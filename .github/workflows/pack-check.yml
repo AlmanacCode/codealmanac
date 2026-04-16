@@ -1,0 +1,20 @@
+name: pack-check
+
+# Dry-run npm pack on every push to main so publish config drift (extra files,
+# missing files, renamed entrypoints) surfaces before a release is cut.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm pack --dry-run

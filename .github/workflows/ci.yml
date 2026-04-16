@@ -1,0 +1,47 @@
+name: ci
+
+# Runs on every push (any branch) and every pull request. Covers the full
+# verification loop — install, build, typecheck, test — so red builds surface
+# on the first commit, not at release time. Release is handled separately in
+# publish.yml (tag-triggered).
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      # One Node version failing shouldn't cancel the other — we want to see
+      # which versions regress independently.
+      fail-fast: false
+      matrix:
+        # package.json declares `engines.node: >=20`. We test 20 (minimum) and
+        # 22 (current LTS) so both supported versions stay green. Extending
+        # to newer LTS is ~30s of extra runtime, which is worth the coverage.
+        node-version: [20, 22]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          # Built-in npm cache — keyed on package-lock.json. Saves ~20-30s
+          # on warm runs vs re-downloading every dependency.
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
