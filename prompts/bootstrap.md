@@ -69,29 +69,49 @@ Keep the README around 50-100 lines. Enough to set the tone, not a comprehensive
 
 One page per anchor. Each stub has:
 
+> **DO NOT copy the example below literally.** The slugs, paths, and
+> `[[doppler]]` reference are illustrative of the *shape* of a stub, not
+> content to reproduce. Every wikilink, every file path, and every topic
+> in a real stub must come from the repo you're actually scanning.
+
 ```yaml
 ---
-title: Supabase
-topics: [stack, database]
+title: <Real dependency or system name from this repo>
+topics: [<real topics from the DAG you're defining>]
 files:
-  - src/lib/supabase.ts
-  - docker-compose.yml
-  - backend/src/models/
+  - <real path that exists in this repo>
+  - <real path that exists in this repo>
 ---
 
-# Supabase
+# <Real name>
 
-PostgreSQL hosted on Supabase. Connection pooling via Supavisor.
+<One paragraph describing what this is IN THIS REPO, based on what you
+actually read. Not generic docs for the dependency.>
 
 <!-- stub: the writer will fill this in over sessions -->
 
 ## Where we use it
-- `src/lib/supabase.ts` — the client singleton
-- `backend/src/models/` — ORM models
+- `<real/path.ts>` — <what it does here>
+- `<real/dir/>` — <what it does here>
 
 ## Configuration
-Connection string in Doppler (`DATABASE_URL`). See [[doppler]].
+<Only include a Configuration section if you actually found
+configuration while scanning. Reference real env vars, real config files.
+If you mention another anchor page, only use `[[slug]]` when you have
+actually created that anchor in this same bootstrap run.>
 ```
+
+For illustration only (do NOT emit this as a page), a filled-in stub for
+a Supabase-using repo would look like:
+
+    title: Supabase
+    topics: [stack, database]
+    files: [src/lib/supabase.ts, docker-compose.yml]
+    # body references real files from that specific repo
+
+Again: the names, paths, and topics above are examples of the *pattern*.
+Never ship a page that references `src/lib/supabase.ts` unless that file
+actually exists in the repo you just scanned.
 
 Stubs are fine. They should have:
 - **Title** (what the thing is)
@@ -111,6 +131,31 @@ Do NOT:
 Create the topics you propose. Set parent relationships. If a topic is obviously cross-cutting (e.g., `decisions` touches every domain), it can be top-level with no parents.
 
 Don't over-engineer the DAG. Flat is fine to start. The writer and reviewer will deepen it as the wiki grows.
+
+## No placeholder wikilinks — ever
+
+Every `[[...]]` you emit must reference a real page or real file in this
+repo. Do not include placeholder slugs like `[[some-page]]`,
+`[[example-flow]]`, `[[your-thing]]`, or illustrative cross-wiki refs
+like `[[openalmanac:supabase]]`, `[[wiki-name:slug]]`,
+`[[example-wiki:slug]]`.
+
+Rules:
+
+- `[[page-slug]]` — only if you are creating that exact page in this same
+  bootstrap run. Page slugs are kebab-cased filenames under
+  `.almanac/pages/`.
+- `[[src/path/to/file.ts]]` — only if the file actually exists in this
+  repo. Verify with `Read` or `Glob` before writing the link.
+- `[[src/path/to/dir/]]` — only if the directory actually exists.
+- `[[wiki:slug]]` cross-wiki references — **do not emit any during
+  bootstrap**. Cross-wiki refs require the target wiki to be registered
+  on this machine; a fresh bootstrap has no way to know what other wikis
+  exist.
+
+If you're tempted to link to a concept but aren't sure whether a page
+for it will exist, mention the concept in prose instead. The writer will
+turn it into a wikilink later when the anchor actually exists.
 
 ## Scope discipline
 
