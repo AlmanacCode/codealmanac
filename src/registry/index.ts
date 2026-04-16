@@ -1,7 +1,12 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
 import { getGlobalAlmanacDir, getRegistryPath } from "../paths.js";
+import { toKebabCase } from "../slug.js";
+
+// Re-export so existing import sites (`from "../registry/index.js"`) keep
+// working without a mechanical fan-out. The canonical home is `../slug.js`.
+export { toKebabCase };
 
 /**
  * One entry in `~/.almanac/registry.json`.
@@ -54,18 +59,30 @@ export async function readRegistry(): Promise<RegistryEntry[]> {
     throw new Error(`registry at ${path} must be a JSON array`);
   }
 
-  // We trust fields we wrote but coerce defensively — someone could have
-  // hand-edited the file, and a missing field shouldn't crash `list`.
+  // Validate every entry. We do NOT silently coerce missing `name` or
+  // `path` — an entry with `name: ""` would be unremovable via `--drop`
+  // and an empty `path` would match any `findEntry({ path: "" })` call.
+  // If someone hand-edited the registry into a bad state, surfacing the
+  // error is strictly better than limping along with corrupt data.
   return parsed.map((item, idx) => {
     if (typeof item !== "object" || item === null) {
       throw new Error(`registry entry ${idx} is not an object`);
     }
     const e = item as Record<string, unknown>;
+    const name = typeof e.name === "string" ? e.name : "";
+    const path = typeof e.path === "string" ? e.path : "";
+    if (name.length === 0) {
+      throw new Error(`registry entry ${idx} is missing a non-empty "name"`);
+    }
+    if (path.length === 0) {
+      throw new Error(`registry entry ${idx} is missing a non-empty "path"`);
+    }
     return {
-      name: String(e.name ?? ""),
-      description: String(e.description ?? ""),
-      path: String(e.path ?? ""),
-      registered_at: String(e.registered_at ?? ""),
+      name,
+      description: typeof e.description === "string" ? e.description : "",
+      path,
+      registered_at:
+        typeof e.registered_at === "string" ? e.registered_at : "",
     };
   });
 }
@@ -75,12 +92,37 @@ export async function readRegistry(): Promise<RegistryEntry[]> {
  *
  * We write with a trailing newline and 2-space indentation so the file is
  * diff-friendly if someone ever commits or inspects it manually.
+ *
+ * The write is atomic: we write to `registry.json.tmp` and then rename,
+ * which is an atomic operation on every mainstream filesystem. This
+ * matters because two concurrent `almanac init` (or autoregister) calls
+ * from different shells would otherwise race on a partial write and
+ * corrupt the file — a single `rename` means one wins cleanly and the
+ * other's contents are simply dropped.
  */
 export async function writeRegistry(entries: RegistryEntry[]): Promise<void> {
   const path = getRegistryPath();
   await mkdir(dirname(path), { recursive: true });
   const body = `${JSON.stringify(entries, null, 2)}\n`;
-  await writeFile(path, body, "utf8");
+  const tmpPath = `${path}.tmp`;
+  await writeFile(tmpPath, body, "utf8");
+  await rename(tmpPath, path);
+}
+
+/**
+ * macOS (HFS+/APFS default) and Windows (NTFS default) are case-insensitive
+ * but case-preserving. `/Users/x/Project` and `/Users/x/project` are the
+ * same directory. We must treat them as the same registry entry, or a
+ * single `almanac init` from a differently-cased cwd would duplicate the
+ * row. Linux is case-sensitive — do not normalize there.
+ *
+ * Callers still store the original casing; only comparisons are lowercased.
+ */
+function pathsEqual(a: string, b: string): boolean {
+  if (process.platform === "darwin" || process.platform === "win32") {
+    return a.toLowerCase() === b.toLowerCase();
+  }
+  return a === b;
 }
 
 /**
@@ -94,7 +136,7 @@ export async function writeRegistry(entries: RegistryEntry[]): Promise<void> {
 export async function addEntry(entry: RegistryEntry): Promise<RegistryEntry[]> {
   const existing = await readRegistry();
   const filtered = existing.filter(
-    (e) => e.name !== entry.name && e.path !== entry.path,
+    (e) => e.name !== entry.name && !pathsEqual(e.path, entry.path),
   );
   filtered.push(entry);
   await writeRegistry(filtered);
@@ -120,6 +162,8 @@ export async function dropEntry(name: string): Promise<RegistryEntry | null> {
 /**
  * Find an entry by either name or absolute path. Used by auto-registration
  * to decide whether the current repo is already known.
+ *
+ * Path comparison is case-insensitive on macOS/Windows (see `pathsEqual`).
  */
 export async function findEntry(params: {
   name?: string;
@@ -128,26 +172,11 @@ export async function findEntry(params: {
   const entries = await readRegistry();
   for (const entry of entries) {
     if (params.name !== undefined && entry.name === params.name) return entry;
-    if (params.path !== undefined && entry.path === params.path) return entry;
+    if (params.path !== undefined && pathsEqual(entry.path, params.path)) {
+      return entry;
+    }
   }
   return null;
-}
-
-/**
- * Convert an arbitrary string to a kebab-case slug. Used for wiki names —
- * both the default (derived from directory name) and anything the user
- * passes via `--name`, so all registry keys follow the same shape.
- *
- * Rules:
- *   - Lowercase
- *   - Non-alphanumeric runs collapse to a single hyphen
- *   - Leading/trailing hyphens trimmed
- */
-export function toKebabCase(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
 
 /**

@@ -1,6 +1,10 @@
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { looksLikeDir, normalizePath } from "../src/indexer/paths.js";
+import { findNearestAlmanacDir } from "../src/paths.js";
+import { makeRepo, withTempHome } from "./helpers.js";
 
 describe("normalizePath", () => {
   it("lowercases", () => {
@@ -59,5 +63,37 @@ describe("looksLikeDir", () => {
 
   it("handles a Windows-style trailing backslash as dir", () => {
     expect(looksLikeDir("src\\checkout\\")).toBe(true);
+  });
+});
+
+describe("findNearestAlmanacDir", () => {
+  it("finds a wiki root when one exists upward", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "wiki");
+      await mkdir(join(repo, ".almanac"), { recursive: true });
+      const nested = join(repo, "src", "deep");
+      await mkdir(nested, { recursive: true });
+      expect(findNearestAlmanacDir(nested)).toBe(repo);
+    });
+  });
+
+  it("returns null when no wiki encloses the startDir", async () => {
+    await withTempHome(async (home) => {
+      const bare = await makeRepo(home, "nowhere");
+      expect(findNearestAlmanacDir(bare)).toBeNull();
+    });
+  });
+
+  it("ignores the global ~/.almanac/ directory", async () => {
+    // Regression: otherwise `almanac init` run from anywhere under `$HOME`
+    // would walk up, find `~/.almanac/` (the global registry dir), and
+    // register the home directory itself as a wiki.
+    await withTempHome(async (home) => {
+      // Create ~/.almanac/ as the global registry dir would.
+      await mkdir(join(home, ".almanac"), { recursive: true });
+      const sub = await makeRepo(home, "plain-repo");
+      expect(findNearestAlmanacDir(sub)).toBeNull();
+      expect(findNearestAlmanacDir(home)).toBeNull();
+    });
   });
 });

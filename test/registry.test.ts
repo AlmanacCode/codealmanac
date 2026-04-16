@@ -159,6 +159,48 @@ describe("registry", () => {
       expect(await readRegistry()).toEqual([entry]);
     });
   });
+
+  it("rejects entries missing a non-empty name", async () => {
+    await withTempHome(async () => {
+      const path = getRegistryPath();
+      await mkdir(path.replace(/\/registry\.json$/, ""), { recursive: true });
+      await writeFile(
+        path,
+        JSON.stringify([{ path: "/x", description: "", registered_at: "" }]),
+        "utf8",
+      );
+      await expect(readRegistry()).rejects.toThrow(/"name"/);
+    });
+  });
+
+  it("rejects entries missing a non-empty path", async () => {
+    await withTempHome(async () => {
+      const path = getRegistryPath();
+      await mkdir(path.replace(/\/registry\.json$/, ""), { recursive: true });
+      await writeFile(
+        path,
+        JSON.stringify([{ name: "x", description: "", registered_at: "" }]),
+        "utf8",
+      );
+      await expect(readRegistry()).rejects.toThrow(/"path"/);
+    });
+  });
+
+  it("leaves no .tmp file behind after a successful write", async () => {
+    // Atomic writes go through `registry.json.tmp` then rename. If the
+    // rename succeeded, no stray tmp file should remain.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "atomic");
+      await addEntry({
+        name: "atomic",
+        description: "",
+        path: repo,
+        registered_at: "2026-04-15T00:00:00Z",
+      });
+      const tmp = `${getRegistryPath()}.tmp`;
+      expect(existsSync(tmp)).toBe(false);
+    });
+  });
 });
 
 describe("toKebabCase", () => {

@@ -2,11 +2,11 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 
-import { getRepoAlmanacDir } from "../paths.js";
+import { findNearestAlmanacDir, getRepoAlmanacDir } from "../paths.js";
+import { toKebabCase } from "../slug.js";
 import {
   addEntry,
   ensureGlobalDir,
-  toKebabCase,
   type RegistryEntry,
 } from "../registry/index.js";
 
@@ -29,10 +29,19 @@ export interface InitResult {
  * fine — we re-register (refreshing the name/description) and skip
  * anything that already exists. We never overwrite a user-authored
  * `README.md` or touch existing pages.
+ *
+ * If `cwd` lives inside a subdirectory of an existing wiki, we walk up to
+ * the wiki root and operate there. `almanac init` from `src/nested/`
+ * should update the enclosing wiki, not create a nested one at
+ * `src/nested/.almanac/` (which would fragment the registry and leave a
+ * confusing orphan `.almanac/` on disk).
  */
 export async function initWiki(options: InitOptions): Promise<InitResult> {
-  const { cwd } = options;
-  const almanacDir = getRepoAlmanacDir(cwd);
+  // If cwd is already inside a wiki, prefer that root. Otherwise treat
+  // cwd as the new wiki root.
+  const repoRoot = findNearestAlmanacDir(options.cwd) ?? options.cwd;
+
+  const almanacDir = getRepoAlmanacDir(repoRoot);
   const pagesDir = join(almanacDir, "pages");
   const readmePath = join(almanacDir, "README.md");
 
@@ -44,9 +53,9 @@ export async function initWiki(options: InitOptions): Promise<InitResult> {
     await writeFile(readmePath, starterReadme(), "utf8");
   }
 
-  await ensureGitignoreHasIndexDb(cwd);
+  await ensureGitignoreHasIndexDb(repoRoot);
 
-  const name = toKebabCase(options.name ?? basename(cwd));
+  const name = toKebabCase(options.name ?? basename(repoRoot));
   if (name.length === 0) {
     throw new Error(
       "could not derive a wiki name from the current directory; pass --name",
@@ -59,7 +68,7 @@ export async function initWiki(options: InitOptions): Promise<InitResult> {
   const entry: RegistryEntry = {
     name,
     description,
-    path: cwd,
+    path: repoRoot,
     registered_at: new Date().toISOString(),
   };
   await addEntry(entry);
@@ -74,6 +83,12 @@ export async function initWiki(options: InitOptions): Promise<InitResult> {
  * bloat git history. We add the line regardless of whether the file
  * exists (creating `.gitignore` if needed), but only once. If the line is
  * already present under any reasonable variant, we leave the file alone.
+ *
+ * Formatting: we guarantee exactly one blank line between the prior
+ * content and our appended block, regardless of whether the existing file
+ * ends with `\n`, ends with nothing, or is empty. This keeps the file
+ * tidy across repeated runs and on `.gitignore`s that were written
+ * without a trailing newline.
  */
 async function ensureGitignoreHasIndexDb(cwd: string): Promise<void> {
   const path = join(cwd, ".gitignore");
@@ -89,10 +104,14 @@ async function ensureGitignoreHasIndexDb(cwd: string): Promise<void> {
   const lines = existing.split(/\r?\n/).map((l) => l.trim());
   if (lines.includes(target)) return;
 
-  const prefix = existing.length === 0 || existing.endsWith("\n") ? "" : "\n";
-  const block = `${prefix}${existing.length === 0 ? "" : "\n"}# codealmanac\n${target}\n`;
-
-  await writeFile(path, existing + block, "utf8");
+  // Three cases:
+  //  - empty file: no separator needed
+  //  - ends with newline: one more newline produces a single blank line
+  //  - no trailing newline: two newlines (one to terminate the last line,
+  //    one for the blank separator)
+  const sep =
+    existing.length === 0 ? "" : existing.endsWith("\n") ? "\n" : "\n\n";
+  await writeFile(path, `${existing}${sep}# codealmanac\n${target}\n`, "utf8");
 }
 
 /**

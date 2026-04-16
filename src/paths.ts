@@ -41,15 +41,23 @@ export function getRepoAlmanacDir(cwd: string): string {
  *
  * Mirrors how `git` locates the enclosing repository. This lets `almanac`
  * work from any subdirectory inside a repo, not just the root.
+ *
+ * We explicitly skip the global `~/.almanac/` directory. It shares the
+ * `.almanac` name with the per-repo wiki dir, but it's not a wiki — it
+ * only holds the registry and global state. If the user runs `almanac
+ * init` anywhere inside their home directory (outside a real wiki), we
+ * must NOT treat `~` as an enclosing wiki root. Otherwise init would try
+ * to register the home dir itself as a wiki.
  */
 export function findNearestAlmanacDir(startDir: string): string | null {
+  const globalDir = getGlobalAlmanacDir();
   let current = isAbsolute(startDir) ? startDir : resolve(startDir);
 
   // Walk until we hit the filesystem root. `dirname("/")` returns `"/"`,
   // so the loop terminates when we stop ascending.
   while (true) {
     const candidate = join(current, ".almanac");
-    if (existsSync(candidate)) {
+    if (candidate !== globalDir && existsSync(candidate)) {
       return current;
     }
     const parent = dirname(current);

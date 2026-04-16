@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -154,6 +154,77 @@ describe("almanac init", () => {
       await initWiki({ cwd: repo, name: "example" });
       const entries = await readRegistry();
       expect(entries[0]?.description).toBe("");
+    });
+  });
+
+  it("walks up to the nearest .almanac/ when run from a subdirectory", async () => {
+    // This is the must-fix from the slice 1 review: `init` run in a
+    // subdir must update the enclosing wiki, not create a nested one.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "walkup");
+      await initWiki({ cwd: repo, name: "walkup", description: "root" });
+
+      const nested = join(repo, "src", "nested");
+      await mkdir(nested, { recursive: true });
+
+      const second = await initWiki({
+        cwd: nested,
+        description: "from nested",
+      });
+
+      // No nested .almanac/ at the subdirectory.
+      expect(existsSync(join(nested, ".almanac"))).toBe(false);
+
+      // Registry entry still points at the repo root.
+      const entries = await readRegistry();
+      expect(entries).toHaveLength(1);
+      expect(entries[0]?.path).toBe(repo);
+      expect(entries[0]?.description).toBe("from nested");
+      // `created` is false because the enclosing .almanac/ already existed.
+      expect(second.created).toBe(false);
+    });
+  });
+
+  it("does not create a blank line separator when .gitignore is absent", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "gi-absent");
+      await initWiki({ cwd: repo, name: "gi-absent", description: "" });
+      const contents = await readFile(join(repo, ".gitignore"), "utf8");
+      expect(contents).toBe("# codealmanac\n.almanac/index.db\n");
+    });
+  });
+
+  it("preserves a single blank line when .gitignore lacks a trailing newline", async () => {
+    // Regression: previously produced a double-blank-line or bare-blank-line
+    // issue when the existing file didn't end with "\n".
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "gi-notrail");
+      await writeFile(join(repo, ".gitignore"), "foo"); // no trailing newline
+      await initWiki({ cwd: repo, name: "gi-notrail", description: "" });
+      const contents = await readFile(join(repo, ".gitignore"), "utf8");
+      expect(contents).toBe("foo\n\n# codealmanac\n.almanac/index.db\n");
+    });
+  });
+
+  it("preserves a single blank line when .gitignore ends with a newline", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "gi-trail");
+      await writeFile(join(repo, ".gitignore"), "node_modules/\n");
+      await initWiki({ cwd: repo, name: "gi-trail", description: "" });
+      const contents = await readFile(join(repo, ".gitignore"), "utf8");
+      expect(contents).toBe(
+        "node_modules/\n\n# codealmanac\n.almanac/index.db\n",
+      );
+    });
+  });
+
+  it("handles an empty .gitignore file gracefully", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "gi-empty");
+      await writeFile(join(repo, ".gitignore"), "");
+      await initWiki({ cwd: repo, name: "gi-empty", description: "" });
+      const contents = await readFile(join(repo, ".gitignore"), "utf8");
+      expect(contents).toBe("# codealmanac\n.almanac/index.db\n");
     });
   });
 });

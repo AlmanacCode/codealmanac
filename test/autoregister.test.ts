@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { initWiki } from "../src/commands/init.js";
+import { getRegistryPath } from "../src/paths.js";
 import { autoRegisterIfNeeded } from "../src/registry/autoregister.js";
 import { readRegistry, addEntry } from "../src/registry/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
@@ -87,6 +88,27 @@ describe("autoRegisterIfNeeded", () => {
       expect(entries).toHaveLength(2);
       const original = entries.find((e) => e.name === "shared-name");
       expect(original?.path).toBe(other);
+    });
+  });
+
+  it("propagates malformed registry JSON instead of silently returning null", async () => {
+    // Regression: the original catch-all swallowed JSON parse errors,
+    // hiding corruption until it caused downstream weirdness. We now
+    // surface the error so the user sees the problem immediately.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "auto-repo");
+      await scaffoldDotAlmanac(repo);
+
+      // Corrupt the registry on disk.
+      const registryPath = getRegistryPath();
+      await mkdir(registryPath.replace(/\/registry\.json$/, ""), {
+        recursive: true,
+      });
+      await writeFile(registryPath, "garbage{", "utf8");
+
+      await expect(autoRegisterIfNeeded(repo)).rejects.toThrow(
+        /not valid JSON/,
+      );
     });
   });
 });

@@ -1,8 +1,10 @@
-import { rm } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { initWiki } from "../src/commands/init.js";
 import { listWikis } from "../src/commands/list.js";
+import { autoRegisterIfNeeded } from "../src/registry/autoregister.js";
 import { readRegistry } from "../src/registry/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
@@ -98,6 +100,29 @@ describe("almanac list", () => {
       const result = await listWikis({ drop: "ghost" });
       expect(result.exitCode).toBe(1);
       expect(result.stdout).toMatch(/no registry entry named "ghost"/);
+    });
+  });
+
+  it("auto-registers from a subdirectory of an existing wiki", async () => {
+    // End-to-end: `almanac list` runs `autoRegisterIfNeeded(cwd)` first,
+    // which must walk up from a nested dir to find the enclosing wiki
+    // and register it silently.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "sub-auto");
+      await mkdir(join(repo, ".almanac", "pages"), { recursive: true });
+
+      // Simulate the CLI's pre-list hook from a nested dir.
+      const nested = join(repo, "src", "deep");
+      await mkdir(nested, { recursive: true });
+      await autoRegisterIfNeeded(nested);
+
+      const result = await listWikis({});
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/sub-auto/);
+
+      const entries = await readRegistry();
+      expect(entries).toHaveLength(1);
+      expect(entries[0]?.path).toBe(repo);
     });
   });
 });
