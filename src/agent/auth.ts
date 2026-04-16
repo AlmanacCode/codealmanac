@@ -65,11 +65,15 @@ function resolveCliJsPath(): string {
   // `import.meta.url` points at this module (dev or dist). `createRequire`
   // from that URL can then resolve sibling packages the same way Node's
   // own CJS resolver would.
+  //
+  // We resolve the main entry (not `./package.json`) because the SDK's
+  // `exports` field locks subpath access — `require.resolve(".../package.json")`
+  // fails with `ERR_PACKAGE_PATH_NOT_EXPORTED` on current SDK versions.
+  // The main entry resolves fine; `cli.js` is its sibling in the install
+  // layout the SDK has used since day one.
   const require = createRequire(import.meta.url);
-  const pkgJsonPath = require.resolve(
-    "@anthropic-ai/claude-agent-sdk/package.json",
-  );
-  return join(dirname(pkgJsonPath), "cli.js");
+  const entry = require.resolve("@anthropic-ai/claude-agent-sdk");
+  return join(dirname(entry), "cli.js");
 }
 
 /**
