@@ -1,0 +1,35 @@
+topics:
+  - slug: stack
+    title: Stack
+    description: Third-party technologies and libraries the CLI depends on
+    parents: []
+
+  - slug: systems
+    title: Systems
+    description: Custom subsystems built inside this repo
+    parents: []
+
+  - slug: flows
+    title: Flows
+    description: Multi-step processes spanning multiple files or components
+    parents: []
+
+  - slug: decisions
+    title: Decisions
+    description: Architectural and design choices with rationale
+    parents: []
+
+  - slug: agents
+    title: Agents
+    description: AI agent integration — SDK usage, prompts, bootstrap, capture
+    parents: [flows, stack]
+
+  - slug: cli
+    title: CLI
+    description: Command-line interface commands and surface area
+    parents: [systems]
+
+  - slug: storage
+    title: Storage
+    description: SQLite index, registry persistence, and file layout
+    parents: [systems]
