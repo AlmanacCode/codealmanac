@@ -1,8 +1,9 @@
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type Database from "better-sqlite3";
 
@@ -580,23 +581,42 @@ function countHealthProblems(jsonStdout: string): number {
 // ─── Probes ───────────────────────────────────────────────────────────
 
 /**
- * Best-effort detection of where codealmanac is installed. Uses
- * `require.resolve` on the package manifest — works for `npm i -g`,
- * `npx`, and local `node_modules/` installs alike. Returns `null` if
- * resolution fails (unusual; suggests a broken install).
+ * Detect where codealmanac is installed by walking up from the running
+ * module until we find a `package.json` whose `name` is `codealmanac`.
+ *
+ * `require.resolve("codealmanac")` doesn't work here — when codealmanac
+ * runs as its own binary, it's not a dependency of anything that can
+ * resolve it. But the currently-executing module IS inside the install
+ * directory, so `import.meta.url` → walk up → find `package.json` →
+ * verify name. Works for `npm i -g`, `npx`, local `node_modules/`, and
+ * dev-from-source alike.
  */
 function detectInstallPath(): string | null {
   try {
-    // Resolving the main entry (not package.json directly) — the SDK's
-    // subpath exports trip over `/package.json` imports on some
-    // versions; the main entry always resolves.
-    const entry = req.resolve("codealmanac");
-    // Walk up to the package root. `dirname` twice covers the common
-    // dist-layout case (`.../codealmanac/dist/codealmanac.js` →
-    // `.../codealmanac/`).
-    return path.dirname(path.dirname(entry));
+    const here = fileURLToPath(import.meta.url);
+    let dir = path.dirname(here);
+    // Walk up at most 5 levels — `dist/codealmanac.js` is one level deep
+    // in a typical install; `src/commands/doctor.ts` is two levels deep
+    // in dev. 5 is generous enough for exotic bundlers without risking
+    // runaway traversal.
+    for (let i = 0; i < 5; i++) {
+      const pkgPath = path.join(dir, "package.json");
+      if (existsSync(pkgPath)) {
+        try {
+          const raw = readFileSync(pkgPath, "utf-8");
+          const pkg = JSON.parse(raw) as { name?: unknown };
+          if (pkg.name === "codealmanac") return dir;
+        } catch {
+          // ignore — keep walking
+        }
+      }
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+    return null;
   } catch {
-    // Not installed as a package (dev mode / running from source).
+    // `import.meta.url` unavailable (unusual); fall back to null.
     return null;
   }
 }
