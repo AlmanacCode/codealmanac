@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -33,7 +33,37 @@ export async function withTempHome<T>(
  */
 export async function makeRepo(parent: string, name: string): Promise<string> {
   const path = join(parent, name);
-  const { mkdir } = await import("node:fs/promises");
   await mkdir(path, { recursive: true });
+  return path;
+}
+
+/**
+ * Create a wiki with `.almanac/pages/` scaffolded inside the given repo.
+ * Doesn't touch the registry — callers that need registration can wrap
+ * with `initWiki`.
+ */
+export async function scaffoldWiki(repo: string): Promise<string> {
+  const pagesDir = join(repo, ".almanac", "pages");
+  await mkdir(pagesDir, { recursive: true });
+  return pagesDir;
+}
+
+/**
+ * Write a markdown page under `.almanac/pages/<slug>.md` and optionally
+ * stamp its mtime for freshness tests. Returns the absolute path.
+ */
+export async function writePage(
+  repo: string,
+  slug: string,
+  contents: string,
+  opts?: { mtime?: Date },
+): Promise<string> {
+  const pagesDir = join(repo, ".almanac", "pages");
+  await mkdir(pagesDir, { recursive: true });
+  const path = join(pagesDir, `${slug}.md`);
+  await writeFile(path, contents, "utf8");
+  if (opts?.mtime !== undefined) {
+    await utimes(path, opts.mtime, opts.mtime);
+  }
   return path;
 }

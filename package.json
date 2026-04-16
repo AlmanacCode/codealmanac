@@ -43,9 +43,14 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "commander": "^12.1.0"
+    "better-sqlite3": "^12.9.0",
+    "commander": "^12.1.0",
+    "fast-glob": "^3.3.3",
+    "js-yaml": "^4.1.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
