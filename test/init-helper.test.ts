@@ -3,11 +3,11 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { initWiki } from "../src/commands/init.js";
+import { initWiki } from "../src/commands/_init.js";
 import { readRegistry } from "../src/registry/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
-describe("almanac init", () => {
+describe("initWiki (internal helper)", () => {
   it("creates the .almanac/ directory structure", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "example");

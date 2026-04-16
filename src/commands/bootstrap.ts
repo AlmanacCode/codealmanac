@@ -12,7 +12,7 @@ import {
   type RunAgentOptions,
 } from "../agent/sdk.js";
 import { findNearestAlmanacDir, getRepoAlmanacDir } from "../paths.js";
-import { initWiki } from "./init.js";
+import { initWiki } from "./_init.js";
 
 export interface BootstrapOptions {
   cwd: string;
