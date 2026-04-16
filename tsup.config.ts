@@ -17,7 +17,19 @@ export default defineConfig({
   // binary via `bindings`); `fast-glob` uses dynamic CommonJS `require()`
   // internally and breaks when bundled into ESM. `js-yaml` could be
   // bundled but we keep it external for consistency with its peers.
-  external: ["better-sqlite3", "fast-glob", "js-yaml"],
+  //
+  // The Claude Agent SDK family (`@anthropic-ai/claude-agent-sdk` plus its
+  // runtime peers `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk`)
+  // ships its own binaries/vendored CLI and uses dynamic imports that
+  // bundlers can't follow. Always resolved at runtime from `node_modules`.
+  external: [
+    "better-sqlite3",
+    "fast-glob",
+    "js-yaml",
+    "@anthropic-ai/claude-agent-sdk",
+    "@anthropic-ai/sdk",
+    "@modelcontextprotocol/sdk",
+  ],
   banner: {
     js: "#!/usr/bin/env node",
   },

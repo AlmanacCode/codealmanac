@@ -1,5 +1,6 @@
 import { Command } from "commander";
 
+import { runBootstrap } from "./commands/bootstrap.js";
 import { runHealth } from "./commands/health.js";
 import { initWiki } from "./commands/init.js";
 import { runInfo } from "./commands/info.js";
@@ -430,6 +431,38 @@ export async function run(argv: string[]): Promise<void> {
           page,
           topic,
           wiki: opts.wiki,
+        });
+        emit(result);
+      },
+    );
+
+  // ─── bootstrap ───────────────────────────────────────────────────
+  // Slice 4: first Claude Agent SDK integration. Spawns the bootstrap
+  // agent on the current repo to create initial entity pages + README +
+  // topic DAG. Requires ANTHROPIC_API_KEY; refuses on populated wikis
+  // unless --force.
+  program
+    .command("bootstrap")
+    .description(
+      "spawn an agent to scan the repo and create initial wiki stubs (requires ANTHROPIC_API_KEY)",
+    )
+    .option("--quiet", "suppress per-tool streaming; print only the final line")
+    .option("--model <model>", "override the agent model")
+    .option(
+      "--force",
+      "overwrite an existing populated wiki (default: refuse)",
+    )
+    .action(
+      async (opts: { quiet?: boolean; model?: string; force?: boolean }) => {
+        // No auto-register here: if this is a fresh repo the bootstrap
+        // command handles init (and therefore registration) itself. If
+        // the repo is already a wiki, capture/init have already
+        // registered it.
+        const result = await runBootstrap({
+          cwd: process.cwd(),
+          quiet: opts.quiet,
+          model: opts.model,
+          force: opts.force,
         });
         emit(result);
       },

@@ -43,6 +43,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.110",
     "better-sqlite3": "^12.9.0",
     "commander": "^12.1.0",
     "fast-glob": "^3.3.3",
