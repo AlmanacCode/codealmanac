@@ -11,9 +11,9 @@ import { basename, join, relative } from "node:path";
 
 import type { AgentDefinition, SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
+import { assertClaudeAuth, type SpawnCliFn } from "../agent/auth.js";
 import { loadPrompt } from "../agent/prompts.js";
 import {
-  assertAnthropicApiKey,
   runAgent,
   type AgentResult,
   type RunAgentOptions,
@@ -34,6 +34,12 @@ export interface CaptureOptions {
   model?: string;
   /** Injectable agent runner — tests replace this with a fake. */
   runAgent?: (opts: RunAgentOptions) => Promise<AgentResult>;
+  /**
+   * Injectable spawner for the Claude auth-status subprocess. Tests pass
+   * a stub; production uses `defaultSpawnCli` which shells out to the
+   * bundled SDK's `cli.js`.
+   */
+  spawnCli?: SpawnCliFn;
   /** Clock injection for deterministic log filenames in tests. */
   now?: () => Date;
   /**
@@ -98,8 +104,13 @@ const REVIEWER_DESCRIPTION =
 export async function runCapture(
   options: CaptureOptions,
 ): Promise<CaptureResult> {
+  // Fail before any filesystem work. `assertClaudeAuth` accepts either
+  // subscription OAuth (via the bundled SDK CLI) or `ANTHROPIC_API_KEY`;
+  // missing both surfaces a two-option error with exit 1 so the
+  // SessionEnd hook (which backgrounds + redirects to a sidecar log)
+  // doesn't silently treat auth failure as a successful capture.
   try {
-    assertAnthropicApiKey();
+    await assertClaudeAuth(options.spawnCli);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return {

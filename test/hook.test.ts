@@ -192,6 +192,70 @@ describe("almanac hook uninstall", () => {
     });
   });
 
+  it("drops the empty hooks key entirely when install→uninstall had nothing else", async () => {
+    // Regression: uninstall used to leave `{"hooks": {}}` behind after
+    // removing the sole SessionEnd entry we installed — a visible but
+    // useless breadcrumb in settings.json. The fix drops `hooks` when
+    // it's empty after removal, restoring the shape the file would have
+    // had if we'd never installed.
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+
+      await runHookInstall({ settingsPath, hookScriptPath });
+      await runHookUninstall({ settingsPath, hookScriptPath });
+
+      const parsed = (await readJson(settingsPath)) as Record<string, unknown>;
+      expect(parsed).not.toHaveProperty("hooks");
+    });
+  });
+
+  it("preserves other hook categories when only SessionEnd was ours", async () => {
+    // Different failure mode: if the user has PreToolUse (or any other
+    // category) in hooks alongside our SessionEnd, uninstall should
+    // drop ONLY the SessionEnd key, not the whole hooks block.
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+      await import("node:fs/promises").then((fs) =>
+        fs.mkdir(join(home, ".claude"), { recursive: true }),
+      );
+      await writeFile(
+        settingsPath,
+        JSON.stringify(
+          {
+            hooks: {
+              SessionEnd: [
+                { type: "command", command: hookScriptPath, timeout: 10 },
+              ],
+              PreToolUse: [
+                { type: "command", command: "/usr/local/bin/pre.sh" },
+              ],
+            },
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+
+      await runHookUninstall({ settingsPath, hookScriptPath });
+
+      const parsed = (await readJson(settingsPath)) as {
+        hooks?: {
+          SessionEnd?: unknown;
+          PreToolUse?: { command: string }[];
+        };
+      };
+      // SessionEnd dropped (we owned it exclusively), PreToolUse survives,
+      // and `hooks` still exists because PreToolUse lives there.
+      expect(parsed.hooks).toBeDefined();
+      expect(parsed.hooks?.SessionEnd).toBeUndefined();
+      expect(parsed.hooks?.PreToolUse).toBeDefined();
+      expect(parsed.hooks?.PreToolUse?.[0]?.command).toBe(
+        "/usr/local/bin/pre.sh",
+      );
+    });
+  });
+
   it("leaves foreign entries alone when uninstalling", async () => {
     await withTempHome(async (home) => {
       const { settingsPath, hookScriptPath } = await setup(home);

@@ -10,13 +10,16 @@ import type {
  * from here. Slice 5 (capture) reuses this wrapper unchanged.
  *
  * Why a wrapper at all:
- *   1. Centralizes the auth gate (fail fast if ANTHROPIC_API_KEY is unset —
- *      the SDK otherwise throws mid-stream on auth failure, which is a
- *      poor UX).
- *   2. Sets defaults (`maxTurns`, `includePartialMessages`, model) once so
+ *   1. Sets defaults (`maxTurns`, `includePartialMessages`, model) once so
  *      commands stay small.
- *   3. Translates the SDK's rich message types into a {cost, turns, result}
+ *   2. Translates the SDK's rich message types into a {cost, turns, result}
  *      summary the commands actually care about.
+ *
+ * The auth gate lives in `src/agent/auth.ts`. Commands call
+ * `assertClaudeAuth()` BEFORE `runAgent` so we fail with a clean two-path
+ * error before the SDK generator spins up. `runAgent` itself doesn't
+ * re-check — the SDK reads whichever of (subscription OAuth,
+ * `ANTHROPIC_API_KEY`) is present.
  *
  * Keep this module SMALL. If a feature can live in the caller, it should.
  */
@@ -68,38 +71,19 @@ export interface AgentResult {
 }
 
 /**
- * Auth gate. Called upfront — the SDK itself throws mid-stream on missing
- * auth, which produces an ugly, partially-formatted error. We'd rather
- * fail before the generator starts so callers can print a clean message.
- *
- * Exported so commands can call this BEFORE loading prompts or printing
- * any progress chatter.
- */
-export function assertAnthropicApiKey(): void {
-  if (
-    process.env.ANTHROPIC_API_KEY === undefined ||
-    process.env.ANTHROPIC_API_KEY.length === 0
-  ) {
-    const err = new Error(
-      "ANTHROPIC_API_KEY is required. Set it to a Claude API key:\n" +
-        "    export ANTHROPIC_API_KEY=sk-ant-...",
-    );
-    // Tag it so the CLI shim can distinguish auth-missing from other
-    // Error instances if it ever wants to.
-    (err as { code?: string }).code = "ANTHROPIC_API_KEY_MISSING";
-    throw err;
-  }
-}
-
-/**
  * Run an agent to completion. Iterates the SDK's `AsyncGenerator` and
  * returns a summary. Any thrown error in the `for await` becomes a
  * `success: false` result with the error message attached — we don't
  * propagate because the caller wants to write transcripts + print
  * formatted output regardless of outcome.
+ *
+ * The caller is responsible for running `assertClaudeAuth()` BEFORE
+ * loading prompts or printing progress — see `bootstrap.ts`/`capture.ts`.
+ * `runAgent` itself no longer re-checks; the SDK will happily pick up
+ * whichever of (subscription OAuth, `ANTHROPIC_API_KEY`) the environment
+ * provides.
  */
 export async function runAgent(opts: RunAgentOptions): Promise<AgentResult> {
-  assertAnthropicApiKey();
 
   const q = query({
     prompt: opts.prompt,

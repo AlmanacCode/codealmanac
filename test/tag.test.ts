@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -213,6 +214,46 @@ describe("almanac tag / untag", () => {
       });
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toMatch(/no such page/);
+    });
+  });
+
+  it("does NOT mutate topics.yaml when the tag fails because the page is missing", async () => {
+    // Regression: `almanac tag does-not-exist brand-new-topic` used to
+    // exit 1 with "no such page" but would still create `brand-new-topic`
+    // in topics.yaml — a state leak that polluted the topic DAG with
+    // orphan entries tied to commands that never actually ran. The fix:
+    // validate page existence BEFORE touching topics.yaml.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await runIndexer({ repoRoot: repo });
+
+      const yamlPath = topicsYamlPath(repo);
+      const existedBefore = existsSync(yamlPath);
+      const fileBefore = await loadTopicsFile(yamlPath);
+      const snapshotBefore = JSON.stringify(fileBefore);
+
+      const result = await runTag({
+        cwd: repo,
+        page: "nonexistent",
+        topics: ["brand-new-topic"],
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/no such page/);
+
+      // topics.yaml content must be identical — no `brand-new-topic`
+      // smuggled in by the failed command.
+      const fileAfter = await loadTopicsFile(yamlPath);
+      expect(JSON.stringify(fileAfter)).toBe(snapshotBefore);
+      expect(
+        fileAfter.topics.find((t) => t.slug === "brand-new-topic"),
+      ).toBeUndefined();
+
+      // If the yaml file didn't exist before the call, it must still not
+      // exist afterward — the tag command shouldn't have created it.
+      if (!existedBefore) {
+        expect(existsSync(yamlPath)).toBe(false);
+      }
     });
   });
 

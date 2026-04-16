@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
+import type { SpawnCliFn } from "../src/agent/auth.js";
 import { runBootstrap, StreamingFormatter } from "../src/commands/bootstrap.js";
 import {
   loadPrompt,
@@ -13,6 +14,55 @@ import {
 } from "../src/agent/prompts.js";
 import type { AgentResult, RunAgentOptions } from "../src/agent/sdk.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
+
+/**
+ * Canned `spawnCli` fakes for the Claude auth-status subprocess. These
+ * NEVER actually spawn anything — they emit synthetic stdout/close
+ * events so the auth gate can be exercised deterministically without
+ * touching the bundled SDK CLI or the user's real credentials.
+ */
+function fakeSpawnCliLoggedOut(): SpawnCliFn {
+  return () => makeFakeChild({ stdout: '{"loggedIn": false}\n', code: 0 });
+}
+
+function fakeSpawnCliLoggedIn(): SpawnCliFn {
+  return () =>
+    makeFakeChild({
+      stdout:
+        '{"loggedIn": true, "email": "test@example.com", "subscriptionType": "max", "authMethod": "claude.ai"}\n',
+      code: 0,
+    });
+}
+
+function makeFakeChild(args: { stdout: string; code: number }): {
+  stdout: { on: (event: "data", cb: (data: Buffer | string) => void) => void };
+  stderr: { on: (event: "data", cb: (data: Buffer | string) => void) => void };
+  on: (event: "close" | "error", cb: (arg: number | null | Error) => void) => void;
+  kill: () => void;
+} {
+  const stdoutCb: ((data: string) => void)[] = [];
+  const closeCb: ((code: number | null) => void)[] = [];
+  // Defer firing so the auth-status promise has a chance to wire up
+  // its listeners before we emit events.
+  queueMicrotask(() => {
+    for (const cb of stdoutCb) cb(args.stdout);
+    for (const cb of closeCb) cb(args.code);
+  });
+  return {
+    stdout: {
+      on: (event, cb) => {
+        if (event === "data") stdoutCb.push(cb as (data: string) => void);
+      },
+    },
+    stderr: { on: () => {} },
+    on: (event, cb) => {
+      if (event === "close") {
+        closeCb.push(cb as (code: number | null) => void);
+      }
+    },
+    kill: () => {},
+  };
+}
 
 /**
  * Unit tests for slice 4 — `almanac bootstrap`.
@@ -51,7 +101,9 @@ function fakeRunAgent(messages: SDKMessage[] = [], final?: Partial<AgentResult>)
 }
 
 // Set ANTHROPIC_API_KEY for the common path. Individual auth-gate tests
-// restore/unset it explicitly.
+// restore/unset it explicitly. Every `runBootstrap` call also passes a
+// `spawnCli` stub so the subscription-auth check returns logged-out
+// deterministically — the env-var path is what opens the gate here.
 const ORIGINAL_API_KEY = process.env.ANTHROPIC_API_KEY;
 beforeEach(() => {
   process.env.ANTHROPIC_API_KEY = "sk-ant-test-dummy";
@@ -65,19 +117,47 @@ afterEach(() => {
 });
 
 describe("almanac bootstrap — command wiring", () => {
-  it("errors with a clear message when ANTHROPIC_API_KEY is unset", async () => {
+  it("exits 1 when neither Claude subscription nor ANTHROPIC_API_KEY is available", async () => {
+    // Reproduces the SessionEnd-hook silent-success mode that was fixed
+    // in the v0.1.0 cleanup pass: the command MUST return a non-zero
+    // exit code so the backgrounded hook can detect auth failure via
+    // the exit status (stderr is redirected to a sidecar log).
     await withTempHome(async (home) => {
       delete process.env.ANTHROPIC_API_KEY;
       const repo = await makeRepo(home, "auth-missing");
 
       const out = await runBootstrap({
         cwd: repo,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent(),
       });
 
       expect(out.exitCode).toBe(1);
+      expect(out.stderr).toMatch(/not authenticated to Claude/);
+      expect(out.stderr).toMatch(/claude auth login --claudeai/);
       expect(out.stderr).toMatch(/ANTHROPIC_API_KEY/);
       expect(out.stdout).toBe("");
+    });
+  });
+
+  it("opens the gate when logged in via Claude subscription with no env var", async () => {
+    // The subscription path MUST work even with ANTHROPIC_API_KEY unset.
+    await withTempHome(async (home) => {
+      delete process.env.ANTHROPIC_API_KEY;
+      const repo = await makeRepo(home, "subscription-only");
+
+      let agentCalled = false;
+      const out = await runBootstrap({
+        cwd: repo,
+        spawnCli: fakeSpawnCliLoggedIn(),
+        runAgent: async () => {
+          agentCalled = true;
+          return successResult();
+        },
+      });
+
+      expect(out.exitCode).toBe(0);
+      expect(agentCalled).toBe(true);
     });
   });
 
@@ -103,6 +183,7 @@ describe("almanac bootstrap — command wiring", () => {
 
       const out = await runBootstrap({
         cwd: repo,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: runner,
       });
 
@@ -126,6 +207,7 @@ describe("almanac bootstrap — command wiring", () => {
 
       const out = await runBootstrap({
         cwd: repo,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent(),
       });
 
@@ -149,6 +231,7 @@ describe("almanac bootstrap — command wiring", () => {
       const out = await runBootstrap({
         cwd: repo,
         force: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: async () => {
           agentCalled = true;
           return successResult();
@@ -170,6 +253,7 @@ describe("almanac bootstrap — command wiring", () => {
 
       const out = await runBootstrap({
         cwd: repo,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent(),
       });
 
@@ -194,6 +278,7 @@ describe("almanac bootstrap — command wiring", () => {
         cwd: repo,
         quiet: true,
         now: () => fixedDate,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent(messages),
       });
 
@@ -241,6 +326,7 @@ describe("almanac bootstrap — command wiring", () => {
         const out = await runBootstrap({
           cwd: repo,
           quiet: true,
+          spawnCli: fakeSpawnCliLoggedOut(),
           runAgent: fakeRunAgent(messages),
         });
 
@@ -272,6 +358,7 @@ describe("almanac bootstrap — command wiring", () => {
 
       const out = await runBootstrap({
         cwd: repo,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: runner,
       });
 
@@ -289,6 +376,7 @@ describe("almanac bootstrap — command wiring", () => {
       const out = await runBootstrap({
         cwd: repo,
         quiet: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: async () => ({
           success: true,
           cost: 0.042,
@@ -319,6 +407,7 @@ describe("almanac bootstrap — command wiring", () => {
       await runBootstrap({
         cwd: repo,
         model: "claude-opus-4-6",
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: runner,
       });
 

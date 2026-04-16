@@ -181,6 +181,15 @@ export async function runHookUninstall(
     } else {
       settings.hooks = { ...settings.hooks, SessionEnd: kept };
     }
+
+    // If `hooks` itself is now empty (user had only our SessionEnd entry
+    // and no other hook categories), drop the `hooks` key entirely so
+    // uninstall leaves the settings file in the same shape it would be
+    // in had we never run install. An empty `"hooks": {}` is an obvious
+    // breadcrumb in commit diffs.
+    if (Object.keys(settings.hooks).length === 0) {
+      delete settings.hooks;
+    }
   }
 
   await writeSettings(settingsPath, settings);

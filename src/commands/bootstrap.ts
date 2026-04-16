@@ -4,9 +4,9 @@ import { join, relative } from "node:path";
 
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
+import { assertClaudeAuth, type SpawnCliFn } from "../agent/auth.js";
 import { loadPrompt } from "../agent/prompts.js";
 import {
-  assertAnthropicApiKey,
   runAgent,
   type AgentResult,
   type RunAgentOptions,
@@ -24,6 +24,13 @@ export interface BootstrapOptions {
   force?: boolean;
   /** Injectable agent runner — tests replace this with a fake. */
   runAgent?: (opts: RunAgentOptions) => Promise<AgentResult>;
+  /**
+   * Injectable subprocess spawner for the Claude auth-status check.
+   * Tests substitute a stub that emits canned JSON without running the
+   * bundled CLI. Production leaves this undefined and `assertClaudeAuth`
+   * falls through to `defaultSpawnCli`.
+   */
+  spawnCli?: SpawnCliFn;
   /**
    * Clock injection, for tests. Otherwise `Date.now()` timestamps the
    * transcript log filename and defaults to the SDK's session_id once
@@ -71,9 +78,13 @@ export async function runBootstrap(
   options: BootstrapOptions,
 ): Promise<BootstrapResult> {
   // Fail before loading prompts so we don't do filesystem work on a request
-  // that can't succeed.
+  // that can't succeed. `assertClaudeAuth` accepts either subscription
+  // OAuth (via the bundled SDK CLI) or `ANTHROPIC_API_KEY`; missing both
+  // surfaces a two-option error and MUST exit non-zero so the SessionEnd
+  // hook (which backgrounds the process and ignores stderr) doesn't
+  // treat silent auth failure as success.
   try {
-    assertAnthropicApiKey();
+    await assertClaudeAuth(options.spawnCli);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return {

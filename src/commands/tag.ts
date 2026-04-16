@@ -92,7 +92,50 @@ export async function runTag(options: TagOptions): Promise<TagCommandOutput> {
   await ensureFreshIndex({ repoRoot });
   const db = openIndex(indexDbPath(repoRoot));
 
-  // Auto-create missing topics in topics.yaml.
+  // Validate every requested page exists BEFORE touching topics.yaml.
+  // Previously we auto-created topics first, which meant
+  // `almanac tag does-not-exist brand-new` left `brand-new` in
+  // topics.yaml as a state leak even though the tag itself errored. We
+  // resolve rows up front, then short-circuit with an error (and no
+  // mutations) if none of the pages are valid.
+  const stmt = db.prepare<[string], { file_path: string }>(
+    "SELECT file_path FROM pages WHERE slug = ?",
+  );
+  const resolved: { page: string; filePath: string }[] = [];
+  const missing: string[] = [];
+  try {
+    for (const page of pages) {
+      const row = stmt.get(toKebabCase(page));
+      if (row === undefined) {
+        missing.push(page);
+      } else {
+        resolved.push({ page, filePath: row.file_path });
+      }
+    }
+  } finally {
+    db.close();
+  }
+
+  // Hard-fail when NO page resolved. We deliberately don't mutate
+  // topics.yaml on this path — the user's intent (tag page X) is
+  // inarguably unsatisfiable, so we shouldn't leave breadcrumbs.
+  //
+  // In bulk mode (`--stdin`) some pages might resolve and others
+  // won't; keeping the original partial-progress behavior for that case
+  // (topics get created, resolved pages get tagged, `missing` are
+  // reported on stderr with exitCode 1). The state leak only matters
+  // when NOTHING succeeds, and that's the case we're fixing.
+  if (resolved.length === 0) {
+    const stderr = missing.map((p) => `almanac: no such page "${p}"\n`).join("");
+    return {
+      stdout: "",
+      stderr,
+      exitCode: 1,
+    };
+  }
+
+  // Auto-create missing topics in topics.yaml. Safe to do now — we have
+  // at least one page that will actually end up tagged with them.
   const yamlPath = topicsYamlPath(repoRoot);
   const file = await loadTopicsFile(yamlPath);
   let fileChanged = false;
@@ -108,42 +151,29 @@ export async function runTag(options: TagOptions): Promise<TagCommandOutput> {
     await writeTopicsFile(yamlPath, file);
   }
 
-  const stmt = db.prepare<[string], { file_path: string }>(
-    "SELECT file_path FROM pages WHERE slug = ?",
-  );
   const summary: string[] = [];
-  const missing: string[] = [];
   let taggedPages = 0;
-  try {
-    for (const page of pages) {
-      const row = stmt.get(toKebabCase(page));
-      if (row === undefined) {
-        missing.push(page);
-        continue;
-      }
-      const result = await rewritePageTopics(row.file_path, (current) => {
-        // Preserve existing order; append new topics in the order
-        // the caller supplied them. `applyTopicsTransform` will
-        // dedupe for us, but we skip redundant work here too.
-        const out = [...current];
-        for (const t of topics) if (!current.includes(t)) out.push(t);
-        return out;
-      });
-      if (result.changed) {
-        taggedPages += 1;
-        // Only surface the NEWLY ADDED topics — not the full request.
-        // Reporting every requested topic (including ones the page
-        // already had) reads like false positives in commit diffs.
-        const added = result.after.filter((t) => !result.before.includes(t));
-        summary.push(`tagged ${page}: ${added.join(", ")}`);
-      } else {
-        summary.push(
-          `no change ${page} (already tagged with ${topics.join(", ")})`,
-        );
-      }
+  for (const { page, filePath } of resolved) {
+    const result = await rewritePageTopics(filePath, (current) => {
+      // Preserve existing order; append new topics in the order
+      // the caller supplied them. `applyTopicsTransform` will
+      // dedupe for us, but we skip redundant work here too.
+      const out = [...current];
+      for (const t of topics) if (!current.includes(t)) out.push(t);
+      return out;
+    });
+    if (result.changed) {
+      taggedPages += 1;
+      // Only surface the NEWLY ADDED topics — not the full request.
+      // Reporting every requested topic (including ones the page
+      // already had) reads like false positives in commit diffs.
+      const added = result.after.filter((t) => !result.before.includes(t));
+      summary.push(`tagged ${page}: ${added.join(", ")}`);
+    } else {
+      summary.push(
+        `no change ${page} (already tagged with ${topics.join(", ")})`,
+      );
     }
-  } finally {
-    db.close();
   }
 
   if (taggedPages > 0 || fileChanged) {

@@ -5,9 +5,55 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
+import type { SpawnCliFn } from "../src/agent/auth.js";
 import { runCapture } from "../src/commands/capture.js";
 import type { AgentResult, RunAgentOptions } from "../src/agent/sdk.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
+
+/**
+ * Canned `spawnCli` stubs for the auth-status subprocess. See the bigger
+ * comment in `bootstrap.test.ts`; same rationale.
+ */
+function makeFakeChild(args: { stdout: string; code: number }): {
+  stdout: { on: (event: "data", cb: (data: Buffer | string) => void) => void };
+  stderr: { on: (event: "data", cb: (data: Buffer | string) => void) => void };
+  on: (event: "close" | "error", cb: (arg: number | null | Error) => void) => void;
+  kill: () => void;
+} {
+  const stdoutCb: ((data: string) => void)[] = [];
+  const closeCb: ((code: number | null) => void)[] = [];
+  queueMicrotask(() => {
+    for (const cb of stdoutCb) cb(args.stdout);
+    for (const cb of closeCb) cb(args.code);
+  });
+  return {
+    stdout: {
+      on: (event, cb) => {
+        if (event === "data") stdoutCb.push(cb as (data: string) => void);
+      },
+    },
+    stderr: { on: () => {} },
+    on: (event, cb) => {
+      if (event === "close") {
+        closeCb.push(cb as (code: number | null) => void);
+      }
+    },
+    kill: () => {},
+  };
+}
+
+function fakeSpawnCliLoggedOut(): SpawnCliFn {
+  return () => makeFakeChild({ stdout: '{"loggedIn": false}\n', code: 0 });
+}
+
+function fakeSpawnCliLoggedIn(): SpawnCliFn {
+  return () =>
+    makeFakeChild({
+      stdout:
+        '{"loggedIn": true, "email": "test@example.com", "subscriptionType": "pro", "authMethod": "claude.ai"}\n',
+      code: 0,
+    });
+}
 
 /**
  * Unit tests for slice 5 — `almanac capture`.
@@ -105,7 +151,11 @@ afterEach(() => {
 });
 
 describe("almanac capture — command wiring", () => {
-  it("errors with a clear message when ANTHROPIC_API_KEY is unset", async () => {
+  it("exits 1 when no auth path is available — SessionEnd hook detection relies on this", async () => {
+    // Regression: the SessionEnd hook backgrounds `almanac capture` and
+    // redirects stderr to a log. Without a non-zero exit the hook can't
+    // tell whether capture actually ran — the silent-success bug that
+    // prompted the v0.1.0 cleanup pass. Must exit 1 on auth failure.
     await withTempHome(async (home) => {
       delete process.env.ANTHROPIC_API_KEY;
       const repo = await makeRepo(home, "auth-missing");
@@ -114,11 +164,40 @@ describe("almanac capture — command wiring", () => {
       const out = await runCapture({
         cwd: repo,
         transcriptPath: join(home, "fake.jsonl"),
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({}),
       });
 
       expect(out.exitCode).toBe(1);
+      expect(out.stderr).toMatch(/not authenticated to Claude/);
+      expect(out.stderr).toMatch(/claude auth login --claudeai/);
       expect(out.stderr).toMatch(/ANTHROPIC_API_KEY/);
+    });
+  });
+
+  it("opens the gate when logged in via Claude subscription with no env var", async () => {
+    await withTempHome(async (home) => {
+      delete process.env.ANTHROPIC_API_KEY;
+      const repo = await makeRepo(home, "subscription-only");
+      await scaffoldWiki(repo);
+      const transcript = join(home, "t.jsonl");
+      await writeFile(transcript, "{}\n", "utf8");
+
+      let agentCalled = false;
+      const out = await runCapture({
+        cwd: repo,
+        transcriptPath: transcript,
+        quiet: true,
+        spawnCli: fakeSpawnCliLoggedIn(),
+        runAgent: fakeRunAgent({
+          onRun: () => {
+            agentCalled = true;
+          },
+        }),
+      });
+
+      expect(out.exitCode).toBe(0);
+      expect(agentCalled).toBe(true);
     });
   });
 
@@ -129,6 +208,7 @@ describe("almanac capture — command wiring", () => {
       const out = await runCapture({
         cwd: repo,
         transcriptPath: join(home, "fake.jsonl"),
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({}),
       });
 
@@ -146,6 +226,7 @@ describe("almanac capture — command wiring", () => {
       const out = await runCapture({
         cwd: repo,
         transcriptPath: join(home, "does-not-exist.jsonl"),
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({}),
       });
 
@@ -169,6 +250,7 @@ describe("almanac capture — command wiring", () => {
       const out = await runCapture({
         cwd: repo,
         claudeProjectsDir: projectsDir,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({
           onRun: (opts) => {
             seenPrompt = opts.prompt;
@@ -204,6 +286,7 @@ describe("almanac capture — command wiring", () => {
       await runCapture({
         cwd: repo,
         claudeProjectsDir: projectsDir,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({
           onRun: (opts) => {
             seenPrompt = opts.prompt;
@@ -230,6 +313,7 @@ describe("almanac capture — command wiring", () => {
       const out = await runCapture({
         cwd: repo,
         claudeProjectsDir: projectsDir,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({}),
       });
 
@@ -261,6 +345,7 @@ describe("almanac capture — command wiring", () => {
         cwd: repo,
         sessionId: "beta",
         claudeProjectsDir: projectsDir,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({
           onRun: (opts) => {
             seenPrompt = opts.prompt;
@@ -289,6 +374,7 @@ describe("almanac capture — command wiring", () => {
         cwd: repo,
         transcriptPath: transcript,
         quiet: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({}), // doesn't mutate any files
       });
 
@@ -310,6 +396,7 @@ describe("almanac capture — command wiring", () => {
         cwd: repo,
         transcriptPath: transcript,
         quiet: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({
           onRun: async () => {
             await writeFile(
@@ -348,6 +435,7 @@ describe("almanac capture — command wiring", () => {
         cwd: repo,
         transcriptPath: transcript,
         quiet: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({
           onRun: async () => {
             // Simulate an edit to alpha (update) and an archive of beta.
@@ -397,6 +485,7 @@ describe("almanac capture — command wiring", () => {
         transcriptPath: transcript,
         quiet: true,
         now: () => fixed,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({ messages }),
       });
 
@@ -437,6 +526,7 @@ describe("almanac capture — command wiring", () => {
           cwd: repo,
           transcriptPath: transcript,
           quiet: true,
+          spawnCli: fakeSpawnCliLoggedOut(),
           runAgent: fakeRunAgent({
             messages: [
               makeAssistantToolUse("Read", { file_path: "a.md" }),
@@ -475,6 +565,7 @@ describe("almanac capture — command wiring", () => {
         cwd: repo,
         transcriptPath: transcript,
         quiet: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: async () => ({
           success: false,
           cost: 0.001,
@@ -503,6 +594,7 @@ describe("almanac capture — command wiring", () => {
         cwd: repo,
         transcriptPath: transcript,
         quiet: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: async (opts: RunAgentOptions): Promise<AgentResult> => {
           seenAgents = opts.agents;
           seenAllowed = opts.allowedTools;
@@ -536,6 +628,7 @@ describe("almanac capture — command wiring", () => {
         cwd: repo,
         transcriptPath: transcript,
         quiet: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: async () => ({
           success: false,
           cost: 0.001,

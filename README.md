@@ -24,9 +24,27 @@ npm install -g codealmanac
 npx codealmanac --help
 ```
 
-Installs two binaries pointing at the same entry: `codealmanac` (canonical) and `almanac` (alias). Requires Node 20 or newer.
+Installs two binaries pointing at the same entry: `codealmanac` (canonical) and `almanac` (alias). Requires Node 20 or 22.
 
-`bootstrap` and `capture` call the Anthropic API and need `ANTHROPIC_API_KEY` in your environment. The query commands (`search`, `show`, `info`, `health`, `topics`) need no API key.
+`bootstrap` and `capture` invoke Claude via the bundled Claude Agent SDK. The query commands (`search`, `show`, `info`, `health`, `topics`) need no credentials at all.
+
+## Authentication
+
+Pick one — `bootstrap` and `capture` accept either:
+
+```bash
+# Option A — your Claude subscription (Pro/Max). Preferred if you already
+# use Claude Code; no separate bill, no copy-pasted keys.
+claude auth login --claudeai
+
+# Option B — a pay-per-token API key from https://console.anthropic.com.
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# Either way, verify with:
+claude auth status
+```
+
+codealmanac itself never sees your credentials — auth is handled by the bundled Claude Agent SDK CLI, which reads the same `~/.claude/credentials/` store Claude Code uses.
 
 ## Quickstart
 
@@ -162,7 +180,7 @@ Pages are neutral-tone encyclopedia-style prose — every sentence contains a sp
 
 ## Status
 
-`v0.1.0`, pre-release. Node 20+. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
+`v0.1.0`, pre-release. Node 20.x or 22.x. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
 
 ## Philosophy
 

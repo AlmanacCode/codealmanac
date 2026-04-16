@@ -1,3 +1,5 @@
+import { basename } from "node:path";
+
 import { Command } from "commander";
 
 import { runBootstrap } from "./commands/bootstrap.js";
@@ -41,8 +43,17 @@ import { autoRegisterIfNeeded } from "./registry/autoregister.js";
 export async function run(argv: string[]): Promise<void> {
   const program = new Command();
 
+  // Both `almanac` and `codealmanac` point at the same entry (see
+  // `package.json#bin`). Match the help header to whatever the user
+  // invoked so `codealmanac --help` doesn't incongruously read
+  // `Usage: almanac …`. Fall back to `almanac` when argv[1] isn't
+  // available (programmatic invocation, tests).
+  const invoked = argv[1] !== undefined ? basename(argv[1]) : "almanac";
+  const programName =
+    invoked === "codealmanac" ? "codealmanac" : "almanac";
+
   program
-    .name("almanac")
+    .name(programName)
     .description(
       "codealmanac — a living wiki for codebases, maintained by AI agents",
     )
