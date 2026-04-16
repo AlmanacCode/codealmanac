@@ -1,48 +1,40 @@
 name: publish
 
-# Tag-triggered npm publish. Push a tag matching `v*` (e.g. v0.1.0) and this
-# workflow builds, type-checks, tests, then publishes to npm as `codealmanac`.
-# See RELEASE.md for the full release checklist.
+# Intentionally disabled. Releases happen locally via the publishcodealmanac
+# Claude skill (parallels publishmcp), using the npm token in ~/.npmrc.
+#
+# Why local, not CI:
+# - Matches the existing publishmcp flow for the OpenAlmanac MCP package
+# - Avoids rotating a GitHub NPM_TOKEN secret every 90 days (npm's granular
+#   token cap) or maintaining a broader classic token
+# - One less piece of infrastructure to keep healthy
+#
+# Why the file still exists:
+# - If we ever want CI-signed provenance attestation (npm's Sigstore signing),
+#   we flip the trigger below from `workflow_dispatch` back to tags + add the
+#   NPM_TOKEN secret
+# - Keeps the workflow as runnable reference rather than lost tribal knowledge
+#
+# To re-enable: change the trigger back to `push: tags: ["v*"]`, add NPM_TOKEN
+# to repo secrets, remove this header comment. Full history of the original
+# setup is in git at `196d423`.
+
 on:
-  push:
-    tags:
-      - "v*"
+  # Manual-only trigger. Do not add tag-based triggers without adding the
+  # NPM_TOKEN secret first, or the publish step will hang / error.
+  workflow_dispatch:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
 
-    # Least-privilege: we only need to read the repo contents.
-    # `id-token: write` is required for npm provenance attestation
-    # (`npm publish --provenance`), which signs the build so consumers
-    # can verify it was produced by this workflow on this commit.
     permissions:
       contents: read
       id-token: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org/
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Typecheck
-        run: npx tsc --noEmit
-
-      - name: Test
-        run: npm test
-
-      - name: Publish to npm
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Refuse to run until NPM_TOKEN is wired up
+        run: |
+          echo "This workflow is intentionally disabled. See the header comment."
+          echo "Local publish happens via the publishcodealmanac skill."
+          exit 1
