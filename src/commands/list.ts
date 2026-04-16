@@ -78,7 +78,7 @@ function isReachable(entry: RegistryEntry): boolean {
  */
 function formatPretty(entries: RegistryEntry[]): string {
   if (entries.length === 0) {
-    return "no wikis registered. run `almanac init` in a repo to create one.\n";
+    return "no wikis registered. run `almanac bootstrap` in a repo to create one.\n";
   }
 
   // Column-width the name for alignment; cap at 30 so absurd names don't

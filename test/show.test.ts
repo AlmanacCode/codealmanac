@@ -424,3 +424,84 @@ describe("almanac show — --stdin (JSON Lines)", () => {
     });
   });
 });
+
+describe("almanac show — CRLF + --raw normalization", () => {
+  // v0.1.3: frontmatter stripping on CRLF files left a stray `\r` at the
+  // start of the body because `src.indexOf("\n") + 1` landed AFTER the
+  // `\r`. And `--raw` on a body without a trailing newline produced a
+  // file missing its final newline under shell redirect. Both fixed.
+
+  it("strips CRLF frontmatter cleanly (no stray \\r at body head)", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      // Explicit CRLF line endings throughout — simulates a page edited
+      // on Windows or through an editor that normalized to CRLF.
+      const crlfPage =
+        "---\r\ntitle: CRLF Page\r\ntopics: [crlf]\r\n---\r\n" +
+        "\r\n# CRLF Page\r\n" +
+        "\r\nBody content here.\r\n";
+      await writePage(repo, "crlf-page", crlfPage);
+
+      const r = await runShow({
+        cwd: repo,
+        slug: "crlf-page",
+        raw: true,
+      });
+      expect(r.exitCode).toBe(0);
+      // No frontmatter fence leaked through.
+      expect(r.stdout).not.toMatch(/^---/);
+      // No stray `\r` immediately preceding the H1 — the bug manifested
+      // as `\r# CRLF Page`, which breaks markdown renderers and confuses
+      // downstream greps.
+      expect(r.stdout).not.toMatch(/\r# CRLF Page/);
+      expect(r.stdout).toMatch(/# CRLF Page/);
+    });
+  });
+
+  it("--raw guarantees exactly one trailing newline", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      // Body with NO trailing newline — writePage preserves bytes.
+      await writePage(
+        repo,
+        "no-trailing",
+        "---\ntitle: T\n---\n\n# T\n\nbody line",
+      );
+
+      const r = await runShow({
+        cwd: repo,
+        slug: "no-trailing",
+        raw: true,
+      });
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout.endsWith("\n")).toBe(true);
+      // We don't COLLAPSE trailing newlines — an intentional blank line
+      // at the end of a page must survive.
+      expect(r.stdout.endsWith("\n\n")).toBe(false);
+    });
+  });
+
+  it("--raw preserves multiple intentional trailing newlines", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      // Body that deliberately ends with a blank line.
+      await writePage(
+        repo,
+        "trailing-blank",
+        "---\ntitle: T\n---\n\n# T\n\nbody\n\n",
+      );
+
+      const r = await runShow({
+        cwd: repo,
+        slug: "trailing-blank",
+        raw: true,
+      });
+      expect(r.exitCode).toBe(0);
+      // The body ended with `\n\n` — don't normalize it away.
+      expect(r.stdout.endsWith("\n\n")).toBe(true);
+    });
+  });
+});

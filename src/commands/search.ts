@@ -364,6 +364,15 @@ function buildStderr(rows: SearchResult[], options: SearchOptions): string {
   // Spec: "print warns if >50 when not --json". The warning goes to
   // stderr so it doesn't corrupt pipelines that filter stdout.
   if (options.json === true) return "";
+  // Empty-result breadcrumb (v0.1.3). Interviews showed users saw blank
+  // stdout and concluded the wiki was broken rather than the query
+  // genuinely matched nothing. A single `# 0 results` line to stderr
+  // makes the outcome legible without corrupting stdout pipelines (the
+  // downstream command still sees zero lines). `--json` mode is silent
+  // because `[]` is the unambiguous empty signal there.
+  if (rows.length === 0) {
+    return "# 0 results\n";
+  }
   if (options.limit !== undefined) return "";
   if (rows.length > 50) {
     return `almanac: ${rows.length} results — consider --limit or a narrower query\n`;

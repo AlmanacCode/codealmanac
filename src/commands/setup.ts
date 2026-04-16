@@ -146,6 +146,19 @@ export async function runSetup(
     options.isTTY ?? (process.stdin.isTTY === true);
   const interactive = isTTY && options.yes !== true;
 
+  // No-op fast path. When the caller explicitly skipped every install
+  // step, rendering the full banner + step markers + "Setup complete"
+  // box is actively misleading — nothing was actually set up. Emit a
+  // single terse line and exit so the user gets honest feedback and
+  // piped callers (CI, scripts) don't parse through nine lines of ANSI
+  // to conclude nothing happened.
+  if (options.skipHook === true && options.skipGuides === true) {
+    out.write(
+      "codealmanac: nothing to install — use --help to see what setup does\n",
+    );
+    return { stdout: "", stderr: "", exitCode: 0 };
+  }
+
   printBanner(out);
   printBadge(out);
 
@@ -375,8 +388,18 @@ async function ensureImport(claudeMdPath: string): Promise<boolean> {
 }
 
 export function hasImportLine(contents: string): boolean {
+  // Match line-starts-with-token rather than exact-line equality so a
+  // user who annotated the import line (`@~/.claude/codealmanac.md #
+  // codealmanac`) doesn't cause us to re-append a duplicate below.
+  // The trailing-character check rules out accidental matches on a
+  // longer line like `@~/.claude/codealmanac.md-extra`.
   const lines = contents.split(/\r?\n/).map((l) => l.trim());
-  return lines.includes(IMPORT_LINE);
+  return lines.some((line) => {
+    if (line === IMPORT_LINE) return true;
+    if (!line.startsWith(IMPORT_LINE)) return false;
+    const next = line[IMPORT_LINE.length];
+    return next === " " || next === "\t";
+  });
 }
 
 // ─── Interactive prompt ──────────────────────────────────────────────

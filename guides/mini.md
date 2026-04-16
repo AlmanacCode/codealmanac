@@ -43,7 +43,9 @@ The output is page slugs. Pick 1-3 that look relevant, `almanac show <slug>`, fo
 
 ---
 
-## The five commands you'll actually use
+## The commands you'll use
+
+Other commands exist (`list`, `tag`, `untag`, `hook`, `uninstall`, `doctor`, etc.) — most are administrative. See `almanac --help` or `@~/.claude/codealmanac-reference.md` for the full surface. In normal sessions you'll live in the four commands below.
 
 ### 1. `almanac search` — the starting point
 
@@ -122,32 +124,40 @@ Almost always existing. Skim `almanac topics` before creating. New topic is just
 ### "Can I just `almanac tag`?"
 Yes — safe, idempotent, preserves body bytes. Use `almanac tag` / `untag` rather than hand-editing frontmatter.
 
+### "The wiki returned nothing. Now what?"
+Trust the silence. Empty stdout with `# 0 results` on stderr means the query ran cleanly and matched nothing — the wiki doesn't have a page on that yet, or the query needs to be broader. That is the answer, not a bug. Don't fall back to guessing; fall back to the code, and trust that capture will surface the knowledge the next time a session naturally discovers it.
+
+If stderr shows a real error (an `almanac:` prefix or a commander parse failure), the invocation is broken — re-read `almanac --help` for the right flags.
+
 ---
 
 ## A concrete example
 
-User: *"fix the checkout timeout bug."*
+User: *"the indexer isn't picking up my new page, what's going on?"*
 
 ```bash
-# 1. Find relevant pages
-$ almanac search --mentions src/checkout/
-checkout-flow
-inventory-lock-gotcha
-stripe-async-migration
+# 1. Find pages touching the indexer
+$ almanac search --mentions src/indexer/
+sqlite-indexer
+wikilink-syntax
 
 # 2. Triage with --lead
-$ almanac show checkout-flow --lead
-$ almanac show inventory-lock-gotcha --lead
+$ almanac show sqlite-indexer --lead
+The indexer (`src/indexer/`) builds and maintains `.almanac/index.db` — a
+SQLite database that powers all query commands (`search`, `info`, `health`,
+`topics show`). It runs silently before every query command, comparing page
+file mtimes against the stored `content_hash`; only changed or new pages are
+re-parsed.
 
 # 3. Read the most relevant
-$ almanac show inventory-lock-gotcha
-# ...points to [[stripe-deadlock]], show that too
+$ almanac show sqlite-indexer
+# ...covers the schema, freshness rules, and where new pages get picked up
 
-# 4. Before editing, check backlinks
-$ almanac show checkout-flow --backlinks
+# 4. Before you touch anything, check backlinks
+$ almanac show sqlite-indexer --backlinks
 ```
 
-You now know: there was a deadlock between webhooks and the inventory lock, the team moved to async Stripe in April, two other pages link to `checkout-flow` so your edits matter beyond this file.
+You now know: the indexer only re-parses pages whose mtime is newer than the stored `content_hash`, runs on every query command, and backing it is a schema you can read at `src/indexer/schema.ts`. The lead alone ruled out two entire hypotheses ("maybe it only indexes on startup", "maybe I need to restart something") before you read any source code.
 
 You don't write anything. At session end the capture agent reads the transcript, sees your discovery, writes or updates pages. Next session, a different agent running a related task sees it surface in `--mentions`.
 
@@ -177,6 +187,32 @@ If the user has multiple repos with `.almanac/`, they're globally registered. Pa
 - **List files in frontmatter.** Pages about specific code need `files: [...]` to surface in `--mentions` queries.
 
 The reviewer subagent (run by capture at session end) enforces these. Stricter with yourself = less rework.
+
+---
+
+## Troubleshooting
+
+### `almanac doctor` is the catchall
+When anything feels off and you don't know where to start, run `almanac doctor`. It reports the install (binary, native SQLite binding, Claude auth, hook, guides, CLAUDE.md import) and the current wiki (registered, page/topic counts, index freshness, last capture age, health problems). Every ✗ comes with a one-line `run: …` fix. Add `--json` for scripting.
+
+### "better-sqlite3 bindings failed"
+Node version or arch mismatch with the prebuilt native binding. `almanac doctor` reports this under `install.sqlite` with the raw error. Fix by rebuilding the native binding:
+```bash
+npm rebuild better-sqlite3   # in the install directory
+```
+
+### "search returned nothing"
+Empty stdout plus `# 0 results` on stderr means the query ran and genuinely matched nothing. Don't retry with random flag permutations — either broaden the query, or accept the wiki hasn't covered that area yet. A real error would have come with an `almanac:`-prefixed stderr line.
+
+`--json` is silent on stderr — the `[]` array is the empty signal there.
+
+### "capture didn't fire after my last session"
+```bash
+almanac doctor              # install.hook: ok/problem, wiki.capture: last capture age
+almanac hook status         # just the hook entry
+ls -lah .almanac/.capture-*.log
+```
+No logs at all → the hook isn't installed, or bailed before backgrounding, or `cwd` was outside any wiki (silent correct no-op). Capture ran but wrote nothing → the reviewer rejected the draft for notability, or the session was pure-read. Check the `.capture-<id>.log` for the writer/reviewer transcript.
 
 ---
 

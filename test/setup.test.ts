@@ -382,4 +382,58 @@ describe("codealmanac setup", () => {
       expect(res.stderr).toMatch(/guide install failed/);
     });
   });
+
+  it("--skip-hook --skip-guides short-circuits with a terse message", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const res = await runSetup({
+        yes: true,
+        skipHook: true,
+        skipGuides: true,
+        isTTY: false,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        settingsPath: env.settingsPath,
+        hookScriptPath: env.hookScriptPath,
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      // Nothing should be installed.
+      expect(existsSync(env.settingsPath)).toBe(false);
+      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
+      expect(existsSync(join(env.claudeDir, "CLAUDE.md"))).toBe(false);
+      // And the banner/step theater should not have rendered.
+      expect(env.stdout()).not.toMatch(/CODE ALMANAC/);
+    });
+  });
+});
+
+describe("hasImportLine", () => {
+  // The import line is the token setup.ts appends to CLAUDE.md.
+  const IMPORT = "@~/.claude/codealmanac.md";
+
+  it("detects the bare import line", () => {
+    expect(hasImportLine(`foo\n${IMPORT}\nbar\n`)).toBe(true);
+  });
+
+  it("detects an annotated import line (trailing comment)", () => {
+    // Real-world case: user appends a comment to document why the
+    // line is there. We don't want setup to re-append a duplicate.
+    expect(hasImportLine(`${IMPORT} # codealmanac mini guide\n`)).toBe(true);
+    expect(hasImportLine(`${IMPORT}\t# with a tab separator\n`)).toBe(true);
+  });
+
+  it("rejects a longer-prefix accidental match", () => {
+    // `@~/.claude/codealmanac.md-extra` starts with the import line
+    // but isn't one — the next char is `-`, not whitespace.
+    expect(hasImportLine(`${IMPORT}-extra\n`)).toBe(false);
+  });
+
+  it("returns false when the import line isn't present", () => {
+    expect(hasImportLine("# unrelated\n@~/.claude/something-else.md\n")).toBe(
+      false,
+    );
+  });
 });

@@ -130,7 +130,7 @@ export async function runCapture(
       stdout: "",
       stderr:
         "almanac: no .almanac/ found in this directory or any parent. " +
-        "Run 'almanac init' or 'almanac bootstrap' first.\n",
+        "Run 'almanac bootstrap' first.\n",
       exitCode: 1,
     };
   }

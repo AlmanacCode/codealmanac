@@ -4,12 +4,14 @@ Long-form manual for the `almanac` / `codealmanac` CLI. The mini guide at `~/.cl
 
 Groupings match `almanac --help`:
 
-1. **Query** — `search`, `show`, `path`, `info`, `topics`, `health`
-2. **Edit** — `tag`, `untag`, `topics create|link|unlink|rename|delete|describe`, `reindex`
-3. **Wiki lifecycle** — `init`, `list`, `bootstrap`, `capture`
-4. **Install** — `hook install|uninstall|status`
+1. **Query** — `search`, `show`, `health`, `list`
+2. **Edit** — `tag`, `untag`, `topics ...`
+3. **Wiki lifecycle** — `bootstrap`, `capture`, `hook ...`, `reindex`
+4. **Setup** — `setup`, `uninstall`, `doctor`
 
-Every command auto-registers the current repo in `~/.almanac/registry.json` on first run. Exceptions: `init` (registers explicitly) and `list --drop` (skips auto-register so the removal intent isn't undone).
+Every query/edit command auto-registers the current repo in `~/.almanac/registry.json` on first run. Exceptions: `list --drop` (skips auto-register so the removal intent isn't undone) and the setup group (installers, not wiki commands — they never touch the registry).
+
+There is no `almanac init` command. The two ways a wiki gets scaffolded are `almanac bootstrap` (agent reads the repo and seeds stub pages) and committing a `.almanac/` that someone else authored and cloning into it (auto-registered on first query command).
 
 ---
 
@@ -23,7 +25,7 @@ Every command auto-registers the current repo in `~/.almanac/registry.json` on f
 |---|---|---|---|
 | `[query]` | string | — | FTS5 MATCH against titles + bodies. Omit for pure-filter queries. |
 | `--topic <name...>` | repeatable | `[]` | AND-intersect filter. Walks the DAG subtree — `--topic auth` matches `auth` or any descendant. |
-| `--mentions <path>` | string | — | Pages referencing this file (no trailing `/`) or folder (trailing `/`). Matches both `files:` frontmatter and `[[...]]` file refs, case-insensitive. |
+| `--mentions <path>` | string | — | Pages referencing this path. Matches exact file, trailing-slash folders, and any file under a folder prefix. Case-insensitive. |
 | `--since <duration>` | duration | — | Updated within window. Format: `<int>[smhdw]` (`2w`, `30d`, `48h`). By file mtime. |
 | `--stale <duration>` | duration | — | Inverse of `--since`. |
 | `--orphan` | bool | false | Pages with zero topics. |
@@ -33,52 +35,36 @@ Every command auto-registers the current repo in `~/.almanac/registry.json` on f
 | `--json` | bool | false | Structured JSON. |
 | `--limit <n>` | int ≥0 | unbounded | Cap results. |
 
-**Default output:** one slug per line to stdout.
-**`--json` schema:** `{wiki, results: [{slug, title, updated_at, topics, path}]}`.
-**Exit:** `0` always (empty result isn't an error). `2` on flag validation failure.
+**Default output:** one slug per line to stdout. When zero pages match, stdout is empty and stderr emits `# 0 results` (a breadcrumb so users can tell "matched nothing" apart from "command broken"). `--json` is silent on stderr — `[]` is the unambiguous empty signal there.
+**`--json` schema:** JSON array of `{slug, title, updated_at, topics, path}`.
+**Exit:** `0` always (empty result isn't an error). Arg-parse failures exit `1` with an `almanac:` error.
 
 #### `almanac show [slug]`
 
-| Flag | Semantics |
-|---|---|
-| `[slug]` | Required unless `--stdin`. Slugs are kebab-canonicalized before lookup. |
-| `--stdin` | Read slugs from stdin. Pages separated by form-feed (`\f`) in output. |
-| `--wiki <name>` | Target a specific registered wiki. |
+Unified reader. Absorbs the old `info` and `path` commands — pick fields with flags.
 
-Projections (if available in the installed build — check `--help`): `--raw` (body only), `--meta` (metadata only), `--lead` (first paragraph), `--backlinks` (pages linking in), `--links` (pages this links out to). Falls back to `almanac info` + `path` if missing.
+| Flag | Default | Semantics |
+|---|---|---|
+| `[slug]` | — | Required unless `--stdin`. Slugs are kebab-canonicalized before lookup. |
+| `--stdin` | false | Read slugs from stdin, one per line. JSON Lines output for `--json` mode. |
+| `--wiki <name>` | current repo | Target a specific registered wiki. |
+| `--json` | false | Structured JSON. Overrides every view/field flag. |
+| `--raw` / `--body` | false | Body only (alias pair). Guarantees exactly one trailing newline — shell redirect produces a well-formed file. |
+| `--meta` | false | Metadata header only, no body. |
+| `--lead` | false | First paragraph of the body only (cheap preview). |
+| `--title` | false | Print title. |
+| `--topics` | false | Print topics. |
+| `--files` | false | Print file refs. |
+| `--links` | false | Print outgoing wikilinks. |
+| `--backlinks` | false | Print incoming wikilinks. |
+| `--xwiki` | false | Print cross-wiki links. |
+| `--lineage` | false | Print `archived_at` / `supersedes` / `superseded_by`. |
+| `--updated` | false | Print updated timestamp. |
+| `--path` | false | Print absolute file path (`info` + `path` replacement). |
 
-**Exit:** `0` on success, `1` if slug not found, `2` on flag errors.
+Combining field flags emits labeled sections in canonical order. `--meta` is the full labeled header; individual flags like `--title --topics` give you just those two sections.
 
-#### `almanac path [slug]`
-
-Resolve slug → absolute file path. `--stdin` writes one path per input line, preserving order; missing slugs emit a blank line so output is 1:1.
-
-#### `almanac info [slug]`
-
-Metadata only (topics, refs, links, lineage). No body.
-
-**`--json` schema:**
-```json
-{
-  "slug": "checkout-flow",
-  "title": "...",
-  "updated_at": 1713000000,
-  "archived_at": null,
-  "superseded_by": null, "supersedes": null,
-  "topics": [...],
-  "files": [...],
-  "wikilinks_out": [...],
-  "wikilinks_in": [...],
-  "file_refs": [{"path": "...", "is_dir": false}],
-  "cross_wiki_refs": [{"wiki": "...", "target": "..."}]
-}
-```
-
-#### `almanac topics` (and subcommands)
-
-`almanac topics` — list all with page counts. `--json` emits `[{slug, description, parents[], children[], page_count}]`.
-
-`almanac topics show <slug>` — description, parents, children, pages. `--descendants` includes pages tagged with descendant topics (walks the DAG subtree).
+**Exit:** `0` on success, `1` if slug not found, non-zero on flag/input errors.
 
 #### `almanac health`
 
@@ -94,75 +80,137 @@ Eight independent categories. One failing doesn't skip the others.
 
 **Categories:** `orphans`, `stale`, `dead-refs`, `broken-links`, `broken-xwiki`, `empty-topics`, `empty-pages`, `slug-collisions`. Archived pages are exempt from most (see §4). Exit `0` always — the report IS the output.
 
+#### `almanac list`
+
+| Flag | Semantics |
+|---|---|
+| `--json` | Structured JSON. |
+| `--drop <name>` | Remove a wiki from the registry. The **only** way entries are ever removed. Skips auto-register. |
+
 ### 1.2 Edit
 
 #### `almanac tag [page] [topics...]`
 
 Add topics to a page. Auto-creates missing topics. Idempotent. Rewrites only the frontmatter block; body bytes preserved. `--stdin` tags every page-slug from stdin with the same topic set — in that mode all positionals are topics.
 
+Flags: `--stdin`, `--wiki <name>`.
+
 #### `almanac untag <page> <topic>`
 
-Remove one topic. Idempotent (silent 0 if page wasn't tagged).
+Remove one topic. Idempotent (silent `0` if page wasn't tagged).
 
-#### `almanac topics create <name>`
+Flags: `--wiki <name>`.
 
-`--parent <slug>` repeatable. Rejects if any parent slug doesn't exist.
+#### `almanac topics` (DAG management)
 
-#### `almanac topics link <child> <parent>` / `topics unlink <child> <parent>`
+- `almanac topics list` — list all topics with page counts. `--json` emits an array of `{slug, description, parents[], children[], page_count}`.
+- `almanac topics show <slug>` — description, parents, children, pages. `--descendants` includes pages tagged with descendant topics (walks the DAG subtree).
+- `almanac topics create <name>` — `--parent <slug>` repeatable. Rejects if any parent slug doesn't exist.
+- `almanac topics link <child> <parent>` / `almanac topics unlink <child> <parent>` — add/remove a DAG edge. `link` is cycle-checked (§5). `unlink` is idempotent.
+- `almanac topics rename <old> <new>` — rewrites `topics.yaml` first (atomic tmp+rename), then every affected page's `topics:` frontmatter. YAML-first so a mid-pass crash leaves the graph, not the pages, as the source of truth.
+- `almanac topics delete <slug>` — removes from `topics.yaml`, untags every affected page. Does **not** cascade to children — orphaned children become top-level. Run `almanac health` to surface stragglers.
+- `almanac topics describe <slug> <text>` — set the topic's one-line description.
 
-Add/remove a DAG edge. `link` is cycle-checked (§5). `unlink` is idempotent.
-
-#### `almanac topics rename <old> <new>`
-
-Rewrites `topics.yaml` first (atomic tmp+rename), then every affected page's `topics:` frontmatter. YAML-first so a mid-pass crash leaves the graph, not the pages, as the source of truth.
-
-#### `almanac topics delete <slug>`
-
-Removes from `topics.yaml`, untags every affected page. Does **not** cascade to children — orphaned children become top-level. Run `almanac health` to surface stragglers.
-
-#### `almanac topics describe <slug> <text>`
-
-Set the topic's one-line description in `topics.yaml`.
-
-#### `almanac reindex`
-
-Forces a full rebuild of `.almanac/index.db`. Rarely needed — every query calls `ensureFreshIndex` first. Use after manual `topics.yaml` edits or when clock skew defeats mtime checks.
+All topic subcommands accept `--wiki <name>`. `list` / `show` accept `--json`.
 
 ### 1.3 Wiki lifecycle
 
-#### `almanac init`
-
-Scaffolds `.almanac/` in cwd. `--name <name>` sets the registry entry (default: basename of cwd). `--description <text>` stored in the registry. Creates `pages/`, `topics.yaml`, `README.md`, `index.db`, and adds `.gitignore` entries.
-
-#### `almanac list`
-
-`--json` for structured output. `--drop <name>` is the **only** way to remove a registry entry.
-
 #### `almanac bootstrap`
 
-Spawn an agent to create initial wiki stubs. Requires `ANTHROPIC_API_KEY`. `--quiet` suppresses per-tool streaming. `--model <model>` overrides the model. `--force` overwrites a populated wiki. Writes `.almanac/.bootstrap-<timestamp>.log`.
+Spawns an agent to create initial wiki stubs. Requires `ANTHROPIC_API_KEY` or a logged-in Claude subscription. `--quiet` suppresses per-tool streaming. `--model <model>` overrides the model. `--force` overwrites an existing populated wiki. Writes `.almanac/.bootstrap-<timestamp>.log`.
+
+Bootstrap is the scaffolding path — it creates `.almanac/pages/`, `.almanac/topics.yaml`, `.almanac/README.md`, and stub entity pages based on what the agent reads in the repo.
 
 #### `almanac capture [transcript]`
 
-Capture knowledge from a Claude Code session transcript. Requires `ANTHROPIC_API_KEY` or a logged-in Claude Code session. Refuses if no `.almanac/` exists — capture maintains wikis, doesn't create them.
+Run the writer/reviewer pipeline on a Claude Code session transcript. Usually automatic — the `SessionEnd` hook invokes this. Refuses if no `.almanac/` exists in cwd or any parent (capture maintains wikis, doesn't create them; run `almanac bootstrap` first).
 
-**Transcript resolution order:** explicit positional → `--session <id>` matches filename under `~/.claude/projects/` → most recent transcript whose recorded `cwd` matches this repo.
+| Flag | Semantics |
+|---|---|
+| `[transcript]` | Explicit path. Falls back to `--session` match or most-recent-by-cwd. |
+| `--session <id>` | Target a specific session by ID. Matches filename under `~/.claude/projects/`. |
+| `--quiet` | Suppress per-tool streaming; print only the final summary. |
+| `--model <model>` | Override the agent model. |
 
 Writes SDK transcript to `.almanac/.capture-<session-id>.log`. A writer subagent drafts pages; a reviewer subagent enforces notability + writing conventions (§9) before drafts land.
-
-### 1.4 Install
 
 #### `almanac hook install | uninstall | status`
 
 See §7 — the hook is complex enough to warrant its own section.
 
+#### `almanac reindex`
+
+Forces a full rebuild of `.almanac/index.db`. Rarely needed — every query calls `ensureFreshIndex` first. Use after manual `topics.yaml` edits or when clock skew defeats mtime checks.
+
+Flag: `--wiki <name>`.
+
+### 1.4 Setup
+
+#### `almanac setup` (alias: bare `codealmanac`)
+
+Install the SessionEnd hook + the two CLAUDE.md guides (`codealmanac.md`, `codealmanac-reference.md`) + the `@~/.claude/codealmanac.md` import line. Idempotent.
+
+| Flag | Semantics |
+|---|---|
+| `-y, --yes` | Skip prompts; install everything. |
+| `--skip-hook` | Opt out of the SessionEnd hook. |
+| `--skip-guides` | Opt out of the CLAUDE.md guides. |
+
+Both `almanac setup` and bare `codealmanac` route here. `codealmanac --yes`, `codealmanac --skip-hook`, and `codealmanac --skip-guides` are the typical first-run invocations. Passing `--skip-hook --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn.
+
+#### `almanac uninstall`
+
+Remove the hook + guides + import line.
+
+| Flag | Semantics |
+|---|---|
+| `-y, --yes` | Skip confirmations; remove everything. |
+| `--keep-hook` | Don't remove the SessionEnd hook (guides still prompted unless `--yes`). |
+| `--keep-guides` | Don't remove the guides or CLAUDE.md import (hook still prompted unless `--yes`). |
+
+#### `almanac doctor`
+
+Read-only install + current-wiki health report. Every check reports a state; none of them mutate. Exit always `0` — doctor is a report, not a test.
+
+| Flag | Semantics |
+|---|---|
+| `--json` | Structured JSON. |
+| `--install-only` | Report only on the install (skip the wiki section). |
+| `--wiki-only` | Report only on the current wiki (skip the install section). |
+
+**JSON shape:**
+```json
+{
+  "version": "0.1.3",
+  "install": [
+    { "key": "install.path",   "status": "ok", "message": "..." },
+    { "key": "install.sqlite", "status": "ok", "message": "..." },
+    { "key": "install.auth",   "status": "problem", "message": "...", "fix": "run: claude auth login --claudeai" },
+    { "key": "install.hook",   "status": "ok", "message": "..." },
+    { "key": "install.guides", "status": "ok", "message": "..." },
+    { "key": "install.import", "status": "ok", "message": "..." }
+  ],
+  "wiki": [
+    { "key": "wiki.repo",       "status": "info", "message": "repo: /abs/path" },
+    { "key": "wiki.registered", "status": "ok",   "message": "registered as '...'" },
+    { "key": "wiki.pages",      "status": "info", "message": "pages: 42" },
+    { "key": "wiki.topics",     "status": "info", "message": "topics: 7" },
+    { "key": "wiki.index",      "status": "info", "message": "index: rebuilt 2m ago" },
+    { "key": "wiki.capture",    "status": "info", "message": "last capture: 1h ago (.capture-<id>.log)" },
+    { "key": "wiki.health",     "status": "ok",   "message": "almanac health reports 0 problems" }
+  ]
+}
+```
+
+Each check has a stable `key` safe for scripting. ✗ entries include a `fix` field with a one-line "run: …" hint. Parse `--json` and count `status === "problem"` for a pass/fail gate.
+
 ### 1.5 `--stdin` pipe semantics
 
-Commands that accept `--stdin`: `show`, `path`, `info`, `tag`, `health`.
+Commands that accept `--stdin`: `show`, `tag`, `health`.
 
 - One slug per line; blank lines ignored; whitespace trimmed.
-- Output order mirrors input order (matters for `path`, `info`).
-- Missing slugs don't abort — logged to stderr, pipeline continues. `show --stdin` writes a "not found" marker and keeps exit `0` for pipeline resilience; `path` / `info` exit `1` overall if any slug was missing.
+- Output order mirrors input order.
+- Missing slugs don't abort — logged to stderr, pipeline continues. `show --stdin` writes a "not found" marker per slug and keeps exit `0` for pipeline resilience.
 - `--stdin` must be explicit. No `isTTY` auto-detection (confusing under script redirection).
 
 ---
@@ -229,6 +277,8 @@ The flow starts at `src/checkout/handler.ts` when the browser POSTs
 inventory lock row to Supabase, returns the PI client secret. See
 [[inventory-lock-gotcha]] for the deadlock we hit in March.
 ```
+
+CRLF-terminated files are handled transparently — `show --raw` strips frontmatter without leaving a stray `\r` at the body head.
 
 ---
 
@@ -348,7 +398,7 @@ almanac topics delete old-payments
 **List pages that lack `files:` frontmatter for files they mention in prose:**
 ```bash
 almanac search | while read slug; do
-  info=$(almanac info "$slug" --json)
+  info=$(almanac show "$slug" --json)
   prose=$(echo "$info" | jq -r '.file_refs[].path' | sort -u)
   fm=$(echo "$info" | jq -r '.files[]' | sort -u)
   missing=$(comm -23 <(echo "$prose") <(echo "$fm"))
@@ -358,7 +408,17 @@ done
 
 **Open every orphan page in `$EDITOR`:**
 ```bash
-almanac search --orphan | almanac path --stdin | xargs -n 1 "$EDITOR"
+almanac search --orphan | almanac show --stdin --path | xargs -n 1 "$EDITOR"
+```
+
+**Export a page's body to a standalone markdown file:**
+```bash
+almanac show checkout-flow --raw > checkout-flow.md   # exactly one trailing \n
+```
+
+**Doctor a flaky install in CI:**
+```bash
+almanac doctor --json | jq '.install[] | select(.status == "problem")'
 ```
 
 ---
@@ -396,11 +456,14 @@ Falls back to `npx --no-install codealmanac` if `almanac` isn't on `PATH`.
 **`status`:**
 - Reports installed / not installed, the script path, the settings path. Non-interactive.
 
+`almanac setup` wraps `hook install` alongside the guides. `almanac uninstall` wraps `hook uninstall` alongside guide removal. You rarely invoke `hook *` directly.
+
 ### Diagnosing "capture didn't run"
 
 ```bash
-almanac hook status                      # installed?
-ls -lah .almanac/.capture-*.log          # any logs at all?
+almanac doctor              # catch-all — reports hook state + last capture age
+almanac hook status         # just the hook entry
+ls -lah .almanac/.capture-*.log
 ```
 
 Installed but no log: `SessionEnd` didn't fire (rare, hard crash), or script bailed before backgrounding (add `set -x` to trace), or no `.almanac/` upward from `cwd` (silent correct no-op).
@@ -434,13 +497,13 @@ Common causes:
 
 ### Registration paths
 
-- **`almanac init`** — explicit. Sets `name` and `description`.
-- **Silent auto-register** — every other command (except `list --drop`) calls `autoRegisterIfNeeded` on cwd. Repo with `.almanac/` but no registry entry → added with `name = basename(cwd)`, no description. Makes "cloned a repo with `.almanac/` committed" just work.
+- **Silent auto-register** — every query/edit command (except `list --drop`) calls `autoRegisterIfNeeded` on cwd. A repo with `.almanac/` but no registry entry → added with `name = basename(cwd)`, no description. Makes "cloned a repo with `.almanac/` committed" just work.
+- **`almanac bootstrap`** — auto-registers as a side effect of scaffolding. `name` defaults to the repo basename; edit `~/.almanac/registry.json` or re-bootstrap to rename.
 - **`almanac list --drop <name>`** — the only removal path. Skips auto-register so the removal isn't immediately undone.
 
 ### `--wiki <name>`
 
-Route the command at a specific registered wiki. Used when you're in one repo but querying another. Without `--wiki`, commands resolve to the wiki whose `path` is an ancestor of cwd. If none, commands error: `almanac: no wiki registered for this cwd. run 'almanac init' or pass --wiki.`
+Route the command at a specific registered wiki. Used when you're in one repo but querying another. Without `--wiki`, commands resolve to the wiki whose `path` is an ancestor of cwd. If none, commands error: `almanac: no .almanac/ found in this directory or any parent; run 'almanac bootstrap' first`.
 
 ### Cross-wiki link resolution
 
@@ -563,31 +626,54 @@ one, usually the webhook, leaving orders silently stuck in pending.
 
 ## 10. Troubleshooting
 
-### "dead-refs reports files that exist"
-Case sensitivity on Linux. Schema v2 stores `original_path` for case-preserving stat; upgrade from pre-v2 requires `almanac reindex`. Dangling symlinks fail `existsSync` too.
+### Catch-all: `almanac doctor`
+
+When something feels off and you don't know where to start, run `almanac doctor`. It reports install state (binary, native binding, Claude auth, hook, guides, import line) and current-wiki state (registered, page/topic counts, index freshness, last capture age, health problems). Every ✗ comes with a one-line `run: …` fix. `--json` for scripting.
+
+### "better-sqlite3 bindings missing"
+Node version / arch mismatch with the prebuilt binary. `almanac doctor` reports it as `install.sqlite: problem` with the underlying error's first line. Fix:
+```bash
+npm rebuild better-sqlite3   # in the install directory
+```
+On M-series Macs with x64+arm64 Node installs, bindings are arch-specific — rebuild in the arch you'll run from. Node ≥20 required (`engines.node`).
+
+### "search returns nothing"
+
+Two different outcomes to distinguish:
+- **Silent stdout, stderr says `# 0 results`.** The query ran and genuinely matched nothing — this is an answer, not a failure. Either the wiki doesn't cover that area yet, or the query needs broadening.
+- **An actual error on stderr.** Commander or `almanac:` prefix. That's a broken invocation; re-read the `--help`.
+
+`--json` is silent on stderr — the `[]` array is the unambiguous empty signal.
 
 ### "pages don't show up in `--mentions`"
+
 Missing `files:` frontmatter, OR path referenced only in inline prose (not via `[[...]]`). Inline prose isn't indexed. If neither: `almanac reindex`.
 
 ### "topics missing after rename"
+
 `topics rename` bumps `topics.yaml` mtime → next query's `ensureFreshIndex` catches up. Hand-edited `topics.yaml` without page rewrites leaves frontmatter out of sync — `almanac reindex` then audit with `almanac health --orphans --empty-topics`.
 
 ### "capture didn't fire"
+
 ```bash
-almanac hook status
-claude auth status                  # OAuth token present?
-echo "${ANTHROPIC_API_KEY:0:10}"    # API key fallback?
+almanac doctor              # reports hook state + last capture age + auth
+claude auth status          # OAuth token present?
+echo "${ANTHROPIC_API_KEY:0:10}"   # API key fallback?
 ls -lah .almanac/.capture-*.log
 ```
-No logs at all → script bailed pre-background. Add `set -x` to `hooks/almanac-capture.sh` to trace.
+
+No logs at all → script bailed pre-background. Add `set -x` to `hooks/almanac-capture.sh` to trace. If the hook itself isn't installed, `almanac doctor` reports `install.hook: problem` with `run: almanac setup --yes`.
 
 ### "slug collision warnings"
+
 Two files kebab-case to the same slug (`Checkout Flow.md` and `checkout-flow.md`). `health --slug-collisions` lists them. Rename one, grep `.almanac/pages/` for any `[[...]]` references, update them.
 
-### "better-sqlite3 bindings missing"
-Node version / arch mismatch with the prebuilt binary. `npm rebuild better-sqlite3`. On M-series Macs with x64+arm64 Node installs, bindings are arch-specific — rebuild in the arch you'll run from. Node ≥20 required (`engines.node`).
+### "dead-refs reports files that exist"
+
+Case sensitivity on Linux. Schema v2 stores `original_path` for case-preserving stat; upgrade from pre-v2 requires `almanac reindex`. Dangling symlinks also fail `existsSync`.
 
 ### Forensics files
+
 - `.almanac/.capture-<session-id>.log` — per-session SDK transcript from capture. Writer + reviewer interleaved.
 - `.almanac/.bootstrap-<timestamp>.log` — one per bootstrap. Gitignored by default.
 
@@ -596,4 +682,5 @@ Node version / arch mismatch with the prebuilt binary. `npm rebuild better-sqlit
 ## When in doubt
 
 - `almanac --help` / `almanac <command> --help` — flags are always current for the installed build.
+- `almanac doctor` — one command that reports everything relevant about install + current wiki.
 - `.almanac/README.md` in the repo — the notability bar and topic taxonomy for *this* repo override anything here.

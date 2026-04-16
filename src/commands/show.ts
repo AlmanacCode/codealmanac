@@ -298,7 +298,13 @@ function selectedFields(options: ShowOptions): FieldName[] {
 function formatRecord(rec: ShowRecord, options: ShowOptions): string {
   // 1. raw / body
   if (options.raw === true) {
-    return rec.body;
+    // Guarantee exactly one trailing newline. Without it, shell redirects
+    // (`almanac show foo --raw > foo.md`) produce files missing a final
+    // newline, which confuses concatenation and diff tools. We don't
+    // collapse multiple trailing newlines — a page that ends with a
+    // blank line is intentional.
+    if (rec.body.length === 0) return "";
+    return rec.body.endsWith("\n") ? rec.body : `${rec.body}\n`;
   }
 
   // 4. Field flags (check before meta/lead so --meta + --title is unambiguous).
@@ -394,7 +400,7 @@ function labeledFields(rec: ShowRecord, fields: FieldName[]): string {
   for (const f of fields) {
     parts.push(labeledSection(rec, f));
   }
-  return parts.join("\n") + (parts.length > 0 ? "" : "");
+  return parts.join("\n");
 }
 
 function labeledSection(rec: ShowRecord, field: FieldName): string {
@@ -515,12 +521,15 @@ function metadataHeader(rec: ShowRecord): string {
  */
 function stripFrontmatter(src: string): string {
   if (!src.startsWith("---\n") && !src.startsWith("---\r\n")) return src;
-  // Find the closing `---` at the start of a line, after the opening.
-  const rest = src.slice(src.indexOf("\n") + 1);
-  const endMatch = rest.match(/^---[ \t]*\r?\n/m);
+  // Strip the opening fence. A regex replace handles both LF and CRLF
+  // line endings without the off-by-one that `src.indexOf("\n") + 1`
+  // suffered on CRLF files — `indexOf("\n")` landed AFTER the `\r`, so
+  // the `\r` survived as a prefix on the first body byte.
+  const afterOpen = src.replace(/^---\r?\n/, "");
+  const endMatch = afterOpen.match(/^---[ \t]*\r?\n/m);
   if (endMatch === null || endMatch.index === undefined) return src;
   // Slice after the closing fence's line.
-  return rest.slice(endMatch.index + endMatch[0].length);
+  return afterOpen.slice(endMatch.index + endMatch[0].length);
 }
 
 /**

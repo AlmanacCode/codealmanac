@@ -5,6 +5,7 @@ import { Command, type Help } from "commander";
 
 import { runBootstrap } from "./commands/bootstrap.js";
 import { runCapture } from "./commands/capture.js";
+import { runDoctor } from "./commands/doctor.js";
 import {
   runHookInstall,
   runHookStatus,
@@ -67,18 +68,33 @@ export async function run(argv: string[]): Promise<void> {
     )
     .version(readPackageVersion(), "-v, --version", "print version");
 
-  // Bare `codealmanac` with no arguments → setup. Bare `almanac` falls
-  // through to commander's default help output (unchanged).
+  // Bare `codealmanac` → run setup. The `codealmanac` binary is the first
+  // thing a user types after `npm i -g` or `npx codealmanac`, and the
+  // expected behavior is MCP-style "I'll install myself" rather than a
+  // help dump. We also accept the `setup` flag set at this level — flags
+  // like `--yes` / `--skip-hook` / `--skip-guides` need to work on the
+  // bare form (otherwise `codealmanac --yes` hits commander with
+  // "unknown option --yes", because commander treats flags on a
+  // no-subcommand invocation as root options it hasn't been taught
+  // about).
   //
-  // `argv` layout: [0] = node, [1] = binary, [2..] = user args. We route
-  // on the absence of a user arg, so `codealmanac --help` and
-  // `codealmanac show` still parse normally.
-  if (programName === "codealmanac" && argv.length === 2) {
-    const result = await runSetup({});
-    if (result.stderr.length > 0) process.stderr.write(result.stderr);
-    if (result.stdout.length > 0) process.stdout.write(result.stdout);
-    if (result.exitCode !== 0) process.exitCode = result.exitCode;
-    return;
+  // `almanac` (bare) still falls through to commander's default help.
+  //
+  // `argv` layout: [0] = node, [1] = binary, [2..] = user args. The
+  // codealmanac-setup shortcut activates when:
+  //   - the user ran `codealmanac` with no args at all, OR
+  //   - every arg is a recognized setup flag (and there's no subcommand).
+  // Anything else — including `--help`, `--version`, or a subcommand —
+  // falls through to commander's normal parsing.
+  if (programName === "codealmanac") {
+    const setupInvocation = tryParseSetupShortcut(argv.slice(2));
+    if (setupInvocation !== null) {
+      const result = await runSetup(setupInvocation);
+      if (result.stderr.length > 0) process.stderr.write(result.stderr);
+      if (result.stdout.length > 0) process.stdout.write(result.stdout);
+      if (result.exitCode !== 0) process.exitCode = result.exitCode;
+      return;
+    }
   }
 
   // ─── Query group ─────────────────────────────────────────────────
@@ -93,7 +109,7 @@ export async function run(argv: string[]): Promise<void> {
     )
     .option(
       "--mentions <path>",
-      "pages referencing this file or folder (trailing / = folder)",
+      "pages referencing this path; matches exact file, trailing-slash folders, and any file under a folder prefix",
     )
     .option(
       "--since <duration>",
@@ -580,11 +596,39 @@ export async function run(argv: string[]): Promise<void> {
     );
 
   program
+    .command("doctor")
+    .description("report on the codealmanac install + current wiki health")
+    .option("--json", "emit structured JSON")
+    .option("--install-only", "report only on the install (skip wiki checks)")
+    .option("--wiki-only", "report only on the current wiki (skip install checks)")
+    .action(
+      async (opts: {
+        json?: boolean;
+        installOnly?: boolean;
+        wikiOnly?: boolean;
+      }) => {
+        const result = await runDoctor({
+          cwd: process.cwd(),
+          json: opts.json,
+          installOnly: opts.installOnly,
+          wikiOnly: opts.wikiOnly,
+        });
+        emit(result);
+      },
+    );
+
+  program
     .command("uninstall")
     .description("remove the hook + guides + import line")
     .option("-y, --yes", "skip confirmations; remove everything")
-    .option("--keep-hook", "leave the hook alone")
-    .option("--keep-guides", "leave the guides + CLAUDE.md import alone")
+    .option(
+      "--keep-hook",
+      "don't remove the SessionEnd hook (guides still prompted unless --yes)",
+    )
+    .option(
+      "--keep-guides",
+      "don't remove the guides or CLAUDE.md import (hook still prompted unless --yes)",
+    )
     .action(
       async (opts: {
         yes?: boolean;
@@ -627,7 +671,7 @@ const HELP_GROUPS: Array<{ title: string; commands: string[] }> = [
   },
   {
     title: "Setup",
-    commands: ["setup", "uninstall"],
+    commands: ["setup", "uninstall", "doctor"],
   },
 ];
 
@@ -831,4 +875,46 @@ async function readStdin(): Promise<string> {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
   return Buffer.concat(chunks).toString("utf8");
+}
+
+/**
+ * Decide whether a bare `codealmanac [...args]` invocation should route
+ * straight to `runSetup` (and if so, with which flags). Returns the
+ * options object when it's a setup shortcut, or `null` when the invocation
+ * should fall through to commander's normal parsing (subcommands,
+ * `--help`, `--version`, unknown flags we don't handle here).
+ *
+ * Context: commander routes bare `codealmanac` to a default action but
+ * doesn't forward flags like `--yes` when there's no subcommand on the
+ * line. Without this shortcut, `codealmanac --yes` errors with "unknown
+ * option '--yes'". We accept exactly the flag set `setup` itself takes:
+ * `--yes` / `-y`, `--skip-hook`, `--skip-guides`. Anything else (a
+ * subcommand, `--help`, `--version`, an unrecognized flag) falls through.
+ */
+function tryParseSetupShortcut(args: string[]): {
+  yes?: boolean;
+  skipHook?: boolean;
+  skipGuides?: boolean;
+} | null {
+  if (args.length === 0) return {};
+
+  const opts: { yes?: boolean; skipHook?: boolean; skipGuides?: boolean } = {};
+  for (const arg of args) {
+    if (arg === "--yes" || arg === "-y") {
+      opts.yes = true;
+      continue;
+    }
+    if (arg === "--skip-hook") {
+      opts.skipHook = true;
+      continue;
+    }
+    if (arg === "--skip-guides") {
+      opts.skipGuides = true;
+      continue;
+    }
+    // Anything else (subcommand, --help, --version, unknown flag) —
+    // defer to commander.
+    return null;
+  }
+  return opts;
 }

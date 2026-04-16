@@ -449,4 +449,40 @@ body
       expect(r.stdout.trim().split("\n")).toHaveLength(2);
     });
   });
+
+  it("empty result emits `# 0 results` on stderr, silent on stdout", async () => {
+    // v0.1.3: silent stdout + no stderr breadcrumb made users think the
+    // wiki was broken. The stderr line disambiguates "matched nothing"
+    // from "broken command" without corrupting pipelines.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await seedFixture(repo);
+      const r = await runSearch({
+        cwd: repo,
+        query: "nonsense-query-that-matches-nothing-xyz",
+        topics: [],
+      });
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout).toBe("");
+      expect(r.stderr).toBe("# 0 results\n");
+    });
+  });
+
+  it("--json stays silent on empty result (no stderr breadcrumb)", async () => {
+    // JSON callers get `[]` as the unambiguous empty signal. Emitting
+    // `# 0 results` alongside would pollute `--json` pipelines.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await seedFixture(repo);
+      const r = await runSearch({
+        cwd: repo,
+        query: "nonsense-query-that-matches-nothing-xyz",
+        topics: [],
+        json: true,
+      });
+      expect(r.exitCode).toBe(0);
+      expect(r.stderr).toBe("");
+      expect(JSON.parse(r.stdout)).toEqual([]);
+    });
+  });
 });

@@ -14,19 +14,30 @@ A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, ha
 
 Each repo gets a committed `.almanac/pages/` directory of markdown files. A SessionEnd hook fires when a Claude Code session ends and runs `almanac capture` in the background. A writer agent reads the session transcript and existing pages, drafts changes, and invokes a reviewer subagent that critiques against the wider graph. The writer applies the final versions. New and updated pages show up in your next `git status`; you review them like any other commit.
 
-The CLI never reads or writes page content except in `capture` and `bootstrap`. Every other command (`search`, `show`, `info`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
+The CLI never reads or writes page content except in `capture` and `bootstrap`. Every other command (`search`, `show`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
 
 ## Install
 
 ```bash
+npx codealmanac                # installs globally + runs the setup wizard
+# or, if you prefer the explicit two-step:
 npm install -g codealmanac
-# or for one-off use:
-npx codealmanac --help
+codealmanac                    # interactive wizard
+# or fully unattended:
+codealmanac --yes
 ```
 
-Installs two binaries pointing at the same entry: `codealmanac` (canonical) and `almanac` (alias). Requires Node 20 or 22.
+`codealmanac` (the bare invocation) routes to a setup wizard that:
+- checks Claude auth (subscription via `claude auth login`, or `ANTHROPIC_API_KEY`),
+- installs the SessionEnd hook in `~/.claude/settings.json`,
+- drops two agent guides into `~/.claude/` (`codealmanac.md` mini, `codealmanac-reference.md` full),
+- appends `@~/.claude/codealmanac.md` to `~/.claude/CLAUDE.md` so every Claude Code session loads the mini guide.
 
-`bootstrap` and `capture` invoke Claude via the bundled Claude Agent SDK. The query commands (`search`, `show`, `info`, `health`, `topics`) need no credentials at all.
+The setup is idempotent — safe to re-run. Opt out with `--skip-hook` or `--skip-guides`. Later, `almanac uninstall` reverses it.
+
+Two binaries ship, both pointing at the same entry: `codealmanac` (install surface) and `almanac` (day-to-day). Requires Node 20 or 22.
+
+`bootstrap` and `capture` invoke Claude via the bundled Claude Agent SDK. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
 
 ## Authentication
 
@@ -42,6 +53,8 @@ export ANTHROPIC_API_KEY=sk-ant-...
 
 # Either way, verify with:
 claude auth status
+# or:
+almanac doctor
 ```
 
 codealmanac itself never sees your credentials — auth is handled by the bundled Claude Agent SDK CLI, which reads the same `~/.claude/credentials/` store Claude Code uses.
@@ -49,46 +62,47 @@ codealmanac itself never sees your credentials — auth is handled by the bundle
 ## Quickstart
 
 ```bash
+npm install -g codealmanac
+codealmanac                   # interactive setup wizard
+                              # (or: codealmanac --yes)
+
 cd your-repo
+almanac bootstrap             # agent reads the repo and seeds stub pages + topic DAG
 
-almanac init
-# scaffolds .almanac/pages/ and .almanac/README.md, registers the wiki
-# in ~/.almanac/registry.json, adds .almanac/index.db to .gitignore
+almanac search "auth"         # full-text search across pages; prints slugs one per line
+almanac show checkout-flow    # read a page
 
-almanac bootstrap
-# spawns an agent that reads package.json, docker-compose.yml, the
-# top-level layout, and writes stub entity pages + a topic DAG
-
-almanac search "auth"
-# full-text search across pages; prints slugs one per line
-
-almanac hook install
-# adds the SessionEnd entry to ~/.claude/settings.json so capture
-# runs at the end of every Claude Code session
-
-# from here on, just code as usual — capture runs itself
+# From here on, just code as usual — the SessionEnd hook invokes
+# `almanac capture` at session end, which writes and updates pages
+# based on what happened in the session.
 ```
+
+No `almanac init`. A wiki is scaffolded two ways: run `almanac bootstrap` yourself, or clone a repo that already has `.almanac/` committed (codealmanac auto-registers it on the first query).
+
+Sanity-check the install with `almanac doctor` — it reports binary location, native SQLite binding, Claude auth, hook status, guides, import line, and current-wiki stats with a one-line fix for each ✗.
 
 ## Command reference
 
-| Command | What it does |
-|---------|--------------|
-| `almanac init` | Scaffold `.almanac/` and register the wiki globally |
-| `almanac list` | List every registered wiki (`--drop <name>` to remove) |
-| `almanac bootstrap` | Agent reads the repo and seeds stub entity pages + topic DAG |
-| `almanac search [query]` | FTS, `--topic`, `--mentions <path>`, `--since`, `--stale`, `--orphan` |
-| `almanac show <slug>` | Print a page's markdown to stdout |
-| `almanac path <slug>` | Resolve a slug to its absolute file path |
-| `almanac info <slug>` | Topics, file refs, wikilinks, lineage for a page |
-| `almanac topics` | List, create, link, rename, delete topics in the DAG |
-| `almanac tag <page> <topic>...` | Add topics to a page |
-| `almanac untag <page> <topic>` | Remove a topic |
-| `almanac health` | Orphans, stale pages, dead refs, broken links, slug collisions |
-| `almanac capture [transcript]` | Writer + reviewer on a Claude Code session transcript |
-| `almanac hook install\|uninstall\|status` | Manage the SessionEnd hook in `~/.claude/settings.json` |
-| `almanac reindex` | Force rebuild of `.almanac/index.db` |
+Grouped the same way as `almanac --help`:
 
-Every command that returns pages prints slugs one per line; pass `--json` for structured output; pipe slugs into commands that accept `--stdin`. Run `almanac <command> --help` for the full flag surface.
+| Group | Command | What it does |
+|---|---|---|
+| Query | `almanac search [query]` | FTS, `--topic`, `--mentions <path>`, `--since`, `--stale`, `--orphan`, `--archived`, `--limit`, `--json` |
+| Query | `almanac show <slug>` | Read a page. Field flags: `--raw`, `--meta`, `--lead`, `--title`, `--topics`, `--files`, `--links`, `--backlinks`, `--xwiki`, `--lineage`, `--updated`, `--path`, `--json`. Absorbs the old `info` and `path` commands. |
+| Query | `almanac health` | Eight-category graph integrity report (`orphans`, `stale`, `dead-refs`, `broken-links`, `broken-xwiki`, `empty-topics`, `empty-pages`, `slug-collisions`) |
+| Query | `almanac list` | List registered wikis; `--drop <name>` to remove |
+| Edit | `almanac tag <page> <topics...>` | Add topics; auto-creates missing ones; `--stdin` for bulk |
+| Edit | `almanac untag <page> <topic>` | Remove a topic |
+| Edit | `almanac topics ...` | `list`, `show`, `create`, `link`, `unlink`, `rename`, `delete`, `describe` — DAG management |
+| Wiki lifecycle | `almanac bootstrap` | Agent reads the repo and seeds stub entity pages + topic DAG (requires Claude auth) |
+| Wiki lifecycle | `almanac capture [transcript]` | Writer + reviewer on a session transcript (usually invoked by the hook) |
+| Wiki lifecycle | `almanac hook install\|uninstall\|status` | Manage the SessionEnd hook in `~/.claude/settings.json` |
+| Wiki lifecycle | `almanac reindex` | Force rebuild of `.almanac/index.db` |
+| Setup | `almanac setup` | Install hook + guides + CLAUDE.md import (bare `codealmanac` alias) |
+| Setup | `almanac uninstall` | Reverse `setup`: remove hook + guides + import line |
+| Setup | `almanac doctor` | Report on install + current wiki with one-line fixes |
+
+Every command that returns pages prints slugs one per line; pass `--json` for structured output; pipe slugs into commands that accept `--stdin` (`show`, `tag`, `health`). Run `almanac <command> --help` for the full flag surface, or import the full reference on demand: `@~/.claude/codealmanac-reference.md`.
 
 ## Concepts
 
@@ -169,18 +183,17 @@ Each repo has its own sovereign `.almanac/`. The global registry at `~/.almanac/
 ```bash
 almanac list                            # all registered wikis
 almanac search --wiki openalmanac "RLS" # specific wiki
-almanac search --all "RLS"              # every registered wiki
 ```
 
 Cross-wiki references use a colon prefix: `[[openalmanac:supabase]]`. The segment before `:` resolves via the registry; unreachable wikis are silently skipped rather than erroring. Cloning a repo with a committed `.almanac/` auto-registers it on the first `almanac` command.
 
 ## Writing conventions
 
-Pages are neutral-tone encyclopedia-style prose — every sentence contains a specific fact, no significance inflation, no hedging, no formulaic conclusions. Prose first, bullets for genuine lists, tables only for structured comparison. The conventions are described in each repo's `.almanac/README.md` (generated by `init` and refined by `bootstrap`); the reviewer loads them at runtime and enforces them on every proposal.
+Pages are neutral-tone encyclopedia-style prose — every sentence contains a specific fact, no significance inflation, no hedging, no formulaic conclusions. Prose first, bullets for genuine lists, tables only for structured comparison. The conventions are described in each repo's `.almanac/README.md` (generated by `bootstrap`); the reviewer loads them at runtime and enforces them on every proposal.
 
 ## Status
 
-`v0.1.0`, pre-release. Node 20.x or 22.x. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
+`v0.1.3`, pre-release. Node 20.x or 22.x. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
 
 ## Philosophy
 

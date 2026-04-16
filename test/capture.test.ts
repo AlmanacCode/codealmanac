@@ -214,7 +214,7 @@ describe("almanac capture — command wiring", () => {
 
       expect(out.exitCode).toBe(1);
       expect(out.stderr).toMatch(/no \.almanac/);
-      expect(out.stderr).toMatch(/almanac init/);
+      expect(out.stderr).toMatch(/almanac bootstrap/);
     });
   });
 
