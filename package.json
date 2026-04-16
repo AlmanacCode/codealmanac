@@ -28,6 +28,7 @@
   "files": [
     "dist",
     "prompts",
+    "hooks",
     "README.md",
     "LICENSE"
   ],

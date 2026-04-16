@@ -267,6 +267,16 @@ export class StreamingFormatter {
     this.sink = sink;
   }
 
+  /**
+   * Swap the top-level agent label. `capture` uses this to relabel from
+   * the default "bootstrap" to "writer" — otherwise the writer's tool-use
+   * output would render as `[bootstrap] …`, which is confusing when you're
+   * reading capture logs.
+   */
+  setAgent(name: string): void {
+    this.currentAgent = name;
+  }
+
   handle(msg: SDKMessage): void {
     if (msg.type === "assistant") {
       for (const block of msg.message.content) {

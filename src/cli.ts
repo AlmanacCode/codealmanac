@@ -1,6 +1,12 @@
 import { Command } from "commander";
 
 import { runBootstrap } from "./commands/bootstrap.js";
+import { runCapture } from "./commands/capture.js";
+import {
+  runHookInstall,
+  runHookStatus,
+  runHookUninstall,
+} from "./commands/hook.js";
 import { runHealth } from "./commands/health.js";
 import { initWiki } from "./commands/init.js";
 import { runInfo } from "./commands/info.js";
@@ -467,6 +473,79 @@ export async function run(argv: string[]): Promise<void> {
         emit(result);
       },
     );
+
+  // ─── capture ─────────────────────────────────────────────────────
+  // Slice 5: writer + reviewer subagent on a Claude Code session
+  // transcript. Refuses if no `.almanac/` exists (capture is for
+  // maintaining wikis, not creating them). Transcript path resolution:
+  //  - explicit positional arg wins
+  //  - `--session <id>` matches by filename under ~/.claude/projects/
+  //  - otherwise auto-resolve the most recent transcript whose cwd
+  //    matches this repo
+  program
+    .command("capture [transcript]")
+    .description(
+      "capture knowledge from a Claude Code session transcript " +
+        "(auto-resolves the most recent session for this repo when no " +
+        "path is given; requires ANTHROPIC_API_KEY)",
+    )
+    .option("--session <id>", "target a specific session by ID")
+    .option(
+      "--quiet",
+      "suppress per-tool streaming; print only the final summary",
+    )
+    .option("--model <model>", "override the agent model")
+    .action(
+      async (
+        transcript: string | undefined,
+        opts: { session?: string; quiet?: boolean; model?: string },
+      ) => {
+        // Auto-register the repo on capture: the user may have cloned a
+        // repo with `.almanac/` committed but never run init.
+        await autoRegisterIfNeeded(process.cwd());
+        const result = await runCapture({
+          cwd: process.cwd(),
+          transcriptPath: transcript,
+          sessionId: opts.session,
+          quiet: opts.quiet,
+          model: opts.model,
+        });
+        emit(result);
+      },
+    );
+
+  // ─── hook ─────────────────────────────────────────────────────────
+  // Wires codealmanac into Claude Code's SessionEnd hook via
+  // ~/.claude/settings.json. Non-interactive install/uninstall/status.
+  const hook = program
+    .command("hook")
+    .description(
+      "install, uninstall, or inspect the SessionEnd hook in ~/.claude/settings.json",
+    );
+
+  hook
+    .command("install")
+    .description("add a SessionEnd entry that runs 'almanac capture' on session end")
+    .action(async () => {
+      const result = await runHookInstall();
+      emit(result);
+    });
+
+  hook
+    .command("uninstall")
+    .description("remove codealmanac's SessionEnd entry; leaves foreign entries alone")
+    .action(async () => {
+      const result = await runHookUninstall();
+      emit(result);
+    });
+
+  hook
+    .command("status")
+    .description("report whether the SessionEnd hook is installed")
+    .action(async () => {
+      const result = await runHookStatus();
+      emit(result);
+    });
 
   // ─── health ──────────────────────────────────────────────────────
   program
