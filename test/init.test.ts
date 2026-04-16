@@ -79,14 +79,24 @@ describe("almanac init", () => {
     });
   });
 
-  it("does not duplicate the gitignore entry on re-run", async () => {
+  it("does not duplicate the gitignore entries on re-run", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "example");
       await initWiki({ cwd: repo, name: "example", description: "" });
       await initWiki({ cwd: repo, name: "example", description: "" });
       const gitignore = await readFile(join(repo, ".gitignore"), "utf8");
-      const matches = gitignore.match(/\.almanac\/index\.db/g) ?? [];
-      expect(matches).toHaveLength(1);
+      // Each of the three sidecar-related entries appears exactly once.
+      // Use line-anchored matches so `.almanac/index.db` doesn't count
+      // the `-wal`/`-shm` lines as duplicates.
+      const lines = gitignore.split("\n");
+      expect(lines.filter((l) => l === ".almanac/index.db")).toHaveLength(1);
+      expect(lines.filter((l) => l === ".almanac/index.db-wal")).toHaveLength(
+        1,
+      );
+      expect(lines.filter((l) => l === ".almanac/index.db-shm")).toHaveLength(
+        1,
+      );
+      expect(lines.filter((l) => l === "# codealmanac")).toHaveLength(1);
     });
   });
 
@@ -185,12 +195,18 @@ describe("almanac init", () => {
     });
   });
 
+  // The block codealmanac writes to .gitignore: one header line + three
+  // sidecar-related entries (the DB itself and the WAL/SHM files that
+  // appear during active reindexing).
+  const GITIGNORE_BLOCK =
+    "# codealmanac\n.almanac/index.db\n.almanac/index.db-wal\n.almanac/index.db-shm\n";
+
   it("does not create a blank line separator when .gitignore is absent", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "gi-absent");
       await initWiki({ cwd: repo, name: "gi-absent", description: "" });
       const contents = await readFile(join(repo, ".gitignore"), "utf8");
-      expect(contents).toBe("# codealmanac\n.almanac/index.db\n");
+      expect(contents).toBe(GITIGNORE_BLOCK);
     });
   });
 
@@ -202,7 +218,7 @@ describe("almanac init", () => {
       await writeFile(join(repo, ".gitignore"), "foo"); // no trailing newline
       await initWiki({ cwd: repo, name: "gi-notrail", description: "" });
       const contents = await readFile(join(repo, ".gitignore"), "utf8");
-      expect(contents).toBe("foo\n\n# codealmanac\n.almanac/index.db\n");
+      expect(contents).toBe(`foo\n\n${GITIGNORE_BLOCK}`);
     });
   });
 
@@ -212,9 +228,7 @@ describe("almanac init", () => {
       await writeFile(join(repo, ".gitignore"), "node_modules/\n");
       await initWiki({ cwd: repo, name: "gi-trail", description: "" });
       const contents = await readFile(join(repo, ".gitignore"), "utf8");
-      expect(contents).toBe(
-        "node_modules/\n\n# codealmanac\n.almanac/index.db\n",
-      );
+      expect(contents).toBe(`node_modules/\n\n${GITIGNORE_BLOCK}`);
     });
   });
 
@@ -224,7 +238,32 @@ describe("almanac init", () => {
       await writeFile(join(repo, ".gitignore"), "");
       await initWiki({ cwd: repo, name: "gi-empty", description: "" });
       const contents = await readFile(join(repo, ".gitignore"), "utf8");
-      expect(contents).toBe("# codealmanac\n.almanac/index.db\n");
+      expect(contents).toBe(GITIGNORE_BLOCK);
+    });
+  });
+
+  it("adds only the missing sidecar lines when index.db is already ignored", async () => {
+    // Someone set up .gitignore before upgrading codealmanac: the `.db`
+    // line is present but the WAL/SHM lines aren't. We should append
+    // just the missing ones and NOT write a duplicate `# codealmanac`
+    // header.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "gi-partial");
+      await writeFile(
+        join(repo, ".gitignore"),
+        "# codealmanac\n.almanac/index.db\n",
+      );
+      await initWiki({ cwd: repo, name: "gi-partial", description: "" });
+      const contents = await readFile(join(repo, ".gitignore"), "utf8");
+      const lines = contents.split("\n");
+      expect(lines.filter((l) => l === "# codealmanac")).toHaveLength(1);
+      expect(lines.filter((l) => l === ".almanac/index.db")).toHaveLength(1);
+      expect(lines.filter((l) => l === ".almanac/index.db-wal")).toHaveLength(
+        1,
+      );
+      expect(lines.filter((l) => l === ".almanac/index.db-shm")).toHaveLength(
+        1,
+      );
     });
   });
 });

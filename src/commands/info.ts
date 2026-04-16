@@ -84,13 +84,26 @@ export async function runInfo(
     const bulk = options.stdin === true;
     const jsonOut = options.json === true || bulk;
 
+    // JSON shape rule (consumers depend on this being predictable):
+    //   --stdin        → always array of records (even for a single slug)
+    //   positional     → always a single object (never an array)
+    // The previous implementation accidentally reshaped "positional with
+    // zero records" as an array and positional with one record as an
+    // object, which made downstream callers have to sniff the shape.
+    // Now: `info --stdin` gives you a list to iterate; `info <slug>` gives
+    // you one record to dot-access.
     let stdout: string;
     if (jsonOut) {
-      stdout = bulk
-        ? `${JSON.stringify(records, null, 2)}\n`
-        : records.length === 1 && records[0] !== undefined
-          ? `${JSON.stringify(records[0], null, 2)}\n`
-          : `${JSON.stringify(records, null, 2)}\n`;
+      if (bulk) {
+        stdout = `${JSON.stringify(records, null, 2)}\n`;
+      } else {
+        // Positional mode: we already short-circuited on empty slugs,
+        // and a missing page is in `missing[]` — so `records` is either
+        // length 1 (found) or length 0 (missing). For length 0 we emit
+        // `null` so the shape is still object-ish, not an empty array.
+        const only = records[0] ?? null;
+        stdout = `${JSON.stringify(only, null, 2)}\n`;
+      }
     } else {
       stdout = records.map(formatHumanReadable).join("\n");
     }

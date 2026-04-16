@@ -1,15 +1,15 @@
 import { createHash } from "node:crypto";
 import { existsSync, statSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, utimes } from "node:fs/promises";
 import { basename, join, relative } from "node:path";
 
 import fg from "fast-glob";
 import type Database from "better-sqlite3";
 
+import { toKebabCase } from "../slug.js";
 import { firstH1, parseFrontmatter } from "./frontmatter.js";
 import { normalizePath, looksLikeDir } from "./paths.js";
 import { openIndex } from "./schema.js";
-import { slugifyFilename } from "./slug.js";
 import { extractWikilinks } from "./wikilinks.js";
 
 export interface IndexContext {
@@ -22,8 +22,29 @@ export interface IndexResult {
   changed: number;
   /** Pages present in the DB before this run but missing from disk. */
   removed: number;
-  /** Pages on disk at the end of this run. */
+  /**
+   * Pages on disk at the end of this run — i.e. files that made it all the
+   * way through to the index. Skipped files (slug collisions, unreadable,
+   * un-sluggable filenames) are NOT counted here. Use `filesSeen` for the
+   * raw count of `.md` files encountered on disk.
+   *
+   * Alias retained for backwards-compat with existing tests/consumers; new
+   * code should prefer `pagesIndexed` for clarity.
+   */
   total: number;
+  /** Pages that made it into the index. Same number as `total`. */
+  pagesIndexed: number;
+  /**
+   * Count of `.md` files found under `pages/` before any filtering. Always
+   * `>= pagesIndexed`; the difference is `filesSkipped`.
+   */
+  filesSeen: number;
+  /**
+   * Files dropped before making it into the index — slug collisions,
+   * un-sluggable filenames, or filesystem races (deleted/unreadable mid-run).
+   * Covered by stderr warnings when non-zero.
+   */
+  filesSkipped: number;
 }
 
 // Glob is relative to `pagesDir` (which is `.almanac/pages/`), so this is
@@ -52,13 +73,24 @@ export async function ensureFreshIndex(ctx: IndexContext): Promise<IndexResult> 
     // missing file.
     const db = openIndex(dbPath);
     db.close();
-    return { changed: 0, removed: 0, total: 0 };
+    return emptyResult();
   }
 
   if (!existsSync(dbPath) || pagesNewerThan(pagesDir, dbPath)) {
     return runIndexer(ctx);
   }
-  return { changed: 0, removed: 0, total: 0 };
+  return emptyResult();
+}
+
+function emptyResult(): IndexResult {
+  return {
+    changed: 0,
+    removed: 0,
+    total: 0,
+    pagesIndexed: 0,
+    filesSeen: 0,
+    filesSkipped: 0,
+  };
 }
 
 /**
@@ -71,11 +103,28 @@ export async function runIndexer(ctx: IndexContext): Promise<IndexResult> {
   const pagesDir = join(almanacDir, "pages");
 
   const db = openIndex(dbPath);
+  let result: IndexResult;
   try {
-    return await indexPagesInto(db, pagesDir);
+    result = await indexPagesInto(db, pagesDir);
   } finally {
     db.close();
   }
+
+  // Bump the DB mtime to "now" after a successful reindex (even a no-op
+  // one). Otherwise, a page file with a future mtime (clock skew,
+  // `git checkout` preserving source mtimes) would trigger `ensureFreshIndex`
+  // on every query: the freshness check sees `page.mtime > db.mtime`,
+  // reindex runs, finds no content-hash changes, and the DB mtime stays
+  // stale — locking us into a reindex-on-every-query loop. Touching the
+  // DB mtime makes the comparison monotonic.
+  try {
+    const now = new Date();
+    await utimes(dbPath, now, now);
+  } catch {
+    // Touching mtime is a freshness optimization; failures here are
+    // non-fatal and the reindex result is still correct.
+  }
+  return result;
 }
 
 interface ExistingRow {
@@ -123,15 +172,17 @@ async function indexPagesInto(
     content: string;
   }> = [];
   const seenSlugs = new Set<string>();
+  let filesSkipped = 0;
 
   for (const rel of files) {
     const fullPath = join(pagesDir, rel);
     const base = basename(rel, ".md");
-    const slug = slugifyFilename(base);
+    const slug = toKebabCase(base);
     if (slug.length === 0) {
       process.stderr.write(
         `almanac: skipping "${rel}" — filename has no slug-able characters\n`,
       );
+      filesSkipped++;
       continue;
     }
     if (slug !== base) {
@@ -148,17 +199,43 @@ async function indexPagesInto(
       process.stderr.write(
         `almanac: warning — slug "${slug}" collides with an earlier file; skipping "${rel}"\n`,
       );
+      filesSkipped++;
       continue;
     }
-    seenSlugs.add(slug);
 
-    const st = statSync(fullPath);
+    // `fast-glob` gave us the list in one shot, but by the time we stat
+    // and read each file it can have been deleted, renamed, or swapped
+    // (editors that save via rename-swap expose this briefly). A single
+    // such race shouldn't tank the whole reindex — matches the malformed-
+    // YAML behavior ("one bad file doesn't stop the others"). We narrow
+    // to ENOENT/EACCES so genuine I/O failures (EIO, EMFILE, etc.) still
+    // surface.
+    let st: ReturnType<typeof statSync>;
+    let raw: string;
+    try {
+      st = statSync(fullPath);
+      raw = await readFile(fullPath, "utf8");
+    } catch (err: unknown) {
+      if (
+        err instanceof Error &&
+        "code" in err &&
+        (err.code === "ENOENT" || err.code === "EACCES")
+      ) {
+        process.stderr.write(
+          `almanac: skipping "${rel}" — ${err.message}\n`,
+        );
+        filesSkipped++;
+        continue;
+      }
+      throw err;
+    }
+
+    seenSlugs.add(slug);
     const updatedAt = Math.floor(st.mtimeMs / 1000);
 
     // Content-hash skip: if the hash matches what's in the DB and the
     // file path hasn't moved, we can leave this page's rows alone. This
     // is the fast-path for "user ran a query; one page was touched".
-    const raw = await readFile(fullPath, "utf8");
     const contentHash = hashContent(raw);
     const existing = existingBySlug.get(slug);
     if (
@@ -252,6 +329,12 @@ async function indexPagesInto(
 
   const apply = db.transaction(() => {
     for (const slug of toDelete) {
+      // `fts_pages` is an FTS5 virtual table — FK cascades do NOT propagate
+      // into it, so we must delete FTS rows explicitly before relying on
+      // `DELETE FROM pages` to cascade-clean the four real tables
+      // (page_topics, file_refs, wikilinks, cross_wiki_links). If this
+      // explicit delete ever gets removed, orphaned FTS rows will show up
+      // as phantom search hits pointing at non-existent slugs.
       deleteFtsByPage.run(slug);
       deleteByPage.run(slug); // CASCADE cleans page_topics, file_refs, wikilinks, cross_wiki_links
     }
@@ -266,6 +349,8 @@ async function indexPagesInto(
       deleteFileRefs.run(p.slug);
       deleteWikilinks.run(p.slug);
       deleteXwiki.run(p.slug);
+      // Same virtual-table reason as the deletion branch above — FTS5
+      // rows do not cascade, so clean them by hand before reinserting.
       deleteFtsByPage.run(p.slug);
 
       replacePage.run(
@@ -279,7 +364,7 @@ async function indexPagesInto(
       );
 
       for (const topic of p.topics) {
-        const topicSlug = slugifyFilename(topic);
+        const topicSlug = toKebabCase(topic);
         if (topicSlug.length === 0) continue;
         insertTopic.run(topicSlug);
         insertPageTopic.run(p.slug, topicSlug);
@@ -322,10 +407,14 @@ async function indexPagesInto(
   // `relative` keeps lint happy about unused imports; total is just the
   // count of .md files we saw on this pass.
   void relative;
+  const pagesIndexed = seenSlugs.size;
   return {
     changed: planned.length,
     removed: toDelete.length,
-    total: seenSlugs.size,
+    total: pagesIndexed,
+    pagesIndexed,
+    filesSeen: files.length,
+    filesSkipped,
   };
 }
 

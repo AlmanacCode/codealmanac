@@ -77,22 +77,36 @@ export async function initWiki(options: InitOptions): Promise<InitResult> {
 }
 
 /**
- * Ensure `.gitignore` in the repo root contains `.almanac/index.db`.
+ * Ensure `.gitignore` in the repo root contains the codealmanac-derived
+ * files that should never be committed.
  *
- * The index is a derived SQLite file — it would churn every reindex and
- * bloat git history. We add the line regardless of whether the file
- * exists (creating `.gitignore` if needed), but only once. If the line is
- * already present under any reasonable variant, we leave the file alone.
+ * We ignore three paths:
+ *   - `.almanac/index.db`        — the SQLite index (derived)
+ *   - `.almanac/index.db-wal`    — WAL mode sidecar (present during writes)
+ *   - `.almanac/index.db-shm`    — shared-memory sidecar (WAL mode)
  *
- * Formatting: we guarantee exactly one blank line between the prior
- * content and our appended block, regardless of whether the existing file
- * ends with `\n`, ends with nothing, or is empty. This keeps the file
- * tidy across repeated runs and on `.gitignore`s that were written
- * without a trailing newline.
+ * All three are derived from the markdown pages. The sidecars only show
+ * up while better-sqlite3 has the DB open and can vanish between `git
+ * status` calls, but explicitly ignoring them prevents "dirty worktree"
+ * noise during active reindexing.
+ *
+ * We add the block regardless of whether the file exists (creating
+ * `.gitignore` if needed), and we add any target lines that aren't
+ * already present. Existing targets are left alone. If none of the
+ * target lines need adding, the file is not touched at all.
+ *
+ * Formatting: when we do append, we guarantee exactly one blank line
+ * between the prior content and our appended block. If the `# codealmanac`
+ * header is already present but new targets need adding, we just append
+ * the missing lines (no duplicate header).
  */
 async function ensureGitignoreHasIndexDb(cwd: string): Promise<void> {
   const path = join(cwd, ".gitignore");
-  const target = ".almanac/index.db";
+  const targets = [
+    ".almanac/index.db",
+    ".almanac/index.db-wal",
+    ".almanac/index.db-shm",
+  ];
 
   let existing = "";
   if (existsSync(path)) {
@@ -102,16 +116,22 @@ async function ensureGitignoreHasIndexDb(cwd: string): Promise<void> {
   // Normalize to line comparison to avoid false negatives on trailing
   // whitespace or CRLF line endings.
   const lines = existing.split(/\r?\n/).map((l) => l.trim());
-  if (lines.includes(target)) return;
+  const missing = targets.filter((t) => !lines.includes(t));
+  if (missing.length === 0) return;
 
-  // Three cases:
+  const hasHeader = lines.includes("# codealmanac");
+  const block = hasHeader
+    ? missing.join("\n") + "\n"
+    : `# codealmanac\n${missing.join("\n")}\n`;
+
+  // Three cases for the separator before the appended block:
   //  - empty file: no separator needed
   //  - ends with newline: one more newline produces a single blank line
   //  - no trailing newline: two newlines (one to terminate the last line,
   //    one for the blank separator)
   const sep =
     existing.length === 0 ? "" : existing.endsWith("\n") ? "\n" : "\n\n";
-  await writeFile(path, `${existing}${sep}# codealmanac\n${target}\n`, "utf8");
+  await writeFile(path, `${existing}${sep}${block}`, "utf8");
 }
 
 /**

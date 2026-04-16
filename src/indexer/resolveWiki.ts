@@ -17,6 +17,13 @@ import { findEntry } from "../registry/index.js";
  *
  * Returns the absolute path to the repo root (the directory containing
  * `.almanac/`).
+ *
+ * NOTE (spec contract, not yet implemented): when `--all` lands in a
+ * future slice, it must silently skip wikis whose paths have gone
+ * unreachable — the asymmetry with `--wiki <name>` is deliberate.
+ * Explicit lookup is loud about failures (user named a specific wiki);
+ * bulk `--all` is quiet (user asked "whatever's available"). Don't
+ * unify the error behavior when adding `--all`.
  */
 export async function resolveWikiRoot(params: {
   cwd: string;

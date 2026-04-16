@@ -81,8 +81,14 @@ export async function run(argv: string[]): Promise<void> {
       "--mentions <path>",
       "pages referencing this file or folder (trailing / = folder)",
     )
-    .option("--since <duration>", "updated within duration (e.g. 2w, 30d)")
-    .option("--stale <duration>", "NOT updated within duration")
+    .option(
+      "--since <duration>",
+      "updated within duration, by file mtime (e.g. 2w, 30d)",
+    )
+    .option(
+      "--stale <duration>",
+      "NOT updated within duration, by file mtime",
+    )
     .option("--orphan", "pages with no topics")
     .option("--include-archive", "include archived pages")
     .option("--archived", "archived pages only")

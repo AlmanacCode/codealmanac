@@ -121,35 +121,69 @@ function executeQuery(
   // matches exactly, OR is a containing folder (is_dir=1 and the query
   // path starts with the row's path), OR the row itself lives inside
   // the queried folder. See spec → "Graph querying → Query examples".
+  //
+  // We deliberately avoid GLOB on the RHS of the comparison with stored
+  // `r.path`, because stored paths can legitimately contain GLOB
+  // metacharacters — Next.js dynamic routes like `src/[id]/page.tsx`
+  // store a literal `[id]`, and `[abc]` is a SQL GLOB character class.
+  // Concatenating `r.path || '*'` into a GLOB pattern would make
+  // `src/[id]/page.tsx*` match `src/i/page.tsx` (spurious hit on the
+  // character class).
+  //
+  // Instead we enumerate the prefix folders in JS and use parameterized
+  // equality. For `src/checkout/handler.ts` the prefixes are
+  // `['src/', 'src/checkout/']`; any file_refs row with is_dir=1 and
+  // a path in that list is a containing folder of the queried file.
+  // This also lets SQLite use `idx_file_refs_path` as an equality
+  // probe rather than a range scan.
   if (options.mentions !== undefined && options.mentions.length > 0) {
     const isDir = looksLikeDir(options.mentions);
     const norm = normalizePath(options.mentions, isDir);
     if (isDir) {
-      // Query is a folder. Match: the exact folder, OR any path (file
-      // or sub-folder) inside it.
+      // Query is a folder. Match: the exact folder, OR any file/sub-
+      // folder whose path starts with the folder prefix. The prefix
+      // match is the one place we still need GLOB — but we escape any
+      // wildcard metacharacters in `norm` first so a user-supplied
+      // `src/[id]/` query is treated as a literal. Note: the query
+      // path comes from the caller, not from stored data, but a user
+      // typing `--mentions src/[id]/` should get the literal folder,
+      // not a character class.
+      const escaped = escapeGlobMeta(norm);
       whereClauses.push(
         `EXISTS (
            SELECT 1 FROM file_refs r
            WHERE r.page_slug = p.slug
-             AND (r.path = ? OR r.path GLOB ? || '*')
+             AND (r.path = ? OR r.path GLOB ?)
          )`,
       );
-      params.push(norm, norm);
+      params.push(norm, `${escaped}*`);
     } else {
       // Query is a file. Match: the exact file, OR any folder whose
-      // path is a prefix of this file. GLOB is critical here — LIKE
-      // would treat `_` as a wildcard and spuriously match neighbors.
-      whereClauses.push(
-        `EXISTS (
-           SELECT 1 FROM file_refs r
-           WHERE r.page_slug = p.slug
-             AND (
-               r.path = ?
-               OR (r.is_dir = 1 AND ? GLOB r.path || '*')
-             )
-         )`,
-      );
-      params.push(norm, norm);
+      // path is a prefix of this file. Build the prefix list in JS and
+      // probe file_refs with equality — no GLOB on stored values.
+      const prefixes = parentFolderPrefixes(norm);
+      if (prefixes.length === 0) {
+        whereClauses.push(
+          `EXISTS (
+             SELECT 1 FROM file_refs r
+             WHERE r.page_slug = p.slug AND r.path = ?
+           )`,
+        );
+        params.push(norm);
+      } else {
+        const placeholders = prefixes.map(() => "?").join(", ");
+        whereClauses.push(
+          `EXISTS (
+             SELECT 1 FROM file_refs r
+             WHERE r.page_slug = p.slug
+               AND (
+                 r.path = ?
+                 OR (r.is_dir = 1 AND r.path IN (${placeholders}))
+               )
+           )`,
+        );
+        params.push(norm, ...prefixes);
+      }
     }
   }
 
@@ -231,11 +265,35 @@ function buildSql(whereClauses: string[]): string {
  * we tokenize into alphanumeric runs and emit a conjunction of prefixed
  * tokens. Each token is suffixed with `*` so "stri" matches "stripe".
  *
+ * Quoted input (`"stripe webhook"`) is treated as an FTS5 phrase query
+ * — tokens must appear contiguously in that order. This matches shell
+ * conventions where quoting something means "match it literally". We
+ * strip the surrounding quotes, collapse inner punctuation to spaces,
+ * and re-wrap in quotes for FTS5's phrase syntax. Any embedded `"` in
+ * the user input is dropped (FTS5 phrase syntax has no escape).
+ *
  * Anything that tokenizes to empty (e.g. pure punctuation) falls back
  * to an empty MATCH, which yields no rows — which is the right answer.
  */
 function buildFtsQuery(raw: string): string {
-  const tokens = raw
+  const trimmed = raw.trim();
+  if (
+    trimmed.length >= 2 &&
+    trimmed.startsWith("\"") &&
+    trimmed.endsWith("\"")
+  ) {
+    // Phrase mode. Strip outer quotes, lowercase, collapse non-alnum
+    // runs to a single space, trim. Any surviving inner `"` are
+    // removed since FTS5 phrase syntax has no escape mechanism.
+    const inner = trimmed
+      .slice(1, -1)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+    if (inner.length === 0) return "\"\"";
+    return `"${inner}"`;
+  }
+  const tokens = trimmed
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length > 0);
@@ -248,6 +306,44 @@ function slugForTopic(raw: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * For a normalized file path like `src/checkout/handler.ts`, enumerate
+ * every containing folder in the form those folders are stored (trailing
+ * slash): `['src/', 'src/checkout/']`. Empty for paths with no folder
+ * separator (e.g. `README.md`) — a top-level file has no parent folder
+ * recorded in `file_refs`.
+ *
+ * Used by the `--mentions <file>` path to let us probe `file_refs` with
+ * equality instead of GLOB, sidestepping wildcard-escape bugs entirely.
+ */
+function parentFolderPrefixes(filePath: string): string[] {
+  const out: string[] = [];
+  let cursor = 0;
+  while (true) {
+    const next = filePath.indexOf("/", cursor);
+    if (next === -1) break;
+    // Slice includes the slash — matches how directories are stored.
+    out.push(filePath.slice(0, next + 1));
+    cursor = next + 1;
+  }
+  return out;
+}
+
+/**
+ * Escape SQLite GLOB metacharacters (`*`, `?`, `[`) by wrapping each in
+ * a single-character class. SQLite GLOB has no backslash-escape, so the
+ * idiomatic trick is `[*]` → literal `*`, `[?]` → literal `?`, `[[]` →
+ * literal `[`. `]` doesn't need escaping outside a class.
+ *
+ * We only need this on the *query* side — stored paths aren't
+ * concatenated into GLOB patterns anymore (see --mentions handling).
+ * But a user-typed `--mentions src/[id]/` should still match a stored
+ * `src/[id]/` literally, not as a character class over `i` or `d`.
+ */
+function escapeGlobMeta(s: string): string {
+  return s.replace(/[\*\?\[]/g, (ch) => `[${ch}]`);
 }
 
 function formatResults(

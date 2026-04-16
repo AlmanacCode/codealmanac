@@ -24,9 +24,15 @@ export interface ShowCommandOutput {
  *
  * This is the one command that is allowed to read page file contents;
  * everything else operates on the index (per the spec's design
- * principles). With `--stdin` it accepts newline-separated slugs and
- * emits each page separated by `\n---\n`, matching the convention the
- * agent uses when piping pages into prompts.
+ * principles).
+ *
+ * Output shapes:
+ *   - positional slug → raw markdown on stdout, unchanged (the cat case)
+ *   - `--stdin`       → JSON Lines: one `{slug, content}` object per
+ *                       successfully-read page, terminated by `\n`. JSON
+ *                       Lines is parseable, unlike the old `\n---\n`
+ *                       separator which collided with YAML frontmatter
+ *                       delimiters in the page bodies themselves.
  *
  * Unresolvable slugs go to stderr with a non-zero exit; we still print
  * whatever we could resolve on stdout so bulk runs don't have to fail
@@ -58,7 +64,7 @@ export async function runShow(
       "SELECT file_path FROM pages WHERE slug = ?",
     );
 
-    const bodies: string[] = [];
+    const records: Array<{ slug: string; content: string }> = [];
     const missing: string[] = [];
     for (const slug of slugs) {
       const row = stmt.get(slug);
@@ -67,17 +73,27 @@ export async function runShow(
         continue;
       }
       try {
-        bodies.push(await readFile(row.file_path, "utf8"));
+        records.push({ slug, content: await readFile(row.file_path, "utf8") });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         missing.push(`${slug} (${message})`);
       }
     }
 
-    // `\n---\n` separator between pages. We do NOT add a trailing
-    // separator — a single page prints cleanly, and pipeline consumers
-    // can count `---` to know page boundaries.
-    const stdout = bodies.join("\n---\n");
+    const bulk = options.stdin === true;
+    let stdout: string;
+    if (bulk) {
+      // JSON Lines: one object per line, trailing newline on the last.
+      // Consumers can split on `\n` and `JSON.parse` each line.
+      stdout = records
+        .map((r) => JSON.stringify(r))
+        .join("\n");
+      if (stdout.length > 0) stdout += "\n";
+    } else {
+      // Positional single-slug: just emit the raw markdown. No
+      // separator, no wrapping — this is the "cat" case.
+      stdout = records.map((r) => r.content).join("");
+    }
     const stderr = missing
       .map((s) => `almanac: no such page "${s}"\n`)
       .join("");

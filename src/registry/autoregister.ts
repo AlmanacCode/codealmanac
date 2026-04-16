@@ -5,7 +5,6 @@ import { findNearestAlmanacDir } from "../paths.js";
 import { toKebabCase } from "../slug.js";
 import {
   addEntry,
-  findEntry,
   readRegistry,
   type RegistryEntry,
 } from "./index.js";

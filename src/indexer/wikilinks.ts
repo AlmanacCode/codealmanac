@@ -1,5 +1,5 @@
+import { toKebabCase } from "../slug.js";
 import { looksLikeDir, normalizePath } from "./paths.js";
-import { slugifyFilename } from "./slug.js";
 
 /**
  * One parsed `[[...]]` reference from a page body. Classification is
@@ -68,7 +68,7 @@ export function classifyWikilink(raw: string): WikilinkRef | null {
   // Rule 3: page slug wikilink. Authors might write `Checkout Flow` or
   // `Checkout_Flow` by accident — slugify defensively so backlinks still
   // resolve in those cases.
-  const target = slugifyFilename(body);
+  const target = toKebabCase(body);
   if (target.length === 0) return null;
   return { kind: "page", target };
 }

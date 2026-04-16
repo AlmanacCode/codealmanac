@@ -289,6 +289,155 @@ body
     });
   });
 
+  it("--mentions does not treat stored `[id]` as a GLOB character class", async () => {
+    // The Next.js dynamic-route regression: a page that references
+    // `src/[id]/page.tsx` must NOT match when the user queries for
+    // `src/a/page.tsx` (which would happen if we concatenated the
+    // stored path into a GLOB RHS — `[id]` is a character class over
+    // `i` and `d`).
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "route-a",
+        `---
+topics: [routes]
+files:
+  - src/[id]/page.tsx
+---
+
+body
+`,
+      );
+      await writePage(
+        repo,
+        "route-b",
+        `---
+topics: [routes]
+files:
+  - src/abc/page.tsx
+---
+
+body
+`,
+      );
+
+      // Query for a concrete route: should match route-b only.
+      const r = await runSearch({
+        cwd: repo,
+        topics: [],
+        mentions: "src/abc/page.tsx",
+      });
+      expect(r.stdout.trim().split("\n")).toEqual(["route-b"]);
+    });
+  });
+
+  it("--mentions on a file still matches folder refs (upward match)", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "checkout",
+        `---
+topics: [x]
+files:
+  - src/checkout/
+---
+
+body
+`,
+      );
+      // Folder ref should match a query for any file under it.
+      const r = await runSearch({
+        cwd: repo,
+        topics: [],
+        mentions: "src/checkout/handler.ts",
+      });
+      expect(r.stdout.trim().split("\n")).toEqual(["checkout"]);
+    });
+  });
+
+  it("--mentions on a folder with GLOB metachars in the query string is treated literally", async () => {
+    // User types `--mentions src/[id]/` — the `[id]` should match the
+    // literal folder `src/[id]/`, NOT be interpreted as a character
+    // class over `i` and `d`.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "literal",
+        `---
+topics: [x]
+files:
+  - src/[id]/page.tsx
+---
+
+body
+`,
+      );
+      await writePage(
+        repo,
+        "spurious",
+        `---
+topics: [x]
+files:
+  - src/i/page.tsx
+---
+
+body
+`,
+      );
+
+      const r = await runSearch({
+        cwd: repo,
+        topics: [],
+        mentions: "src/[id]/",
+      });
+      expect(r.stdout.trim().split("\n")).toEqual(["literal"]);
+    });
+  });
+
+  it("quoted query triggers an FTS phrase match, not prefix-AND", async () => {
+    // Phrase: "synchronous stripe" must be adjacent, in that order.
+    // Without phrase handling, `synchronous*` AND `stripe*` matches
+    // any doc containing both words anywhere.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "phrase-hit",
+        "---\ntopics: [x]\n---\n\nWe call the synchronous stripe client.\n",
+      );
+      await writePage(
+        repo,
+        "phrase-miss",
+        "---\ntopics: [x]\n---\n\nWe synchronous-ly tested stripe stuff.\n",
+      );
+
+      // Unquoted: both match (both contain `synchronous*` and `stripe*`).
+      const both = await runSearch({
+        cwd: repo,
+        query: "synchronous stripe",
+        topics: [],
+      });
+      expect(both.stdout.trim().split("\n").sort()).toEqual(
+        ["phrase-hit", "phrase-miss"].sort(),
+      );
+
+      // Quoted: only the one with the adjacent phrase matches.
+      const only = await runSearch({
+        cwd: repo,
+        query: '"synchronous stripe"',
+        topics: [],
+      });
+      expect(only.stdout.trim().split("\n")).toEqual(["phrase-hit"]);
+    });
+  });
+
   it("--limit caps output", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");

@@ -9,6 +9,28 @@ import {
 import { openIndex } from "../src/indexer/schema.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
+/**
+ * Swap `process.stderr.write` for a capturing shim for the duration of
+ * `fn`, returning whatever was written. Used by the several warn-path
+ * tests in this file; keeps them from each rolling their own shim.
+ */
+async function captureStderr<T>(
+  fn: () => Promise<T>,
+): Promise<{ result: T; stderr: string }> {
+  const orig = process.stderr.write.bind(process.stderr);
+  const chunks: string[] = [];
+  process.stderr.write = ((c: string | Uint8Array): boolean => {
+    chunks.push(typeof c === "string" ? c : Buffer.from(c).toString("utf8"));
+    return true;
+  }) as typeof process.stderr.write;
+  try {
+    const result = await fn();
+    return { result, stderr: chunks.join("") };
+  } finally {
+    process.stderr.write = orig;
+  }
+}
+
 describe("indexer", () => {
   it("indexes pages on first run", async () => {
     await withTempHome(async (home) => {
@@ -284,6 +306,133 @@ superseded_by: stripe-async
           .prepare("SELECT slug FROM pages")
           .get() as { slug: string } | undefined;
         expect(row?.slug).toBe("checkout-flow");
+      } finally {
+        db.close();
+      }
+    });
+  });
+
+  it("skips the second of two files whose slugs collide", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      // Two filenames that kebab-case to the same slug: `checkout-flow`.
+      // We want `Checkout_Flow.md` indexed (alphabetical winner on the
+      // fast-glob output) and `checkout flow.md` skipped with a warning.
+      await writeFile(
+        join(repo, ".almanac", "pages", "Checkout_Flow.md"),
+        "---\ntopics: [x]\n---\n\nbody A\n",
+        "utf8",
+      );
+      await writeFile(
+        join(repo, ".almanac", "pages", "checkout flow.md"),
+        "---\ntopics: [y]\n---\n\nbody B\n",
+        "utf8",
+      );
+
+      const { result, stderr } = await captureStderr(() =>
+        runIndexer({ repoRoot: repo }),
+      );
+      expect(stderr).toMatch(/collides with an earlier file/);
+      expect(result.pagesIndexed).toBe(1);
+      expect(result.filesSeen).toBe(2);
+      expect(result.filesSkipped).toBe(1);
+
+      const db = openIndex(join(repo, ".almanac", "index.db"));
+      try {
+        const rows = db
+          .prepare("SELECT slug FROM pages ORDER BY slug")
+          .all();
+        expect(rows).toEqual([{ slug: "checkout-flow" }]);
+      } finally {
+        db.close();
+      }
+    });
+  });
+
+  it("handles an empty pages directory without error", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      // No pages written at all.
+      const result = await runIndexer({ repoRoot: repo });
+      expect(result.changed).toBe(0);
+      expect(result.removed).toBe(0);
+      expect(result.pagesIndexed).toBe(0);
+      expect(result.filesSeen).toBe(0);
+      expect(result.filesSkipped).toBe(0);
+
+      const db = openIndex(join(repo, ".almanac", "index.db"));
+      try {
+        const rows = db.prepare("SELECT COUNT(*) AS n FROM pages").get() as {
+          n: number;
+        };
+        expect(rows.n).toBe(0);
+      } finally {
+        db.close();
+      }
+    });
+  });
+
+  it("skips a broken symlink (ENOENT) without tanking the whole reindex", async () => {
+    // The spec bug: a file vanishes between `fast-glob` listing and
+    // `statSync`/`readFile` (rename-swap editors do this). We can't
+    // interleave an atomic "glob then delete" cleanly, so the closest
+    // realistic reproduction is a dangling symlink that fast-glob
+    // returns (followSymbolicLinks defaults to `true`, but the target is
+    // gone). Per the fix: stderr warns, filesSkipped increments, the
+    // other file still lands in the index.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(repo, "good", "---\ntopics: [x]\n---\n\nbody\n");
+
+      const { symlink } = await import("node:fs/promises");
+      const pagesDir = join(repo, ".almanac", "pages");
+      await symlink(
+        join(pagesDir, "nonexistent.md"),
+        join(pagesDir, "broken.md"),
+      );
+
+      const { result, stderr } = await captureStderr(() =>
+        runIndexer({ repoRoot: repo }),
+      );
+      // Either the symlink gets skipped at stat time (ENOENT surfaced
+      // from the stat/read) or fast-glob filters it before we see it.
+      // Both behaviors are correct; we just assert the indexer doesn't
+      // throw and the good page still indexes.
+      expect(result.pagesIndexed).toBe(1);
+      if (result.filesSkipped > 0) {
+        expect(stderr).toMatch(/ENOENT|skipping/);
+      }
+
+      const db = openIndex(join(repo, ".almanac", "index.db"));
+      try {
+        const rows = db
+          .prepare("SELECT slug FROM pages ORDER BY slug")
+          .all() as { slug: string }[];
+        expect(rows.map((r) => r.slug)).toContain("good");
+      } finally {
+        db.close();
+      }
+    });
+  });
+
+  it("indexes an empty-body page so it's still searchable by title", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      // Title-only, no body.
+      await writePage(repo, "title-only", "---\ntitle: Title Only\n---\n");
+
+      await runIndexer({ repoRoot: repo });
+
+      const db = openIndex(join(repo, ".almanac", "index.db"));
+      try {
+        const fts = db
+          .prepare("SELECT slug FROM fts_pages WHERE fts_pages MATCH ?")
+          .all("title*") as { slug: string }[];
+        expect(fts.map((r) => r.slug)).toContain("title-only");
       } finally {
         db.close();
       }

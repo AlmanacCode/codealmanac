@@ -29,6 +29,13 @@ export async function runReindex(
     wiki: options.wiki,
   });
   const result = await runIndexer({ repoRoot });
-  const stdout = `reindexed: ${result.total} page${result.total === 1 ? "" : "s"} (${result.changed} updated, ${result.removed} removed)\n`;
+  // Summary wording: "reindexed: N pages (K updated, R removed)". When
+  // some files were on disk but never made it into the index
+  // (slug collisions, ENOENT races, un-sluggable filenames), tack on a
+  // `; S skipped` suffix so the user notices. The per-file reason was
+  // already written to stderr at indexing time.
+  const skipSuffix =
+    result.filesSkipped > 0 ? `; ${result.filesSkipped} skipped` : "";
+  const stdout = `reindexed: ${result.pagesIndexed} page${result.pagesIndexed === 1 ? "" : "s"} (${result.changed} updated, ${result.removed} removed${skipSuffix})\n`;
   return { result, stdout, exitCode: 0 };
 }

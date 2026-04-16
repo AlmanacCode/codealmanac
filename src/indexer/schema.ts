@@ -67,6 +67,9 @@ CREATE TABLE IF NOT EXISTS cross_wiki_links (
   PRIMARY KEY (source_slug, target_wiki, target_slug)
 );
 
+-- NOTE: virtual FTS5 table — ON DELETE CASCADE from pages does NOT apply.
+-- The indexer must explicitly DELETE FROM fts_pages whenever it removes
+-- or replaces a page row, or we leak orphaned FTS rows.
 CREATE VIRTUAL TABLE IF NOT EXISTS fts_pages USING fts5(slug, title, content);
 `;
 
@@ -82,7 +85,14 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_pages USING fts5(slug, title, content);
  */
 export function openIndex(dbPath: string): Database.Database {
   const db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
+  // WAL journal mode is persistent — once set, it's recorded in the DB
+  // header and survives close/open cycles. Check first and only switch if
+  // we're not already there; this avoids a redundant pragma write on every
+  // query command.
+  const mode = db.pragma("journal_mode", { simple: true });
+  if (typeof mode !== "string" || mode.toLowerCase() !== "wal") {
+    db.pragma("journal_mode = WAL");
+  }
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA_DDL);
   return db;

@@ -73,7 +73,7 @@ describe("almanac show", () => {
     });
   });
 
-  it("reads slugs from stdin and emits both pages", async () => {
+  it("reads slugs from stdin and emits one JSON object per line", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");
       await seed(repo);
@@ -83,11 +83,14 @@ describe("almanac show", () => {
         stdinInput: "checkout-flow\nstripe-async\n",
       });
       expect(r.exitCode).toBe(0);
-      // We can't split the output on `\n---\n` because that sequence also
-      // delimits each file's frontmatter. Instead assert both page bodies
-      // are present.
-      expect(r.stdout).toMatch(/# Checkout Flow/);
-      expect(r.stdout).toMatch(/# Stripe Async/);
+      // JSON Lines: one {slug, content} per line, trailing newline.
+      const lines = r.stdout.trimEnd().split("\n");
+      expect(lines).toHaveLength(2);
+      const parsed = lines.map((l) => JSON.parse(l));
+      expect(parsed[0].slug).toBe("checkout-flow");
+      expect(parsed[0].content).toMatch(/# Checkout Flow/);
+      expect(parsed[1].slug).toBe("stripe-async");
+      expect(parsed[1].content).toMatch(/# Stripe Async/);
     });
   });
 });
@@ -218,6 +221,44 @@ describe("almanac info", () => {
       const r = await runInfo({ cwd: repo, slug: "ghost" });
       expect(r.exitCode).toBe(1);
       expect(r.stderr).toMatch(/no such page/);
+    });
+  });
+
+  it("positional JSON output is always an object (even when missing)", async () => {
+    // Shape contract: `info <slug> --json` never emits an array. A found
+    // page is an object; a missing page is `null`. This makes
+    // downstream consumers safe to dot-access.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await seed(repo);
+
+      const found = JSON.parse(
+        (await runInfo({ cwd: repo, slug: "checkout-flow", json: true }))
+          .stdout,
+      );
+      expect(Array.isArray(found)).toBe(false);
+      expect(found.slug).toBe("checkout-flow");
+
+      const missing = JSON.parse(
+        (await runInfo({ cwd: repo, slug: "ghost", json: true })).stdout,
+      );
+      expect(missing).toBeNull();
+    });
+  });
+
+  it("--stdin JSON output is always an array (even for a single slug)", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await seed(repo);
+      const r = await runInfo({
+        cwd: repo,
+        stdin: true,
+        stdinInput: "checkout-flow\n",
+      });
+      const parsed = JSON.parse(r.stdout);
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0].slug).toBe("checkout-flow");
     });
   });
 });

@@ -94,9 +94,13 @@ export function parseFrontmatter(raw: string): Frontmatter {
 /**
  * H1 fallback for title when frontmatter has none.
  *
- * Scans only up to the first 40 lines so a 2MB file doesn't stall the
- * indexer on a pathological input; any real wiki page has its H1 near the
- * top.
+ * Only considers the first 40 lines of the body — any real wiki page has
+ * its H1 near the top. NOTE: `String.prototype.split(sep, limit)` still
+ * splits the whole string internally and then truncates; it's not an
+ * early-bail iteration. For the multi-megabyte files we might see in
+ * practice this is still cheap (one regex pass, no allocation per-line
+ * beyond the 40 we keep), so we favor the clearer code over hand-rolled
+ * line iteration.
  */
 export function firstH1(body: string): string | undefined {
   const lines = body.split(/\r?\n/, 40);
