@@ -143,8 +143,9 @@ export async function writeTopicsFile(
   const doc = {
     topics: sorted.map((t) => {
       // Emit all four keys in a stable order: slug, title, description,
-      // parents. description is emitted as null (becomes `~` in YAML)
-      // when unset so the schema stays consistent across entries.
+      // parents. description is emitted as `null` in YAML when unset so
+      // the schema stays consistent across entries (js-yaml renders the
+      // literal word `null`, not the `~` shorthand).
       return {
         slug: t.slug,
         title: t.title,
@@ -154,7 +155,13 @@ export async function writeTopicsFile(
     }),
   };
 
-  const header = `# .almanac/topics.yaml — source of truth for topic metadata.\n# Managed by \`almanac topics\` commands. Edit by hand if you must.\n`;
+  const header =
+    `# .almanac/topics.yaml — source of truth for topic metadata.\n` +
+    `# Managed by \`almanac topics\` commands. User-added comments\n` +
+    `# between entries will be stripped on the next write (js-yaml\n` +
+    `# doesn't round-trip comments). Edit at your own risk — or use the\n` +
+    `# CLI (\`almanac topics create|link|describe|rename|delete\`)\n` +
+    `# which preserves the structure correctly.\n`;
   const body = yaml.dump(doc, {
     lineWidth: 100,
     noRefs: true,

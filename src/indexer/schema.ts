@@ -15,6 +15,18 @@ import Database from "better-sqlite3";
  *   - `wikilinks.target_slug` / `cross_wiki_links.target_slug` also have
  *     no FK — these can be intentionally broken (unwritten target page),
  *     and `almanac health` will surface them in slice 3.
+ *
+ * `file_refs` carries TWO forms of each path:
+ *   - `path`          — normalized + lowercased, used for GLOB/equality
+ *                       queries (`--mentions`). Stable across casing
+ *                       choices on macOS/Windows.
+ *   - `original_path` — as-written (normalized slashes, no `./`, trailing
+ *                       `/` for dirs), preserving the author's casing.
+ *                       Used for filesystem stats (dead-refs on
+ *                       case-sensitive filesystems like Linux) and for
+ *                       user-facing display (`almanac info`).
+ *
+ * See also: `SCHEMA_VERSION` below and the migration logic in `openIndex`.
  */
 const SCHEMA_DDL = `
 CREATE TABLE IF NOT EXISTS pages (
@@ -47,9 +59,10 @@ CREATE TABLE IF NOT EXISTS topic_parents (
 );
 
 CREATE TABLE IF NOT EXISTS file_refs (
-  page_slug TEXT NOT NULL REFERENCES pages(slug) ON DELETE CASCADE,
-  path      TEXT NOT NULL,
-  is_dir    INTEGER NOT NULL,
+  page_slug     TEXT NOT NULL REFERENCES pages(slug) ON DELETE CASCADE,
+  path          TEXT NOT NULL,
+  original_path TEXT NOT NULL,
+  is_dir        INTEGER NOT NULL,
   PRIMARY KEY (page_slug, path)
 );
 CREATE INDEX IF NOT EXISTS idx_file_refs_path ON file_refs(path);
@@ -74,6 +87,19 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_pages USING fts5(slug, title, content);
 `;
 
 /**
+ * Bump this whenever the schema changes in a backwards-incompatible way.
+ * On open we compare the stored `user_version` against this constant; if
+ * it's lower, we drop the affected tables so the next `runIndexer` can
+ * rebuild them. Full reindex is cheap (everything lives on disk as
+ * markdown), so "drop + recreate" is simpler than ALTER TABLE migrations.
+ *
+ * Version history:
+ *   1 — initial slice-2 schema
+ *   2 — slice-3-review: added `file_refs.original_path`
+ */
+const SCHEMA_VERSION = 2;
+
+/**
  * Open `index.db` and apply the schema. Foreign keys are off by default in
  * SQLite; we turn them on per-connection so the ON DELETE CASCADE on
  * `pages` actually fires when we delete stale rows during incremental
@@ -82,6 +108,11 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_pages USING fts5(slug, title, content);
  * We don't wrap this open in a transaction — `CREATE ... IF NOT EXISTS` is
  * safe to run repeatedly and the FTS5 virtual-table creation is already
  * atomic.
+ *
+ * Migration: if the DB was created by an older schema (`user_version` <
+ * `SCHEMA_VERSION`), we drop the tables whose shape changed and let the
+ * CREATE IF NOT EXISTS below rebuild them. The next `runIndexer` repopulates
+ * from the filesystem — cheap and avoids the ALTER TABLE dance.
  */
 export function openIndex(dbPath: string): Database.Database {
   const db = new Database(dbPath);
@@ -94,6 +125,29 @@ export function openIndex(dbPath: string): Database.Database {
     db.pragma("journal_mode = WAL");
   }
   db.pragma("foreign_keys = ON");
+
+  const rawVersion = db.pragma("user_version", { simple: true });
+  const currentVersion = typeof rawVersion === "number" ? rawVersion : 0;
+  if (currentVersion < SCHEMA_VERSION) {
+    // Drop tables whose shape changed. `file_refs` got `original_path`
+    // as of v2; easiest to drop it entirely so CREATE IF NOT EXISTS
+    // runs with the new definition. Pages/topics/links are untouched.
+    db.exec("DROP TABLE IF EXISTS file_refs");
+    // The indexer's fast-path skips pages whose content_hash matches,
+    // which means a migration-dropped `file_refs` wouldn't get
+    // repopulated until a page changed. Clear the hash column so the
+    // next reindex treats every page as changed and rebuilds its
+    // file_refs/wikilinks/cross-wiki rows. Table may not exist yet on
+    // a brand-new DB, so swallow errors.
+    try {
+      db.exec("UPDATE pages SET content_hash = ''");
+    } catch {
+      // pages table didn't exist yet; the upcoming CREATE IF NOT EXISTS
+      // takes care of a fresh install.
+    }
+    db.pragma(`user_version = ${SCHEMA_VERSION}`);
+  }
+
   db.exec(SCHEMA_DDL);
   return db;
 }

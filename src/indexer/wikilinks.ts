@@ -1,5 +1,9 @@
 import { toKebabCase } from "../slug.js";
-import { looksLikeDir, normalizePath } from "./paths.js";
+import {
+  looksLikeDir,
+  normalizePath,
+  normalizePathPreservingCase,
+} from "./paths.js";
 
 /**
  * One parsed `[[...]]` reference from a page body. Classification is
@@ -10,11 +14,16 @@ import { looksLikeDir, normalizePath } from "./paths.js";
  *   - `file`    → row in `file_refs` with `is_dir = 0`
  *   - `folder`  → row in `file_refs` with `is_dir = 1`
  *   - `xwiki`   → row in `cross_wiki_links`
+ *
+ * File/folder refs carry TWO forms of the path:
+ *   - `path`         — lowercased (for `--mentions` lookups)
+ *   - `originalPath` — as-written (for filesystem stats on case-sensitive
+ *                      systems and for user-facing display)
  */
 export type WikilinkRef =
   | { kind: "page"; target: string }
-  | { kind: "file"; path: string }
-  | { kind: "folder"; path: string }
+  | { kind: "file"; path: string; originalPath: string }
+  | { kind: "folder"; path: string; originalPath: string }
   | { kind: "xwiki"; wiki: string; target: string };
 
 /**
@@ -61,8 +70,11 @@ export function classifyWikilink(raw: string): WikilinkRef | null {
   if (firstSlash !== -1) {
     const isDir = looksLikeDir(body);
     const path = normalizePath(body, isDir);
+    const originalPath = normalizePathPreservingCase(body, isDir);
     if (path.length === 0) return null;
-    return isDir ? { kind: "folder", path } : { kind: "file", path };
+    return isDir
+      ? { kind: "folder", path, originalPath }
+      : { kind: "file", path, originalPath };
   }
 
   // Rule 3: page slug wikilink. Authors might write `Checkout Flow` or

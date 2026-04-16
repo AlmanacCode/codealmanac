@@ -9,7 +9,11 @@ import type Database from "better-sqlite3";
 import { toKebabCase } from "../slug.js";
 import { loadTopicsFile, titleCase } from "../topics/yaml.js";
 import { firstH1, parseFrontmatter } from "./frontmatter.js";
-import { normalizePath, looksLikeDir } from "./paths.js";
+import {
+  normalizePath,
+  normalizePathPreservingCase,
+  looksLikeDir,
+} from "./paths.js";
 import { openIndex } from "./schema.js";
 import { extractWikilinks } from "./wikilinks.js";
 
@@ -332,8 +336,8 @@ async function indexPagesInto(
   const deleteFileRefs = db.prepare<[string]>(
     "DELETE FROM file_refs WHERE page_slug = ?",
   );
-  const insertFileRef = db.prepare<[string, string, number]>(
-    "INSERT OR IGNORE INTO file_refs (page_slug, path, is_dir) VALUES (?, ?, ?)",
+  const insertFileRef = db.prepare<[string, string, string, number]>(
+    "INSERT OR IGNORE INTO file_refs (page_slug, path, original_path, is_dir) VALUES (?, ?, ?, ?)",
   );
 
   const deleteWikilinks = db.prepare<[string]>(
@@ -400,12 +404,15 @@ async function indexPagesInto(
       // Frontmatter `files:` — normalize each entry, inferring directness
       // from its trailing slash. Authors who write `src/payments` (no
       // trailing slash) are asserting a file; this matches how `[[...]]`
-      // classifies the same string.
+      // classifies the same string. We store both the lowercased form
+      // (for `--mentions` GLOB queries) and the casing-preserving form
+      // (for dead-ref `existsSync` on case-sensitive filesystems).
       for (const raw of p.frontmatterFiles) {
         const isDir = looksLikeDir(raw);
         const path = normalizePath(raw, isDir);
+        const originalPath = normalizePathPreservingCase(raw, isDir);
         if (path.length === 0) continue;
-        insertFileRef.run(p.slug, path, isDir ? 1 : 0);
+        insertFileRef.run(p.slug, path, originalPath, isDir ? 1 : 0);
       }
 
       // Inline `[[...]]` extracted from body.
@@ -415,10 +422,10 @@ async function indexPagesInto(
             insertWikilink.run(p.slug, ref.target);
             break;
           case "file":
-            insertFileRef.run(p.slug, ref.path, 0);
+            insertFileRef.run(p.slug, ref.path, ref.originalPath, 0);
             break;
           case "folder":
-            insertFileRef.run(p.slug, ref.path, 1);
+            insertFileRef.run(p.slug, ref.path, ref.originalPath, 1);
             break;
           case "xwiki":
             insertXwiki.run(p.slug, ref.wiki, ref.target);

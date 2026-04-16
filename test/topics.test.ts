@@ -281,6 +281,124 @@ describe("almanac topics", () => {
     });
   });
 
+  it("list page_count excludes archived pages (consistency with show)", async () => {
+    // Regression: `topics list` used COUNT(*) across `page_topics`
+    // without filtering archived sources, while `topics show` did —
+    // producing inconsistent numbers. Now both exclude archived.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(repo, "active", "---\ntopics: [shared]\n---\n\nbody.\n");
+      await writePage(
+        repo,
+        "retired",
+        "---\ntopics: [shared]\narchived_at: 2025-01-01\n---\n\nbody.\n",
+      );
+      await runIndexer({ repoRoot: repo });
+
+      const result = await runTopicsList({ cwd: repo, json: true });
+      const rows = JSON.parse(result.stdout);
+      const shared = rows.find((r: { slug: string }) => r.slug === "shared");
+      expect(shared?.page_count).toBe(1);
+    });
+  });
+
+  it("create --parent works immediately after writing a page with a new topic", async () => {
+    // Regression: `runTopicsCreate` skipped `ensureFreshIndex` so an
+    // ad-hoc topic declared in a freshly-written page frontmatter
+    // wasn't visible to the parent check yet. Now it runs
+    // ensureFreshIndex at entry like every other topics command.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      // Write a page that mentions a new topic; do NOT call runIndexer
+      // ourselves. `runTopicsCreate` must trigger the reindex.
+      await writePage(
+        repo,
+        "notes",
+        "---\ntopics: [fresh-parent]\n---\n\nbody.\n",
+      );
+      const result = await runTopicsCreate({
+        cwd: repo,
+        name: "Child",
+        parents: ["fresh-parent"],
+      });
+      expect(result.exitCode).toBe(0);
+    });
+  });
+
+  it("detects a two-hop cycle when linking through an ad-hoc-promoted topic", async () => {
+    // Exercises the "promote ad-hoc slug into topics.yaml then run the
+    // cycle check" path inside `runTopicsLink`. `ancestorsInFile` runs
+    // on the in-memory file post-promotion.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      // `ad-hoc` is only in page frontmatter; `concrete` is a real
+      // topic with `ad-hoc` as parent. Trying to link `ad-hoc → concrete`
+      // would close the loop.
+      await writePage(
+        repo,
+        "page",
+        "---\ntopics: [ad-hoc]\n---\n\nbody.\n",
+      );
+      await runIndexer({ repoRoot: repo });
+      await runTopicsCreate({
+        cwd: repo,
+        name: "Concrete",
+        parents: ["ad-hoc"],
+      });
+
+      const result = await runTopicsLink({
+        cwd: repo,
+        child: "ad-hoc",
+        parent: "concrete",
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/cycle/);
+    });
+  });
+
+  it("list --json emits a stable row shape", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await runTopicsCreate({ cwd: repo, name: "A" });
+      const result = await runTopicsList({ cwd: repo, json: true });
+      const rows = JSON.parse(result.stdout);
+      expect(Array.isArray(rows)).toBe(true);
+      expect(rows[0]).toMatchObject({
+        slug: expect.any(String),
+        title: expect.any(String),
+        page_count: expect.any(Number),
+      });
+      // `description` may be null; assert the key is present either
+      // way so scripts can dot-access it.
+      expect("description" in rows[0]).toBe(true);
+    });
+  });
+
+  it("show --json emits the full record shape", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await runTopicsCreate({ cwd: repo, name: "A" });
+      const result = await runTopicsShow({
+        cwd: repo,
+        slug: "a",
+        json: true,
+      });
+      const record = JSON.parse(result.stdout);
+      expect(record).toMatchObject({
+        slug: "a",
+        title: expect.any(String),
+        parents: expect.any(Array),
+        children: expect.any(Array),
+        pages: expect.any(Array),
+      });
+    });
+  });
+
   it("delete removes the topic and untags all pages", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");

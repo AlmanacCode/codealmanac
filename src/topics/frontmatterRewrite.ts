@@ -94,7 +94,10 @@ export function applyTopicsTransform(
     // No frontmatter at all. Tagging a topic on such a page means
     // creating a frontmatter block. We keep the body untouched and
     // prepend `---\ntopics: [...]\n---\n\n`. If the transform yields
-    // an empty list, this is a no-op.
+    // an empty list, this is a no-op. Line endings: default to LF for a
+    // brand-new frontmatter — we can't infer intent from a file that
+    // doesn't have frontmatter yet, and LF is the committed default in
+    // most modern repos.
     const next = dedupeSlugs(transform([]));
     if (next.length === 0) {
       return { before: [], after: [], output: raw, changed: false };
@@ -108,7 +111,7 @@ export function applyTopicsTransform(
     };
   }
 
-  const { opener, fmLines, closer, body } = parsed;
+  const { opener, fmLines, closer, body, eol } = parsed;
   const { before, existingRange } = readTopicsFromLines(fmLines);
   const beforeDeduped = dedupeSlugs(before);
   const after = dedupeSlugs(transform(beforeDeduped));
@@ -127,15 +130,29 @@ export function applyTopicsTransform(
   } else {
     const replacement =
       after.length === 0 ? null : `topics: ${flowList(after)}`;
+    // Interleaved comments/blank lines from a block-style list are
+    // re-emitted BELOW the new flow-style `topics:` line so the
+    // author's commentary sticks around. Flow/scalar inputs produce an
+    // empty `preserved` array, so this collapses to the old behavior
+    // for the common case. When we fully delete the key (empty after)
+    // the preserved lines go too — without a `topics:` key to anchor
+    // them to, trailing "# below the topics list" comments become
+    // orphans that no longer mean what they said.
+    const preservedTail =
+      replacement === null ? [] : existingRange.preserved;
     nextFmLines = [
       ...fmLines.slice(0, existingRange.start),
       ...(replacement === null ? [] : [replacement]),
+      ...preservedTail,
       ...fmLines.slice(existingRange.end),
     ];
   }
 
+  // Rejoin with the same line ending the input frontmatter used so a
+  // CRLF-authored file comes out CRLF end-to-end. `splitFrontmatter`
+  // sniffed the dominant separator for us.
   const fmBlock =
-    nextFmLines.length === 0 ? "" : `${nextFmLines.join("\n")}\n`;
+    nextFmLines.length === 0 ? "" : `${nextFmLines.join(eol)}${eol}`;
   const output = `${opener}${fmBlock}${closer}${body}`;
   return {
     before: beforeDeduped,
@@ -154,6 +171,12 @@ interface SplitFrontmatter {
   closer: string;
   /** Everything after the closing fence, byte-for-byte. */
   body: string;
+  /**
+   * Dominant line ending inside the frontmatter block. CRLF-authored
+   * files stay CRLF on write; LF stays LF. We sniff once at split time
+   * so rewriting doesn't have to re-inspect every line.
+   */
+  eol: "\n" | "\r\n";
 }
 
 /**
@@ -201,7 +224,14 @@ function splitFrontmatter(raw: string): SplitFrontmatter | null {
   const body = afterDashes.slice(closerTail.length);
   const fmLines =
     fmBlock.length === 0 ? [] : fmBlock.replace(/\r?\n$/, "").split(/\r?\n/);
-  return { opener, fmLines, closer, body };
+  // Sniff the frontmatter's dominant line ending. We look at the
+  // opener first (most reliable signal — it's always present and
+  // always has an ending). Fall back to checking the fmBlock for any
+  // `\r\n` runs so a frontmatter with a single-line opener and
+  // multi-line body still gets classified right.
+  const eol: "\n" | "\r\n" =
+    opener.endsWith("\r\n") || /\r\n/.test(fmBlock) ? "\r\n" : "\n";
+  return { opener, fmLines, closer, body, eol };
 }
 
 interface ExistingRange {
@@ -209,6 +239,14 @@ interface ExistingRange {
   start: number;
   /** Index in `fmLines` one past the last line belonging to this key. */
   end: number;
+  /**
+   * Lines inside `[start+1, end)` that aren't `- entry` lines — i.e.
+   * interleaved comments and blank lines a user wrote between entries.
+   * We preserve these verbatim when rewriting block-style lists to
+   * flow; otherwise a `tag` on a commented list would silently drop
+   * the commentary. Empty for flow/scalar shapes.
+   */
+  preserved: string[];
 }
 
 /**
@@ -244,21 +282,60 @@ function readTopicsFromLines(fmLines: string[]): {
   const afterNoComment = stripTrailingComment(after);
 
   if (afterNoComment.length === 0) {
-    // Block sequence style: collect subsequent `- item` lines.
+    // Block sequence style: collect subsequent `- item` lines. Between
+    // entries a user may have written:
+    //   - interleaved `# comment` lines
+    //   - blank lines
+    // We must NOT break the scan on those — doing so would drop every
+    // entry after the first comment/blank when we rewrite (silent data
+    // loss: the original bug that triggered this fix). We skip them in
+    // the scan and stash them in `preserved` so the replacement step
+    // can re-emit them verbatim BETWEEN the new flow-style line and
+    // the rest of the frontmatter.
+    //
+    // Edge: comments/blanks that appear BEFORE the first `- entry` or
+    // AFTER the last `- entry` count as part of the block too — pulling
+    // them out keeps the author's commentary near the list it belongs
+    // to. We cap the scan when we hit a real non-entry line (e.g. the
+    // next top-level key), leaving everything from that line onward
+    // outside the range.
     const values: string[] = [];
+    const preserved: string[] = [];
+    // Provisional scan cursor. `endIdx` only advances when we've seen
+    // something we're sure belongs to this block (an entry line), so
+    // trailing whitespace/comments that don't precede another entry
+    // stay OUTSIDE the range and aren't shuffled on rewrite.
     let i = keyLineIdx + 1;
+    let endIdx = i;
+    // `pendingNonEntries` holds comments/blanks we've seen since the
+    // last confirmed entry. They're committed to `preserved` only
+    // when a subsequent `- entry` proves they live mid-list.
+    let pendingNonEntries: string[] = [];
     while (i < fmLines.length) {
       const line = fmLines[i] ?? "";
+      const trimmed = line.trim();
+      if (trimmed.length === 0 || trimmed.startsWith("#")) {
+        pendingNonEntries.push(line);
+        i += 1;
+        continue;
+      }
       const m = line.match(/^\s*-\s+(.*)$/);
       if (m === null) break;
+      // Promote any pending comments/blanks — they're between entries
+      // (or before the first entry within the block).
+      if (pendingNonEntries.length > 0) {
+        preserved.push(...pendingNonEntries);
+        pendingNonEntries = [];
+      }
       const raw = stripTrailingComment((m[1] ?? "").trim());
       const parsed = parseScalar(raw);
       if (parsed.length > 0) values.push(parsed);
       i += 1;
+      endIdx = i;
     }
     return {
       before: values,
-      existingRange: { start: keyLineIdx, end: i },
+      existingRange: { start: keyLineIdx, end: endIdx, preserved },
     };
   }
 
@@ -282,7 +359,7 @@ function readTopicsFromLines(fmLines: string[]): {
   }
   return {
     before: values,
-    existingRange: { start: keyLineIdx, end: keyLineIdx + 1 },
+    existingRange: { start: keyLineIdx, end: keyLineIdx + 1, preserved: [] },
   };
 }
 

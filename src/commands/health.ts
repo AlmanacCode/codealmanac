@@ -226,6 +226,13 @@ function findStale(
  * Only checks active pages — archived pages are allowed to reference
  * files that have since been deleted (that's often why they were
  * archived in the first place).
+ *
+ * We stat the `original_path` (author's casing) rather than the
+ * lowercased `path` — on case-sensitive filesystems like Linux, stat
+ * of a lowercased alias of `src/Dockerfile` returns ENOENT even
+ * though the file exists. macOS and Windows are case-insensitive so
+ * either form resolves there; using the original consistently means
+ * the code behaves identically on every host.
  */
 async function findDeadRefs(
   db: Database.Database,
@@ -233,8 +240,11 @@ async function findDeadRefs(
   repoRoot: string,
 ): Promise<{ slug: string; path: string }[]> {
   const rows = db
-    .prepare<[], { slug: string; path: string; is_dir: number }>(
-      `SELECT p.slug, r.path, r.is_dir
+    .prepare<
+      [],
+      { slug: string; path: string; original_path: string; is_dir: number }
+    >(
+      `SELECT p.slug, r.path, r.original_path, r.is_dir
        FROM file_refs r
        JOIN pages p ON p.slug = r.page_slug
        WHERE p.archived_at IS NULL
@@ -244,19 +254,23 @@ async function findDeadRefs(
   const out: { slug: string; path: string }[] = [];
   for (const r of rows) {
     if (!inPageScope(scope, r.slug)) continue;
-    // `r.path` is stored normalized & lowercased. On case-preserving
-    // filesystems (macOS default) this still stats correctly because
-    // HFS+/APFS are case-insensitive. On Linux the repo author is
-    // expected to already be writing canonical casing.
-    const abs = join(repoRoot, r.path);
+    const abs = join(repoRoot, r.original_path);
     if (!existsSync(abs)) {
-      out.push({ slug: r.slug, path: r.path });
+      // Surface the author's casing in the report — matches what's in
+      // the user's frontmatter/wikilink, which is what they'll search
+      // for when fixing the miss.
+      out.push({ slug: r.slug, path: r.original_path });
     }
   }
   return out;
 }
 
-/** Wikilinks whose target slug has no row in `pages`. */
+/**
+ * Wikilinks whose target slug has no row in `pages`. Every other
+ * page-scoped check filters archived source pages out; this one and
+ * `findBrokenXwiki` follow the same rule so the report doesn't flag
+ * broken links from pages that have been retired.
+ */
 function findBrokenLinks(
   db: Database.Database,
   scope: HealthScope,
@@ -265,8 +279,9 @@ function findBrokenLinks(
     .prepare<[], { source_slug: string; target_slug: string }>(
       `SELECT w.source_slug, w.target_slug
        FROM wikilinks w
-       LEFT JOIN pages p ON p.slug = w.target_slug
-       WHERE p.slug IS NULL
+       JOIN pages src ON src.slug = w.source_slug
+       LEFT JOIN pages tgt ON tgt.slug = w.target_slug
+       WHERE tgt.slug IS NULL AND src.archived_at IS NULL
        ORDER BY w.source_slug, w.target_slug`,
     )
     .all();
@@ -289,9 +304,14 @@ async function findBrokenXwiki(
       [],
       { source_slug: string; target_wiki: string; target_slug: string }
     >(
-      `SELECT source_slug, target_wiki, target_slug
-       FROM cross_wiki_links
-       ORDER BY source_slug, target_wiki, target_slug`,
+      // Same archived-source filter as `findBrokenLinks`. Retired pages
+      // shouldn't spam the report with links to wikis that may have
+      // been intentionally retired too.
+      `SELECT x.source_slug, x.target_wiki, x.target_slug
+       FROM cross_wiki_links x
+       JOIN pages src ON src.slug = x.source_slug
+       WHERE src.archived_at IS NULL
+       ORDER BY x.source_slug, x.target_wiki, x.target_slug`,
     )
     .all();
   const out: { source_slug: string; target_wiki: string; target_slug: string }[] = [];

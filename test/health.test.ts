@@ -246,4 +246,82 @@ describe("almanac health", () => {
       ]);
     });
   });
+
+  it("skips broken wikilinks originating from archived pages", async () => {
+    // Regression: every other page-scoped check filters
+    // `archived_at IS NULL`; broken-links and broken-xwiki didn't.
+    // Archived pages shouldn't spam the report.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "retired",
+        "---\ntopics: [x]\narchived_at: 2025-01-01\n---\n\nSee [[ghost]].\n",
+      );
+      await writePage(
+        repo,
+        "active",
+        "---\ntopics: [x]\n---\n\nSee [[ghost2]].\n",
+      );
+      await runIndexer({ repoRoot: repo });
+
+      const result = await runHealth({ cwd: repo, json: true });
+      const report = JSON.parse(result.stdout);
+      // Only the active page's broken link appears.
+      expect(report.broken_links).toEqual([
+        { source_slug: "active", target_slug: "ghost2" },
+      ]);
+    });
+  });
+
+  it("skips broken xwiki refs originating from archived pages", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "retired",
+        "---\ntopics: [x]\narchived_at: 2025-01-01\n---\n\nSee [[unknown:foo]].\n",
+      );
+      await writePage(
+        repo,
+        "active",
+        "---\ntopics: [x]\n---\n\nSee [[unknown:bar]].\n",
+      );
+      await runIndexer({ repoRoot: repo });
+
+      const result = await runHealth({ cwd: repo, json: true });
+      const report = JSON.parse(result.stdout);
+      expect(report.broken_xwiki).toEqual([
+        { source_slug: "active", target_wiki: "unknown", target_slug: "bar" },
+      ]);
+    });
+  });
+
+  it("--json shape snapshot is stable across topics/tag/health", async () => {
+    // Pins the top-level field set of `almanac health --json`. Script
+    // authors depend on these keys being present. Adding a new
+    // category is a deliberate schema change and should touch this
+    // test explicitly.
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(repo, "a", "---\ntopics: [x]\n---\n\nbody.\n");
+      await runIndexer({ repoRoot: repo });
+
+      const result = await runHealth({ cwd: repo, json: true });
+      const report = JSON.parse(result.stdout);
+      expect(report).toMatchObject({
+        orphans: expect.any(Array),
+        stale: expect.any(Array),
+        dead_refs: expect.any(Array),
+        broken_links: expect.any(Array),
+        broken_xwiki: expect.any(Array),
+        empty_topics: expect.any(Array),
+        empty_pages: expect.any(Array),
+        slug_collisions: expect.any(Array),
+      });
+    });
+  });
 });

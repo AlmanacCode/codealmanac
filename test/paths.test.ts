@@ -2,7 +2,11 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { looksLikeDir, normalizePath } from "../src/indexer/paths.js";
+import {
+  looksLikeDir,
+  normalizePath,
+  normalizePathPreservingCase,
+} from "../src/indexer/paths.js";
 import { findNearestAlmanacDir } from "../src/paths.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
@@ -48,6 +52,27 @@ describe("normalizePath", () => {
   it("round-trips through lowercase + slash-normalization", () => {
     expect(normalizePath("./Src\\Checkout\\\\Handler.TS", false)).toBe(
       "src/checkout/handler.ts",
+    );
+  });
+});
+
+describe("normalizePathPreservingCase", () => {
+  it("keeps the author's casing intact", () => {
+    expect(normalizePathPreservingCase("Src/Checkout.TS", false)).toBe(
+      "Src/Checkout.TS",
+    );
+  });
+
+  it("still normalizes slashes, `./`, and trailing-slash rules", () => {
+    // Same shape rules as `normalizePath` — only the lowercasing step
+    // is skipped. This keeps the dead-ref stat path identical to
+    // whatever the author wrote while the lookup column stays stable
+    // across casing.
+    expect(normalizePathPreservingCase("./Src\\Checkout//", true)).toBe(
+      "Src/Checkout/",
+    );
+    expect(normalizePathPreservingCase("src/CHECKOUT", true)).toBe(
+      "src/CHECKOUT/",
     );
   });
 });

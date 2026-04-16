@@ -147,11 +147,14 @@ function fetchInfo(db: Database.Database, slug: string): InfoRecord | null {
     .map((r) => r.topic_slug);
 
   const refs = db
-    .prepare<[string], { path: string; is_dir: number }>(
-      "SELECT path, is_dir FROM file_refs WHERE page_slug = ? ORDER BY path",
+    .prepare<[string], { original_path: string; is_dir: number }>(
+      // Display the author's casing (`original_path`), not the
+      // lowercased lookup form. The lowercased `path` column is the
+      // query key for `--mentions`; it's not a user-facing string.
+      "SELECT original_path, is_dir FROM file_refs WHERE page_slug = ? ORDER BY original_path",
     )
     .all(slug)
-    .map((r) => ({ path: r.path, is_dir: r.is_dir === 1 }));
+    .map((r) => ({ path: r.original_path, is_dir: r.is_dir === 1 }));
 
   const linksOut = db
     .prepare<[string], { target_slug: string }>(

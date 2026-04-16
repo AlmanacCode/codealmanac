@@ -22,6 +22,25 @@
  * directory inference rule testable in isolation.
  */
 export function normalizePath(raw: string, isDir: boolean): string {
+  const normalized = normalizeShape(raw, isDir);
+  return normalized.toLowerCase();
+}
+
+/**
+ * Normalize shape without lowercasing — preserves the author's casing.
+ * Used to store `original_path` in `file_refs` so dead-ref checks on
+ * case-sensitive filesystems (Linux, `git` checkouts with core.ignorecase
+ * false) stat the actual path on disk rather than a lowercased alias.
+ *
+ * Everything else about the result is identical to `normalizePath`:
+ * forward slashes, no `./`, no duplicate slashes, trailing `/` iff
+ * `isDir`. The ONLY difference is the final `.toLowerCase()` is skipped.
+ */
+export function normalizePathPreservingCase(raw: string, isDir: boolean): string {
+  return normalizeShape(raw, isDir);
+}
+
+function normalizeShape(raw: string, isDir: boolean): string {
   let s = raw.trim();
 
   // Windows-style backslashes → forward slashes. We never want to store
@@ -41,8 +60,6 @@ export function normalizePath(raw: string, isDir: boolean): string {
   // this way we don't care if the caller fed us `src/checkout` or
   // `src/checkout/` as a directory; we impose our own rule.
   s = s.replace(/\/+$/, "");
-
-  s = s.toLowerCase();
 
   if (isDir) {
     // Directories ALWAYS end with a trailing slash. This is what lets the

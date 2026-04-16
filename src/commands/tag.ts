@@ -1,11 +1,9 @@
-import { join } from "node:path";
-
 import { ensureFreshIndex, runIndexer } from "../indexer/index.js";
 import { resolveWikiRoot } from "../indexer/resolveWiki.js";
 import { openIndex } from "../indexer/schema.js";
 import { toKebabCase } from "../slug.js";
 import { rewritePageTopics } from "../topics/frontmatterRewrite.js";
-import { topicsYamlPath } from "../topics/paths.js";
+import { indexDbPath, topicsYamlPath } from "../topics/paths.js";
 import {
   ensureTopic,
   loadTopicsFile,
@@ -92,8 +90,7 @@ export async function runTag(options: TagOptions): Promise<TagCommandOutput> {
   // `tag` — we just need to find each page's file; `ensureFreshIndex`
   // runs first so the common path is consistent.
   await ensureFreshIndex({ repoRoot });
-  const dbPath = join(repoRoot, ".almanac", "index.db");
-  const db = openIndex(dbPath);
+  const db = openIndex(indexDbPath(repoRoot));
 
   // Auto-create missing topics in topics.yaml.
   const yamlPath = topicsYamlPath(repoRoot);
@@ -134,9 +131,15 @@ export async function runTag(options: TagOptions): Promise<TagCommandOutput> {
       });
       if (result.changed) {
         taggedPages += 1;
-        summary.push(`tagged ${page}: ${topics.join(", ")}`);
+        // Only surface the NEWLY ADDED topics — not the full request.
+        // Reporting every requested topic (including ones the page
+        // already had) reads like false positives in commit diffs.
+        const added = result.after.filter((t) => !result.before.includes(t));
+        summary.push(`tagged ${page}: ${added.join(", ")}`);
       } else {
-        summary.push(`no change ${page} (already tagged)`);
+        summary.push(
+          `no change ${page} (already tagged with ${topics.join(", ")})`,
+        );
       }
     }
   } finally {
@@ -180,7 +183,7 @@ export async function runUntag(
   }
 
   await ensureFreshIndex({ repoRoot });
-  const db = openIndex(join(repoRoot, ".almanac", "index.db"));
+  const db = openIndex(indexDbPath(repoRoot));
   let filePath: string;
   try {
     const row = db

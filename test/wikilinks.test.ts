@@ -24,6 +24,7 @@ describe("classifyWikilink", () => {
     expect(classifyWikilink("src/checkout/handler.ts")).toEqual({
       kind: "file",
       path: "src/checkout/handler.ts",
+      originalPath: "src/checkout/handler.ts",
     });
   });
 
@@ -31,13 +32,18 @@ describe("classifyWikilink", () => {
     expect(classifyWikilink("src/checkout/")).toEqual({
       kind: "folder",
       path: "src/checkout/",
+      originalPath: "src/checkout/",
     });
   });
 
   it("normalizes a file path (lowercase, no leading ./)", () => {
+    // `path` is lowercased for `--mentions` GLOB equality; `originalPath`
+    // preserves the author's casing so `health` can stat the real file
+    // on case-sensitive filesystems.
     expect(classifyWikilink("./Src/Checkout.TS")).toEqual({
       kind: "file",
       path: "src/checkout.ts",
+      originalPath: "Src/Checkout.TS",
     });
   });
 
@@ -61,6 +67,7 @@ describe("classifyWikilink", () => {
     expect(classifyWikilink("src/a:b")).toEqual({
       kind: "file",
       path: "src/a:b",
+      originalPath: "src/a:b",
     });
   });
 
@@ -72,6 +79,7 @@ describe("classifyWikilink", () => {
     expect(classifyWikilink("src/foo.ts|the handler")).toEqual({
       kind: "file",
       path: "src/foo.ts",
+      originalPath: "src/foo.ts",
     });
   });
 

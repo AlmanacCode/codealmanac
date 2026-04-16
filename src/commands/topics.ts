@@ -13,7 +13,7 @@ import {
   applyTopicsTransform,
   rewritePageTopics,
 } from "../topics/frontmatterRewrite.js";
-import { topicsYamlPath } from "../topics/paths.js";
+import { indexDbPath, topicsYamlPath } from "../topics/paths.js";
 import {
   ensureTopic,
   findTopic,
@@ -102,15 +102,24 @@ export async function runTopicsList(
   const repoRoot = await resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
   await ensureFreshIndex({ repoRoot });
 
-  const db = openIndex(join(repoRoot, ".almanac", "index.db"));
+  const db = openIndex(indexDbPath(repoRoot));
   try {
     const rows = db
       .prepare<
         [],
         { slug: string; title: string | null; description: string | null; page_count: number }
       >(
+        // page_count excludes archived pages — matches the policy used
+        // by `topics show` (see `pagesDirectlyTagged`) and by every
+        // page-scoped check in `health`. Pick one rule and apply it
+        // everywhere; a topic with "5 pages" in `topics list` and "3
+        // pages" in `topics show` is a trust-eroding inconsistency.
         `SELECT t.slug, t.title, t.description,
-                (SELECT COUNT(*) FROM page_topics pt WHERE pt.topic_slug = t.slug) AS page_count
+                (SELECT COUNT(*)
+                   FROM page_topics pt
+                   JOIN pages p ON p.slug = pt.page_slug
+                   WHERE pt.topic_slug = t.slug AND p.archived_at IS NULL
+                ) AS page_count
          FROM topics t
          ORDER BY t.slug`,
       )
@@ -179,7 +188,7 @@ export async function runTopicsShow(
     };
   }
 
-  const db = openIndex(join(repoRoot, ".almanac", "index.db"));
+  const db = openIndex(indexDbPath(repoRoot));
   try {
     const row = db
       .prepare<
@@ -319,103 +328,122 @@ export async function runTopicsCreate(
   }
   const title = options.name.trim().length > 0 ? options.name.trim() : titleCase(slug);
 
+  // Reindex first so an ad-hoc `--parent <slug>` created by a
+  // just-written page is visible to `topicExists`. Every other topics
+  // command did this; `create` silently skipped the refresh which meant
+  // a brand-new page's `topics: [newparent]` couldn't be used as a
+  // parent until the next query touched the DB.
+  await ensureFreshIndex({ repoRoot });
+
   const yamlPath = topicsYamlPath(repoRoot);
   const file = await loadTopicsFile(yamlPath);
 
-  // Resolve/validate parents BEFORE mutating the file. All-or-nothing.
-  const requestedParents = (options.parents ?? [])
-    .map((p) => toKebabCase(p))
-    .filter((p) => p.length > 0);
-  for (const p of requestedParents) {
-    if (p === slug) {
-      return {
-        stdout: "",
-        stderr: `almanac: topic cannot be its own parent\n`,
-        exitCode: 1,
-      };
-    }
-    if (findTopic(file, p) === null) {
-      // Check DB ad-hoc topics too — users may have tagged pages with
-      // `--parent <slug>` before ever running `topics create`. Reading
-      // the DB here keeps the "parent already exists" check honest.
-      if (!isAdHocTopicInDb(repoRoot, p)) {
+  // Hoist the DB open out of the parents loop. We used to open + close
+  // the DB inside `isAdHocTopicInDb` for every parent; opening is
+  // cheap but not free, and the iteration pattern shows up in other
+  // topics commands too.
+  const db = openIndex(indexDbPath(repoRoot));
+  try {
+    // Resolve/validate parents BEFORE mutating the file. All-or-nothing.
+    const requestedParents = (options.parents ?? [])
+      .map((p) => toKebabCase(p))
+      .filter((p) => p.length > 0);
+    for (const p of requestedParents) {
+      if (p === slug) {
+        return {
+          stdout: "",
+          stderr: `almanac: topic cannot be its own parent\n`,
+          exitCode: 1,
+        };
+      }
+      if (!topicExists(file, db, p)) {
         return {
           stdout: "",
           stderr: `almanac: parent topic "${p}" does not exist; create it first with \`almanac topics create ${p}\`\n`,
           exitCode: 1,
         };
       }
-      // Promote the ad-hoc topic into topics.yaml so it gets a proper
-      // entry. `ensureTopic` is idempotent.
-      ensureTopic(file, p);
-    }
-  }
-
-  const existing = findTopic(file, slug);
-  if (existing === null) {
-    const entry: TopicEntry = {
-      slug,
-      title,
-      description: null,
-      parents: requestedParents,
-    };
-    file.topics.push(entry);
-  } else {
-    // Add any new parents, skipping ones that already exist or would
-    // create a cycle.
-    for (const p of requestedParents) {
-      if (existing.parents.includes(p)) continue;
-      const ancestors = ancestorsInFile(file, p);
-      if (ancestors.has(slug) || p === slug) {
-        return {
-          stdout: "",
-          stderr: `almanac: adding "${p}" as a parent of "${slug}" would create a cycle\n`,
-          exitCode: 1,
-        };
+      if (findTopic(file, p) === null) {
+        // Topic exists only as an ad-hoc DB entry. Promote it into
+        // topics.yaml so it has a proper record. `ensureTopic` is
+        // idempotent so this is safe even if two loop iterations
+        // reference the same ad-hoc parent.
+        ensureTopic(file, p);
       }
-      existing.parents.push(p);
     }
-    // Promote the user-supplied title only if the existing one was a
-    // title-cased default (i.e., they didn't describe it yet). Don't
-    // clobber a deliberate title silently.
-    if (
-      existing.title === titleCase(existing.slug) &&
-      title !== titleCase(slug) &&
-      title !== existing.title
-    ) {
-      existing.title = title;
+
+    const existing = findTopic(file, slug);
+    if (existing === null) {
+      const entry: TopicEntry = {
+        slug,
+        title,
+        description: null,
+        parents: requestedParents,
+      };
+      file.topics.push(entry);
+    } else {
+      // Add any new parents, skipping ones that already exist or would
+      // create a cycle.
+      for (const p of requestedParents) {
+        if (existing.parents.includes(p)) continue;
+        const ancestors = ancestorsInFile(file, p);
+        if (ancestors.has(slug) || p === slug) {
+          return {
+            stdout: "",
+            stderr: `almanac: adding "${p}" as a parent of "${slug}" would create a cycle\n`,
+            exitCode: 1,
+          };
+        }
+        existing.parents.push(p);
+      }
+      // Promote the user-supplied title only if the existing one was a
+      // title-cased default (i.e., they didn't describe it yet). Don't
+      // clobber a deliberate title silently.
+      if (
+        existing.title === titleCase(existing.slug) &&
+        title !== titleCase(slug) &&
+        title !== existing.title
+      ) {
+        existing.title = title;
+      }
     }
-  }
 
-  await writeTopicsFile(yamlPath, file);
-  await runIndexer({ repoRoot });
-  return {
-    stdout: existing === null
-      ? `created topic "${slug}"\n`
-      : `updated topic "${slug}"\n`,
-    stderr: "",
-    exitCode: 0,
-  };
-}
-
-/**
- * Check whether a topic slug shows up in the DB (i.e., has been used in
- * any page's frontmatter). Used by `topics create` to distinguish
- * "typo — refuse" from "ad-hoc topic the user tagged a page with but
- * never formally created — accept and promote".
- */
-function isAdHocTopicInDb(repoRoot: string, slug: string): boolean {
-  const db = openIndex(join(repoRoot, ".almanac", "index.db"));
-  try {
-    const row = db
-      .prepare<[string], { slug: string }>(
-        "SELECT slug FROM topics WHERE slug = ?",
-      )
-      .get(slug);
-    return row !== undefined;
+    await writeTopicsFile(yamlPath, file);
+    await runIndexer({ repoRoot });
+    return {
+      stdout: existing === null
+        ? `created topic "${slug}"\n`
+        : `updated topic "${slug}"\n`,
+      stderr: "",
+      exitCode: 0,
+    };
   } finally {
     db.close();
   }
+}
+
+/**
+ * Is `slug` a known topic anywhere — in `topics.yaml`, or as an ad-hoc
+ * slug that a page's frontmatter mentioned and the indexer seeded?
+ *
+ * Collapses the previous `findTopic(file, s) === null &&
+ * !isAdHocTopicInDb(root, s)` duplication into one intent-revealing
+ * helper. Takes an open `db` handle so the caller can hoist DB open
+ * out of tight loops — every earlier call site created + destroyed a
+ * new connection per iteration.
+ */
+function topicExists(
+  file: TopicsFile,
+  db: Database.Database,
+  slug: string,
+): boolean {
+  if (findTopic(file, slug) !== null) return true;
+  const row = db
+    .prepare<[string], { slug: string }>(
+      "SELECT slug FROM topics WHERE slug = ?",
+    )
+    .get(slug);
+  return row !== undefined;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -443,60 +471,71 @@ export async function runTopicsLink(
     };
   }
 
+  // Refresh the index so ad-hoc topics (ones the user tagged pages
+  // with but never formally `topics create`d) are visible to
+  // `topicExists` below.
+  await ensureFreshIndex({ repoRoot });
+
   const yamlPath = topicsYamlPath(repoRoot);
   const file = await loadTopicsFile(yamlPath);
 
-  for (const slug of [child, parent]) {
-    if (findTopic(file, slug) === null) {
-      await ensureFreshIndex({ repoRoot });
-      if (!isAdHocTopicInDb(repoRoot, slug)) {
+  const db = openIndex(indexDbPath(repoRoot));
+  try {
+    for (const slug of [child, parent]) {
+      if (!topicExists(file, db, slug)) {
         return {
           stdout: "",
           stderr: `almanac: topic "${slug}" does not exist\n`,
           exitCode: 1,
         };
       }
-      ensureTopic(file, slug);
+      if (findTopic(file, slug) === null) {
+        // DB-only ad-hoc topic → promote it into topics.yaml so the
+        // new DAG edge has a concrete home.
+        ensureTopic(file, slug);
+      }
     }
-  }
 
-  const childEntry = findTopic(file, child);
-  if (childEntry === null) {
-    // Shouldn't happen after ensureTopic above — defensive.
-    return {
-      stdout: "",
-      stderr: `almanac: topic "${child}" not found\n`,
-      exitCode: 1,
-    };
-  }
+    const childEntry = findTopic(file, child);
+    if (childEntry === null) {
+      // Shouldn't happen after ensureTopic above — defensive.
+      return {
+        stdout: "",
+        stderr: `almanac: topic "${child}" not found\n`,
+        exitCode: 1,
+      };
+    }
 
-  if (childEntry.parents.includes(parent)) {
+    if (childEntry.parents.includes(parent)) {
+      return {
+        stdout: `edge ${child} → ${parent} already exists\n`,
+        stderr: "",
+        exitCode: 0,
+      };
+    }
+
+    // Cycle check BEFORE mutation. Uses the in-memory file so the check
+    // operates on the state we're about to write — no DB round-trip needed.
+    const parentAncestors = ancestorsInFile(file, parent);
+    if (parentAncestors.has(child) || parent === child) {
+      return {
+        stdout: "",
+        stderr: `almanac: adding ${parent} as parent of ${child} would create a cycle\n`,
+        exitCode: 1,
+      };
+    }
+
+    childEntry.parents.push(parent);
+    await writeTopicsFile(yamlPath, file);
+    await runIndexer({ repoRoot });
     return {
-      stdout: `edge ${child} → ${parent} already exists\n`,
+      stdout: `linked ${child} → ${parent}\n`,
       stderr: "",
       exitCode: 0,
     };
+  } finally {
+    db.close();
   }
-
-  // Cycle check BEFORE mutation. Uses the in-memory file so the check
-  // operates on the state we're about to write — no DB round-trip needed.
-  const parentAncestors = ancestorsInFile(file, parent);
-  if (parentAncestors.has(child) || parent === child) {
-    return {
-      stdout: "",
-      stderr: `almanac: adding ${parent} as parent of ${child} would create a cycle\n`,
-      exitCode: 1,
-    };
-  }
-
-  childEntry.parents.push(parent);
-  await writeTopicsFile(yamlPath, file);
-  await runIndexer({ repoRoot });
-  return {
-    stdout: `linked ${child} → ${parent}\n`,
-    stderr: "",
-    exitCode: 0,
-  };
 }
 
 /**
@@ -566,46 +605,62 @@ export async function runTopicsRename(
   const yamlPath = topicsYamlPath(repoRoot);
   const file = await loadTopicsFile(yamlPath);
 
-  // Fetch existence info from both topics.yaml and the DB — the old
-  // slug might be ad-hoc-only (never created via `topics create`).
-  const oldInYaml = findTopic(file, oldSlug);
-  const oldInDb = isAdHocTopicInDb(repoRoot, oldSlug);
-  if (oldInYaml === null && !oldInDb) {
-    return {
-      stdout: "",
-      stderr: `almanac: no such topic "${oldSlug}"\n`,
-      exitCode: 1,
-    };
-  }
-
-  if (findTopic(file, newSlug) !== null || isAdHocTopicInDb(repoRoot, newSlug)) {
-    return {
-      stdout: "",
-      stderr: `almanac: topic "${newSlug}" already exists; delete it first if you intend to merge\n`,
-      exitCode: 1,
-    };
-  }
-
-  // Rewrite `topics.yaml`: the entry itself (if present) plus any
-  // parent reference to `oldSlug`.
-  if (oldInYaml !== null) {
-    oldInYaml.slug = newSlug;
-    if (oldInYaml.title === titleCase(oldSlug)) {
-      // Title was the auto-generated default — refresh it to the new
-      // slug's title-case. A custom title stays as-is.
-      oldInYaml.title = titleCase(newSlug);
+  // Hoist the DB handle so the existence checks below don't reopen
+  // the index per-slug.
+  const db = openIndex(indexDbPath(repoRoot));
+  let pagesUpdated: number;
+  try {
+    // Fetch existence info. `oldInYaml` is kept as a direct reference
+    // because we mutate the entry; the DB check is only needed when
+    // the slug isn't in the file (ad-hoc-only).
+    const oldInYaml = findTopic(file, oldSlug);
+    if (!topicExists(file, db, oldSlug)) {
+      return {
+        stdout: "",
+        stderr: `almanac: no such topic "${oldSlug}"\n`,
+        exitCode: 1,
+      };
     }
-  }
-  for (const t of file.topics) {
-    t.parents = t.parents.map((p) => (p === oldSlug ? newSlug : p));
+
+    if (topicExists(file, db, newSlug)) {
+      return {
+        stdout: "",
+        stderr: `almanac: topic "${newSlug}" already exists; delete it first if you intend to merge\n`,
+        exitCode: 1,
+      };
+    }
+
+    // Rewrite `topics.yaml`: the entry itself (if present) plus any
+    // parent reference to `oldSlug`.
+    if (oldInYaml !== null) {
+      oldInYaml.slug = newSlug;
+      if (oldInYaml.title === titleCase(oldSlug)) {
+        // Title was the auto-generated default — refresh it to the new
+        // slug's title-case. A custom title stays as-is.
+        oldInYaml.title = titleCase(newSlug);
+      }
+    }
+    for (const t of file.topics) {
+      t.parents = t.parents.map((p) => (p === oldSlug ? newSlug : p));
+    }
+
+    // Write ordering matters: topics.yaml FIRST (atomic tmp+rename), THEN
+    // the page rewrites. If topics.yaml write fails, no page was touched.
+    // If a page rewrite fails midway, topics.yaml already reflects the
+    // rename so the next reindex picks up the ad-hoc state and the user
+    // can re-run to finish the remaining pages. The opposite ordering
+    // would leave half-rewritten pages referencing a slug that
+    // topics.yaml doesn't know about.
+    await writeTopicsFile(yamlPath, file);
+
+    // Rewrite every page that has `oldSlug` in `topics:` frontmatter.
+    pagesUpdated = await rewriteTopicOnPages(repoRoot, (topics) =>
+      topics.map((t) => (t === oldSlug ? newSlug : t)),
+    );
+  } finally {
+    db.close();
   }
 
-  // Rewrite every page that has `oldSlug` in `topics:` frontmatter.
-  const pagesUpdated = await rewriteTopicOnPages(repoRoot, (topics) =>
-    topics.map((t) => (t === oldSlug ? newSlug : t)),
-  );
-
-  await writeTopicsFile(yamlPath, file);
   await runIndexer({ repoRoot });
   return {
     stdout: `renamed ${oldSlug} → ${newSlug} (${pagesUpdated} page${pagesUpdated === 1 ? "" : "s"} updated)\n`,
@@ -637,27 +692,37 @@ export async function runTopicsDelete(
 
   const yamlPath = topicsYamlPath(repoRoot);
   const file = await loadTopicsFile(yamlPath);
-  const wasInYaml = findTopic(file, slug) !== null;
-  const wasInDb = isAdHocTopicInDb(repoRoot, slug);
-  if (!wasInYaml && !wasInDb) {
-    return {
-      stdout: "",
-      stderr: `almanac: no such topic "${slug}"\n`,
-      exitCode: 1,
-    };
+  const db = openIndex(indexDbPath(repoRoot));
+  let pagesUpdated: number;
+  try {
+    if (!topicExists(file, db, slug)) {
+      return {
+        stdout: "",
+        stderr: `almanac: no such topic "${slug}"\n`,
+        exitCode: 1,
+      };
+    }
+
+    // Remove the entry and strip it from everyone else's `parents` list.
+    file.topics = file.topics.filter((t) => t.slug !== slug);
+    for (const t of file.topics) {
+      t.parents = t.parents.filter((p) => p !== slug);
+    }
+
+    // Same write ordering as rename: topics.yaml first (atomic), then
+    // pages. A crash between the two leaves topics.yaml already scrubbed
+    // and any remaining in-page references become ad-hoc topics — which
+    // the reindex will pick up as empty-topics on next health, and the
+    // user can re-run to finish untagging.
+    await writeTopicsFile(yamlPath, file);
+
+    pagesUpdated = await rewriteTopicOnPages(repoRoot, (topics) =>
+      topics.filter((t) => t !== slug),
+    );
+  } finally {
+    db.close();
   }
 
-  // Remove the entry and strip it from everyone else's `parents` list.
-  file.topics = file.topics.filter((t) => t.slug !== slug);
-  for (const t of file.topics) {
-    t.parents = t.parents.filter((p) => p !== slug);
-  }
-
-  const pagesUpdated = await rewriteTopicOnPages(repoRoot, (topics) =>
-    topics.filter((t) => t !== slug),
-  );
-
-  await writeTopicsFile(yamlPath, file);
   await runIndexer({ repoRoot });
   return {
     stdout: `deleted topic "${slug}" (${pagesUpdated} page${pagesUpdated === 1 ? "" : "s"} untagged)\n`,
@@ -687,31 +752,28 @@ export async function runTopicsDescribe(
 
   const yamlPath = topicsYamlPath(repoRoot);
   const file = await loadTopicsFile(yamlPath);
-  const existing = findTopic(file, slug);
-  if (existing === null) {
-    // Allow describing an ad-hoc topic by promoting it first.
-    if (!isAdHocTopicInDb(repoRoot, slug)) {
+  const db = openIndex(indexDbPath(repoRoot));
+  try {
+    if (!topicExists(file, db, slug)) {
       return {
         stdout: "",
         stderr: `almanac: no such topic "${slug}"\n`,
         exitCode: 1,
       };
     }
-    ensureTopic(file, slug);
-  }
-  const entry = findTopic(file, slug);
-  if (entry === null) {
-    return {
-      stdout: "",
-      stderr: `almanac: internal error — topic "${slug}" not found after ensure\n`,
-      exitCode: 1,
-    };
+    // `ensureTopic` is idempotent — if the topic was DB-only it
+    // promotes into `file`; if already in `file` it returns the
+    // existing entry. Either way we get a concrete entry to mutate.
+    const entry = ensureTopic(file, slug);
+
+    const text = options.description.trim();
+    entry.description = text.length === 0 ? null : text;
+
+    await writeTopicsFile(yamlPath, file);
+  } finally {
+    db.close();
   }
 
-  const text = options.description.trim();
-  entry.description = text.length === 0 ? null : text;
-
-  await writeTopicsFile(yamlPath, file);
   await runIndexer({ repoRoot });
   return {
     stdout: `described ${slug}\n`,
