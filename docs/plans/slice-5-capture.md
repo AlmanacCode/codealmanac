@@ -4,18 +4,25 @@ Fifth implementation slice of codealmanac. Builds on slices 1-4. Reuses the `age
 
 ## Read before coding
 
-1. **Full design spec:** `/Users/rohan/Desktop/Projects/openalmanac/docs/ideas/codebase-wiki.md`
-   - Focus on: Writer/Reviewer Pipeline section, SessionEnd hook details, the writer + reviewer subagent architecture
-2. **The prompts that drive the agents:**
+1. **SDK implementation reference (read FIRST):** `~/Desktop/Projects/codealmanac/docs/research/agent-sdk.md`
+   Version, auth, message types, subagent routing, streaming format, pitfalls. §6 and §11 specifically cover the subagent pattern slice 5 needs.
+
+2. **Design spec:** `/Users/rohan/Desktop/Projects/openalmanac/docs/ideas/codebase-wiki.md`
+   Focus on: Writer/Reviewer Pipeline, SessionEnd hook, writer + reviewer subagent architecture.
+
+3. **The prompts that drive the agents:**
    - `~/Desktop/Projects/codealmanac/prompts/writer.md`
    - `~/Desktop/Projects/codealmanac/prompts/reviewer.md`
    Read both in full. They define the behavior; this slice is the harness.
-3. **Precedent pattern in OpenAlmanac GUI** — subagent definitions + invocation:
-   - `/Users/rohan/Desktop/Projects/openalmanac/gui/main/agent-definitions.js` — `AGENT_DEFINITIONS` shape
-   - `/Users/rohan/Desktop/Projects/openalmanac/gui/process-manager.js` — `query({ prompt, options: { ..., agents } })`
-   - `/Users/rohan/Desktop/Projects/openalmanac/prompts/article-writer.md` — how writer dispatches to subagents
+
 4. **Slice 4 code** — reuse `src/agent/sdk.ts` and `src/agent/prompts.ts`. Extend if needed; don't duplicate.
-5. **Claude Code's SessionEnd hook docs** — know what input the hook receives (session_id, transcript_path, cwd), what exit code means what.
+
+5. **GUI precedent** (already summarized in `docs/research/agent-sdk.md`, read only if you need more context):
+   - `/Users/rohan/Desktop/Projects/openalmanac/gui/main/agent-definitions.js` — `AgentDefinition` shape
+   - `/Users/rohan/Desktop/Projects/openalmanac/gui/process-manager.js` — `query({ prompt, options: { ..., agents } })`
+   - `/Users/rohan/Desktop/Projects/openalmanac/prompts/article-writer.md` — how writer prompt dispatches to subagents
+
+6. **Claude Code's SessionEnd hook docs** — know what input the hook receives (session_id, transcript_path, cwd), what exit codes mean.
 
 ## Scope
 

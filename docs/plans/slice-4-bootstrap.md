@@ -4,18 +4,20 @@ Fourth implementation slice of codealmanac. Builds on slices 1-3. Introduces the
 
 ## Read before coding
 
-1. **Full design spec:** `/Users/rohan/Desktop/Projects/openalmanac/docs/ideas/codebase-wiki.md`
-   - Focus on: Design Philosophy ("intelligence in the prompt, not in the pipeline"), Bootstrap section, Writer/Reviewer Pipeline architecture (same SDK pattern)
-2. **The bootstrap prompt that will drive the agent:**
-   `~/Desktop/Projects/codealmanac/prompts/bootstrap.md`
-   Read it in full. This is what the agent reads at runtime — you're building the harness that delivers it to the agent with the right tools and working directory.
-3. **Precedent pattern in OpenAlmanac GUI** — how they invoke subagents via the SDK:
-   - `/Users/rohan/Desktop/Projects/openalmanac/gui/main/agent-definitions.js`
-   - `/Users/rohan/Desktop/Projects/openalmanac/gui/process-manager.js` (look at `_startProcess` and the `query()` invocation with `agents: AGENT_DEFINITIONS`)
-   - `/Users/rohan/Desktop/Projects/openalmanac/prompts/article-writer.md` (example writer prompt)
-   
-   Bootstrap has no subagents — simpler case. But the `query()` API is the same.
-4. **Existing codealmanac code** — match the command pattern from slice 2 (e.g., the `reindex` command is a similar "do work, then exit" shape).
+1. **SDK implementation reference (read FIRST):** `~/Desktop/Projects/codealmanac/docs/research/agent-sdk.md`
+   Contains version to pin, auth pattern, full `query()` signature, message types, streaming format, pitfalls. Written specifically so this slice doesn't have to research the SDK from scratch.
+
+2. **Design spec:** `/Users/rohan/Desktop/Projects/openalmanac/docs/ideas/codebase-wiki.md`
+   Focus on: Design Philosophy ("intelligence in the prompt, not in the pipeline"), Bootstrap section.
+
+3. **The bootstrap prompt that drives the agent:** `~/Desktop/Projects/codealmanac/prompts/bootstrap.md`
+   Read in full. This is what the agent reads at runtime — you're building the harness that delivers it.
+
+4. **GUI precedent** (already summarized in the SDK reference above, read only if you need more context):
+   - `/Users/rohan/Desktop/Projects/openalmanac/gui/process-manager.js` — `_startProcess` / `_iterateProcess` lifecycle
+   - `/Users/rohan/Desktop/Projects/openalmanac/gui/main/agent-definitions.js` — `AgentDefinition` examples
+
+5. **Existing codealmanac code** — match the command pattern from slice 2 (e.g., `reindex` is a similar "do work, then exit" shape).
 
 ## Scope
 
@@ -212,14 +214,19 @@ Don't print every token — just the tool calls and major milestones. Full trans
 
 ## Authentication
 
-The Claude Agent SDK reads credentials the same way Claude Code does — from the environment or from Claude's auth store. Document in the bootstrap command's error path: if no auth, exit with a clear message:
+**The SDK requires `ANTHROPIC_API_KEY` env var in headless mode.** (The earlier assumption that it reads Claude Code's local auth store is incorrect — see `docs/research/agent-sdk.md` §2.)
 
-```
-error: Claude Code authentication required for almanac bootstrap.
-Run 'claude' once to authenticate, then retry.
+Gate upfront before calling `query()`:
+
+```typescript
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error("error: ANTHROPIC_API_KEY is required for almanac bootstrap.");
+  console.error("export ANTHROPIC_API_KEY=sk-ant-...");
+  process.exit(1);
+}
 ```
 
-Don't try to handle auth yourself. Surface the SDK's error clearly.
+The SDK throws mid-stream on missing auth, which is a bad UX. Always check first.
 
 ## Testing
 
