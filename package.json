@@ -1,0 +1,57 @@
+{
+  "name": "codealmanac",
+  "version": "0.1.0",
+  "description": "A living wiki for codebases, maintained by AI agents. Documents what the code can't say: decisions, flows, invariants, incidents, gotchas.",
+  "keywords": [
+    "wiki",
+    "documentation",
+    "ai",
+    "claude",
+    "codebase",
+    "knowledge-base"
+  ],
+  "license": "MIT",
+  "author": "Rohan Sheth",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlmanacCode/codealmanac.git"
+  },
+  "homepage": "https://github.com/AlmanacCode/codealmanac#readme",
+  "bugs": {
+    "url": "https://github.com/AlmanacCode/codealmanac/issues"
+  },
+  "type": "module",
+  "bin": {
+    "codealmanac": "./dist/codealmanac.js",
+    "almanac": "./dist/codealmanac.js"
+  },
+  "files": [
+    "dist",
+    "prompts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
