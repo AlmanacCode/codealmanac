@@ -7,10 +7,20 @@ import fg from "fast-glob";
 import type Database from "better-sqlite3";
 
 import { toKebabCase } from "../slug.js";
+import { loadTopicsFile, titleCase } from "../topics/yaml.js";
 import { firstH1, parseFrontmatter } from "./frontmatter.js";
 import { normalizePath, looksLikeDir } from "./paths.js";
 import { openIndex } from "./schema.js";
 import { extractWikilinks } from "./wikilinks.js";
+
+/**
+ * Filename relative to the `.almanac/` dir where the topic DAG + metadata
+ * lives. The indexer loads it on every reindex; the topics commands
+ * mutate it atomically. Keep this in sync with `src/topics/paths.ts`'s
+ * `topicsYamlPath` — duplicated here only so the indexer doesn't import
+ * a second "where is it" helper.
+ */
+const TOPICS_YAML_FILENAME = "topics.yaml";
 
 export interface IndexContext {
   /** Absolute path to the repo root (the dir containing `.almanac/`). */
@@ -76,7 +86,11 @@ export async function ensureFreshIndex(ctx: IndexContext): Promise<IndexResult> 
     return emptyResult();
   }
 
-  if (!existsSync(dbPath) || pagesNewerThan(pagesDir, dbPath)) {
+  if (
+    !existsSync(dbPath) ||
+    pagesNewerThan(pagesDir, dbPath) ||
+    topicsYamlNewerThan(almanacDir, dbPath)
+  ) {
     return runIndexer(ctx);
   }
   return emptyResult();
@@ -106,6 +120,13 @@ export async function runIndexer(ctx: IndexContext): Promise<IndexResult> {
   let result: IndexResult;
   try {
     result = await indexPagesInto(db, pagesDir);
+    // After pages are indexed, reconcile the topics table against
+    // `.almanac/topics.yaml` (if present). `indexPagesInto` has already
+    // lazily inserted rows for every topic slug mentioned in page
+    // frontmatter with a title-cased title; `applyTopicsYaml` now
+    // promotes the declared title/description and rewrites parent edges
+    // for those topics that live in the file.
+    await applyTopicsYaml(db, join(almanacDir, TOPICS_YAML_FILENAME));
   } finally {
     db.close();
   }
@@ -298,8 +319,14 @@ async function indexPagesInto(
   const insertPageTopic = db.prepare<[string, string]>(
     "INSERT OR IGNORE INTO page_topics (page_slug, topic_slug) VALUES (?, ?)",
   );
-  const insertTopic = db.prepare<[string]>(
-    "INSERT OR IGNORE INTO topics (slug) VALUES (?)",
+  // Seed ad-hoc topics with a title-cased default. If the topic is
+  // later declared in `.almanac/topics.yaml`, `applyTopicsYaml` will
+  // promote the title/description to whatever the file says. We set the
+  // title here (rather than leaving NULL) so `topics list` and
+  // `health --topic` have a display name even before a user writes to
+  // topics.yaml.
+  const insertTopic = db.prepare<[string, string]>(
+    "INSERT OR IGNORE INTO topics (slug, title) VALUES (?, ?)",
   );
 
   const deleteFileRefs = db.prepare<[string]>(
@@ -366,7 +393,7 @@ async function indexPagesInto(
       for (const topic of p.topics) {
         const topicSlug = toKebabCase(topic);
         if (topicSlug.length === 0) continue;
-        insertTopic.run(topicSlug);
+        insertTopic.run(topicSlug, titleCase(topicSlug));
         insertPageTopic.run(p.slug, topicSlug);
       }
 
@@ -453,4 +480,125 @@ function pagesNewerThan(pagesDir: string, dbPath: string): boolean {
 
 function hashContent(raw: string): string {
   return createHash("sha256").update(raw).digest("hex");
+}
+
+/**
+ * Return true if `topics.yaml` has an mtime strictly greater than the
+ * index DB's mtime. This is the topics-side mirror of `pagesNewerThan`
+ * — mutations to `topics.yaml` (title/description/parents) aren't
+ * visible from any page mtime, so we need a separate freshness hook
+ * for the file itself.
+ *
+ * Missing `topics.yaml` → false. Absence is legal and means "no topic
+ * metadata, only whatever pages declare". A missing file doesn't
+ * invalidate the existing index.
+ */
+function topicsYamlNewerThan(almanacDir: string, dbPath: string): boolean {
+  const path = join(almanacDir, "topics.yaml");
+  if (!existsSync(path)) return false;
+  let dbMtime: number;
+  try {
+    dbMtime = statSync(dbPath).mtimeMs;
+  } catch {
+    return true;
+  }
+  try {
+    const st = statSync(path);
+    return st.mtimeMs > dbMtime;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Apply the contents of `.almanac/topics.yaml` to SQLite.
+ *
+ * Called at the tail of every reindex. For each entry in the file we
+ * upsert a row into `topics` (with title + description) and rewrite
+ * that topic's edges in `topic_parents`. Topics that were ad-hoc-only
+ * before (mentioned in page frontmatter, never `almanac topics
+ * create`d) get their display name promoted to whatever is in the
+ * file.
+ *
+ * Importantly, we do NOT delete `topics` rows that live only in page
+ * frontmatter — those are legal, per the spec ("any slug mentioned in
+ * pages' `topics:` frontmatter gets a row, even if not in
+ * topics.yaml"). We also do NOT clear `topic_parents` wholesale; we
+ * rewrite edges for each declared topic but leave untouched rows for
+ * ad-hoc topics (which by definition have no declared parents).
+ *
+ * Missing file = no-op. This is the "no topic metadata yet" state and
+ * callers shouldn't have to paper over it.
+ */
+async function applyTopicsYaml(
+  db: Database.Database,
+  topicsYamlPath: string,
+): Promise<void> {
+  if (!existsSync(topicsYamlPath)) return;
+  let file;
+  try {
+    file = await loadTopicsFile(topicsYamlPath);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`almanac: ${message}\n`);
+    return;
+  }
+
+  const upsertTopic = db.prepare<[string, string, string | null]>(
+    `INSERT INTO topics (slug, title, description) VALUES (?, ?, ?)
+     ON CONFLICT(slug) DO UPDATE SET
+       title = excluded.title,
+       description = excluded.description`,
+  );
+  const clearParents = db.prepare<[string]>(
+    "DELETE FROM topic_parents WHERE child_slug = ?",
+  );
+  const insertParent = db.prepare<[string, string]>(
+    "INSERT OR IGNORE INTO topic_parents (child_slug, parent_slug) VALUES (?, ?)",
+  );
+
+  // Collect every slug we consider "declared" — in topics.yaml or
+  // referenced by any page_topics row. Anything outside this set is
+  // stale (e.g., a topic that used to be in the file before a rename
+  // or delete, or an ad-hoc slug whose only page just got untagged).
+  // Those get removed so `empty-topics` doesn't falsely flag them.
+  const declared = new Set<string>();
+  for (const t of file.topics) declared.add(t.slug);
+  const adHoc = db
+    .prepare<[], { topic_slug: string }>(
+      "SELECT DISTINCT topic_slug FROM page_topics",
+    )
+    .all();
+  for (const r of adHoc) declared.add(r.topic_slug);
+
+  const apply = db.transaction(() => {
+    for (const t of file.topics) {
+      upsertTopic.run(t.slug, t.title, t.description);
+      clearParents.run(t.slug);
+      for (const parent of t.parents) {
+        if (parent === t.slug) continue;
+        insertParent.run(t.slug, parent);
+      }
+    }
+
+    // Prune stale topic rows + any edges attached to them. We do this
+    // last so the upserts above have already promoted declared slugs.
+    const existing = db
+      .prepare<[], { slug: string }>("SELECT slug FROM topics")
+      .all();
+    const deleteTopic = db.prepare<[string]>("DELETE FROM topics WHERE slug = ?");
+    const deleteEdgesByChild = db.prepare<[string]>(
+      "DELETE FROM topic_parents WHERE child_slug = ?",
+    );
+    const deleteEdgesByParent = db.prepare<[string]>(
+      "DELETE FROM topic_parents WHERE parent_slug = ?",
+    );
+    for (const r of existing) {
+      if (declared.has(r.slug)) continue;
+      deleteEdgesByChild.run(r.slug);
+      deleteEdgesByParent.run(r.slug);
+      deleteTopic.run(r.slug);
+    }
+  });
+  apply();
 }
