@@ -13,7 +13,7 @@ files:
 
 # SQLite Indexer
 
-The indexer (`src/indexer/`) builds and maintains `.almanac/index.db` — a SQLite database that powers all query commands (`search`, `info`, `health`, `topics show`). It runs silently before every query command, comparing page file mtimes against the stored `content_hash`; only changed or new pages are re-parsed.
+The indexer (`src/indexer/`) builds and maintains `.almanac/index.db` — a SQLite database that powers all query commands (`search`, `show`, `health`, `topics show`). It runs silently before every query command, comparing page file mtimes against the stored `content_hash`; only changed or new pages are re-parsed.
 
 <!-- stub: fill in FTS5 gotchas, GLOB vs LIKE decision, path normalization details as discovered -->
 

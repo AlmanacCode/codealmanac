@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import type { SpawnCliFn, SpawnedProcess } from "../src/agent/auth.js";
 import { runDoctor } from "../src/commands/doctor.js";
 import { IMPORT_LINE } from "../src/commands/setup.js";
+import { writeConfig } from "../src/update/config.js";
+import { writeState } from "../src/update/state.js";
 import {
   makeRepo,
   scaffoldWiki,
@@ -84,10 +86,22 @@ async function scaffoldHealthyClaudeDir(home: string): Promise<{
   await writeFile(hookScriptPath, "#!/bin/bash\nexit 0\n", "utf8");
 
   const settingsPath = join(claudeDir, "settings.json");
+  // Wrapped schema: `{matcher, hooks: [{type, command}]}` — the shape
+  // Claude Code's validator expects. `describeHook` in doctor.ts also
+  // tolerates the legacy unwrapped shape for users mid-migration.
   await writeFile(
     settingsPath,
     JSON.stringify(
-      { hooks: { SessionEnd: [{ command: hookScriptPath }] } },
+      {
+        hooks: {
+          SessionEnd: [
+            {
+              matcher: "",
+              hooks: [{ type: "command", command: hookScriptPath }],
+            },
+          ],
+        },
+      },
       null,
       2,
     ),
@@ -440,6 +454,229 @@ describe("almanac doctor — pretty output", () => {
       expect(r.stdout).toMatch(/## Current wiki/);
       // Fix suggestion rendered under the failing check.
       expect(r.stdout).toMatch(/almanac setup --yes/);
+    });
+  });
+});
+
+describe("almanac doctor — updates section", () => {
+  it("reports `on latest` when state says we match latest_version", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyClaudeDir(home);
+      const updateStatePath = join(home, ".almanac", "update-state.json");
+      await writeState(
+        {
+          last_check_at: Math.floor(Date.now() / 1000) - 3600,
+          installed_version: "0.1.5",
+          latest_version: "0.1.5",
+          dismissed_versions: [],
+        },
+        updateStatePath,
+      );
+      const r = await runDoctor({
+        cwd: home,
+        json: true,
+        settingsPath: env.settingsPath,
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.5",
+        updateStatePath,
+        updateConfigPath: join(home, ".almanac", "config.json"),
+      });
+      const parsed = JSON.parse(r.stdout);
+      const status = parsed.updates.find(
+        (c: { key: string }) => c.key === "update.status",
+      );
+      expect(status.status).toBe("ok");
+      expect(status.message).toMatch(/on latest/);
+    });
+  });
+
+  it("flags an outdated install as problem with a `run: almanac update` fix", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyClaudeDir(home);
+      const updateStatePath = join(home, ".almanac", "update-state.json");
+      await writeState(
+        {
+          last_check_at: Math.floor(Date.now() / 1000) - 3600,
+          installed_version: "0.1.5",
+          latest_version: "0.1.6",
+          dismissed_versions: [],
+        },
+        updateStatePath,
+      );
+      const r = await runDoctor({
+        cwd: home,
+        json: true,
+        settingsPath: env.settingsPath,
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.5",
+        updateStatePath,
+        updateConfigPath: join(home, ".almanac", "config.json"),
+      });
+      const parsed = JSON.parse(r.stdout);
+      const status = parsed.updates.find(
+        (c: { key: string }) => c.key === "update.status",
+      );
+      expect(status.status).toBe("problem");
+      expect(status.message).toMatch(/0\.1\.6 available/);
+      expect(status.fix).toMatch(/almanac update/);
+    });
+  });
+
+  it("annotates a dismissed outdated version but still flags it", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyClaudeDir(home);
+      const updateStatePath = join(home, ".almanac", "update-state.json");
+      await writeState(
+        {
+          last_check_at: Math.floor(Date.now() / 1000) - 3600,
+          installed_version: "0.1.5",
+          latest_version: "0.1.6",
+          dismissed_versions: ["0.1.6"],
+        },
+        updateStatePath,
+      );
+      const r = await runDoctor({
+        cwd: home,
+        json: true,
+        settingsPath: env.settingsPath,
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.5",
+        updateStatePath,
+        updateConfigPath: join(home, ".almanac", "config.json"),
+      });
+      const parsed = JSON.parse(r.stdout);
+      const status = parsed.updates.find(
+        (c: { key: string }) => c.key === "update.status",
+      );
+      expect(status.status).toBe("problem");
+      expect(status.message).toMatch(/dismissed/);
+      const dismissed = parsed.updates.find(
+        (c: { key: string }) => c.key === "update.dismissed",
+      );
+      expect(dismissed).toBeDefined();
+      expect(dismissed.message).toMatch(/0\.1\.6/);
+    });
+  });
+
+  it("reports `no update check has run yet` when state is absent", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyClaudeDir(home);
+      const updateStatePath = join(home, ".almanac", "update-state.json");
+      const r = await runDoctor({
+        cwd: home,
+        json: true,
+        settingsPath: env.settingsPath,
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.5",
+        updateStatePath,
+        updateConfigPath: join(home, ".almanac", "config.json"),
+      });
+      const parsed = JSON.parse(r.stdout);
+      const status = parsed.updates.find(
+        (c: { key: string }) => c.key === "update.status",
+      );
+      expect(status.status).toBe("info");
+      expect(status.fix).toMatch(/almanac update --check/);
+    });
+  });
+
+  it("reports the notifier toggle state", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyClaudeDir(home);
+      const configPath = join(home, ".almanac", "config.json");
+      await writeConfig({ update_notifier: false }, configPath);
+      const r = await runDoctor({
+        cwd: home,
+        json: true,
+        settingsPath: env.settingsPath,
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.5",
+        updateStatePath: join(home, ".almanac", "update-state.json"),
+        updateConfigPath: configPath,
+      });
+      const parsed = JSON.parse(r.stdout);
+      const notifier = parsed.updates.find(
+        (c: { key: string }) => c.key === "update.notifier",
+      );
+      expect(notifier.message).toMatch(/disabled/);
+      expect(notifier.fix).toMatch(/almanac update --enable-notifier/);
+    });
+  });
+
+  it("omits the updates section on --wiki-only", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyClaudeDir(home);
+      const r = await runDoctor({
+        cwd: home,
+        json: true,
+        wikiOnly: true,
+        settingsPath: env.settingsPath,
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.5",
+        updateStatePath: join(home, ".almanac", "update-state.json"),
+        updateConfigPath: join(home, ".almanac", "config.json"),
+        runHealthFn: async () => ({ stdout: "{}", stderr: "", exitCode: 0 }),
+      });
+      const parsed = JSON.parse(r.stdout);
+      expect(parsed.updates).toEqual([]);
+    });
+  });
+});
+
+describe("almanac doctor — corrupt registry resilience (review fix)", () => {
+  it("emits a `problem` instead of crashing on malformed ~/.almanac/registry.json", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyClaudeDir(home);
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      // Write a corrupt registry. `readRegistry` throws on parse
+      // errors; doctor must catch them and surface a problem line.
+      const { mkdir, writeFile: wf } = await import("node:fs/promises");
+      await mkdir(join(home, ".almanac"), { recursive: true });
+      await wf(
+        join(home, ".almanac", "registry.json"),
+        "{ not json at all",
+        "utf8",
+      );
+
+      const r = await runDoctor({
+        cwd: repo,
+        json: true,
+        settingsPath: env.settingsPath,
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.5",
+        updateStatePath: join(home, ".almanac", "update-state.json"),
+        updateConfigPath: join(home, ".almanac", "config.json"),
+        runHealthFn: async () => ({ stdout: "{}", stderr: "", exitCode: 0 }),
+      });
+      expect(r.exitCode).toBe(0);
+      const parsed = JSON.parse(r.stdout);
+      const registered = parsed.wiki.find(
+        (c: { key: string }) => c.key === "wiki.registered",
+      );
+      expect(registered.status).toBe("problem");
+      expect(registered.message).toMatch(/registry/i);
     });
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "codealmanac",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A living wiki for codebases, maintained by AI agents. Documents what the code can't say: decisions, flows, invariants, incidents, gotchas.",
   "keywords": [
     "wiki",

@@ -16,7 +16,19 @@ import { withTempHome } from "./helpers.js";
  * homedir plumbing. Same for `hookScriptPath`: the bundled
  * `hooks/almanac-capture.sh` lives outside the sandbox so we point at a
  * fake.
+ *
+ * The hook schema we write is `{matcher, hooks: [{type, command,
+ * timeout}]}` — Claude Code's validator rejects the legacy unwrapped
+ * shape (bare `{type, command, ...}`) that v0.1.0–v0.1.4 emitted. Tests
+ * both assert the wrapped shape on install AND that a pre-existing
+ * legacy entry gets migrated without duplication.
  */
+
+/** Shape of the wrapped entry we write. Kept here as a type for tests. */
+interface WrappedEntry {
+  matcher: string;
+  hooks: { type: string; command: string; timeout?: number }[];
+}
 
 async function setup(
   home: string,
@@ -36,7 +48,7 @@ async function readJson(path: string): Promise<unknown> {
 }
 
 describe("almanac hook install", () => {
-  it("creates a new settings.json with the SessionEnd entry", async () => {
+  it("creates a new settings.json with the wrapped SessionEnd entry", async () => {
     await withTempHome(async (home) => {
       const { settingsPath, hookScriptPath } = await setup(home);
 
@@ -46,12 +58,16 @@ describe("almanac hook install", () => {
       expect(out.stdout).toMatch(/SessionEnd hook installed/);
 
       const parsed = (await readJson(settingsPath)) as {
-        hooks: { SessionEnd: { type: string; command: string; timeout?: number }[] };
+        hooks: { SessionEnd: WrappedEntry[] };
       };
       expect(parsed.hooks.SessionEnd).toHaveLength(1);
-      expect(parsed.hooks.SessionEnd[0]!.command).toBe(hookScriptPath);
-      expect(parsed.hooks.SessionEnd[0]!.type).toBe("command");
-      expect(parsed.hooks.SessionEnd[0]!.timeout).toBe(10);
+      const entry = parsed.hooks.SessionEnd[0]!;
+      // Wrapped shape: outer entry has `matcher` + inner `hooks[]`.
+      expect(entry.matcher).toBe("");
+      expect(entry.hooks).toHaveLength(1);
+      expect(entry.hooks[0]!.type).toBe("command");
+      expect(entry.hooks[0]!.command).toBe(hookScriptPath);
+      expect(entry.hooks[0]!.timeout).toBe(10);
     });
   });
 
@@ -76,7 +92,7 @@ describe("almanac hook install", () => {
     });
   });
 
-  it("is idempotent: installing twice leaves exactly one entry", async () => {
+  it("is idempotent: installing twice leaves exactly one wrapped entry", async () => {
     await withTempHome(async (home) => {
       const { settingsPath, hookScriptPath } = await setup(home);
 
@@ -87,57 +103,19 @@ describe("almanac hook install", () => {
       expect(second.stdout).toMatch(/already installed/);
 
       const parsed = (await readJson(settingsPath)) as {
-        hooks: { SessionEnd: unknown[] };
+        hooks: { SessionEnd: WrappedEntry[] };
       };
       expect(parsed.hooks.SessionEnd).toHaveLength(1);
+      // Still one command inside the wrapper, not two.
+      expect(parsed.hooks.SessionEnd[0]!.hooks).toHaveLength(1);
     });
   });
 
-  it("refuses to overwrite a foreign SessionEnd entry", async () => {
-    await withTempHome(async (home) => {
-      const { settingsPath, hookScriptPath } = await setup(home);
-      await mkdir(join(home, ".claude"), { recursive: true });
-      await writeFile(
-        settingsPath,
-        JSON.stringify(
-          {
-            hooks: {
-              SessionEnd: [
-                {
-                  type: "command",
-                  command: "/usr/local/bin/my-other-hook.sh",
-                  timeout: 30,
-                },
-              ],
-            },
-          },
-          null,
-          2,
-        ),
-        "utf8",
-      );
-
-      const out = await runHookInstall({ settingsPath, hookScriptPath });
-
-      expect(out.exitCode).toBe(1);
-      expect(out.stderr).toMatch(/foreign entry/);
-      expect(out.stderr).toContain("/usr/local/bin/my-other-hook.sh");
-
-      // Settings must be untouched.
-      const parsed = (await readJson(settingsPath)) as {
-        hooks: { SessionEnd: { command: string }[] };
-      };
-      expect(parsed.hooks.SessionEnd).toHaveLength(1);
-      expect(parsed.hooks.SessionEnd[0]!.command).toBe(
-        "/usr/local/bin/my-other-hook.sh",
-      );
-    });
-  });
-
-  it("replaces a stale almanac-capture.sh entry from a prior install", async () => {
-    // Simulates the user having installed from a different node_modules
-    // path; on re-install we should update the path to the current
-    // location rather than doubling up.
+  it("migrates a legacy unwrapped entry to the wrapped shape", async () => {
+    // v0.1.0–v0.1.4 emitted bare `{type, command, timeout}` at the event
+    // array level. Newer Claude Code rejects that; a re-install after
+    // upgrading the CLI should rewrite the file to the wrapped form
+    // without duplicating the entry.
     await withTempHome(async (home) => {
       const { settingsPath, hookScriptPath } = await setup(home);
       await mkdir(join(home, ".claude"), { recursive: true });
@@ -165,16 +143,145 @@ describe("almanac hook install", () => {
 
       expect(out.exitCode).toBe(0);
       const parsed = (await readJson(settingsPath)) as {
+        hooks: { SessionEnd: WrappedEntry[] };
+      };
+      expect(parsed.hooks.SessionEnd).toHaveLength(1);
+      const entry = parsed.hooks.SessionEnd[0]!;
+      expect(entry.matcher).toBe("");
+      expect(entry.hooks).toHaveLength(1);
+      expect(entry.hooks[0]!.command).toBe(hookScriptPath);
+    });
+  });
+
+  it("replaces a wrapped-but-stale almanac-capture.sh entry from a prior install", async () => {
+    // User had installed from a different node_modules path (already in
+    // the correct wrapped shape); on re-install we should update the
+    // path to the current location rather than doubling up.
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+      await mkdir(join(home, ".claude"), { recursive: true });
+      await writeFile(
+        settingsPath,
+        JSON.stringify(
+          {
+            hooks: {
+              SessionEnd: [
+                {
+                  matcher: "",
+                  hooks: [
+                    {
+                      type: "command",
+                      command: "/old/path/hooks/almanac-capture.sh",
+                      timeout: 10,
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+
+      const out = await runHookInstall({ settingsPath, hookScriptPath });
+
+      expect(out.exitCode).toBe(0);
+      const parsed = (await readJson(settingsPath)) as {
+        hooks: { SessionEnd: WrappedEntry[] };
+      };
+      expect(parsed.hooks.SessionEnd).toHaveLength(1);
+      expect(parsed.hooks.SessionEnd[0]!.hooks[0]!.command).toBe(
+        hookScriptPath,
+      );
+    });
+  });
+
+  it("preserves a foreign wrapped entry byte-for-byte when installing ours alongside", async () => {
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+      await mkdir(join(home, ".claude"), { recursive: true });
+      const foreign = {
+        matcher: "Write",
+        hooks: [
+          {
+            type: "command",
+            command: "/usr/local/bin/my-other-hook.sh",
+            timeout: 30,
+          },
+        ],
+      };
+      await writeFile(
+        settingsPath,
+        JSON.stringify({ hooks: { SessionEnd: [foreign] } }, null, 2),
+        "utf8",
+      );
+
+      const out = await runHookInstall({ settingsPath, hookScriptPath });
+
+      expect(out.exitCode).toBe(0);
+      const parsed = (await readJson(settingsPath)) as {
+        hooks: { SessionEnd: WrappedEntry[] };
+      };
+      // Now has TWO entries: foreign first, ours appended.
+      expect(parsed.hooks.SessionEnd).toHaveLength(2);
+      // Foreign entry survives verbatim — matcher, command, timeout.
+      expect(parsed.hooks.SessionEnd[0]).toEqual(foreign);
+      // Our fresh wrapped entry is at the end.
+      const ours = parsed.hooks.SessionEnd[1]!;
+      expect(ours.matcher).toBe("");
+      expect(ours.hooks[0]!.command).toBe(hookScriptPath);
+    });
+  });
+
+  it("refuses to install when a foreign legacy (unwrapped) entry is present", async () => {
+    // Claude Code rejects unwrapped entries outright; if the user has
+    // one, we flag it rather than silently mixing our wrapped entry
+    // into a file the validator already rejects.
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+      await mkdir(join(home, ".claude"), { recursive: true });
+      await writeFile(
+        settingsPath,
+        JSON.stringify(
+          {
+            hooks: {
+              SessionEnd: [
+                {
+                  type: "command",
+                  command: "/usr/local/bin/my-other-hook.sh",
+                  timeout: 30,
+                },
+              ],
+            },
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+
+      const out = await runHookInstall({ settingsPath, hookScriptPath });
+
+      expect(out.exitCode).toBe(1);
+      expect(out.stderr).toMatch(/foreign legacy entry/);
+      expect(out.stderr).toContain("/usr/local/bin/my-other-hook.sh");
+
+      // Settings must be untouched.
+      const parsed = (await readJson(settingsPath)) as {
         hooks: { SessionEnd: { command: string }[] };
       };
       expect(parsed.hooks.SessionEnd).toHaveLength(1);
-      expect(parsed.hooks.SessionEnd[0]!.command).toBe(hookScriptPath);
+      expect(parsed.hooks.SessionEnd[0]!.command).toBe(
+        "/usr/local/bin/my-other-hook.sh",
+      );
     });
   });
 });
 
 describe("almanac hook uninstall", () => {
-  it("removes our entry and leaves the file otherwise untouched", async () => {
+  it("removes our wrapped entry and leaves the file otherwise untouched", async () => {
     await withTempHome(async (home) => {
       const { settingsPath, hookScriptPath } = await setup(home);
       await runHookInstall({ settingsPath, hookScriptPath });
@@ -189,6 +296,42 @@ describe("almanac hook uninstall", () => {
       };
       // When we removed the last entry the SessionEnd key is dropped.
       expect(parsed.hooks?.SessionEnd).toBeUndefined();
+    });
+  });
+
+  it("recognizes and removes a legacy unwrapped entry on uninstall", async () => {
+    // A user who never re-ran setup after upgrading past v0.1.4 could
+    // still have the legacy shape in their settings.json. Uninstall
+    // should still recognize + strip it.
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+      await mkdir(join(home, ".claude"), { recursive: true });
+      await writeFile(
+        settingsPath,
+        JSON.stringify(
+          {
+            hooks: {
+              SessionEnd: [
+                {
+                  type: "command",
+                  command: hookScriptPath,
+                  timeout: 10,
+                },
+              ],
+            },
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+
+      const out = await runHookUninstall({ settingsPath, hookScriptPath });
+
+      expect(out.exitCode).toBe(0);
+      expect(out.stdout).toMatch(/removed/);
+      const parsed = (await readJson(settingsPath)) as Record<string, unknown>;
+      expect(parsed).not.toHaveProperty("hooks");
     });
   });
 
@@ -215,19 +358,27 @@ describe("almanac hook uninstall", () => {
     // drop ONLY the SessionEnd key, not the whole hooks block.
     await withTempHome(async (home) => {
       const { settingsPath, hookScriptPath } = await setup(home);
-      await import("node:fs/promises").then((fs) =>
-        fs.mkdir(join(home, ".claude"), { recursive: true }),
-      );
+      await mkdir(join(home, ".claude"), { recursive: true });
       await writeFile(
         settingsPath,
         JSON.stringify(
           {
             hooks: {
               SessionEnd: [
-                { type: "command", command: hookScriptPath, timeout: 10 },
+                {
+                  matcher: "",
+                  hooks: [
+                    { type: "command", command: hookScriptPath, timeout: 10 },
+                  ],
+                },
               ],
               PreToolUse: [
-                { type: "command", command: "/usr/local/bin/pre.sh" },
+                {
+                  matcher: "Write",
+                  hooks: [
+                    { type: "command", command: "/usr/local/bin/pre.sh" },
+                  ],
+                },
               ],
             },
           },
@@ -242,7 +393,7 @@ describe("almanac hook uninstall", () => {
       const parsed = (await readJson(settingsPath)) as {
         hooks?: {
           SessionEnd?: unknown;
-          PreToolUse?: { command: string }[];
+          PreToolUse?: WrappedEntry[];
         };
       };
       // SessionEnd dropped (we owned it exclusively), PreToolUse survives,
@@ -250,16 +401,29 @@ describe("almanac hook uninstall", () => {
       expect(parsed.hooks).toBeDefined();
       expect(parsed.hooks?.SessionEnd).toBeUndefined();
       expect(parsed.hooks?.PreToolUse).toBeDefined();
-      expect(parsed.hooks?.PreToolUse?.[0]?.command).toBe(
+      expect(parsed.hooks?.PreToolUse?.[0]?.hooks[0]!.command).toBe(
         "/usr/local/bin/pre.sh",
       );
     });
   });
 
-  it("leaves foreign entries alone when uninstalling", async () => {
+  it("leaves foreign wrapped entries alone when uninstalling", async () => {
+    // Exercises the contract: `{matcher, hooks: [...]}` entries we
+    // didn't create must be preserved byte-for-byte (no re-serialization
+    // side effects).
     await withTempHome(async (home) => {
       const { settingsPath, hookScriptPath } = await setup(home);
       await mkdir(join(home, ".claude"), { recursive: true });
+      const foreign = {
+        matcher: "Bash",
+        hooks: [
+          {
+            type: "command",
+            command: "/usr/local/bin/other.sh",
+            timeout: 30,
+          },
+        ],
+      };
       await writeFile(
         settingsPath,
         JSON.stringify(
@@ -267,15 +431,16 @@ describe("almanac hook uninstall", () => {
             hooks: {
               SessionEnd: [
                 {
-                  type: "command",
-                  command: hookScriptPath,
-                  timeout: 10,
+                  matcher: "",
+                  hooks: [
+                    {
+                      type: "command",
+                      command: hookScriptPath,
+                      timeout: 10,
+                    },
+                  ],
                 },
-                {
-                  type: "command",
-                  command: "/usr/local/bin/other.sh",
-                  timeout: 30,
-                },
+                foreign,
               ],
             },
           },
@@ -288,12 +453,50 @@ describe("almanac hook uninstall", () => {
       await runHookUninstall({ settingsPath, hookScriptPath });
 
       const parsed = (await readJson(settingsPath)) as {
-        hooks: { SessionEnd: { command: string }[] };
+        hooks: { SessionEnd: WrappedEntry[] };
       };
       expect(parsed.hooks.SessionEnd).toHaveLength(1);
-      expect(parsed.hooks.SessionEnd[0]!.command).toBe(
-        "/usr/local/bin/other.sh",
+      expect(parsed.hooks.SessionEnd[0]).toEqual(foreign);
+    });
+  });
+
+  it("collapses empty inner hooks[] by removing the outer entry", async () => {
+    // A wrapper that was entirely ours (single inner command, ours)
+    // should have the whole `{matcher, hooks}` container dropped when
+    // we strip its only command — not left as `{matcher, hooks: []}`.
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+      await mkdir(join(home, ".claude"), { recursive: true });
+      await writeFile(
+        settingsPath,
+        JSON.stringify(
+          {
+            hooks: {
+              SessionEnd: [
+                {
+                  matcher: "",
+                  hooks: [
+                    {
+                      type: "command",
+                      command: hookScriptPath,
+                      timeout: 10,
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+          null,
+          2,
+        ),
+        "utf8",
       );
+
+      await runHookUninstall({ settingsPath, hookScriptPath });
+
+      const parsed = (await readJson(settingsPath)) as Record<string, unknown>;
+      // No more hooks key at all — container and SessionEnd both gone.
+      expect(parsed).not.toHaveProperty("hooks");
     });
   });
 
@@ -322,10 +525,41 @@ describe("almanac hook status", () => {
     });
   });
 
-  it("reports installed with the current script path", async () => {
+  it("reports installed with the current script path (wrapped)", async () => {
     await withTempHome(async (home) => {
       const { settingsPath, hookScriptPath } = await setup(home);
       await runHookInstall({ settingsPath, hookScriptPath });
+
+      const out = await runHookStatus({ settingsPath, hookScriptPath });
+
+      expect(out.exitCode).toBe(0);
+      expect(out.stdout).toMatch(/SessionEnd hook: installed/);
+      expect(out.stdout).toContain(hookScriptPath);
+    });
+  });
+
+  it("reports installed for a legacy unwrapped entry too", async () => {
+    // Status shouldn't require the user to re-run install before it
+    // recognizes what they already have — migration is deferred to
+    // install time.
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+      await mkdir(join(home, ".claude"), { recursive: true });
+      await writeFile(
+        settingsPath,
+        JSON.stringify(
+          {
+            hooks: {
+              SessionEnd: [
+                { type: "command", command: hookScriptPath, timeout: 10 },
+              ],
+            },
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
 
       const out = await runHookStatus({ settingsPath, hookScriptPath });
 
@@ -346,9 +580,14 @@ describe("almanac hook status", () => {
             hooks: {
               SessionEnd: [
                 {
-                  type: "command",
-                  command: "/usr/local/bin/notifier.sh",
-                  timeout: 10,
+                  matcher: "",
+                  hooks: [
+                    {
+                      type: "command",
+                      command: "/usr/local/bin/notifier.sh",
+                      timeout: 10,
+                    },
+                  ],
                 },
               ],
             },

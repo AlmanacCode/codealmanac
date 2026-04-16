@@ -7,7 +7,7 @@ Groupings match `almanac --help`:
 1. **Query** — `search`, `show`, `health`, `list`
 2. **Edit** — `tag`, `untag`, `topics ...`
 3. **Wiki lifecycle** — `bootstrap`, `capture`, `hook ...`, `reindex`
-4. **Setup** — `setup`, `uninstall`, `doctor`
+4. **Setup** — `setup`, `uninstall`, `doctor`, `update`
 
 Every query/edit command auto-registers the current repo in `~/.almanac/registry.json` on first run. Exceptions: `list --drop` (skips auto-register so the removal intent isn't undone) and the setup group (installers, not wiki commands — they never touch the registry).
 
@@ -36,7 +36,7 @@ There is no `almanac init` command. The two ways a wiki gets scaffolded are `alm
 | `--limit <n>` | int ≥0 | unbounded | Cap results. |
 
 **Default output:** one slug per line to stdout. When zero pages match, stdout is empty and stderr emits `# 0 results` (a breadcrumb so users can tell "matched nothing" apart from "command broken"). `--json` is silent on stderr — `[]` is the unambiguous empty signal there.
-**`--json` schema:** JSON array of `{slug, title, updated_at, topics, path}`.
+**`--json` schema:** JSON array of `{slug, title, updated_at, archived_at, superseded_by, topics}`. `title` is the page's frontmatter title (nullable when no frontmatter). `updated_at` is epoch seconds (file mtime). `archived_at` is epoch seconds or `null`. `superseded_by` is a slug string or `null`. `topics` is an array of topic slugs, sorted ascending. No `path` field — use `almanac show <slug> --path` (or `--json`) for the absolute path.
 **Exit:** `0` always (empty result isn't an error). Arg-parse failures exit `1` with an `almanac:` error.
 
 #### `almanac show [slug]`
@@ -103,7 +103,7 @@ Flags: `--wiki <name>`.
 
 #### `almanac topics` (DAG management)
 
-- `almanac topics list` — list all topics with page counts. `--json` emits an array of `{slug, description, parents[], children[], page_count}`.
+- `almanac topics list` — list all topics with page counts. `--json` emits an array of `{slug, title, description, page_count}`. `page_count` excludes archived pages (matches `topics show`). `parents`/`children` are only on `topics show <slug> --json`; use that when you need DAG edges.
 - `almanac topics show <slug>` — description, parents, children, pages. `--descendants` includes pages tagged with descendant topics (walks the DAG subtree).
 - `almanac topics create <name>` — `--parent <slug>` repeatable. Rejects if any parent slug doesn't exist.
 - `almanac topics link <child> <parent>` / `almanac topics unlink <child> <parent>` — add/remove a DAG edge. `link` is cycle-checked (§5). `unlink` is idempotent.
@@ -132,7 +132,7 @@ Run the writer/reviewer pipeline on a Claude Code session transcript. Usually au
 | `--quiet` | Suppress per-tool streaming; print only the final summary. |
 | `--model <model>` | Override the agent model. |
 
-Writes SDK transcript to `.almanac/.capture-<session-id>.log`. A writer subagent drafts pages; a reviewer subagent enforces notability + writing conventions (§9) before drafts land.
+Writes SDK transcript to `.almanac/.capture-<session-id>.jsonl` (one JSON message per line). When invoked manually without `--session`, falls back to `.capture-<timestamp>.jsonl` so repeated runs don't clobber each other. A writer subagent drafts pages; a reviewer subagent enforces notability + writing conventions (§9) before drafts land.
 
 #### `almanac hook install | uninstall | status`
 
@@ -204,13 +204,32 @@ Read-only install + current-wiki health report. Every check reports a state; non
 
 Each check has a stable `key` safe for scripting. ✗ entries include a `fix` field with a one-line "run: …" hint. Parse `--json` and count `status === "problem"` for a pass/fail gate.
 
+The report also includes an `## Updates` section (`updates: Check[]` in `--json`) with keys `update.status`, `update.last_check`, `update.notifier`, and `update.dismissed`. `update.status === "problem"` when a new version is available — mirrors the pre-command banner.
+
+#### `almanac update`
+
+Upgrade command + the controls for the nag banner. See §11 for the full update-notifier architecture.
+
+| Flag | Semantics |
+|---|---|
+| (none) | Run `npm i -g codealmanac@latest` synchronously in the foreground. Inherits stdio so you see npm's progress bar, permission prompts, and peer-dep warnings verbatim. |
+| `--dismiss` | Mark the current `latest_version` as "don't nag". No install. Banner is suppressed until a newer version ships. |
+| `--check` | Force a registry query now, bypassing the 24h cache. Prints the result. No install. |
+| `--enable-notifier` | Set `update_notifier: true` in `~/.almanac/config.json` (default). |
+| `--disable-notifier` | Set `update_notifier: false` — banner stops showing entirely. `almanac doctor` still reports update status. |
+
+**Exit codes:** `0` on successful install / check / dismiss / toggle. Install propagates npm's exit code on failure. `--check` exits `1` when the registry is unreachable.
+
+**EACCES:** if `npm i -g` fails with a permission error, try `sudo npm i -g codealmanac@latest`, or switch to a version manager (nvm/volta/fnm) that doesn't require root. codealmanac will never sudo on your behalf — silent privilege escalation would violate the trust contract.
+
 ### 1.5 `--stdin` pipe semantics
 
 Commands that accept `--stdin`: `show`, `tag`, `health`.
 
 - One slug per line; blank lines ignored; whitespace trimmed.
 - Output order mirrors input order.
-- Missing slugs don't abort — logged to stderr, pipeline continues. `show --stdin` writes a "not found" marker per slug and keeps exit `0` for pipeline resilience.
+- Missing slugs don't abort the output — every found slug still gets printed, and each missing slug writes `almanac: no such page "<slug>"` to stderr.
+- **Exit code reflects completeness.** `show --stdin` exits `1` if any slug was missing, `0` only when every requested slug resolved. This is what `xargs` + CI wants: a pipeline that silently drops slugs is a bug, not a feature. Use `|| true` or `; :` to continue past it when you genuinely don't care.
 - `--stdin` must be explicit. No `isTTY` auto-detection (confusing under script redirection).
 
 ---
@@ -674,8 +693,63 @@ Case sensitivity on Linux. Schema v2 stores `original_path` for case-preserving 
 
 ### Forensics files
 
-- `.almanac/.capture-<session-id>.log` — per-session SDK transcript from capture. Writer + reviewer interleaved.
+- `.almanac/.capture-<session-id>.jsonl` — SDK message stream from `almanac capture` (one JSON object per line). Writer + reviewer interleaved.
+- `.almanac/.capture-<session-id>.log` — companion sidecar written by the SessionEnd hook: stdout+stderr of `almanac capture`, human-readable. Present only for hook-invoked captures; manual invocations emit only the `.jsonl`.
 - `.almanac/.bootstrap-<timestamp>.log` — one per bootstrap. Gitignored by default.
+
+---
+
+## 11. Updates: nag banner + manual install
+
+Tier B design, per the pair review. No silent auto-install. The CLI self-schedules a detached background version check after each command; the next command's banner reflects what that check learned. Installing is always a foreground action the user chooses.
+
+### How it works
+
+```
+command runs
+   │
+   ├─ pre:  announceUpdateIfAvailable()   ── reads ~/.almanac/update-state.json (sync)
+   │                                         prints stderr banner if outdated
+   │
+   ├─ (command does its thing)
+   │
+   └─ post: spawn --internal-check-updates (detached, stdio: ignore)
+                                            queries registry.npmjs.org
+                                            writes ~/.almanac/update-state.json
+                                            exits
+```
+
+### State files
+
+- **`~/.almanac/update-state.json`** — written by the background worker + `almanac update`. Shape: `{last_check_at, installed_version, latest_version, dismissed_versions[], last_fetch_failed_at?}`. `last_check_at` is epoch seconds; `dismissed_versions` is a list of version strings the user muted via `--dismiss`. Missing / malformed → all read paths return defaults. Never break the CLI.
+- **`~/.almanac/config.json`** — `{update_notifier: boolean}`. Toggles whether the banner ever prints. Default `true`. Flip via `almanac update --enable-notifier` / `--disable-notifier`.
+
+### Cache behavior
+
+- Background check runs at most once per 24h (comparing `last_check_at` to now).
+- `almanac update --check` bypasses the cache for immediate status.
+- Failed registry fetches bump `last_check_at` anyway so a one-shot failure doesn't hammer the registry on every subsequent invocation. The 24h cycle resumes as normal.
+- Network timeout is 3s; longer would be noticeable in the background spawn.
+
+### Dismissal semantics
+
+`almanac update --dismiss` appends the current `latest_version` to `dismissed_versions[]`. The banner suppresses **only that specific version** — when a newer one ships, `latest_version` moves on and the banner reappears. Multiple consecutive dismissals accumulate; `dismissed_versions` is never trimmed automatically. If you find yourself dismissing every release, `almanac update --disable-notifier` is the right tool instead.
+
+Dismissal does NOT prevent `almanac update` from installing. It only silences the banner.
+
+### Test / CI gating
+
+The post-command background spawn is gated on `process.env.NODE_ENV !== "test"`, `!process.env.VITEST`, and `!process.env.CODEALMANAC_SKIP_UPDATE_CHECK`. Test suites never fork update workers; CI pipelines that want to opt out set `CODEALMANAC_SKIP_UPDATE_CHECK=1`.
+
+### Why not auto-install
+
+From the pair review:
+- Silent install without consent violates trust norms; users expect to choose when their tooling changes under them.
+- `npm i -g` prefixes diverge across nvm, volta, fnm, and system Node; guessing wrong corrupts the PATH.
+- Detached-child survival is fragile in Claude Code subprocesses, CI runners, and Windows — a mid-install kill leaves a half-linked binary.
+- Mid-invocation binary swap breaks `import()` of dist chunks that haven't yet been loaded.
+
+The manual `almanac update` in the foreground resolves all of these: user sees what's running, npm picks its own prefix, the child is owned by the user's shell, and the running process doesn't touch its own files.
 
 ---
 

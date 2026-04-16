@@ -11,17 +11,30 @@ import { fileURLToPath } from "node:url";
  *
  * Design notes:
  *
+ * - **Schema.** Claude Code validates `settings.json` against a strict
+ *   schema: each entry in an event array (like `SessionEnd`) is a
+ *   `{matcher, hooks: [...]}` container, and the actual command objects
+ *   live in the nested `hooks` array. v0.1.0–v0.1.4 wrote command objects
+ *   directly at the event-array level; newer Claude Code versions now
+ *   reject that shape. We produce the wrapped form on install, and when
+ *   encountering a legacy unwrapped entry that we recognize as ours (by
+ *   `command` ending in `almanac-capture.sh`) we migrate it on next
+ *   install. `SessionEnd` never uses the `matcher` field to discriminate
+ *   anything — we always emit an empty `matcher: ""` (matches
+ *   everything, which is what session-end lifecycle hooks want).
+ *
  * - **Idempotent.** `install` twice leaves one entry, not two. We match by
- *   `command` string equality — if the user replaces our absolute path
- *   with a symlink pointing at the same script, we'll treat it as foreign.
- *   That's acceptable; the `status` output shows the path we'd use, so the
- *   user can reconcile manually.
+ *   `command` string equality on the inner `hooks[]` entries. If the user
+ *   replaces our absolute path with a symlink pointing at the same
+ *   script, we'll treat it as foreign. That's acceptable; the `status`
+ *   output shows the path we'd use, so the user can reconcile manually.
  *
  * - **Refuse foreign entries.** If `SessionEnd` is already populated with
  *   a command we don't recognize, we print the existing value and exit
  *   non-zero. Claude Code lets users wire their own hooks (notifications,
  *   git autocommit scripts, etc.) and silently replacing them would be
- *   rude.
+ *   rude. Foreign wrapped containers that don't reference our script are
+ *   preserved byte-for-byte.
  *
  * - **Atomic write.** `settings.json` is small but heavily touched by
  *   Claude Code. Writing via tmp-file + rename avoids corrupting the file
@@ -54,20 +67,92 @@ export interface HookCommandResult {
 
 const HOOK_TIMEOUT_SECONDS = 10;
 
-interface SessionEndEntry {
+/** A single command invocation inside a wrapper's `hooks[]` array. */
+interface HookCommand {
   type: "command";
   command: string;
   timeout?: number;
 }
 
+/** A wrapped SessionEnd entry per Claude Code's schema. */
+interface WrappedEntry {
+  matcher: string;
+  hooks: HookCommand[];
+}
+
+/**
+ * What we read from `settings.hooks.SessionEnd`. During a read we may
+ * encounter the legacy unwrapped shape (`HookCommand` directly) written
+ * by v0.1.0–v0.1.4 — we recognize and migrate it. Unknown entries we
+ * can't classify are preserved as-is via `unknown`.
+ */
+type RawEntry = WrappedEntry | HookCommand | unknown;
+
 /**
  * Claude Code's `settings.json` is a free-form JSON object; we only care
- * about the `hooks.SessionEnd` array. Preserve everything else verbatim so
- * we don't drop user settings when we write the file back.
+ * about the `hooks.SessionEnd` array. Preserve everything else verbatim
+ * so we don't drop user settings when we write the file back.
  */
 type SettingsJson = Record<string, unknown> & {
-  hooks?: Record<string, SessionEndEntry[] | undefined>;
+  hooks?: Record<string, RawEntry[] | undefined>;
 };
+
+/** Heuristic: does this command path look like one we installed? */
+function isOurCommandPath(command: string): boolean {
+  return command.endsWith("almanac-capture.sh");
+}
+
+/**
+ * Classify a raw SessionEnd entry. Wrapped entries are the canonical
+ * shape; unwrapped-command entries are legacy output from v0.1.0–v0.1.4.
+ * Anything else (random user JSON) is `unknown` and we leave it alone.
+ */
+type Classified =
+  | { kind: "wrapped"; entry: WrappedEntry }
+  | { kind: "legacy"; entry: HookCommand }
+  | { kind: "unknown"; entry: unknown };
+
+function classifyEntry(raw: RawEntry): Classified {
+  if (raw === null || typeof raw !== "object") {
+    return { kind: "unknown", entry: raw };
+  }
+  const obj = raw as Record<string, unknown>;
+  if (Array.isArray(obj.hooks)) {
+    // Wrapped shape. `matcher` may be absent in hand-edited files; treat
+    // absent as "" so we don't throw on slightly malformed input.
+    const matcher = typeof obj.matcher === "string" ? obj.matcher : "";
+    const hooks: HookCommand[] = [];
+    for (const h of obj.hooks as unknown[]) {
+      if (h !== null && typeof h === "object") {
+        const ho = h as Record<string, unknown>;
+        if (ho.type === "command" && typeof ho.command === "string") {
+          const cmd: HookCommand = {
+            type: "command",
+            command: ho.command,
+          };
+          if (typeof ho.timeout === "number") cmd.timeout = ho.timeout;
+          hooks.push(cmd);
+        }
+      }
+    }
+    return { kind: "wrapped", entry: { matcher, hooks } };
+  }
+  if (obj.type === "command" && typeof obj.command === "string") {
+    // Legacy unwrapped shape — v0.1.0–v0.1.4 wrote this form.
+    const cmd: HookCommand = {
+      type: "command",
+      command: obj.command as string,
+    };
+    if (typeof obj.timeout === "number") cmd.timeout = obj.timeout;
+    return { kind: "legacy", entry: cmd };
+  }
+  return { kind: "unknown", entry: raw };
+}
+
+/** True when the entry references our script and is safely ours to manage. */
+function isOurWrapped(entry: WrappedEntry): boolean {
+  return entry.hooks.some((h) => isOurCommandPath(h.command));
+}
 
 export async function runHookInstall(
   options: HookCommandOptions = {},
@@ -81,36 +166,79 @@ export async function runHookInstall(
   const settings = await readSettings(settingsPath);
   const existing = (settings.hooks?.SessionEnd ?? []).slice();
 
-  // Find any existing entry with our exact command. If found, the install
-  // is a no-op (idempotent). If SessionEnd has OTHER commands alongside
-  // ours, leave them alone — the user might be composing multiple hooks.
-  const ourEntries = existing.filter((e) => e.command === script.path);
-  const foreignEntries = existing.filter((e) => e.command !== script.path);
+  // Walk existing entries and split them into buckets:
+  //   - `preserved`  — foreign wrapped/unknown entries we leave alone.
+  //   - `oursAlready` — a wrapped entry that already points at OUR exact
+  //                     script path (makes install a no-op).
+  //   - `oursStale`   — a wrapped or legacy entry that references our
+  //                     capture script but at a different absolute path
+  //                     (old install, `npm i` moved us) or in the legacy
+  //                     unwrapped shape. We'll collapse these into a
+  //                     single fresh entry at the new path.
+  const preserved: RawEntry[] = [];
+  let oursAlready: WrappedEntry | null = null;
+  const staleCount = { n: 0 };
 
-  // If the sole existing entry looks like ours-but-on-a-different-path
-  // (e.g. an old install from a different node_modules), replace it so we
-  // don't double-fire on session end. Heuristic: command ends with
-  // `almanac-capture.sh`. We accept this specific rename; unrelated
-  // commands still block.
-  const stale = foreignEntries.filter((e) =>
-    e.command.endsWith("almanac-capture.sh"),
-  );
-  const unrelated = foreignEntries.filter(
-    (e) => !e.command.endsWith("almanac-capture.sh"),
-  );
+  for (const raw of existing) {
+    const c = classifyEntry(raw);
+    if (c.kind === "wrapped") {
+      if (!isOurWrapped(c.entry)) {
+        preserved.push(raw);
+        continue;
+      }
+      // Entry belongs to us. Does it already point at the exact script
+      // path? If every command in its `hooks[]` that looks like ours is
+      // already at `script.path`, it's up to date.
+      const exactMatch = c.entry.hooks.some(
+        (h) => h.command === script.path,
+      );
+      if (exactMatch && oursAlready === null) {
+        oursAlready = c.entry;
+      } else {
+        staleCount.n += 1;
+      }
+    } else if (c.kind === "legacy") {
+      if (isOurCommandPath(c.entry.command)) {
+        // Legacy unwrapped entry of ours — always migrate to wrapped.
+        staleCount.n += 1;
+      } else {
+        // Foreign legacy entry (user had their own script before
+        // settings.json required wrapping). Leave it alone.
+        preserved.push(raw);
+      }
+    } else {
+      // Unknown shape — we can't classify it. Preserve verbatim.
+      preserved.push(raw);
+    }
+  }
 
-  if (unrelated.length > 0) {
-    const existingStr = unrelated.map((e) => `  - ${e.command}`).join("\n");
+  // If every non-ours entry is a foreign unwrapped command (not a
+  // wrapped one) we refuse to touch the file — Claude Code's newer
+  // schema will already reject such files, but surfacing it here lets
+  // the user clean up before we stack our entry on top. Wrapped foreign
+  // entries are fine to leave alongside ours.
+  const foreignLegacy = preserved.filter((raw) => {
+    const c = classifyEntry(raw);
+    return c.kind === "legacy";
+  });
+  if (foreignLegacy.length > 0) {
+    const lines = foreignLegacy
+      .map((raw) => {
+        const c = classifyEntry(raw);
+        if (c.kind === "legacy") return `  - ${c.entry.command}`;
+        return "  - <unrecognized>";
+      })
+      .join("\n");
     return {
       stdout: "",
       stderr:
-        `almanac: SessionEnd hook already has a foreign entry:\n${existingStr}\n` +
-        `Remove it manually from ${settingsPath} if you want almanac to manage the hook.\n`,
+        `almanac: SessionEnd has a foreign legacy entry:\n${lines}\n` +
+        `Remove or rewrap it manually in ${settingsPath} before installing.\n`,
       exitCode: 1,
     };
   }
 
-  if (ourEntries.length > 0 && stale.length === 0) {
+  if (oursAlready !== null && staleCount.n === 0) {
     return {
       stdout: `almanac: SessionEnd hook already installed at ${script.path}\n`,
       stderr: "",
@@ -118,15 +246,22 @@ export async function runHookInstall(
     };
   }
 
-  // Compose the new SessionEnd array: keep our one entry (fresh), drop any
-  // stale almanac entries.
-  const newEntries: SessionEndEntry[] = [
-    {
-      type: "command",
-      command: script.path,
-      timeout: HOOK_TIMEOUT_SECONDS,
-    },
-  ];
+  // Build the fresh wrapped entry and append to preserved foreign
+  // entries. Stale entries of ours are dropped (we only ever want a
+  // single active entry; multiple copies of the capture hook would
+  // double-fire on session end).
+  const fresh: WrappedEntry = {
+    matcher: "",
+    hooks: [
+      {
+        type: "command",
+        command: script.path,
+        timeout: HOOK_TIMEOUT_SECONDS,
+      },
+    ],
+  };
+
+  const newEntries: RawEntry[] = [...preserved, fresh];
 
   settings.hooks = { ...(settings.hooks ?? {}), SessionEnd: newEntries };
   await writeSettings(settingsPath, settings);
@@ -157,11 +292,48 @@ export async function runHookUninstall(
   const settings = await readSettings(settingsPath);
   const existing = (settings.hooks?.SessionEnd ?? []).slice();
 
-  // Remove ONLY our entries — anything else stays. We treat any entry with
-  // a command ending in `almanac-capture.sh` as ours (handles the case
-  // where the bundled path moved between `npm i` locations).
-  const kept = existing.filter((e) => !e.command.endsWith("almanac-capture.sh"));
-  const removed = existing.length - kept.length;
+  const kept: RawEntry[] = [];
+  let removed = 0;
+
+  for (const raw of existing) {
+    const c = classifyEntry(raw);
+    if (c.kind === "wrapped") {
+      // Filter out our command(s) from the inner hooks array. Keep
+      // anything else in the array intact — a foreign wrapper that
+      // happened to include our script alongside its own commands
+      // (unusual, but survivable) loses our entry and keeps theirs.
+      const innerKept = c.entry.hooks.filter(
+        (h) => !isOurCommandPath(h.command),
+      );
+      const innerRemoved = c.entry.hooks.length - innerKept.length;
+      removed += innerRemoved;
+      if (innerKept.length === 0) {
+        // Only drop the outer wrapper when it was entirely ours. A
+        // foreign wrapper that never contained our script stays verbatim
+        // below (handled by `innerRemoved === 0`, which leaves
+        // `innerKept.length === c.entry.hooks.length`, hence we fall
+        // through to the else-branch).
+        if (innerRemoved === 0) kept.push(raw);
+        // else: fully owned by us, drop the container.
+      } else if (innerRemoved === 0) {
+        // Untouched foreign wrapper — preserve the raw object to keep
+        // any fields (like matcher) byte-for-byte.
+        kept.push(raw);
+      } else {
+        // Partial: rebuild with just the kept inner entries, preserving
+        // the original matcher string.
+        kept.push({ matcher: c.entry.matcher, hooks: innerKept });
+      }
+    } else if (c.kind === "legacy") {
+      if (isOurCommandPath(c.entry.command)) {
+        removed += 1;
+      } else {
+        kept.push(raw);
+      }
+    } else {
+      kept.push(raw);
+    }
+  }
 
   if (removed === 0) {
     return {
@@ -220,18 +392,41 @@ export async function runHookStatus(
 
   const settings = await readSettings(settingsPath);
   const existing = settings.hooks?.SessionEnd ?? [];
-  const ours = existing.find((e) => e.command.endsWith("almanac-capture.sh"));
 
-  if (ours === undefined) {
-    const foreign = existing
-      .map((e) => `  - ${e.command}`)
+  // Walk the array looking for any entry (wrapped or legacy) that
+  // references our capture script. Gathering foreign entries separately
+  // lets us show them to the user if nothing of ours was found.
+  let ourCommand: string | null = null;
+  const foreignSummary: string[] = [];
+  for (const raw of existing) {
+    const c = classifyEntry(raw);
+    if (c.kind === "wrapped") {
+      for (const h of c.entry.hooks) {
+        if (isOurCommandPath(h.command)) {
+          ourCommand ??= h.command;
+        } else {
+          foreignSummary.push(h.command);
+        }
+      }
+    } else if (c.kind === "legacy") {
+      if (isOurCommandPath(c.entry.command)) {
+        ourCommand ??= c.entry.command;
+      } else {
+        foreignSummary.push(c.entry.command);
+      }
+    }
+  }
+
+  if (ourCommand === null) {
+    const foreignLines = foreignSummary
+      .map((c) => `  - ${c}`)
       .join("\n");
     return {
       stdout:
         `SessionEnd hook: not installed\n` +
         `settings: ${settingsPath}\n` +
-        (existing.length > 0
-          ? `(${existing.length} foreign entr${existing.length === 1 ? "y" : "ies"} present:\n${foreign})\n`
+        (foreignSummary.length > 0
+          ? `(${foreignSummary.length} foreign entr${foreignSummary.length === 1 ? "y" : "ies"} present:\n${foreignLines})\n`
           : "") +
         (script.ok ? `script would be: ${script.path}\n` : ""),
       stderr: "",
@@ -242,7 +437,7 @@ export async function runHookStatus(
   return {
     stdout:
       `SessionEnd hook: installed\n` +
-      `script: ${ours.command}\n` +
+      `script: ${ourCommand}\n` +
       `settings: ${settingsPath}\n`,
     stderr: "",
     exitCode: 0,

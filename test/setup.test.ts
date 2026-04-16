@@ -129,15 +129,26 @@ describe("codealmanac setup", () => {
       });
 
       expect(res.exitCode).toBe(0);
-      // Hook installed.
+      // Hook installed. Schema: `SessionEnd[i]` is a
+      // `{matcher, hooks: [{type, command, timeout}]}` container per
+      // Claude Code's validator — the bare `{type, command, …}` shape
+      // that earlier codealmanac versions emitted is now rejected.
       expect(existsSync(env.settingsPath)).toBe(true);
       const settings = JSON.parse(
         await readFile(env.settingsPath, "utf8"),
       ) as {
-        hooks: { SessionEnd: { command: string }[] };
+        hooks: {
+          SessionEnd: {
+            matcher: string;
+            hooks: { type: string; command: string; timeout?: number }[];
+          }[];
+        };
       };
       expect(settings.hooks.SessionEnd).toHaveLength(1);
-      expect(settings.hooks.SessionEnd[0]!.command).toBe(env.hookScriptPath);
+      const entry = settings.hooks.SessionEnd[0]!;
+      expect(entry.matcher).toBe("");
+      expect(entry.hooks).toHaveLength(1);
+      expect(entry.hooks[0]!.command).toBe(env.hookScriptPath);
 
       // Guides copied.
       expect(
@@ -190,13 +201,17 @@ describe("codealmanac setup", () => {
       const matches = secondClaudeMd.match(/@~\/\.claude\/codealmanac\.md/g);
       expect(matches).toHaveLength(1);
 
-      // SessionEnd still has just one entry.
+      // SessionEnd still has just one wrapped entry — idempotent under
+      // the new schema.
       const settings = JSON.parse(
         await readFile(env.settingsPath, "utf8"),
       ) as {
-        hooks: { SessionEnd: unknown[] };
+        hooks: {
+          SessionEnd: { matcher: string; hooks: unknown[] }[];
+        };
       };
       expect(settings.hooks.SessionEnd).toHaveLength(1);
+      expect(settings.hooks.SessionEnd[0]!.hooks).toHaveLength(1);
     });
   });
 

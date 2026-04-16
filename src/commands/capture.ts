@@ -174,12 +174,28 @@ export async function runCapture(
     },
   };
 
-  // Transcript log filename: timestamp-based so repeated runs don't clobber
-  // each other. We don't have the SDK session_id yet (it's on the first
-  // message), and filesystem writes need a destination before the stream
-  // begins.
+  // Transcript log filename. Prefer the Claude Code session-id when we
+  // have one (`--session` was passed — which is what the SessionEnd
+  // hook does) so the SDK transcript and the hook's human-readable
+  // sidecar share a stem: `.capture-<sid>.jsonl` (this file) alongside
+  // `.capture-<sid>.log` (the hook's stdout redirect). `ls -lah
+  // .capture-<sid>.*` tells one coherent story per session. Fall back
+  // to a timestamp for manual `almanac capture` invocations where no
+  // session-id is available — we don't have the SDK session_id either
+  // at this point; it arrives on the first SDK message, too late to
+  // use as a filename.
+  //
+  // The file extension is `.jsonl` because that's what's actually
+  // written (one JSON SDK message per line). Using `.log` here would
+  // collide with the hook's stdout-redirect sidecar, which happens to
+  // share the session-id stem; distinct extensions keep them from
+  // clobbering each other.
   const now = options.now?.() ?? new Date();
-  const logName = `.capture-${formatTimestamp(now)}.log`;
+  const logStem =
+    options.sessionId !== undefined && options.sessionId.length > 0
+      ? options.sessionId
+      : formatTimestamp(now);
+  const logName = `.capture-${logStem}.jsonl`;
   const logPath = join(almanacDir, logName);
   const logStream = createWriteStream(logPath, { flags: "w" });
 

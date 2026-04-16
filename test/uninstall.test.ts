@@ -35,7 +35,8 @@ async function scaffold(home: string): Promise<Env> {
 
 async function primeInstalled(env: Env): Promise<void> {
   await mkdir(env.claudeDir, { recursive: true });
-  // Hook entry.
+  // Hook entry in the wrapped schema (`{matcher, hooks: [...]}`) that
+  // Claude Code's validator accepts.
   await writeFile(
     env.settingsPath,
     JSON.stringify(
@@ -43,9 +44,14 @@ async function primeInstalled(env: Env): Promise<void> {
         hooks: {
           SessionEnd: [
             {
-              type: "command",
-              command: env.hookScriptPath,
-              timeout: 10,
+              matcher: "",
+              hooks: [
+                {
+                  type: "command",
+                  command: env.hookScriptPath,
+                  timeout: 10,
+                },
+              ],
             },
           ],
         },
@@ -174,8 +180,18 @@ describe("almanac uninstall", () => {
 
       const settings = JSON.parse(
         await readFile(env.settingsPath, "utf8"),
-      ) as { hooks: { SessionEnd: { command: string }[] } };
+      ) as {
+        hooks: {
+          SessionEnd: {
+            matcher: string;
+            hooks: { command: string }[];
+          }[];
+        };
+      };
       expect(settings.hooks.SessionEnd).toHaveLength(1);
+      expect(settings.hooks.SessionEnd[0]!.hooks[0]!.command).toBe(
+        env.hookScriptPath,
+      );
       expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
     });
   });
@@ -209,10 +225,22 @@ describe("almanac uninstall", () => {
     });
   });
 
-  it("does not touch foreign hook entries in SessionEnd", async () => {
+  it("does not touch foreign wrapped hook entries in SessionEnd", async () => {
+    // Both ours and the foreign entry are in the wrapped schema; we
+    // strip ours and leave theirs byte-for-byte.
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       await mkdir(env.claudeDir, { recursive: true });
+      const foreign = {
+        matcher: "Bash",
+        hooks: [
+          {
+            type: "command",
+            command: "/usr/local/bin/notifier.sh",
+            timeout: 10,
+          },
+        ],
+      };
       await writeFile(
         env.settingsPath,
         JSON.stringify(
@@ -220,15 +248,16 @@ describe("almanac uninstall", () => {
             hooks: {
               SessionEnd: [
                 {
-                  type: "command",
-                  command: env.hookScriptPath,
-                  timeout: 10,
+                  matcher: "",
+                  hooks: [
+                    {
+                      type: "command",
+                      command: env.hookScriptPath,
+                      timeout: 10,
+                    },
+                  ],
                 },
-                {
-                  type: "command",
-                  command: "/usr/local/bin/notifier.sh",
-                  timeout: 10,
-                },
+                foreign,
               ],
             },
           },
@@ -249,11 +278,16 @@ describe("almanac uninstall", () => {
 
       const settings = JSON.parse(
         await readFile(env.settingsPath, "utf8"),
-      ) as { hooks: { SessionEnd: { command: string }[] } };
+      ) as {
+        hooks: {
+          SessionEnd: {
+            matcher: string;
+            hooks: { type: string; command: string; timeout?: number }[];
+          }[];
+        };
+      };
       expect(settings.hooks.SessionEnd).toHaveLength(1);
-      expect(settings.hooks.SessionEnd[0]!.command).toBe(
-        "/usr/local/bin/notifier.sh",
-      );
+      expect(settings.hooks.SessionEnd[0]).toEqual(foreign);
     });
   });
 });

@@ -144,7 +144,7 @@ wikilink-syntax
 # 2. Triage with --lead
 $ almanac show sqlite-indexer --lead
 The indexer (`src/indexer/`) builds and maintains `.almanac/index.db` — a
-SQLite database that powers all query commands (`search`, `info`, `health`,
+SQLite database that powers all query commands (`search`, `show`, `health`,
 `topics show`). It runs silently before every query command, comparing page
 file mtimes against the stored `content_hash`; only changed or new pages are
 re-parsed.
@@ -213,6 +213,32 @@ almanac hook status         # just the hook entry
 ls -lah .almanac/.capture-*.log
 ```
 No logs at all → the hook isn't installed, or bailed before backgrounding, or `cwd` was outside any wiki (silent correct no-op). Capture ran but wrote nothing → the reviewer rejected the draft for notability, or the session was pure-read. Check the `.capture-<id>.log` for the writer/reviewer transcript.
+
+---
+
+## Staying current
+
+codealmanac checks for updates in the background (once per 24h) after each
+command. When a new version is available, you'll see a stderr banner on
+every subsequent invocation:
+
+```
+! codealmanac 0.1.6 available (you're on 0.1.5) — run: almanac update
+```
+
+The banner shows on every command until you update or dismiss it. Run:
+
+```bash
+almanac update              # upgrade to latest (foreground `npm i -g codealmanac@latest`)
+almanac update --dismiss    # skip this version; banner goes away until the next release
+almanac update --check      # check now without installing (bypasses 24h cache)
+almanac doctor              # see current update status + notifier setting
+```
+
+Auto-install is deliberately NOT the default — silent install without consent
+violates the trust contract, npm prefixes diverge across version managers, and a
+mid-invocation binary swap corrupts dynamic imports. Tier B (nag + manual
+install) is the design. See `almanac update --help` for the full flag set.
 
 ---
 

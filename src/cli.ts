@@ -29,7 +29,13 @@ import {
   runTopicsUnlink,
 } from "./commands/topics.js";
 import { runUninstall } from "./commands/uninstall.js";
+import { runUpdate } from "./commands/update.js";
 import { autoRegisterIfNeeded } from "./registry/autoregister.js";
+import { announceUpdateIfAvailable } from "./update/announce.js";
+import {
+  runInternalUpdateCheck,
+  scheduleBackgroundUpdateCheck,
+} from "./update/schedule.js";
 
 /**
  * Entry point. `bin/codealmanac.ts` hands us `process.argv` and any errors
@@ -51,13 +57,63 @@ import { autoRegisterIfNeeded } from "./registry/autoregister.js";
  * `almanac list`. `setup`/`uninstall`/`hook` are installers, not wiki
  * commands; they never touch the registry.
  */
-export async function run(argv: string[]): Promise<void> {
+/**
+ * Optional dependency overrides for `run`. Tests use these to avoid
+ * spawning the real setup wizard, the real update background check,
+ * and the real update banner. Production callers pass nothing —
+ * defaults preserve the normal CLI behavior.
+ */
+export interface RunDeps {
+  /** Replace the setup wizard (bare `codealmanac` / `almanac setup`). */
+  runSetup?: typeof runSetup;
+  /** Replace the pre-command update-nag banner. */
+  announceUpdate?: (stderr: NodeJS.WritableStream) => void;
+  /** Replace the post-command background update check scheduler. */
+  scheduleUpdateCheck?: (argv: string[]) => void;
+  /** Replace the internal update-check worker (run on --internal-check-updates). */
+  runInternalUpdateCheck?: () => Promise<void>;
+}
+
+export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
+  const runSetupFn = deps.runSetup ?? runSetup;
+  const announceUpdateFn = deps.announceUpdate ?? announceUpdateIfAvailable;
+  const scheduleUpdateCheckFn =
+    deps.scheduleUpdateCheck ?? scheduleBackgroundUpdateCheck;
+  const runInternalUpdateCheckFn =
+    deps.runInternalUpdateCheck ?? runInternalUpdateCheck;
+
+  // Internal post-command update check worker. Spawned detached by the
+  // main process after any normal invocation; runs only the registry
+  // query + state-file write, never installs. Not listed in `--help`
+  // because it's not a user-facing command. Return before commander
+  // sees it so no "unknown option" error fires.
+  if (argv.slice(2).includes("--internal-check-updates")) {
+    await runInternalUpdateCheckFn();
+    return;
+  }
+
   // Invocation name. Both `almanac` and `codealmanac` point at the same
   // entry (see package.json#bin); we match the help header + default
   // action to the actual binary that was invoked.
   const invoked = argv[1] !== undefined ? basename(argv[1]) : "almanac";
   const programName =
     invoked === "codealmanac" ? "codealmanac" : "almanac";
+
+  // Persistent update nag. Printed to stderr at the top of every
+  // command, before any output from the command itself, so users see
+  // it regardless of whether the command succeeds. Reads state from
+  // `~/.almanac/update-state.json` (written by the background worker
+  // that runs after each previous invocation). Silent no-op when no
+  // state file, when on latest, when the latest version is dismissed,
+  // or when the user disabled notifications.
+  announceUpdateFn(process.stderr);
+
+  // Schedule a detached background update check that runs after THIS
+  // command exits. The worker spawns its own process, writes the
+  // state file, and disappears — it never interferes with the
+  // foreground invocation. Gated against test environments so `npm
+  // test` doesn't fork 300 copies of itself.
+  scheduleUpdateCheckFn(argv);
 
   const program = new Command();
 
@@ -89,7 +145,7 @@ export async function run(argv: string[]): Promise<void> {
   if (programName === "codealmanac") {
     const setupInvocation = tryParseSetupShortcut(argv.slice(2));
     if (setupInvocation !== null) {
-      const result = await runSetup(setupInvocation);
+      const result = await runSetupFn(setupInvocation);
       if (result.stderr.length > 0) process.stderr.write(result.stderr);
       if (result.stdout.length > 0) process.stdout.write(result.stdout);
       if (result.exitCode !== 0) process.exitCode = result.exitCode;
@@ -618,6 +674,44 @@ export async function run(argv: string[]): Promise<void> {
     );
 
   program
+    .command("update")
+    .description(
+      "install the latest codealmanac (synchronous foreground `npm i -g`)",
+    )
+    .option(
+      "--dismiss",
+      "silence the update banner for the current `latest_version` without installing",
+    )
+    .option(
+      "--check",
+      "force a registry check now (bypasses the 24h cache); no install",
+    )
+    .option(
+      "--enable-notifier",
+      "re-enable the pre-command update banner (writes ~/.almanac/config.json)",
+    )
+    .option(
+      "--disable-notifier",
+      "silence the pre-command update banner (writes ~/.almanac/config.json)",
+    )
+    .action(
+      async (opts: {
+        dismiss?: boolean;
+        check?: boolean;
+        enableNotifier?: boolean;
+        disableNotifier?: boolean;
+      }) => {
+        const result = await runUpdate({
+          dismiss: opts.dismiss,
+          check: opts.check,
+          enableNotifier: opts.enableNotifier,
+          disableNotifier: opts.disableNotifier,
+        });
+        emit(result);
+      },
+    );
+
+  program
     .command("uninstall")
     .description("remove the hook + guides + import line")
     .option("-y, --yes", "skip confirmations; remove everything")
@@ -671,7 +765,7 @@ const HELP_GROUPS: Array<{ title: string; commands: string[] }> = [
   },
   {
     title: "Setup",
-    commands: ["setup", "uninstall", "doctor"],
+    commands: ["setup", "uninstall", "doctor", "update"],
   },
 ];
 
@@ -750,6 +844,14 @@ function configureGroupedHelp(program: Command): void {
       // Any leftovers (new commands not in a group). Prevents silent
       // disappearance from help when someone adds a command and forgets
       // to slot it into HELP_GROUPS.
+      //
+      // Commander v12 auto-generates an implicit `help` subcommand that
+      // doesn't belong in any product group — filter it out here so
+      // `almanac --help` never renders a singleton "Other" section
+      // containing just `help`. The top-of-help `-h, --help` option
+      // already documents the help flag; users don't need a second
+      // entry for the subcommand form.
+      byName.delete("help");
       if (byName.size > 0) {
         out.push("Other:");
         for (const c of byName.values()) {
@@ -877,6 +979,12 @@ async function readStdin(): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+export interface SetupShortcutOptions {
+  yes?: boolean;
+  skipHook?: boolean;
+  skipGuides?: boolean;
+}
+
 /**
  * Decide whether a bare `codealmanac [...args]` invocation should route
  * straight to `runSetup` (and if so, with which flags). Returns the
@@ -890,12 +998,12 @@ async function readStdin(): Promise<string> {
  * option '--yes'". We accept exactly the flag set `setup` itself takes:
  * `--yes` / `-y`, `--skip-hook`, `--skip-guides`. Anything else (a
  * subcommand, `--help`, `--version`, an unrecognized flag) falls through.
+ *
+ * Exported for tests. `run` calls this only when `programName ===
+ * "codealmanac"`; callers testing `almanac` behavior should verify the
+ * gating in `run`, not the shortcut itself.
  */
-function tryParseSetupShortcut(args: string[]): {
-  yes?: boolean;
-  skipHook?: boolean;
-  skipGuides?: boolean;
-} | null {
+export function tryParseSetupShortcut(args: string[]): SetupShortcutOptions | null {
   if (args.length === 0) return {};
 
   const opts: { yes?: boolean; skipHook?: boolean; skipGuides?: boolean } = {};

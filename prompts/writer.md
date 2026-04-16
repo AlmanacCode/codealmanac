@@ -7,7 +7,7 @@ You have a reviewer subagent available. Invoke it when you want a second set of 
 ## What you're reading
 
 - The session transcript (file path passed as input)
-- Existing wiki pages, via `almanac search`, `almanac show <slug>`, `almanac info <slug>`
+- Existing wiki pages, via `almanac search` and `almanac show <slug>` (add `--meta` for metadata only)
 - The repo's `.almanac/README.md` — conventions and notability bar
 - Source files referenced in the session, via `Read` / `Grep`
 

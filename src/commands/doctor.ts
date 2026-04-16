@@ -12,10 +12,14 @@ import {
   type ClaudeAuthStatus,
   type SpawnCliFn,
 } from "../agent/auth.js";
+import { ensureFreshIndex } from "../indexer/index.js";
 import { findNearestAlmanacDir } from "../paths.js";
 import { openIndex } from "../indexer/schema.js";
 import { findEntry } from "../registry/index.js";
-import { runHealth } from "./health.js";
+import { readConfig } from "../update/config.js";
+import { readStateForDoctor } from "../update/schedule.js";
+import { isNewer } from "../update/semver.js";
+import { runHealth, type HealthReport } from "./health.js";
 import { IMPORT_LINE } from "./setup.js";
 
 /**
@@ -24,8 +28,7 @@ import { IMPORT_LINE } from "./setup.js";
  * Separate from `almanac health` (which checks graph integrity of a
  * specific wiki). `doctor` answers the "is this install even set up
  * correctly?" question that users hit when first trying the tool or when
- * sessions silently stop getting captured. It's read-only: every check
- * reports a state; none of them mutate.
+ * sessions silently stop getting captured.
  *
  * The report has two sections:
  *   - **Install** — host-level things: the binary, the native SQLite
@@ -35,6 +38,14 @@ import { IMPORT_LINE } from "./setup.js";
  *   - **Current wiki** — whether the current cwd is inside a wiki,
  *     whether it's registered, how many pages/topics, index freshness,
  *     last-capture age, and any `almanac health` problems.
+ *
+ * **Side effect:** doctor refreshes the current wiki's `index.db` before
+ * reading counts so the report matches reality. We used to claim
+ * "read-only", but the `almanac health` probe already called
+ * `ensureFreshIndex` transitively, and skipping the refresh up front
+ * made page/topic counts lie when the wiki had drifted. Refreshing
+ * here means the report stays honest; the cost is one rebuild on a
+ * stale index, which is what every other query command does too.
  *
  * Exit code is always 0 — doctor is a report, not a test. Callers that
  * want a pass/fail gate can parse `--json` and count the ✗ entries.
@@ -65,6 +76,10 @@ export interface DoctorOptions {
   versionOverride?: string;
   /** Override the reported Node version (for binding-mismatch tests). */
   nodeVersion?: string;
+  /** Override the update-state.json path (tests sandbox to tmpdir). */
+  updateStatePath?: string;
+  /** Override the config.json path (tests sandbox to tmpdir). */
+  updateConfigPath?: string;
   /**
    * Override the better-sqlite3 probe result. When provided, doctor
    * skips the real native-binding load and returns this instead.
@@ -110,6 +125,7 @@ export interface Check {
 export interface DoctorReport {
   version: string;
   install: Check[];
+  updates: Check[];
   wiki: Check[];
 }
 
@@ -131,11 +147,19 @@ export async function runDoctor(
     ? []
     : await gatherInstallChecks(options);
 
+  // Updates are part of the install story — suppressed in `--wiki-only`.
+  // We intentionally don't gate behind `--install-only` being false; a
+  // user asking for install-only likely wants to know their update
+  // status too.
+  const updates: Check[] = options.wikiOnly === true
+    ? []
+    : await gatherUpdateChecks(options, version);
+
   const wiki: Check[] = options.installOnly === true
     ? []
     : await gatherWikiChecks(options);
 
-  const report: DoctorReport = { version, install, wiki };
+  const report: DoctorReport = { version, install, updates, wiki };
 
   if (options.json === true) {
     return {
@@ -255,16 +279,40 @@ async function describeHook(settingsPath: string): Promise<Check> {
   }
   try {
     const raw = await readFile(settingsPath, "utf8");
+    // Each SessionEnd entry is either:
+    //   - a wrapped container `{matcher, hooks: [{type, command, …}]}`
+    //     (the current Claude Code schema), OR
+    //   - a legacy unwrapped `{type, command, …}` from codealmanac
+    //     v0.1.0–v0.1.4.
+    // We accept both so a user upgrading across the migration boundary
+    // doesn't see a spurious "hook missing" flag until they re-run
+    // setup.
     const parsed = JSON.parse(raw) as {
-      hooks?: { SessionEnd?: { command?: string }[] };
+      hooks?: {
+        SessionEnd?: {
+          command?: string;
+          hooks?: { command?: string }[];
+        }[];
+      };
     };
     const entries = parsed.hooks?.SessionEnd ?? [];
-    const ours = entries.find(
-      (e) =>
-        typeof e.command === "string" &&
-        e.command.endsWith("almanac-capture.sh"),
-    );
-    if (ours === undefined) {
+    const found = entries.some((e) => {
+      if (
+        typeof e?.command === "string" &&
+        e.command.endsWith("almanac-capture.sh")
+      ) {
+        return true; // Legacy shape.
+      }
+      if (Array.isArray(e?.hooks)) {
+        return e.hooks.some(
+          (h) =>
+            typeof h?.command === "string" &&
+            h.command.endsWith("almanac-capture.sh"),
+        );
+      }
+      return false;
+    });
+    if (!found) {
       return {
         status: "problem",
         key: "install.hook",
@@ -355,6 +403,102 @@ async function describeImportLine(claudeDir: string): Promise<Check> {
   }
 }
 
+// ─── Updates section ──────────────────────────────────────────────────
+
+/**
+ * Build the "## Updates" section of the doctor report.
+ *
+ * The data comes from `~/.almanac/update-state.json` (written by the
+ * post-command background worker) and `~/.almanac/config.json` (the
+ * notifier toggle). Doctor never touches the registry itself — that's
+ * a side effect, and `almanac update --check` is the command for
+ * forcing a registry call.
+ *
+ * Report lines:
+ *   1. `update.status` — ok when on latest, problem when outdated.
+ *      Missing state file is shown as an `info` line pointing at
+ *      `almanac update --check` (first-run state: we literally don't
+ *      know yet).
+ *   2. `update.last_check` — info, human-readable age.
+ *   3. `update.notifier` — info, enabled/disabled.
+ *   4. `update.dismissed` — info, only present when the user has
+ *      dismissed one or more versions.
+ */
+async function gatherUpdateChecks(
+  options: DoctorOptions,
+  installedVersion: string,
+): Promise<Check[]> {
+  const checks: Check[] = [];
+  const state = readStateForDoctor(options.updateStatePath);
+  const config = await readConfig(options.updateConfigPath);
+
+  if (state === null || state.latest_version.length === 0) {
+    checks.push({
+      status: "info",
+      key: "update.status",
+      message: `on ${installedVersion}; no update check has run yet`,
+      fix: "run: almanac update --check",
+    });
+  } else if (isNewer(state.latest_version, installedVersion)) {
+    const dismissed = state.dismissed_versions.includes(state.latest_version)
+      ? " (dismissed — run `almanac update` to install anyway)"
+      : "";
+    checks.push({
+      status: "problem",
+      key: "update.status",
+      message:
+        `${state.latest_version} available (you're on ${installedVersion})${dismissed}`,
+      fix: "run: almanac update",
+    });
+  } else {
+    checks.push({
+      status: "ok",
+      key: "update.status",
+      message: `on latest (${installedVersion})`,
+    });
+  }
+
+  if (state !== null && state.last_check_at > 0) {
+    const now = (options.now?.() ?? new Date()).getTime();
+    const ageMs = now - state.last_check_at * 1000;
+    const failedSuffix =
+      state.last_fetch_failed_at !== undefined &&
+      state.last_fetch_failed_at === state.last_check_at
+        ? " (last attempt failed — will retry next invocation)"
+        : "";
+    checks.push({
+      status: "info",
+      key: "update.last_check",
+      message: `last checked: ${formatDuration(ageMs)} ago${failedSuffix}`,
+    });
+  } else {
+    checks.push({
+      status: "info",
+      key: "update.last_check",
+      message: "last checked: never",
+    });
+  }
+
+  checks.push({
+    status: "info",
+    key: "update.notifier",
+    message: `update notifier: ${config.update_notifier ? "enabled" : "disabled"}`,
+    fix: config.update_notifier
+      ? undefined
+      : "run: almanac update --enable-notifier",
+  });
+
+  if (state !== null && state.dismissed_versions.length > 0) {
+    checks.push({
+      status: "info",
+      key: "update.dismissed",
+      message: `dismissed versions: ${state.dismissed_versions.join(", ")}`,
+    });
+  }
+
+  return checks;
+}
+
 // ─── Wiki section ─────────────────────────────────────────────────────
 
 async function gatherWikiChecks(options: DoctorOptions): Promise<Check[]> {
@@ -377,20 +521,46 @@ async function gatherWikiChecks(options: DoctorOptions): Promise<Check[]> {
     message: `repo: ${repoRoot}`,
   });
 
-  // Registry check.
-  const entry = await findEntry({ path: repoRoot });
+  // Refresh the index up front so the page/topic counts below reflect
+  // on-disk reality. `runHealth` would refresh transitively anyway —
+  // doing it here explicitly means both the counts AND the health
+  // summary agree on what they're counting. Any error during freshness
+  // is swallowed; a broken index is a wiki-local concern we let the
+  // per-check errors below report.
+  try {
+    await ensureFreshIndex({ repoRoot });
+  } catch {
+    // non-fatal: counts below will report whatever's in index.db (or
+    // trigger their own error path), and the health check will
+    // surface the real failure mode.
+  }
+
+  // Registry check. A malformed `~/.almanac/registry.json` must not crash
+  // doctor — that's the exact failure mode doctor exists to surface. Wrap
+  // the read in try/catch and translate a parse error into a `problem`
+  // entry with the error message as the fix hint.
+  let entry: Awaited<ReturnType<typeof findEntry>>;
+  try {
+    entry = await findEntry({ path: repoRoot });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    checks.push({
+      status: "problem",
+      key: "wiki.registered",
+      message: `could not read registry: ${msg}`,
+      fix: "inspect ~/.almanac/registry.json; remove or fix the malformed entry",
+    });
+    entry = null;
+  }
   if (entry !== null) {
     checks.push({
       status: "ok",
       key: "wiki.registered",
       message: `registered as '${entry.name}'`,
     });
-  } else {
-    // Auto-register runs on every query command — so if a user has ever
-    // run `almanac search` in this repo, it's registered. If we see no
-    // entry here it means they haven't. Run `almanac doctor` itself
-    // doesn't auto-register (by design — doctor is a report, not a
-    // mutator).
+  } else if (checks[checks.length - 1]?.key !== "wiki.registered") {
+    // Only push the "not yet registered" info line when the corrupt-
+    // registry branch above didn't already push its own entry.
     checks.push({
       status: "info",
       key: "wiki.registered",
@@ -531,7 +701,19 @@ function describeLastCapture(
     };
   }
   const captures = entries
-    .filter((e) => e.startsWith(".capture-") && e.endsWith(".log"))
+    // Match both sidecar formats. `.capture-<sid>.log` is the hook's
+    // stdout redirect (human-readable, what you want to tail). The
+    // newer `.capture-<stem>.jsonl` is the SDK message stream written
+    // by `capture.ts` itself — the only thing present when `almanac
+    // capture` is invoked by hand (no hook, nothing redirecting
+    // stdout). Reporting either extension as "last capture" means
+    // doctor stays truthful in both the hook and manual invocation
+    // paths.
+    .filter(
+      (e) =>
+        e.startsWith(".capture-") &&
+        (e.endsWith(".log") || e.endsWith(".jsonl")),
+    )
     .map((e) => {
       try {
         return {
@@ -565,11 +747,34 @@ function describeLastCapture(
 // `probeBetterSqlite3`. Instantiating per call is cheap but not free.
 const req = createRequire(import.meta.url);
 
+/**
+ * Problem-bearing keys in `HealthReport`. Kept as an explicit list
+ * rather than `Object.values(parsed)` so that if a future health check
+ * adds a non-problem array (a scope summary, a histogram, etc.), we
+ * don't silently double-count it here.
+ *
+ * Each key maps 1:1 to a category in `health.ts` — when that file grows
+ * a new problem category, add it here and the doctor summary will pick
+ * it up. Forgetting costs one category of under-counting, caught by the
+ * doctor tests.
+ */
+const HEALTH_PROBLEM_KEYS: (keyof HealthReport)[] = [
+  "orphans",
+  "stale",
+  "dead_refs",
+  "broken_links",
+  "broken_xwiki",
+  "empty_topics",
+  "empty_pages",
+  "slug_collisions",
+];
+
 function countHealthProblems(jsonStdout: string): number {
   try {
-    const report = JSON.parse(jsonStdout) as Record<string, unknown[]>;
+    const report = JSON.parse(jsonStdout) as Partial<HealthReport>;
     let total = 0;
-    for (const arr of Object.values(report)) {
+    for (const key of HEALTH_PROBLEM_KEYS) {
+      const arr = report[key];
       if (Array.isArray(arr)) total += arr.length;
     }
     return total;
@@ -684,6 +889,13 @@ function formatReport(report: DoctorReport, options: DoctorOptions): string {
   if (report.install.length > 0) {
     lines.push(color ? `${BOLD}## Install${RST}` : "## Install");
     for (const c of report.install) {
+      lines.push(formatCheck(c, color));
+    }
+    lines.push("");
+  }
+  if (report.updates.length > 0) {
+    lines.push(color ? `${BOLD}## Updates${RST}` : "## Updates");
+    for (const c of report.updates) {
       lines.push(formatCheck(c, color));
     }
     lines.push("");
