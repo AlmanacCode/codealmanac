@@ -5,6 +5,7 @@ import { basename, join } from "node:path";
 import fg from "fast-glob";
 import type Database from "better-sqlite3";
 
+import { BLUE, BOLD, DIM, GREEN, RED, RST } from "../ansi.js";
 import { parseDuration } from "../indexer/duration.js";
 import { ensureFreshIndex } from "../indexer/index.js";
 import { resolveWikiRoot } from "../indexer/resolveWiki.js";
@@ -457,21 +458,21 @@ function formatReport(r: HealthReport): string {
     section(
       "orphans",
       r.orphans.length,
-      r.orphans.map((o) => `  ${o.slug}`),
+      r.orphans.map((o) => `  ${BLUE}${o.slug}${RST}`),
     ),
   );
   sections.push(
     section(
       "stale",
       r.stale.length,
-      r.stale.map((s) => `  ${s.slug}     (${s.days_since_update} days)`),
+      r.stale.map((s) => `  ${BLUE}${s.slug}${RST}     ${DIM}(${s.days_since_update} days)${RST}`),
     ),
   );
   sections.push(
     section(
       "dead-refs",
       r.dead_refs.length,
-      r.dead_refs.map((d) => `  ${d.slug}  references ${d.path} (missing)`),
+      r.dead_refs.map((d) => `  ${BLUE}${d.slug}${RST}  references ${d.path} ${DIM}(missing)${RST}`),
     ),
   );
   sections.push(
@@ -479,7 +480,7 @@ function formatReport(r: HealthReport): string {
       "broken-links",
       r.broken_links.length,
       r.broken_links.map(
-        (b) => `  ${b.source_slug} → ${b.target_slug} (target does not exist)`,
+        (b) => `  ${BLUE}${b.source_slug}${RST} → ${b.target_slug} ${DIM}(target does not exist)${RST}`,
       ),
     ),
   );
@@ -489,7 +490,7 @@ function formatReport(r: HealthReport): string {
       r.broken_xwiki.length,
       r.broken_xwiki.map(
         (b) =>
-          `  ${b.source_slug} → ${b.target_wiki}:${b.target_slug} (wiki unregistered or unreachable)`,
+          `  ${BLUE}${b.source_slug}${RST} → ${b.target_wiki}:${b.target_slug} ${DIM}(wiki unregistered or unreachable)${RST}`,
       ),
     ),
   );
@@ -497,27 +498,27 @@ function formatReport(r: HealthReport): string {
     section(
       "empty-topics",
       r.empty_topics.length,
-      r.empty_topics.map((e) => `  ${e.slug}`),
+      r.empty_topics.map((e) => `  ${BLUE}${e.slug}${RST}`),
     ),
   );
   sections.push(
     section(
       "empty-pages",
       r.empty_pages.length,
-      r.empty_pages.map((e) => `  ${e.slug}`),
+      r.empty_pages.map((e) => `  ${BLUE}${e.slug}${RST}`),
     ),
   );
   sections.push(
     section(
       "slug-collisions",
       r.slug_collisions.length,
-      r.slug_collisions.map((c) => `  ${c.slug}: ${c.paths.join(", ")}`),
+      r.slug_collisions.map((c) => `  ${BLUE}${c.slug}${RST}: ${c.paths.join(", ")}`),
     ),
   );
   return `${sections.join("\n\n")}\n`;
 }
 
 function section(label: string, count: number, lines: string[]): string {
-  if (count === 0) return `${label} (0): (ok)`;
-  return `${label} (${count}):\n${lines.join("\n")}`;
+  if (count === 0) return `${BOLD}${label}${RST} ${GREEN}(0): (ok)${RST}`;
+  return `${BOLD}${label}${RST} ${RED}(${count})${RST}:\n${lines.join("\n")}`;
 }

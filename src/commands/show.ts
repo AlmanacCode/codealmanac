@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import type Database from "better-sqlite3";
 
+import { BLUE, DIM, RST } from "../ansi.js";
 import { ensureFreshIndex } from "../indexer/index.js";
 import { resolveWikiRoot } from "../indexer/resolveWiki.js";
 import { openIndex } from "../indexer/schema.js";
@@ -329,7 +330,7 @@ function formatRecord(rec: ShowRecord, options: ShowOptions): string {
   // 5. Default — metadata header + separator + body.
   const header = metadataHeader(rec);
   const body = rec.body;
-  const sep = body.length > 0 ? "\n\n---\n\n" : "\n";
+  const sep = body.length > 0 ? `\n\n${DIM}---${RST}\n\n` : "\n";
   return header + sep + body;
 }
 
@@ -406,11 +407,11 @@ function labeledFields(rec: ShowRecord, fields: FieldName[]): string {
 function labeledSection(rec: ShowRecord, field: FieldName): string {
   switch (field) {
     case "title":
-      return `title: ${rec.title ?? "—"}\n`;
+      return `${DIM}title:${RST} ${rec.title ?? "—"}\n`;
     case "topics":
       return rec.topics.length > 0
-        ? `topics: ${rec.topics.join(", ")}\n`
-        : `topics: —\n`;
+        ? `${DIM}topics:${RST} ${rec.topics.join(", ")}\n`
+        : `${DIM}topics:${RST} —\n`;
     case "files":
       return formatListSection(
         "files",
@@ -426,32 +427,32 @@ function labeledSection(rec: ShowRecord, field: FieldName): string {
         rec.cross_wiki_links.map((x) => `${x.wiki}:${x.target}`),
       );
     case "lineage": {
-      const lines: string[] = ["lineage:"];
+      const lines: string[] = [`${DIM}lineage:${RST}`];
       if (rec.archived_at !== null) {
         lines.push(
-          `  archived_at: ${new Date(rec.archived_at * 1000).toISOString()}`,
+          `  ${DIM}archived_at:${RST} ${new Date(rec.archived_at * 1000).toISOString()}`,
         );
       }
       if (rec.superseded_by !== null) {
-        lines.push(`  superseded_by: ${rec.superseded_by}`);
+        lines.push(`  ${DIM}superseded_by:${RST} ${rec.superseded_by}`);
       }
       if (rec.supersedes.length > 0) {
-        lines.push(`  supersedes: ${rec.supersedes.join(", ")}`);
+        lines.push(`  ${DIM}supersedes:${RST} ${rec.supersedes.join(", ")}`);
       }
       if (lines.length === 1) lines.push("  —");
       return lines.join("\n") + "\n";
     }
     case "updated":
-      return `updated: ${new Date(rec.updated_at * 1000).toISOString()}\n`;
+      return `${DIM}updated:${RST} ${new Date(rec.updated_at * 1000).toISOString()}\n`;
     case "path":
-      return `path: ${rec.file_path}\n`;
+      return `${DIM}path:${RST} ${rec.file_path}\n`;
   }
 }
 
 function formatListSection(label: string, items: string[]): string {
-  if (items.length === 0) return `${label}: —\n`;
-  if (items.length <= 3) return `${label}: ${items.join(", ")}\n`;
-  return `${label}:\n${items.map((i) => `  ${i}`).join("\n")}\n`;
+  if (items.length === 0) return `${DIM}${label}:${RST} —\n`;
+  if (items.length <= 3) return `${DIM}${label}:${RST} ${items.join(", ")}\n`;
+  return `${DIM}${label}:${RST}\n${items.map((i) => `  ${i}`).join("\n")}\n`;
 }
 
 /**
@@ -462,46 +463,46 @@ function formatListSection(label: string, items: string[]): string {
  */
 function metadataHeader(rec: ShowRecord): string {
   const lines: string[] = [];
-  lines.push(`slug:       ${rec.slug}`);
-  lines.push(`title:      ${rec.title ?? "—"}`);
+  lines.push(`${DIM}slug:${RST}       ${BLUE}${rec.slug}${RST}`);
+  lines.push(`${DIM}title:${RST}      ${rec.title ?? "—"}`);
   lines.push(
-    `topics:     ${rec.topics.length > 0 ? rec.topics.join(", ") : "—"}`,
+    `${DIM}topics:${RST}     ${rec.topics.length > 0 ? rec.topics.join(", ") : "—"}`,
   );
 
   if (rec.file_refs.length > 0) {
     const parts = rec.file_refs.map(
       (r) => `${r.path}`,
     );
-    lines.push(`files:      ${parts.join(", ")}`);
+    lines.push(`${DIM}files:${RST}      ${parts.join(", ")}`);
   }
 
   lines.push(
-    `updated:    ${new Date(rec.updated_at * 1000).toISOString()}`,
+    `${DIM}updated:${RST}    ${new Date(rec.updated_at * 1000).toISOString()}`,
   );
 
   if (rec.wikilinks_out.length > 0) {
-    lines.push(`links:      ${rec.wikilinks_out.join(", ")}`);
+    lines.push(`${DIM}links:${RST}      ${rec.wikilinks_out.join(", ")}`);
   }
   if (rec.wikilinks_in.length > 0) {
-    lines.push(`backlinks:  ${rec.wikilinks_in.join(", ")}`);
+    lines.push(`${DIM}backlinks:${RST}  ${rec.wikilinks_in.join(", ")}`);
   }
   if (rec.cross_wiki_links.length > 0) {
     lines.push(
-      `xwiki:      ${rec.cross_wiki_links
+      `${DIM}xwiki:${RST}      ${rec.cross_wiki_links
         .map((x) => `${x.wiki}:${x.target}`)
         .join(", ")}`,
     );
   }
   if (rec.archived_at !== null) {
     lines.push(
-      `archived:   ${new Date(rec.archived_at * 1000).toISOString()}`,
+      `${DIM}archived:${RST}   ${new Date(rec.archived_at * 1000).toISOString()}`,
     );
   }
   if (rec.superseded_by !== null) {
-    lines.push(`superseded_by: ${rec.superseded_by}`);
+    lines.push(`${DIM}superseded_by:${RST} ${rec.superseded_by}`);
   }
   if (rec.supersedes.length > 0) {
-    lines.push(`supersedes: ${rec.supersedes.join(", ")}`);
+    lines.push(`${DIM}supersedes:${RST} ${rec.supersedes.join(", ")}`);
   }
 
   return lines.join("\n");

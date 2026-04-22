@@ -4,6 +4,7 @@ import { join } from "node:path";
 import fg from "fast-glob";
 import type Database from "better-sqlite3";
 
+import { BLUE, DIM, RST } from "../ansi.js";
 import { ensureFreshIndex, runIndexer } from "../indexer/index.js";
 import { resolveWikiRoot } from "../indexer/resolveWiki.js";
 import { openIndex } from "../indexer/schema.js";
@@ -146,7 +147,7 @@ export async function runTopicsList(
     const lines = rows.map((r) => {
       const slug = r.slug.padEnd(slugWidth);
       const count = `(${r.page_count} page${r.page_count === 1 ? "" : "s"})`;
-      return `${slug}  ${count}`;
+      return `${BLUE}${slug}${RST}  ${DIM}${count}${RST}`;
     });
     return { stdout: `${lines.join("\n")}\n`, stderr: "", exitCode: 0 };
   } finally {
@@ -277,21 +278,21 @@ function pagesForSubtree(db: Database.Database, slug: string): string[] {
 
 function formatShow(r: TopicsShowRecord): string {
   const lines: string[] = [];
-  lines.push(`slug:         ${r.slug}`);
-  lines.push(`title:        ${r.title ?? titleCase(r.slug)}`);
-  lines.push(`description:  ${r.description ?? "—"}`);
+  lines.push(`${DIM}slug:${RST}         ${BLUE}${r.slug}${RST}`);
+  lines.push(`${DIM}title:${RST}        ${r.title ?? titleCase(r.slug)}`);
+  lines.push(`${DIM}description:${RST}  ${r.description ?? "—"}`);
   lines.push(
-    `parents:      ${r.parents.length > 0 ? r.parents.join(", ") : "—"}`,
+    `${DIM}parents:${RST}      ${r.parents.length > 0 ? r.parents.join(", ") : "—"}`,
   );
   lines.push(
-    `children:     ${r.children.length > 0 ? r.children.join(", ") : "—"}`,
+    `${DIM}children:${RST}     ${r.children.length > 0 ? r.children.join(", ") : "—"}`,
   );
   const pagesLabel = r.descendants_used === true ? "pages (incl. descendants)" : "pages";
-  lines.push(`${pagesLabel}:`);
+  lines.push(`${DIM}${pagesLabel}:${RST}`);
   if (r.pages.length === 0) {
     lines.push("  —");
   } else {
-    for (const p of r.pages) lines.push(`  ${p}`);
+    for (const p of r.pages) lines.push(`  ${BLUE}${p}${RST}`);
   }
   return `${lines.join("\n")}\n`;
 }

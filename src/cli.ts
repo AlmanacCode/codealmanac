@@ -3,6 +3,8 @@ import { basename } from "node:path";
 
 import { Command, type Help } from "commander";
 
+import { BLUE, BOLD, DIM, RST } from "./ansi.js";
+
 import { runBootstrap } from "./commands/bootstrap.js";
 import { runCapture } from "./commands/capture.js";
 import { runDoctor } from "./commands/doctor.js";
@@ -795,7 +797,7 @@ function configureGroupedHelp(program: Command): void {
       const out: string[] = [];
 
       // Usage line.
-      out.push(`Usage: ${helper.commandUsage(cmd)}\n`);
+      out.push(`${BOLD}Usage:${RST} ${helper.commandUsage(cmd)}\n`);
 
       const description = helper.commandDescription(cmd);
       if (description.length > 0) {
@@ -808,11 +810,14 @@ function configureGroupedHelp(program: Command): void {
       const optionList = helper
         .visibleOptions(cmd)
         .map(
-          (o) =>
-            `${helper.optionTerm(o)}${" ".repeat(Math.max(0, termWidth - helper.optionTerm(o).length) + itemSepWidth)}${helper.optionDescription(o)}`,
+          (o) => {
+            const term = helper.optionTerm(o);
+            const pad = " ".repeat(Math.max(0, termWidth - term.length) + itemSepWidth);
+            return `${BLUE}${term}${RST}${pad}${DIM}${helper.optionDescription(o)}${RST}`;
+          },
         );
       if (optionList.length > 0) {
-        out.push("Options:");
+        out.push(`${BOLD}Options:${RST}`);
         for (const l of optionList) out.push(`  ${l}`);
         out.push("");
       }
@@ -827,7 +832,7 @@ function configureGroupedHelp(program: Command): void {
           .map((n) => byName.get(n))
           .filter((c): c is (typeof visible)[number] => c !== undefined);
         if (members.length === 0) continue;
-        out.push(`${group.title}:`);
+        out.push(`${BOLD}${group.title}:${RST}`);
         for (const c of members) {
           const term = helper.subcommandTerm(c);
           const desc = helper.subcommandDescription(c);
@@ -835,7 +840,7 @@ function configureGroupedHelp(program: Command): void {
             0,
             termWidth - term.length + itemSepWidth,
           );
-          out.push(`  ${term}${" ".repeat(padding)}${desc}`);
+          out.push(`  ${BLUE}${term}${RST}${" ".repeat(padding)}${DIM}${desc}${RST}`);
           byName.delete(c.name());
         }
         out.push("");
@@ -853,7 +858,7 @@ function configureGroupedHelp(program: Command): void {
       // entry for the subcommand form.
       byName.delete("help");
       if (byName.size > 0) {
-        out.push("Other:");
+        out.push(`${BOLD}Other:${RST}`);
         for (const c of byName.values()) {
           const term = helper.subcommandTerm(c);
           const desc = helper.subcommandDescription(c);
@@ -861,7 +866,7 @@ function configureGroupedHelp(program: Command): void {
             0,
             termWidth - term.length + itemSepWidth,
           );
-          out.push(`  ${term}${" ".repeat(padding)}${desc}`);
+          out.push(`  ${BLUE}${term}${RST}${" ".repeat(padding)}${DIM}${desc}${RST}`);
         }
         out.push("");
       }
@@ -879,38 +884,47 @@ function renderDefault(cmd: Command, helper: Help): string {
   const helpWidth = helper.helpWidth ?? process.stdout.columns ?? 80;
   const itemSepWidth = 2;
 
-  const lines: string[] = [`Usage: ${helper.commandUsage(cmd)}\n`];
+  const lines: string[] = [`${BOLD}Usage:${RST} ${helper.commandUsage(cmd)}\n`];
   const description = helper.commandDescription(cmd);
   if (description.length > 0) {
     lines.push(helper.wrap(description, helpWidth, 0) + "\n");
   }
 
   const args = helper.visibleArguments(cmd).map(
-    (a) =>
-      `${helper.argumentTerm(a)}${" ".repeat(Math.max(0, termWidth - helper.argumentTerm(a).length) + itemSepWidth)}${helper.argumentDescription(a)}`,
+    (a) => {
+      const term = helper.argumentTerm(a);
+      const pad = " ".repeat(Math.max(0, termWidth - term.length) + itemSepWidth);
+      return `${BLUE}${term}${RST}${pad}${DIM}${helper.argumentDescription(a)}${RST}`;
+    },
   );
   if (args.length > 0) {
-    lines.push("Arguments:");
+    lines.push(`${BOLD}Arguments:${RST}`);
     for (const a of args) lines.push(`  ${a}`);
     lines.push("");
   }
 
   const opts = helper.visibleOptions(cmd).map(
-    (o) =>
-      `${helper.optionTerm(o)}${" ".repeat(Math.max(0, termWidth - helper.optionTerm(o).length) + itemSepWidth)}${helper.optionDescription(o)}`,
+    (o) => {
+      const term = helper.optionTerm(o);
+      const pad = " ".repeat(Math.max(0, termWidth - term.length) + itemSepWidth);
+      return `${BLUE}${term}${RST}${pad}${DIM}${helper.optionDescription(o)}${RST}`;
+    },
   );
   if (opts.length > 0) {
-    lines.push("Options:");
+    lines.push(`${BOLD}Options:${RST}`);
     for (const o of opts) lines.push(`  ${o}`);
     lines.push("");
   }
 
   const subs = helper.visibleCommands(cmd).map(
-    (c) =>
-      `${helper.subcommandTerm(c)}${" ".repeat(Math.max(0, termWidth - helper.subcommandTerm(c).length) + itemSepWidth)}${helper.subcommandDescription(c)}`,
+    (c) => {
+      const term = helper.subcommandTerm(c);
+      const pad = " ".repeat(Math.max(0, termWidth - term.length) + itemSepWidth);
+      return `${BLUE}${term}${RST}${pad}${DIM}${helper.subcommandDescription(c)}${RST}`;
+    },
   );
   if (subs.length > 0) {
-    lines.push("Commands:");
+    lines.push(`${BOLD}Commands:${RST}`);
     for (const s of subs) lines.push(`  ${s}`);
     lines.push("");
   }

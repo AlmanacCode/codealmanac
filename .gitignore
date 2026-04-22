@@ -12,3 +12,5 @@ coverage/
 .almanac/index.db
 .almanac/index.db-wal
 .almanac/index.db-shm
+
+AGENTS.md

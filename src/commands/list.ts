@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 
+import { BLUE, BOLD, DIM, RST } from "../ansi.js";
 import {
   dropEntry,
   readRegistry,
@@ -78,7 +79,7 @@ function isReachable(entry: RegistryEntry): boolean {
  */
 function formatPretty(entries: RegistryEntry[]): string {
   if (entries.length === 0) {
-    return "no wikis registered. run `almanac bootstrap` in a repo to create one.\n";
+    return `${DIM}no wikis registered. run \`almanac bootstrap\` in a repo to create one.${RST}\n`;
   }
 
   // Column-width the name for alignment; cap at 30 so absurd names don't
@@ -92,8 +93,8 @@ function formatPretty(entries: RegistryEntry[]): string {
   for (const entry of entries) {
     const name = entry.name.padEnd(nameWidth);
     const desc = entry.description.length > 0 ? entry.description : "—";
-    lines.push(`${name}  ${desc}`);
-    lines.push(`${" ".repeat(nameWidth)}  ${entry.path}`);
+    lines.push(`${BLUE}${BOLD}${name}${RST}  ${desc}`);
+    lines.push(`${" ".repeat(nameWidth)}  ${DIM}${entry.path}${RST}`);
   }
   return `${lines.join("\n")}\n`;
 }

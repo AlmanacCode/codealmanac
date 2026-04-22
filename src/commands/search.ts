@@ -2,6 +2,7 @@ import { join } from "node:path";
 
 import type Database from "better-sqlite3";
 
+import { BLUE, RST } from "../ansi.js";
 import { parseDuration } from "../indexer/duration.js";
 import { ensureFreshIndex } from "../indexer/index.js";
 import { looksLikeDir, normalizePath } from "../indexer/paths.js";
@@ -357,7 +358,7 @@ function formatResults(
   // "no results found") — makes piping into xargs / subsequent commands
   // degrade gracefully.
   if (rows.length === 0) return "";
-  return `${rows.map((r) => r.slug).join("\n")}\n`;
+  return `${rows.map((r) => `${BLUE}${r.slug}${RST}`).join("\n")}\n`;
 }
 
 function buildStderr(rows: SearchResult[], options: SearchOptions): string {
