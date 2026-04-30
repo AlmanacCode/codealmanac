@@ -317,8 +317,6 @@ function formatShow(r: TopicsShowRecord): string {
 export async function runTopicsCreate(
   options: TopicsCreateOptions,
 ): Promise<TopicsCommandOutput> {
-  const repoRoot = await resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
-
   const slug = toKebabCase(options.name);
   if (slug.length === 0) {
     return {
@@ -329,22 +327,9 @@ export async function runTopicsCreate(
   }
   const title = options.name.trim().length > 0 ? options.name.trim() : titleCase(slug);
 
-  // Reindex first so an ad-hoc `--parent <slug>` created by a
-  // just-written page is visible to `topicExists`. Every other topics
-  // command did this; `create` silently skipped the refresh which meant
-  // a brand-new page's `topics: [newparent]` couldn't be used as a
-  // parent until the next query touched the DB.
-  await ensureFreshIndex({ repoRoot });
-
-  const yamlPath = topicsYamlPath(repoRoot);
-  const file = await loadTopicsFile(yamlPath);
-
-  // Hoist the DB open out of the parents loop. We used to open + close
-  // the DB inside `isAdHocTopicInDb` for every parent; opening is
-  // cheap but not free, and the iteration pattern shows up in other
-  // topics commands too.
-  const db = openIndex(indexDbPath(repoRoot));
+  const workspace = await openFreshTopicsWorkspace(options);
   try {
+    const { repoRoot, yamlPath, file, db } = workspace;
     // Resolve/validate parents BEFORE mutating the file. All-or-nothing.
     const requestedParents = (options.parents ?? [])
       .map((p) => toKebabCase(p))
@@ -419,7 +404,7 @@ export async function runTopicsCreate(
       exitCode: 0,
     };
   } finally {
-    db.close();
+    closeWorkspace(workspace);
   }
 }
 
@@ -458,7 +443,6 @@ function topicExists(
 export async function runTopicsLink(
   options: TopicsLinkOptions,
 ): Promise<TopicsCommandOutput> {
-  const repoRoot = await resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
   const child = toKebabCase(options.child);
   const parent = toKebabCase(options.parent);
   if (child.length === 0 || parent.length === 0) {
@@ -472,16 +456,9 @@ export async function runTopicsLink(
     };
   }
 
-  // Refresh the index so ad-hoc topics (ones the user tagged pages
-  // with but never formally `topics create`d) are visible to
-  // `topicExists` below.
-  await ensureFreshIndex({ repoRoot });
-
-  const yamlPath = topicsYamlPath(repoRoot);
-  const file = await loadTopicsFile(yamlPath);
-
-  const db = openIndex(indexDbPath(repoRoot));
+  const workspace = await openFreshTopicsWorkspace(options);
   try {
+    const { repoRoot, yamlPath, file, db } = workspace;
     for (const slug of [child, parent]) {
       if (!topicExists(file, db, slug)) {
         return {
@@ -535,7 +512,7 @@ export async function runTopicsLink(
       exitCode: 0,
     };
   } finally {
-    db.close();
+    closeWorkspace(workspace);
   }
 }
 
@@ -587,7 +564,6 @@ export async function runTopicsUnlink(
 export async function runTopicsRename(
   options: TopicsRenameOptions,
 ): Promise<TopicsCommandOutput> {
-  const repoRoot = await resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
   const oldSlug = toKebabCase(options.oldSlug);
   const newSlug = toKebabCase(options.newSlug);
   if (oldSlug.length === 0 || newSlug.length === 0) {
@@ -601,16 +577,10 @@ export async function runTopicsRename(
     };
   }
 
-  await ensureFreshIndex({ repoRoot });
-
-  const yamlPath = topicsYamlPath(repoRoot);
-  const file = await loadTopicsFile(yamlPath);
-
-  // Hoist the DB handle so the existence checks below don't reopen
-  // the index per-slug.
-  const db = openIndex(indexDbPath(repoRoot));
+  const workspace = await openFreshTopicsWorkspace(options);
   let pagesUpdated: number;
   try {
+    const { repoRoot, yamlPath, file, db } = workspace;
     // Fetch existence info. `oldInYaml` is kept as a direct reference
     // because we mutate the entry; the DB check is only needed when
     // the slug isn't in the file (ad-hoc-only).
@@ -659,10 +629,10 @@ export async function runTopicsRename(
       topics.map((t) => (t === oldSlug ? newSlug : t)),
     );
   } finally {
-    db.close();
+    closeWorkspace(workspace);
   }
 
-  await runIndexer({ repoRoot });
+  await runIndexer({ repoRoot: workspace.repoRoot });
   return {
     stdout: `renamed ${oldSlug} → ${newSlug} (${pagesUpdated} page${pagesUpdated === 1 ? "" : "s"} updated)\n`,
     stderr: "",
@@ -683,19 +653,15 @@ export async function runTopicsRename(
 export async function runTopicsDelete(
   options: TopicsDeleteOptions,
 ): Promise<TopicsCommandOutput> {
-  const repoRoot = await resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
   const slug = toKebabCase(options.slug);
   if (slug.length === 0) {
     return { stdout: "", stderr: `almanac: empty topic slug\n`, exitCode: 1 };
   }
 
-  await ensureFreshIndex({ repoRoot });
-
-  const yamlPath = topicsYamlPath(repoRoot);
-  const file = await loadTopicsFile(yamlPath);
-  const db = openIndex(indexDbPath(repoRoot));
+  const workspace = await openFreshTopicsWorkspace(options);
   let pagesUpdated: number;
   try {
+    const { repoRoot, yamlPath, file, db } = workspace;
     if (!topicExists(file, db, slug)) {
       return {
         stdout: "",
@@ -721,10 +687,10 @@ export async function runTopicsDelete(
       topics.filter((t) => t !== slug),
     );
   } finally {
-    db.close();
+    closeWorkspace(workspace);
   }
 
-  await runIndexer({ repoRoot });
+  await runIndexer({ repoRoot: workspace.repoRoot });
   return {
     stdout: `deleted topic "${slug}" (${pagesUpdated} page${pagesUpdated === 1 ? "" : "s"} untagged)\n`,
     stderr: "",
@@ -743,18 +709,14 @@ export async function runTopicsDelete(
 export async function runTopicsDescribe(
   options: TopicsDescribeOptions,
 ): Promise<TopicsCommandOutput> {
-  const repoRoot = await resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
   const slug = toKebabCase(options.slug);
   if (slug.length === 0) {
     return { stdout: "", stderr: `almanac: empty topic slug\n`, exitCode: 1 };
   }
 
-  await ensureFreshIndex({ repoRoot });
-
-  const yamlPath = topicsYamlPath(repoRoot);
-  const file = await loadTopicsFile(yamlPath);
-  const db = openIndex(indexDbPath(repoRoot));
+  const workspace = await openFreshTopicsWorkspace(options);
   try {
+    const { yamlPath, file, db } = workspace;
     if (!topicExists(file, db, slug)) {
       return {
         stdout: "",
@@ -772,10 +734,10 @@ export async function runTopicsDescribe(
 
     await writeTopicsFile(yamlPath, file);
   } finally {
-    db.close();
+    closeWorkspace(workspace);
   }
 
-  await runIndexer({ repoRoot });
+  await runIndexer({ repoRoot: workspace.repoRoot });
   return {
     stdout: `described ${slug}\n`,
     stderr: "",
@@ -786,6 +748,34 @@ export async function runTopicsDescribe(
 // ─────────────────────────────────────────────────────────────────────
 // Shared helpers
 // ─────────────────────────────────────────────────────────────────────
+
+interface TopicsWorkspace {
+  repoRoot: string;
+  yamlPath: string;
+  file: TopicsFile;
+  db: Database.Database;
+}
+
+/**
+ * Shared setup path for mutating topic commands. These commands all need
+ * a fresh DB view so ad-hoc topics from page frontmatter can be promoted
+ * into `topics.yaml` before mutation.
+ */
+async function openFreshTopicsWorkspace(
+  options: TopicsBaseOptions,
+): Promise<TopicsWorkspace> {
+  const repoRoot = await resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
+  await ensureFreshIndex({ repoRoot });
+
+  const yamlPath = topicsYamlPath(repoRoot);
+  const file = await loadTopicsFile(yamlPath);
+  const db = openIndex(indexDbPath(repoRoot));
+  return { repoRoot, yamlPath, file, db };
+}
+
+function closeWorkspace(workspace: TopicsWorkspace): void {
+  workspace.db.close();
+}
 
 /**
  * Apply a `topic-list transform` to every `.almanac/pages/*.md` file
