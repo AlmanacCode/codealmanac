@@ -4,7 +4,7 @@
 
 **Goal:** Make the indexer easier to scan by extracting freshness checks and `topics.yaml` reconciliation from the page indexing transaction.
 
-**Architecture:** Keep `src/indexer/index.ts` responsible for `ensureFreshIndex`, `runIndexer`, page scanning, and page-row writes. Move mtime freshness helpers into `src/indexer/freshness.ts` and topic DAG reconciliation into `src/indexer/topicsYaml.ts`. Do not change SQLite schema or page indexing behavior.
+**Architecture:** Keep `src/indexer/index.ts` responsible for `ensureFreshIndex`, `runIndexer`, page scanning, and page-row writes. Move mtime freshness helpers into `src/indexer/freshness.ts` and topic DAG reconciliation into `src/indexer/topics-yaml.ts`. Do not change SQLite schema or page indexing behavior.
 
 **Tech Stack:** TypeScript, fast-glob, better-sqlite3, Vitest.
 
@@ -24,11 +24,11 @@
 ### Task 2: Extract Topics YAML Reconciliation
 
 **Files:**
-- Create: `src/indexer/topicsYaml.ts`
+- Create: `src/indexer/topics-yaml.ts`
 - Modify: `src/indexer/index.ts`
 
 **Steps:**
-1. Move `TOPICS_YAML_FILENAME` and `applyTopicsYaml` into `topicsYaml.ts`.
+1. Move `TOPICS_YAML_FILENAME` and `applyTopicsYaml` into `topics-yaml.ts`.
 2. Preserve malformed YAML warning behavior.
 3. Keep page transaction code in `index.ts`.
 4. Run focused indexer/search/topics/health tests.

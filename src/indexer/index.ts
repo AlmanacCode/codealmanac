@@ -20,7 +20,7 @@ import {
   looksLikeDir,
 } from "./paths.js";
 import { openIndex } from "./schema.js";
-import { applyTopicsYaml, TOPICS_YAML_FILENAME } from "./topicsYaml.js";
+import { applyTopicsYaml, TOPICS_YAML_FILENAME } from "./topics-yaml.js";
 import { extractWikilinks } from "./wikilinks.js";
 
 export interface IndexContext {

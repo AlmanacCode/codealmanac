@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { initWiki } from "../src/commands/_init.js";
+import { initWiki } from "../src/commands/init.js";
 import { readRegistry } from "../src/registry/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 

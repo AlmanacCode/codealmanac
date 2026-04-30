@@ -4,7 +4,7 @@ topics: [systems, cli]
 files:
   - src/topics/yaml.ts
   - src/topics/dag.ts
-  - src/topics/frontmatterRewrite.ts
+  - src/topics/frontmatter-rewrite.ts
   - src/topics/paths.ts
   - src/indexer/schema.ts
   - src/commands/topics.ts
@@ -30,7 +30,7 @@ Three layers:
 
 ## Frontmatter rewrite
 
-`almanac topics rename <old> <new>` and `almanac untag <page> <topic>` rewrite affected pages' frontmatter in place. `src/topics/frontmatterRewrite.ts` handles this — it parses only the YAML block, patches the `topics:` array, and rewrites the file atomically to avoid corrupting prose.
+`almanac topics rename <old> <new>` and `almanac untag <page> <topic>` rewrite affected pages' frontmatter in place. `src/topics/frontmatter-rewrite.ts` handles this — it parses only the YAML block, patches the `topics:` array, and rewrites the file atomically to avoid corrupting prose.
 
 ## CLI surface
 

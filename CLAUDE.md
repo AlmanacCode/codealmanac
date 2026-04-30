@@ -13,9 +13,9 @@ Intelligence lives in prompts, not pipelines. When judgment is needed — decidi
 | `bin/` | npm bin shim — error-formatter around `src/cli.ts` | `codealmanac.ts` |
 | `src/` | TypeScript source | `cli.ts` (commander wiring), `paths.ts` (walk-up to nearest `.almanac/`), `slug.ts` (kebab-case canonicalization) |
 | `src/commands/` | One file per CLI command | `init.ts`, `list.ts`, `search.ts`, `show.ts`, `path.ts`, `info.ts`, `reindex.ts` |
-| `src/indexer/` | SQLite indexer — schema, frontmatter parse, `[[...]]` classifier, freshness | `schema.ts`, `index.ts`, `frontmatter.ts`, `wikilinks.ts`, `paths.ts` (normalization), `resolveWiki.ts`, `duration.ts` |
+| `src/indexer/` | SQLite indexer — schema, frontmatter parse, `[[...]]` classifier, freshness | `schema.ts`, `index.ts`, `frontmatter.ts`, `wikilinks.ts`, `paths.ts` (normalization), `resolve-wiki.ts`, `duration.ts` |
 | `src/registry/` | Global registry at `~/.almanac/registry.json` — atomic read/write + auto-register | `index.ts`, `autoregister.ts` |
-| `src/topics/` | Topic DAG serialized to `.almanac/topics.yaml` + page frontmatter rewrites (slice 3) | `yaml.ts`, `frontmatterRewrite.ts` |
+| `src/topics/` | Topic DAG serialized to `.almanac/topics.yaml` + page frontmatter rewrites (slice 3) | `yaml.ts`, `frontmatter-rewrite.ts` |
 | `test/` | Vitest suites, one per feature area | `helpers.ts` (`withTempHome`, `makeRepo`, `writePage`), `*.test.ts` |
 | `prompts/` | Agent prompts bundled in the npm package | `bootstrap.md`, `writer.md`, `reviewer.md` |
 | `docs/plans/` | Slice-by-slice implementation plans + review-fix plans | `slice-N-*.md`, `fixes-slice-N-review.md` |

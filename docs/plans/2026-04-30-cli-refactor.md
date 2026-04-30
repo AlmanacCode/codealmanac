@@ -4,7 +4,7 @@
 
 **Goal:** Make the CLI entrypoint easier to read by moving command wiring and help formatting into named modules without changing command behavior.
 
-**Architecture:** Keep `src/cli.ts` as the process-level entrypoint: invocation-name handling, update scheduling, setup shortcut routing, and `program.parseAsync`. Move Commander registration into `src/cli/registerCommands.ts`, shared CLI helpers into `src/cli/helpers.ts`, and root help rendering into `src/cli/help.ts`. Do not introduce a framework, domain layer, or new runtime behavior.
+**Architecture:** Keep `src/cli.ts` as the process-level entrypoint: invocation-name handling, update scheduling, setup shortcut routing, and `program.parseAsync`. Move Commander registration into `src/cli/register-commands.ts`, shared CLI helpers into `src/cli/helpers.ts`, and root help rendering into `src/cli/help.ts`. Do not introduce a framework, domain layer, or new runtime behavior.
 
 **Tech Stack:** TypeScript, Commander, Vitest.
 
@@ -37,7 +37,7 @@
 ### Task 3: Extract Command Registration
 
 **Files:**
-- Create: `src/cli/registerCommands.ts`
+- Create: `src/cli/register-commands.ts`
 - Modify: `src/cli.ts`
 
 **Steps:**

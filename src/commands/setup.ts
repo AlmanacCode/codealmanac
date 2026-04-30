@@ -21,11 +21,11 @@ import {
   detectCurrentInstallPath,
   detectEphemeral,
   spawnGlobalInstall,
-} from "./setup/installPath.js";
+} from "./setup/install-path.js";
 import {
   countExistingPages,
   printNextSteps,
-} from "./setup/nextSteps.js";
+} from "./setup/next-steps.js";
 
 /**
  * `codealmanac setup` — the MCP-style branded TUI that runs when a user

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Command } from "commander";
 
 import { run, tryParseSetupShortcut } from "../src/cli.js";
-import { registerCommands } from "../src/cli/registerCommands.js";
+import { registerCommands } from "../src/cli/register-commands.js";
 import type { SetupResult } from "../src/commands/setup.js";
 
 /**

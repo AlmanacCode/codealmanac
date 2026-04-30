@@ -4,7 +4,7 @@ Apply the fixes identified in the slice 3 code review. Slice 3 introduced topics
 
 ## Read before coding
 
-- `/Users/rohan/Desktop/Projects/codealmanac/src/topics/frontmatterRewrite.ts`
+- `/Users/rohan/Desktop/Projects/codealmanac/src/topics/frontmatter-rewrite.ts`
 - `/Users/rohan/Desktop/Projects/codealmanac/src/topics/yaml.ts`
 - `/Users/rohan/Desktop/Projects/codealmanac/src/commands/topics.ts`
 - `/Users/rohan/Desktop/Projects/codealmanac/src/commands/health.ts`
@@ -18,7 +18,7 @@ Existing patterns to preserve: `withTempHome` in tests, surgical frontmatter rew
 
 ### 1. Block-style topics list with comments silently drops items (DATA LOSS)
 
-**File:** `src/topics/frontmatterRewrite.ts:249-258`
+**File:** `src/topics/frontmatter-rewrite.ts:249-258`
 
 **Bug:** The block-sequence parser loops while each line matches `^\s*-\s+(.*)$` and **breaks on the first non-matching line**. A page with:
 
@@ -43,7 +43,7 @@ Alternative (acceptable): detect the comment and refuse with a clear error ("blo
 
 ### 2. CRLF → LF corruption in frontmatter (line-ending corruption)
 
-**File:** `src/topics/frontmatterRewrite.ts:138, 202-203`
+**File:** `src/topics/frontmatter-rewrite.ts:138, 202-203`
 
 **Bug:** `splitFrontmatter` preserves the opener/closer's line endings byte-for-byte, but `fmLines = fmBlock.split(/\r?\n/)` strips endings, and the rewrite joins with `\n`. A CRLF-authored file comes out with LF frontmatter + CRLF body + CRLF closer — mixed endings, git-diff storm.
 

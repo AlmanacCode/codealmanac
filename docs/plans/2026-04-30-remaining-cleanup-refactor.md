@@ -28,12 +28,12 @@ Files:
 - Modify: `src/commands/topics.ts`
 - Create: `src/commands/topics/read.ts`
 - Create: `src/commands/topics/workspace.ts`
-- Create: `src/commands/topics/pageRewrite.ts`
+- Create: `src/commands/topics/page-rewrite.ts`
 
 Steps:
 1. Move `TopicsShowRecord`, `pagesDirectlyTagged`, `pagesForSubtree`, and `formatShow` into `topics/read.ts`.
 2. Move `TopicsWorkspace`, `resolveTopicsRepo`, `openFreshTopicsWorkspace`, `closeWorkspace`, and `topicExists` into `topics/workspace.ts`.
-3. Move `rewriteTopicOnPages` into `topics/pageRewrite.ts`.
+3. Move `rewriteTopicOnPages` into `topics/page-rewrite.ts`.
 4. Update imports in `topics.ts` and keep all exported command functions in `topics.ts`.
 5. Run `npm test -- test/topics.test.ts test/tag.test.ts` and `npm run lint`.
 6. Commit as `refactor(v2): split topics helpers`.

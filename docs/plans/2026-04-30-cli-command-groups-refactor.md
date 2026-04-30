@@ -4,7 +4,7 @@
 
 **Goal:** Keep CLI command registration readable after extracting it from `src/cli.ts`.
 
-**Architecture:** Keep `src/cli/registerCommands.ts` as the command-group composition root. Move each help group into a matching registration module under `src/cli/`: query, edit, wiki lifecycle, and setup. Preserve all Commander option mappings and command order.
+**Architecture:** Keep `src/cli/register-commands.ts` as the command-group composition root. Move each help group into a matching registration module under `src/cli/`: query, edit, wiki lifecycle, and setup. Preserve all Commander option mappings and command order.
 
 **Tech Stack:** TypeScript, Commander, Vitest.
 
@@ -13,18 +13,18 @@
 ### Task 1: Split Command Group Registration
 
 **Files:**
-- Create: `src/cli/registerQueryCommands.ts`
-- Create: `src/cli/registerEditCommands.ts`
-- Create: `src/cli/registerWikiLifecycleCommands.ts`
-- Create: `src/cli/registerSetupCommands.ts`
-- Modify: `src/cli/registerCommands.ts`
+- Create: `src/cli/register-query-commands.ts`
+- Create: `src/cli/register-edit-commands.ts`
+- Create: `src/cli/register-wiki-lifecycle-commands.ts`
+- Create: `src/cli/register-setup-commands.ts`
+- Modify: `src/cli/register-commands.ts`
 
 **Steps:**
-1. Move query commands to `registerQueryCommands.ts`.
-2. Move edit commands to `registerEditCommands.ts`.
-3. Move bootstrap/capture/hook/reindex commands to `registerWikiLifecycleCommands.ts`.
-4. Move setup/doctor/update/uninstall commands to `registerSetupCommands.ts`.
-5. Keep `registerCommands.ts` as the ordered group caller.
+1. Move query commands to `register-query-commands.ts`.
+2. Move edit commands to `register-edit-commands.ts`.
+3. Move bootstrap/capture/hook/reindex commands to `register-wiki-lifecycle-commands.ts`.
+4. Move setup/doctor/update/uninstall commands to `register-setup-commands.ts`.
+5. Keep `register-commands.ts` as the ordered group caller.
 
 ### Task 2: Verify
 

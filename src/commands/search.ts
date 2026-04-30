@@ -6,7 +6,7 @@ import { BLUE, RST } from "../ansi.js";
 import { parseDuration } from "../indexer/duration.js";
 import { ensureFreshIndex } from "../indexer/index.js";
 import { looksLikeDir, normalizePath } from "../indexer/paths.js";
-import { resolveWikiRoot } from "../indexer/resolveWiki.js";
+import { resolveWikiRoot } from "../indexer/resolve-wiki.js";
 import { openIndex } from "../indexer/schema.js";
 
 export interface SearchOptions {

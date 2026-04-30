@@ -1,8 +1,8 @@
 import { ensureFreshIndex, runIndexer } from "../indexer/index.js";
-import { resolveWikiRoot } from "../indexer/resolveWiki.js";
+import { resolveWikiRoot } from "../indexer/resolve-wiki.js";
 import { openIndex } from "../indexer/schema.js";
 import { toKebabCase } from "../slug.js";
-import { rewritePageTopics } from "../topics/frontmatterRewrite.js";
+import { rewritePageTopics } from "../topics/frontmatter-rewrite.js";
 import { indexDbPath, topicsYamlPath } from "../topics/paths.js";
 import {
   ensureTopic,

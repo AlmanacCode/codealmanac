@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { initWiki } from "../src/commands/_init.js";
+import { initWiki } from "../src/commands/init.js";
 import { getRegistryPath } from "../src/paths.js";
 import { autoRegisterIfNeeded } from "../src/registry/autoregister.js";
 import { readRegistry, addEntry } from "../src/registry/index.js";

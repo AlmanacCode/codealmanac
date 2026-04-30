@@ -8,7 +8,7 @@ import type Database from "better-sqlite3";
 import { BLUE, BOLD, DIM, GREEN, RED, RST } from "../ansi.js";
 import { parseDuration } from "../indexer/duration.js";
 import { ensureFreshIndex } from "../indexer/index.js";
-import { resolveWikiRoot } from "../indexer/resolveWiki.js";
+import { resolveWikiRoot } from "../indexer/resolve-wiki.js";
 import { openIndex } from "../indexer/schema.js";
 import { findEntry } from "../registry/index.js";
 import { toKebabCase } from "../slug.js";

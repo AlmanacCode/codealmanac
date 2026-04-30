@@ -7,7 +7,7 @@ files:
   - src/indexer/frontmatter.ts
   - src/indexer/wikilinks.ts
   - src/indexer/paths.ts
-  - src/indexer/resolveWiki.ts
+  - src/indexer/resolve-wiki.ts
   - src/indexer/duration.ts
 ---
 

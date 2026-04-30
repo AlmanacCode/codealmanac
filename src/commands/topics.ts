@@ -1,6 +1,6 @@
 import { BLUE, DIM, RST } from "../ansi.js";
 import { ensureFreshIndex, runIndexer } from "../indexer/index.js";
-import { resolveWikiRoot } from "../indexer/resolveWiki.js";
+import { resolveWikiRoot } from "../indexer/resolve-wiki.js";
 import { openIndex } from "../indexer/schema.js";
 import { toKebabCase } from "../slug.js";
 import { ancestorsInFile } from "../topics/dag.js";
@@ -14,7 +14,7 @@ import {
   type TopicEntry,
   type TopicsFile,
 } from "../topics/yaml.js";
-import { rewriteTopicOnPages } from "./topics/pageRewrite.js";
+import { rewriteTopicOnPages } from "./topics/page-rewrite.js";
 import {
   formatShow,
   pagesDirectlyTagged,

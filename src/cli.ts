@@ -6,7 +6,7 @@ import { Command } from "commander";
 import { runSetup } from "./commands/setup.js";
 import { configureGroupedHelp } from "./cli/help.js";
 import { emit } from "./cli/helpers.js";
-import { registerCommands } from "./cli/registerCommands.js";
+import { registerCommands } from "./cli/register-commands.js";
 import { announceUpdateIfAvailable } from "./update/announce.js";
 import {
   runInternalUpdateCheck,
@@ -33,7 +33,7 @@ export interface RunDeps {
  * Process-level CLI entrypoint. This owns invocation-level behavior:
  * update checks, bare `codealmanac` setup routing, Commander creation,
  * grouped help, and parsing. Individual command wiring lives in
- * `src/cli/registerCommands.ts`.
+ * `src/cli/register-commands.ts`.
  */
 export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
   const runSetupFn = deps.runSetup ?? runSetup;

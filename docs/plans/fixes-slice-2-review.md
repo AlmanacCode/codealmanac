@@ -194,9 +194,9 @@ And optionally in `schema.ts` near the `fts_pages` CREATE: `-- NOTE: virtual, no
 
 ### 16. `--all` cross-wiki asymmetry
 
-**Observation (deferred behavior):** The spec says "explicit `--wiki foo` errors on unreachable; `--all` silent." Slice 2 deferred `--all` entirely. Document this expectation in `resolveWiki.ts` comments so slice 3 (or whenever --all lands) preserves the asymmetry.
+**Observation (deferred behavior):** The spec says "explicit `--wiki foo` errors on unreachable; `--all` silent." Slice 2 deferred `--all` entirely. Document this expectation in `resolve-wiki.ts` comments so slice 3 (or whenever --all lands) preserves the asymmetry.
 
-**Fix:** Add a comment in `src/indexer/resolveWiki.ts`:
+**Fix:** Add a comment in `src/indexer/resolve-wiki.ts`:
 ```typescript
 // NOTE: explicit --wiki <name> must fail loudly on unreachable wikis.
 // When --all lands, it must silently skip unreachable ones (spec contract).

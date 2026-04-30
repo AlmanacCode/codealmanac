@@ -5,7 +5,7 @@ import type Database from "better-sqlite3";
 
 import { BLUE, DIM, RST } from "../ansi.js";
 import { ensureFreshIndex } from "../indexer/index.js";
-import { resolveWikiRoot } from "../indexer/resolveWiki.js";
+import { resolveWikiRoot } from "../indexer/resolve-wiki.js";
 import { openIndex } from "../indexer/schema.js";
 
 /**
