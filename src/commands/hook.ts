@@ -1,8 +1,13 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+
+import {
+  copyToStableHooksDir,
+  resolveHookScriptPath,
+  resolveSettingsPath,
+  type ScriptResolution,
+} from "./hook/script.js";
 
 /**
  * `almanac hook install|uninstall|status` — wires the bundled
@@ -57,6 +62,18 @@ export interface HookCommandOptions {
    * production code leaves it undefined.
    */
   settingsPath?: string;
+  /**
+   * Override the stable hooks directory where we copy the script.
+   * Defaults to `~/.claude/hooks/`. Tests sandbox this to a tmpdir.
+   *
+   * Bug #1 fix: we always copy the bundled script to this stable path
+   * before writing it into settings.json. This way the settings entry
+   * points at a user-owned location that survives npm version bumps,
+   * npx cache evictions, and nvm version switches — instead of an
+   * ephemeral path inside ~/.npm/_npx/<sha>/... or the nvm-versioned
+   * node_modules/.
+   */
+  stableHooksDir?: string;
 }
 
 export interface HookCommandResult {
@@ -97,7 +114,17 @@ type SettingsJson = Record<string, unknown> & {
   hooks?: Record<string, RawEntry[] | undefined>;
 };
 
-/** Heuristic: does this command path look like one we installed? */
+/**
+ * Heuristic: does this command path look like one we installed?
+ *
+ * We match on the filename `almanac-capture.sh` regardless of the parent
+ * directory. This covers:
+ *   - the stable path: `~/.claude/hooks/almanac-capture.sh`
+ *   - legacy paths from v0.1.0–v0.1.5: inside the nvm node_modules or
+ *     npx cache
+ * The stable path is what new installs produce; legacy paths are what
+ * we migrate when the user runs `almanac hook install` again.
+ */
 function isOurCommandPath(command: string): boolean {
   return command.endsWith("almanac-capture.sh");
 }
@@ -157,7 +184,34 @@ function isOurWrapped(entry: WrappedEntry): boolean {
 export async function runHookInstall(
   options: HookCommandOptions = {},
 ): Promise<HookCommandResult> {
-  const script = resolveHookScriptPath(options);
+  const bundled = resolveHookScriptPath(options);
+  if (!bundled.ok) {
+    return { stdout: "", stderr: `almanac: ${bundled.error}\n`, exitCode: 1 };
+  }
+
+  // Copy the bundled hook script to a stable user-owned location before
+  // writing that path into settings.json. This is the Bug #1 fix:
+  //
+  //   OLD behavior: settings.json pointed at the bundled path (inside
+  //   ~/.nvm/versions/node/<ver>/lib/node_modules/codealmanac/hooks/... or
+  //   ~/.npm/_npx/<sha>/node_modules/codealmanac/hooks/...). When the user
+  //   switches Node versions or the npx cache is evicted, the path breaks
+  //   silently and captures stop firing.
+  //
+  //   NEW behavior: we copy almanac-capture.sh to ~/.claude/hooks/ (same
+  //   directory Claude Code uses for its own built-in hooks, always present)
+  //   and point settings.json there. The stable path is independent of
+  //   Node version and npm cache state. When the user upgrades codealmanac,
+  //   `almanac hook install` copies a fresh script and updates settings.json
+  //   if the path changed.
+  //
+  // When `hookScriptPath` is explicitly provided (test injection), the
+  // caller has already specified the destination path — skip the copy and
+  // use that path directly. The stable-copy concern only applies to the
+  // production flow where we resolved from the bundled package layout.
+  const script: ScriptResolution = options.hookScriptPath !== undefined
+    ? bundled // already the caller-provided path, no copy needed
+    : await copyToStableHooksDir(bundled.path, options);
   if (!script.ok) {
     return { stdout: "", stderr: `almanac: ${script.error}\n`, exitCode: 1 };
   }
@@ -444,51 +498,7 @@ export async function runHookStatus(
   };
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────
-
-function resolveSettingsPath(options: HookCommandOptions): string {
-  if (options.settingsPath !== undefined) return options.settingsPath;
-  return path.join(homedir(), ".claude", "settings.json");
-}
-
-type ScriptResolution =
-  | { ok: true; path: string }
-  | { ok: false; error: string };
-
-/**
- * Locate the bundled `hooks/almanac-capture.sh`. Mirrors
- * `resolvePromptsDir` from `src/agent/prompts.ts`: two plausible layouts
- * (installed dist vs. source dev), probe each.
- */
-function resolveHookScriptPath(options: HookCommandOptions): ScriptResolution {
-  if (options.hookScriptPath !== undefined) {
-    return { ok: true, path: options.hookScriptPath };
-  }
-
-  const here = path.dirname(fileURLToPath(import.meta.url));
-
-  const candidates = [
-    // Bundled: `.../codealmanac/dist/codealmanac.js` → `../hooks/…`
-    path.resolve(here, "..", "hooks", "almanac-capture.sh"),
-    // Source: `.../codealmanac/src/commands/hook.ts` → `../../hooks/…`
-    path.resolve(here, "..", "..", "hooks", "almanac-capture.sh"),
-    // Defensive nested fallback.
-    path.resolve(here, "..", "..", "..", "hooks", "almanac-capture.sh"),
-  ];
-
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) {
-      return { ok: true, path: candidate };
-    }
-  }
-
-  return {
-    ok: false,
-    error:
-      `could not locate hooks/almanac-capture.sh. Tried:\n` +
-      candidates.map((c) => `  - ${c}`).join("\n"),
-  };
-}
+// ─── Settings JSON helpers ───────────────────────────────────────────
 
 async function readSettings(settingsPath: string): Promise<SettingsJson> {
   if (!existsSync(settingsPath)) return {};

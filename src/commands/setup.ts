@@ -17,6 +17,15 @@ import {
   UNAUTHENTICATED_MESSAGE,
 } from "../agent/auth.js";
 import { runHookInstall } from "./hook.js";
+import {
+  detectCurrentInstallPath,
+  detectEphemeral,
+  spawnGlobalInstall,
+} from "./setup/installPath.js";
+import {
+  countExistingPages,
+  printNextSteps,
+} from "./setup/nextSteps.js";
 
 /**
  * `codealmanac setup` — the MCP-style branded TUI that runs when a user
@@ -59,6 +68,8 @@ export interface SetupOptions {
   settingsPath?: string;
   /** Override the bundled hook script path. */
   hookScriptPath?: string;
+  /** Override the stable hooks directory for the hook script copy. */
+  stableHooksDir?: string;
   /** Override `~/.claude/` dir for guide install. */
   claudeDir?: string;
   /** Override the directory containing `mini.md` / `reference.md`. */
@@ -67,6 +78,17 @@ export interface SetupOptions {
   isTTY?: boolean;
   /** Stdout sink; defaults to `process.stdout`. */
   stdout?: NodeJS.WritableStream;
+  /**
+   * Override the install-path probe result. When `null` the probe is
+   * bypassed (tests that don't care about the ephemeral-path step).
+   * When a string it's treated as the detected install path.
+   */
+  installPath?: string | null;
+  /**
+   * Override the npm global install spawner (tests inject a no-op to
+   * avoid actually spawning npm during CI).
+   */
+  spawnGlobalInstall?: () => Promise<void>;
 }
 
 export interface SetupResult {
@@ -78,11 +100,9 @@ export interface SetupResult {
 // ─── ANSI helpers ────────────────────────────────────────────────────
 
 const RST = "\x1b[0m";
-const BOLD = "\x1b[1m";
 const DIM = "\x1b[2m";
 const WHITE_BOLD = "\x1b[1;37m";
 const BLUE = "\x1b[38;5;75m";
-const BLUE_DIM = "\x1b[38;5;69m";
 const ACCENT_BG = "\x1b[48;5;252m\x1b[38;5;16m";
 
 const GRADIENT = [
@@ -169,6 +189,50 @@ export async function runSetup(
   reportAuth(out, auth);
   out.write(BAR + "\n");
 
+  // Step 1b: ephemeral install detection. When codealmanac was invoked via
+  // `npx codealmanac` (no prior `npm i -g`), the binary lives inside an
+  // npx cache directory or pnpm store that can be evicted at any time.
+  // `almanac` is also not on PATH, so the user can't use it after setup.
+  //
+  // When we detect an ephemeral location, we offer (or, on --yes, perform)
+  // a `npm install -g codealmanac` to make the install permanent.
+  //
+  // This is Bug #2 from codealmanac-known-bugs.md.
+  const ephem = options.installPath !== undefined
+    ? (options.installPath !== null
+        ? detectEphemeral(options.installPath)
+        : false)
+    : detectEphemeral(detectCurrentInstallPath());
+  if (ephem) {
+    let globalAction: InstallDecision = "install";
+    if (interactive) {
+      globalAction = await confirm(
+        out,
+        `Running from an ephemeral npx location. Install globally so 'almanac' stays on PATH?`,
+        true,
+      );
+    }
+    if (globalAction === "install") {
+      stepActive(out, "Installing codealmanac globally…");
+      try {
+        await (options.spawnGlobalInstall ?? spawnGlobalInstall)();
+        stepDone(out, "codealmanac installed globally (almanac now on PATH)");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        stepActive(out, `Global install failed: ${msg}`);
+        out.write(
+          `  ${DIM}You can retry manually: npm install -g codealmanac${RST}\n`,
+        );
+      }
+    } else {
+      stepSkipped(
+        out,
+        `Global install ${DIM}skipped — almanac will not be on PATH after this session${RST}`,
+      );
+    }
+    out.write(BAR + "\n");
+  }
+
   // Step 2: install the hook (default yes).
   let hookAction: InstallDecision = "install";
   if (options.skipHook === true) {
@@ -186,6 +250,7 @@ export async function runSetup(
     const res = await runHookInstall({
       settingsPath: options.settingsPath,
       hookScriptPath: options.hookScriptPath,
+      stableHooksDir: options.stableHooksDir,
     });
     if (res.exitCode !== 0) {
       stepActive(out, `SessionEnd hook: ${res.stderr.trim()}`);
@@ -242,7 +307,14 @@ export async function runSetup(
 
   stepDone(out, `${BLUE}Setup complete${RST}`);
   out.write("\n");
-  printNextSteps(out);
+
+  // Detect whether the current working directory is inside a repo that
+  // already has a wiki with pages. This fixes Bug #6 from
+  // codealmanac-known-bugs.md: Engineer B clones a repo that already has
+  // `.almanac/pages/` (committed by Engineer A) and gets told to run
+  // `almanac bootstrap`, which is wrong — the wiki already exists.
+  const existingPageCount = countExistingPages(process.cwd());
+  printNextSteps(out, existingPageCount);
 
   return { stdout: "", stderr: "", exitCode: 0 };
 }
@@ -440,39 +512,6 @@ function confirm(
     process.stdin.resume();
     process.stdin.on("data", onData);
   });
-}
-
-// ─── Next steps ──────────────────────────────────────────────────────
-
-function printNextSteps(out: NodeJS.WritableStream): void {
-  const innerW = 62;
-  const vis = (s: string): number =>
-    s.replace(/\x1b\[[0-9;]*m/g, "").length;
-  const row = (content: string): string => {
-    const padding = Math.max(0, innerW - vis(content));
-    return `  ${BLUE_DIM}\u2502${RST}${content}${" ".repeat(padding)}${BLUE_DIM}\u2502${RST}\n`;
-  };
-  const empty = row("");
-
-  out.write(`  ${BLUE_DIM}\u256d${"─".repeat(innerW)}\u256e${RST}\n`);
-  out.write(empty);
-  out.write(row(`  ${WHITE_BOLD}Next steps${RST}`));
-  out.write(empty);
-  out.write(
-    row(`  ${BLUE}1.${RST}  ${BOLD}cd${RST} into a repo you want to document`),
-  );
-  out.write(
-    row(
-      `  ${BLUE}2.${RST}  ${BOLD}almanac bootstrap${RST}  ${DIM}# scaffold the wiki${RST}`,
-    ),
-  );
-  out.write(
-    row(
-      `  ${BLUE}3.${RST}  Work normally — capture runs on session end`,
-    ),
-  );
-  out.write(empty);
-  out.write(`  ${BLUE_DIM}\u2570${"─".repeat(innerW)}\u256f${RST}\n\n`);
 }
 
 // ─── Guides path resolution ──────────────────────────────────────────
