@@ -88,21 +88,20 @@ export async function safeCheckAuth(
 }
 
 export function readPackageVersion(): string | null {
-  try {
-    const pkg = req("../../../package.json") as { version?: unknown };
-    if (typeof pkg.version === "string" && pkg.version.length > 0) {
-      return pkg.version;
+  const candidates = [
+    "../../../package.json",
+    "../../package.json",
+    "../package.json",
+  ];
+  for (const candidate of candidates) {
+    try {
+      const pkg = req(candidate) as { version?: unknown };
+      if (typeof pkg.version === "string" && pkg.version.length > 0) {
+        return pkg.version;
+      }
+    } catch {
+      // Fall through to the next runtime layout candidate.
     }
-  } catch {
-    // Fall through.
-  }
-  try {
-    const pkg = req("../../package.json") as { version?: unknown };
-    if (typeof pkg.version === "string" && pkg.version.length > 0) {
-      return pkg.version;
-    }
-  } catch {
-    // Fall through.
   }
   return null;
 }
