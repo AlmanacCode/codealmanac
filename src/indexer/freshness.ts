@@ -9,7 +9,9 @@ export const PAGES_GLOB = "**/*.md";
 
 /**
  * Return true if any page file has an mtime strictly greater than the
- * index DB's mtime.
+ * index DB's mtime. This is intentionally cheap: `fast-glob` with
+ * `stats: true` gives us mtimes without a second `stat` round-trip, and
+ * the synchronous walk keeps the decision path simple for CLI entrypoints.
  */
 export function pagesNewerThan(pagesDir: string, dbPath: string): boolean {
   let dbMtime: number;
@@ -35,7 +37,8 @@ export function pagesNewerThan(pagesDir: string, dbPath: string): boolean {
 
 /**
  * Return true if `topics.yaml` has an mtime strictly greater than the
- * index DB's mtime.
+ * index DB's mtime. Missing `topics.yaml` is legal: it means "no topic
+ * metadata yet", not "the index is stale".
  */
 export function topicsYamlNewerThan(
   almanacDir: string,
