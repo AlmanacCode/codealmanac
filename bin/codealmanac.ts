@@ -1,5 +1,4 @@
 import { checkSqliteAbi } from "../src/abi-guard.js";
-import { run } from "../src/cli.js";
 
 // ABI guard: detect better-sqlite3 binding mismatch before any command
 // runs. When the binary was compiled for a different Node ABI (common
@@ -13,6 +12,8 @@ if (abiError !== null) {
   process.stderr.write(`almanac: ${abiError}\n`);
   process.exit(1);
 }
+
+const { run } = await import("../src/cli.js");
 
 run(process.argv).catch((err: unknown) => {
   const message = err instanceof Error ? err.message : String(err);

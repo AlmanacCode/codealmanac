@@ -26,7 +26,7 @@ The committed design and implementation provide these primitives:
 - **Topic**: a multi-parent DAG serialized in `.almanac/topics.yaml`
 - **File reference**: explicit `files:` frontmatter plus inline `[[path]]` refs
 - **Lineage for reversals**: `archived_at`, `superseded_by`, `supersedes`
-- **Indexer-backed query surface**: search, show, info, topics, health, graph
+- **Indexer-backed query surface**: search, show, list, topics, health
 - **Writer/reviewer capture flow**: writer owns edits; reviewer evaluates graph impact
 
 These are real primitives, not just conventions. The SQLite index persists them, query commands read them, and the prompts rely on them. They are enough to answer "what pages exist?", "what links where?", and "what topic is this in?".
