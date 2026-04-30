@@ -1,6 +1,6 @@
 {
   "name": "codealmanac",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A living wiki for codebases, maintained by AI agents. Documents what the code can't say: decisions, flows, invariants, incidents, gotchas.",
   "keywords": [
     "wiki",
@@ -34,7 +34,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=20"
+    "node": "20.x || 22.x || 23.x || 24.x || 25.x"
   },
   "scripts": {
     "build": "tsup",
