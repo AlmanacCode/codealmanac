@@ -1,30 +1,27 @@
 import { createHash } from "node:crypto";
 import { existsSync, statSync } from "node:fs";
 import { readFile, utimes } from "node:fs/promises";
-import { basename, join, relative } from "node:path";
+import { basename, join } from "node:path";
 
 import fg from "fast-glob";
 import type Database from "better-sqlite3";
 
 import { toKebabCase } from "../slug.js";
-import { loadTopicsFile, titleCase } from "../topics/yaml.js";
+import { titleCase } from "../topics/yaml.js";
 import { firstH1, parseFrontmatter } from "./frontmatter.js";
+import {
+  PAGES_GLOB,
+  pagesNewerThan,
+  topicsYamlNewerThan,
+} from "./freshness.js";
 import {
   normalizePath,
   normalizePathPreservingCase,
   looksLikeDir,
 } from "./paths.js";
 import { openIndex } from "./schema.js";
+import { applyTopicsYaml, TOPICS_YAML_FILENAME } from "./topicsYaml.js";
 import { extractWikilinks } from "./wikilinks.js";
-
-/**
- * Filename relative to the `.almanac/` dir where the topic DAG + metadata
- * lives. The indexer loads it on every reindex; the topics commands
- * mutate it atomically. Keep this in sync with `src/topics/paths.ts`'s
- * `topicsYamlPath` — duplicated here only so the indexer doesn't import
- * a second "where is it" helper.
- */
-const TOPICS_YAML_FILENAME = "topics.yaml";
 
 export interface IndexContext {
   /** Absolute path to the repo root (the dir containing `.almanac/`). */
@@ -60,11 +57,6 @@ export interface IndexResult {
    */
   filesSkipped: number;
 }
-
-// Glob is relative to `pagesDir` (which is `.almanac/pages/`), so this is
-// just "every .md at any depth" — not `pages/**/*.md`, because we've
-// already `cd`'d into `pages/` logically.
-const PAGES_GLOB = "**/*.md";
 
 /**
  * The "front door" for query commands. Runs the indexer only if the DB is
@@ -438,9 +430,6 @@ async function indexPagesInto(
   });
   apply();
 
-  // `relative` keeps lint happy about unused imports; total is just the
-  // count of .md files we saw on this pass.
-  void relative;
   const pagesIndexed = seenSlugs.size;
   return {
     changed: planned.length,
@@ -452,160 +441,6 @@ async function indexPagesInto(
   };
 }
 
-/**
- * Return true if any `pages/**\/*.md` has an mtime strictly greater than
- * the index DB's mtime. We walk with `fast-glob` rather than shell out to
- * `find` for portability.
- *
- * This is the "should we reindex?" check. It's intentionally cheap —
- * `fast-glob` with `stats: true` gives us mtimes without a second `stat`
- * round-trip.
- */
-function pagesNewerThan(pagesDir: string, dbPath: string): boolean {
-  let dbMtime: number;
-  try {
-    dbMtime = statSync(dbPath).mtimeMs;
-  } catch {
-    return true;
-  }
-
-  // Synchronous walk — `fg.sync` is fine at this scale and keeps the
-  // decision path simple (we don't need to await inside every CLI entry).
-  const entries = fg.sync(PAGES_GLOB, {
-    cwd: pagesDir,
-    absolute: true,
-    onlyFiles: true,
-    stats: true,
-  }) as Array<{ path: string; stats?: { mtimeMs: number } }>;
-
-  for (const entry of entries) {
-    const mtime = entry.stats?.mtimeMs;
-    if (mtime !== undefined && mtime > dbMtime) return true;
-  }
-  return false;
-}
-
 function hashContent(raw: string): string {
   return createHash("sha256").update(raw).digest("hex");
-}
-
-/**
- * Return true if `topics.yaml` has an mtime strictly greater than the
- * index DB's mtime. This is the topics-side mirror of `pagesNewerThan`
- * — mutations to `topics.yaml` (title/description/parents) aren't
- * visible from any page mtime, so we need a separate freshness hook
- * for the file itself.
- *
- * Missing `topics.yaml` → false. Absence is legal and means "no topic
- * metadata, only whatever pages declare". A missing file doesn't
- * invalidate the existing index.
- */
-function topicsYamlNewerThan(almanacDir: string, dbPath: string): boolean {
-  const path = join(almanacDir, "topics.yaml");
-  if (!existsSync(path)) return false;
-  let dbMtime: number;
-  try {
-    dbMtime = statSync(dbPath).mtimeMs;
-  } catch {
-    return true;
-  }
-  try {
-    const st = statSync(path);
-    return st.mtimeMs > dbMtime;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Apply the contents of `.almanac/topics.yaml` to SQLite.
- *
- * Called at the tail of every reindex. For each entry in the file we
- * upsert a row into `topics` (with title + description) and rewrite
- * that topic's edges in `topic_parents`. Topics that were ad-hoc-only
- * before (mentioned in page frontmatter, never `almanac topics
- * create`d) get their display name promoted to whatever is in the
- * file.
- *
- * Importantly, we do NOT delete `topics` rows that live only in page
- * frontmatter — those are legal, per the spec ("any slug mentioned in
- * pages' `topics:` frontmatter gets a row, even if not in
- * topics.yaml"). We also do NOT clear `topic_parents` wholesale; we
- * rewrite edges for each declared topic but leave untouched rows for
- * ad-hoc topics (which by definition have no declared parents).
- *
- * Missing file = no-op. This is the "no topic metadata yet" state and
- * callers shouldn't have to paper over it.
- */
-async function applyTopicsYaml(
-  db: Database.Database,
-  topicsYamlPath: string,
-): Promise<void> {
-  if (!existsSync(topicsYamlPath)) return;
-  let file;
-  try {
-    file = await loadTopicsFile(topicsYamlPath);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`almanac: ${message}\n`);
-    return;
-  }
-
-  const upsertTopic = db.prepare<[string, string, string | null]>(
-    `INSERT INTO topics (slug, title, description) VALUES (?, ?, ?)
-     ON CONFLICT(slug) DO UPDATE SET
-       title = excluded.title,
-       description = excluded.description`,
-  );
-  const clearParents = db.prepare<[string]>(
-    "DELETE FROM topic_parents WHERE child_slug = ?",
-  );
-  const insertParent = db.prepare<[string, string]>(
-    "INSERT OR IGNORE INTO topic_parents (child_slug, parent_slug) VALUES (?, ?)",
-  );
-
-  // Collect every slug we consider "declared" — in topics.yaml or
-  // referenced by any page_topics row. Anything outside this set is
-  // stale (e.g., a topic that used to be in the file before a rename
-  // or delete, or an ad-hoc slug whose only page just got untagged).
-  // Those get removed so `empty-topics` doesn't falsely flag them.
-  const declared = new Set<string>();
-  for (const t of file.topics) declared.add(t.slug);
-  const adHoc = db
-    .prepare<[], { topic_slug: string }>(
-      "SELECT DISTINCT topic_slug FROM page_topics",
-    )
-    .all();
-  for (const r of adHoc) declared.add(r.topic_slug);
-
-  const apply = db.transaction(() => {
-    for (const t of file.topics) {
-      upsertTopic.run(t.slug, t.title, t.description);
-      clearParents.run(t.slug);
-      for (const parent of t.parents) {
-        if (parent === t.slug) continue;
-        insertParent.run(t.slug, parent);
-      }
-    }
-
-    // Prune stale topic rows + any edges attached to them. We do this
-    // last so the upserts above have already promoted declared slugs.
-    const existing = db
-      .prepare<[], { slug: string }>("SELECT slug FROM topics")
-      .all();
-    const deleteTopic = db.prepare<[string]>("DELETE FROM topics WHERE slug = ?");
-    const deleteEdgesByChild = db.prepare<[string]>(
-      "DELETE FROM topic_parents WHERE child_slug = ?",
-    );
-    const deleteEdgesByParent = db.prepare<[string]>(
-      "DELETE FROM topic_parents WHERE parent_slug = ?",
-    );
-    for (const r of existing) {
-      if (declared.has(r.slug)) continue;
-      deleteEdgesByChild.run(r.slug);
-      deleteEdgesByParent.run(r.slug);
-      deleteTopic.run(r.slug);
-    }
-  });
-  apply();
 }
