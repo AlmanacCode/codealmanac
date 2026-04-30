@@ -1,19 +1,9 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-
-import fg from "fast-glob";
-import type Database from "better-sqlite3";
-
 import { BLUE, DIM, RST } from "../ansi.js";
 import { ensureFreshIndex, runIndexer } from "../indexer/index.js";
 import { resolveWikiRoot } from "../indexer/resolveWiki.js";
 import { openIndex } from "../indexer/schema.js";
 import { toKebabCase } from "../slug.js";
-import { ancestorsInFile, descendantsInDb } from "../topics/dag.js";
-import {
-  applyTopicsTransform,
-  rewritePageTopics,
-} from "../topics/frontmatterRewrite.js";
+import { ancestorsInFile } from "../topics/dag.js";
 import { indexDbPath, topicsYamlPath } from "../topics/paths.js";
 import {
   ensureTopic,
@@ -24,6 +14,19 @@ import {
   type TopicEntry,
   type TopicsFile,
 } from "../topics/yaml.js";
+import { rewriteTopicOnPages } from "./topics/pageRewrite.js";
+import {
+  formatShow,
+  pagesDirectlyTagged,
+  pagesForSubtree,
+  type TopicsShowRecord,
+} from "./topics/read.js";
+import {
+  closeWorkspace,
+  openFreshTopicsWorkspace,
+  resolveTopicsRepo,
+  topicExists,
+} from "./topics/workspace.js";
 
 /**
  * All `almanac topics <verb>` logic lives here. The CLI dispatches on
@@ -159,16 +162,6 @@ export async function runTopicsList(
 // show — `almanac topics show <slug>`
 // ─────────────────────────────────────────────────────────────────────
 
-export interface TopicsShowRecord {
-  slug: string;
-  title: string | null;
-  description: string | null;
-  parents: string[];
-  children: string[];
-  pages: string[];
-  descendants_used?: boolean;
-}
-
 /**
  * `almanac topics show <slug>`. Prints metadata + parents, children,
  * and the page list. `--descendants` widens the page list to include
@@ -244,57 +237,6 @@ export async function runTopicsShow(
   } finally {
     db.close();
   }
-}
-
-function pagesDirectlyTagged(db: Database.Database, slug: string): string[] {
-  return db
-    .prepare<[string], { page_slug: string }>(
-      `SELECT pt.page_slug
-       FROM page_topics pt
-       JOIN pages p ON p.slug = pt.page_slug
-       WHERE pt.topic_slug = ? AND p.archived_at IS NULL
-       ORDER BY pt.page_slug`,
-    )
-    .all(slug)
-    .map((r) => r.page_slug);
-}
-
-function pagesForSubtree(db: Database.Database, slug: string): string[] {
-  const slugs = [slug, ...descendantsInDb(db, slug)];
-  // Deduplicate + preserve order via a Set — a page can belong to
-  // multiple topics in the subtree and we only want one row per page.
-  const placeholders = slugs.map(() => "?").join(", ");
-  const rows = db
-    .prepare<unknown[], { page_slug: string }>(
-      `SELECT DISTINCT pt.page_slug
-       FROM page_topics pt
-       JOIN pages p ON p.slug = pt.page_slug
-       WHERE pt.topic_slug IN (${placeholders}) AND p.archived_at IS NULL
-       ORDER BY pt.page_slug`,
-    )
-    .all(...slugs);
-  return rows.map((r) => r.page_slug);
-}
-
-function formatShow(r: TopicsShowRecord): string {
-  const lines: string[] = [];
-  lines.push(`${DIM}slug:${RST}         ${BLUE}${r.slug}${RST}`);
-  lines.push(`${DIM}title:${RST}        ${r.title ?? titleCase(r.slug)}`);
-  lines.push(`${DIM}description:${RST}  ${r.description ?? "—"}`);
-  lines.push(
-    `${DIM}parents:${RST}      ${r.parents.length > 0 ? r.parents.join(", ") : "—"}`,
-  );
-  lines.push(
-    `${DIM}children:${RST}     ${r.children.length > 0 ? r.children.join(", ") : "—"}`,
-  );
-  const pagesLabel = r.descendants_used === true ? "pages (incl. descendants)" : "pages";
-  lines.push(`${DIM}${pagesLabel}:${RST}`);
-  if (r.pages.length === 0) {
-    lines.push("  —");
-  } else {
-    for (const p of r.pages) lines.push(`  ${BLUE}${p}${RST}`);
-  }
-  return `${lines.join("\n")}\n`;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -407,30 +349,6 @@ export async function runTopicsCreate(
   } finally {
     closeWorkspace(workspace);
   }
-}
-
-/**
- * Is `slug` a known topic anywhere — in `topics.yaml`, or as an ad-hoc
- * slug that a page's frontmatter mentioned and the indexer seeded?
- *
- * Collapses the previous `findTopic(file, s) === null &&
- * !isAdHocTopicInDb(root, s)` duplication into one intent-revealing
- * helper. Takes an open `db` handle so the caller can hoist DB open
- * out of tight loops — every earlier call site created + destroyed a
- * new connection per iteration.
- */
-function topicExists(
-  file: TopicsFile,
-  db: Database.Database,
-  slug: string,
-): boolean {
-  if (findTopic(file, slug) !== null) return true;
-  const row = db
-    .prepare<[string], { slug: string }>(
-      "SELECT slug FROM topics WHERE slug = ?",
-    )
-    .get(slug);
-  return row !== undefined;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -753,73 +671,6 @@ export async function runTopicsDescribe(
 // ─────────────────────────────────────────────────────────────────────
 // Shared helpers
 // ─────────────────────────────────────────────────────────────────────
-
-interface TopicsWorkspace {
-  repoRoot: string;
-  yamlPath: string;
-  file: TopicsFile;
-  db: Database.Database;
-}
-
-function resolveTopicsRepo(options: TopicsBaseOptions): Promise<string> {
-  return resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
-}
-
-/**
- * Shared setup path for mutating topic commands. These commands all need
- * a fresh DB view so ad-hoc topics from page frontmatter can be promoted
- * into `topics.yaml` before mutation.
- */
-async function openFreshTopicsWorkspace(
-  repoRoot: string,
-): Promise<TopicsWorkspace> {
-  await ensureFreshIndex({ repoRoot });
-
-  const yamlPath = topicsYamlPath(repoRoot);
-  const file = await loadTopicsFile(yamlPath);
-  const db = openIndex(indexDbPath(repoRoot));
-  return { repoRoot, yamlPath, file, db };
-}
-
-function closeWorkspace(workspace: TopicsWorkspace): void {
-  workspace.db.close();
-}
-
-/**
- * Apply a `topic-list transform` to every `.almanac/pages/*.md` file
- * whose frontmatter contains a relevant topic. Returns the number of
- * files actually changed.
- *
- * We glob page files ourselves (not the DB) so this works even on a
- * stale index — `rename` and `delete` run the indexer AFTER mutation,
- * and we don't want the scan to miss a page that was just modified.
- *
- * `transform` operates on the full topic list of each page; returning
- * the same list = no-op (no write). We short-circuit cheaply via
- * `applyTopicsTransform` before touching the file.
- */
-async function rewriteTopicOnPages(
-  repoRoot: string,
-  transform: (topics: string[]) => string[],
-): Promise<number> {
-  const pagesDir = join(repoRoot, ".almanac", "pages");
-  const files = await fg("**/*.md", {
-    cwd: pagesDir,
-    absolute: true,
-    onlyFiles: true,
-  });
-  let changed = 0;
-  for (const filePath of files) {
-    // Cheap read → in-memory check. Skip files that wouldn't be
-    // changed so we don't bump their mtime.
-    const raw = await readFile(filePath, "utf8");
-    const applied = applyTopicsTransform(raw, transform);
-    if (!applied.changed) continue;
-    await rewritePageTopics(filePath, transform);
-    changed += 1;
-  }
-  return changed;
-}
 
 // ─────────────────────────────────────────────────────────────────────
 // dispatch helpers (used by cli.ts)
