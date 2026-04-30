@@ -28,6 +28,19 @@ import {
  * `withTempHome` so they never touch the user's real registry.
  */
 describe("almanac topics", () => {
+  it("resolves --wiki before command-specific early returns", async () => {
+    await withTempHome(async (home) => {
+      await expect(
+        runTopicsRename({
+          cwd: home,
+          wiki: "missing",
+          oldSlug: "a",
+          newSlug: "a",
+        }),
+      ).rejects.toThrow(/no registered wiki named "missing"/);
+    });
+  });
+
   it("creates a topic and persists it to topics.yaml", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");

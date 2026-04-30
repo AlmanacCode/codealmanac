@@ -317,6 +317,7 @@ function formatShow(r: TopicsShowRecord): string {
 export async function runTopicsCreate(
   options: TopicsCreateOptions,
 ): Promise<TopicsCommandOutput> {
+  const repoRoot = await resolveTopicsRepo(options);
   const slug = toKebabCase(options.name);
   if (slug.length === 0) {
     return {
@@ -327,7 +328,7 @@ export async function runTopicsCreate(
   }
   const title = options.name.trim().length > 0 ? options.name.trim() : titleCase(slug);
 
-  const workspace = await openFreshTopicsWorkspace(options);
+  const workspace = await openFreshTopicsWorkspace(repoRoot);
   try {
     const { repoRoot, yamlPath, file, db } = workspace;
     // Resolve/validate parents BEFORE mutating the file. All-or-nothing.
@@ -443,6 +444,7 @@ function topicExists(
 export async function runTopicsLink(
   options: TopicsLinkOptions,
 ): Promise<TopicsCommandOutput> {
+  const repoRoot = await resolveTopicsRepo(options);
   const child = toKebabCase(options.child);
   const parent = toKebabCase(options.parent);
   if (child.length === 0 || parent.length === 0) {
@@ -456,7 +458,7 @@ export async function runTopicsLink(
     };
   }
 
-  const workspace = await openFreshTopicsWorkspace(options);
+  const workspace = await openFreshTopicsWorkspace(repoRoot);
   try {
     const { repoRoot, yamlPath, file, db } = workspace;
     for (const slug of [child, parent]) {
@@ -564,6 +566,7 @@ export async function runTopicsUnlink(
 export async function runTopicsRename(
   options: TopicsRenameOptions,
 ): Promise<TopicsCommandOutput> {
+  const repoRoot = await resolveTopicsRepo(options);
   const oldSlug = toKebabCase(options.oldSlug);
   const newSlug = toKebabCase(options.newSlug);
   if (oldSlug.length === 0 || newSlug.length === 0) {
@@ -577,7 +580,7 @@ export async function runTopicsRename(
     };
   }
 
-  const workspace = await openFreshTopicsWorkspace(options);
+  const workspace = await openFreshTopicsWorkspace(repoRoot);
   let pagesUpdated: number;
   try {
     const { repoRoot, yamlPath, file, db } = workspace;
@@ -653,12 +656,13 @@ export async function runTopicsRename(
 export async function runTopicsDelete(
   options: TopicsDeleteOptions,
 ): Promise<TopicsCommandOutput> {
+  const repoRoot = await resolveTopicsRepo(options);
   const slug = toKebabCase(options.slug);
   if (slug.length === 0) {
     return { stdout: "", stderr: `almanac: empty topic slug\n`, exitCode: 1 };
   }
 
-  const workspace = await openFreshTopicsWorkspace(options);
+  const workspace = await openFreshTopicsWorkspace(repoRoot);
   let pagesUpdated: number;
   try {
     const { repoRoot, yamlPath, file, db } = workspace;
@@ -709,12 +713,13 @@ export async function runTopicsDelete(
 export async function runTopicsDescribe(
   options: TopicsDescribeOptions,
 ): Promise<TopicsCommandOutput> {
+  const repoRoot = await resolveTopicsRepo(options);
   const slug = toKebabCase(options.slug);
   if (slug.length === 0) {
     return { stdout: "", stderr: `almanac: empty topic slug\n`, exitCode: 1 };
   }
 
-  const workspace = await openFreshTopicsWorkspace(options);
+  const workspace = await openFreshTopicsWorkspace(repoRoot);
   try {
     const { yamlPath, file, db } = workspace;
     if (!topicExists(file, db, slug)) {
@@ -756,15 +761,18 @@ interface TopicsWorkspace {
   db: Database.Database;
 }
 
+function resolveTopicsRepo(options: TopicsBaseOptions): Promise<string> {
+  return resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
+}
+
 /**
  * Shared setup path for mutating topic commands. These commands all need
  * a fresh DB view so ad-hoc topics from page frontmatter can be promoted
  * into `topics.yaml` before mutation.
  */
 async function openFreshTopicsWorkspace(
-  options: TopicsBaseOptions,
+  repoRoot: string,
 ): Promise<TopicsWorkspace> {
-  const repoRoot = await resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
   await ensureFreshIndex({ repoRoot });
 
   const yamlPath = topicsYamlPath(repoRoot);
