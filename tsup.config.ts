@@ -9,7 +9,10 @@ export default defineConfig({
   platform: "node",
   clean: true,
   sourcemap: true,
-  splitting: false,
+  // Keep the CLI graph in a separate dynamic chunk so the entrypoint can
+  // run the better-sqlite3 ABI guard before any command module imports
+  // the native binding.
+  splitting: true,
   minify: false,
   shims: false,
   // Keep CJS/native dependencies external so Node's resolver handles them
