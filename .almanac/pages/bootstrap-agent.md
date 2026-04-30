@@ -31,7 +31,7 @@ Bootstrap is given Read/Write/Edit/Glob/Grep/Bash. No `Agent` tool (no subagent 
 
 ## Prompts
 
-`prompts/bootstrap.md` is bundled in `files` in `package.json` and loaded via `src/agent/prompts.ts` which resolves relative to the npm package install path. The prompt instructs the agent to identify anchors (stable named things other pages will link to), group related deps into single entity pages, and write stubs with frontmatter, a one-paragraph intro, a "Where we use it" section, and a `<!-- stub: ... -->` marker.
+`prompts/bootstrap.md` is bundled in `files` in `package.json` and loaded via `src/agent/prompts.ts` which resolves relative to the npm package install path. The prompt instructs the agent to identify anchors (stable named things other pages will link to), group related deps into single entity pages, and write stubs with frontmatter, a one-paragraph intro, a "Where we use it" section, and a `<!-- stub: ... -->` marker. The broader organizational role of anchors, hubs, redirects, and gardening is captured in [[wiki-organization-primitives]].
 
 ## StreamingFormatter
 
