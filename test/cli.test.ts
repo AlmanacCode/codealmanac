@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
+import { Command } from "commander";
 
 import { run, tryParseSetupShortcut } from "../src/cli.js";
+import { registerCommands } from "../src/cli/registerCommands.js";
 import type { SetupResult } from "../src/commands/setup.js";
 
 /**
@@ -61,6 +63,73 @@ describe("tryParseSetupShortcut", () => {
     // to patch bare-invocation flag forwarding.
     expect(tryParseSetupShortcut(["setup", "--yes"])).toBeNull();
     expect(tryParseSetupShortcut(["doctor", "--yes"])).toBeNull();
+  });
+});
+
+describe("registerCommands", () => {
+  function findCommand(root: Command, path: string[]): Command {
+    let current = root;
+    for (const name of path) {
+      const next = current.commands.find((cmd) => cmd.name() === name);
+      if (next === undefined) {
+        throw new Error(`missing command ${path.join(" ")}`);
+      }
+      current = next;
+    }
+    return current;
+  }
+
+  function optionFlags(command: Command): string[] {
+    return command.options.map((option) => option.flags);
+  }
+
+  it("keeps the expected command groups, subcommands, and representative options wired", () => {
+    const program = new Command();
+    registerCommands(program);
+
+    expect(program.commands.map((cmd) => cmd.name())).toEqual([
+      "search",
+      "show",
+      "health",
+      "list",
+      "tag",
+      "untag",
+      "topics",
+      "bootstrap",
+      "capture",
+      "hook",
+      "reindex",
+      "setup",
+      "doctor",
+      "update",
+      "uninstall",
+    ]);
+
+    expect(findCommand(program, ["topics"]).commands.map((cmd) => cmd.name()))
+      .toEqual([
+        "list",
+        "show",
+        "create",
+        "link",
+        "unlink",
+        "rename",
+        "delete",
+        "describe",
+      ]);
+    expect(findCommand(program, ["hook"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["install", "uninstall", "status"]);
+
+    expect(optionFlags(findCommand(program, ["setup"]))).toContain("-y, --yes");
+    expect(optionFlags(findCommand(program, ["doctor"]))).toContain("--json");
+    expect(optionFlags(findCommand(program, ["topics", "show"]))).toContain(
+      "--descendants",
+    );
+    expect(optionFlags(findCommand(program, ["search"]))).toContain(
+      "--mentions <path>",
+    );
+    expect(optionFlags(findCommand(program, ["list"]))).toContain(
+      "--drop <name>",
+    );
   });
 });
 
