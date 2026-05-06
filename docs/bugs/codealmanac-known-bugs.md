@@ -1,160 +1,151 @@
 # codealmanac — Known Bugs + Fixes Needed
 
-As of v0.1.5 (published 2026-04-16). Organized by severity.
+As of v0.1.6. Fixed v0.1.5 install issues have been removed from this
+list; see `docs/bugs/codealmanac-install-audit.md` for the historical audit.
 
 ---
 
-## Must-fix (blocking or data-corrupting)
+## Must-fix
 
-### 1. Hook path points at ephemeral npx cache
+### 1. better-sqlite3 native binding can break across Node installs
 
-**Found by:** install audit (`docs/codealmanac-install-audit.md`)
+**Found by:** repeated user experience, smoke tests, local dev checkout.
 
-When a user runs `npx codealmanac`, the setup wizard writes the SessionEnd hook pointing at an **absolute path inside npm's npx cache** (e.g., `~/.npm/_npx/<sha>/node_modules/codealmanac/hooks/almanac-capture.sh`). That cache entry gets GC'd on version bump, `npm cache clean`, or automatic eviction. Hook silently stops working — captures stop, user has no indication.
+codealmanac uses `better-sqlite3` for the local `.almanac/index.db` search
+index. `better-sqlite3` ships a native Node addon compiled against Node's V8
+module ABI. When a user switches Node versions via `nvm`, `volta`, `fnm`, or
+similar tools, the native binding installed for the old Node version can fail
+to load under the new one.
 
-**Fix:** Copy the hook script to a stable user-owned location (`~/.claude/hooks/codealmanac-capture.sh`) during setup — same pattern already used for guide files. Write THAT path into `settings.json`.
+Typical symptoms:
 
-**Status:** user's settings.json manually patched to correct path. Code fix not yet shipped.
-
-### 2. `npx codealmanac` doesn't install globally
-
-**Found by:** install audit
-
-README says `npx codealmanac` "installs globally + runs the setup wizard." It does NOT install globally — `almanac` is not on PATH after running it. Users can't run `almanac search`, `almanac show`, `almanac doctor` from their shell.
-
-**Fix:** When setup detects it's running from an ephemeral path (npx cache, pnpm store), offer to spawn `npm install -g codealmanac`. On `--yes`/`!isTTY`: install automatically. On interactive: prompt `[Y/n]`.
-
-**Status:** not fixed.
-
-### 3. better-sqlite3 ABI mismatch on Node version switch
-
-**Found by:** repeated user experience (3 times in one day), blind user interview, smoke test
-
-When a user switches Node versions via nvm/volta/fnm, the `better-sqlite3` native binding compiled for the old Node version doesn't load under the new Node. Error: "Could not locate the bindings file." Particularly bad with Node 21 (EOL, no prebuilt binary available).
-
-**Fix (short-term):** Startup ABI guard in `src/cli.ts` — detect mismatch before any command runs, print actionable error: "codealmanac was installed for Node 20, you're running Node 21. Run: `npm rebuild better-sqlite3` or `nvm use 20`."
-
-**Fix (long-term, v0.2):** Migrate to N-API-backed SQLite (libsql or wait for node:sqlite in Node 23+ LTS).
-
-**Also:** Tighten `engines` to `"node": "20.x || 22.x || 23.x || 24.x || 25.x"` — matches better-sqlite3's prebuilt coverage.
-
-**Status:** user's Node 21 install manually rebuilt. Code fix not yet shipped.
-
-### 4. `.gitignore` missing capture/bootstrap log patterns
-
-**Found by:** install audit (1.8MB bootstrap log committed to openalmanac's `.almanac/`)
-
-`almanac init` writes `.almanac/index.db*` to `.gitignore` but NOT `.almanac/.capture-*` or `.almanac/.bootstrap-*` patterns. Logs leak into commits.
-
-**Fix:** Extend the `.gitignore` block written by `_init.ts`:
-```
-.almanac/index.db
-.almanac/index.db-wal
-.almanac/index.db-shm
-.almanac/.capture-*
-.almanac/.bootstrap-*
-.almanac/.ingest-*
+```text
+Could not locate the bindings file
 ```
 
-**Status:** not fixed.
+or:
+
+```text
+better-sqlite3 native binding failed: Cannot find module 'better-sqlite3'
+```
+
+Current mitigation: the CLI has a startup ABI guard that tries to open an
+in-memory SQLite database before command routing. When the native binding is
+broken, users get a direct rebuild hint instead of a deep stack trace:
+
+```bash
+cd "<codealmanac install dir>" && npm rebuild better-sqlite3
+```
+
+This improves the failure mode but does not remove the underlying fragility.
+
+**Why this survives:** `better-sqlite3` is not N-API-stable. It is tied to the
+Node/V8 ABI of the runtime that installed it. codealmanac is a CLI users may
+run from many shells and Node versions, so the package can be installed under
+one ABI and executed under another.
+
+**Short-term fix:** keep the startup guard, improve the doctor report, and add
+install smoke tests that cover Node manager/version-switch scenarios.
+
+**Long-term fix:** migrate the index layer to an N-API-stable SQLite binding
+or to `node:sqlite` once FTS5 support is available in the relevant LTS target.
 
 ---
 
-## Should-fix (quality / correctness)
+## Should-fix / verify
 
-### 5. `codealmanac --yes` (bare + flag) doesn't forward to setup
+### 2. Install-surface smoke coverage is still thin
 
-**Found by:** v0.1.3 smoke test
+The 0.1.6 code appears to fix the old `npx` install hazards:
 
-`codealmanac setup --yes` works. `codealmanac --yes` (bare invocation with flag) errors: "unknown option '--yes'." The `tryParseSetupShortcut` fix in v0.1.3 handles this for the built CLI but may not work correctly in all invocation contexts (npx, symlinks).
+- setup detects ephemeral `npx`/`pnpm dlx` paths and offers global install
+- setup copies the hook script to `~/.claude/hooks/almanac-capture.sh`
+- `.gitignore` includes `.almanac/.capture-*` and `.almanac/.bootstrap-*`
+- setup detects existing committed wikis before suggesting bootstrap
 
-**Fix:** Verify `tryParseSetupShortcut` works for: global install, npx, dev-from-source, symlinked binary. Add integration test.
+These should be protected by a smoke test that runs in a clean environment:
 
-**Status:** partially fixed in v0.1.3. Needs verification across install contexts.
+```bash
+npx codealmanac@latest --yes
+which almanac
+almanac doctor
+```
 
-### 6. Setup wizard says "Next: almanac bootstrap" even when wiki exists
+The test should also verify that the SessionEnd hook path exists and is under
+`~/.claude/hooks/`, not an npm cache path.
 
-**Found by:** team workflow analysis
+### 3. Stale npx cache can serve old codealmanac versions
 
-When Engineer B clones a repo that already has `.almanac/` (committed by Engineer A) and runs setup, the wizard's final message still says "almanac bootstrap" as the next step. Wrong — the wiki already exists, they should start querying.
+README still documents:
 
-**Fix:** Setup wizard detects if current cwd has `.almanac/pages/` with content. If yes: "This repo already has a wiki (N pages). Start querying: `almanac search --mentions <file>`." If no: "Next: `almanac ingest .`."
+```bash
+npx codealmanac
+```
 
-**Status:** not fixed.
+Users who previously ran an older version may get that cached version again.
+Prefer documenting:
 
-### 7. Doctor `install.path` detection uses `require.resolve("codealmanac")`
+```bash
+npx codealmanac@latest
+```
 
-**Found by:** v0.1.4 smoke test (showed "could not detect codealmanac install path" on a working install)
+or make setup detect when the running package version lags the npm `latest`
+dist-tag.
 
-Fixed in v0.1.4: now uses `import.meta.url` walk-up instead. But doctor still shows `✗` in some contexts (dev mode, npx cache).
+### 4. `codealmanac --yes` shortcut needs invocation-level verification
 
-**Fix:** Improve `detectInstallPath` to also accept npx cache locations as valid (with a note that it's ephemeral).
+`tryParseSetupShortcut` now handles bare setup flags such as:
 
-**Status:** partially fixed in v0.1.4. Npx-cache case still shows ✗.
+```bash
+codealmanac --yes
+codealmanac --skip-hook
+codealmanac --skip-guides
+```
 
-### 8. `npm bin -g` usage (deprecated in npm 9)
+Unit coverage exists for the parser, but the original bug involved invocation
+contexts. Verify global install, `npx`, source/dev, and symlinked binary paths.
 
-**Found by:** install audit
+### 5. Doctor install-path classification needs npx/dev smoke coverage
 
-Any code or docs that reference `npm bin -g` will fail on npm 9+. Use `npm prefix -g` + `/bin` instead.
+Doctor now detects install paths by walking from `import.meta.url`, and it can
+classify ephemeral paths. Keep this open until `almanac doctor --install-only`
+has been smoke-tested under global install, `npx`, and local dev execution.
 
-**Fix:** Grep codebase for `npm bin`. Replace with `npm prefix -g` + `/bin` construction.
+### 6. Help output grouping may still leak Commander internals
 
-**Status:** not checked.
+`src/cli/help.ts` still has an `Other:` fallback group. Verify whether the
+implicit Commander `help` command appears there in `almanac --help`.
 
-### 9. Stale npx cache serves old versions
+### 7. Capture has two log artifacts per hook run
 
-**Found by:** user experience
+Current capture behavior intentionally separates:
 
-`npx codealmanac` uses cached version. User who first ran v0.1.0 via npx will keep getting v0.1.0 until they explicitly `npx codealmanac@latest` or clear the npx cache. The setup wizard installs hook/guides from the stale version, then the global install (if they do `npm i -g` separately) has a different version.
+```text
+.almanac/.capture-<session>.jsonl  # raw SDK message transcript
+.almanac/.capture-<session>.log    # hook stdout/stderr sidecar
+```
 
-**Fix:** README should document `npx codealmanac@latest` (with `@latest`), not bare `npx codealmanac`. Or: the setup wizard detects version mismatch between the running binary and npm's `latest` tag, warns if stale.
-
-**Status:** not fixed.
-
----
-
-## Polish (non-blocking)
-
-### 10. Update nag banner formatting
-
-**Found by:** v0.1.5 implementation
-
-The `!` / `⚠` banner style is implemented but could be more visually consistent with doctor's `✓` / `✗` / `◇` register.
-
-**Status:** cosmetic, defer.
-
-### 11. `help` command leaks into "Other" group
-
-**Found by:** v0.1.3 review
-
-Commander's implicit `help` subcommand appears as the sole entry in an "Other" group in `--help`. Either add to Setup group or filter out.
-
-**Status:** possibly fixed in v0.1.5 — needs verification.
-
-### 12. Capture log filename inconsistency
-
-**Found by:** v0.1.3 review
-
-Manual `capture` writes `.capture-<timestamp>.jsonl`. Hook writes `.capture-<session-id>.log`. Two formats.
-
-**Status:** v0.1.5 partially addressed (manual uses `.jsonl`, hook uses `.log`). Documented in reference.md.
-
-### 13. `codealmanac --help` vs `almanac --help` binary name
-
-**Fixed in:** v0.1.2. Both now correctly show their invoked name in the usage line.
+This is probably acceptable, but docs and doctor output should make the split
+clear so users know which file to inspect.
 
 ---
 
-## Architecture notes (not bugs — future direction)
+## Architecture notes
 
-### better-sqlite3 → N-API migration
+### better-sqlite3 -> N-API migration
 
-better-sqlite3 uses old V8 ABI (not N-API). This is the root cause of #3. Long-term options researched:
-- `libsql` (napi-rs, N-API stable) — FTS5 bundling uncertain (issue #1930), named params broken (issue #202), 2x slower reads. Research inconclusive.
-- `node:sqlite` (built-in, Node 22.5+) — FTS5 merged in Node 23+ only. Not in Node 22 LTS. The correct eventual destination but timing is wrong (Node 22 EOL: April 2027).
-- **Decision:** stay on better-sqlite3 + ABI guard for now. Revisit when node:sqlite FTS5 is in an LTS release.
+The native binding issue is the main remaining architecture risk in 0.1.6.
+Options researched:
+
+- `libsql` has an N-API-backed implementation, but prior research found FTS5
+  bundling and named-parameter concerns.
+- `node:sqlite` is the clean eventual destination, but FTS5 support is not yet
+  available in the Node LTS target codealmanac can rely on.
+
+Decision for now: keep `better-sqlite3` plus guardrails, and revisit once
+`node:sqlite` with FTS5 is available in an LTS release.
 
 ### `ingest` command unification
 
-`bootstrap` and `capture` are being unified into `almanac ingest`. Design doc at `docs/ideas/ingest-design.md`. This is a v0.2 feature, not a bug fix.
+`bootstrap` and `capture` are planned to become `almanac ingest` in a future
+release. This is product direction, not a current 0.1.6 bug.
