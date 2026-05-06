@@ -4,6 +4,8 @@ import type {
   SDKMessage,
 } from "@anthropic-ai/claude-agent-sdk";
 
+import { resolveClaudeExecutable } from "./auth.js";
+
 /**
  * Thin wrapper around `@anthropic-ai/claude-agent-sdk`'s `query()`. This is
  * the ONLY module that imports from the SDK — every other command imports
@@ -84,6 +86,7 @@ export interface AgentResult {
  * provides.
  */
 export async function runAgent(opts: RunAgentOptions): Promise<AgentResult> {
+  const claudeExecutable = resolveClaudeExecutable();
 
   const q = query({
     prompt: opts.prompt,
@@ -94,6 +97,13 @@ export async function runAgent(opts: RunAgentOptions): Promise<AgentResult> {
       cwd: opts.cwd,
       model: opts.model ?? "claude-sonnet-4-6",
       maxTurns: opts.maxTurns ?? 100,
+      ...(claudeExecutable !== undefined
+        ? { pathToClaudeCodeExecutable: claudeExecutable }
+        : {}),
+      env: {
+        ...process.env,
+        CODEALMANAC_INTERNAL_SESSION: "1",
+      },
       // REQUIRED for streaming text deltas. Without it, `stream_event`
       // messages never fire and the CLI has no progress visibility during
       // long turns. See docs/research/agent-sdk.md §12 pitfall #1.

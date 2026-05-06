@@ -1,5 +1,5 @@
 import { createWriteStream, existsSync, type WriteStream } from "node:fs";
-import { readdir } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
@@ -69,7 +69,7 @@ const BOOTSTRAP_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Bash"];
  *   5. Load `prompts/bootstrap.md`.
  *   6. Run the agent with BOOTSTRAP_TOOLS, cwd = repo root.
  *   7. Stream tool-uses to stdout (unless --quiet); write the full raw
- *      transcript to `.almanac/.bootstrap-<session>.log`.
+ *      transcript to `.almanac/logs/.bootstrap-<session>.log`.
  *   8. Print a final `[done]` / `[failed]` line with cost + turns.
  *
  * Non-zero exit on failure so shell users can pipe into `&&`.
@@ -140,8 +140,10 @@ export async function runBootstrap(
   // that's still meaningful even on a run that fails before producing a
   // session_id.
   const now = options.now?.() ?? new Date();
+  const logsDir = join(almanacDir, "logs");
+  await mkdir(logsDir, { recursive: true });
   const logName = `.bootstrap-${formatTimestamp(now)}.log`;
-  const logPath = join(almanacDir, logName);
+  const logPath = join(logsDir, logName);
   const logStream = createWriteStream(logPath, { flags: "w" });
 
   // The streaming formatter is what the user sees on stdout unless

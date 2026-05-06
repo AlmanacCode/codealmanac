@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
@@ -6,26 +6,15 @@ import { dirname, join } from "node:path";
  * Claude auth gate — accepts either an active Claude subscription login
  * OR an `ANTHROPIC_API_KEY` environment variable.
  *
- * The Claude Agent SDK delegates authentication to its bundled `cli.js`,
- * which reads OAuth credentials from `~/.claude/credentials/` (the same
- * store Claude Code uses). Users who are logged in via `claude auth login
- * --claudeai` should be able to run bootstrap/capture without ever
- * exporting an API key. Conversely, users on pay-per-token API keys
+ * Claude Code owns subscription OAuth credentials. Users who are logged in
+ * via `claude auth login --claudeai` should be able to run bootstrap/capture
+ * without exporting an API key. Conversely, users on pay-per-token API keys
  * shouldn't be required to go through the OAuth flow.
  *
- * We spawn the bundled SDK's `cli.js auth status --json` to answer "are
- * we logged in?" rather than poking at the credentials file directly —
- * that's the SDK's contract, and it handles all the edge cases (token
- * expiry, org switching, consoleloginpath, …) for us.
- *
- * The CLI path is resolved via `require.resolve("@anthropic-ai/claude-
- * agent-sdk/package.json")` + the `cli.js` sibling. Going through
- * `createRequire` keeps this compatible with both ESM dev mode (tsx) and
- * the bundled dist (tsup externalizes the SDK, so Node's own resolver
- * does the lookup at runtime). If the SDK isn't installed at all we fall
- * back to treating the user as unauthenticated — the assert will then
- * surface the familiar two-path error so they can at least fix it via
- * `ANTHROPIC_API_KEY`.
+ * Current Claude Agent SDK packages no longer ship the old private
+ * `cli.js` entrypoint, so the primary probe is the public Claude Code CLI:
+ * `claude auth status --json`. We keep the SDK `cli.js` probe as a legacy
+ * fallback for older SDK layouts.
  */
 
 export interface ClaudeAuthStatus {
@@ -44,48 +33,51 @@ export interface SpawnedProcess {
 
 /**
  * The subprocess spawner is injectable so tests can replace it with a
- * fake that emits canned JSON without touching the filesystem. Production
- * code uses `defaultSpawnCli` which invokes the bundled SDK CLI.
+ * fake that emits canned JSON without touching the filesystem.
  */
 export type SpawnCliFn = (args: string[]) => SpawnedProcess;
 
 const AUTH_TIMEOUT_MS = 10_000;
 
 /**
- * Resolve `cli.js` from the bundled `@anthropic-ai/claude-agent-sdk`
- * install. Uses `createRequire` so the lookup works regardless of
- * whether we're running from `dist/` (where tsup externalized the SDK)
- * or directly from source.
- *
- * Throws if the SDK can't be located — `checkClaudeAuth` catches this
- * and treats the user as not-logged-in, which lets the env-var path
- * still work for users with a borked install.
+ * Resolve the installed Claude Code executable from PATH. The Agent SDK can
+ * accept this path via `pathToClaudeCodeExecutable`, and the auth probe uses
+ * the same binary so CodeAlmanac agrees with `claude auth status`.
+ */
+export function resolveClaudeExecutable(): string | undefined {
+  const result = spawnSync("sh", ["-lc", "command -v claude"], {
+    encoding: "utf8",
+  });
+  if (result.status !== 0) return undefined;
+  const found = result.stdout.trim().split("\n")[0]?.trim();
+  return found !== undefined && found.length > 0 ? found : undefined;
+}
+
+/**
+ * Resolve legacy `cli.js` from older `@anthropic-ai/claude-agent-sdk`
+ * installs. SDK 0.2.129+ no longer ships this file; callers must treat
+ * failure as expected and fall back to the public `claude` binary.
  */
 function resolveCliJsPath(): string {
-  // `import.meta.url` points at this module (dev or dist). `createRequire`
-  // from that URL can then resolve sibling packages the same way Node's
-  // own CJS resolver would.
-  //
-  // We resolve the main entry (not `./package.json`) because the SDK's
-  // `exports` field locks subpath access — `require.resolve(".../package.json")`
-  // fails with `ERR_PACKAGE_PATH_NOT_EXPORTED` on current SDK versions.
-  // The main entry resolves fine; `cli.js` is its sibling in the install
-  // layout the SDK has used since day one.
   const require = createRequire(import.meta.url);
   const entry = require.resolve("@anthropic-ai/claude-agent-sdk");
   return join(dirname(entry), "cli.js");
 }
 
 /**
- * Default subprocess spawner for production use — invokes the bundled
- * SDK's `cli.js` via the same Node runtime that's running codealmanac.
- * Tests inject a fake via the `spawnCli` parameter.
+ * Default subprocess spawner for production use — invokes the installed
+ * Claude Code CLI.
  */
 export const defaultSpawnCli: SpawnCliFn = (args: string[]) => {
+  const command = resolveClaudeExecutable() ?? "claude";
+  const child = spawn(command, args, {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  return child as unknown as SpawnedProcess;
+};
+
+export const legacySdkSpawnCli: SpawnCliFn = (args: string[]) => {
   const cliPath = resolveCliJsPath();
-  // Use `process.execPath` so we inherit the Node runtime codealmanac
-  // itself is running under — avoids PATH weirdness on systems where
-  // `node` isn't on PATH but codealmanac was installed via npm.
   const child = spawn(process.execPath, [cliPath, ...args], {
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -95,17 +87,29 @@ export const defaultSpawnCli: SpawnCliFn = (args: string[]) => {
 /**
  * Check whether the user is authenticated via Claude subscription OAuth.
  *
- * Spawns the bundled SDK CLI's `auth status --json`. On any failure
- * (spawn error, non-JSON stdout, non-zero exit, timeout) we return
- * `{ loggedIn: false }` rather than propagating the error — the caller
- * will fall back to the `ANTHROPIC_API_KEY` path and, if that's also
- * missing, produce a clean two-option error message.
+ * Spawns `claude auth status --json`, falling back to the legacy SDK CLI
+ * layout when available. On any failure (spawn error, non-JSON stdout,
+ * non-zero exit, timeout) we return `{ loggedIn: false }` rather than
+ * propagating the error — the caller will fall back to the
+ * `ANTHROPIC_API_KEY` path and, if that's also missing, produce a clean
+ * two-option error message.
  *
  * The 10s timeout guards against the CLI hanging on a broken network or
  * keychain prompt. In practice `auth status` is a cheap local read.
  */
 export async function checkClaudeAuth(
   spawnCli: SpawnCliFn = defaultSpawnCli,
+): Promise<ClaudeAuthStatus> {
+  if (spawnCli === defaultSpawnCli) {
+    const status = await checkClaudeAuthWith(defaultSpawnCli);
+    if (status.loggedIn) return status;
+    return await checkClaudeAuthWith(legacySdkSpawnCli);
+  }
+  return await checkClaudeAuthWith(spawnCli);
+}
+
+async function checkClaudeAuthWith(
+  spawnCli: SpawnCliFn,
 ): Promise<ClaudeAuthStatus> {
   let child: SpawnedProcess;
   try {
@@ -160,22 +164,26 @@ export async function checkClaudeAuth(
         return;
       }
       try {
-        const parsed = JSON.parse(stdout.trim()) as Record<string, unknown>;
-        const loggedIn = parsed.loggedIn === true;
-        const out: ClaudeAuthStatus = { loggedIn };
-        if (typeof parsed.email === "string") out.email = parsed.email;
-        if (typeof parsed.subscriptionType === "string") {
-          out.subscriptionType = parsed.subscriptionType;
-        }
-        if (typeof parsed.authMethod === "string") {
-          out.authMethod = parsed.authMethod;
-        }
-        settle(out);
+        settle(parseClaudeAuthStatus(stdout.trim()));
       } catch {
         settle({ loggedIn: false });
       }
     });
   });
+}
+
+function parseClaudeAuthStatus(raw: string): ClaudeAuthStatus {
+  const parsed = JSON.parse(raw) as Record<string, unknown>;
+  const loggedIn = parsed.loggedIn === true;
+  const out: ClaudeAuthStatus = { loggedIn };
+  if (typeof parsed.email === "string") out.email = parsed.email;
+  if (typeof parsed.subscriptionType === "string") {
+    out.subscriptionType = parsed.subscriptionType;
+  }
+  if (typeof parsed.authMethod === "string") {
+    out.authMethod = parsed.authMethod;
+  }
+  return out;
 }
 
 /**

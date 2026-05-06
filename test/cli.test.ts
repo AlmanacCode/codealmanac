@@ -171,6 +171,29 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     expect(setupMock).toHaveBeenCalledWith({ yes: true, skipHook: true });
   });
 
+  it("routes explicit `codealmanac setup --yes` before heavy command registration", async () => {
+    const setupMock = vi
+      .fn<(opts?: unknown) => Promise<SetupResult>>()
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await run(
+      ["/abs/node", "/abs/path/codealmanac", "setup", "--yes"],
+      {
+        runSetup: setupMock as never,
+        announceUpdate: () => {},
+        scheduleUpdateCheck: () => {},
+        runInternalUpdateCheck: async () => {},
+      },
+    );
+
+    expect(setupMock).toHaveBeenCalledTimes(1);
+    expect(setupMock).toHaveBeenCalledWith({
+      yes: true,
+      skipGuides: false,
+      skipHook: false,
+    });
+  });
+
   it("does NOT shortcut when the binary name is `almanac`", async () => {
     // `almanac --yes` without a subcommand isn't a setup invocation —
     // it's a commander error ("unknown option '--yes'"). We verify

@@ -1,6 +1,6 @@
 {
   "name": "codealmanac",
-  "version": "0.1.6",
+  "version": "0.1.9",
   "description": "A living wiki for codebases, maintained by AI agents. Documents what the code can't say: decisions, flows, invariants, incidents, gotchas.",
   "keywords": [
     "wiki",
@@ -45,7 +45,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.110",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.129",
     "better-sqlite3": "^12.9.0",
     "commander": "^12.1.0",
     "fast-glob": "^3.3.3",

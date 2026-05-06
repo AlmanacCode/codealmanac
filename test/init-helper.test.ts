@@ -197,14 +197,14 @@ describe("initWiki (internal helper)", () => {
 
   // The block codealmanac writes to .gitignore: one header line + three
   // SQLite sidecar entries (the DB itself and the WAL/SHM files that appear
-  // during active reindexing) + three log-file glob patterns (capture,
-  // bootstrap, ingest) added in v0.1.6 to prevent multi-MB AI session logs
-  // from leaking into commits (bug #4 from codealmanac-known-bugs.md).
+  // during active reindexing) + the runtime log directory + legacy root-level
+  // log globs kept so repos initialized by earlier versions stay quiet.
   const GITIGNORE_BLOCK =
     "# codealmanac\n" +
     ".almanac/index.db\n" +
     ".almanac/index.db-wal\n" +
     ".almanac/index.db-shm\n" +
+    ".almanac/logs/\n" +
     ".almanac/.capture-*\n" +
     ".almanac/.bootstrap-*\n" +
     ".almanac/.ingest-*\n";

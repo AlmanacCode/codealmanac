@@ -117,7 +117,7 @@ All topic subcommands accept `--wiki <name>`. `list` / `show` accept `--json`.
 
 #### `almanac bootstrap`
 
-Spawns an agent to create initial wiki stubs. Requires `ANTHROPIC_API_KEY` or a logged-in Claude subscription. `--quiet` suppresses per-tool streaming. `--model <model>` overrides the model. `--force` overwrites an existing populated wiki. Writes `.almanac/.bootstrap-<timestamp>.log`.
+Spawns an agent to create initial wiki stubs. Requires `ANTHROPIC_API_KEY` or a logged-in Claude subscription. `--quiet` suppresses per-tool streaming. `--model <model>` overrides the model. `--force` overwrites an existing populated wiki. Writes `.almanac/logs/.bootstrap-<timestamp>.log`.
 
 Bootstrap is the scaffolding path — it creates `.almanac/pages/`, `.almanac/topics.yaml`, `.almanac/README.md`, and stub entity pages based on what the agent reads in the repo.
 
@@ -132,7 +132,7 @@ Run the writer/reviewer pipeline on a Claude Code session transcript. Usually au
 | `--quiet` | Suppress per-tool streaming; print only the final summary. |
 | `--model <model>` | Override the agent model. |
 
-Writes SDK transcript to `.almanac/.capture-<session-id>.jsonl` (one JSON message per line). When invoked manually without `--session`, falls back to `.capture-<timestamp>.jsonl` so repeated runs don't clobber each other. A writer subagent drafts pages; a reviewer subagent enforces notability + writing conventions (§9) before drafts land.
+Writes SDK transcript to `.almanac/logs/.capture-<session-id>.jsonl` (one JSON message per line). When invoked manually without `--session`, falls back to `.capture-<timestamp>.jsonl` so repeated runs don't clobber each other. A writer subagent drafts pages; a reviewer subagent enforces notability + writing conventions (§9) before drafts land.
 
 #### `almanac hook install | uninstall | status`
 
@@ -455,7 +455,7 @@ Claude Code invokes `SessionEnd` hooks after each session. Payload on stdin:
 
 1. Parse payload with `jq`. Missing `jq` → exit 0 silently.
 2. Walk upward from `cwd` for a `.almanac/`. Bounded at filesystem root.
-3. Background `almanac capture "$TRANSCRIPT" --session "$SESSION_ID" --quiet`, redirect to `.almanac/.capture-$SESSION_ID.log`, `disown`.
+3. Background `almanac capture "$TRANSCRIPT" --session "$SESSION_ID" --quiet`, redirect to `.almanac/logs/.capture-$SESSION_ID.log`, `disown`.
 4. Exit always `0`. Capture failures must never break Claude Code's session-end path.
 
 Falls back to `npx --no-install codealmanac` if `almanac` isn't on `PATH`.
@@ -482,7 +482,7 @@ Falls back to `npx --no-install codealmanac` if `almanac` isn't on `PATH`.
 ```bash
 almanac doctor              # catch-all — reports hook state + last capture age
 almanac hook status         # just the hook entry
-ls -lah .almanac/.capture-*.log
+ls -lah .almanac/logs/.capture-*.log
 ```
 
 Installed but no log: `SessionEnd` didn't fire (rare, hard crash), or script bailed before backgrounding (add `set -x` to trace), or no `.almanac/` upward from `cwd` (silent correct no-op).
@@ -490,7 +490,7 @@ Installed but no log: `SessionEnd` didn't fire (rare, hard crash), or script bai
 ### Diagnosing "capture ran but wrote nothing"
 
 ```bash
-tail -200 .almanac/.capture-<id>.log
+tail -200 .almanac/logs/.capture-<id>.log
 ```
 
 Common causes:
@@ -678,7 +678,7 @@ Missing `files:` frontmatter, OR path referenced only in inline prose (not via `
 almanac doctor              # reports hook state + last capture age + auth
 claude auth status          # OAuth token present?
 echo "${ANTHROPIC_API_KEY:0:10}"   # API key fallback?
-ls -lah .almanac/.capture-*.log
+ls -lah .almanac/logs/.capture-*.log
 ```
 
 No logs at all → script bailed pre-background. Add `set -x` to `hooks/almanac-capture.sh` to trace. If the hook itself isn't installed, `almanac doctor` reports `install.hook: problem` with `run: almanac setup --yes`.
@@ -693,9 +693,9 @@ Case sensitivity on Linux. Schema v2 stores `original_path` for case-preserving 
 
 ### Forensics files
 
-- `.almanac/.capture-<session-id>.jsonl` — SDK message stream from `almanac capture` (one JSON object per line). Writer + reviewer interleaved.
-- `.almanac/.capture-<session-id>.log` — companion sidecar written by the SessionEnd hook: stdout+stderr of `almanac capture`, human-readable. Present only for hook-invoked captures; manual invocations emit only the `.jsonl`.
-- `.almanac/.bootstrap-<timestamp>.log` — one per bootstrap. Gitignored by default.
+- `.almanac/logs/.capture-<session-id>.jsonl` — SDK message stream from `almanac capture` (one JSON object per line). Writer + reviewer interleaved.
+- `.almanac/logs/.capture-<session-id>.log` — companion sidecar written by the SessionEnd hook: stdout+stderr of `almanac capture`, human-readable. Present only for hook-invoked captures; manual invocations emit only the `.jsonl`.
+- `.almanac/logs/.bootstrap-<timestamp>.log` — one per bootstrap. Gitignored by default.
 
 ---
 

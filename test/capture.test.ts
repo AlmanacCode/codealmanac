@@ -459,7 +459,7 @@ describe("almanac capture — command wiring", () => {
     });
   });
 
-  it("writes the full raw transcript to .almanac/.capture-<stamp>.log", async () => {
+  it("writes the full raw transcript to .almanac/logs/.capture-<stamp>.log", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "log-written");
       await scaffoldWiki(repo);
@@ -489,10 +489,13 @@ describe("almanac capture — command wiring", () => {
         runAgent: fakeRunAgent({ messages }),
       });
 
-      const entries = await readdir(join(repo, ".almanac"));
+      const entries = await readdir(join(repo, ".almanac", "logs"));
       const logs = entries.filter((f) => f.startsWith(".capture-"));
       expect(logs).toHaveLength(1);
-      const contents = await readFile(join(repo, ".almanac", logs[0]!), "utf8");
+      const contents = await readFile(
+        join(repo, ".almanac", "logs", logs[0]!),
+        "utf8",
+      );
       const lines = contents.trim().split("\n");
       expect(lines).toHaveLength(3);
       for (const line of lines) {
@@ -638,10 +641,10 @@ describe("almanac capture — command wiring", () => {
         }),
       });
 
-      const entries = await readdir(join(repo, ".almanac"));
+      const entries = await readdir(join(repo, ".almanac", "logs"));
       const logs = entries.filter((f) => f.startsWith(".capture-"));
       expect(logs.length).toBeGreaterThan(0);
-      expect(existsSync(join(repo, ".almanac", logs[0]!))).toBe(true);
+      expect(existsSync(join(repo, ".almanac", "logs", logs[0]!))).toBe(true);
     });
   });
 });

@@ -106,10 +106,10 @@ async function ensureGitignoreHasIndexDb(cwd: string): Promise<void> {
     ".almanac/index.db",
     ".almanac/index.db-wal",
     ".almanac/index.db-shm",
-    // Capture/bootstrap/ingest log files written by the AI pipeline.
-    // These can be multi-megabyte JSONL files and should never be
-    // committed. Bug #4 from codealmanac-known-bugs.md: a 1.8MB bootstrap
-    // log was accidentally committed before this line was added.
+    // Runtime logs written by the AI pipeline. These can be multi-megabyte
+    // JSONL files and should never be committed. Keep the old root-level
+    // globs too so repos initialized by earlier releases stay quiet.
+    ".almanac/logs/",
     ".almanac/.capture-*",
     ".almanac/.bootstrap-*",
     ".almanac/.ingest-*",

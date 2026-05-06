@@ -210,9 +210,9 @@ Empty stdout plus `# 0 results` on stderr means the query ran and genuinely matc
 ```bash
 almanac doctor              # install.hook: ok/problem, wiki.capture: last capture age
 almanac hook status         # just the hook entry
-ls -lah .almanac/.capture-*.log
+ls -lah .almanac/logs/.capture-*.log
 ```
-No logs at all → the hook isn't installed, or bailed before backgrounding, or `cwd` was outside any wiki (silent correct no-op). Capture ran but wrote nothing → the reviewer rejected the draft for notability, or the session was pure-read. Check the `.capture-<id>.log` for the writer/reviewer transcript.
+No logs at all → the hook isn't installed, or bailed before backgrounding, or `cwd` was outside any wiki (silent correct no-op). Capture ran but wrote nothing → the reviewer rejected the draft for notability, or the session was pure-read. Check `.almanac/logs/.capture-<id>.log` for the writer/reviewer transcript.
 
 ---
 

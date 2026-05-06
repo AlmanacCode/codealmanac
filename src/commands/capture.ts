@@ -5,7 +5,7 @@ import {
   statSync,
   type WriteStream,
 } from "node:fs";
-import { readFile, readdir, stat } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, join, relative } from "node:path";
 
@@ -177,9 +177,10 @@ export async function runCapture(
   // Transcript log filename. Prefer the Claude Code session-id when we
   // have one (`--session` was passed — which is what the SessionEnd
   // hook does) so the SDK transcript and the hook's human-readable
-  // sidecar share a stem: `.capture-<sid>.jsonl` (this file) alongside
-  // `.capture-<sid>.log` (the hook's stdout redirect). `ls -lah
-  // .capture-<sid>.*` tells one coherent story per session. Fall back
+  // sidecar share a stem in `.almanac/logs`: `.capture-<sid>.jsonl` (this
+  // file) alongside `.capture-<sid>.log` (the hook's stdout redirect).
+  // `ls -lah .almanac/logs/.capture-<sid>.*` tells one coherent story per
+  // session. Fall back
   // to a timestamp for manual `almanac capture` invocations where no
   // session-id is available — we don't have the SDK session_id either
   // at this point; it arrives on the first SDK message, too late to
@@ -195,8 +196,10 @@ export async function runCapture(
     options.sessionId !== undefined && options.sessionId.length > 0
       ? options.sessionId
       : formatTimestamp(now);
+  const logsDir = join(almanacDir, "logs");
+  await mkdir(logsDir, { recursive: true });
   const logName = `.capture-${logStem}.jsonl`;
-  const logPath = join(almanacDir, logName);
+  const logPath = join(logsDir, logName);
   const logStream = createWriteStream(logPath, { flags: "w" });
 
   const out = process.stdout;

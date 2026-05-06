@@ -155,27 +155,28 @@ function describeLastCapture(
       message: "last capture: never",
     };
   }
-  let entries: string[];
-  try {
-    entries = readdirSync(almanacDir);
-  } catch {
-    return {
-      status: "info",
-      key: "wiki.capture",
-      message: "last capture: unknown",
-    };
-  }
-  const captures = entries
-    .filter(
-      (e) =>
-        e.startsWith(".capture-") &&
-        (e.endsWith(".log") || e.endsWith(".jsonl")),
-    )
+  const logDirs = [path.join(almanacDir, "logs"), almanacDir];
+  const captures = logDirs
+    .flatMap((dir) => {
+      let entries: string[];
+      try {
+        entries = readdirSync(dir);
+      } catch {
+        return [];
+      }
+      return entries
+        .filter(
+          (e) =>
+            e.startsWith(".capture-") &&
+            (e.endsWith(".log") || e.endsWith(".jsonl")),
+        )
+        .map((e) => ({ dir, name: e }));
+    })
     .map((e) => {
       try {
         return {
-          name: e,
-          mtime: statSync(path.join(almanacDir, e)).mtimeMs,
+          name: e.name,
+          mtime: statSync(path.join(e.dir, e.name)).mtimeMs,
         };
       } catch {
         return null;

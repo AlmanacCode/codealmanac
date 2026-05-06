@@ -10,7 +10,6 @@ import type {
   SqliteProbeResult,
 } from "./doctor-checks/types.js";
 import { gatherUpdateChecks } from "./doctor-checks/updates.js";
-import { gatherWikiChecks } from "./doctor-checks/wiki.js";
 
 export type {
   Check,
@@ -49,7 +48,7 @@ export async function runDoctor(
 
   const wiki: Check[] = options.installOnly === true
     ? []
-    : await gatherWikiChecks(options);
+    : await safeGatherWikiChecks(options);
 
   const report: DoctorReport = { version, install, updates, wiki };
 
@@ -66,4 +65,23 @@ export async function runDoctor(
     stderr: "",
     exitCode: 0,
   };
+}
+
+async function safeGatherWikiChecks(
+  options: DoctorOptions,
+): Promise<Check[]> {
+  try {
+    const { gatherWikiChecks } = await import("./doctor-checks/wiki.js");
+    return await gatherWikiChecks(options);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return [
+      {
+        status: "problem",
+        key: "wiki.checks",
+        message: `could not run wiki checks: ${msg.split("\n")[0] ?? msg}`,
+        fix: "run: npm rebuild better-sqlite3 (in the install directory)",
+      },
+    ];
+  }
 }

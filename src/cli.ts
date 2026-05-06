@@ -6,7 +6,6 @@ import { Command } from "commander";
 import { runSetup } from "./commands/setup.js";
 import { configureGroupedHelp } from "./cli/help.js";
 import { emit } from "./cli/helpers.js";
-import { registerCommands } from "./cli/register-commands.js";
 import { announceUpdateIfAvailable } from "./update/announce.js";
 import {
   runInternalUpdateCheck,
@@ -61,6 +60,11 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
     )
     .version(readPackageVersion(), "-v, --version", "print version");
 
+  if (isRootVersionInvocation(argv.slice(2))) {
+    await program.parseAsync(argv);
+    return;
+  }
+
   if (programName === "codealmanac") {
     const setupInvocation = tryParseSetupShortcut(argv.slice(2));
     if (setupInvocation !== null) {
@@ -69,6 +73,11 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
     }
   }
 
+  if (await tryRunSqliteFreeCommand(argv.slice(2), runSetupFn)) {
+    return;
+  }
+
+  const { registerCommands } = await import("./cli/register-commands.js");
   registerCommands(program);
   configureGroupedHelp(program);
 
@@ -78,6 +87,117 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
 function getProgramName(argv: string[]): "almanac" | "codealmanac" {
   const invoked = argv[1] !== undefined ? basename(argv[1]) : "almanac";
   return invoked === "codealmanac" ? "codealmanac" : "almanac";
+}
+
+function isRootVersionInvocation(args: string[]): boolean {
+  return args.length === 1 && (args[0] === "--version" || args[0] === "-v");
+}
+
+function parseSetupFlags(args: string[]): {
+  yes?: boolean;
+  skipHook?: boolean;
+  skipGuides?: boolean;
+} {
+  return {
+    yes: args.includes("--yes") || args.includes("-y"),
+    skipHook: args.includes("--skip-hook"),
+    skipGuides: args.includes("--skip-guides"),
+  };
+}
+
+function parseUpdateFlags(args: string[]): {
+  dismiss?: boolean;
+  check?: boolean;
+  enableNotifier?: boolean;
+  disableNotifier?: boolean;
+} {
+  return {
+    dismiss: args.includes("--dismiss"),
+    check: args.includes("--check"),
+    enableNotifier: args.includes("--enable-notifier"),
+    disableNotifier: args.includes("--disable-notifier"),
+  };
+}
+
+function parseUninstallFlags(args: string[]): {
+  yes?: boolean;
+  keepHook?: boolean;
+  keepGuides?: boolean;
+} {
+  return {
+    yes: args.includes("--yes") || args.includes("-y"),
+    keepHook: args.includes("--keep-hook"),
+    keepGuides: args.includes("--keep-guides"),
+  };
+}
+
+function parseDoctorFlags(args: string[]): {
+  json?: boolean;
+  installOnly?: boolean;
+  wikiOnly?: boolean;
+} {
+  return {
+    json: args.includes("--json"),
+    installOnly: args.includes("--install-only"),
+    wikiOnly: args.includes("--wiki-only"),
+  };
+}
+
+async function tryRunSqliteFreeCommand(
+  args: string[],
+  runSetupFn: typeof runSetup,
+): Promise<boolean> {
+  if (args.includes("--help") || args.includes("-h")) return false;
+
+  const [command, subcommand] = args;
+  if (command === undefined) return false;
+
+  if (command === "setup") {
+    emit(await runSetupFn(parseSetupFlags(args.slice(1))));
+    return true;
+  }
+
+  if (command === "hook") {
+    const { runHookInstall, runHookStatus, runHookUninstall } = await import(
+      "./commands/hook.js"
+    );
+    if (subcommand === "install") {
+      emit(await runHookInstall());
+      return true;
+    }
+    if (subcommand === "uninstall") {
+      emit(await runHookUninstall());
+      return true;
+    }
+    if (subcommand === "status") {
+      emit(await runHookStatus());
+      return true;
+    }
+    return false;
+  }
+
+  if (command === "update") {
+    const { runUpdate } = await import("./commands/update.js");
+    emit(await runUpdate(parseUpdateFlags(args.slice(1))));
+    return true;
+  }
+
+  if (command === "doctor") {
+    const { runDoctor } = await import("./commands/doctor.js");
+    emit(await runDoctor({
+      cwd: process.cwd(),
+      ...parseDoctorFlags(args.slice(1)),
+    }));
+    return true;
+  }
+
+  if (command === "uninstall") {
+    const { runUninstall } = await import("./commands/uninstall.js");
+    emit(await runUninstall(parseUninstallFlags(args.slice(1))));
+    return true;
+  }
+
+  return false;
 }
 
 function readPackageVersion(): string {

@@ -13,6 +13,13 @@
 
 set -u
 
+# CodeAlmanac's own bootstrap/capture agents run Claude Code internally.
+# Their SessionEnd events must not trigger another capture, or one capture
+# can become an unbounded capture chain.
+if [ "${CODEALMANAC_INTERNAL_SESSION:-}" = "1" ]; then
+  exit 0
+fi
+
 # Be forgiving: if jq is missing, we can't parse the payload, so no-op.
 if ! command -v jq >/dev/null 2>&1; then
   exit 0
@@ -33,7 +40,8 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 DIR="$CWD"
 while [ "$DIR" != "/" ] && [ -n "$DIR" ]; do
   if [ -d "$DIR/.almanac" ]; then
-    LOG_DIR="$DIR/.almanac"
+    LOG_DIR="$DIR/.almanac/logs"
+    mkdir -p "$LOG_DIR" || exit 0
     # Prefer `almanac` on PATH; fall back to `npx codealmanac` if the
     # binary isn't linked (happens with non-global installs).
     if command -v almanac >/dev/null 2>&1; then
