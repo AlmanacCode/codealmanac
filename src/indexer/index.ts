@@ -84,6 +84,9 @@ export async function ensureFreshIndex(ctx: IndexContext): Promise<IndexResult> 
 
   if (
     !existsSync(dbPath) ||
+    // Keep read-side freshness even when CLI/agent write paths eagerly
+    // reindex: users can still change `.almanac/pages/` directly via
+    // manual edits, git pulls, merges, or branch switches.
     pagesNewerThan(pagesDir, dbPath) ||
     topicsYamlNewerThan(almanacDir, dbPath)
   ) {
