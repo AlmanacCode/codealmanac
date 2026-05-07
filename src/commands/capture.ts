@@ -11,9 +11,11 @@ import { basename, join, relative } from "node:path";
 
 import type { AgentDefinition } from "@anthropic-ai/claude-agent-sdk";
 
+import { getProviderDefaultModel } from "../agent/provider-view.js";
 import type { SpawnCliFn } from "../agent/providers/claude/index.js";
 import { assertAgentAuth } from "../agent/providers.js";
 import { loadPrompt } from "../agent/prompts.js";
+import { resolveAgentSelection } from "../agent/selection.js";
 import {
   runAgent,
   type AgentResult,
@@ -22,11 +24,6 @@ import {
 } from "../agent/sdk.js";
 import { parseFrontmatter } from "../indexer/frontmatter.js";
 import { findNearestAlmanacDir, getRepoAlmanacDir } from "../paths.js";
-import {
-  isAgentProviderId,
-  readConfig,
-  type AgentProviderId,
-} from "../update/config.js";
 import { formatRunUsage, StreamingFormatter } from "./bootstrap.js";
 import {
   buildStartedCaptureRecord,
@@ -49,6 +46,8 @@ export interface CaptureOptions {
   agent?: string;
   /** Injectable agent runner — tests replace this with a fake. */
   runAgent?: (opts: RunAgentOptions) => Promise<AgentResult>;
+  /** Injectable auth gate — tests can bypass non-Claude provider CLIs. */
+  assertAgentAuthFn?: typeof assertAgentAuth;
   /**
    * Injectable spawner for the Claude auth-status subprocess. Tests pass
    * a stub; production uses `defaultSpawnCli` which shells out to the
@@ -136,9 +135,13 @@ export async function runCapture(
     };
   }
   const { provider, model } = providerResolution;
+  const statusModel = model ?? getProviderDefaultModel(provider) ?? "provider default";
 
   try {
-    await assertAgentAuth({ provider, spawnCli: options.spawnCli });
+    await (options.assertAgentAuthFn ?? assertAgentAuth)({
+      provider,
+      spawnCli: options.spawnCli,
+    });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return {
@@ -235,7 +238,7 @@ export async function runCapture(
     stem: logStem,
     sessionId: options.sessionId,
     transcriptPath,
-    model: options.model,
+    model: statusModel,
     startedAt,
   });
   await writeCaptureRunRecord(statePath, stateRecord).catch(() => {});
@@ -339,33 +342,6 @@ export async function runCapture(
     stderr: "",
     exitCode: 0,
   };
-}
-
-type AgentSelection =
-  | { ok: true; provider: AgentProviderId; model?: string }
-  | { ok: false; error: string };
-
-async function resolveAgentSelection(args: {
-  agent?: string;
-  model?: string;
-}): Promise<AgentSelection> {
-  const config = await readConfig();
-  const rawProvider = args.agent ?? config.agent.default;
-  if (!isAgentProviderId(rawProvider)) {
-    return {
-      ok: false,
-      error:
-        `unknown agent '${rawProvider}'. Expected one of: claude, codex, cursor.`,
-    };
-  }
-  const configuredModel = config.agent.models[rawProvider] ?? undefined;
-  const model =
-    args.model !== undefined
-      ? args.model
-      : configuredModel === null
-        ? undefined
-        : configuredModel;
-  return { ok: true, provider: rawProvider, model };
 }
 
 // ─── Transcript resolution ────────────────────────────────────────────────

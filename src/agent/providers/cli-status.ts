@@ -1,5 +1,7 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 
+const STATUS_TIMEOUT_MS = 3_000;
+
 export function commandExists(command: string): boolean {
   const result = spawnSync("sh", ["-lc", `command -v ${command}`], {
     encoding: "utf8",
@@ -15,6 +17,13 @@ export function runStatusCommand(
     let stdout = "";
     let stderr = "";
     let child: ChildProcess;
+    let settled = false;
+    const settle = (value: { ok: boolean; detail: string }): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
     try {
       child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
     } catch (err: unknown) {
@@ -25,11 +34,20 @@ export function runStatusCommand(
     const timer = setTimeout(() => {
       try {
         child.kill("SIGTERM");
+        setTimeout(() => {
+          if (child.exitCode === null && child.signalCode === null) {
+            try {
+              child.kill("SIGKILL");
+            } catch {
+              // already exited
+            }
+          }
+        }, 500).unref();
       } catch {
         // already exited
       }
-      resolve({ ok: false, detail: `${command} status timed out` });
-    }, 10_000);
+      settle({ ok: false, detail: `${command} status timed out` });
+    }, STATUS_TIMEOUT_MS);
     child.stdout?.on("data", (chunk) => {
       stdout += chunk.toString("utf8");
     });
@@ -37,13 +55,11 @@ export function runStatusCommand(
       stderr += chunk.toString("utf8");
     });
     child.on("error", (err) => {
-      clearTimeout(timer);
-      resolve({ ok: false, detail: err.message });
+      settle({ ok: false, detail: err.message });
     });
     child.on("close", (code) => {
-      clearTimeout(timer);
       const text = `${stdout}\n${stderr}`.trim();
-      resolve({
+      settle({
         ok: code === 0,
         detail:
           text

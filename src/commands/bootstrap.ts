@@ -5,6 +5,7 @@ import { join, relative } from "node:path";
 import type { SpawnCliFn } from "../agent/providers/claude/index.js";
 import { assertAgentAuth } from "../agent/providers.js";
 import { loadPrompt } from "../agent/prompts.js";
+import { resolveAgentSelection } from "../agent/selection.js";
 import {
   runAgent,
   type AgentResult,
@@ -12,11 +13,6 @@ import {
   type RunAgentOptions,
 } from "../agent/sdk.js";
 import { findNearestAlmanacDir, getRepoAlmanacDir } from "../paths.js";
-import {
-  isAgentProviderId,
-  readConfig,
-  type AgentProviderId,
-} from "../update/config.js";
 import { initWiki } from "./init.js";
 
 export interface BootstrapOptions {
@@ -222,33 +218,6 @@ export async function runBootstrap(
     stderr: `almanac: bootstrap failed: ${result.error ?? "unknown error"}\n`,
     exitCode: 1,
   };
-}
-
-type AgentSelection =
-  | { ok: true; provider: AgentProviderId; model?: string }
-  | { ok: false; error: string };
-
-async function resolveAgentSelection(args: {
-  agent?: string;
-  model?: string;
-}): Promise<AgentSelection> {
-  const config = await readConfig();
-  const rawProvider = args.agent ?? config.agent.default;
-  if (!isAgentProviderId(rawProvider)) {
-    return {
-      ok: false,
-      error:
-        `unknown agent '${rawProvider}'. Expected one of: claude, codex, cursor.`,
-    };
-  }
-  const configuredModel = config.agent.models[rawProvider] ?? undefined;
-  const model =
-    args.model !== undefined
-      ? args.model
-      : configuredModel === null
-        ? undefined
-        : configuredModel;
-  return { ok: true, provider: rawProvider, model };
 }
 
 /**

@@ -156,6 +156,7 @@ describe("almanac doctor — JSON report shape", () => {
       const parsed = JSON.parse(r.stdout);
       expect(parsed.version).toBe("0.1.3");
       expect(Array.isArray(parsed.install)).toBe(true);
+      expect(Array.isArray(parsed.agents)).toBe(true);
       expect(Array.isArray(parsed.wiki)).toBe(true);
 
       const installKeys = parsed.install.map((c: { key: string }) => c.key);
@@ -173,6 +174,18 @@ describe("almanac doctor — JSON report shape", () => {
       for (const check of parsed.install) {
         expect(check.status).toBe("ok");
       }
+      expect(parsed.agents[0]).toMatchObject({
+        id: "claude",
+        label: "Claude",
+        status: "ok",
+        readiness: "ready",
+        selected: true,
+        recommended: true,
+        installed: true,
+        authenticated: true,
+        model: "claude-sonnet-4-6",
+        account: "user@example.com",
+      });
     });
   });
 });

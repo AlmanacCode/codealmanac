@@ -111,6 +111,7 @@ describe("registerCommands", () => {
       "hook",
       "reindex",
       "agents",
+      "config",
       "set",
       "setup",
       "doctor",
@@ -134,7 +135,9 @@ describe("registerCommands", () => {
     expect(findCommand(program, ["capture"]).commands.map((cmd) => cmd.name()))
       .toEqual(["status"]);
     expect(findCommand(program, ["agents"]).commands.map((cmd) => cmd.name()))
-      .toEqual(["list"]);
+      .toEqual(["list", "doctor", "use", "model"]);
+    expect(findCommand(program, ["config"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["list", "get", "set", "unset"]);
 
     expect(optionFlags(findCommand(program, ["setup"]))).toContain("-y, --yes");
     expect(optionFlags(findCommand(program, ["setup"]))).toContain(

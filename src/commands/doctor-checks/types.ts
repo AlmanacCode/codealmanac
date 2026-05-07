@@ -1,4 +1,6 @@
 import type { SpawnCliFn } from "../../agent/providers/claude/index.js";
+import type { ProviderStatus } from "../../agent/types.js";
+import type { AgentProviderId } from "../../update/config.js";
 import type { runHealth } from "../health.js";
 
 export interface DoctorOptions {
@@ -14,6 +16,8 @@ export interface DoctorOptions {
   // ─── Injection points (tests) ──────────────────────────────────────
   /** Override Claude auth probe. */
   spawnCli?: SpawnCliFn;
+  /** Override provider readiness probes. */
+  providerStatuses?: ProviderStatus[];
   /** Override `~/.claude/settings.json` path. */
   settingsPath?: string;
   /** Override `~/.claude/` directory. */
@@ -64,8 +68,26 @@ export interface Check {
 export interface DoctorReport {
   version: string;
   install: Check[];
+  agents: AgentDoctorCheck[];
   updates: Check[];
   wiki: Check[];
+}
+
+export interface AgentDoctorCheck {
+  id: AgentProviderId;
+  label: string;
+  status: CheckStatus;
+  readiness: "ready" | "not-authenticated" | "missing";
+  selected: boolean;
+  recommended: boolean;
+  installed: boolean;
+  authenticated: boolean;
+  model: string | null;
+  providerDefaultModel: string | null;
+  configuredModel: string | null;
+  account: string | null;
+  detail: string;
+  fix?: string;
 }
 
 export interface SqliteProbeResult {

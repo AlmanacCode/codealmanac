@@ -78,8 +78,12 @@ almanac doctor
 Set or change the default at any time:
 
 ```bash
-almanac set default-agent codex
-almanac set model codex gpt-5.3-codex
+almanac agents use codex
+almanac agents model codex gpt-5.3-codex
+
+# Scriptable equivalent:
+almanac config set agent.default codex
+almanac config set agent.models.codex gpt-5.3-codex
 ```
 
 codealmanac itself never stores your provider credentials. Auth stays in each agent's normal local credential store.
@@ -132,12 +136,17 @@ almanac hook install --source all            # auto-capture for Claude/Codex/Cur
 
 # Setup & diagnose
 almanac agents list                          # provider readiness + default
-almanac set default-agent codex              # change default provider
+almanac agents use codex                     # change default provider
+almanac agents model claude claude-opus-4-6  # set provider model
+almanac config list --show-origin            # scriptable settings view
 almanac doctor                               # check install + wiki health
 almanac update                               # update to latest version
 ```
 
-All commands output slugs one per line. Add `--json` for structured output. Pipe with `--stdin`:
+`bootstrap` and `capture` resolve provider settings in the standard order:
+`--agent` / `--model`, then `ALMANAC_AGENT` / `ALMANAC_MODEL`, then config.
+
+All query commands output slugs one per line. Add `--json` for structured output. Pipe with `--stdin`:
 
 ```bash
 almanac search --topic flows | almanac show --stdin

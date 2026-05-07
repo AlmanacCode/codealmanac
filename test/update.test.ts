@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { runUpdate } from "../src/commands/update.js";
+import { runConfigSet } from "../src/commands/config.js";
 import { readConfig, writeConfig } from "../src/update/config.js";
 import { readState, writeState } from "../src/update/state.js";
 import { withTempHome } from "./helpers.js";
@@ -271,6 +272,32 @@ describe("almanac update --enable-notifier / --disable-notifier", () => {
       expect(result.exitCode).toBe(0);
       const config = await readConfig(configPath);
       expect(config.update_notifier).toBe(false);
+      const raw = JSON.parse(await readFile(configPath, "utf8")) as {
+        update_notifier?: boolean;
+        agent?: unknown;
+      };
+      expect(raw.update_notifier).toBe(false);
+      expect(raw.agent).toBeUndefined();
+    });
+  });
+
+  it("preserves explicit default-valued agent origins when toggling notifier", async () => {
+    await withTempHome(async (home) => {
+      const configPath = configPathIn(home);
+      await expect(runConfigSet({
+        key: "agent.models.codex",
+        value: "default",
+      })).resolves.toMatchObject({ exitCode: 0 });
+
+      await expect(runUpdate({ disableNotifier: true, configPath }))
+        .resolves.toMatchObject({ exitCode: 0 });
+
+      const raw = JSON.parse(await readFile(configPath, "utf8")) as {
+        update_notifier?: boolean;
+        agent?: { models?: { codex?: null } };
+      };
+      expect(raw.update_notifier).toBe(false);
+      expect(raw.agent?.models?.codex).toBeNull();
     });
   });
 

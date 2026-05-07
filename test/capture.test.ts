@@ -8,6 +8,7 @@ import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { SpawnCliFn } from "../src/agent/providers/claude/index.js";
 import { runCapture } from "../src/commands/capture.js";
 import type { AgentResult, RunAgentOptions } from "../src/agent/sdk.js";
+import { writeConfig } from "../src/update/config.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 
 /**
@@ -139,14 +140,28 @@ async function writeFakeTranscript(args: {
 }
 
 const ORIGINAL_API_KEY = process.env.ANTHROPIC_API_KEY;
+const ORIGINAL_ALMANAC_AGENT = process.env.ALMANAC_AGENT;
+const ORIGINAL_ALMANAC_MODEL = process.env.ALMANAC_MODEL;
 beforeEach(() => {
   process.env.ANTHROPIC_API_KEY = "sk-ant-test-dummy";
+  delete process.env.ALMANAC_AGENT;
+  delete process.env.ALMANAC_MODEL;
 });
 afterEach(() => {
   if (ORIGINAL_API_KEY === undefined) {
     delete process.env.ANTHROPIC_API_KEY;
   } else {
     process.env.ANTHROPIC_API_KEY = ORIGINAL_API_KEY;
+  }
+  if (ORIGINAL_ALMANAC_AGENT === undefined) {
+    delete process.env.ALMANAC_AGENT;
+  } else {
+    process.env.ALMANAC_AGENT = ORIGINAL_ALMANAC_AGENT;
+  }
+  if (ORIGINAL_ALMANAC_MODEL === undefined) {
+    delete process.env.ALMANAC_MODEL;
+  } else {
+    process.env.ALMANAC_MODEL = ORIGINAL_ALMANAC_MODEL;
   }
 });
 
@@ -187,6 +202,7 @@ describe("almanac capture — command wiring", () => {
       const out = await runCapture({
         cwd: repo,
         transcriptPath: transcript,
+        sessionId: "sess_env",
         quiet: true,
         spawnCli: fakeSpawnCliLoggedIn(),
         runAgent: fakeRunAgent({
@@ -250,6 +266,74 @@ describe("almanac capture — command wiring", () => {
       expect(record.model).toBe("claude-opus-4-6");
       expect(record.durationMs).toBe(64000);
       expect(record.summary).toMatchObject({ created: 1, updated: 0, archived: 0 });
+    });
+  });
+
+  it("uses env agent and model overrides between flags and config", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "env-agent");
+      await scaffoldWiki(repo);
+      const transcript = join(home, "t.jsonl");
+      await writeFile(transcript, "{}\n", "utf8");
+      await writeConfig({
+        agent: {
+          default: "cursor",
+          models: { cursor: "cursor-config-model" },
+        },
+      });
+      process.env.ALMANAC_AGENT = "claude/shorthand-model";
+      process.env.ALMANAC_MODEL = "env-model";
+
+      let seen: Pick<RunAgentOptions, "provider" | "model"> = {};
+      const out = await runCapture({
+        cwd: repo,
+        transcriptPath: transcript,
+        sessionId: "sess_env",
+        quiet: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
+        runAgent: fakeRunAgent({
+          onRun: (opts) => {
+            seen = { provider: opts.provider, model: opts.model };
+          },
+        }),
+      });
+
+      expect(out.exitCode).toBe(0);
+      expect(seen).toEqual({ provider: "claude", model: "env-model" });
+      const raw = await readFile(
+        join(repo, ".almanac", "logs", ".capture-sess_env.state.json"),
+        "utf8",
+      );
+      expect((JSON.parse(raw) as { model: string }).model).toBe("env-model");
+    });
+  });
+
+  it("records provider default instead of Claude default for Codex capture status", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "codex-default-status");
+      await scaffoldWiki(repo);
+      const transcript = join(home, "t.jsonl");
+      await writeFile(transcript, "{}\n", "utf8");
+      process.env.ALMANAC_AGENT = "codex";
+
+      const out = await runCapture({
+        cwd: repo,
+        transcriptPath: transcript,
+        sessionId: "sess_codex",
+        quiet: true,
+        assertAgentAuthFn: async () => {},
+        spawnCli: fakeSpawnCliLoggedOut(),
+        runAgent: fakeRunAgent({}),
+      });
+
+      expect(out.exitCode).toBe(0);
+      const raw = await readFile(
+        join(repo, ".almanac", "logs", ".capture-sess_codex.state.json"),
+        "utf8",
+      );
+      expect((JSON.parse(raw) as { model: string }).model).toBe(
+        "provider default",
+      );
     });
   });
 

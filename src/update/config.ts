@@ -39,7 +39,7 @@ export function defaultConfig(): GlobalConfig {
     agent: {
       default: "claude",
       models: {
-        claude: "claude-sonnet-4-6",
+        claude: null,
         codex: null,
         cursor: null,
       },
@@ -113,7 +113,10 @@ export async function writeConfig(
 ): Promise<void> {
   const file = path ?? getConfigPath();
   await mkdir(dirname(file), { recursive: true });
-  const body = `${JSON.stringify(normalizeConfig(config), null, 2)}\n`;
+  const current = await readConfig(file);
+  const existingRaw = await readRawConfigObject(file);
+  const stored = toStoredConfigPatch(config, current, existingRaw);
+  const body = `${JSON.stringify(stored, null, 2)}\n`;
   const tmp = `${file}.tmp`;
   await writeFile(tmp, body, "utf8");
   await rename(tmp, file);
@@ -137,4 +140,103 @@ function normalizeConfig(config: GlobalConfig | Partial<GlobalConfig>): GlobalCo
       },
     },
   };
+}
+
+async function readRawConfigObject(
+  path: string,
+): Promise<Record<string, unknown>> {
+  try {
+    const parsed = JSON.parse(await readFile(path, "utf8")) as unknown;
+    if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Fall through to empty.
+  }
+  return {};
+}
+
+function toStoredConfigPatch(
+  config: GlobalConfig | Partial<GlobalConfig>,
+  current: GlobalConfig,
+  raw: Record<string, unknown>,
+): Record<string, unknown> {
+  const normalized = normalizeConfig(config);
+  const defaults = defaultConfig();
+  const stored = cloneJsonObject(raw);
+
+  if (
+    config.update_notifier !== undefined &&
+    normalized.update_notifier !== current.update_notifier
+  ) {
+    setStoredValue(
+      stored,
+      ["update_notifier"],
+      normalized.update_notifier,
+      defaults.update_notifier,
+    );
+  }
+
+  if (config.agent !== undefined) {
+    if (
+      config.agent.default !== undefined &&
+      normalized.agent.default !== current.agent.default
+    ) {
+      setStoredValue(
+        stored,
+        ["agent", "default"],
+        normalized.agent.default,
+        defaults.agent.default,
+      );
+    }
+
+    const inputModels = config.agent.models ?? {};
+    for (const id of AGENT_PROVIDER_IDS) {
+      if (!Object.prototype.hasOwnProperty.call(inputModels, id)) continue;
+      const value = normalized.agent.models[id] ?? null;
+      const currentValue = current.agent.models[id] ?? null;
+      const defaultValue = defaults.agent.models[id] ?? null;
+      if (value !== currentValue) {
+        setStoredValue(stored, ["agent", "models", id], value, defaultValue);
+      }
+    }
+  }
+  pruneEmptyObjects(stored);
+  return stored;
+}
+
+function setStoredValue(
+  raw: Record<string, unknown>,
+  path: string[],
+  value: string | boolean | null,
+  defaultValue: string | boolean | null,
+): void {
+  let cursor = raw;
+  for (const part of path.slice(0, -1)) {
+    const next = cursor[part];
+    if (next === null || typeof next !== "object" || Array.isArray(next)) {
+      cursor[part] = {};
+    }
+    cursor = cursor[part] as Record<string, unknown>;
+  }
+  const leaf = path[path.length - 1];
+  if (leaf === undefined) return;
+  cursor[leaf] = value;
+  if (value !== defaultValue) return;
+  // Keep explicit defaults only when the caller changed the value to the
+  // default. Unchanged explicit defaults are preserved by cloning `raw`.
+}
+
+function cloneJsonObject(raw: Record<string, unknown>): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(raw)) as Record<string, unknown>;
+}
+
+function pruneEmptyObjects(raw: Record<string, unknown>): void {
+  for (const [key, value] of Object.entries(raw)) {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+      continue;
+    }
+    pruneEmptyObjects(value as Record<string, unknown>);
+    if (Object.keys(value).length === 0) delete raw[key];
+  }
 }

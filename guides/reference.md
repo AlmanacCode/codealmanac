@@ -117,7 +117,7 @@ All topic subcommands accept `--wiki <name>`. `list` / `show` accept `--json`.
 
 #### `almanac bootstrap`
 
-Spawns an agent to create initial wiki stubs. Requires `ANTHROPIC_API_KEY` or a logged-in Claude subscription. `--quiet` suppresses per-tool streaming. `--model <model>` overrides the model. `--force` overwrites an existing populated wiki. Writes `.almanac/logs/.bootstrap-<timestamp>.log`.
+Spawns an agent to create initial wiki stubs. Requires the selected provider to be installed and logged in. `--quiet` suppresses per-tool streaming. `--agent <provider>` overrides the provider for this run. `--model <model>` overrides the provider-local model. `--force` overwrites an existing populated wiki. Writes `.almanac/logs/.bootstrap-<timestamp>.log`.
 
 Bootstrap is the scaffolding path — it creates `.almanac/pages/`, `.almanac/topics.yaml`, `.almanac/README.md`, and stub entity pages based on what the agent reads in the repo.
 
@@ -130,6 +130,7 @@ Run the writer/reviewer pipeline on a Claude Code session transcript. Usually au
 | `[transcript]` | Explicit path. Falls back to `--session` match or most-recent-by-cwd. |
 | `--session <id>` | Target a specific session by ID. Matches filename under `~/.claude/projects/`. |
 | `--quiet` | Suppress per-tool streaming; print only the final summary. |
+| `--agent <provider>` | Override the configured provider for this run. |
 | `--model <model>` | Override the agent model. |
 
 Writes SDK transcript to `.almanac/logs/.capture-<session-id>.jsonl` (one JSON message per line). When invoked manually without `--session`, falls back to `.capture-<timestamp>.jsonl` so repeated runs don't clobber each other. A writer subagent drafts pages; a reviewer subagent enforces notability + writing conventions (§9) before drafts land.
@@ -153,6 +154,7 @@ Install the SessionEnd hook + the two CLAUDE.md guides (`codealmanac.md`, `codea
 | Flag | Semantics |
 |---|---|
 | `-y, --yes` | Skip prompts; install everything. |
+| `--agent <agent>` | Set the default provider. Accepts `claude`, `codex`, `cursor`, or optional shorthand like `claude/opus`. |
 | `--skip-hook` | Opt out of the SessionEnd hook. |
 | `--skip-guides` | Opt out of the CLAUDE.md guides. |
 
@@ -190,6 +192,23 @@ Read-only install + current-wiki health report. Every check reports a state; non
     { "key": "install.guides", "status": "ok", "message": "..." },
     { "key": "install.import", "status": "ok", "message": "..." }
   ],
+  "agents": [
+    {
+      "id": "claude",
+      "label": "Claude",
+      "status": "ok",
+      "readiness": "ready",
+      "selected": true,
+      "recommended": true,
+      "installed": true,
+      "authenticated": true,
+      "model": "claude-sonnet-4-6",
+      "providerDefaultModel": "claude-sonnet-4-6",
+      "configuredModel": null,
+      "account": "rohan@example.com",
+      "detail": "rohan@example.com"
+    }
+  ],
   "wiki": [
     { "key": "wiki.repo",       "status": "info", "message": "repo: /abs/path" },
     { "key": "wiki.registered", "status": "ok",   "message": "registered as '...'" },
@@ -205,6 +224,41 @@ Read-only install + current-wiki health report. Every check reports a state; non
 Each check has a stable `key` safe for scripting. ✗ entries include a `fix` field with a one-line "run: …" hint. Parse `--json` and count `status === "problem"` for a pass/fail gate.
 
 The report also includes an `## Updates` section (`updates: Check[]` in `--json`) with keys `update.status`, `update.last_check`, `update.notifier`, and `update.dismissed`. `update.status === "problem"` when a new version is available — mirrors the pre-command banner.
+
+#### `almanac agents`
+
+Provider-focused settings and readiness.
+
+```bash
+almanac agents list
+almanac agents doctor
+almanac agents use claude
+almanac agents model claude claude-opus-4-6
+almanac agents model claude --default
+```
+
+`agents use` writes the default provider. `agents model` writes the provider-local model override; `--default`, `default`, or `null` resets the provider to its own default. The older `almanac set default-agent ...` and `almanac set model ...` commands remain compatibility aliases.
+
+`bootstrap` and `capture` resolve provider settings in this order:
+
+```text
+--agent flag > ALMANAC_AGENT env > config.agent.default > built-in default
+--model flag > ALMANAC_MODEL env > config.agent.models[provider] > provider default
+```
+
+#### `almanac config`
+
+Low-level scriptable settings surface.
+
+```bash
+almanac config list
+almanac config list --show-origin
+almanac config get agent.default
+almanac config set agent.models.claude claude-opus-4-6
+almanac config unset agent.models.claude
+```
+
+Supported keys: `update_notifier`, `agent.default`, `agent.models.claude`, `agent.models.codex`, and `agent.models.cursor`.
 
 #### `almanac update`
 

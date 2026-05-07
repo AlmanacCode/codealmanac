@@ -1,10 +1,19 @@
 import { Command } from "commander";
 
 import {
+  runAgentsDoctor,
   runAgentsList,
+  runAgentsModel,
+  runAgentsUse,
   runSetAgentModel,
   runSetDefaultAgent,
 } from "../commands/agents.js";
+import {
+  runConfigGet,
+  runConfigList,
+  runConfigSet,
+  runConfigUnset,
+} from "../commands/config.js";
 import { runDoctor } from "../commands/doctor.js";
 import { runSetup } from "../commands/setup.js";
 import { runUninstall } from "../commands/uninstall.js";
@@ -21,6 +30,82 @@ export function registerSetupCommands(program: Command): void {
     .description("show Claude, Codex, and Cursor provider status")
     .action(async () => {
       emit(await runAgentsList());
+    });
+
+  agents
+    .command("doctor")
+    .description("diagnose supported AI agent providers")
+    .action(async () => {
+      emit(await runAgentsDoctor());
+    });
+
+  agents
+    .command("use")
+    .description("set the default AI agent provider")
+    .argument("<provider>", "claude, codex, cursor, or claude/<model>")
+    .action(async (provider: string) => {
+      emit(await runAgentsUse({ provider }));
+    });
+
+  agents
+    .command("model")
+    .description("set or reset a provider model")
+    .argument("<provider>", "claude, codex, or cursor")
+    .argument("[model]", "provider-specific model id")
+    .option("--default", "reset to provider default")
+    .action(async (
+      provider: string,
+      model: string | undefined,
+      opts: { default?: boolean },
+    ) => {
+      emit(await runAgentsModel({
+        provider,
+        model,
+        defaultModel: opts.default,
+      }));
+    });
+
+  const config = program
+    .command("config")
+    .description("read and write codealmanac settings");
+
+  config
+    .command("list")
+    .description("show supported config keys")
+    .option("--json", "emit structured JSON")
+    .option("--show-origin", "show whether each value came from file or default")
+    .action(async (opts: { json?: boolean; showOrigin?: boolean }) => {
+      emit(await runConfigList(opts));
+    });
+
+  config
+    .command("get")
+    .description("print one config value")
+    .argument("<key>", "config key")
+    .option("--json", "emit structured JSON")
+    .option("--show-origin", "show whether the value came from file or default")
+    .action(async (
+      key: string,
+      opts: { json?: boolean; showOrigin?: boolean },
+    ) => {
+      emit(await runConfigGet({ key, ...opts }));
+    });
+
+  config
+    .command("set")
+    .description("set one config value")
+    .argument("<key>", "config key")
+    .argument("<value>", "config value")
+    .action(async (key: string, value: string) => {
+      emit(await runConfigSet({ key, value }));
+    });
+
+  config
+    .command("unset")
+    .description("restore one config value to default")
+    .argument("<key>", "config key")
+    .action(async (key: string) => {
+      emit(await runConfigUnset({ key }));
     });
 
   program

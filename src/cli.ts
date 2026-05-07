@@ -201,9 +201,63 @@ async function tryRunSqliteFreeCommand(
   }
 
   if (command === "agents") {
-    const { runAgentsList } = await import("./commands/agents.js");
+    const {
+      runAgentsDoctor,
+      runAgentsList,
+      runAgentsModel,
+      runAgentsUse,
+    } = await import("./commands/agents.js");
     if (subcommand === "list" || subcommand === undefined) {
       emit(await runAgentsList());
+      return true;
+    }
+    if (subcommand === "doctor") {
+      emit(await runAgentsDoctor());
+      return true;
+    }
+    if (subcommand === "use") {
+      emit(await runAgentsUse({ provider: args[2] ?? "" }));
+      return true;
+    }
+    if (subcommand === "model") {
+      emit(await runAgentsModel({
+        provider: args[2] ?? "",
+        model: args[3] === "--default" ? undefined : args[3],
+        defaultModel: args.includes("--default"),
+      }));
+      return true;
+    }
+    return false;
+  }
+
+  if (command === "config") {
+    const {
+      runConfigGet,
+      runConfigList,
+      runConfigSet,
+      runConfigUnset,
+    } = await import("./commands/config.js");
+    if (subcommand === "list" || subcommand === undefined) {
+      emit(await runConfigList({
+        json: args.includes("--json"),
+        showOrigin: args.includes("--show-origin"),
+      }));
+      return true;
+    }
+    if (subcommand === "get") {
+      emit(await runConfigGet({
+        key: args[2] ?? "",
+        json: args.includes("--json"),
+        showOrigin: args.includes("--show-origin"),
+      }));
+      return true;
+    }
+    if (subcommand === "set") {
+      emit(await runConfigSet({ key: args[2] ?? "", value: args[3] }));
+      return true;
+    }
+    if (subcommand === "unset") {
+      emit(await runConfigUnset({ key: args[2] ?? "" }));
       return true;
     }
     return false;

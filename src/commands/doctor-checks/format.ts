@@ -1,5 +1,11 @@
 import { BLUE, BOLD, DIM, GREEN, RED, RST } from "../../ansi.js";
-import type { Check, CheckStatus, DoctorOptions, DoctorReport } from "./types.js";
+import type {
+  AgentDoctorCheck,
+  Check,
+  CheckStatus,
+  DoctorOptions,
+  DoctorReport,
+} from "./types.js";
 
 export function formatReport(
   report: DoctorReport,
@@ -12,6 +18,13 @@ export function formatReport(
   if (report.install.length > 0) {
     lines.push(color ? `${BOLD}## Install${RST}` : "## Install");
     for (const c of report.install) {
+      lines.push(formatCheck(c, color));
+    }
+    lines.push("");
+  }
+  if (report.agents.length > 0) {
+    lines.push(color ? `${BOLD}## Agents${RST}` : "## Agents");
+    for (const c of report.agents.map(agentToCheck)) {
       lines.push(formatCheck(c, color));
     }
     lines.push("");
@@ -31,6 +44,29 @@ export function formatReport(
     lines.push("");
   }
   return `${lines.join("\n")}\n`;
+}
+
+function agentToCheck(agent: AgentDoctorCheck): Check {
+  const message = [
+    agent.label,
+    agent.selected ? "(default)" : null,
+    agent.recommended ? "(recommended)" : null,
+    agent.status === "ok" ? "ready" : readinessMessage(agent),
+    `model: ${agent.model ?? "provider default"}`,
+    agent.account,
+  ].filter((part): part is string => part !== null).join(" ");
+  return {
+    status: agent.status,
+    key: `agents.${agent.id}`,
+    message,
+    fix: agent.fix,
+  };
+}
+
+function readinessMessage(agent: AgentDoctorCheck): string {
+  if (!agent.installed) return "missing";
+  if (!agent.authenticated) return `not ready: ${agent.detail}`;
+  return agent.detail;
 }
 
 function formatCheck(c: Check, color: boolean): string {

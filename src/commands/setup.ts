@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { spawn } from "node:child_process";
 import {
   copyFile,
   mkdir,
@@ -16,6 +17,12 @@ import {
   type SpawnCliFn,
   UNAUTHENTICATED_MESSAGE,
 } from "../agent/providers/claude/index.js";
+import {
+  buildProviderSetupView,
+  getProviderDefaultModel,
+  parseAgentSelection,
+} from "../agent/provider-view.js";
+import type { ProviderSetupView } from "../agent/provider-view.js";
 import {
   isAgentProviderId,
   readConfig,
@@ -201,6 +208,7 @@ export async function runSetup(
     out,
     interactive,
     requested: options.agent,
+    spawnCli: options.spawnCli,
   });
   if (!agentChoice.ok) {
     return {
@@ -209,7 +217,11 @@ export async function runSetup(
       exitCode: 1,
     };
   }
-  stepDone(out, `Default agent: ${WHITE_BOLD}${agentChoice.provider}${RST}`);
+  stepDone(
+    out,
+    `Default agent: ${WHITE_BOLD}${agentChoice.provider}${RST}` +
+      (agentChoice.model === null ? "" : ` (${agentChoice.model})`),
+  );
   out.write(BAR + "\n");
 
   // Step 1b: ephemeral install detection. When codealmanac was invoked via
@@ -356,38 +368,120 @@ async function safeCheckAuth(
 }
 
 type AgentChoice =
-  | { ok: true; provider: AgentProviderId }
+  | { ok: true; provider: AgentProviderId; model: string | null }
   | { ok: false; error: string };
 
 async function chooseDefaultAgent(args: {
   out: NodeJS.WritableStream;
   interactive: boolean;
   requested?: string;
+  spawnCli?: SpawnCliFn;
 }): Promise<AgentChoice> {
   const config = await readConfig();
+  let view: ProviderSetupView | null = null;
   let selected = args.requested ?? config.agent.default;
-  if (args.interactive && args.requested === undefined) {
+  if (args.interactive || args.requested !== undefined) {
+    view = await buildProviderSetupView({ config, spawnCli: args.spawnCli });
+  }
+  if (args.interactive && args.requested === undefined && view !== null) {
+    args.out.write("  Choose default agent:\n");
+    view.choices.forEach((choice, index) => {
+      const tag = choice.recommended ? " recommended" : "";
+      const status = choice.ready ? "ready" : "not ready";
+      const detail = choice.account ?? choice.fixCommand ?? choice.detail;
+      args.out.write(
+        `    ${index + 1}. ${choice.label.padEnd(6)} ${status.padEnd(9)}${tag}  ${detail}\n`,
+      );
+    });
     selected = await promptText(
       args.out,
-      "Choose default agent: claude, codex, or cursor",
-      config.agent.default,
+      "Default agent",
+      view.recommendedProvider,
     );
+    const number = Number.parseInt(selected, 10);
+    if (
+      Number.isInteger(number) &&
+      number >= 1 &&
+      number <= view.choices.length
+    ) {
+      selected = view.choices[number - 1]?.id ?? selected;
+    }
   }
-  if (!isAgentProviderId(selected)) {
+  const parsed = parseAgentSelection(selected);
+  if (parsed.provider === null || !isAgentProviderId(parsed.provider)) {
     return {
       ok: false,
       error:
         `unknown agent '${selected}'. Expected one of: claude, codex, cursor.`,
     };
   }
+  const provider = parsed.provider;
+  let selectedChoice = view?.choices.find((choice) => choice.id === provider);
+  if (
+    args.interactive &&
+    selectedChoice !== undefined &&
+    !selectedChoice.ready &&
+    selectedChoice.fixCommand?.startsWith("run: ") === true
+  ) {
+    const command = selectedChoice.fixCommand.slice("run: ".length);
+    const runLogin = await confirm(
+      args.out,
+      `${selectedChoice.label} is not ready. Run '${command}' now?`,
+      true,
+    );
+    if (runLogin === "install") {
+      const login = await runLoginCommand(command);
+      if (login.ok) {
+        view = await buildProviderSetupView({ config, spawnCli: args.spawnCli });
+        selectedChoice = view.choices.find((choice) => choice.id === provider);
+      } else {
+        stepActive(args.out, `${selectedChoice.label} login failed: ${login.error}`);
+      }
+    }
+  }
+  const recommendedModel = getProviderDefaultModel(provider);
+  const model =
+    parsed.model ?? config.agent.models[provider] ?? recommendedModel;
   await writeConfig({
     ...config,
     agent: {
       ...config.agent,
-      default: selected,
+      default: provider,
+      models: {
+        ...config.agent.models,
+        [provider]: model,
+      },
     },
   });
-  return { ok: true, provider: selected };
+  if (!args.interactive || args.requested !== undefined) {
+    const detail = selectedChoice?.ready === true
+      ? "ready"
+      : selectedChoice?.fixCommand ?? selectedChoice?.detail ?? "status unknown";
+    stepDone(args.out, `Agent readiness: ${detail}`);
+  }
+  return { ok: true, provider, model };
+}
+
+async function runLoginCommand(command: string): Promise<
+  | { ok: true }
+  | { ok: false; error: string }
+> {
+  return new Promise((resolve) => {
+    const child = spawn(command, {
+      shell: true,
+      stdio: "inherit",
+    });
+    child.on("error", (err) => {
+      resolve({ ok: false, error: err.message });
+    });
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve({ ok: true });
+        return;
+      }
+      resolve({ ok: false, error: `exited ${code ?? 1}` });
+    });
+  });
 }
 
 function reportAuth(

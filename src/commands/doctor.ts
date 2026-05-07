@@ -4,11 +4,13 @@ import { readPackageVersion } from "./doctor-checks/probes.js";
 import type {
   Check,
   CheckStatus,
+  AgentDoctorCheck,
   DoctorOptions,
   DoctorReport,
   DoctorResult,
   SqliteProbeResult,
 } from "./doctor-checks/types.js";
+import { gatherAgentChecks } from "./doctor-checks/agents.js";
 import { gatherUpdateChecks } from "./doctor-checks/updates.js";
 
 export type {
@@ -42,6 +44,10 @@ export async function runDoctor(
     ? []
     : await gatherInstallChecks(options);
 
+  const agents: AgentDoctorCheck[] = options.wikiOnly === true
+    ? []
+    : await gatherAgentChecks(options);
+
   const updates: Check[] = options.wikiOnly === true
     ? []
     : await gatherUpdateChecks(options, version);
@@ -50,7 +56,7 @@ export async function runDoctor(
     ? []
     : await safeGatherWikiChecks(options);
 
-  const report: DoctorReport = { version, install, updates, wiki };
+  const report: DoctorReport = { version, install, agents, updates, wiki };
 
   if (options.json === true) {
     return {

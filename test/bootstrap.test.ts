@@ -13,6 +13,7 @@ import {
   setPromptsDirForTesting,
 } from "../src/agent/prompts.js";
 import type { AgentResult, RunAgentOptions } from "../src/agent/sdk.js";
+import { writeConfig } from "../src/update/config.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 
 /**
@@ -105,14 +106,28 @@ function fakeRunAgent(messages: SDKMessage[] = [], final?: Partial<AgentResult>)
 // `spawnCli` stub so the subscription-auth check returns logged-out
 // deterministically — the env-var path is what opens the gate here.
 const ORIGINAL_API_KEY = process.env.ANTHROPIC_API_KEY;
+const ORIGINAL_ALMANAC_AGENT = process.env.ALMANAC_AGENT;
+const ORIGINAL_ALMANAC_MODEL = process.env.ALMANAC_MODEL;
 beforeEach(() => {
   process.env.ANTHROPIC_API_KEY = "sk-ant-test-dummy";
+  delete process.env.ALMANAC_AGENT;
+  delete process.env.ALMANAC_MODEL;
 });
 afterEach(() => {
   if (ORIGINAL_API_KEY === undefined) {
     delete process.env.ANTHROPIC_API_KEY;
   } else {
     process.env.ANTHROPIC_API_KEY = ORIGINAL_API_KEY;
+  }
+  if (ORIGINAL_ALMANAC_AGENT === undefined) {
+    delete process.env.ALMANAC_AGENT;
+  } else {
+    process.env.ALMANAC_AGENT = ORIGINAL_ALMANAC_AGENT;
+  }
+  if (ORIGINAL_ALMANAC_MODEL === undefined) {
+    delete process.env.ALMANAC_MODEL;
+  } else {
+    process.env.ALMANAC_MODEL = ORIGINAL_ALMANAC_MODEL;
   }
 });
 
@@ -443,6 +458,66 @@ describe("almanac bootstrap — command wiring", () => {
       });
 
       expect(seenModel).toBe("claude-opus-4-6");
+    });
+  });
+
+  it("applies agent and model precedence across flags, env, and config", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "agent-precedence");
+      await scaffoldWiki(repo);
+      await writeConfig({
+        agent: {
+          default: "cursor",
+          models: { cursor: "cursor-config-model" },
+        },
+      });
+      process.env.ALMANAC_AGENT = "claude/env-model";
+      process.env.ALMANAC_MODEL = "env-model-override";
+
+      let seen: Pick<RunAgentOptions, "provider" | "model"> = {};
+      const runner = async (opts: RunAgentOptions): Promise<AgentResult> => {
+        seen = { provider: opts.provider, model: opts.model };
+        return successResult();
+      };
+
+      await runBootstrap({
+        cwd: repo,
+        agent: "claude/flag-model",
+        model: "flag-model-override",
+        spawnCli: fakeSpawnCliLoggedOut(),
+        runAgent: runner,
+      });
+
+      expect(seen).toEqual({
+        provider: "claude",
+        model: "flag-model-override",
+      });
+    });
+  });
+
+  it("treats --agent provider/model shorthand as flag precedence over env model", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "agent-shorthand-precedence");
+      await scaffoldWiki(repo);
+      process.env.ALMANAC_MODEL = "env-model";
+
+      let seen: Pick<RunAgentOptions, "provider" | "model"> = {};
+      const runner = async (opts: RunAgentOptions): Promise<AgentResult> => {
+        seen = { provider: opts.provider, model: opts.model };
+        return successResult();
+      };
+
+      await runBootstrap({
+        cwd: repo,
+        agent: "claude/flag-shorthand-model",
+        spawnCli: fakeSpawnCliLoggedOut(),
+        runAgent: runner,
+      });
+
+      expect(seen).toEqual({
+        provider: "claude",
+        model: "flag-shorthand-model",
+      });
     });
   });
 });
