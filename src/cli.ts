@@ -116,11 +116,14 @@ function isRootVersionInvocation(args: string[]): boolean {
 
 function parseSetupFlags(args: string[]): {
   yes?: boolean;
+  agent?: string;
   skipHook?: boolean;
   skipGuides?: boolean;
 } {
+  const agentIdx = args.indexOf("--agent");
   return {
     yes: args.includes("--yes") || args.includes("-y"),
+    agent: agentIdx === -1 ? undefined : args[agentIdx + 1],
     skipHook: args.includes("--skip-hook"),
     skipGuides: args.includes("--skip-guides"),
   };
@@ -183,7 +186,7 @@ async function tryRunSqliteFreeCommand(
       "./commands/hook.js"
     );
     if (subcommand === "install") {
-      emit(await runHookInstall());
+      emit(await runHookInstall({ source: parseHookSource(args.slice(2)) }));
       return true;
     }
     if (subcommand === "uninstall") {
@@ -192,6 +195,30 @@ async function tryRunSqliteFreeCommand(
     }
     if (subcommand === "status") {
       emit(await runHookStatus());
+      return true;
+    }
+    return false;
+  }
+
+  if (command === "agents") {
+    const { runAgentsList } = await import("./commands/agents.js");
+    if (subcommand === "list" || subcommand === undefined) {
+      emit(await runAgentsList());
+      return true;
+    }
+    return false;
+  }
+
+  if (command === "set") {
+    const { runSetAgentModel, runSetDefaultAgent } = await import(
+      "./commands/agents.js"
+    );
+    if (subcommand === "default-agent") {
+      emit(await runSetDefaultAgent({ provider: args[2] ?? "" }));
+      return true;
+    }
+    if (subcommand === "model") {
+      emit(await runSetAgentModel({ provider: args[2] ?? "", model: args[3] }));
       return true;
     }
     return false;
@@ -221,6 +248,22 @@ async function tryRunSqliteFreeCommand(
   return false;
 }
 
+function parseHookSource(
+  args: string[],
+): "claude" | "codex" | "cursor" | "all" | undefined {
+  const idx = args.indexOf("--source");
+  const value = idx === -1 ? undefined : args[idx + 1];
+  if (
+    value === "claude" ||
+    value === "codex" ||
+    value === "cursor" ||
+    value === "all"
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
 function readPackageVersion(): string {
   try {
     const require = createRequire(import.meta.url);
@@ -236,6 +279,7 @@ function readPackageVersion(): string {
 
 export interface SetupShortcutOptions {
   yes?: boolean;
+  agent?: string;
   skipHook?: boolean;
   skipGuides?: boolean;
 }
@@ -250,9 +294,15 @@ export function tryParseSetupShortcut(args: string[]): SetupShortcutOptions | nu
   if (args.length === 0) return {};
 
   const opts: SetupShortcutOptions = {};
-  for (const arg of args) {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
     if (arg === "--yes" || arg === "-y") {
       opts.yes = true;
+      continue;
+    }
+    if (arg === "--agent") {
+      opts.agent = args[i + 1];
+      i += 1;
       continue;
     }
     if (arg === "--skip-hook") {

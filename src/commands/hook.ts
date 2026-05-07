@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import path from "node:path";
 
 import {
@@ -51,6 +52,8 @@ import {
  */
 
 export interface HookCommandOptions {
+  /** Which agent app to install hooks for. Default keeps legacy Claude behavior. */
+  source?: "claude" | "codex" | "cursor" | "all";
   /**
    * Override the hook script path. Production code leaves this undefined
    * and we resolve the bundled `hooks/almanac-capture.sh`. Tests pass a
@@ -216,6 +219,60 @@ export async function runHookInstall(
     return { stdout: "", stderr: `almanac: ${script.error}\n`, exitCode: 1 };
   }
 
+  const source = options.source ?? "claude";
+  if (source === "all") {
+    const results = [
+      await installClaudeHook(options, script.path),
+      await installGenericHook({
+        label: "Codex Stop",
+        settingsPath: path.join(homedir(), ".codex", "hooks.json"),
+        eventName: "Stop",
+        shape: "wrapped",
+        scriptPath: script.path,
+      }),
+      await installGenericHook({
+        label: "Cursor sessionEnd",
+        settingsPath: path.join(homedir(), ".cursor", "hooks.json"),
+        eventName: "sessionEnd",
+        shape: "flat",
+        scriptPath: script.path,
+      }),
+    ];
+    const failed = results.find((r) => r.exitCode !== 0);
+    if (failed !== undefined) return failed;
+    return {
+      stdout: results.map((r) => r.stdout.trimEnd()).join("\n") + "\n",
+      stderr: "",
+      exitCode: 0,
+    };
+  }
+  if (source === "codex") {
+    return await installGenericHook({
+      label: "Codex Stop",
+      settingsPath: path.join(homedir(), ".codex", "hooks.json"),
+      eventName: "Stop",
+      shape: "wrapped",
+      scriptPath: script.path,
+    });
+  }
+  if (source === "cursor") {
+    return await installGenericHook({
+      label: "Cursor sessionEnd",
+      settingsPath: path.join(homedir(), ".cursor", "hooks.json"),
+      eventName: "sessionEnd",
+      shape: "flat",
+      scriptPath: script.path,
+    });
+  }
+
+  return await installClaudeHook(options, script.path);
+}
+
+async function installClaudeHook(
+  options: HookCommandOptions,
+  scriptPath: string,
+): Promise<HookCommandResult> {
+
   const settingsPath = resolveSettingsPath(options);
   const settings = await readSettings(settingsPath);
   const existing = (settings.hooks?.SessionEnd ?? []).slice();
@@ -244,7 +301,7 @@ export async function runHookInstall(
       // path? If every command in its `hooks[]` that looks like ours is
       // already at `script.path`, it's up to date.
       const exactMatch = c.entry.hooks.some(
-        (h) => h.command === script.path,
+        (h) => h.command === scriptPath,
       );
       if (exactMatch && oursAlready === null) {
         oursAlready = c.entry;
@@ -294,7 +351,7 @@ export async function runHookInstall(
 
   if (oursAlready !== null && staleCount.n === 0) {
     return {
-      stdout: `almanac: SessionEnd hook already installed at ${script.path}\n`,
+      stdout: `almanac: SessionEnd hook already installed at ${scriptPath}\n`,
       stderr: "",
       exitCode: 0,
     };
@@ -307,11 +364,11 @@ export async function runHookInstall(
   const fresh: WrappedEntry = {
     matcher: "",
     hooks: [
-      {
-        type: "command",
-        command: script.path,
-        timeout: HOOK_TIMEOUT_SECONDS,
-      },
+        {
+          type: "command",
+          command: scriptPath,
+          timeout: HOOK_TIMEOUT_SECONDS,
+        },
     ],
   };
 
@@ -323,11 +380,147 @@ export async function runHookInstall(
   return {
     stdout:
       `almanac: SessionEnd hook installed\n` +
-      `  script: ${script.path}\n` +
+      `  script: ${scriptPath}\n` +
       `  settings: ${settingsPath}\n`,
     stderr: "",
     exitCode: 0,
   };
+}
+
+async function installGenericHook(args: {
+  label: string;
+  settingsPath: string;
+  eventName: string;
+  shape: "flat" | "wrapped";
+  scriptPath: string;
+}): Promise<HookCommandResult> {
+  const settings = await readSettings(args.settingsPath);
+  const hooksObj =
+    settings.hooks !== undefined &&
+    settings.hooks !== null &&
+    typeof settings.hooks === "object"
+      ? settings.hooks
+      : {};
+  const existing = Array.isArray(hooksObj[args.eventName])
+    ? (hooksObj[args.eventName] as RawEntry[])
+    : [];
+  const kept = existing.filter((entry) => !entryHasOurCommand(entry));
+  const already = existing.some((entry) =>
+    entryHasExactCommand(entry, args.scriptPath),
+  );
+  if (already && kept.length === existing.length - 1) {
+    return {
+      stdout: `almanac: ${args.label} hook already installed at ${args.scriptPath}\n`,
+      stderr: "",
+      exitCode: 0,
+    };
+  }
+  const fresh =
+    args.shape === "wrapped"
+      ? {
+          hooks: [
+            {
+              type: "command",
+              command: args.scriptPath,
+              timeout: HOOK_TIMEOUT_SECONDS,
+            },
+          ],
+        }
+      : {
+          command: args.scriptPath,
+          timeout: HOOK_TIMEOUT_SECONDS,
+        };
+  hooksObj[args.eventName] = [
+    ...kept,
+    fresh,
+  ];
+  settings.hooks = hooksObj;
+  await writeSettings(args.settingsPath, settings);
+  if (args.label.startsWith("Codex ")) {
+    await ensureCodexHooksFeature(path.join(homedir(), ".codex", "config.toml"));
+  }
+  return {
+    stdout:
+      `almanac: ${args.label} hook installed\n` +
+      `  script: ${args.scriptPath}\n` +
+      `  settings: ${args.settingsPath}\n`,
+    stderr: "",
+    exitCode: 0,
+  };
+}
+
+function entryHasOurCommand(entry: unknown): boolean {
+  return collectHookCommands(entry).some(isOurCommandPath);
+}
+
+function entryHasExactCommand(entry: unknown, command: string): boolean {
+  return collectHookCommands(entry).some((candidate) => candidate === command);
+}
+
+function collectHookCommands(entry: unknown): string[] {
+  if (entry === null || typeof entry !== "object") return [];
+  const obj = entry as Record<string, unknown>;
+  const direct = typeof obj.command === "string" ? [obj.command] : [];
+  const nested = Array.isArray(obj.hooks)
+    ? obj.hooks.flatMap((hook) => collectHookCommands(hook))
+    : [];
+  return [...direct, ...nested];
+}
+
+async function ensureCodexHooksFeature(configPath: string): Promise<void> {
+  let body = "";
+  if (existsSync(configPath)) {
+    body = await readFile(configPath, "utf8");
+  }
+  if (/^\s*codex_hooks\s*=\s*true\s*$/m.test(body)) return;
+
+  const next = setTomlFeatureFlag(body, "codex_hooks", true);
+  await mkdir(path.dirname(configPath), { recursive: true });
+  const tmp = `${configPath}.almanac-tmp-${process.pid}`;
+  await writeFile(tmp, next.endsWith("\n") ? next : `${next}\n`, "utf8");
+  await rename(tmp, configPath);
+}
+
+function setTomlFeatureFlag(
+  body: string,
+  key: string,
+  value: boolean,
+): string {
+  const desired = `${key} = ${value ? "true" : "false"}`;
+  const lines = body.split(/\r?\n/);
+  let featuresStart = -1;
+  let featuresEnd = lines.length;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*\[features\]\s*$/.test(lines[i] ?? "")) {
+      featuresStart = i;
+      continue;
+    }
+    if (featuresStart !== -1 && i > featuresStart && /^\s*\[.*\]\s*$/.test(lines[i] ?? "")) {
+      featuresEnd = i;
+      break;
+    }
+  }
+
+  if (featuresStart === -1) {
+    const prefix = body.trim().length === 0 ? "" : `${body.trimEnd()}\n\n`;
+    return `${prefix}[features]\n${desired}\n`;
+  }
+
+  const keyPattern = new RegExp(`^\\s*${escapeRegex(key)}\\s*=`);
+  for (let i = featuresStart + 1; i < featuresEnd; i++) {
+    if (keyPattern.test(lines[i] ?? "")) {
+      lines[i] = desired;
+      return lines.join("\n");
+    }
+  }
+
+  lines.splice(featuresStart + 1, 0, desired);
+  return lines.join("\n");
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export async function runHookUninstall(

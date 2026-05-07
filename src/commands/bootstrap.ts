@@ -2,16 +2,21 @@ import { createWriteStream, existsSync, type WriteStream } from "node:fs";
 import { mkdir, readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 
-import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-
-import { assertClaudeAuth, type SpawnCliFn } from "../agent/auth.js";
+import type { SpawnCliFn } from "../agent/auth.js";
+import { assertAgentAuth } from "../agent/providers.js";
 import { loadPrompt } from "../agent/prompts.js";
 import {
   runAgent,
   type AgentResult,
+  type AgentStreamMessage,
   type RunAgentOptions,
 } from "../agent/sdk.js";
 import { findNearestAlmanacDir, getRepoAlmanacDir } from "../paths.js";
+import {
+  isAgentProviderId,
+  readConfig,
+  type AgentProviderId,
+} from "../update/config.js";
 import { initWiki } from "./init.js";
 
 export interface BootstrapOptions {
@@ -20,6 +25,8 @@ export interface BootstrapOptions {
   quiet?: boolean;
   /** Override the agent model. Defaults to the SDK default (sonnet-4-6). */
   model?: string;
+  /** Override the agent provider. Defaults to ~/.almanac/config.json. */
+  agent?: string;
   /** Overwrite a populated wiki. Default refuses with a pointer at `capture`. */
   force?: boolean;
   /** Injectable agent runner — tests replace this with a fake. */
@@ -83,8 +90,21 @@ export async function runBootstrap(
   // surfaces a two-option error and MUST exit non-zero so the SessionEnd
   // hook (which backgrounds the process and ignores stderr) doesn't
   // treat silent auth failure as success.
+  const providerResolution = await resolveAgentSelection({
+    agent: options.agent,
+    model: options.model,
+  });
+  if (!providerResolution.ok) {
+    return {
+      stdout: "",
+      stderr: `almanac: ${providerResolution.error}\n`,
+      exitCode: 1,
+    };
+  }
+  const { provider, model } = providerResolution;
+
   try {
-    await assertClaudeAuth(options.spawnCli);
+    await assertAgentAuth({ provider, spawnCli: options.spawnCli });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return {
@@ -156,7 +176,7 @@ export async function runBootstrap(
     },
   });
 
-  const onMessage = (msg: SDKMessage): void => {
+  const onMessage = (msg: AgentStreamMessage): void => {
     // Write the raw message to the transcript. Keep one JSON per line so
     // the log is grep-able and can be re-parsed if needed.
     try {
@@ -179,7 +199,8 @@ export async function runBootstrap(
       prompt: userPrompt,
       allowedTools: BOOTSTRAP_TOOLS,
       cwd: repoRoot,
-      model: options.model,
+      provider,
+      model,
       onMessage,
     });
   } finally {
@@ -201,6 +222,33 @@ export async function runBootstrap(
     stderr: `almanac: bootstrap failed: ${result.error ?? "unknown error"}\n`,
     exitCode: 1,
   };
+}
+
+type AgentSelection =
+  | { ok: true; provider: AgentProviderId; model?: string }
+  | { ok: false; error: string };
+
+async function resolveAgentSelection(args: {
+  agent?: string;
+  model?: string;
+}): Promise<AgentSelection> {
+  const config = await readConfig();
+  const rawProvider = args.agent ?? config.agent.default;
+  if (!isAgentProviderId(rawProvider)) {
+    return {
+      ok: false,
+      error:
+        `unknown agent '${rawProvider}'. Expected one of: claude, codex, cursor.`,
+    };
+  }
+  const configuredModel = config.agent.models[rawProvider] ?? undefined;
+  const model =
+    args.model !== undefined
+      ? args.model
+      : configuredModel === null
+        ? undefined
+        : configuredModel;
+  return { ok: true, provider: rawProvider, model };
 }
 
 /**
@@ -290,10 +338,15 @@ export class StreamingFormatter {
     this.currentAgent = name;
   }
 
-  handle(msg: SDKMessage): void {
-    if (msg.type === "assistant") {
+  handle(msg: AgentStreamMessage): void {
+    if (!isRecord(msg)) return;
+
+    if (msg.type === "assistant" && isRecord(msg.message)) {
+      const content = msg.message.content;
+      if (!Array.isArray(content)) return;
       for (const block of msg.message.content) {
-        if (block.type !== "tool_use") continue;
+        if (!isRecord(block) || block.type !== "tool_use") continue;
+        if (typeof block.name !== "string") continue;
         this.handleToolUse(block.name, block.input);
       }
       return;
@@ -305,8 +358,11 @@ export class StreamingFormatter {
       // transcript log shows the full run. Kept terse.
       const status =
         msg.subtype === "success" ? "done" : `failed (${msg.subtype})`;
+      const cost =
+        typeof msg.total_cost_usd === "number" ? msg.total_cost_usd : 0;
+      const turns = typeof msg.num_turns === "number" ? msg.num_turns : 0;
       this.sink.write(
-        `[${status}] cost: $${msg.total_cost_usd.toFixed(3)}, turns: ${msg.num_turns}\n`,
+        `[${status}] cost: $${cost.toFixed(3)}, turns: ${turns}\n`,
       );
       return;
     }
@@ -405,4 +461,8 @@ function stringField(
 ): string | undefined {
   const value = input[key];
   return typeof value === "string" ? value : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
 }

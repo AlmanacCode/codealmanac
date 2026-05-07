@@ -71,6 +71,71 @@ describe("almanac hook install", () => {
     });
   });
 
+  it("can install Codex and Cursor hooks alongside Claude", async () => {
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+
+      const out = await runHookInstall({
+        source: "all",
+        settingsPath,
+        hookScriptPath,
+      });
+
+      expect(out.exitCode).toBe(0);
+      expect(out.stdout).toMatch(/SessionEnd hook installed/);
+      expect(out.stdout).toMatch(/Codex Stop hook installed/);
+      expect(out.stdout).toMatch(/Cursor sessionEnd hook installed/);
+
+      const claude = (await readJson(settingsPath)) as {
+        hooks: { SessionEnd: WrappedEntry[] };
+      };
+      expect(claude.hooks.SessionEnd[0]!.hooks[0]!.command).toBe(
+        hookScriptPath,
+      );
+
+      const codex = (await readJson(join(home, ".codex", "hooks.json"))) as {
+        hooks: {
+          Stop: {
+            hooks: { type: string; command: string; timeout: number }[];
+          }[];
+        };
+      };
+      expect(codex.hooks.Stop[0]!.hooks[0]!.command).toBe(hookScriptPath);
+      await expect(
+        readFile(join(home, ".codex", "config.toml"), "utf8"),
+      ).resolves.toMatch(/codex_hooks = true/);
+
+      const cursor = (await readJson(join(home, ".cursor", "hooks.json"))) as {
+        hooks: { sessionEnd: { command: string; timeout: number }[] };
+      };
+      expect(cursor.hooks.sessionEnd[0]!.command).toBe(hookScriptPath);
+    });
+  });
+
+  it("replaces an existing codex_hooks=false flag instead of duplicating it", async () => {
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+      await mkdir(join(home, ".codex"), { recursive: true });
+      await writeFile(
+        join(home, ".codex", "config.toml"),
+        "[features]\ncodex_hooks = false\nother = true\n",
+        "utf8",
+      );
+
+      const out = await runHookInstall({
+        source: "codex",
+        settingsPath,
+        hookScriptPath,
+      });
+
+      expect(out.exitCode).toBe(0);
+      const body = await readFile(join(home, ".codex", "config.toml"), "utf8");
+      expect(body.match(/codex_hooks/g)).toHaveLength(1);
+      expect(body).toMatch(/codex_hooks = true/);
+      expect(body).toMatch(/other = true/);
+    });
+  });
+
   it("preserves unrelated top-level keys on install", async () => {
     await withTempHome(async (home) => {
       const { settingsPath, hookScriptPath } = await setup(home);

@@ -26,7 +26,7 @@ A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, ha
 
 ## How it works
 
-Each repo gets a committed `.almanac/pages/` directory of markdown files. A SessionEnd hook fires when a Claude Code session ends and runs `almanac capture` in the background. A writer agent reads the session transcript and existing pages, drafts changes, and invokes a reviewer subagent that critiques against the wider graph. The writer applies the final versions. New and updated pages show up in your next `git status`; you review them like any other commit.
+Each repo gets a committed `.almanac/pages/` directory of markdown files. Auto-capture hooks fire when Claude Code, Codex, or Cursor Agent sessions end and run `almanac capture` in the background. A writer agent reads the session transcript and existing pages, drafts changes, and runs a reviewer pass against the wider graph. The writer applies the final versions. New and updated pages show up in your next `git status`; you review them like any other commit.
 
 The CLI never reads or writes page content except in `capture` and `bootstrap`. Every other command (`search`, `show`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
 
@@ -42,8 +42,9 @@ codealmanac --yes
 ```
 
 `codealmanac` (the bare invocation) routes to a setup wizard that:
-- checks Claude auth (subscription via `claude auth login`, or `ANTHROPIC_API_KEY`),
-- installs the SessionEnd hook in `~/.claude/settings.json`,
+- lets you choose a default agent: Claude, Codex, or Cursor,
+- checks local agent readiness,
+- installs auto-capture hooks for Claude, Codex, and Cursor,
 - drops two agent guides into `~/.claude/` (`codealmanac.md` mini, `codealmanac-reference.md` full),
 - appends `@~/.claude/codealmanac.md` to `~/.claude/CLAUDE.md` so every Claude Code session loads the mini guide.
 
@@ -51,49 +52,59 @@ The setup is idempotent — safe to re-run. Opt out with `--skip-hook` or `--ski
 
 Two binaries ship, both pointing at the same entry: `codealmanac` (install surface) and `almanac` (day-to-day). Requires Node 20 or 22.
 
-`bootstrap` and `capture` invoke Claude via the bundled Claude Agent SDK. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
+`bootstrap` and `capture` invoke your configured default agent. Claude uses the bundled Claude Agent SDK, Codex uses `codex exec --json`, and Cursor uses `cursor-agent --print --output-format stream-json`. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
 
 ## Authentication
 
-Pick one — `bootstrap` and `capture` accept either:
+Pick the agent you want CodeAlmanac to use:
 
 ```bash
-# Option A — your Claude subscription (Pro/Max). Preferred if you already
-# use Claude Code; no separate bill, no copy-pasted keys.
+# Claude
 claude auth login --claudeai
-
-# Option B — a pay-per-token API key from https://console.anthropic.com.
+# or:
 export ANTHROPIC_API_KEY=sk-ant-...
 
-# Either way, verify with:
-claude auth status
-# or:
+# Codex
+codex login
+
+# Cursor
+cursor-agent login
+
+# Verify all providers:
+almanac agents list
 almanac doctor
 ```
 
-codealmanac itself never sees your credentials — auth is handled by the bundled Claude Agent SDK CLI, which reads the same `~/.claude/credentials/` store Claude Code uses.
+Set or change the default at any time:
+
+```bash
+almanac set default-agent codex
+almanac set model codex gpt-5.3-codex
+```
+
+codealmanac itself never stores your provider credentials. Auth stays in each agent's normal local credential store.
 
 ## Quickstart
 
 ```bash
 npm install -g codealmanac
-codealmanac                   # interactive setup wizard
+codealmanac                   # interactive setup wizard; choose Claude/Codex/Cursor
                               # (or: codealmanac --yes)
 
 cd your-repo
-almanac bootstrap             # agent reads the repo and seeds stub pages + topic DAG
+almanac bootstrap             # default agent reads the repo and seeds pages + topic DAG
 
 almanac search "auth"         # full-text search across pages
 almanac show checkout-flow    # read a page
 
-# From here on, just code as usual — the SessionEnd hook invokes
+# From here on, just code as usual — the installed hooks invoke
 # `almanac capture` at session end, which writes and updates pages
 # based on what happened in the session.
 ```
 
 No `almanac init`. A wiki is scaffolded two ways: run `almanac bootstrap` yourself, or clone a repo that already has `.almanac/` committed (codealmanac auto-registers it on the first query).
 
-Sanity-check the install with `almanac doctor` — it reports binary location, native SQLite binding, Claude auth, hook status, guides, import line, and current-wiki stats with a one-line fix for each failure.
+Sanity-check the install with `almanac doctor` and `almanac agents list` — they report binary location, native SQLite binding, provider readiness, hook status, guides, import line, and current-wiki stats.
 
 New to codealmanac? Read the [Concepts guide](./docs/concepts.md) for a walkthrough of pages, topics, files, the database, and the CLI.
 
@@ -114,12 +125,14 @@ almanac topics show database --descendants   # topic + its subtree
 almanac tag <page> <topic...>                # add topics to a page
 almanac health                               # graph integrity report
 
-# Wiki lifecycle (bootstrap and capture require Claude auth)
-almanac bootstrap                            # seed a new wiki from the repo
-almanac capture                              # update wiki from a session transcript
-almanac hook install                         # auto-capture on session end
+# Wiki lifecycle
+almanac bootstrap --agent codex              # seed a new wiki from the repo
+almanac capture --agent cursor <transcript>  # update wiki from a transcript
+almanac hook install --source all            # auto-capture for Claude/Codex/Cursor
 
 # Setup & diagnose
+almanac agents list                          # provider readiness + default
+almanac set default-agent codex              # change default provider
 almanac doctor                               # check install + wiki health
 almanac update                               # update to latest version
 ```
@@ -135,7 +148,7 @@ Run `almanac <command> --help` for the full flag surface.
 
 ## How capture works
 
-When a Claude Code session ends, the SessionEnd hook backgrounds `almanac capture`. The writer agent reads the session transcript, runs `almanac search` and `almanac show` against the existing wiki, drafts changes to pages under `.almanac/pages/`, and invokes the reviewer subagent. The reviewer reads across the graph, flags duplicates, missing wikilinks, missing topics, inference dressed as fact, and cohesion problems, then returns a text critique. The writer decides what to incorporate and writes the final versions.
+When a Claude, Codex, or Cursor session ends, the installed hook backgrounds `almanac capture`. The writer agent reads the session transcript, runs `almanac search` and `almanac show` against the existing wiki, drafts changes to pages under `.almanac/pages/`, and performs a reviewer pass. Claude uses its SDK's read-only reviewer subagent; Codex and Cursor perform the reviewer pass from prompt guidance until stricter provider enforcement lands. The reviewer checks duplicates, missing wikilinks, missing topics, inference dressed as fact, and cohesion problems. The writer decides what to incorporate and writes the final versions.
 
 Capture writes nothing if nothing in the session meets the notability bar — silence is a valid outcome.
 
@@ -160,6 +173,9 @@ almanac search --wiki openalmanac "RLS" # specific wiki
 
 Cross-wiki references use a colon prefix: `[[openalmanac:supabase]]`. The segment before `:` resolves via the registry; unreachable wikis are silently skipped rather than erroring. Cloning a repo with a committed `.almanac/` auto-registers it on the first `almanac` command.
 
+## Status
+
+`v0.2.0`, pre-release. Node 20.x or 22.x. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
 ## Philosophy
 
 Intelligence lives in the prompt, not in the pipeline. Whenever a task calls for judgment — deciding what from a session is worth capturing, evaluating a proposal against the graph, picking between editing and archiving — codealmanac hands a concrete-but-open prompt to an agent. It does not wrap agents in propose/review/apply state machines, intermediate proposal files, or `--dry-run` rehearsal flags. The CLI finds and organizes; the agents do the thinking. If a future change can be expressed as a longer prompt or as more pipeline code, the prompt almost always wins.

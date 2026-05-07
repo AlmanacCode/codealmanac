@@ -38,6 +38,16 @@ describe("tryParseSetupShortcut", () => {
     ).toEqual({ skipHook: true, skipGuides: true });
   });
 
+  it("recognizes --agent for the setup shortcut", () => {
+    expect(tryParseSetupShortcut(["--agent", "codex"])).toEqual({
+      agent: "codex",
+    });
+    expect(tryParseSetupShortcut(["--yes", "--agent", "cursor"])).toEqual({
+      yes: true,
+      agent: "cursor",
+    });
+  });
+
   it("accepts the full flag combo (`--yes --skip-hook --skip-guides`)", () => {
     expect(
       tryParseSetupShortcut(["--yes", "--skip-hook", "--skip-guides"]),
@@ -100,6 +110,8 @@ describe("registerCommands", () => {
       "ps",
       "hook",
       "reindex",
+      "agents",
+      "set",
       "setup",
       "doctor",
       "update",
@@ -121,8 +133,13 @@ describe("registerCommands", () => {
       .toEqual(["install", "uninstall", "status"]);
     expect(findCommand(program, ["capture"]).commands.map((cmd) => cmd.name()))
       .toEqual(["status"]);
+    expect(findCommand(program, ["agents"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["list"]);
 
     expect(optionFlags(findCommand(program, ["setup"]))).toContain("-y, --yes");
+    expect(optionFlags(findCommand(program, ["setup"]))).toContain(
+      "--agent <agent>",
+    );
     expect(optionFlags(findCommand(program, ["doctor"]))).toContain("--json");
     expect(optionFlags(findCommand(program, ["topics", "show"]))).toContain(
       "--descendants",
