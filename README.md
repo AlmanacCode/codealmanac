@@ -1,12 +1,26 @@
 # codealmanac
 
-codealmanac maintains a `.almanac/` folder in your repo that AI coding agents populate with decisions, gotchas, flows, and invariants — the context the code itself can't tell you. Pages are atomic markdown files, interlinked by `[[wikilinks]]`, indexed in SQLite, and written by a writer/reviewer agent pair that runs at session end.
+A living wiki for your codebase, maintained by AI agents. It documents what the code can't say — decisions, flows, invariants, gotchas — as atomic, interlinked markdown pages living at `.almanac/` in your repo.
+
+```
+your-repo/
+├── src/
+├── .almanac/
+│   ├── pages/
+│   │   ├── supabase.md
+│   │   ├── checkout-flow.md
+│   │   └── uuid-decision.md
+│   ├── topics.yaml
+│   └── index.db          ← auto-generated SQLite index
+├── .git/
+└── ...
+```
 
 The primary consumer is the AI coding agent. The secondary consumer is humans.
 
 ## Why
 
-Claude Code, Cursor, and Copilot can read the code and tell you what it does. They can't tell you why it's shaped that way, what approaches were tried and rejected, what invariants must not be violated, or how a flow spans four files in three services. That knowledge lives in Slack threads, PR descriptions, and people's heads. It dies when threads scroll, people leave, or an agent starts a fresh session.
+Claude Code, Cursor, and Copilot can read the code and tell you what it does. They can't tell you _why_ it's shaped that way, what approaches were tried and rejected, what invariants must not be violated, or how a flow spans four files in three services. That knowledge lives in Slack threads, PR descriptions, and people's heads. It dies when threads scroll, people leave, or an agent starts a fresh session.
 
 A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, has no graph structure, and gets stale the moment anyone commits without editing it. codealmanac replaces that one flat file with a wiki of atomic pages that agents are prompted to keep current as a side-effect of coding.
 
@@ -69,7 +83,7 @@ codealmanac                   # interactive setup wizard
 cd your-repo
 almanac bootstrap             # agent reads the repo and seeds stub pages + topic DAG
 
-almanac search "auth"         # full-text search across pages; prints slugs one per line
+almanac search "auth"         # full-text search across pages
 almanac show checkout-flow    # read a page
 
 # From here on, just code as usual — the SessionEnd hook invokes
@@ -79,102 +93,61 @@ almanac show checkout-flow    # read a page
 
 No `almanac init`. A wiki is scaffolded two ways: run `almanac bootstrap` yourself, or clone a repo that already has `.almanac/` committed (codealmanac auto-registers it on the first query).
 
-Sanity-check the install with `almanac doctor` — it reports binary location, native SQLite binding, Claude auth, hook status, guides, import line, and current-wiki stats with a one-line fix for each ✗.
+Sanity-check the install with `almanac doctor` — it reports binary location, native SQLite binding, Claude auth, hook status, guides, import line, and current-wiki stats with a one-line fix for each failure.
 
-## Command reference
+New to codealmanac? Read the [Concepts guide](./docs/concepts.md) for a walkthrough of pages, topics, files, the database, and the CLI.
 
-Grouped the same way as `almanac --help`:
+## Commands
 
-| Group | Command | What it does |
-|---|---|---|
-| Query | `almanac search [query]` | FTS, `--topic`, `--mentions <path>`, `--since`, `--stale`, `--orphan`, `--archived`, `--limit`, `--json` |
-| Query | `almanac show <slug>` | Read a page. Field flags: `--raw`, `--meta`, `--lead`, `--title`, `--topics`, `--files`, `--links`, `--backlinks`, `--xwiki`, `--lineage`, `--updated`, `--path`, `--json`. Absorbs the old `info` and `path` commands. |
-| Query | `almanac health` | Eight-category graph integrity report (`orphans`, `stale`, `dead-refs`, `broken-links`, `broken-xwiki`, `empty-topics`, `empty-pages`, `slug-collisions`) |
-| Query | `almanac list` | List registered wikis; `--drop <name>` to remove |
-| Edit | `almanac tag <page> <topics...>` | Add topics; auto-creates missing ones; `--stdin` for bulk |
-| Edit | `almanac untag <page> <topic>` | Remove a topic |
-| Edit | `almanac topics ...` | `list`, `show`, `create`, `link`, `unlink`, `rename`, `delete`, `describe` — DAG management |
-| Wiki lifecycle | `almanac bootstrap` | Agent reads the repo and seeds stub entity pages + topic DAG (requires Claude auth) |
-| Wiki lifecycle | `almanac capture [transcript]` | Writer + reviewer on a session transcript (usually invoked by the hook) |
-| Wiki lifecycle | `almanac hook install\|uninstall\|status` | Manage the SessionEnd hook in `~/.claude/settings.json` |
-| Wiki lifecycle | `almanac reindex` | Force rebuild of `.almanac/index.db` |
-| Setup | `almanac setup` | Install hook + guides + CLAUDE.md import (bare `codealmanac` alias) |
-| Setup | `almanac uninstall` | Reverse `setup`: remove hook + guides + import line |
-| Setup | `almanac doctor` | Report on install + current wiki with one-line fixes |
+```bash
+# Search & read
+almanac search "auth"                        # full-text search across pages
+almanac search --topic database              # filter by topic
+almanac search --mentions src/lib/stripe.ts  # pages referencing a file
+almanac show checkout-flow                   # read a page
+almanac show checkout-flow --meta            # metadata only
+almanac show checkout-flow --raw             # body only
 
-Every command that returns pages prints slugs one per line; pass `--json` for structured output; pipe slugs into commands that accept `--stdin` (`show`, `tag`, `health`). Run `almanac <command> --help` for the full flag surface, or import the full reference on demand: `@~/.claude/codealmanac-reference.md`.
+# Organize
+almanac topics list                          # all topics with page counts
+almanac topics show database --descendants   # topic + its subtree
+almanac tag <page> <topic...>                # add topics to a page
+almanac health                               # graph integrity report
 
-## Concepts
+# Wiki lifecycle (bootstrap and capture require Claude auth)
+almanac bootstrap                            # seed a new wiki from the repo
+almanac capture                              # update wiki from a session transcript
+almanac hook install                         # auto-capture on session end
 
-### Page shapes (suggestions, not rules)
-
-The wiki tends to organize around four kinds of pages, but nothing in the system enforces them:
-
-- **Entity pages** — stable named things (Supabase, Stripe, a custom auth system). These are the anchors other pages link to.
-- **Decision pages** — why X over Y, with context and consequences.
-- **Flow pages** — how a multi-file process works end-to-end.
-- **Gotcha pages** — specific failures or constraints, usually anchored to an entity.
-
-A page that doesn't fit any of these is fine. Pick the shape that serves the knowledge.
-
-### Topics as a DAG
-
-One organizational axis: topics. Topics form a directed acyclic graph — a topic can have multiple parents, and a page can belong to multiple topics. No page type system.
-
-```
-decisions   stack      flows
-            └─ database
-               └─ supabase   ← a page tagged [stack, database]
+# Setup & diagnose
+almanac doctor                               # check install + wiki health
+almanac update                               # update to latest version
 ```
 
-`almanac topics show database --descendants` walks the subgraph and returns every page in `database` or `supabase`. Cycles are prevented by a `CHECK` constraint and a depth cap.
+All commands output slugs one per line. Add `--json` for structured output. Pipe with `--stdin`:
 
-### The unified `[[...]]` link syntax
-
-One link form, disambiguated by content:
-
-```markdown
-See [[checkout-flow]] for the full sequence.           ← page slug (no slash)
-The handler [[src/checkout/handler.ts]] does X.        ← file (has slash)
-This spans [[src/checkout/]] generally.                ← folder (trailing slash)
-See [[openalmanac:supabase]] for cross-wiki context.   ← cross-wiki (colon prefix)
+```bash
+almanac search --topic flows | almanac show --stdin
+almanac search --stale 90d | almanac tag --stdin needs-review
 ```
 
-The indexer classifies each link by those rules and writes it to `wikilinks`, `file_refs`, or `cross_wiki_links`. `almanac search --mentions src/checkout/handler.ts` returns every page referencing that file or any folder containing it.
+Run `almanac <command> --help` for the full flag surface.
 
-### Archive vs edit
+## How capture works
 
-Most changes are edits — the page is updated in place to reflect current truth, with git history as the archive. When a page's central decision is reversed (not just refined), the old page is marked `archived_at` and `superseded_by`, a new page is created with `supersedes`, and both live side by side. Archived pages are excluded from `almanac search` by default and exempt from dead-ref health checks.
+When a Claude Code session ends, the SessionEnd hook backgrounds `almanac capture`. The writer agent reads the session transcript, runs `almanac search` and `almanac show` against the existing wiki, drafts changes to pages under `.almanac/pages/`, and invokes the reviewer subagent. The reviewer reads across the graph, flags duplicates, missing wikilinks, missing topics, inference dressed as fact, and cohesion problems, then returns a text critique. The writer decides what to incorporate and writes the final versions.
+
+Capture writes nothing if nothing in the session meets the notability bar — silence is a valid outcome.
+
+No proposal files, no `--apply` step, no state machine between writer and reviewer. The changes land in `git status` and you commit them like anything else.
 
 ### The notability bar
 
 Every repo's `.almanac/README.md` contains a notability bar: the threshold for what deserves a page. The default is "non-obvious knowledge that will help a future agent" — decisions that took research, gotchas discovered through failure, cross-cutting flows, constraints not visible in code. The writer consults the bar before writing; the reviewer enforces it. Edit the bar to match your repo's taste.
 
-## How capture works
+### Archive vs edit
 
-A page looks like this:
-
-```markdown
----
-title: Supabase
-topics: [stack, database]
-files:
-  - src/lib/supabase.ts
-  - backend/src/models/
----
-
-# Supabase
-
-PostgreSQL hosted on Supabase. Connection pooling via Supavisor.
-
-## Gotchas
-- Supavisor has a 30s idle timeout — long transactions get killed ([[supavisor-timeout]]).
-- UUIDs as primary keys, not `serial` ([[uuid-decision]]).
-```
-
-When a Claude Code session ends, the SessionEnd hook backgrounds `almanac capture <transcript>`. The writer agent reads the transcript, runs `almanac search` and `almanac show` against the existing wiki, drafts changes to pages under `.almanac/pages/`, and invokes the reviewer subagent. The reviewer reads across the graph, flags duplicates, missing wikilinks, missing topics, inference dressed as fact, and cohesion problems, then returns a text critique. The writer decides what to incorporate and writes the final versions. Capture writes nothing if nothing in the session meets the notability bar — silence is a valid outcome.
-
-No proposal files, no `--apply` step, no state machine between writer and reviewer. The changes land in `git status` and you commit them like anything else.
+Most changes are edits — the page is updated in place to reflect current truth, with git history as the archive. When a page's central decision is reversed (not just refined), the old page is marked `archived_at` and `superseded_by`, a new page is created with `supersedes`, and both live side by side. Archived pages are excluded from `almanac search` by default and exempt from dead-ref health checks.
 
 ## Multi-wiki
 
@@ -187,17 +160,48 @@ almanac search --wiki openalmanac "RLS" # specific wiki
 
 Cross-wiki references use a colon prefix: `[[openalmanac:supabase]]`. The segment before `:` resolves via the registry; unreachable wikis are silently skipped rather than erroring. Cloning a repo with a committed `.almanac/` auto-registers it on the first `almanac` command.
 
-## Writing conventions
-
-Pages are neutral-tone encyclopedia-style prose — every sentence contains a specific fact, no significance inflation, no hedging, no formulaic conclusions. Prose first, bullets for genuine lists, tables only for structured comparison. The conventions are described in each repo's `.almanac/README.md` (generated by `bootstrap`); the reviewer loads them at runtime and enforces them on every proposal.
-
-## Status
-
-`v0.1.3`, pre-release. Node 20.x or 22.x. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
-
 ## Philosophy
 
 Intelligence lives in the prompt, not in the pipeline. Whenever a task calls for judgment — deciding what from a session is worth capturing, evaluating a proposal against the graph, picking between editing and archiving — codealmanac hands a concrete-but-open prompt to an agent. It does not wrap agents in propose/review/apply state machines, intermediate proposal files, or `--dry-run` rehearsal flags. The CLI finds and organizes; the agents do the thinking. If a future change can be expressed as a longer prompt or as more pipeline code, the prompt almost always wins.
+
+## Contributing
+
+codealmanac is open source under the MIT license. To set up a development environment:
+
+```bash
+git clone https://github.com/AlmanacCode/codealmanac.git
+cd codealmanac
+npm install
+npm run build
+npm link                  # makes `almanac` and `codealmanac` available globally
+npm test                  # run the test suite (vitest)
+```
+
+The codebase is TypeScript, built with [tsup](https://tsup.egoist.dev/), tested with [Vitest](https://vitest.dev/). SQLite via [better-sqlite3](https://github.com/WiseLibs/better-sqlite3). AI features use the [Claude Agent SDK](https://docs.anthropic.com/en/docs/agents/agent-sdk).
+
+### Project structure
+
+```
+src/
+├── cli.ts              ← entry point and shortcut routing
+├── cli/                ← commander command registration and help layout
+├── commands/           ← one file per CLI command
+├── indexer/            ← parses markdown → SQLite index
+│   ├── schema.ts       ← DDL (CREATE TABLE statements)
+│   ├── index.ts        ← incremental indexer (mtime-based freshness)
+│   ├── frontmatter.ts  ← YAML frontmatter parser
+│   ├── wikilinks.ts    ← [[link]] extractor + classifier
+│   └── paths.ts        ← path normalization
+├── registry/           ← global wiki registry (~/.almanac/registry.json)
+├── topics/             ← topic DAG + frontmatter rewriting
+├── agent/              ← Claude Agent SDK integration
+├── paths.ts            ← find nearest .almanac/ (like git finds .git/)
+└── slug.ts             ← kebab-case canonicalization
+```
+
+## Status
+
+v0.1.10, pre-release. Node 20.x or 22.x. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
 
 ## Related
 
