@@ -9,6 +9,7 @@ import type {
   SpawnedProcess,
 } from "../src/agent/providers/claude/index.js";
 import { runSetup, hasImportLine } from "../src/commands/setup.js";
+import { readConfig, writeConfig } from "../src/update/config.js";
 import { withTempHome } from "./helpers.js";
 
 /**
@@ -278,6 +279,118 @@ describe("codealmanac setup", () => {
       expect(res.exitCode).toBe(0);
       expect(existsSync(env.settingsPath)).toBe(true);
       expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(true);
+    });
+  });
+
+  it("writes a scriptable setup model override", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const res = await runSetup({
+        yes: true,
+        isTTY: false,
+        agent: "claude",
+        model: "claude-opus-4-6",
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        settingsPath: env.settingsPath,
+        hookScriptPath: env.hookScriptPath,
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      await expect(readConfig()).resolves.toMatchObject({
+        agent: {
+          default: "claude",
+          models: {
+            claude: "claude-opus-4-6",
+          },
+        },
+      });
+      expect(env.stdout()).toContain("Default agent:");
+      expect(env.stdout()).toContain("claude-opus-4-6");
+    });
+  });
+
+  it("keeps non-interactive setup on provider defaults when no model override is passed", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const res = await runSetup({
+        yes: true,
+        isTTY: false,
+        agent: "codex",
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        settingsPath: env.settingsPath,
+        hookScriptPath: env.hookScriptPath,
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      await expect(readConfig()).resolves.toMatchObject({
+        agent: {
+          default: "codex",
+          models: {
+            codex: null,
+          },
+        },
+      });
+      expect(env.stdout()).toContain("provider default");
+    });
+  });
+
+  it("defaults the interactive model picker to the current configured model", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      await writeConfig({
+        agent: {
+          default: "claude",
+          models: {
+            claude: "claude-opus-4-6",
+          },
+        },
+      });
+      const originalStdin = process.stdin;
+      const input = new PassThrough();
+      Object.defineProperty(process, "stdin", {
+        value: input,
+        configurable: true,
+      });
+      queueMicrotask(() => {
+        input.write("\n");
+        input.write("\n");
+        input.write("n\n");
+        input.write("n\n");
+      });
+
+      try {
+        const res = await runSetup({
+          isTTY: true,
+          spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+          settingsPath: env.settingsPath,
+          hookScriptPath: env.hookScriptPath,
+          claudeDir: env.claudeDir,
+          guidesDir: env.guidesDir,
+          stdout: env.out,
+          installPath: null,
+        });
+
+        expect(res.exitCode).toBe(0);
+        await expect(readConfig()).resolves.toMatchObject({
+          agent: {
+            default: "claude",
+            models: {
+              claude: "claude-opus-4-6",
+            },
+          },
+        });
+      } finally {
+        Object.defineProperty(process, "stdin", {
+          value: originalStdin,
+          configurable: true,
+        });
+      }
     });
   });
 

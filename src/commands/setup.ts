@@ -18,11 +18,14 @@ import {
   UNAUTHENTICATED_MESSAGE,
 } from "../agent/providers/claude/index.js";
 import {
+  buildProviderModelChoices,
   buildProviderSetupView,
-  getProviderDefaultModel,
   parseAgentSelection,
 } from "../agent/provider-view.js";
-import type { ProviderSetupView } from "../agent/provider-view.js";
+import type {
+  ProviderModelChoice,
+  ProviderSetupView,
+} from "../agent/provider-view.js";
 import {
   isAgentProviderId,
   readConfig,
@@ -75,6 +78,8 @@ export interface SetupOptions {
   skipGuides?: boolean;
   /** Set the default agent provider during setup. */
   agent?: string;
+  /** Set the default model for the selected provider during setup. */
+  model?: string;
 
   // ─── Injection points (tests only) ────────────────────────────────
   /** Override the subprocess spawner for `claude auth status`. */
@@ -208,6 +213,7 @@ export async function runSetup(
     out,
     interactive,
     requested: options.agent,
+    requestedModel: options.model,
     spawnCli: options.spawnCli,
   });
   if (!agentChoice.ok) {
@@ -220,7 +226,7 @@ export async function runSetup(
   stepDone(
     out,
     `Default agent: ${WHITE_BOLD}${agentChoice.provider}${RST}` +
-      (agentChoice.model === null ? "" : ` (${agentChoice.model})`),
+      ` (${agentChoice.model ?? "provider default"})`,
   );
   out.write(BAR + "\n");
 
@@ -375,6 +381,7 @@ async function chooseDefaultAgent(args: {
   out: NodeJS.WritableStream;
   interactive: boolean;
   requested?: string;
+  requestedModel?: string;
   spawnCli?: SpawnCliFn;
 }): Promise<AgentChoice> {
   const config = await readConfig();
@@ -393,11 +400,11 @@ async function chooseDefaultAgent(args: {
         `    ${index + 1}. ${choice.label.padEnd(6)} ${status.padEnd(9)}${tag}  ${detail}\n`,
       );
     });
-    selected = await promptText(
+    selected = (await promptText(
       args.out,
       "Default agent",
       view.recommendedProvider,
-    );
+    )).toLowerCase();
     const number = Number.parseInt(selected, 10);
     if (
       Number.isInteger(number) &&
@@ -439,9 +446,14 @@ async function chooseDefaultAgent(args: {
       }
     }
   }
-  const recommendedModel = getProviderDefaultModel(provider);
-  const model =
-    parsed.model ?? config.agent.models[provider] ?? recommendedModel;
+  const requestedModel = args.requestedModel ?? parsed.model;
+  const model = requestedModel ?? await chooseProviderModel({
+    out: args.out,
+    interactive: args.interactive,
+    provider,
+    choice: selectedChoice,
+    configuredModel: config.agent.models[provider] ?? null,
+  });
   await writeConfig({
     ...config,
     agent: {
@@ -460,6 +472,60 @@ async function chooseDefaultAgent(args: {
     stepDone(args.out, `Agent readiness: ${detail}`);
   }
   return { ok: true, provider, model };
+}
+
+async function chooseProviderModel(args: {
+  out: NodeJS.WritableStream;
+  interactive: boolean;
+  provider: AgentProviderId;
+  choice?: ProviderSetupView["choices"][number];
+  configuredModel: string | null;
+}): Promise<string | null> {
+  const choices =
+    args.choice?.modelChoices ??
+    buildProviderModelChoices(args.provider, args.configuredModel);
+  const recommended =
+    choices.find((choice) => choice.recommended) ??
+    choices.find((choice) => choice.source === "provider-default");
+  if (!args.interactive) {
+    return args.configuredModel ?? recommended?.value ?? null;
+  }
+
+  args.out.write(`  Choose ${args.provider} model:\n`);
+  choices.forEach((choice, index) => {
+    const marker = choice.recommended ? " recommended" : "";
+    const current = choice.value === args.configuredModel ? " current" : "";
+    args.out.write(
+      `    ${index + 1}. ${choice.label}${marker}${current}\n`,
+    );
+  });
+  const currentIndex = choices.findIndex((choice) =>
+    choice.value === args.configuredModel
+  );
+  const recommendedIndex = choices.findIndex((choice) => choice.recommended);
+  const defaultIndex =
+    currentIndex >= 0
+      ? currentIndex + 1
+      : recommendedIndex >= 0
+        ? recommendedIndex + 1
+        : 1;
+  const selected = await promptText(args.out, "Model", String(defaultIndex));
+  const number = Number.parseInt(selected, 10);
+  let modelChoice: ProviderModelChoice | undefined;
+  if (
+    Number.isInteger(number) &&
+    number >= 1 &&
+    number <= choices.length
+  ) {
+    modelChoice = choices[number - 1];
+  } else {
+    modelChoice = choices.find((choice) => choice.value === selected);
+  }
+  if (modelChoice?.source === "custom") {
+    const custom = await promptText(args.out, "Custom model id", "");
+    return custom.length > 0 ? custom : recommended?.value ?? null;
+  }
+  return modelChoice?.value ?? recommended?.value ?? null;
 }
 
 async function runLoginCommand(command: string): Promise<
@@ -685,7 +751,7 @@ function promptText(
       process.stdin.removeListener("data", onData);
       process.stdin.pause();
 
-      const answer = buf.slice(0, nl).trim().toLowerCase();
+      const answer = buf.slice(0, nl).trim();
       resolve(answer.length === 0 ? defaultValue : answer);
     };
 

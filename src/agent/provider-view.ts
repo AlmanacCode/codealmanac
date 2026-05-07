@@ -28,6 +28,14 @@ export interface ProviderSetupChoice {
   account: string | null;
   detail: string;
   fixCommand: string | null;
+  modelChoices: ProviderModelChoice[];
+}
+
+export interface ProviderModelChoice {
+  value: string | null;
+  label: string;
+  recommended: boolean;
+  source: "configured" | "provider-default" | "custom";
 }
 
 export interface ProviderSetupView {
@@ -74,6 +82,7 @@ export async function buildProviderSetupView(
     const readiness = getReadiness(status);
     const configuredModel = normalizeModel(config.agent.models[id]);
     const providerDefaultModel = getProviderDefaultModel(id);
+    const effectiveModel = configuredModel ?? providerDefaultModel;
     return {
       id,
       label: getProviderLabel(id),
@@ -83,12 +92,13 @@ export async function buildProviderSetupView(
       ready: readiness === "ready",
       installed: status.installed,
       authenticated: status.authenticated,
-      effectiveModel: configuredModel ?? providerDefaultModel,
+      effectiveModel,
       providerDefaultModel,
       configuredModel,
       account: status.authenticated ? accountFromDetail(status.detail) : null,
       detail: status.detail,
       fixCommand: fixFor(id, readiness),
+      modelChoices: buildProviderModelChoices(id, configuredModel),
     };
   });
   return {
@@ -96,6 +106,50 @@ export async function buildProviderSetupView(
     recommendedProvider,
     choices,
   };
+}
+
+export function buildProviderModelChoices(
+  id: AgentProviderId,
+  configuredModel: string | null = null,
+): ProviderModelChoice[] {
+  const choices: ProviderModelChoice[] = [];
+  if (configuredModel !== null) {
+    choices.push({
+      value: configuredModel,
+      label: configuredModel,
+      recommended: false,
+      source: "configured",
+    });
+  }
+
+  const providerDefault = getProviderDefaultModel(id);
+  if (providerDefault !== null) {
+    if (!choices.some((choice) => choice.value === providerDefault)) {
+      choices.push({
+        value: providerDefault,
+        label: providerDefault,
+        recommended: true,
+        source: "provider-default",
+      });
+    } else {
+      choices[0] = { ...choices[0]!, recommended: true };
+    }
+  } else {
+    choices.push({
+      value: null,
+      label: "provider default",
+      recommended: true,
+      source: "provider-default",
+    });
+  }
+
+  choices.push({
+    value: "__custom__",
+    label: "custom model id",
+    recommended: false,
+    source: "custom",
+  });
+  return choices;
 }
 
 export function chooseRecommendedProvider(

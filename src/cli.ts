@@ -115,18 +115,16 @@ function isRootVersionInvocation(args: string[]): boolean {
 }
 
 function parseSetupFlags(args: string[]): {
-  yes?: boolean;
-  agent?: string;
-  skipHook?: boolean;
-  skipGuides?: boolean;
+  ok: true;
+  options: SetupShortcutOptions;
+} | {
+  ok: false;
+  error: string;
 } {
-  const agentIdx = args.indexOf("--agent");
-  return {
-    yes: args.includes("--yes") || args.includes("-y"),
-    agent: agentIdx === -1 ? undefined : args[agentIdx + 1],
-    skipHook: args.includes("--skip-hook"),
-    skipGuides: args.includes("--skip-guides"),
-  };
+  const options = parseSetupShortcutFlags(args);
+  return options === null
+    ? { ok: false, error: "invalid setup option value" }
+    : { ok: true, options };
 }
 
 function parseUpdateFlags(args: string[]): {
@@ -177,7 +175,12 @@ async function tryRunSqliteFreeCommand(
   if (command === undefined) return false;
 
   if (command === "setup") {
-    emit(await runSetupFn(parseSetupFlags(args.slice(1))));
+    const parsed = parseSetupFlags(args.slice(1));
+    if (parsed.ok === false) {
+      emit({ stdout: "", stderr: `almanac: ${parsed.error}\n`, exitCode: 1 });
+      return true;
+    }
+    emit(await runSetupFn(parsed.options));
     return true;
   }
 
@@ -337,6 +340,7 @@ function readPackageVersion(): string {
 export interface SetupShortcutOptions {
   yes?: boolean;
   agent?: string;
+  model?: string;
   skipHook?: boolean;
   skipGuides?: boolean;
 }
@@ -350,6 +354,10 @@ export interface SetupShortcutOptions {
 export function tryParseSetupShortcut(args: string[]): SetupShortcutOptions | null {
   if (args.length === 0) return {};
 
+  return parseSetupShortcutFlags(args);
+}
+
+function parseSetupShortcutFlags(args: string[]): SetupShortcutOptions | null {
   const opts: SetupShortcutOptions = {};
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
@@ -358,7 +366,16 @@ export function tryParseSetupShortcut(args: string[]): SetupShortcutOptions | nu
       continue;
     }
     if (arg === "--agent") {
-      opts.agent = args[i + 1];
+      const value = args[i + 1];
+      if (value === undefined || value.startsWith("-")) return null;
+      opts.agent = value;
+      i += 1;
+      continue;
+    }
+    if (arg === "--model") {
+      const value = args[i + 1];
+      if (value === undefined || value.startsWith("-")) return null;
+      opts.model = value;
       i += 1;
       continue;
     }

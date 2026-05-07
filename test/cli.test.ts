@@ -49,6 +49,19 @@ describe("tryParseSetupShortcut", () => {
     });
   });
 
+  it("recognizes --model for the setup shortcut", () => {
+    expect(tryParseSetupShortcut(["--agent", "claude", "--model", "opus"]))
+      .toEqual({
+        agent: "claude",
+        model: "opus",
+      });
+    expect(tryParseSetupShortcut(["--yes", "--model", "gpt-5.3-codex"]))
+      .toEqual({
+        yes: true,
+        model: "gpt-5.3-codex",
+      });
+  });
+
   it("accepts the full flag combo (`--yes --skip-hook --skip-guides`)", () => {
     expect(
       tryParseSetupShortcut(["--yes", "--skip-hook", "--skip-guides"]),
@@ -60,6 +73,13 @@ describe("tryParseSetupShortcut", () => {
     expect(tryParseSetupShortcut(["--version"])).toBeNull();
     expect(tryParseSetupShortcut(["-h"])).toBeNull();
     expect(tryParseSetupShortcut(["--unknown"])).toBeNull();
+  });
+
+  it("returns null when setup shortcut flags miss required values", () => {
+    expect(tryParseSetupShortcut(["--agent"])).toBeNull();
+    expect(tryParseSetupShortcut(["--agent", "--model"])).toBeNull();
+    expect(tryParseSetupShortcut(["--model"])).toBeNull();
+    expect(tryParseSetupShortcut(["--model", "--yes"])).toBeNull();
   });
 
   it("returns null for subcommands", () => {
@@ -143,6 +163,9 @@ describe("registerCommands", () => {
     expect(optionFlags(findCommand(program, ["setup"]))).toContain("-y, --yes");
     expect(optionFlags(findCommand(program, ["setup"]))).toContain(
       "--agent <agent>",
+    );
+    expect(optionFlags(findCommand(program, ["setup"]))).toContain(
+      "--model <model>",
     );
     expect(optionFlags(findCommand(program, ["doctor"]))).toContain("--json");
     expect(optionFlags(findCommand(program, ["topics", "show"]))).toContain(
@@ -254,8 +277,6 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     expect(setupMock).toHaveBeenCalledTimes(1);
     expect(setupMock).toHaveBeenCalledWith({
       yes: true,
-      skipGuides: false,
-      skipHook: false,
     });
   });
 

@@ -56,6 +56,24 @@ describe("provider setup view", () => {
         effectiveModel: "claude-opus-4-6",
         account: "Claude account: rohan@example.com",
         fixCommand: null,
+        modelChoices: [
+          {
+            value: "claude-opus-4-6",
+            label: "claude-opus-4-6",
+            source: "configured",
+          },
+          {
+            value: "claude-sonnet-4-6",
+            label: "claude-sonnet-4-6",
+            source: "provider-default",
+            recommended: true,
+          },
+          {
+            value: "__custom__",
+            label: "custom model id",
+            source: "custom",
+          },
+        ],
       },
       {
         id: "codex",
@@ -63,6 +81,19 @@ describe("provider setup view", () => {
         readiness: "ready",
         effectiveModel: null,
         account: "ChatGPT account: rohan@example.com",
+        modelChoices: [
+          {
+            value: null,
+            label: "provider default",
+            source: "provider-default",
+            recommended: true,
+          },
+          {
+            value: "__custom__",
+            label: "custom model id",
+            source: "custom",
+          },
+        ],
       },
       {
         id: "cursor",

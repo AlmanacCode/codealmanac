@@ -43,6 +43,7 @@ codealmanac --yes
 
 `codealmanac` (the bare invocation) routes to a setup wizard that:
 - lets you choose a default agent: Claude, Codex, or Cursor,
+- lets you choose a provider model or inherit the provider default,
 - checks local agent readiness,
 - installs auto-capture hooks for Claude, Codex, and Cursor,
 - drops two agent guides into `~/.claude/` (`codealmanac.md` mini, `codealmanac-reference.md` full),
@@ -92,7 +93,7 @@ codealmanac itself never stores your provider credentials. Auth stays in each ag
 
 ```bash
 npm install -g codealmanac
-codealmanac                   # interactive setup wizard; choose Claude/Codex/Cursor
+codealmanac                   # interactive setup wizard; choose provider + model
                               # (or: codealmanac --yes)
 
 cd your-repo

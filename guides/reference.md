@@ -157,10 +157,11 @@ Install the SessionEnd hook + the two CLAUDE.md guides (`codealmanac.md`, `codea
 |---|---|
 | `-y, --yes` | Skip prompts; install everything. |
 | `--agent <agent>` | Set the default provider. Accepts `claude`, `codex`, `cursor`, or optional shorthand like `claude/opus`. |
+| `--model <model>` | Set the provider-local model during setup. Non-interactive equivalent of the model picker. |
 | `--skip-hook` | Opt out of the SessionEnd hook. |
 | `--skip-guides` | Opt out of the CLAUDE.md guides. |
 
-Both `almanac setup` and bare `codealmanac` route here. `codealmanac --yes`, `codealmanac --skip-hook`, and `codealmanac --skip-guides` are the typical first-run invocations. Passing `--skip-hook --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn.
+Both `almanac setup` and bare `codealmanac` route here. Interactive setup chooses provider first, then provider-local model. `codealmanac --yes`, `codealmanac --agent codex --model gpt-5.3-codex`, `codealmanac --skip-hook`, and `codealmanac --skip-guides` are the typical first-run invocations. Passing `--skip-hook --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn.
 
 #### `almanac uninstall`
 

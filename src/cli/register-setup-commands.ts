@@ -138,18 +138,21 @@ export function registerSetupCommands(program: Command): void {
     .description("install the hook + CLAUDE.md guides (bare codealmanac alias)")
     .option("-y, --yes", "skip prompts; install everything")
     .option("--agent <agent>", "default agent: claude, codex, or cursor")
+    .option("--model <model>", "default model for the selected agent")
     .option("--skip-hook", "opt out of the SessionEnd hook")
     .option("--skip-guides", "opt out of the CLAUDE.md guides")
     .action(
       async (opts: {
         yes?: boolean;
         agent?: string;
+        model?: string;
         skipHook?: boolean;
         skipGuides?: boolean;
       }) => {
         const result = await runSetup({
           yes: opts.yes,
           agent: opts.agent,
+          model: opts.model,
           skipHook: opts.skipHook,
           skipGuides: opts.skipGuides,
         });
