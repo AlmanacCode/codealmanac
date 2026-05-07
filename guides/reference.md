@@ -49,7 +49,8 @@ Unified reader. Absorbs the old `info` and `path` commands — pick fields with 
 | `--stdin` | false | Read slugs from stdin, one per line. JSON Lines output for `--json` mode. |
 | `--wiki <name>` | current repo | Target a specific registered wiki. |
 | `--json` | false | Structured JSON. Overrides every view/field flag. |
-| `--raw` / `--body` | false | Body only (alias pair). Guarantees exactly one trailing newline — shell redirect produces a well-formed file. |
+| `--body` | false | Body only. Guarantees exactly one trailing newline — shell redirect produces a well-formed file. |
+| `--raw` | false | Deprecated alias for `--body`; still accepted for compatibility. |
 | `--meta` | false | Metadata header only, no body. |
 | `--lead` | false | First paragraph of the body only (cheap preview). |
 | `--title` | false | Print title. |
@@ -238,7 +239,7 @@ almanac agents model claude claude-opus-4-6
 almanac agents model claude --default
 ```
 
-`agents use` writes the default provider. `agents model` writes the provider-local model override; `--default`, `default`, or `null` resets the provider to its own default. The older `almanac set default-agent ...` and `almanac set model ...` commands remain compatibility aliases.
+`agents use` writes the default provider. `agents model` writes the provider-local model override; `--default`, `default`, or `null` resets the provider to its own default. The older `almanac set default-agent ...` and `almanac set model ...` commands remain compatibility aliases and print deprecation warnings.
 
 `bootstrap` and `capture` resolve provider settings in this order:
 
@@ -270,8 +271,8 @@ Upgrade command + the controls for the nag banner. See §11 for the full update-
 | (none) | Run `npm i -g codealmanac@latest` synchronously in the foreground. Inherits stdio so you see npm's progress bar, permission prompts, and peer-dep warnings verbatim. |
 | `--dismiss` | Mark the current `latest_version` as "don't nag". No install. Banner is suppressed until a newer version ships. |
 | `--check` | Force a registry query now, bypassing the 24h cache. Prints the result. No install. |
-| `--enable-notifier` | Set `update_notifier: true` in `~/.almanac/config.json` (default). |
-| `--disable-notifier` | Set `update_notifier: false` — banner stops showing entirely. `almanac doctor` still reports update status. |
+| `--enable-notifier` | Deprecated alias for `almanac config set update_notifier true`. |
+| `--disable-notifier` | Deprecated alias for `almanac config set update_notifier false`. |
 
 **Exit codes:** `0` on successful install / check / dismiss / toggle. Install propagates npm's exit code on failure. `--check` exits `1` when the registry is unreachable.
 
@@ -352,7 +353,7 @@ inventory lock row to Supabase, returns the PI client secret. See
 [[inventory-lock-gotcha]] for the deadlock we hit in March.
 ```
 
-CRLF-terminated files are handled transparently — `show --raw` strips frontmatter without leaving a stray `\r` at the body head.
+CRLF-terminated files are handled transparently — `show --body` strips frontmatter without leaving a stray `\r` at the body head.
 
 ---
 
@@ -487,7 +488,7 @@ almanac search --orphan | almanac show --stdin --path | xargs -n 1 "$EDITOR"
 
 **Export a page's body to a standalone markdown file:**
 ```bash
-almanac show checkout-flow --raw > checkout-flow.md   # exactly one trailing \n
+almanac show checkout-flow --body > checkout-flow.md  # exactly one trailing \n
 ```
 
 **Doctor a flaky install in CI:**
@@ -777,7 +778,7 @@ command runs
 ### State files
 
 - **`~/.almanac/update-state.json`** — written by the background worker + `almanac update`. Shape: `{last_check_at, installed_version, latest_version, dismissed_versions[], last_fetch_failed_at?}`. `last_check_at` is epoch seconds; `dismissed_versions` is a list of version strings the user muted via `--dismiss`. Missing / malformed → all read paths return defaults. Never break the CLI.
-- **`~/.almanac/config.json`** — `{update_notifier: boolean}`. Toggles whether the banner ever prints. Default `true`. Flip via `almanac update --enable-notifier` / `--disable-notifier`.
+- **`~/.almanac/config.json`** — `{update_notifier: boolean}`. Toggles whether the banner ever prints. Default `true`. Flip via `almanac config set update_notifier true` / `false`.
 
 ### Cache behavior
 
@@ -788,7 +789,7 @@ command runs
 
 ### Dismissal semantics
 
-`almanac update --dismiss` appends the current `latest_version` to `dismissed_versions[]`. The banner suppresses **only that specific version** — when a newer one ships, `latest_version` moves on and the banner reappears. Multiple consecutive dismissals accumulate; `dismissed_versions` is never trimmed automatically. If you find yourself dismissing every release, `almanac update --disable-notifier` is the right tool instead.
+`almanac update --dismiss` appends the current `latest_version` to `dismissed_versions[]`. The banner suppresses **only that specific version** — when a newer one ships, `latest_version` moves on and the banner reappears. Multiple consecutive dismissals accumulate; `dismissed_versions` is never trimmed automatically. If you find yourself dismissing every release, `almanac config set update_notifier false` is the right tool instead.
 
 Dismissal does NOT prevent `almanac update` from installing. It only silences the banner.
 

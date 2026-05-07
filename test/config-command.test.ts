@@ -52,6 +52,26 @@ describe("config command", () => {
     });
   });
 
+  it("sets update_notifier through the canonical config surface", async () => {
+    await withTempHome(async () => {
+      await expect(runConfigSet({
+        key: "update_notifier",
+        value: "false",
+      })).resolves.toMatchObject({ exitCode: 0 });
+      await expect(readConfig()).resolves.toMatchObject({
+        update_notifier: false,
+      });
+
+      await expect(runConfigSet({
+        key: "update_notifier",
+        value: "true",
+      })).resolves.toMatchObject({ exitCode: 0 });
+      await expect(readConfig()).resolves.toMatchObject({
+        update_notifier: true,
+      });
+    });
+  });
+
   it("reports file origins in json even without --show-origin", async () => {
     await withTempHome(async () => {
       await runConfigSet({ key: "agent.default", value: "codex" });

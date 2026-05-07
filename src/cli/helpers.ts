@@ -10,6 +10,20 @@ export function emit(result: CommandResult): void {
   if (result.exitCode !== 0) process.exitCode = result.exitCode;
 }
 
+export function withWarning(
+  result: CommandResult,
+  warning: string,
+): CommandResult {
+  return {
+    ...result,
+    stderr: `${warning}${result.stderr}`,
+  };
+}
+
+export function deprecationWarning(oldUsage: string, newUsage: string): string {
+  return `almanac: warning: \`${oldUsage}\` is deprecated; use \`${newUsage}\`.\n`;
+}
+
 export function collectOption(value: string, previous: string[]): string[] {
   return [...previous, value];
 }

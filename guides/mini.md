@@ -69,7 +69,7 @@ Returns slugs, one per line. Pipe-friendly. Filters AND-intersect.
 
 ```bash
 almanac show checkout-flow                 # metadata header + body (default)
-almanac show checkout-flow --raw           # body only
+almanac show checkout-flow --body          # body only
 almanac show checkout-flow --meta          # metadata only
 almanac show checkout-flow --lead          # first paragraph (cheap preview)
 almanac show checkout-flow --backlinks     # pages linking TO this one

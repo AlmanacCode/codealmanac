@@ -21,7 +21,7 @@ import { openIndex } from "../indexer/schema.js";
  *      to skim a page and still see its topics/files/links at a glance.
  *   2. **View flags** (mutually exclusive-ish):
  *        --json   structured JSON, overrides everything else
- *        --raw    body only (alias --body; the old `show` behavior)
+ *        --body   body only (`--raw` is a deprecated CLI alias)
  *        --meta   metadata only, no body
  *        --lead   first paragraph of body only (cheap preview)
  *   3. **Field flags** (composable). Each selects one "field" of the page:
@@ -259,7 +259,7 @@ function formatSingle(
 
 /**
  * Figure out which fields the user asked for. Precedence:
- *   1. `--raw` / `--body` — body only. Everything else is ignored.
+ *   1. Body-only mode — everything else is ignored.
  *   2. `--meta` — metadata only, no body. Ignores `--lead`.
  *   3. `--lead` — first paragraph only.
  *   4. Any field flag (`--title`, `--topics`, …) set → those fields only.
@@ -300,7 +300,7 @@ function formatRecord(rec: ShowRecord, options: ShowOptions): string {
   // 1. raw / body
   if (options.raw === true) {
     // Guarantee exactly one trailing newline. Without it, shell redirects
-    // (`almanac show foo --raw > foo.md`) produce files missing a final
+    // (`almanac show foo --body > foo.md`) produce files missing a final
     // newline, which confuses concatenation and diff tools. We don't
     // collapse multiple trailing newlines — a page that ends with a
     // blank line is intentional.

@@ -25,10 +25,8 @@ import { readState, writeState } from "../update/state.js";
  *     this one again". No install. Writes state and exits.
  *   --check — force a registry query regardless of the 24h cache.
  *     Shows the result and exits. No install.
- *   --enable-notifier / --disable-notifier — flip the global
- *     `update_notifier` config. Default is enabled; after
- *     `--disable-notifier` the banner won't show even when a new
- *     version is available.
+ *   --enable-notifier / --disable-notifier — deprecated compatibility
+ *     flags for `config set update_notifier true|false`.
  */
 
 export interface UpdateOptions {
@@ -121,10 +119,10 @@ async function dismissLatest(opts: UpdateOptions): Promise<UpdateResult> {
   };
   await writeState(next, opts.statePath);
   return {
-    stdout:
-      `codealmanac: dismissed ${state.latest_version}. The nag banner ` +
-      `will not show for this version.\n` +
-      `Run \`almanac update\` to upgrade, or \`almanac update --enable-notifier\` to re-enable nags.\n`,
+      stdout:
+        `codealmanac: dismissed ${state.latest_version}. The nag banner ` +
+        `will not show for this version.\n` +
+        `Run \`almanac update\` to upgrade, or \`almanac config set update_notifier true\` to re-enable nags.\n`,
     stderr: "",
     exitCode: 0,
   };
@@ -193,7 +191,9 @@ async function toggleNotifier(
           "The pre-command banner will show when a new version is available.\n"
         : "codealmanac: update notifier disabled. " +
           "No more pre-command banners. Run `almanac update --check` to see status.\n",
-    stderr: "",
+    stderr: enable
+      ? "almanac: warning: `almanac update --enable-notifier` is deprecated; use `almanac config set update_notifier true`.\n"
+      : "almanac: warning: `almanac update --disable-notifier` is deprecated; use `almanac config set update_notifier false`.\n",
     exitCode: 0,
   };
 }

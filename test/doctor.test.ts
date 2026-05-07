@@ -630,7 +630,7 @@ describe("almanac doctor — updates section", () => {
         (c: { key: string }) => c.key === "update.notifier",
       );
       expect(notifier.message).toMatch(/disabled/);
-      expect(notifier.fix).toMatch(/almanac update --enable-notifier/);
+      expect(notifier.fix).toMatch(/almanac config set update_notifier true/);
     });
   });
 

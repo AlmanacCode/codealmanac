@@ -65,7 +65,7 @@ export async function gatherUpdateChecks(
     message: `update notifier: ${config.update_notifier ? "enabled" : "disabled"}`,
     fix: config.update_notifier
       ? undefined
-      : "run: almanac update --enable-notifier",
+      : "run: almanac config set update_notifier true",
   });
 
   if (state !== null && state.dismissed_versions.length > 0) {

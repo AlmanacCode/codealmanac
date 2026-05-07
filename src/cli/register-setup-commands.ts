@@ -5,8 +5,8 @@ import {
   runAgentsList,
   runAgentsModel,
   runAgentsUse,
-  runSetAgentModel,
-  runSetDefaultAgent,
+  runDeprecatedSetAgentModel,
+  runDeprecatedSetDefaultAgent,
 } from "../commands/agents.js";
 import {
   runConfigGet,
@@ -115,11 +115,11 @@ export function registerSetupCommands(program: Command): void {
     .argument("[value...]", "setting value")
     .action(async (key: string, value: string[]) => {
       if (key === "default-agent") {
-        emit(await runSetDefaultAgent({ provider: value[0] ?? "" }));
+        emit(await runDeprecatedSetDefaultAgent({ provider: value[0] ?? "" }));
         return;
       }
       if (key === "model") {
-        emit(await runSetAgentModel({
+        emit(await runDeprecatedSetAgentModel({
           provider: value[0] ?? "",
           model: value[1],
         }));
@@ -189,11 +189,11 @@ export function registerSetupCommands(program: Command): void {
     .option("--check", "force a registry check now (bypasses the 24h cache); no install")
     .option(
       "--enable-notifier",
-      "re-enable the pre-command update banner (writes ~/.almanac/config.json)",
+      "deprecated: use `almanac config set update_notifier true`",
     )
     .option(
       "--disable-notifier",
-      "silence the pre-command update banner (writes ~/.almanac/config.json)",
+      "deprecated: use `almanac config set update_notifier false`",
     )
     .action(
       async (opts: {

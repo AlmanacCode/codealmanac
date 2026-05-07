@@ -13,11 +13,15 @@ const HELP_GROUPS: Array<{ title: string; commands: string[] }> = [
   },
   {
     title: "Wiki lifecycle",
-    commands: ["bootstrap", "capture", "ps", "hook", "reindex"],
+    commands: ["bootstrap", "capture", "hook", "reindex"],
   },
   {
     title: "Setup",
-    commands: ["setup", "uninstall", "doctor", "update"],
+    commands: ["agents", "config", "setup", "uninstall", "doctor", "update"],
+  },
+  {
+    title: "Deprecated",
+    commands: ["set", "ps"],
   },
 ];
 

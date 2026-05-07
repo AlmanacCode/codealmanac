@@ -8,7 +8,7 @@ import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
  * `path` commands. Coverage:
  *
  *   - Default view: metadata header + body
- *   - `--raw` / `--body`: body only
+ *   - Body-only mode (`--body`, with `--raw` retained as a CLI alias)
  *   - `--meta`: metadata only
  *   - `--lead`: first paragraph only
  *   - `--json`: structured JSON, single object for positional, null for
@@ -108,7 +108,7 @@ describe("almanac show — default view", () => {
 });
 
 describe("almanac show — view modes", () => {
-  it("--raw emits only the body", async () => {
+  it("body-only mode emits only the body", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");
       await seed(repo);
@@ -425,10 +425,10 @@ describe("almanac show — --stdin (JSON Lines)", () => {
   });
 });
 
-describe("almanac show — CRLF + --raw normalization", () => {
+describe("almanac show — CRLF + body normalization", () => {
   // v0.1.3: frontmatter stripping on CRLF files left a stray `\r` at the
   // start of the body because `src.indexOf("\n") + 1` landed AFTER the
-  // `\r`. And `--raw` on a body without a trailing newline produced a
+  // `\r`. And body-only output without a trailing newline produced a
   // file missing its final newline under shell redirect. Both fixed.
 
   it("strips CRLF frontmatter cleanly (no stray \\r at body head)", async () => {
@@ -459,7 +459,7 @@ describe("almanac show — CRLF + --raw normalization", () => {
     });
   });
 
-  it("--raw guarantees exactly one trailing newline", async () => {
+  it("body-only output guarantees exactly one trailing newline", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");
       await scaffoldWiki(repo);
@@ -483,7 +483,7 @@ describe("almanac show — CRLF + --raw normalization", () => {
     });
   });
 
-  it("--raw preserves multiple intentional trailing newlines", async () => {
+  it("body-only output preserves multiple intentional trailing newlines", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");
       await scaffoldWiki(repo);

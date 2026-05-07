@@ -7,9 +7,11 @@ import { runShow } from "../commands/show.js";
 import { autoRegisterIfNeeded } from "../registry/autoregister.js";
 import {
   collectOption,
+  deprecationWarning,
   emit,
   parsePositiveInt,
   readStdin,
+  withWarning,
 } from "./helpers.js";
 
 export function registerQueryCommands(program: Command): void {
@@ -75,8 +77,8 @@ export function registerQueryCommands(program: Command): void {
     .option("--stdin", "read slugs from stdin (one per line)")
     .option("--wiki <name>", "target a specific registered wiki")
     .option("--json", "structured JSON (overrides other view/field flags)")
-    .option("--raw", "body only (alias: --body)")
-    .option("--body", "body only (alias: --raw)")
+    .option("--body", "body only")
+    .option("--raw", "deprecated alias for --body")
     .option("--meta", "metadata only, no body")
     .option("--lead", "first paragraph of the body only")
     .option("--title", "print title")
@@ -131,7 +133,12 @@ export function registerQueryCommands(program: Command): void {
           updated: opts.updated,
           path: opts.path,
         });
-        emit(result);
+        emit(opts.raw === true
+          ? withWarning(
+            result,
+            deprecationWarning("almanac show <slug> --raw", "almanac show <slug> --body"),
+          )
+          : result);
       },
     );
 

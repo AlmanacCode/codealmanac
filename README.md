@@ -121,7 +121,7 @@ almanac search --topic database              # filter by topic
 almanac search --mentions src/lib/stripe.ts  # pages referencing a file
 almanac show checkout-flow                   # read a page
 almanac show checkout-flow --meta            # metadata only
-almanac show checkout-flow --raw             # body only
+almanac show checkout-flow --body            # body only
 
 # Organize
 almanac topics list                          # all topics with page counts

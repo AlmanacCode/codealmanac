@@ -10,7 +10,7 @@ import {
 } from "../commands/hook.js";
 import { runReindex } from "../commands/reindex.js";
 import { autoRegisterIfNeeded } from "../registry/autoregister.js";
-import { emit } from "./helpers.js";
+import { deprecationWarning, emit, withWarning } from "./helpers.js";
 
 export function registerWikiLifecycleCommands(program: Command): void {
   program
@@ -92,7 +92,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   program
     .command("ps")
-    .description("show running and recent capture jobs")
+    .description("deprecated alias for capture status")
     .option("--json", "emit structured JSON")
     .action(async (opts: { json?: boolean }) => {
       await autoRegisterIfNeeded(process.cwd());
@@ -100,7 +100,10 @@ export function registerWikiLifecycleCommands(program: Command): void {
         cwd: process.cwd(),
         json: opts.json,
       });
-      emit(result);
+      emit(withWarning(
+        result,
+        deprecationWarning("almanac ps", "almanac capture status"),
+      ));
     });
 
   const hook = program

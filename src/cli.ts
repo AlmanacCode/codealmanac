@@ -264,15 +264,18 @@ async function tryRunSqliteFreeCommand(
   }
 
   if (command === "set") {
-    const { runSetAgentModel, runSetDefaultAgent } = await import(
+    const { runDeprecatedSetAgentModel, runDeprecatedSetDefaultAgent } = await import(
       "./commands/agents.js"
     );
     if (subcommand === "default-agent") {
-      emit(await runSetDefaultAgent({ provider: args[2] ?? "" }));
+      emit(await runDeprecatedSetDefaultAgent({ provider: args[2] ?? "" }));
       return true;
     }
     if (subcommand === "model") {
-      emit(await runSetAgentModel({ provider: args[2] ?? "", model: args[3] }));
+      emit(await runDeprecatedSetAgentModel({
+        provider: args[2] ?? "",
+        model: args[3],
+      }));
       return true;
     }
     return false;

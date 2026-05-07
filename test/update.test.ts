@@ -257,6 +257,8 @@ describe("almanac update --enable-notifier / --disable-notifier", () => {
         configPath,
       });
       expect(result.exitCode).toBe(0);
+      expect(result.stderr).toContain("deprecated");
+      expect(result.stderr).toContain("almanac config set update_notifier true");
       const config = await readConfig(configPath);
       expect(config.update_notifier).toBe(true);
     });
@@ -270,6 +272,8 @@ describe("almanac update --enable-notifier / --disable-notifier", () => {
         configPath,
       });
       expect(result.exitCode).toBe(0);
+      expect(result.stderr).toContain("deprecated");
+      expect(result.stderr).toContain("almanac config set update_notifier false");
       const config = await readConfig(configPath);
       expect(config.update_notifier).toBe(false);
       const raw = JSON.parse(await readFile(configPath, "utf8")) as {

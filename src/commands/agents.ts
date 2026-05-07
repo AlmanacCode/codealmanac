@@ -67,6 +67,26 @@ export interface SetDefaultAgentOptions {
 export async function runSetDefaultAgent(
   opts: SetDefaultAgentOptions,
 ): Promise<AgentsResult> {
+  return setDefaultAgent(opts);
+}
+
+export async function runDeprecatedSetDefaultAgent(
+  opts: SetDefaultAgentOptions,
+): Promise<AgentsResult> {
+  return withDeprecation(
+    await setDefaultAgent(opts),
+    "almanac set default-agent <provider>",
+    "almanac agents use <provider>",
+  );
+}
+
+export async function runAgentsUse(opts: SetDefaultAgentOptions): Promise<AgentsResult> {
+  return setDefaultAgent(opts);
+}
+
+async function setDefaultAgent(
+  opts: SetDefaultAgentOptions,
+): Promise<AgentsResult> {
   const parsed = parseAgentSelection(opts.provider);
   if (parsed.provider === null) {
     return {
@@ -104,11 +124,35 @@ export async function runSetDefaultAgent(
   };
 }
 
-export async function runAgentsUse(opts: SetDefaultAgentOptions): Promise<AgentsResult> {
-  return runSetDefaultAgent(opts);
+export async function runSetAgentModel(opts: {
+  provider: string;
+  model?: string;
+  defaultModel?: boolean;
+}): Promise<AgentsResult> {
+  return setProviderModel(opts);
 }
 
-export async function runSetAgentModel(opts: {
+export async function runDeprecatedSetAgentModel(opts: {
+  provider: string;
+  model?: string;
+  defaultModel?: boolean;
+}): Promise<AgentsResult> {
+  return withDeprecation(
+    await setProviderModel(opts),
+    "almanac set model <provider> <model>",
+    "almanac agents model <provider> <model>",
+  );
+}
+
+export async function runAgentsModel(opts: {
+  provider: string;
+  model?: string;
+  defaultModel?: boolean;
+}): Promise<AgentsResult> {
+  return setProviderModel(opts);
+}
+
+async function setProviderModel(opts: {
   provider: string;
   model?: string;
   defaultModel?: boolean;
@@ -157,14 +201,6 @@ export async function runSetAgentModel(opts: {
   };
 }
 
-export async function runAgentsModel(opts: {
-  provider: string;
-  model?: string;
-  defaultModel?: boolean;
-}): Promise<AgentsResult> {
-  return runSetAgentModel(opts);
-}
-
 function normalizeRequestedModel(opts: {
   provider: string;
   model?: string;
@@ -185,4 +221,17 @@ function readinessLabel(readiness: ProviderReadiness): string {
     case "not-authenticated":
       return "not ready";
   }
+}
+
+function withDeprecation(
+  result: AgentsResult,
+  oldUsage: string,
+  newUsage: string,
+): AgentsResult {
+  return {
+    ...result,
+    stderr:
+      `almanac: warning: \`${oldUsage}\` is deprecated; use \`${newUsage}\`.\n` +
+      result.stderr,
+  };
 }

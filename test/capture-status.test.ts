@@ -170,12 +170,18 @@ describe("capture status CLI aliases", () => {
       await scaffoldWiki(repo);
       const originalCwd = process.cwd();
       const originalStdout = process.stdout.write.bind(process.stdout);
+      const originalStderr = process.stderr.write.bind(process.stderr);
       const captured: string[] = [];
+      const stderr: string[] = [];
       process.chdir(repo);
       process.stdout.write = ((chunk: unknown) => {
         captured.push(typeof chunk === "string" ? chunk : Buffer.from(chunk as Uint8Array).toString());
         return true;
       }) as typeof process.stdout.write;
+      process.stderr.write = ((chunk: unknown) => {
+        stderr.push(typeof chunk === "string" ? chunk : Buffer.from(chunk as Uint8Array).toString());
+        return true;
+      }) as typeof process.stderr.write;
 
       try {
         await run(["/abs/node", "/abs/path/alm", "ps"], {
@@ -190,11 +196,14 @@ describe("capture status CLI aliases", () => {
         });
       } finally {
         process.stdout.write = originalStdout;
+        process.stderr.write = originalStderr;
         process.chdir(originalCwd);
       }
 
       expect(captured.join("")).toContain("No capture jobs found.");
       expect(captured.join("").match(/Capture jobs/g)).toHaveLength(2);
+      expect(stderr.join("")).toContain("almanac ps");
+      expect(stderr.join("")).toContain("deprecated");
     });
   });
 

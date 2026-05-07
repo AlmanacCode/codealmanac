@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Command } from "commander";
 
 import { run, tryParseSetupShortcut } from "../src/cli.js";
+import { configureGroupedHelp } from "../src/cli/help.js";
 import { registerCommands } from "../src/cli/register-commands.js";
 import type { SetupResult } from "../src/commands/setup.js";
 
@@ -153,6 +154,21 @@ describe("registerCommands", () => {
     expect(optionFlags(findCommand(program, ["list"]))).toContain(
       "--drop <name>",
     );
+  });
+
+  it("places legacy commands in a Deprecated help group", () => {
+    const program = new Command();
+    program.name("almanac");
+    registerCommands(program);
+    configureGroupedHelp(program);
+
+    const help = program.helpInformation();
+
+    expect(help).toMatch(/Setup:[\s\S]*agents\s+list supported AI agent providers and readiness/);
+    expect(help).toMatch(/Setup:[\s\S]*config\s+read and write codealmanac settings/);
+    expect(help).toContain("Deprecated:");
+    expect(help).toMatch(/set <key> \[value\.\.\.\]\s+configure codealmanac defaults/);
+    expect(help).toMatch(/ps \[options\]\s+deprecated alias for capture status/);
   });
 });
 
