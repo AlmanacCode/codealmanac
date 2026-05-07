@@ -117,7 +117,7 @@ All topic subcommands accept `--wiki <name>`. `list` / `show` accept `--json`.
 
 #### `almanac bootstrap`
 
-Spawns an agent to create initial wiki stubs. Requires the selected provider to be installed and logged in. `--quiet` suppresses per-tool streaming. `--agent <provider>` overrides the provider for this run. `--model <model>` overrides the provider-local model. `--force` overwrites an existing populated wiki. Writes `.almanac/logs/.bootstrap-<timestamp>.log`.
+Spawns an agent to create initial wiki stubs. Requires the selected provider to be installed and logged in. `--quiet` suppresses per-tool streaming. `--agent <provider>` overrides the provider for this run. `--model <model>` overrides the provider-local model. `--json` emits a structured `CommandOutcome` and suppresses streaming. `--force` overwrites an existing populated wiki. Writes `.almanac/logs/.bootstrap-<timestamp>.log`.
 
 Bootstrap is the scaffolding path — it creates `.almanac/pages/`, `.almanac/topics.yaml`, `.almanac/README.md`, and stub entity pages based on what the agent reads in the repo.
 
@@ -132,6 +132,7 @@ Run the writer/reviewer pipeline on a Claude Code session transcript. Usually au
 | `--quiet` | Suppress per-tool streaming; print only the final summary. |
 | `--agent <provider>` | Override the configured provider for this run. |
 | `--model <model>` | Override the agent model. |
+| `--json` | Emit a structured `CommandOutcome`; suppresses streaming so stdout is parseable. |
 
 Writes SDK transcript to `.almanac/logs/.capture-<session-id>.jsonl` (one JSON message per line). When invoked manually without `--session`, falls back to `.capture-<timestamp>.jsonl` so repeated runs don't clobber each other. A writer subagent drafts pages; a reviewer subagent enforces notability + writing conventions (§9) before drafts land.
 

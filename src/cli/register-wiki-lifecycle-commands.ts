@@ -22,12 +22,14 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .option("--agent <agent>", "agent provider: claude, codex, or cursor")
     .option("--model <model>", "override the agent model")
     .option("--force", "overwrite an existing populated wiki (default: refuse)")
+    .option("--json", "emit structured CommandOutcome JSON")
     .action(
       async (opts: {
         quiet?: boolean;
         agent?: string;
         model?: string;
         force?: boolean;
+        json?: boolean;
       }) => {
         const result = await runBootstrap({
           cwd: process.cwd(),
@@ -35,6 +37,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
           agent: opts.agent,
           model: opts.model,
           force: opts.force,
+          json: opts.json,
         });
         emit(result);
       },
@@ -48,6 +51,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .option("--quiet", "suppress per-tool streaming; print only the final summary")
     .option("--agent <agent>", "agent provider: claude, codex, or cursor")
     .option("--model <model>", "override the agent model")
+    .option("--json", "emit structured CommandOutcome JSON")
     .action(
       async (
         transcript: string | undefined,
@@ -56,6 +60,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
           quiet?: boolean;
           agent?: string;
           model?: string;
+          json?: boolean;
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
@@ -66,6 +71,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
           quiet: opts.quiet,
           agent: opts.agent,
           model: opts.model,
+          json: opts.json,
         });
         emit(result);
       },

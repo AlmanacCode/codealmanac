@@ -6,6 +6,7 @@ import type { SpawnCliFn } from "../agent/providers/claude/index.js";
 import { assertAgentAuth } from "../agent/providers.js";
 import { loadPrompt } from "../agent/prompts.js";
 import { resolveAgentSelection } from "../agent/selection.js";
+import { renderOutcome } from "../cli/outcome.js";
 import {
   runAgent,
   type AgentResult,
@@ -25,6 +26,8 @@ export interface BootstrapOptions {
   agent?: string;
   /** Overwrite a populated wiki. Default refuses with a pointer at `capture`. */
   force?: boolean;
+  /** Emit CommandOutcome JSON instead of human output. */
+  json?: boolean;
   /** Injectable agent runner — tests replace this with a fake. */
   runAgent?: (opts: RunAgentOptions) => Promise<AgentResult>;
   /**
@@ -91,11 +94,10 @@ export async function runBootstrap(
     model: options.model,
   });
   if (!providerResolution.ok) {
-    return {
-      stdout: "",
-      stderr: `almanac: ${providerResolution.error}\n`,
-      exitCode: 1,
-    };
+    return renderOutcome(
+      { type: "error", message: providerResolution.error },
+      { json: options.json },
+    );
   }
   const { provider, model } = providerResolution;
 
@@ -103,11 +105,15 @@ export async function runBootstrap(
     await assertAgentAuth({ provider, spawnCli: options.spawnCli });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    return {
-      stdout: "",
-      stderr: `almanac: ${msg}\n`,
-      exitCode: 1,
-    };
+    return renderOutcome(
+      {
+        type: "needs-action",
+        message: msg,
+        fix: authFixFor(provider),
+        data: { provider },
+      },
+      { json: options.json },
+    );
   }
 
   // Repo root: honor an already-initialized wiki anywhere above us.
@@ -121,13 +127,16 @@ export async function runBootstrap(
   if (options.force !== true && existsSync(pagesDir)) {
     const existing = await countMarkdownPages(pagesDir);
     if (existing > 0) {
-      return {
-        stdout: "",
-        stderr:
-          `almanac: .almanac/ already initialized with ${existing} page${existing === 1 ? "" : "s"}. ` +
-          "Use 'almanac capture' instead, or --force to overwrite.\n",
-        exitCode: 1,
-      };
+      return renderOutcome(
+        {
+          type: "needs-action",
+          message:
+            `.almanac/ already initialized with ${existing} page${existing === 1 ? "" : "s"}.`,
+          fix: "run: almanac capture  (or pass --force to overwrite)",
+          data: { pages: existing },
+        },
+        { json: options.json },
+      );
     }
   }
 
@@ -140,11 +149,10 @@ export async function runBootstrap(
       // Per the slice spec: auto-init failures should be loud. The user
       // needs to know init is broken, not see a cascading agent error.
       const msg = err instanceof Error ? err.message : String(err);
-      return {
-        stdout: "",
-        stderr: `almanac: init failed during bootstrap: ${msg}\n`,
-        exitCode: 1,
-      };
+      return renderOutcome(
+        { type: "error", message: `init failed during bootstrap: ${msg}` },
+        { json: options.json },
+      );
     }
   }
 
@@ -168,7 +176,7 @@ export async function runBootstrap(
   const out = process.stdout;
   const formatter = new StreamingFormatter({
     write: (line: string) => {
-      if (options.quiet !== true) out.write(line);
+      if (options.quiet !== true && options.json !== true) out.write(line);
     },
   });
 
@@ -206,17 +214,52 @@ export async function runBootstrap(
   const finalLine = formatFinalLine(result, logPath, repoRoot);
 
   if (result.success) {
-    return {
-      stdout: `${finalLine}\n`,
-      stderr: "",
-      exitCode: 0,
-    };
+    return renderOutcome(
+      {
+        type: "success",
+        message: finalLine,
+        data: runData(result, logPath, repoRoot),
+      },
+      { json: options.json },
+    );
   }
 
+  return renderOutcome(
+    {
+      type: "error",
+      message: `bootstrap failed: ${result.error ?? "unknown error"}`,
+      data: runData(result, logPath, repoRoot),
+    },
+    {
+      json: options.json,
+      stdout: options.quiet === true || options.json === true ? "" : `${finalLine}\n`,
+    },
+  );
+}
+
+function authFixFor(provider: string): string {
+  switch (provider) {
+    case "claude":
+      return "run: claude auth login --claudeai  (or export ANTHROPIC_API_KEY)";
+    case "codex":
+      return "run: codex login";
+    case "cursor":
+      return "run: cursor-agent login";
+    default:
+      return "run: almanac agents doctor";
+  }
+}
+
+function runData(
+  result: AgentResult,
+  logPath: string,
+  repoRoot: string,
+): Record<string, unknown> {
   return {
-    stdout: options.quiet === true ? "" : `${finalLine}\n`,
-    stderr: `almanac: bootstrap failed: ${result.error ?? "unknown error"}\n`,
-    exitCode: 1,
+    transcript: relative(repoRoot, logPath),
+    cost: result.cost,
+    turns: result.turns,
+    sessionId: result.sessionId,
   };
 }
 

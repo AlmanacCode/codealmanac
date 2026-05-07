@@ -16,6 +16,7 @@ import type { SpawnCliFn } from "../agent/providers/claude/index.js";
 import { assertAgentAuth } from "../agent/providers.js";
 import { loadPrompt } from "../agent/prompts.js";
 import { resolveAgentSelection } from "../agent/selection.js";
+import { renderOutcome } from "../cli/outcome.js";
 import {
   runAgent,
   type AgentResult,
@@ -44,6 +45,8 @@ export interface CaptureOptions {
   model?: string;
   /** Agent provider override. Defaults to ~/.almanac/config.json. */
   agent?: string;
+  /** Emit CommandOutcome JSON instead of human output. */
+  json?: boolean;
   /** Injectable agent runner — tests replace this with a fake. */
   runAgent?: (opts: RunAgentOptions) => Promise<AgentResult>;
   /** Injectable auth gate — tests can bypass non-Claude provider CLIs. */
@@ -128,11 +131,10 @@ export async function runCapture(
     model: options.model,
   });
   if (!providerResolution.ok) {
-    return {
-      stdout: "",
-      stderr: `almanac: ${providerResolution.error}\n`,
-      exitCode: 1,
-    };
+    return renderOutcome(
+      { type: "error", message: providerResolution.error },
+      { json: options.json },
+    );
   }
   const { provider, model } = providerResolution;
   const statusModel = model ?? getProviderDefaultModel(provider) ?? "provider default";
@@ -144,11 +146,15 @@ export async function runCapture(
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    return {
-      stdout: "",
-      stderr: `almanac: ${msg}\n`,
-      exitCode: 1,
-    };
+    return renderOutcome(
+      {
+        type: "needs-action",
+        message: msg,
+        fix: authFixFor(provider),
+        data: { provider },
+      },
+      { json: options.json },
+    );
   }
 
   // Resolve the repo root by walking up for `.almanac/`. Unlike bootstrap,
@@ -157,13 +163,14 @@ export async function runCapture(
   // the user skipped `almanac bootstrap`.
   const repoRoot = findNearestAlmanacDir(options.cwd);
   if (repoRoot === null) {
-    return {
-      stdout: "",
-      stderr:
-        "almanac: no .almanac/ found in this directory or any parent. " +
-        "Run 'almanac bootstrap' first.\n",
-      exitCode: 1,
-    };
+    return renderOutcome(
+      {
+        type: "needs-action",
+        message: "no .almanac/ found in this directory or any parent.",
+        fix: "run: almanac bootstrap",
+      },
+      { json: options.json },
+    );
   }
 
   const almanacDir = getRepoAlmanacDir(repoRoot);
@@ -178,11 +185,14 @@ export async function runCapture(
     claudeProjectsDir: options.claudeProjectsDir,
   });
   if (!transcriptResolution.ok) {
-    return {
-      stdout: "",
-      stderr: `almanac: ${transcriptResolution.error}\n`,
-      exitCode: 1,
-    };
+    return renderOutcome(
+      {
+        type: "needs-action",
+        message: transcriptResolution.error,
+        fix: transcriptFix(transcriptResolution.error),
+      },
+      { json: options.json },
+    );
   }
   const transcriptPath = transcriptResolution.path;
 
@@ -248,7 +258,7 @@ export async function runCapture(
   const out = process.stdout;
   const formatter = new StreamingFormatter({
     write: (line: string) => {
-      if (options.quiet !== true) out.write(line);
+      if (options.quiet !== true && options.json !== true) out.write(line);
     },
   });
   // The shared StreamingFormatter defaults its currentAgent to "bootstrap"
@@ -316,13 +326,19 @@ export async function runCapture(
         error: result.error ?? "unknown error",
       }),
     ).catch(() => {});
-    return {
-      stdout: "",
-      stderr:
-        `almanac: capture failed: ${result.error ?? "unknown error"}\n` +
-        `(transcript: ${relative(repoRoot, logPath)})\n`,
-      exitCode: 1,
-    };
+    return renderOutcome(
+      {
+        type: "error",
+        message:
+          `capture failed: ${result.error ?? "unknown error"}\n` +
+          `(transcript: ${relative(repoRoot, logPath)})`,
+        data: captureOutcomeData(result, delta, logPath, repoRoot),
+      },
+      {
+        json: options.json,
+        stdout: "",
+      },
+    );
   }
 
   await writeCaptureRunRecord(
@@ -337,11 +353,55 @@ export async function runCapture(
 
   const summary = formatSummary(result, delta, logPath, repoRoot);
 
+  return renderOutcome(
+    {
+      type: isNoopDelta(delta) ? "noop" : "success",
+      message: summary,
+      data: captureOutcomeData(result, delta, logPath, repoRoot),
+    },
+    { json: options.json },
+  );
+}
+
+function transcriptFix(error: string): string {
+  if (error.includes("transcript not found")) {
+    return "pass a valid <transcript-path>";
+  }
+  return "pass --session <id> or <transcript-path>";
+}
+
+function authFixFor(provider: string): string {
+  switch (provider) {
+    case "claude":
+      return "run: claude auth login --claudeai  (or export ANTHROPIC_API_KEY)";
+    case "codex":
+      return "run: codex login";
+    case "cursor":
+      return "run: cursor-agent login";
+    default:
+      return "run: almanac agents doctor";
+  }
+}
+
+function captureOutcomeData(
+  result: AgentResult,
+  delta: SnapshotDelta,
+  logPath: string,
+  repoRoot: string,
+): Record<string, unknown> {
   return {
-    stdout: `${summary}\n`,
-    stderr: "",
-    exitCode: 0,
+    transcript: relative(repoRoot, logPath),
+    updated: delta.updated,
+    created: delta.created,
+    archived: delta.archived,
+    cost: result.cost,
+    turns: result.turns,
+    sessionId: result.sessionId,
   };
+}
+
+function isNoopDelta(delta: SnapshotDelta): boolean {
+  return delta.created === 0 && delta.updated === 0 && delta.archived === 0;
 }
 
 // ─── Transcript resolution ────────────────────────────────────────────────

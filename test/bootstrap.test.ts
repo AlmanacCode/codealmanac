@@ -155,6 +155,26 @@ describe("almanac bootstrap — command wiring", () => {
     });
   });
 
+  it("emits needs-action JSON for missing auth when requested", async () => {
+    await withTempHome(async (home) => {
+      delete process.env.ANTHROPIC_API_KEY;
+      const repo = await makeRepo(home, "auth-missing-json");
+      const out = await runBootstrap({
+        cwd: repo,
+        json: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
+        runAgent: fakeRunAgent(),
+      });
+
+      expect(out.exitCode).toBe(1);
+      expect(out.stderr).toBe("");
+      expect(JSON.parse(out.stdout)).toMatchObject({
+        type: "needs-action",
+        data: { provider: "claude" },
+      });
+    });
+  });
+
   it("opens the gate when logged in via Claude subscription with no env var", async () => {
     // The subscription path MUST work even with ANTHROPIC_API_KEY unset.
     await withTempHome(async (home) => {
@@ -230,6 +250,32 @@ describe("almanac bootstrap — command wiring", () => {
       expect(out.stderr).toMatch(/already initialized with 1 page/);
       expect(out.stderr).toMatch(/almanac capture/);
       expect(out.stderr).toMatch(/--force/);
+    });
+  });
+
+  it("emits needs-action JSON for populated wiki refusal", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "populated-json");
+      await scaffoldWiki(repo);
+      await writeFile(
+        join(repo, ".almanac", "pages", "supabase.md"),
+        "# Supabase\n",
+      );
+
+      const out = await runBootstrap({
+        cwd: repo,
+        json: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
+        runAgent: fakeRunAgent(),
+      });
+
+      expect(out.exitCode).toBe(1);
+      expect(out.stderr).toBe("");
+      expect(JSON.parse(out.stdout)).toMatchObject({
+        type: "needs-action",
+        fix: "run: almanac capture  (or pass --force to overwrite)",
+        data: { pages: 1 },
+      });
     });
   });
 

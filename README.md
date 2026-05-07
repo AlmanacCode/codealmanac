@@ -132,6 +132,7 @@ almanac health                               # graph integrity report
 # Wiki lifecycle
 almanac bootstrap --agent codex              # seed a new wiki from the repo
 almanac capture --agent cursor <transcript>  # update wiki from a transcript
+almanac capture --json <transcript>          # structured CommandOutcome output
 almanac hook install --source all            # auto-capture for Claude/Codex/Cursor
 
 # Setup & diagnose

@@ -190,6 +190,27 @@ describe("almanac capture — command wiring", () => {
     });
   });
 
+  it("emits needs-action JSON when no wiki exists", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "no-wiki-json");
+
+      const out = await runCapture({
+        cwd: repo,
+        json: true,
+        transcriptPath: join(home, "fake.jsonl"),
+        spawnCli: fakeSpawnCliLoggedOut(),
+        runAgent: fakeRunAgent({}),
+      });
+
+      expect(out.exitCode).toBe(1);
+      expect(out.stderr).toBe("");
+      expect(JSON.parse(out.stdout)).toMatchObject({
+        type: "needs-action",
+        fix: "run: almanac bootstrap",
+      });
+    });
+  });
+
   it("opens the gate when logged in via Claude subscription with no env var", async () => {
     await withTempHome(async (home) => {
       delete process.env.ANTHROPIC_API_KEY;
@@ -362,12 +383,17 @@ describe("almanac capture — command wiring", () => {
       const out = await runCapture({
         cwd: repo,
         transcriptPath: join(home, "does-not-exist.jsonl"),
+        json: true,
         spawnCli: fakeSpawnCliLoggedOut(),
         runAgent: fakeRunAgent({}),
       });
 
       expect(out.exitCode).toBe(1);
-      expect(out.stderr).toMatch(/transcript not found/);
+      expect(out.stderr).toBe("");
+      expect(JSON.parse(out.stdout)).toMatchObject({
+        type: "needs-action",
+        fix: "pass a valid <transcript-path>",
+      });
     });
   });
 
@@ -455,6 +481,17 @@ describe("almanac capture — command wiring", () => {
 
       expect(out.exitCode).toBe(1);
       expect(out.stderr).toMatch(/could not auto-resolve/);
+      const json = await runCapture({
+        cwd: repo,
+        claudeProjectsDir: projectsDir,
+        json: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
+        runAgent: fakeRunAgent({}),
+      });
+      expect(JSON.parse(json.stdout)).toMatchObject({
+        type: "needs-action",
+        fix: "pass --session <id> or <transcript-path>",
+      });
     });
   });
 
@@ -517,6 +554,30 @@ describe("almanac capture — command wiring", () => {
       expect(out.exitCode).toBe(0);
       expect(out.stdout).toMatch(/notability bar/);
       expect(out.stdout).toMatch(/0 pages written/);
+    });
+  });
+
+  it("emits noop JSON when capture writes no pages", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "noop-json");
+      await scaffoldWiki(repo);
+      const transcript = join(home, "t.jsonl");
+      await writeFile(transcript, "{}\n", "utf8");
+
+      const out = await runCapture({
+        cwd: repo,
+        transcriptPath: transcript,
+        json: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
+        runAgent: fakeRunAgent({}),
+      });
+
+      expect(out.exitCode).toBe(0);
+      expect(out.stderr).toBe("");
+      expect(JSON.parse(out.stdout)).toMatchObject({
+        type: "noop",
+        data: { updated: 0, created: 0, archived: 0 },
+      });
     });
   });
 
@@ -719,6 +780,7 @@ describe("almanac capture — command wiring", () => {
       expect(out.exitCode).toBe(1);
       expect(out.stderr).toMatch(/capture failed/);
       expect(out.stderr).toMatch(/rate limit exceeded/);
+      expect(out.stderr).toMatch(/transcript:/);
     });
   });
 
