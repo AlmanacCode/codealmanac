@@ -9,17 +9,24 @@ import { mkdir, readFile, readdir, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, join, relative } from "node:path";
 
-import type { AgentDefinition, SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import type { AgentDefinition } from "@anthropic-ai/claude-agent-sdk";
 
-import { assertClaudeAuth, type SpawnCliFn } from "../agent/auth.js";
+import type { SpawnCliFn } from "../agent/auth.js";
+import { assertAgentAuth } from "../agent/providers.js";
 import { loadPrompt } from "../agent/prompts.js";
 import {
   runAgent,
   type AgentResult,
+  type AgentStreamMessage,
   type RunAgentOptions,
 } from "../agent/sdk.js";
 import { parseFrontmatter } from "../indexer/frontmatter.js";
 import { findNearestAlmanacDir, getRepoAlmanacDir } from "../paths.js";
+import {
+  isAgentProviderId,
+  readConfig,
+  type AgentProviderId,
+} from "../update/config.js";
 import { StreamingFormatter } from "./bootstrap.js";
 
 export interface CaptureOptions {
@@ -32,6 +39,8 @@ export interface CaptureOptions {
   quiet?: boolean;
   /** Model override. Defaults to the SDK default (sonnet-4-6). */
   model?: string;
+  /** Agent provider override. Defaults to ~/.almanac/config.json. */
+  agent?: string;
   /** Injectable agent runner — tests replace this with a fake. */
   runAgent?: (opts: RunAgentOptions) => Promise<AgentResult>;
   /**
@@ -109,8 +118,21 @@ export async function runCapture(
   // missing both surfaces a two-option error with exit 1 so the
   // SessionEnd hook (which backgrounds + redirects to a sidecar log)
   // doesn't silently treat auth failure as a successful capture.
+  const providerResolution = await resolveAgentSelection({
+    agent: options.agent,
+    model: options.model,
+  });
+  if (!providerResolution.ok) {
+    return {
+      stdout: "",
+      stderr: `almanac: ${providerResolution.error}\n`,
+      exitCode: 1,
+    };
+  }
+  const { provider, model } = providerResolution;
+
   try {
-    await assertClaudeAuth(options.spawnCli);
+    await assertAgentAuth({ provider, spawnCli: options.spawnCli });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return {
@@ -213,7 +235,7 @@ export async function runCapture(
   // writer owns the top-level turn, so relabel.
   formatter.setAgent("writer");
 
-  const onMessage = (msg: SDKMessage): void => {
+  const onMessage = (msg: AgentStreamMessage): void => {
     try {
       logStream.write(`${JSON.stringify(msg)}\n`);
     } catch {
@@ -241,7 +263,8 @@ export async function runCapture(
       allowedTools: WRITER_TOOLS,
       agents,
       cwd: repoRoot,
-      model: options.model,
+      provider,
+      model,
       // Capture sessions can touch many pages; give it more headroom than
       // bootstrap. The SDK treats `maxTurns` as a hard stop — better to
       // overshoot than to cut off mid-review.
@@ -272,6 +295,33 @@ export async function runCapture(
     stderr: "",
     exitCode: 0,
   };
+}
+
+type AgentSelection =
+  | { ok: true; provider: AgentProviderId; model?: string }
+  | { ok: false; error: string };
+
+async function resolveAgentSelection(args: {
+  agent?: string;
+  model?: string;
+}): Promise<AgentSelection> {
+  const config = await readConfig();
+  const rawProvider = args.agent ?? config.agent.default;
+  if (!isAgentProviderId(rawProvider)) {
+    return {
+      ok: false,
+      error:
+        `unknown agent '${rawProvider}'. Expected one of: claude, codex, cursor.`,
+    };
+  }
+  const configuredModel = config.agent.models[rawProvider] ?? undefined;
+  const model =
+    args.model !== undefined
+      ? args.model
+      : configuredModel === null
+        ? undefined
+        : configuredModel;
+  return { ok: true, provider: rawProvider, model };
 }
 
 // ─── Transcript resolution ────────────────────────────────────────────────

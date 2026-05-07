@@ -12,7 +12,7 @@ A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, ha
 
 ## How it works
 
-Each repo gets a committed `.almanac/pages/` directory of markdown files. A SessionEnd hook fires when a Claude Code session ends and runs `almanac capture` in the background. A writer agent reads the session transcript and existing pages, drafts changes, and invokes a reviewer subagent that critiques against the wider graph. The writer applies the final versions. New and updated pages show up in your next `git status`; you review them like any other commit.
+Each repo gets a committed `.almanac/pages/` directory of markdown files. Auto-capture hooks fire when Claude Code, Codex, or Cursor Agent sessions end and run `almanac capture` in the background. A writer agent reads the session transcript and existing pages, drafts changes, and runs a reviewer pass against the wider graph. The writer applies the final versions. New and updated pages show up in your next `git status`; you review them like any other commit.
 
 The CLI never reads or writes page content except in `capture` and `bootstrap`. Every other command (`search`, `show`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
 
@@ -28,8 +28,9 @@ codealmanac --yes
 ```
 
 `codealmanac` (the bare invocation) routes to a setup wizard that:
-- checks Claude auth (subscription via `claude auth login`, or `ANTHROPIC_API_KEY`),
-- installs the SessionEnd hook in `~/.claude/settings.json`,
+- lets you choose a default agent: Claude, Codex, or Cursor,
+- checks local agent readiness,
+- installs auto-capture hooks for Claude, Codex, and Cursor,
 - drops two agent guides into `~/.claude/` (`codealmanac.md` mini, `codealmanac-reference.md` full),
 - appends `@~/.claude/codealmanac.md` to `~/.claude/CLAUDE.md` so every Claude Code session loads the mini guide.
 
@@ -37,49 +38,59 @@ The setup is idempotent — safe to re-run. Opt out with `--skip-hook` or `--ski
 
 Two binaries ship, both pointing at the same entry: `codealmanac` (install surface) and `almanac` (day-to-day). Requires Node 20 or 22.
 
-`bootstrap` and `capture` invoke Claude via the bundled Claude Agent SDK. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
+`bootstrap` and `capture` invoke your configured default agent. Claude uses the bundled Claude Agent SDK, Codex uses `codex exec --json`, and Cursor uses `cursor-agent --print --output-format stream-json`. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
 
 ## Authentication
 
-Pick one — `bootstrap` and `capture` accept either:
+Pick the agent you want CodeAlmanac to use:
 
 ```bash
-# Option A — your Claude subscription (Pro/Max). Preferred if you already
-# use Claude Code; no separate bill, no copy-pasted keys.
+# Claude
 claude auth login --claudeai
-
-# Option B — a pay-per-token API key from https://console.anthropic.com.
+# or:
 export ANTHROPIC_API_KEY=sk-ant-...
 
-# Either way, verify with:
-claude auth status
-# or:
+# Codex
+codex login
+
+# Cursor
+cursor-agent login
+
+# Verify all providers:
+almanac agents list
 almanac doctor
 ```
 
-codealmanac itself never sees your credentials — auth is handled by the bundled Claude Agent SDK CLI, which reads the same `~/.claude/credentials/` store Claude Code uses.
+Set or change the default at any time:
+
+```bash
+almanac set default-agent codex
+almanac set model codex gpt-5.3-codex
+```
+
+codealmanac itself never stores your provider credentials. Auth stays in each agent's normal local credential store.
 
 ## Quickstart
 
 ```bash
 npm install -g codealmanac
-codealmanac                   # interactive setup wizard
+codealmanac                   # interactive setup wizard; choose Claude/Codex/Cursor
                               # (or: codealmanac --yes)
 
 cd your-repo
-almanac bootstrap             # agent reads the repo and seeds stub pages + topic DAG
+almanac bootstrap             # default agent reads the repo and seeds pages + topic DAG
 
 almanac search "auth"         # full-text search across pages; prints slugs one per line
 almanac show checkout-flow    # read a page
 
-# From here on, just code as usual — the SessionEnd hook invokes
+# From here on, just code as usual — the installed hooks invoke
 # `almanac capture` at session end, which writes and updates pages
 # based on what happened in the session.
 ```
 
 No `almanac init`. A wiki is scaffolded two ways: run `almanac bootstrap` yourself, or clone a repo that already has `.almanac/` committed (codealmanac auto-registers it on the first query).
 
-Sanity-check the install with `almanac doctor` — it reports binary location, native SQLite binding, Claude auth, hook status, guides, import line, and current-wiki stats with a one-line fix for each ✗.
+Sanity-check the install with `almanac doctor` and `almanac agents list` — they report binary location, native SQLite binding, provider readiness, hook status, guides, import line, and current-wiki stats.
 
 ## Command reference
 
@@ -94,10 +105,14 @@ Grouped the same way as `almanac --help`:
 | Edit | `almanac tag <page> <topics...>` | Add topics; auto-creates missing ones; `--stdin` for bulk |
 | Edit | `almanac untag <page> <topic>` | Remove a topic |
 | Edit | `almanac topics ...` | `list`, `show`, `create`, `link`, `unlink`, `rename`, `delete`, `describe` — DAG management |
-| Wiki lifecycle | `almanac bootstrap` | Agent reads the repo and seeds stub entity pages + topic DAG (requires Claude auth) |
+| Wiki lifecycle | `almanac bootstrap [--agent claude\|codex\|cursor]` | Agent reads the repo and seeds stub entity pages + topic DAG |
 | Wiki lifecycle | `almanac capture [transcript]` | Writer + reviewer on a session transcript (usually invoked by the hook) |
-| Wiki lifecycle | `almanac hook install\|uninstall\|status` | Manage the SessionEnd hook in `~/.claude/settings.json` |
+| Wiki lifecycle | `almanac hook install [--source claude\|codex\|cursor\|all]` | Install auto-capture hooks |
+| Wiki lifecycle | `almanac hook uninstall\|status` | Manage the Claude SessionEnd hook |
 | Wiki lifecycle | `almanac reindex` | Force rebuild of `.almanac/index.db` |
+| Setup | `almanac agents list` | Show Claude/Codex/Cursor readiness and configured default |
+| Setup | `almanac set default-agent <agent>` | Change the default agent |
+| Setup | `almanac set model <agent> [model]` | Set or reset a provider model override |
 | Setup | `almanac setup` | Install hook + guides + CLAUDE.md import (bare `codealmanac` alias) |
 | Setup | `almanac uninstall` | Reverse `setup`: remove hook + guides + import line |
 | Setup | `almanac doctor` | Report on install + current wiki with one-line fixes |
@@ -172,7 +187,7 @@ PostgreSQL hosted on Supabase. Connection pooling via Supavisor.
 - UUIDs as primary keys, not `serial` ([[uuid-decision]]).
 ```
 
-When a Claude Code session ends, the SessionEnd hook backgrounds `almanac capture <transcript>`. The writer agent reads the transcript, runs `almanac search` and `almanac show` against the existing wiki, drafts changes to pages under `.almanac/pages/`, and invokes the reviewer subagent. The reviewer reads across the graph, flags duplicates, missing wikilinks, missing topics, inference dressed as fact, and cohesion problems, then returns a text critique. The writer decides what to incorporate and writes the final versions. Capture writes nothing if nothing in the session meets the notability bar — silence is a valid outcome.
+When a Claude, Codex, or Cursor session ends, the installed hook backgrounds `almanac capture <transcript>`. The writer agent reads the transcript, runs `almanac search` and `almanac show` against the existing wiki, drafts changes to pages under `.almanac/pages/`, and performs a reviewer pass. Claude uses its SDK's read-only reviewer subagent; Codex and Cursor perform the reviewer pass from prompt guidance until stricter provider enforcement lands. The reviewer checks duplicates, missing wikilinks, missing topics, inference dressed as fact, and cohesion problems. The writer decides what to incorporate and writes the final versions. Capture writes nothing if nothing in the session meets the notability bar — silence is a valid outcome.
 
 No proposal files, no `--apply` step, no state machine between writer and reviewer. The changes land in `git status` and you commit them like anything else.
 
@@ -193,7 +208,7 @@ Pages are neutral-tone encyclopedia-style prose — every sentence contains a sp
 
 ## Status
 
-`v0.1.3`, pre-release. Node 20.x or 22.x. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
+`v0.2.0`, pre-release. Node 20.x or 22.x. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
 
 ## Philosophy
 

@@ -16,6 +16,12 @@ import {
   type SpawnCliFn,
   UNAUTHENTICATED_MESSAGE,
 } from "../agent/auth.js";
+import {
+  isAgentProviderId,
+  readConfig,
+  writeConfig,
+  type AgentProviderId,
+} from "../update/config.js";
 import { runHookInstall } from "./hook.js";
 import {
   detectCurrentInstallPath,
@@ -60,6 +66,8 @@ export interface SetupOptions {
   skipHook?: boolean;
   /** Don't install the CLAUDE.md guides. */
   skipGuides?: boolean;
+  /** Set the default agent provider during setup. */
+  agent?: string;
 
   // ─── Injection points (tests only) ────────────────────────────────
   /** Override the subprocess spawner for `claude auth status`. */
@@ -189,6 +197,21 @@ export async function runSetup(
   reportAuth(out, auth);
   out.write(BAR + "\n");
 
+  const agentChoice = await chooseDefaultAgent({
+    out,
+    interactive,
+    requested: options.agent,
+  });
+  if (!agentChoice.ok) {
+    return {
+      stdout: "",
+      stderr: `almanac: ${agentChoice.error}\n`,
+      exitCode: 1,
+    };
+  }
+  stepDone(out, `Default agent: ${WHITE_BOLD}${agentChoice.provider}${RST}`);
+  out.write(BAR + "\n");
+
   // Step 1b: ephemeral install detection. When codealmanac was invoked via
   // `npx codealmanac` (no prior `npm i -g`), the binary lives inside an
   // npx cache directory or pnpm store that can be evicted at any time.
@@ -240,7 +263,7 @@ export async function runSetup(
   } else if (interactive) {
     hookAction = await confirm(
       out,
-      "Install the SessionEnd hook so capture runs at the end of every Claude Code session?",
+      "Install auto-capture hooks for Claude, Codex, and Cursor?",
       true,
     );
   }
@@ -248,6 +271,7 @@ export async function runSetup(
   let hookResultLine = "";
   if (hookAction === "install") {
     const res = await runHookInstall({
+      source: "all",
       settingsPath: options.settingsPath,
       hookScriptPath: options.hookScriptPath,
       stableHooksDir: options.stableHooksDir,
@@ -261,8 +285,8 @@ export async function runSetup(
       };
     }
     hookResultLine = res.stdout.includes("already installed")
-      ? `SessionEnd hook ${DIM}already installed${RST}`
-      : `SessionEnd hook installed`;
+      ? `Auto-capture hooks ${DIM}already installed${RST}`
+      : `Auto-capture hooks installed`;
     stepDone(out, hookResultLine);
   } else {
     stepSkipped(out, `SessionEnd hook ${DIM}skipped${RST}`);
@@ -329,6 +353,41 @@ async function safeCheckAuth(
   } catch {
     return { loggedIn: false };
   }
+}
+
+type AgentChoice =
+  | { ok: true; provider: AgentProviderId }
+  | { ok: false; error: string };
+
+async function chooseDefaultAgent(args: {
+  out: NodeJS.WritableStream;
+  interactive: boolean;
+  requested?: string;
+}): Promise<AgentChoice> {
+  const config = await readConfig();
+  let selected = args.requested ?? config.agent.default;
+  if (args.interactive && args.requested === undefined) {
+    selected = await promptText(
+      args.out,
+      "Choose default agent: claude, codex, or cursor",
+      config.agent.default,
+    );
+  }
+  if (!isAgentProviderId(selected)) {
+    return {
+      ok: false,
+      error:
+        `unknown agent '${selected}'. Expected one of: claude, codex, cursor.`,
+    };
+  }
+  await writeConfig({
+    ...config,
+    agent: {
+      ...config.agent,
+      default: selected,
+    },
+  });
+  return { ok: true, provider: selected };
 }
 
 function reportAuth(
@@ -507,6 +566,33 @@ function confirm(
           ? defaultYes
           : answer === "y" || answer === "yes";
       resolve(accepted ? "install" : "skip");
+    };
+
+    process.stdin.resume();
+    process.stdin.on("data", onData);
+  });
+}
+
+function promptText(
+  out: NodeJS.WritableStream,
+  question: string,
+  defaultValue: string,
+): Promise<string> {
+  return new Promise((resolve) => {
+    out.write(
+      `  ${BLUE}\u25c6${RST}  ${question} ${DIM}[${defaultValue}]${RST} `,
+    );
+
+    let buf = "";
+    const onData = (chunk: Buffer): void => {
+      buf += chunk.toString("utf8");
+      const nl = buf.indexOf("\n");
+      if (nl === -1) return;
+      process.stdin.removeListener("data", onData);
+      process.stdin.pause();
+
+      const answer = buf.slice(0, nl).trim().toLowerCase();
+      resolve(answer.length === 0 ? defaultValue : answer);
     };
 
     process.stdin.resume();

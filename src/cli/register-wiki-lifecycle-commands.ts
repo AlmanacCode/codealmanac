@@ -18,13 +18,20 @@ export function registerWikiLifecycleCommands(program: Command): void {
       "scaffold a wiki in this repo via an AI agent (requires ANTHROPIC_API_KEY or Claude subscription)",
     )
     .option("--quiet", "suppress per-tool streaming; print only the final line")
+    .option("--agent <agent>", "agent provider: claude, codex, or cursor")
     .option("--model <model>", "override the agent model")
     .option("--force", "overwrite an existing populated wiki (default: refuse)")
     .action(
-      async (opts: { quiet?: boolean; model?: string; force?: boolean }) => {
+      async (opts: {
+        quiet?: boolean;
+        agent?: string;
+        model?: string;
+        force?: boolean;
+      }) => {
         const result = await runBootstrap({
           cwd: process.cwd(),
           quiet: opts.quiet,
+          agent: opts.agent,
           model: opts.model,
           force: opts.force,
         });
@@ -37,11 +44,17 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .description("run the writer/reviewer pipeline on a session (usually automatic)")
     .option("--session <id>", "target a specific session by ID")
     .option("--quiet", "suppress per-tool streaming; print only the final summary")
+    .option("--agent <agent>", "agent provider: claude, codex, or cursor")
     .option("--model <model>", "override the agent model")
     .action(
       async (
         transcript: string | undefined,
-        opts: { session?: string; quiet?: boolean; model?: string },
+        opts: {
+          session?: string;
+          quiet?: boolean;
+          agent?: string;
+          model?: string;
+        },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
         const result = await runCapture({
@@ -49,6 +62,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
           transcriptPath: transcript,
           sessionId: opts.session,
           quiet: opts.quiet,
+          agent: opts.agent,
           model: opts.model,
         });
         emit(result);
@@ -62,8 +76,11 @@ export function registerWikiLifecycleCommands(program: Command): void {
   hook
     .command("install")
     .description("add a SessionEnd entry that runs 'almanac capture' on session end")
-    .action(async () => {
-      const result = await runHookInstall();
+    .option("--source <source>", "claude, codex, cursor, or all")
+    .action(async (opts: { source?: string }) => {
+      const result = await runHookInstall({
+        source: normalizeHookSource(opts.source),
+      });
       emit(result);
     });
 
@@ -96,4 +113,18 @@ export function registerWikiLifecycleCommands(program: Command): void {
       process.stdout.write(result.stdout);
       if (result.exitCode !== 0) process.exitCode = result.exitCode;
     });
+}
+
+function normalizeHookSource(
+  source: string | undefined,
+): "claude" | "codex" | "cursor" | "all" | undefined {
+  if (
+    source === "claude" ||
+    source === "codex" ||
+    source === "cursor" ||
+    source === "all"
+  ) {
+    return source;
+  }
+  return undefined;
 }

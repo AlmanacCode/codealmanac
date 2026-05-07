@@ -1,5 +1,10 @@
 import { Command } from "commander";
 
+import {
+  runAgentsList,
+  runSetAgentModel,
+  runSetDefaultAgent,
+} from "../commands/agents.js";
 import { runDoctor } from "../commands/doctor.js";
 import { runSetup } from "../commands/setup.js";
 import { runUninstall } from "../commands/uninstall.js";
@@ -7,20 +12,59 @@ import { runUpdate } from "../commands/update.js";
 import { emit } from "./helpers.js";
 
 export function registerSetupCommands(program: Command): void {
+  const agents = program
+    .command("agents")
+    .description("list supported AI agent providers and readiness");
+
+  agents
+    .command("list")
+    .description("show Claude, Codex, and Cursor provider status")
+    .action(async () => {
+      emit(await runAgentsList());
+    });
+
+  program
+    .command("set")
+    .description("configure codealmanac defaults")
+    .argument("<key>", "setting key, e.g. default-agent or model")
+    .argument("[value...]", "setting value")
+    .action(async (key: string, value: string[]) => {
+      if (key === "default-agent") {
+        emit(await runSetDefaultAgent({ provider: value[0] ?? "" }));
+        return;
+      }
+      if (key === "model") {
+        emit(await runSetAgentModel({
+          provider: value[0] ?? "",
+          model: value[1],
+        }));
+        return;
+      }
+      emit({
+        stdout: "",
+        stderr:
+          "almanac: unknown setting. Use `default-agent` or `model`.\n",
+        exitCode: 1,
+      });
+    });
+
   program
     .command("setup")
     .description("install the hook + CLAUDE.md guides (bare codealmanac alias)")
     .option("-y, --yes", "skip prompts; install everything")
+    .option("--agent <agent>", "default agent: claude, codex, or cursor")
     .option("--skip-hook", "opt out of the SessionEnd hook")
     .option("--skip-guides", "opt out of the CLAUDE.md guides")
     .action(
       async (opts: {
         yes?: boolean;
+        agent?: string;
         skipHook?: boolean;
         skipGuides?: boolean;
       }) => {
         const result = await runSetup({
           yes: opts.yes,
+          agent: opts.agent,
           skipHook: opts.skipHook,
           skipGuides: opts.skipGuides,
         });
