@@ -6,6 +6,7 @@ import { Command } from "commander";
 import { runSetup } from "./commands/setup.js";
 import { configureGroupedHelp } from "./cli/help.js";
 import { emit } from "./cli/helpers.js";
+import { runCodealmanacBootstrap } from "./install/global.js";
 import { announceUpdateIfAvailable } from "./update/announce.js";
 import {
   runInternalUpdateCheck,
@@ -20,6 +21,8 @@ import {
 export interface RunDeps {
   /** Replace the setup wizard (bare `codealmanac` / `almanac setup`). */
   runSetup?: typeof runSetup;
+  /** Replace the bare-`codealmanac` global install bootstrapper. */
+  runCodealmanacBootstrap?: typeof runCodealmanacBootstrap;
   /** Replace the pre-command update-nag banner. */
   announceUpdate?: (stderr: NodeJS.WritableStream) => void;
   /** Replace the post-command background update check scheduler. */
@@ -36,6 +39,8 @@ export interface RunDeps {
  */
 export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
   const runSetupFn = deps.runSetup ?? runSetup;
+  const runCodealmanacBootstrapFn =
+    deps.runCodealmanacBootstrap ?? runCodealmanacBootstrap;
   const announceUpdateFn = deps.announceUpdate ?? announceUpdateIfAvailable;
   const scheduleUpdateCheckFn =
     deps.scheduleUpdateCheck ?? scheduleBackgroundUpdateCheck;
@@ -68,7 +73,23 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
   if (programName === "codealmanac") {
     const setupInvocation = tryParseSetupShortcut(argv.slice(2));
     if (setupInvocation !== null) {
-      emit(await runSetupFn(setupInvocation));
+      if (deps.runCodealmanacBootstrap !== undefined) {
+        emit(
+          await runCodealmanacBootstrapFn({
+            setupOptions: setupInvocation,
+            setupArgs: argv.slice(2),
+          }),
+        );
+      } else if (deps.runSetup !== undefined) {
+        emit(await runSetupFn(setupInvocation));
+      } else {
+        emit(
+          await runCodealmanacBootstrapFn({
+            setupOptions: setupInvocation,
+            setupArgs: argv.slice(2),
+          }),
+        );
+      }
       return;
     }
   }

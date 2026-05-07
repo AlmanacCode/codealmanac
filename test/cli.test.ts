@@ -174,6 +174,32 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     expect(setupMock).toHaveBeenCalledWith({ yes: true, skipHook: true });
   });
 
+  it("routes bare `codealmanac` through the global bootstrapper when provided", async () => {
+    const setupMock = vi
+      .fn<(opts?: unknown) => Promise<SetupResult>>()
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+    const bootstrapMock = vi
+      .fn<(opts: unknown) => Promise<SetupResult>>()
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await run(
+      ["/abs/node", "/abs/path/codealmanac", "--yes"],
+      {
+        runSetup: setupMock as never,
+        runCodealmanacBootstrap: bootstrapMock as never,
+        announceUpdate: () => {},
+        scheduleUpdateCheck: () => {},
+        runInternalUpdateCheck: async () => {},
+      },
+    );
+
+    expect(bootstrapMock).toHaveBeenCalledWith({
+      setupOptions: { yes: true },
+      setupArgs: ["--yes"],
+    });
+    expect(setupMock).not.toHaveBeenCalled();
+  });
+
   it("routes explicit `codealmanac setup --yes` before heavy command registration", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
