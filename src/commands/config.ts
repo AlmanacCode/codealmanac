@@ -12,7 +12,11 @@ import {
 } from "./config-keys.js";
 import {
   getConfigPath,
+  getProjectConfigPath,
+  parseConfigText,
   readConfig,
+  readConfigWithOrigins,
+  serializeConfig,
 } from "../update/config.js";
 
 export interface ConfigResult {
@@ -25,11 +29,10 @@ export async function runConfigList(opts: {
   json?: boolean;
   showOrigin?: boolean;
 } = {}): Promise<ConfigResult> {
-  const config = await readConfig();
-  const raw = await readRawConfig();
+  const { config, origins } = await readConfigWithOrigins({ cwd: process.cwd() });
   const rows = configEntries(config).map((entry) => ({
     ...entry,
-    origin: hasExplicitKey(raw, entry.key) ? "file" : "default",
+    origin: origins[entry.key] ?? "default",
   }));
   if (opts.json === true) {
     return ok(`${JSON.stringify(rows, null, 2)}\n`);
@@ -50,10 +53,9 @@ export async function runConfigGet(opts: {
 }): Promise<ConfigResult> {
   const key = parseConfigKey(opts.key);
   if (key === null) return unknownKey(opts.key);
-  const config = await readConfig();
+  const { config, origins } = await readConfigWithOrigins({ cwd: process.cwd() });
   const value = getConfigValue(config, key);
-  const raw = await readRawConfig();
-  const origin = hasExplicitKey(raw, key) ? "file" : "default";
+  const origin = origins[key] ?? "default";
   if (opts.json === true) {
     return ok(`${JSON.stringify({ key, value, origin }, null, 2)}\n`);
   }
@@ -68,9 +70,17 @@ export async function runConfigGet(opts: {
 export async function runConfigSet(opts: {
   key: string;
   value?: string;
+  project?: boolean;
 }): Promise<ConfigResult> {
   const key = parseConfigKey(opts.key);
   if (key === null) return unknownKey(opts.key);
+  if (opts.project === true && key === "update_notifier") {
+    return {
+      stdout: "",
+      stderr: "almanac: update_notifier is user-level only.\n",
+      exitCode: 1,
+    };
+  }
   if (opts.value === undefined) {
     return {
       stdout: "",
@@ -79,12 +89,21 @@ export async function runConfigSet(opts: {
     };
   }
   try {
-    const next = setConfigValue(await readConfig(), key, opts.value);
-    const raw = ensureRawObject(await readRawConfig());
+    const file = targetConfigPath(opts.project === true);
+    if (file === null) {
+      return {
+        stdout: "",
+        stderr: "almanac: no .almanac/ found for project config.\n",
+        exitCode: 1,
+      };
+    }
+    const next = setConfigValue(await readConfig({ cwd: process.cwd() }), key, opts.value);
+    const raw = ensureRawObject(await readRawConfig(file));
     setRawConfigValue(raw, key, getConfigValue(next, key));
-    await writeRawConfig(raw);
+    await writeRawConfig(raw, file);
     return ok(
-      `codealmanac: set ${key}=${formatConfigValue(getConfigValue(next, key))}.\n`,
+      `codealmanac: set ${key}=${formatConfigValue(getConfigValue(next, key))}` +
+        `${opts.project === true ? " in project config" : ""}.\n`,
     );
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -94,13 +113,31 @@ export async function runConfigSet(opts: {
 
 export async function runConfigUnset(opts: {
   key: string;
+  project?: boolean;
 }): Promise<ConfigResult> {
   const key = parseConfigKey(opts.key);
   if (key === null) return unknownKey(opts.key);
-  const raw = ensureRawObject(await readRawConfig());
+  if (opts.project === true && key === "update_notifier") {
+    return {
+      stdout: "",
+      stderr: "almanac: update_notifier is user-level only.\n",
+      exitCode: 1,
+    };
+  }
+  const file = targetConfigPath(opts.project === true);
+  if (file === null) {
+    return {
+      stdout: "",
+      stderr: "almanac: no .almanac/ found for project config.\n",
+      exitCode: 1,
+    };
+  }
+  const raw = ensureRawObject(await readRawConfig(file));
   deleteRawConfigValue(raw, key);
-  await writeRawConfig(raw);
-  return ok(`codealmanac: unset ${key}.\n`);
+  await writeRawConfig(raw, file);
+  return ok(
+    `codealmanac: unset ${key}${opts.project === true ? " in project config" : ""}.\n`,
+  );
 }
 
 function unknownKey(key: string): ConfigResult {
@@ -117,32 +154,26 @@ function ok(stdout: string): ConfigResult {
   return { stdout, stderr: "", exitCode: 0 };
 }
 
-async function readRawConfig(): Promise<unknown> {
+function targetConfigPath(project: boolean): string | null {
+  return project ? getProjectConfigPath(process.cwd()) : getConfigPath();
+}
+
+async function readRawConfig(file = getConfigPath()): Promise<unknown> {
   try {
-    return JSON.parse(await readFile(getConfigPath(), "utf8"));
+    return parseConfigText(await readFile(file, "utf8"), file);
   } catch {
     return null;
   }
 }
 
-async function writeRawConfig(raw: Record<string, unknown>): Promise<void> {
-  const file = getConfigPath();
+async function writeRawConfig(
+  raw: Record<string, unknown>,
+  file = getConfigPath(),
+): Promise<void> {
   await mkdir(dirname(file), { recursive: true });
   const tmp = `${file}.tmp`;
-  await writeFile(tmp, `${JSON.stringify(raw, null, 2)}\n`, "utf8");
+  await writeFile(tmp, serializeConfig(raw, file), "utf8");
   await rename(tmp, file);
-}
-
-function hasExplicitKey(raw: unknown, key: ConfigKey): boolean {
-  if (raw === null || typeof raw !== "object") return false;
-  const parts = key.split(".");
-  let cursor: unknown = raw;
-  for (const part of parts) {
-    if (cursor === null || typeof cursor !== "object") return false;
-    if (!Object.prototype.hasOwnProperty.call(cursor, part)) return false;
-    cursor = (cursor as Record<string, unknown>)[part];
-  }
-  return true;
 }
 
 function ensureRawObject(raw: unknown): Record<string, unknown> {

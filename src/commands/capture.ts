@@ -43,7 +43,7 @@ export interface CaptureOptions {
   quiet?: boolean;
   /** Model override. Defaults to the SDK default (sonnet-4-6). */
   model?: string;
-  /** Agent provider override. Defaults to ~/.almanac/config.json. */
+  /** Agent provider override. Defaults to config precedence. */
   agent?: string;
   /** Emit CommandOutcome JSON instead of human output. */
   json?: boolean;
@@ -121,6 +121,22 @@ const REVIEWER_DESCRIPTION =
 export async function runCapture(
   options: CaptureOptions,
 ): Promise<CaptureResult> {
+  // Resolve the repo root by walking up for `.almanac/`. Unlike bootstrap,
+  // capture refuses to run when no wiki exists — the writer needs existing
+  // pages to read against, and auto-initing here would hide the fact that
+  // the user skipped `almanac bootstrap`.
+  const repoRoot = findNearestAlmanacDir(options.cwd);
+  if (repoRoot === null) {
+    return renderOutcome(
+      {
+        type: "needs-action",
+        message: "no .almanac/ found in this directory or any parent.",
+        fix: "run: almanac bootstrap",
+      },
+      { json: options.json },
+    );
+  }
+
   // Fail before any filesystem work. `assertClaudeAuth` accepts either
   // subscription OAuth (via the bundled SDK CLI) or `ANTHROPIC_API_KEY`;
   // missing both surfaces a two-option error with exit 1 so the
@@ -129,6 +145,7 @@ export async function runCapture(
   const providerResolution = await resolveAgentSelection({
     agent: options.agent,
     model: options.model,
+    cwd: repoRoot,
   });
   if (!providerResolution.ok) {
     return renderOutcome(
@@ -152,22 +169,6 @@ export async function runCapture(
         message: msg,
         fix: authFixFor(provider),
         data: { provider },
-      },
-      { json: options.json },
-    );
-  }
-
-  // Resolve the repo root by walking up for `.almanac/`. Unlike bootstrap,
-  // capture refuses to run when no wiki exists — the writer needs existing
-  // pages to read against, and auto-initing here would hide the fact that
-  // the user skipped `almanac bootstrap`.
-  const repoRoot = findNearestAlmanacDir(options.cwd);
-  if (repoRoot === null) {
-    return renderOutcome(
-      {
-        type: "needs-action",
-        message: "no .almanac/ found in this directory or any parent.",
-        fix: "run: almanac bootstrap",
       },
       { json: options.json },
     );

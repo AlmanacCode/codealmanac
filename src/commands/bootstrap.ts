@@ -22,7 +22,7 @@ export interface BootstrapOptions {
   quiet?: boolean;
   /** Override the agent model. Defaults to the SDK default (sonnet-4-6). */
   model?: string;
-  /** Override the agent provider. Defaults to ~/.almanac/config.json. */
+  /** Override the agent provider. Defaults to config precedence. */
   agent?: string;
   /** Overwrite a populated wiki. Default refuses with a pointer at `capture`. */
   force?: boolean;
@@ -83,6 +83,10 @@ const BOOTSTRAP_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Bash"];
 export async function runBootstrap(
   options: BootstrapOptions,
 ): Promise<BootstrapResult> {
+  // Repo root: honor an already-initialized wiki anywhere above us.
+  // Otherwise treat `cwd` as the root for a fresh wiki. Resolve this before
+  // provider selection so project-tier config can participate.
+  const repoRoot = findNearestAlmanacDir(options.cwd) ?? options.cwd;
   // Fail before loading prompts so we don't do filesystem work on a request
   // that can't succeed. `assertClaudeAuth` accepts either subscription
   // OAuth (via the bundled SDK CLI) or `ANTHROPIC_API_KEY`; missing both
@@ -92,6 +96,7 @@ export async function runBootstrap(
   const providerResolution = await resolveAgentSelection({
     agent: options.agent,
     model: options.model,
+    cwd: repoRoot,
   });
   if (!providerResolution.ok) {
     return renderOutcome(
@@ -116,9 +121,6 @@ export async function runBootstrap(
     );
   }
 
-  // Repo root: honor an already-initialized wiki anywhere above us.
-  // Otherwise treat `cwd` as the root for a fresh wiki.
-  const repoRoot = findNearestAlmanacDir(options.cwd) ?? options.cwd;
   const almanacDir = getRepoAlmanacDir(repoRoot);
   const pagesDir = join(almanacDir, "pages");
 

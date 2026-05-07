@@ -12,8 +12,9 @@ export type AgentSelection =
 export async function resolveAgentSelection(args: {
   agent?: string;
   model?: string;
+  cwd?: string;
 }): Promise<AgentSelection> {
-  const config = await readConfig();
+  const config = await readConfig({ cwd: args.cwd });
   const rawAgent = args.agent ?? process.env.ALMANAC_AGENT ?? config.agent.default;
   const agentSource =
     args.agent !== undefined

@@ -23,7 +23,7 @@ describe("agents command", () => {
       const rows = JSON.parse((await runConfigList({ json: true })).stdout) as
         Array<{ key: string; origin: string }>;
       expect(rows.find((row) => row.key === "agent.default")?.origin).toBe(
-        "file",
+        "user",
       );
       expect(rows.find((row) => row.key === "agent.models.claude")?.origin).toBe(
         "default",

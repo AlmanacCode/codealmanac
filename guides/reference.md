@@ -258,10 +258,12 @@ almanac config list
 almanac config list --show-origin
 almanac config get agent.default
 almanac config set agent.models.claude claude-opus-4-6
+almanac config set --project agent.default codex
 almanac config unset agent.models.claude
 ```
 
 Supported keys: `update_notifier`, `agent.default`, `agent.models.claude`, `agent.models.codex`, and `agent.models.cursor`.
+User config is stored at `~/.almanac/config.toml`. Project config lives at `.almanac/config.toml` and can override agent provider/model settings for a repo; `update_notifier` remains user-level only because it controls a global pre-command banner. Effective precedence is flag, environment, project config, user config, provider default.
 
 #### `almanac update`
 
@@ -779,7 +781,7 @@ command runs
 ### State files
 
 - **`~/.almanac/update-state.json`** — written by the background worker + `almanac update`. Shape: `{last_check_at, installed_version, latest_version, dismissed_versions[], last_fetch_failed_at?}`. `last_check_at` is epoch seconds; `dismissed_versions` is a list of version strings the user muted via `--dismiss`. Missing / malformed → all read paths return defaults. Never break the CLI.
-- **`~/.almanac/config.json`** — `{update_notifier: boolean}`. Toggles whether the banner ever prints. Default `true`. Flip via `almanac config set update_notifier true` / `false`.
+- **`~/.almanac/config.toml`** — contains `update_notifier` plus user-level agent defaults. Toggles whether the banner ever prints. Default `true`. Flip via `almanac config set update_notifier true` / `false`. Legacy `~/.almanac/config.json` is migrated on normal config reads.
 
 ### Cache behavior
 

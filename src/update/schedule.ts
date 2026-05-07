@@ -2,7 +2,11 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 import { checkForUpdate } from "./check.js";
-import { getConfigPath } from "./config.js";
+import {
+  getConfigPath,
+  getLegacyConfigPath,
+  parseConfigText,
+} from "./config.js";
 import { getStatePath, type UpdateState } from "./state.js";
 
 /**
@@ -90,13 +94,18 @@ function shouldSchedule(argv: string[]): boolean {
 }
 
 function notifierEnabled(): boolean {
+  const parsed = readConfigSync(getConfigPath());
+  if (parsed !== null) return parsed.update_notifier !== false;
+  const legacy = readConfigSync(getLegacyConfigPath());
+  return legacy?.update_notifier !== false;
+}
+
+function readConfigSync(path: string): { update_notifier?: unknown } | null {
   try {
-    const raw = readFileSync(getConfigPath(), "utf8");
-    const parsed = JSON.parse(raw) as { update_notifier?: unknown };
-    if (parsed.update_notifier === false) return false;
-    return true;
+    const raw = readFileSync(path, "utf8");
+    return parseConfigText(raw, path) as { update_notifier?: unknown };
   } catch {
-    return true; // missing / malformed → default-on
+    return null;
   }
 }
 

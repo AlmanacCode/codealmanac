@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { runUpdate } from "../src/commands/update.js";
 import { runConfigSet } from "../src/commands/config.js";
-import { readConfig, writeConfig } from "../src/update/config.js";
+import { parseConfigText, readConfig, writeConfig } from "../src/update/config.js";
 import { readState, writeState } from "../src/update/state.js";
 import { withTempHome } from "./helpers.js";
 
@@ -23,7 +23,7 @@ function statePathIn(home: string): string {
 }
 
 function configPathIn(home: string): string {
-  return join(home, ".almanac", "config.json");
+  return join(home, ".almanac", "config.toml");
 }
 
 /** Minimal stand-in for `ChildProcess` that our code's `spawn` handling accepts. */
@@ -276,7 +276,7 @@ describe("almanac update --enable-notifier / --disable-notifier", () => {
       expect(result.stderr).toContain("almanac config set update_notifier false");
       const config = await readConfig(configPath);
       expect(config.update_notifier).toBe(false);
-      const raw = JSON.parse(await readFile(configPath, "utf8")) as {
+      const raw = parseConfigText(await readFile(configPath, "utf8"), configPath) as {
         update_notifier?: boolean;
         agent?: unknown;
       };
@@ -296,12 +296,12 @@ describe("almanac update --enable-notifier / --disable-notifier", () => {
       await expect(runUpdate({ disableNotifier: true, configPath }))
         .resolves.toMatchObject({ exitCode: 0 });
 
-      const raw = JSON.parse(await readFile(configPath, "utf8")) as {
+      const raw = parseConfigText(await readFile(configPath, "utf8"), configPath) as {
         update_notifier?: boolean;
-        agent?: { models?: { codex?: null } };
+        agent?: { models?: { codex?: string } };
       };
       expect(raw.update_notifier).toBe(false);
-      expect(raw.agent?.models?.codex).toBeNull();
+      expect(raw.agent?.models?.codex).toBe("default");
     });
   });
 
@@ -310,7 +310,7 @@ describe("almanac update --enable-notifier / --disable-notifier", () => {
       const configPath = configPathIn(home);
       await runUpdate({ disableNotifier: true, configPath });
       const raw = await readFile(configPath, "utf8");
-      expect(raw).toMatch(/"update_notifier":\s*false/);
+      expect(raw).toMatch(/update_notifier = false/);
     });
   });
 });

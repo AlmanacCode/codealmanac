@@ -96,16 +96,22 @@ export function registerSetupCommands(program: Command): void {
     .description("set one config value")
     .argument("<key>", "config key")
     .argument("<value>", "config value")
-    .action(async (key: string, value: string) => {
-      emit(await runConfigSet({ key, value }));
+    .option("--project", "write .almanac/config.toml for this repo")
+    .action(async (
+      key: string,
+      value: string,
+      opts: { project?: boolean },
+    ) => {
+      emit(await runConfigSet({ key, value, project: opts.project }));
     });
 
   config
     .command("unset")
     .description("restore one config value to default")
     .argument("<key>", "config key")
-    .action(async (key: string) => {
-      emit(await runConfigUnset({ key }));
+    .option("--project", "remove from .almanac/config.toml for this repo")
+    .action(async (key: string, opts: { project?: boolean }) => {
+      emit(await runConfigUnset({ key, project: opts.project }));
     });
 
   program

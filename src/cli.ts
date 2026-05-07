@@ -256,11 +256,20 @@ async function tryRunSqliteFreeCommand(
       return true;
     }
     if (subcommand === "set") {
-      emit(await runConfigSet({ key: args[2] ?? "", value: args[3] }));
+      const values = args.slice(2).filter((arg) => arg !== "--project");
+      emit(await runConfigSet({
+        key: values[0] ?? "",
+        value: values[1],
+        project: args.includes("--project"),
+      }));
       return true;
     }
     if (subcommand === "unset") {
-      emit(await runConfigUnset({ key: args[2] ?? "" }));
+      const values = args.slice(2).filter((arg) => arg !== "--project");
+      emit(await runConfigUnset({
+        key: values[0] ?? "",
+        project: args.includes("--project"),
+      }));
       return true;
     }
     return false;

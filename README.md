@@ -85,9 +85,11 @@ almanac agents model codex gpt-5.3-codex
 # Scriptable equivalent:
 almanac config set agent.default codex
 almanac config set agent.models.codex gpt-5.3-codex
+almanac config set --project agent.default claude
 ```
 
 codealmanac itself never stores your provider credentials. Auth stays in each agent's normal local credential store.
+User config lives in `~/.almanac/config.toml`; project agent defaults can live in `.almanac/config.toml`.
 
 ## Quickstart
 

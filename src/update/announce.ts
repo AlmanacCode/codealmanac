@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
-import { getConfigPath } from "./config.js";
+import {
+  getConfigPath,
+  getLegacyConfigPath,
+  parseConfigText,
+} from "./config.js";
 import { isNewer } from "./semver.js";
 import { getStatePath, type UpdateState } from "./state.js";
 
@@ -13,7 +17,7 @@ import { getStatePath, type UpdateState } from "./state.js";
  *   1. `~/.almanac/update-state.json` exists and parses.
  *   2. `latest_version` is strictly newer than `installed_version`.
  *   3. `latest_version` is NOT in `dismissed_versions`.
- *   4. `~/.almanac/config.json`.`update_notifier` is not `false`.
+ *   4. `~/.almanac/config.toml`.`update_notifier` is not `false`.
  *
  * Otherwise silent. Deliberately synchronous and filesystem-blocking:
  * this runs in the CLI critical path and waiting on a Promise would
@@ -108,20 +112,30 @@ function readStateSync(path: string): UpdateState | null {
 }
 
 function shouldNotify(configPath: string): boolean {
+  const loaded = readConfigSync(configPath);
+  if (loaded === null) {
+    const legacy = configPath.endsWith(".toml") ? readConfigSync(getLegacyConfigPath()) : null;
+    if (legacy === null) return true; // no config file → default notify on
+    return legacy.update_notifier !== false;
+  }
+  return loaded.update_notifier !== false;
+}
+
+function readConfigSync(configPath: string): { update_notifier?: unknown } | null {
   let raw: string;
   try {
     raw = readFileSync(configPath, "utf8");
   } catch {
-    return true; // no config file → default notify on
+    return null;
   }
   const trimmed = raw.trim();
-  if (trimmed.length === 0) return true;
+  if (trimmed.length === 0) return null;
   try {
-    const parsed = JSON.parse(trimmed) as { update_notifier?: unknown };
-    if (parsed.update_notifier === false) return false;
-    return true;
+    return parseConfigText(trimmed, configPath) as {
+      update_notifier?: unknown;
+    };
   } catch {
-    return true;
+    return null;
   }
 }
 

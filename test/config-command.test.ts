@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -9,8 +9,8 @@ import {
   runConfigSet,
   runConfigUnset,
 } from "../src/commands/config.js";
-import { readConfig } from "../src/update/config.js";
-import { withTempHome } from "./helpers.js";
+import { parseConfigText, readConfig } from "../src/update/config.js";
+import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 
 describe("config command", () => {
   it("lists supported keys with default origins", async () => {
@@ -45,9 +45,10 @@ describe("config command", () => {
 
       config = await readConfig();
       expect(config.agent.models.claude).toBeNull();
-      const raw = JSON.parse(
-        await readFile(join(home, ".almanac", "config.json"), "utf8"),
-      );
+      const path = join(home, ".almanac", "config.toml");
+      const raw = parseConfigText(await readFile(path, "utf8"), path) as {
+        agent: { models?: { claude?: string } };
+      };
       expect(raw.agent.models?.claude).toBeUndefined();
     });
   });
@@ -79,12 +80,12 @@ describe("config command", () => {
       const listed = JSON.parse((await runConfigList({ json: true })).stdout) as
         Array<{ key: string; origin: string }>;
       const row = listed.find((entry) => entry.key === "agent.default");
-      expect(row?.origin).toBe("file");
+      expect(row?.origin).toBe("user");
 
       const got = JSON.parse(
         (await runConfigGet({ key: "agent.default", json: true })).stdout,
       ) as { origin: string };
-      expect(got.origin).toBe("file");
+      expect(got.origin).toBe("user");
     });
   });
 
@@ -103,6 +104,108 @@ describe("config command", () => {
       const unknown = await runConfigGet({ key: "agent.nope" });
       expect(unknown.exitCode).toBe(1);
       expect(unknown.stderr).toContain("unknown config key");
+    });
+  });
+
+  it("migrates legacy JSON config to TOML on normal read", async () => {
+    await withTempHome(async (home) => {
+      await mkdir(join(home, ".almanac"), { recursive: true });
+      await writeFile(
+        join(home, ".almanac", "config.json"),
+        JSON.stringify({
+          update_notifier: false,
+          agent: {
+            default: "codex",
+            models: { codex: "gpt-5.3-codex" },
+          },
+        }),
+        "utf8",
+      );
+
+      await expect(readConfig()).resolves.toMatchObject({
+        update_notifier: false,
+        agent: {
+          default: "codex",
+          models: { codex: "gpt-5.3-codex" },
+        },
+      });
+
+      const toml = await readFile(join(home, ".almanac", "config.toml"), "utf8");
+      expect(toml).toContain("update_notifier = false");
+      expect(toml).toContain("[agent]");
+      expect(toml).toContain('default = "codex"');
+      expect(toml).toContain("[agent.models]");
+    });
+  });
+
+  it("lets project config override user agent settings with project origins", async () => {
+    await withTempHome(async (home) => {
+      await runConfigSet({ key: "agent.default", value: "claude" });
+      await runConfigSet({ key: "agent.models.claude", value: "claude-opus-4-6" });
+      const repo = await makeRepo(home, "project-config");
+      await scaffoldWiki(repo);
+      await writeFile(
+        join(repo, ".almanac", "config.toml"),
+        '[agent]\ndefault = "cursor"\n\n[agent.models]\ncursor = "cursor-fast"\n',
+        "utf8",
+      );
+      const originalCwd = process.cwd();
+      process.chdir(repo);
+      try {
+        const rows = JSON.parse((await runConfigList({ json: true })).stdout) as
+          Array<{ key: string; value: string | null; origin: string }>;
+        expect(rows.find((row) => row.key === "agent.default")).toMatchObject({
+          value: "cursor",
+          origin: "project",
+        });
+        expect(rows.find((row) => row.key === "agent.models.cursor"))
+          .toMatchObject({
+            value: "cursor-fast",
+            origin: "project",
+          });
+        expect(rows.find((row) => row.key === "agent.models.claude"))
+          .toMatchObject({
+            value: "claude-opus-4-6",
+            origin: "user",
+          });
+      } finally {
+        process.chdir(originalCwd);
+      }
+    });
+  });
+
+  it("writes project config with --project semantics", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "project-config-write");
+      await scaffoldWiki(repo);
+      const originalCwd = process.cwd();
+      process.chdir(repo);
+      try {
+        await expect(runConfigSet({
+          key: "agent.default",
+          value: "codex",
+          project: true,
+        })).resolves.toMatchObject({ exitCode: 0 });
+        await expect(runConfigSet({
+          key: "update_notifier",
+          value: "false",
+          project: true,
+        })).resolves.toMatchObject({
+          exitCode: 1,
+        });
+        await expect(runConfigUnset({
+          key: "update_notifier",
+          project: true,
+        })).resolves.toMatchObject({
+          exitCode: 1,
+        });
+      } finally {
+        process.chdir(originalCwd);
+      }
+
+      const toml = await readFile(join(repo, ".almanac", "config.toml"), "utf8");
+      expect(toml).toContain("[agent]");
+      expect(toml).toContain('default = "codex"');
     });
   });
 });

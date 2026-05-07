@@ -5,7 +5,7 @@ import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 
 import { announceUpdateIfAvailable } from "../src/update/announce.js";
-import { writeConfig } from "../src/update/config.js";
+import { getConfigPath, writeConfig } from "../src/update/config.js";
 import { writeState } from "../src/update/state.js";
 import { withTempHome } from "./helpers.js";
 
@@ -33,7 +33,7 @@ function statePathIn(home: string): string {
 }
 
 function configPathIn(home: string): string {
-  return join(home, ".almanac", "config.json");
+  return join(home, ".almanac", "config.toml");
 }
 
 describe("announceUpdateIfAvailable", () => {
@@ -197,6 +197,33 @@ describe("announceUpdateIfAvailable", () => {
       announceUpdateIfAvailable(stream, {
         statePath,
         configPath,
+        installedVersion: "0.1.5",
+        color: false,
+      });
+      expect(output()).toBe("");
+    });
+  });
+
+  it("respects legacy config.json before migration", async () => {
+    await withTempHome(async (home) => {
+      const statePath = statePathIn(home);
+      await writeState(
+        {
+          last_check_at: 1_700_000_000,
+          installed_version: "0.1.5",
+          latest_version: "0.1.6",
+          dismissed_versions: [],
+        },
+        statePath,
+      );
+      await writeConfig(
+        { update_notifier: false },
+        join(home, ".almanac", "config.json"),
+      );
+      const { stream, output } = captureStderr();
+      announceUpdateIfAvailable(stream, {
+        statePath,
+        configPath: getConfigPath(),
         installedVersion: "0.1.5",
         color: false,
       });
