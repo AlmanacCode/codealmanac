@@ -27,7 +27,7 @@ import {
   readConfig,
   type AgentProviderId,
 } from "../update/config.js";
-import { StreamingFormatter } from "./bootstrap.js";
+import { formatRunUsage, StreamingFormatter } from "./bootstrap.js";
 import {
   buildStartedCaptureRecord,
   captureStatePath,
@@ -627,13 +627,13 @@ function formatSummary(
   repoRoot: string,
 ): string {
   const rel = relative(repoRoot, logPath);
-  const cost = `$${result.cost.toFixed(3)}`;
+  const usage = formatRunUsage(result);
   const { created, updated, archived } = delta;
 
   if (created === 0 && updated === 0 && archived === 0) {
     return (
       `[capture] no new knowledge met the notability bar (0 pages written), ` +
-      `cost: ${cost}, turns: ${result.turns} (transcript: ${rel})`
+      `${usage} (transcript: ${rel})`
     );
   }
 
@@ -641,7 +641,7 @@ function formatSummary(
     `[done] ${updated} page${updated === 1 ? "" : "s"} updated, ` +
     `${created} created, ` +
     `${archived} archived, ` +
-    `cost: ${cost}, turns: ${result.turns} (transcript: ${rel})`
+    `${usage} (transcript: ${rel})`
   );
 }
 

@@ -264,8 +264,42 @@ function formatFinalLine(
 ): string {
   const status = result.success ? "done" : "failed";
   const rel = relative(repoRoot, logPath);
-  const cost = `$${result.cost.toFixed(3)}`;
-  return `[${status}] cost: ${cost}, turns: ${result.turns} (transcript: ${rel})`;
+  const usage = formatRunUsage(result);
+  return `[${status}] ${usage} (transcript: ${rel})`;
+}
+
+export function formatRunUsage(result: AgentResult): string {
+  const parts: string[] = [];
+  if (result.cost > 0 || result.usage === undefined) {
+    parts.push(`cost: $${result.cost.toFixed(3)}`);
+  }
+  parts.push(`turns: ${result.turns}`);
+
+  const usage = result.usage;
+  if (usage !== undefined) {
+    const tokenParts: string[] = [];
+    if (usage.inputTokens !== undefined) {
+      tokenParts.push(`${usage.inputTokens.toLocaleString("en-US")} in`);
+    }
+    if (usage.outputTokens !== undefined) {
+      tokenParts.push(`${usage.outputTokens.toLocaleString("en-US")} out`);
+    }
+    if (usage.cachedInputTokens !== undefined) {
+      tokenParts.push(
+        `${usage.cachedInputTokens.toLocaleString("en-US")} cached`,
+      );
+    }
+    if (usage.reasoningOutputTokens !== undefined) {
+      tokenParts.push(
+        `${usage.reasoningOutputTokens.toLocaleString("en-US")} reasoning`,
+      );
+    }
+    if (tokenParts.length > 0) {
+      parts.push(`tokens: ${tokenParts.join(", ")}`);
+    }
+  }
+
+  return parts.join(", ");
 }
 
 async function countMarkdownPages(pagesDir: string): Promise<number> {
@@ -352,18 +386,18 @@ export class StreamingFormatter {
       return;
     }
 
-    if (msg.type === "result") {
-      // The command-level finalLine is what the user sees at the end of
-      // stdout; the formatter also emits one here so live-tailing a
-      // transcript log shows the full run. Kept terse.
-      const status =
-        msg.subtype === "success" ? "done" : `failed (${msg.subtype})`;
-      const cost =
-        typeof msg.total_cost_usd === "number" ? msg.total_cost_usd : 0;
-      const turns = typeof msg.num_turns === "number" ? msg.num_turns : 0;
-      this.sink.write(
-        `[${status}] cost: $${cost.toFixed(3)}, turns: ${turns}\n`,
-      );
+    if (msg.type === "item.started" && isRecord(msg.item)) {
+      this.handleCodexItemStarted(msg.item);
+      return;
+    }
+
+    if (msg.type === "item.completed" && isRecord(msg.item)) {
+      this.handleCodexItemCompleted(msg.item);
+      return;
+    }
+
+    if (msg.type === "tool_call") {
+      this.handleCursorToolCall(msg);
       return;
     }
   }
@@ -384,6 +418,34 @@ export class StreamingFormatter {
     }
 
     const summary = formatToolSummary(name, input);
+    this.sink.write(`[${this.currentAgent}] ${summary}\n`);
+  }
+
+  private handleCodexItemStarted(item: Record<string, unknown>): void {
+    if (item.type !== "command_execution") return;
+    const command = stringField(item, "command") ?? "?";
+    this.sink.write(`[${this.currentAgent}] bash ${truncate(command, 80)}\n`);
+  }
+
+  private handleCodexItemCompleted(item: Record<string, unknown>): void {
+    if (item.type !== "file_change") return;
+    const changes = Array.isArray(item.changes) ? item.changes : [];
+    for (const change of changes) {
+      if (!isRecord(change)) continue;
+      const rawPath = stringField(change, "path") ?? "?";
+      const kind = stringField(change, "kind") ?? "edit";
+      const verb =
+        kind === "add" ? "writing" : kind === "delete" ? "deleting" : "editing";
+      this.sink.write(
+        `[${this.currentAgent}] ${verb} ${formatCodexPath(rawPath)}\n`,
+      );
+    }
+  }
+
+  private handleCursorToolCall(msg: Record<string, unknown>): void {
+    if (msg.subtype !== "started" || !isRecord(msg.tool_call)) return;
+    const summary = formatCursorToolSummary(msg.tool_call);
+    if (summary === undefined) return;
     this.sink.write(`[${this.currentAgent}] ${summary}\n`);
   }
 }
@@ -443,9 +505,7 @@ function formatToolSummary(
     case "Bash": {
       const command = stringField(input, "command") ?? "?";
       // Truncate long commands so one tool-use stays one line.
-      const trimmed =
-        command.length > 80 ? `${command.slice(0, 77)}...` : command;
-      return `bash ${trimmed}`;
+      return `bash ${truncate(command, 80)}`;
     }
     default: {
       // Unknown or MCP tool. Show the name; omit the input to avoid
@@ -455,12 +515,61 @@ function formatToolSummary(
   }
 }
 
+function formatCursorToolSummary(
+  toolCall: Record<string, unknown>,
+): string | undefined {
+  if (isRecord(toolCall.readToolCall)) {
+    const args = recordField(toolCall.readToolCall, "args");
+    return `reading ${stringField(args, "path") ?? "?"}`;
+  }
+  if (isRecord(toolCall.editToolCall)) {
+    const args = recordField(toolCall.editToolCall, "args");
+    return `editing ${formatCodexPath(stringField(args, "path") ?? "?")}`;
+  }
+  if (isRecord(toolCall.globToolCall)) {
+    const args = recordField(toolCall.globToolCall, "args");
+    return `glob ${stringField(args, "globPattern") ?? "?"}`;
+  }
+  if (isRecord(toolCall.grepToolCall)) {
+    const args = recordField(toolCall.grepToolCall, "args");
+    return `grep ${stringField(args, "pattern") ?? "?"}`;
+  }
+  if (isRecord(toolCall.shellToolCall)) {
+    const args = recordField(toolCall.shellToolCall, "args");
+    const description = stringField(toolCall.shellToolCall, "description");
+    const command = stringField(args, "command") ?? description ?? "?";
+    return `bash ${truncate(command, 80)}`;
+  }
+  return undefined;
+}
+
+function truncate(value: string, max: number): string {
+  return value.length > max ? `${value.slice(0, max - 3)}...` : value;
+}
+
+function formatCodexPath(value: string): string {
+  const marker = "/.almanac/";
+  const idx = value.indexOf(marker);
+  if (idx !== -1) {
+    return `.almanac/${value.slice(idx + marker.length)}`;
+  }
+  return value;
+}
+
 function stringField(
   input: Record<string, unknown>,
   key: string,
 ): string | undefined {
   const value = input[key];
   return typeof value === "string" ? value : undefined;
+}
+
+function recordField(
+  input: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> {
+  const value = input[key];
+  return isRecord(value) ? value : {};
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

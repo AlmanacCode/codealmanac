@@ -66,6 +66,13 @@ export interface RunAgentOptions {
 
 export type AgentStreamMessage = SDKMessage | Record<string, unknown>;
 
+export interface AgentUsage {
+  inputTokens?: number;
+  cachedInputTokens?: number;
+  outputTokens?: number;
+  reasoningOutputTokens?: number;
+}
+
 export interface AgentResult {
   /** `true` when the SDK emitted a `result` with `subtype: "success"`. */
   success: boolean;
@@ -77,6 +84,8 @@ export interface AgentResult {
   result: string;
   /** Session ID captured from the first assistant/result message. */
   sessionId?: string;
+  /** Token usage reported by providers that do not expose USD cost. */
+  usage?: AgentUsage;
   /** Populated when `success === false`. */
   error?: string;
 }
@@ -270,6 +279,7 @@ function runJsonlCli(opts: JsonlCliOptions): Promise<AgentResult> {
     let turns = 0;
     let result = "";
     let sessionId: string | undefined;
+    let usage: AgentUsage | undefined;
     let success = false;
     let finalSeen = false;
     let error: string | undefined;
@@ -283,6 +293,13 @@ function runJsonlCli(opts: JsonlCliOptions): Promise<AgentResult> {
       ) {
         sessionId = msg.session_id;
       }
+      if (
+        sessionId === undefined &&
+        typeof msg.thread_id === "string" &&
+        msg.thread_id.length > 0
+      ) {
+        sessionId = msg.thread_id;
+      }
       const final = opts.parseFinal(msg);
       if (final === null) return;
       finalSeen = true;
@@ -290,6 +307,7 @@ function runJsonlCli(opts: JsonlCliOptions): Promise<AgentResult> {
       if (final.turns !== undefined) turns = final.turns;
       if (final.result !== undefined) result = final.result;
       if (final.sessionId !== undefined) sessionId = final.sessionId;
+      if (final.usage !== undefined) usage = final.usage;
       if (final.success !== undefined) success = final.success;
       if (final.error !== undefined) error = final.error;
     };
@@ -326,6 +344,7 @@ function runJsonlCli(opts: JsonlCliOptions): Promise<AgentResult> {
         turns,
         result,
         sessionId,
+        usage,
         error:
           err.code === "ENOENT"
             ? `${opts.command} not found on PATH`
@@ -343,7 +362,7 @@ function runJsonlCli(opts: JsonlCliOptions): Promise<AgentResult> {
       }
 
       if (code === 0 && finalSeen && success) {
-        resolve({ success, cost, turns, result, sessionId });
+        resolve({ success, cost, turns, result, sessionId, usage });
         return;
       }
 
@@ -354,6 +373,7 @@ function runJsonlCli(opts: JsonlCliOptions): Promise<AgentResult> {
         turns,
         result,
         sessionId,
+        usage,
         error:
           error ??
           (firstStderr !== undefined && firstStderr.length > 0
@@ -378,7 +398,7 @@ function parseCodexFinal(
     return null;
   }
   if (msg.type === "turn.completed") {
-    return { success: true };
+    return { success: true, turns: 1, usage: parseUsage(msg.usage) };
   }
   if (msg.type === "turn.failed" || msg.type === "error") {
     return {
@@ -394,6 +414,31 @@ function parseCodexFinal(
   return null;
 }
 
+function parseUsage(value: unknown): AgentUsage | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const obj = value as Record<string, unknown>;
+  return {
+    inputTokens: numberField(obj, "input_tokens") ?? numberField(obj, "inputTokens"),
+    cachedInputTokens:
+      numberField(obj, "cached_input_tokens") ??
+      numberField(obj, "cachedInputTokens") ??
+      numberField(obj, "cacheReadTokens"),
+    outputTokens:
+      numberField(obj, "output_tokens") ?? numberField(obj, "outputTokens"),
+    reasoningOutputTokens:
+      numberField(obj, "reasoning_output_tokens") ??
+      numberField(obj, "reasoningOutputTokens"),
+  };
+}
+
+function numberField(
+  input: Record<string, unknown>,
+  key: string,
+): number | undefined {
+  const value = input[key];
+  return typeof value === "number" ? value : undefined;
+}
+
 function parseCursorFinal(
   msg: Record<string, unknown>,
 ): Partial<AgentResult> | null {
@@ -401,9 +446,11 @@ function parseCursorFinal(
   const isError = msg.is_error === true || msg.subtype !== "success";
   return {
     success: !isError,
+    turns: 1,
     result: typeof msg.result === "string" ? msg.result : "",
     sessionId:
       typeof msg.session_id === "string" ? msg.session_id : undefined,
+    usage: parseUsage(msg.usage),
     error: isError
       ? typeof msg.result === "string"
         ? msg.result

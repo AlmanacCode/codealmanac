@@ -393,6 +393,37 @@ describe("almanac bootstrap — command wiring", () => {
     });
   });
 
+  it("prints token usage instead of a fake zero cost when the provider reports usage", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "usage-final-line");
+      await scaffoldWiki(repo);
+
+      const out = await runBootstrap({
+        cwd: repo,
+        quiet: true,
+        spawnCli: fakeSpawnCliLoggedOut(),
+        runAgent: async () => ({
+          success: true,
+          cost: 0,
+          turns: 1,
+          result: "ok",
+          sessionId: "codex_thread",
+          usage: {
+            inputTokens: 561156,
+            cachedInputTokens: 463744,
+            outputTokens: 8500,
+            reasoningOutputTokens: 1141,
+          },
+        }),
+      });
+
+      expect(out.stdout).toMatch(/\[done\]/);
+      expect(out.stdout).toMatch(/turns: 1/);
+      expect(out.stdout).toMatch(/tokens: 561,156 in, 8,500 out/);
+      expect(out.stdout).not.toMatch(/cost: \$0\.000/);
+    });
+  });
+
   it("honors the --model flag by forwarding it to runAgent", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "model-flag");
@@ -515,7 +546,7 @@ describe("StreamingFormatter", () => {
     expect(out).toEqual(["[reviewer] starting\n", "[reviewer] reading x.md\n"]);
   });
 
-  it("emits a terse final-line on the SDK's result message", () => {
+  it("does not emit a duplicate final line for result messages", () => {
     const { sink, out } = collect();
     const formatter = new StreamingFormatter(sink);
 
@@ -526,7 +557,102 @@ describe("StreamingFormatter", () => {
       num_turns: 12,
     } as unknown as SDKMessage);
 
-    expect(out).toEqual(["[done] cost: $0.025, turns: 12\n"]);
+    expect(out).toEqual([]);
+  });
+
+  it("formats Codex command and file-change events as progress lines", () => {
+    const { sink, out } = collect();
+    const formatter = new StreamingFormatter(sink);
+
+    formatter.handle({
+      type: "item.started",
+      item: {
+        type: "command_execution",
+        command: "/bin/zsh -lc 'almanac health'",
+        status: "in_progress",
+      },
+    });
+    formatter.handle({
+      type: "item.completed",
+      item: {
+        type: "file_change",
+        changes: [
+          {
+            path: "/tmp/repo/.almanac/README.md",
+            kind: "add",
+          },
+          {
+            path: "/tmp/repo/.almanac/pages/live-polling-flow.md",
+            kind: "edit",
+          },
+        ],
+        status: "completed",
+      },
+    });
+
+    expect(out).toEqual([
+      "[bootstrap] bash /bin/zsh -lc 'almanac health'\n",
+      "[bootstrap] writing .almanac/README.md\n",
+      "[bootstrap] editing .almanac/pages/live-polling-flow.md\n",
+    ]);
+  });
+
+  it("formats Cursor tool_call started events as progress lines", () => {
+    const { sink, out } = collect();
+    const formatter = new StreamingFormatter(sink);
+
+    formatter.handle({
+      type: "tool_call",
+      subtype: "started",
+      tool_call: {
+        globToolCall: {
+          args: {
+            targetDirectory: "/tmp/repo",
+            globPattern: "package.json",
+          },
+        },
+      },
+    });
+    formatter.handle({
+      type: "tool_call",
+      subtype: "started",
+      tool_call: {
+        readToolCall: {
+          args: {
+            path: "/tmp/repo/package.json",
+          },
+        },
+      },
+    });
+    formatter.handle({
+      type: "tool_call",
+      subtype: "started",
+      tool_call: {
+        shellToolCall: {
+          args: {
+            command: "ls -la /tmp/repo",
+          },
+        },
+      },
+    });
+    formatter.handle({
+      type: "tool_call",
+      subtype: "started",
+      tool_call: {
+        editToolCall: {
+          args: {
+            path: "/tmp/repo/.almanac/README.md",
+          },
+        },
+      },
+    });
+
+    expect(out).toEqual([
+      "[bootstrap] glob package.json\n",
+      "[bootstrap] reading /tmp/repo/package.json\n",
+      "[bootstrap] bash ls -la /tmp/repo\n",
+      "[bootstrap] editing .almanac/README.md\n",
+    ]);
   });
 
   it("falls back to the tool name for unrecognized tools", () => {
