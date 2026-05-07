@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
-import type { SpawnCliFn } from "../src/agent/auth.js";
+import type { SpawnCliFn } from "../src/agent/providers/claude/index.js";
 import { runBootstrap, StreamingFormatter } from "../src/commands/bootstrap.js";
 import {
   loadPrompt,

@@ -5,7 +5,7 @@ import {
   checkClaudeAuth,
   type SpawnCliFn,
   type SpawnedProcess,
-} from "../src/agent/auth.js";
+} from "../src/agent/providers/claude/index.js";
 
 /**
  * Unit tests for the auth gate. These NEVER spawn the real bundled CLI —

@@ -15,7 +15,7 @@ import {
   type ClaudeAuthStatus,
   type SpawnCliFn,
   UNAUTHENTICATED_MESSAGE,
-} from "../agent/auth.js";
+} from "../agent/providers/claude/index.js";
 import {
   isAgentProviderId,
   readConfig,

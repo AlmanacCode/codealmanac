@@ -2,7 +2,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import type { SpawnCliFn, SpawnedProcess } from "../src/agent/auth.js";
+import type {
+  SpawnCliFn,
+  SpawnedProcess,
+} from "../src/agent/providers/claude/index.js";
 import { runDoctor } from "../src/commands/doctor.js";
 import { IMPORT_LINE } from "../src/commands/setup.js";
 import { writeConfig } from "../src/update/config.js";

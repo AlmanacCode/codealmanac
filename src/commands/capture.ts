@@ -11,7 +11,7 @@ import { basename, join, relative } from "node:path";
 
 import type { AgentDefinition } from "@anthropic-ai/claude-agent-sdk";
 
-import type { SpawnCliFn } from "../agent/auth.js";
+import type { SpawnCliFn } from "../agent/providers/claude/index.js";
 import { assertAgentAuth } from "../agent/providers.js";
 import { loadPrompt } from "../agent/prompts.js";
 import {

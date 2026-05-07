@@ -2,7 +2,7 @@ import { createWriteStream, existsSync, type WriteStream } from "node:fs";
 import { mkdir, readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 
-import type { SpawnCliFn } from "../agent/auth.js";
+import type { SpawnCliFn } from "../agent/providers/claude/index.js";
 import { assertAgentAuth } from "../agent/providers.js";
 import { loadPrompt } from "../agent/prompts.js";
 import {

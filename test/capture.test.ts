@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
-import type { SpawnCliFn } from "../src/agent/auth.js";
+import type { SpawnCliFn } from "../src/agent/providers/claude/index.js";
 import { runCapture } from "../src/commands/capture.js";
 import type { AgentResult, RunAgentOptions } from "../src/agent/sdk.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";

@@ -4,7 +4,10 @@ import { join } from "node:path";
 import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import type { SpawnCliFn, SpawnedProcess } from "../src/agent/auth.js";
+import type {
+  SpawnCliFn,
+  SpawnedProcess,
+} from "../src/agent/providers/claude/index.js";
 import { runSetup, hasImportLine } from "../src/commands/setup.js";
 import { withTempHome } from "./helpers.js";
 

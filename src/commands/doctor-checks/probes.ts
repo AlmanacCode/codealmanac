@@ -4,7 +4,11 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { checkClaudeAuth, type ClaudeAuthStatus, type SpawnCliFn } from "../../agent/auth.js";
+import {
+  checkClaudeAuth,
+  type ClaudeAuthStatus,
+  type SpawnCliFn,
+} from "../../agent/providers/claude/index.js";
 import type { SqliteProbeResult } from "./types.js";
 
 // Single `createRequire` instance — used by package/binding probes.

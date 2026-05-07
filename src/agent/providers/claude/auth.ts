@@ -2,6 +2,8 @@ import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
+import type { SpawnCliFn, SpawnedProcess } from "../../types.js";
+
 /**
  * Claude auth gate — accepts either an active Claude subscription login
  * OR an `ANTHROPIC_API_KEY` environment variable.
@@ -23,19 +25,6 @@ export interface ClaudeAuthStatus {
   subscriptionType?: string;
   authMethod?: string;
 }
-
-export interface SpawnedProcess {
-  stdout: { on: (event: "data", cb: (data: Buffer | string) => void) => void };
-  stderr: { on: (event: "data", cb: (data: Buffer | string) => void) => void };
-  on: (event: "close" | "error", cb: (arg: number | null | Error) => void) => void;
-  kill: (signal?: string) => void;
-}
-
-/**
- * The subprocess spawner is injectable so tests can replace it with a
- * fake that emits canned JSON without touching the filesystem.
- */
-export type SpawnCliFn = (args: string[]) => SpawnedProcess;
 
 const AUTH_TIMEOUT_MS = 10_000;
 
@@ -233,3 +222,4 @@ export async function assertClaudeAuth(
 // Internal re-export — helps keep the public type surface minimal while
 // still letting tests import the `ChildProcess` shape when needed.
 export type { ChildProcess };
+export type { SpawnCliFn, SpawnedProcess };

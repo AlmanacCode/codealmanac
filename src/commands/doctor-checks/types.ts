@@ -1,4 +1,4 @@
-import type { SpawnCliFn } from "../../agent/auth.js";
+import type { SpawnCliFn } from "../../agent/providers/claude/index.js";
 import type { runHealth } from "../health.js";
 
 export interface DoctorOptions {

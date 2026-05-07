@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
-import type { ClaudeAuthStatus } from "../../agent/auth.js";
+import type { ClaudeAuthStatus } from "../../agent/providers/claude/index.js";
 import { IMPORT_LINE } from "../setup.js";
 import {
   classifyInstallPath,
