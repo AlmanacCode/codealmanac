@@ -201,6 +201,58 @@ describe("almanac capture — command wiring", () => {
     });
   });
 
+  it("writes a capture state record with model, duration, and summary", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "state-record");
+      await scaffoldWiki(repo);
+      const transcript = join(home, "t.jsonl");
+      await writeFile(transcript, "{}\n", "utf8");
+
+      const out = await runCapture({
+        cwd: repo,
+        transcriptPath: transcript,
+        sessionId: "sess_state",
+        quiet: true,
+        model: "claude-opus-4-6",
+        spawnCli: fakeSpawnCliLoggedIn(),
+        now: (() => {
+          const dates = [
+            new Date("2026-05-06T21:00:00.000Z"),
+            new Date("2026-05-06T21:01:04.000Z"),
+          ];
+          return () => dates.shift() ?? new Date("2026-05-06T21:01:04.000Z");
+        })(),
+        runAgent: fakeRunAgent({
+          onRun: async () => {
+            await writeFile(
+              join(repo, ".almanac", "pages", "new-page.md"),
+              "---\ntitle: New Page\ntopics: []\n---\n\nBody\n",
+              "utf8",
+            );
+          },
+        }),
+      });
+
+      expect(out.exitCode).toBe(0);
+
+      const raw = await readFile(
+        join(repo, ".almanac", "logs", ".capture-sess_state.state.json"),
+        "utf8",
+      );
+      const record = JSON.parse(raw) as {
+        status: string;
+        model: string;
+        durationMs: number;
+        summary: { created: number; updated: number; archived: number };
+      };
+
+      expect(record.status).toBe("done");
+      expect(record.model).toBe("claude-opus-4-6");
+      expect(record.durationMs).toBe(64000);
+      expect(record.summary).toMatchObject({ created: 1, updated: 0, archived: 0 });
+    });
+  });
+
   it("refuses when no .almanac/ exists in this directory or any parent", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "no-wiki");
@@ -490,7 +542,9 @@ describe("almanac capture — command wiring", () => {
       });
 
       const entries = await readdir(join(repo, ".almanac", "logs"));
-      const logs = entries.filter((f) => f.startsWith(".capture-"));
+      const logs = entries.filter(
+        (f) => f.startsWith(".capture-") && f.endsWith(".jsonl"),
+      );
       expect(logs).toHaveLength(1);
       const contents = await readFile(
         join(repo, ".almanac", "logs", logs[0]!),

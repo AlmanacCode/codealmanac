@@ -21,6 +21,12 @@ import {
 import { parseFrontmatter } from "../indexer/frontmatter.js";
 import { findNearestAlmanacDir, getRepoAlmanacDir } from "../paths.js";
 import { StreamingFormatter } from "./bootstrap.js";
+import {
+  buildStartedCaptureRecord,
+  captureStatePath,
+  finishCaptureRecord,
+  writeCaptureRunRecord,
+} from "./captureStatus.js";
 
 export interface CaptureOptions {
   cwd: string;
@@ -191,15 +197,27 @@ export async function runCapture(
   // collide with the hook's stdout-redirect sidecar, which happens to
   // share the session-id stem; distinct extensions keep them from
   // clobbering each other.
-  const now = options.now?.() ?? new Date();
+  const startedAt = options.now?.() ?? new Date();
   const logStem =
     options.sessionId !== undefined && options.sessionId.length > 0
       ? options.sessionId
-      : formatTimestamp(now);
+      : formatTimestamp(startedAt);
   const logsDir = join(almanacDir, "logs");
   await mkdir(logsDir, { recursive: true });
   const logName = `.capture-${logStem}.jsonl`;
   const logPath = join(logsDir, logName);
+  const statePath = captureStatePath(logsDir, logStem);
+  const stateRecord = buildStartedCaptureRecord({
+    repoRoot,
+    almanacDir: logsDir,
+    stem: logStem,
+    sessionId: options.sessionId,
+    transcriptPath,
+    model: options.model,
+    startedAt,
+  });
+  await writeCaptureRunRecord(statePath, stateRecord).catch(() => {});
+
   const logStream = createWriteStream(logPath, { flags: "w" });
 
   const out = process.stdout;
@@ -254,8 +272,24 @@ export async function runCapture(
 
   const snapshotAfter = await snapshotPages(pagesDir);
   const delta = diffSnapshots(snapshotBefore, snapshotAfter);
+  const finishedAt = options.now?.() ?? new Date();
+  const captureSummary = {
+    ...delta,
+    cost: result.cost,
+    turns: result.turns,
+  };
 
   if (!result.success) {
+    await writeCaptureRunRecord(
+      statePath,
+      finishCaptureRecord({
+        record: stateRecord,
+        status: "failed",
+        finishedAt,
+        summary: captureSummary,
+        error: result.error ?? "unknown error",
+      }),
+    ).catch(() => {});
     return {
       stdout: "",
       stderr:
@@ -264,6 +298,16 @@ export async function runCapture(
       exitCode: 1,
     };
   }
+
+  await writeCaptureRunRecord(
+    statePath,
+    finishCaptureRecord({
+      record: stateRecord,
+      status: "done",
+      finishedAt,
+      summary: captureSummary,
+    }),
+  ).catch(() => {});
 
   const summary = formatSummary(result, delta, logPath, repoRoot);
 

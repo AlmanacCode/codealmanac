@@ -2,6 +2,7 @@ import { Command } from "commander";
 
 import { runBootstrap } from "../commands/bootstrap.js";
 import { runCapture } from "../commands/capture.js";
+import { runCaptureStatus } from "../commands/captureStatus.js";
 import {
   runHookInstall,
   runHookStatus,
@@ -32,8 +33,9 @@ export function registerWikiLifecycleCommands(program: Command): void {
       },
     );
 
-  program
+  const capture = program
     .command("capture [transcript]")
+    .alias("c")
     .description("run the writer/reviewer pipeline on a session (usually automatic)")
     .option("--session <id>", "target a specific session by ID")
     .option("--quiet", "suppress per-tool streaming; print only the final summary")
@@ -54,6 +56,32 @@ export function registerWikiLifecycleCommands(program: Command): void {
         emit(result);
       },
     );
+
+  capture
+    .command("status")
+    .description("show running and recent capture jobs")
+    .option("--json", "emit structured JSON")
+    .action(async (opts: { json?: boolean }) => {
+      await autoRegisterIfNeeded(process.cwd());
+      const result = await runCaptureStatus({
+        cwd: process.cwd(),
+        json: opts.json,
+      });
+      emit(result);
+    });
+
+  program
+    .command("ps")
+    .description("show running and recent capture jobs")
+    .option("--json", "emit structured JSON")
+    .action(async (opts: { json?: boolean }) => {
+      await autoRegisterIfNeeded(process.cwd());
+      const result = await runCaptureStatus({
+        cwd: process.cwd(),
+        json: opts.json,
+      });
+      emit(result);
+    });
 
   const hook = program
     .command("hook")

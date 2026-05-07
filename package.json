@@ -23,7 +23,8 @@
   "type": "module",
   "bin": {
     "codealmanac": "./dist/codealmanac.js",
-    "almanac": "./dist/codealmanac.js"
+    "almanac": "./dist/codealmanac.js",
+    "alm": "./dist/codealmanac.js"
   },
   "files": [
     "dist",

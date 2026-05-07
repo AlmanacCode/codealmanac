@@ -97,6 +97,7 @@ describe("registerCommands", () => {
       "topics",
       "bootstrap",
       "capture",
+      "ps",
       "hook",
       "reindex",
       "setup",
@@ -118,6 +119,8 @@ describe("registerCommands", () => {
       ]);
     expect(findCommand(program, ["hook"]).commands.map((cmd) => cmd.name()))
       .toEqual(["install", "uninstall", "status"]);
+    expect(findCommand(program, ["capture"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["status"]);
 
     expect(optionFlags(findCommand(program, ["setup"]))).toContain("-y, --yes");
     expect(optionFlags(findCommand(program, ["doctor"]))).toContain("--json");

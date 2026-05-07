@@ -6,6 +6,8 @@ import type {
 
 import { resolveClaudeExecutable } from "./auth.js";
 
+export const DEFAULT_AGENT_MODEL = "claude-sonnet-4-6";
+
 /**
  * Thin wrapper around `@anthropic-ai/claude-agent-sdk`'s `query()`. This is
  * the ONLY module that imports from the SDK — every other command imports
@@ -95,7 +97,7 @@ export async function runAgent(opts: RunAgentOptions): Promise<AgentResult> {
       allowedTools: opts.allowedTools,
       agents: opts.agents ?? {},
       cwd: opts.cwd,
-      model: opts.model ?? "claude-sonnet-4-6",
+      model: opts.model ?? DEFAULT_AGENT_MODEL,
       maxTurns: opts.maxTurns ?? 100,
       ...(claudeExecutable !== undefined
         ? { pathToClaudeCodeExecutable: claudeExecutable }
