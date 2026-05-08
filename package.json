@@ -10,7 +10,7 @@
     "codebase",
     "knowledge-base"
   ],
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "author": "Rohan Sheth",
   "repository": {
     "type": "git",
@@ -32,7 +32,8 @@
     "hooks",
     "guides",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "COMMERCIAL.md"
   ],
   "engines": {
     "node": "20.x || 22.x || 23.x || 24.x || 25.x"

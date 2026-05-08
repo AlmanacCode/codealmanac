@@ -195,7 +195,7 @@ Intelligence lives in the prompt, not in the pipeline. Whenever a task calls for
 
 ## Contributing
 
-codealmanac is open source under the MIT license. To set up a development environment:
+codealmanac is source-available for noncommercial use under the PolyForm Noncommercial License 1.0.0. Commercial use requires a separate paid commercial license; see [COMMERCIAL.md](./COMMERCIAL.md). To set up a development environment:
 
 ```bash
 git clone https://github.com/AlmanacCode/codealmanac.git
@@ -238,4 +238,4 @@ codealmanac is part of the [OpenAlmanac](https://www.openalmanac.org) family. Op
 
 ## License
 
-MIT. Copyright (c) 2026 Rohan Sheth. See [LICENSE](./LICENSE).
+PolyForm Noncommercial License 1.0.0. Commercial use requires a separate paid commercial license; see [COMMERCIAL.md](./COMMERCIAL.md). Copyright (c) 2026 Rohan Sheth. See [LICENSE](./LICENSE).
