@@ -12,6 +12,13 @@ substantial refactoring. Do not preserve a smelly architecture merely to land th
 feature faster. The final code should be simple, well-factored, provider-aware,
 and pleasant to extend.**
 
+**During implementation, maintain an implementation log and a decision log.**
+The implementation log should record what was built, what changed, what tests
+were run, and what remains. The decision log should record design choices,
+tradeoffs, rejected alternatives, and places where the plan changed after
+touching the real code. Commit frequently at coherent checkpoints so the work is
+auditable and resumable.
+
 The core shift is:
 
 ```text
