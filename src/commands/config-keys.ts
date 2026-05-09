@@ -1,6 +1,8 @@
 import {
   AGENT_PROVIDER_IDS,
+  formatEnabledAgentProviderList,
   isAgentProviderId,
+  isEnabledAgentProviderId,
   type AgentProviderId,
   type GlobalConfig,
 } from "../update/config.js";
@@ -52,8 +54,14 @@ export function setConfigValue(
     };
   }
   if (key === "agent.default") {
-    if (rawValue === null || !isAgentProviderId(rawValue)) {
-      throw new Error("agent.default must be one of: claude, codex, cursor");
+    if (
+      rawValue === null ||
+      !isAgentProviderId(rawValue) ||
+      !isEnabledAgentProviderId(rawValue)
+    ) {
+      throw new Error(
+        `agent.default must be one of: ${formatEnabledAgentProviderList()}`,
+      );
     }
     return {
       ...config,

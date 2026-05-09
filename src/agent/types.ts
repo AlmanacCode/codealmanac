@@ -42,6 +42,13 @@ export interface ProviderStatus {
   detail: string;
 }
 
+export interface ProviderModelChoice {
+  value: string | null;
+  label: string;
+  recommended: boolean;
+  source: "configured" | "provider-default" | "catalog" | "custom";
+}
+
 export interface RunAgentOptions {
   /** Full system prompt text, usually loaded from `prompts/*.md`. */
   systemPrompt: string;
@@ -87,4 +94,8 @@ export interface AgentProvider {
   checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus>;
   assertReady(spawnCli?: SpawnCliFn): Promise<void>;
   run(opts: RunAgentOptions): Promise<AgentResult>;
+  modelChoices?(args: {
+    configuredModel: string | null;
+    spawnCli?: SpawnCliFn;
+  }): Promise<ProviderModelChoice[]> | ProviderModelChoice[];
 }

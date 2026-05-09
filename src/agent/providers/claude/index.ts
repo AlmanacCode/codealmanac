@@ -4,6 +4,7 @@ import type {
   AgentProvider,
   AgentProviderMetadata,
   AgentResult,
+  ProviderModelChoice,
   ProviderStatus,
   RunAgentOptions,
   SpawnCliFn,
@@ -42,7 +43,58 @@ export const claudeProvider: AgentProvider = {
   checkStatus,
   assertReady,
   run,
+  modelChoices,
 };
+
+const CLAUDE_MODELS = [
+  {
+    value: "claude-opus-4-7",
+    label: "Opus 4.7",
+    recommended: false,
+  },
+  {
+    value: "claude-sonnet-4-6",
+    label: "Sonnet 4.6",
+    recommended: true,
+  },
+  {
+    value: "claude-haiku-4-5-20251001",
+    label: "Haiku 4.5",
+    recommended: false,
+  },
+] as const;
+
+function modelChoices(args: {
+  configuredModel: string | null;
+}): ProviderModelChoice[] {
+  const choices: ProviderModelChoice[] = [];
+  if (
+    args.configuredModel !== null &&
+    !CLAUDE_MODELS.some((model) => model.value === args.configuredModel)
+  ) {
+    choices.push({
+      value: args.configuredModel,
+      label: args.configuredModel,
+      recommended: false,
+      source: "configured",
+    });
+  }
+  for (const model of CLAUDE_MODELS) {
+    choices.push({
+      value: model.value,
+      label: model.label,
+      recommended: model.recommended,
+      source: "catalog",
+    });
+  }
+  choices.push({
+    value: "__custom__",
+    label: "Enter a model name",
+    recommended: false,
+    source: "custom",
+  });
+  return choices;
+}
 
 async function run(opts: RunAgentOptions): Promise<AgentResult> {
   const claudeExecutable = resolveClaudeExecutable();

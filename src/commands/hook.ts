@@ -9,6 +9,7 @@ import {
   resolveSettingsPath,
   type ScriptResolution,
 } from "./hook/script.js";
+import { isCursorEnabled } from "../update/config.js";
 
 /**
  * `almanac hook install|uninstall|status` — wires the bundled
@@ -230,14 +231,16 @@ export async function runHookInstall(
         shape: "wrapped",
         scriptPath: script.path,
       }),
-      await installGenericHook({
+    ];
+    if (isCursorEnabled()) {
+      results.push(await installGenericHook({
         label: "Cursor sessionEnd",
         settingsPath: path.join(homedir(), ".cursor", "hooks.json"),
         eventName: "sessionEnd",
         shape: "flat",
         scriptPath: script.path,
-      }),
-    ];
+      }));
+    }
     const failed = results.find((r) => r.exitCode !== 0);
     if (failed !== undefined) return failed;
     return {
@@ -256,6 +259,14 @@ export async function runHookInstall(
     });
   }
   if (source === "cursor") {
+    if (!isCursorEnabled()) {
+      return {
+        stdout: "",
+        stderr:
+          "almanac: cursor hooks are disabled. Set CODEALMANAC_ENABLE_CURSOR=1 to enable experimental Cursor support.\n",
+        exitCode: 1,
+      };
+    }
     return await installGenericHook({
       label: "Cursor sessionEnd",
       settingsPath: path.join(homedir(), ".cursor", "hooks.json"),

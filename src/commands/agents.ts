@@ -4,7 +4,10 @@ import {
   type ProviderReadiness,
 } from "../agent/provider-view.js";
 import {
+  disabledAgentProviderMessage,
+  formatEnabledAgentProviderList,
   isAgentProviderId,
+  isEnabledAgentProviderId,
   readConfig,
   writeConfig,
   type AgentProviderId,
@@ -36,7 +39,7 @@ export async function runAgentsList(): Promise<AgentsResult> {
     );
   }
   lines.push(
-    "\nUse: almanac agents use <claude|codex|cursor>",
+    `\nUse: almanac agents use <${formatEnabledAgentProviderList().replaceAll(", ", "|")}>`,
     "Set model: almanac agents model <provider> <model>",
   );
   return { stdout: `${lines.join("\n")}\n`, stderr: "", exitCode: 0 };
@@ -93,11 +96,14 @@ async function setDefaultAgent(
       stdout: "",
       stderr:
         `almanac: unknown agent '${opts.provider}'. ` +
-        "Expected one of: claude, codex, cursor.\n",
+        `Expected one of: ${formatEnabledAgentProviderList()}.\n`,
       exitCode: 1,
     };
   }
   const provider = parsed.provider;
+  if (!isEnabledAgentProviderId(provider)) {
+    return disabledProviderResult(provider);
+  }
   const config = await readConfig();
   const next = {
     ...config,
@@ -162,9 +168,12 @@ async function setProviderModel(opts: {
       stdout: "",
       stderr:
         `almanac: unknown agent '${opts.provider}'. ` +
-        "Expected one of: claude, codex, cursor.\n",
+        `Expected one of: ${formatEnabledAgentProviderList()}.\n`,
       exitCode: 1,
     };
+  }
+  if (!isEnabledAgentProviderId(opts.provider)) {
+    return disabledProviderResult(opts.provider);
   }
   if (
     opts.defaultModel !== true &&
@@ -210,6 +219,14 @@ function normalizeRequestedModel(opts: {
   if (opts.model === undefined || opts.model.length === 0) return null;
   if (opts.model === "default" || opts.model === "null") return null;
   return opts.model;
+}
+
+function disabledProviderResult(provider: string): AgentsResult {
+  return {
+    stdout: "",
+    stderr: `almanac: ${disabledAgentProviderMessage(provider)}\n`,
+    exitCode: 1,
+  };
 }
 
 function readinessLabel(readiness: ProviderReadiness): string {

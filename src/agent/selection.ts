@@ -1,6 +1,9 @@
 import { parseAgentSelection } from "./provider-view.js";
 import {
+  disabledAgentProviderMessage,
+  formatEnabledAgentProviderList,
   isAgentProviderId,
+  isEnabledAgentProviderId,
   readConfig,
   type AgentProviderId,
 } from "../update/config.js";
@@ -27,10 +30,16 @@ export async function resolveAgentSelection(args: {
     return {
       ok: false,
       error:
-        `unknown agent '${rawAgent}'. Expected one of: claude, codex, cursor.`,
+        `unknown agent '${rawAgent}'. Expected one of: ${formatEnabledAgentProviderList()}.`,
     };
   }
   const provider = parsed.provider;
+  if (!isEnabledAgentProviderId(provider)) {
+    return {
+      ok: false,
+      error: disabledAgentProviderMessage(provider),
+    };
+  }
   const configuredModel = config.agent.models[provider] ?? undefined;
   const model =
     args.model !== undefined

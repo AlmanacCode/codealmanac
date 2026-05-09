@@ -22,6 +22,8 @@ export interface DoctorOptions {
   settingsPath?: string;
   /** Override `~/.claude/` directory. */
   claudeDir?: string;
+  /** Override `~/.codex/` directory. */
+  codexDir?: string;
   /** Override the bundled hooks directory lookup. */
   hookScriptPath?: string;
   /** Override the `codealmanac` install path detector. */

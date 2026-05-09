@@ -7,7 +7,11 @@ import type {
   SpawnedProcess,
 } from "../src/agent/providers/claude/index.js";
 import { runDoctor } from "../src/commands/doctor.js";
-import { IMPORT_LINE } from "../src/commands/setup.js";
+import {
+  CODEX_INSTRUCTIONS_END,
+  CODEX_INSTRUCTIONS_START,
+  IMPORT_LINE,
+} from "../src/commands/setup.js";
 import { writeConfig } from "../src/update/config.js";
 import { writeState } from "../src/update/state.js";
 import {
@@ -81,6 +85,7 @@ async function scaffoldHealthyClaudeDir(home: string): Promise<{
   settingsPath: string;
   hookScriptPath: string;
   claudeDir: string;
+  codexDir: string;
 }> {
   const claudeDir = join(home, ".claude");
   await mkdir(claudeDir, { recursive: true });
@@ -125,7 +130,14 @@ async function scaffoldHealthyClaudeDir(home: string): Promise<{
     `# CLAUDE.md\n\n${IMPORT_LINE}\n`,
     "utf8",
   );
-  return { settingsPath, hookScriptPath, claudeDir };
+  const codexDir = join(home, ".codex");
+  await mkdir(codexDir, { recursive: true });
+  await writeFile(
+    join(codexDir, "AGENTS.md"),
+    `${CODEX_INSTRUCTIONS_START}\n## codealmanac\n\nUse codealmanac.\n${CODEX_INSTRUCTIONS_END}\n`,
+    "utf8",
+  );
+  return { settingsPath, hookScriptPath, claudeDir, codexDir };
 }
 
 // ─── Tests ─────────────────────────────────────────────────────────────
@@ -147,6 +159,7 @@ describe("almanac doctor — JSON report shape", () => {
         json: true,
         settingsPath: env.settingsPath,
         claudeDir: env.claudeDir,
+        codexDir: env.codexDir,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         sqliteProbe: SQLITE_OK,
         installPath: "/fake/path/codealmanac",
@@ -168,6 +181,7 @@ describe("almanac doctor — JSON report shape", () => {
         "install.hook",
         "install.guides",
         "install.import",
+        "install.codexInstructions",
       ]);
 
       // Every install check is OK (healthy fixture).
@@ -323,6 +337,34 @@ describe("almanac doctor — install section", () => {
         (c: { key: string }) => c.key === "install.import",
       );
       expect(imp.status).toBe("ok");
+    });
+  });
+
+  it("checks the active Codex AGENTS file when override is present", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyClaudeDir(home);
+      await writeFile(
+        join(env.codexDir, "AGENTS.override.md"),
+        "# Override\n\nDo not read AGENTS.md.\n",
+        "utf8",
+      );
+      const r = await runDoctor({
+        cwd: home,
+        json: true,
+        settingsPath: env.settingsPath,
+        claudeDir: env.claudeDir,
+        codexDir: env.codexDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.3",
+      });
+      const parsed = JSON.parse(r.stdout);
+      const codexInstructions = parsed.install.find(
+        (c: { key: string }) => c.key === "install.codexInstructions",
+      );
+      expect(codexInstructions.status).toBe("problem");
+      expect(codexInstructions.message).toMatch(/AGENTS\.override\.md/);
     });
   });
 });

@@ -4,7 +4,11 @@ import { join } from "node:path";
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 
-import { removeImportLine, runUninstall } from "../src/commands/uninstall.js";
+import {
+  removeImportLine,
+  removeManagedBlock,
+  runUninstall,
+} from "../src/commands/uninstall.js";
 import { withTempHome } from "./helpers.js";
 
 /**
@@ -18,6 +22,7 @@ interface Env {
   settingsPath: string;
   hookScriptPath: string;
   claudeDir: string;
+  codexDir: string;
   out: PassThrough;
 }
 
@@ -27,10 +32,11 @@ async function scaffold(home: string): Promise<Env> {
   await mkdir(join(home, "fake-hooks"), { recursive: true });
   await writeFile(hookScriptPath, "#!/bin/bash\nexit 0\n", "utf8");
   const claudeDir = join(home, ".claude");
+  const codexDir = join(home, ".codex");
   const out = new PassThrough();
   // Drain so backpressure never stalls runUninstall's writes.
   out.on("data", () => {});
-  return { settingsPath, hookScriptPath, claudeDir, out };
+  return { settingsPath, hookScriptPath, claudeDir, codexDir, out };
 }
 
 async function primeInstalled(env: Env): Promise<void> {
@@ -78,6 +84,12 @@ async function primeInstalled(env: Env): Promise<void> {
     "# existing\n\n@~/.claude/codealmanac.md\n",
     "utf8",
   );
+  await mkdir(env.codexDir, { recursive: true });
+  await writeFile(
+    join(env.codexDir, "AGENTS.md"),
+    "# existing codex\n\n<!-- codealmanac:start -->\n## codealmanac\n\nUse codealmanac.\n<!-- codealmanac:end -->\n",
+    "utf8",
+  );
 }
 
 describe("almanac uninstall", () => {
@@ -92,6 +104,7 @@ describe("almanac uninstall", () => {
         settingsPath: env.settingsPath,
         hookScriptPath: env.hookScriptPath,
         claudeDir: env.claudeDir,
+        codexDir: env.codexDir,
         stdout: env.out,
       });
 
@@ -117,6 +130,12 @@ describe("almanac uninstall", () => {
       );
       expect(body).toMatch(/# existing/);
       expect(body).not.toMatch(/@~\/\.claude\/codealmanac\.md/);
+      const codexAgents = await readFile(
+        join(env.codexDir, "AGENTS.md"),
+        "utf8",
+      );
+      expect(codexAgents).toMatch(/# existing codex/);
+      expect(codexAgents).not.toMatch(/codealmanac:start/);
     });
   });
 
@@ -320,5 +339,31 @@ describe("removeImportLine (unit)", () => {
     const src = "see @~/.claude/codealmanac.md for details\n";
     const { changed } = removeImportLine(src);
     expect(changed).toBe(false);
+  });
+});
+
+describe("removeManagedBlock (unit)", () => {
+  it("removes the marked block and preserves surrounding content", () => {
+    const src = "# hi\n\n<!-- start -->\nmanaged\n<!-- end -->\n\nother line\n";
+    const { changed, body } = removeManagedBlock(
+      src,
+      "<!-- start -->",
+      "<!-- end -->",
+    );
+    expect(changed).toBe(true);
+    expect(body).toMatch(/# hi/);
+    expect(body).toMatch(/other line/);
+    expect(body).not.toMatch(/managed/);
+  });
+
+  it("is a no-op when the markers are absent", () => {
+    const src = "# hi\n";
+    const { changed, body } = removeManagedBlock(
+      src,
+      "<!-- start -->",
+      "<!-- end -->",
+    );
+    expect(changed).toBe(false);
+    expect(body).toBe(src);
   });
 });

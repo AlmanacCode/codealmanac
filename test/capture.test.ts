@@ -211,6 +211,33 @@ describe("almanac capture — command wiring", () => {
     });
   });
 
+  it("reports disabled Cursor distinctly from an unknown agent", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cursor-disabled");
+      await scaffoldWiki(repo);
+      const transcript = join(home, "t.jsonl");
+      await writeFile(transcript, "{}\n", "utf8");
+      await writeConfig({
+        agent: {
+          default: "cursor",
+          models: { cursor: "cursor-config-model" },
+        },
+      });
+
+      const out = await runCapture({
+        cwd: repo,
+        transcriptPath: transcript,
+        quiet: true,
+        runAgent: fakeRunAgent({}),
+      });
+
+      expect(out.exitCode).toBe(1);
+      expect(out.stderr).toContain("cursor support is disabled");
+      expect(out.stderr).toContain("CODEALMANAC_ENABLE_CURSOR=1");
+      expect(out.stderr).not.toContain("unknown agent");
+    });
+  });
+
   it("opens the gate when logged in via Claude subscription with no env var", async () => {
     await withTempHome(async (home) => {
       delete process.env.ANTHROPIC_API_KEY;

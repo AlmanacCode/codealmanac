@@ -67,12 +67,12 @@ describe("deprecated CLI surfaces", () => {
         "/abs/path/almanac",
         "agents",
         "use",
-        "cursor",
+        "codex",
       ]);
       expect(canonical.stderr).not.toContain("deprecated");
 
       const config = await readConfig();
-      expect(config.agent.default).toBe("cursor");
+      expect(config.agent.default).toBe("codex");
       expect(config.agent.models.claude).toBe("claude-opus-4-6");
     });
   });

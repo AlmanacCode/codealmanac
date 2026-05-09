@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { runAgentsModel, runAgentsUse } from "../src/commands/agents.js";
+import {
+  runAgentsList,
+  runAgentsModel,
+  runAgentsUse,
+} from "../src/commands/agents.js";
 import { runConfigList } from "../src/commands/config.js";
 import { withTempHome } from "./helpers.js";
 
@@ -32,5 +36,35 @@ describe("agents command", () => {
         "default",
       );
     });
+  });
+
+  it("hides Cursor by default and rejects selecting it", async () => {
+    await withTempHome(async () => {
+      const list = await runAgentsList();
+      expect(list.stdout).toContain("Claude");
+      expect(list.stdout).toContain("Codex");
+      expect(list.stdout).not.toContain("Cursor");
+
+      const result = await runAgentsUse({ provider: "cursor" });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("CODEALMANAC_ENABLE_CURSOR=1");
+    });
+  });
+
+  it("allows Cursor when the feature flag is enabled", async () => {
+    const original = process.env.CODEALMANAC_ENABLE_CURSOR;
+    process.env.CODEALMANAC_ENABLE_CURSOR = "1";
+    try {
+      await withTempHome(async () => {
+        const result = await runAgentsUse({ provider: "cursor" });
+        expect(result.exitCode).toBe(0);
+      });
+    } finally {
+      if (original === undefined) {
+        delete process.env.CODEALMANAC_ENABLE_CURSOR;
+      } else {
+        process.env.CODEALMANAC_ENABLE_CURSOR = original;
+      }
+    }
   });
 });

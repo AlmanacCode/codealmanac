@@ -12,10 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  checkClaudeAuth,
-  type ClaudeAuthStatus,
   type SpawnCliFn,
-  UNAUTHENTICATED_MESSAGE,
 } from "../agent/providers/claude/index.js";
 import {
   buildProviderModelChoices,
@@ -23,11 +20,20 @@ import {
   parseAgentSelection,
 } from "../agent/provider-view.js";
 import type {
-  ProviderModelChoice,
   ProviderSetupView,
 } from "../agent/provider-view.js";
+import type { ProviderModelChoice } from "../agent/types.js";
 import {
+  ensureCodexInstructions,
+  hasCodexInstructions,
+  CODEX_INSTRUCTIONS_END,
+  CODEX_INSTRUCTIONS_START,
+} from "../agent/providers/codex-instructions.js";
+import {
+  disabledAgentProviderMessage,
+  formatEnabledAgentProviderList,
   isAgentProviderId,
+  isEnabledAgentProviderId,
   readConfig,
   writeConfig,
   type AgentProviderId,
@@ -52,9 +58,9 @@ import {
  * + step-indicator style, same interactive + `--yes` + non-interactive
  * modes.
  *
- * Three things get installed:
+ * Setup installs:
  *
- *   1. The `SessionEnd` hook in `~/.claude/settings.json` (delegated to
+ *   1. Agent hooks (delegated to
  *      `runHookInstall` from `./hook.ts`).
  *   2. The short "how to use codealmanac" guide at
  *      `~/.claude/codealmanac.md`, sourced from `guides/mini.md` in the
@@ -63,6 +69,10 @@ import {
  *      sourced from `guides/reference.md`.
  *   4. An `@~/.claude/codealmanac.md` import line in `~/.claude/CLAUDE.md`
  *      so Claude Code picks up the short guide globally.
+ *   5. An inline managed codealmanac section in `~/.codex/AGENTS.md`
+ *      (or `AGENTS.override.md` when that is the active non-empty file),
+ *      so Codex picks up the same guidance without relying on Claude's
+ *      `@file` import syntax.
  *
  * Everything is idempotent — running setup again is safe. `--skip-hook`
  * and `--skip-guides` opt out of the individual installs. `--yes` or a
@@ -92,6 +102,8 @@ export interface SetupOptions {
   stableHooksDir?: string;
   /** Override `~/.claude/` dir for guide install. */
   claudeDir?: string;
+  /** Override `~/.codex/` dir for Codex instruction install. */
+  codexDir?: string;
   /** Override the directory containing `mini.md` / `reference.md`. */
   guidesDir?: string;
   /** Override interactivity; defaults to `process.stdin.isTTY`. */
@@ -157,7 +169,7 @@ function printBanner(out: NodeJS.WritableStream): void {
     const color = GRADIENT[Math.min(i, GRADIENT.length - 1)] ?? "";
     out.write(`${color}${LOGO_LINES[i]}${RST}\n`);
   }
-  out.write(`\n${WHITE_BOLD}  Install the hook + agent guides${RST}\n`);
+  out.write(`\n${WHITE_BOLD}  Set up your automatic codebase wiki${RST}\n`);
 }
 
 function printBadge(out: NodeJS.WritableStream): void {
@@ -202,20 +214,25 @@ export async function runSetup(
   printBanner(out);
   printBadge(out);
 
-  // Step 1: auth status. We report what we find; we don't block. The user
-  // can still install the hook + guides without being logged in — they'll
-  // hit the auth wall on first `capture`, not on setup.
-  const auth = await safeCheckAuth(options.spawnCli);
-  reportAuth(out, auth);
-  out.write(BAR + "\n");
-
-  const agentChoice = await chooseDefaultAgent({
-    out,
-    interactive,
-    requested: options.agent,
-    requestedModel: options.model,
-    spawnCli: options.spawnCli,
-  });
+  let agentChoice: AgentChoice;
+  try {
+    agentChoice = await chooseDefaultAgent({
+      out,
+      interactive,
+      requested: options.agent,
+      requestedModel: options.model,
+      spawnCli: options.spawnCli,
+    });
+  } catch (err: unknown) {
+    if (isSetupInterrupted(err)) {
+      return {
+        stdout: "",
+        stderr: "almanac: setup cancelled\n",
+        exitCode: 130,
+      };
+    }
+    throw err;
+  }
   if (!agentChoice.ok) {
     return {
       stdout: "",
@@ -225,7 +242,7 @@ export async function runSetup(
   }
   stepDone(
     out,
-    `Default agent: ${WHITE_BOLD}${agentChoice.provider}${RST}` +
+    `Agent: ${WHITE_BOLD}${agentChoice.provider}${RST}` +
       ` (${agentChoice.model ?? "provider default"})`,
   );
   out.write(BAR + "\n");
@@ -281,7 +298,7 @@ export async function runSetup(
   } else if (interactive) {
     hookAction = await confirm(
       out,
-      "Install auto-capture hooks for Claude, Codex, and Cursor?",
+      "Keep your codebase wiki up to date automatically?",
       true,
     );
   }
@@ -304,10 +321,10 @@ export async function runSetup(
     }
     hookResultLine = res.stdout.includes("already installed")
       ? `Auto-capture hooks ${DIM}already installed${RST}`
-      : `Auto-capture hooks installed`;
+      : `Auto-capture installed`;
     stepDone(out, hookResultLine);
   } else {
-    stepSkipped(out, `SessionEnd hook ${DIM}skipped${RST}`);
+    stepSkipped(out, `Auto-capture ${DIM}skipped${RST}`);
   }
   out.write(BAR + "\n");
 
@@ -318,7 +335,7 @@ export async function runSetup(
   } else if (interactive) {
     guidesAction = await confirm(
       out,
-      "Install the codealmanac usage guides into ~/.claude/ and import them from CLAUDE.md?",
+      "Add codealmanac instructions for your AI agents?",
       true,
     );
   }
@@ -328,11 +345,12 @@ export async function runSetup(
     try {
       const summary = await installGuides({
         claudeDir: options.claudeDir ?? path.join(homedir(), ".claude"),
+        codexDir: options.codexDir ?? path.join(homedir(), ".codex"),
         guidesDir: options.guidesDir ?? resolveGuidesDir(),
       });
       guidesSummary = summary.anyChanges
-        ? `Guides installed (${summary.filesWritten.join(", ")})`
-        : `Guides ${DIM}already installed${RST}`;
+        ? `Agent instructions added`
+        : `Agent instructions ${DIM}already added${RST}`;
       stepDone(out, guidesSummary);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -343,7 +361,7 @@ export async function runSetup(
       };
     }
   } else {
-    stepSkipped(out, `Guides ${DIM}skipped${RST}`);
+    stepSkipped(out, `Agent instructions ${DIM}skipped${RST}`);
   }
   out.write(BAR + "\n");
 
@@ -359,18 +377,6 @@ export async function runSetup(
   printNextSteps(out, existingPageCount);
 
   return { stdout: "", stderr: "", exitCode: 0 };
-}
-
-// ─── Auth reporting ──────────────────────────────────────────────────
-
-async function safeCheckAuth(
-  spawnCli?: SpawnCliFn,
-): Promise<ClaudeAuthStatus> {
-  try {
-    return await checkClaudeAuth(spawnCli);
-  } catch {
-    return { loggedIn: false };
-  }
 }
 
 type AgentChoice =
@@ -391,27 +397,52 @@ async function chooseDefaultAgent(args: {
     view = await buildProviderSetupView({ config, spawnCli: args.spawnCli });
   }
   if (args.interactive && args.requested === undefined && view !== null) {
-    args.out.write("  Choose default agent:\n");
-    view.choices.forEach((choice, index) => {
-      const tag = choice.recommended ? " recommended" : "";
-      const status = choice.ready ? "ready" : "not ready";
-      const detail = choice.account ?? choice.fixCommand ?? choice.detail;
-      args.out.write(
-        `    ${index + 1}. ${choice.label.padEnd(6)} ${status.padEnd(9)}${tag}  ${detail}\n`,
-      );
-    });
-    selected = (await promptText(
-      args.out,
-      "Default agent",
-      view.recommendedProvider,
-    )).toLowerCase();
-    const number = Number.parseInt(selected, 10);
-    if (
-      Number.isInteger(number) &&
-      number >= 1 &&
-      number <= view.choices.length
-    ) {
-      selected = view.choices[number - 1]?.id ?? selected;
+    while (true) {
+      const choice = await selectChoice({
+        out: args.out,
+        title: "Choose your agent",
+        help: "Choose the AI agent codealmanac should use.",
+        choices: view.choices.map((choice) => ({
+          value: choice,
+          line: formatProviderChoice(choice),
+          aliases: [choice.id, choice.label.toLowerCase()],
+        })),
+        defaultIndex: Math.max(
+          0,
+          view.choices.findIndex((choice) =>
+            choice.id === view?.recommendedProvider
+          ),
+        ),
+      });
+      if (choice.ready) {
+        selected = choice.id;
+        break;
+      }
+      if (choice.readiness === "not-authenticated" && choice.fixCommand !== null) {
+        const command = choice.fixCommand.startsWith("run: ")
+          ? choice.fixCommand.slice("run: ".length)
+          : choice.fixCommand;
+        const runLogin = await confirm(
+          args.out,
+          `${choice.label} sign-in is needed. Run '${command}' now?`,
+          true,
+        );
+        if (runLogin === "install") {
+          const login = await runLoginCommand(command);
+          if (!login.ok) {
+            stepActive(args.out, `${choice.label} login failed: ${login.error}`);
+          }
+          view = await buildProviderSetupView({ config, spawnCli: args.spawnCli });
+          const refreshed = view.choices.find((next) => next.id === choice.id);
+          if (refreshed?.ready === true) {
+            selected = refreshed.id;
+            break;
+          }
+        }
+        continue;
+      }
+      showUnavailableProvider(args.out, choice);
+      await waitForEnter(args.out, "Press Enter to choose a different agent.");
     }
   }
   const parsed = parseAgentSelection(selected);
@@ -419,10 +450,16 @@ async function chooseDefaultAgent(args: {
     return {
       ok: false,
       error:
-        `unknown agent '${selected}'. Expected one of: claude, codex, cursor.`,
+        `unknown agent '${selected}'. Expected one of: ${formatEnabledAgentProviderList()}.`,
     };
   }
   const provider = parsed.provider;
+  if (!isEnabledAgentProviderId(provider)) {
+    return {
+      ok: false,
+      error: disabledAgentProviderMessage(provider),
+    };
+  }
   let selectedChoice = view?.choices.find((choice) => choice.id === provider);
   if (
     args.interactive &&
@@ -446,6 +483,14 @@ async function chooseDefaultAgent(args: {
       }
     }
   }
+  if (selectedChoice !== undefined && !selectedChoice.ready) {
+    return {
+      ok: false,
+      error: `${selectedChoice.label} is not ready: ${
+        selectedChoice.fixCommand ?? selectedChoice.detail
+      }`,
+    };
+  }
   const requestedModel = args.requestedModel ?? parsed.model;
   const model = requestedModel ?? await chooseProviderModel({
     out: args.out,
@@ -465,7 +510,7 @@ async function chooseDefaultAgent(args: {
       },
     },
   });
-  if (!args.interactive || args.requested !== undefined) {
+  if ((!args.interactive || args.requested !== undefined) && selectedChoice !== undefined) {
     const detail = selectedChoice?.ready === true
       ? "ready"
       : selectedChoice?.fixCommand ?? selectedChoice?.detail ?? "status unknown";
@@ -483,7 +528,7 @@ async function chooseProviderModel(args: {
 }): Promise<string | null> {
   const choices =
     args.choice?.modelChoices ??
-    buildProviderModelChoices(args.provider, args.configuredModel);
+    await buildProviderModelChoices(args.provider, args.configuredModel);
   const recommended =
     choices.find((choice) => choice.recommended) ??
     choices.find((choice) => choice.source === "provider-default");
@@ -491,41 +536,261 @@ async function chooseProviderModel(args: {
     return args.configuredModel ?? recommended?.value ?? null;
   }
 
-  args.out.write(`  Choose ${args.provider} model:\n`);
-  choices.forEach((choice, index) => {
-    const marker = choice.recommended ? " recommended" : "";
-    const current = choice.value === args.configuredModel ? " current" : "";
-    args.out.write(
-      `    ${index + 1}. ${choice.label}${marker}${current}\n`,
-    );
-  });
   const currentIndex = choices.findIndex((choice) =>
     choice.value === args.configuredModel
   );
   const recommendedIndex = choices.findIndex((choice) => choice.recommended);
-  const defaultIndex =
+  const defaultIndex = Math.max(0,
     currentIndex >= 0
-      ? currentIndex + 1
+      ? currentIndex
       : recommendedIndex >= 0
-        ? recommendedIndex + 1
-        : 1;
-  const selected = await promptText(args.out, "Model", String(defaultIndex));
-  const number = Number.parseInt(selected, 10);
-  let modelChoice: ProviderModelChoice | undefined;
-  if (
-    Number.isInteger(number) &&
-    number >= 1 &&
-    number <= choices.length
-  ) {
-    modelChoice = choices[number - 1];
-  } else {
-    modelChoice = choices.find((choice) => choice.value === selected);
-  }
+        ? recommendedIndex
+        : 0);
+  const modelChoice = await selectChoice({
+    out: args.out,
+    title: `Choose ${providerDisplayName(args.provider)} model`,
+    choices: choices.map((choice) => ({
+      value: choice,
+      line: formatModelChoice(choice, args.configuredModel),
+      aliases: choice.value === null
+        ? ["default", "provider default"]
+        : [String(choice.value)],
+    })),
+    defaultIndex,
+  });
   if (modelChoice?.source === "custom") {
-    const custom = await promptText(args.out, "Custom model id", "");
+    const custom = await promptText(args.out, "Model name", "");
     return custom.length > 0 ? custom : recommended?.value ?? null;
   }
   return modelChoice?.value ?? recommended?.value ?? null;
+}
+
+interface SelectChoice<T> {
+  value: T;
+  line: string;
+  aliases?: string[];
+}
+
+async function selectChoice<T>(args: {
+  out: NodeJS.WritableStream;
+  title: string;
+  help?: string;
+  choices: SelectChoice<T>[];
+  defaultIndex: number;
+}): Promise<T> {
+  const selected = clampIndex(args.defaultIndex, args.choices.length);
+  if (canUseRawSelect()) {
+    return await selectChoiceRaw({ ...args, defaultIndex: selected });
+  }
+  renderSelect(args.out, {
+    title: args.title,
+    help: args.help,
+    choices: args.choices,
+    selected,
+    raw: false,
+  });
+  const answer = await promptText(args.out, "Select", String(selected + 1));
+  const index = Number.parseInt(answer, 10);
+  if (
+    Number.isInteger(index) &&
+    index >= 1 &&
+    index <= args.choices.length
+  ) {
+    return args.choices[index - 1]!.value;
+  }
+  const normalized = answer.trim().toLowerCase();
+  const matched = args.choices.find((choice) =>
+    choice.aliases?.some((alias) => alias.toLowerCase() === normalized)
+  );
+  return (matched ?? args.choices[selected])!.value;
+}
+
+async function selectChoiceRaw<T>(args: {
+  out: NodeJS.WritableStream;
+  title: string;
+  help?: string;
+  choices: SelectChoice<T>[];
+  defaultIndex: number;
+}): Promise<T> {
+  return new Promise((resolve, reject) => {
+    let selected = args.defaultIndex;
+    let renderedLines = 0;
+    const input = process.stdin as NodeJS.ReadStream & {
+      setRawMode?: (mode: boolean) => void;
+    };
+    const render = (): void => {
+      if (renderedLines > 0) {
+        args.out.write(`\x1b[${renderedLines}A\x1b[0J`);
+      }
+      renderedLines = renderSelect(args.out, {
+        title: args.title,
+        help: args.help,
+        choices: args.choices,
+        selected,
+        raw: true,
+      });
+    };
+    const cleanup = (): void => {
+      input.removeListener("data", onData);
+      input.setRawMode?.(false);
+      input.pause();
+    };
+    const onData = (chunk: Buffer): void => {
+      const key = chunk.toString("utf8");
+      if (key === "\u0003") {
+        cleanup();
+        args.out.write("\n");
+        reject(new SetupInterruptedError());
+        return;
+      }
+      if (key === "\r" || key === "\n") {
+        cleanup();
+        args.out.write("\n");
+        resolve(args.choices[selected]!.value);
+        return;
+      }
+      if (key === "\u001b[A") {
+        selected = selected === 0 ? args.choices.length - 1 : selected - 1;
+        render();
+      } else if (key === "\u001b[B") {
+        selected = selected === args.choices.length - 1 ? 0 : selected + 1;
+        render();
+      }
+    };
+    input.setRawMode?.(true);
+    input.resume();
+    input.on("data", onData);
+    render();
+  });
+}
+
+function renderSelect<T>(
+  out: NodeJS.WritableStream,
+  args: {
+    title: string;
+    help?: string;
+    choices: SelectChoice<T>[];
+    selected: number;
+    raw: boolean;
+  },
+): number {
+  let lines = 0;
+  out.write(`  ${WHITE_BOLD}${args.title}${RST}\n`);
+  lines++;
+  if (args.help !== undefined) {
+    out.write(`  ${DIM}${args.help}${RST}\n`);
+    lines++;
+  }
+  out.write("\n");
+  lines++;
+  args.choices.forEach((choice, index) => {
+    const pointer = index === args.selected ? `${BLUE}\u203a${RST}` : " ";
+    out.write(`  ${pointer} ${choice.line}\n`);
+    lines++;
+  });
+  const hint = args.raw
+    ? `Use \u2191/\u2193 to move, Enter to select`
+    : `Type a number or name, then press Enter`;
+  out.write(`\n  ${DIM}${hint}${RST}\n`);
+  lines += 2;
+  return lines;
+}
+
+class SetupInterruptedError extends Error {
+  constructor() {
+    super("setup interrupted");
+  }
+}
+
+function isSetupInterrupted(err: unknown): boolean {
+  return err instanceof SetupInterruptedError;
+}
+
+function canUseRawSelect(): boolean {
+  const input = process.stdin as NodeJS.ReadStream & {
+    setRawMode?: (mode: boolean) => void;
+  };
+  return process.stdin.isTTY === true && typeof input.setRawMode === "function";
+}
+
+function clampIndex(index: number, length: number): number {
+  if (length <= 0) return 0;
+  if (index < 0) return 0;
+  if (index >= length) return length - 1;
+  return index;
+}
+
+function formatProviderChoice(
+  choice: ProviderSetupView["choices"][number],
+): string {
+  const status = providerStatusLabel(choice);
+  const detail = providerDetailLabel(choice);
+  const tag = choice.recommended ? `  ${DIM}recommended${RST}` : "";
+  return `${choice.label.padEnd(8)} ${status.padEnd(15)} ${detail}${tag}`;
+}
+
+function providerStatusLabel(
+  choice: ProviderSetupView["choices"][number],
+): string {
+  if (choice.ready) {
+    return choice.detail === "ANTHROPIC_API_KEY set" ? "API key set" : "signed in";
+  }
+  return choice.readiness === "missing" ? "not installed" : "sign in needed";
+}
+
+function providerDetailLabel(
+  choice: ProviderSetupView["choices"][number],
+): string {
+  if (choice.ready) return choice.account ?? choice.detail;
+  if (choice.fixCommand === null) return choice.detail;
+  return choice.fixCommand.startsWith("run: ")
+    ? choice.fixCommand.slice("run: ".length)
+    : choice.fixCommand;
+}
+
+function showUnavailableProvider(
+  out: NodeJS.WritableStream,
+  choice: ProviderSetupView["choices"][number],
+): void {
+  if (choice.readiness === "missing") {
+    out.write(
+      `\n  ${WHITE_BOLD}${choice.label} is not installed.${RST}\n` +
+        `  ${providerDetailLabel(choice)}\n\n`,
+    );
+    return;
+  }
+  out.write(
+    `\n  ${WHITE_BOLD}${choice.label} is not signed in.${RST}\n` +
+      `  Run: ${providerDetailLabel(choice)}\n\n`,
+  );
+}
+
+function formatModelChoice(
+  choice: ProviderModelChoice,
+  configuredModel: string | null,
+): string {
+  const marker = choice.recommended
+    ? `  ${DIM}recommended${RST}`
+    : choice.value === configuredModel
+      ? `  ${DIM}current${RST}`
+      : "";
+  const label = choice.source === "provider-default" && choice.value !== null
+    ? friendlyModelLabel(choice.value)
+    : choice.label;
+  return `${label}${marker}`;
+}
+
+function friendlyModelLabel(value: string): string {
+  if (value === "claude-sonnet-4-6") return "Sonnet 4.6";
+  if (value === "claude-opus-4-7") return "Opus 4.7";
+  if (value === "claude-haiku-4-5-20251001") return "Haiku 4.5";
+  return value;
+}
+
+function providerDisplayName(provider: AgentProviderId): string {
+  if (provider === "claude") return "Claude";
+  if (provider === "codex") return "Codex";
+  return "Cursor";
 }
 
 async function runLoginCommand(command: string): Promise<
@@ -550,37 +815,11 @@ async function runLoginCommand(command: string): Promise<
   });
 }
 
-function reportAuth(
-  out: NodeJS.WritableStream,
-  auth: ClaudeAuthStatus,
-): void {
-  if (auth.loggedIn) {
-    const who = auth.email ?? "Claude account";
-    const plan =
-      auth.subscriptionType !== undefined
-        ? ` ${DIM}(${auth.subscriptionType})${RST}`
-        : "";
-    stepDone(out, `Claude auth: ${WHITE_BOLD}${who}${RST}${plan}`);
-    return;
-  }
-  if (
-    process.env.ANTHROPIC_API_KEY !== undefined &&
-    process.env.ANTHROPIC_API_KEY.length > 0
-  ) {
-    stepDone(out, `Claude auth: ${WHITE_BOLD}ANTHROPIC_API_KEY${RST} set`);
-    return;
-  }
-  // Not blocking — just report and show the two paths.
-  stepActive(out, `Claude auth: ${DIM}not signed in${RST}`);
-  for (const line of UNAUTHENTICATED_MESSAGE.split("\n")) {
-    out.write(`  ${DIM}\u2502   ${line}${RST}\n`);
-  }
-}
-
 // ─── Guide installation ──────────────────────────────────────────────
 
 interface InstallGuidesOptions {
   claudeDir: string;
+  codexDir: string;
   guidesDir: string;
 }
 
@@ -590,8 +829,9 @@ interface InstallGuidesResult {
 }
 
 /**
- * Copy the two guide files into `~/.claude/` and append an `@import`
- * line to `~/.claude/CLAUDE.md`. Every step is idempotent:
+ * Copy the two Claude guide files into `~/.claude/`, append an `@import`
+ * line to `~/.claude/CLAUDE.md`, and add inline Codex guidance to the
+ * active global Codex AGENTS file. Every step is idempotent:
  *
  *   - Guide files are compared by bytes before we write. If the content
  *     matches the bundled version, we skip (so `setup` doesn't cause a
@@ -626,11 +866,13 @@ async function installGuides(
 
   const claudeMd = path.join(options.claudeDir, "CLAUDE.md");
   const importChanged = await ensureImport(claudeMd);
+  const codexChanged = await ensureCodexInstructions(options.codexDir);
 
   const filesWritten: string[] = [];
   if (miniChanged) filesWritten.push("codealmanac.md");
   if (refChanged) filesWritten.push("codealmanac-reference.md");
   if (importChanged) filesWritten.push("CLAUDE.md");
+  if (codexChanged) filesWritten.push("AGENTS.md");
 
   return { anyChanges: filesWritten.length > 0, filesWritten };
 }
@@ -692,6 +934,12 @@ export function hasImportLine(contents: string): boolean {
     return next === " " || next === "\t";
   });
 }
+
+export {
+  CODEX_INSTRUCTIONS_END,
+  CODEX_INSTRUCTIONS_START,
+  hasCodexInstructions,
+};
 
 // ─── Interactive prompt ──────────────────────────────────────────────
 
@@ -758,6 +1006,13 @@ function promptText(
     process.stdin.resume();
     process.stdin.on("data", onData);
   });
+}
+
+async function waitForEnter(
+  out: NodeJS.WritableStream,
+  message: string,
+): Promise<void> {
+  await promptText(out, message, "");
 }
 
 // ─── Guides path resolution ──────────────────────────────────────────

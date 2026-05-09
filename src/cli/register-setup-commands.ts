@@ -27,7 +27,7 @@ export function registerSetupCommands(program: Command): void {
 
   agents
     .command("list")
-    .description("show Claude, Codex, and Cursor provider status")
+    .description("show Claude and Codex provider status")
     .action(async () => {
       emit(await runAgentsList());
     });
@@ -42,7 +42,7 @@ export function registerSetupCommands(program: Command): void {
   agents
     .command("use")
     .description("set the default AI agent provider")
-    .argument("<provider>", "claude, codex, cursor, or claude/<model>")
+    .argument("<provider>", "claude, codex, or claude/<model>")
     .action(async (provider: string) => {
       emit(await runAgentsUse({ provider }));
     });
@@ -50,7 +50,7 @@ export function registerSetupCommands(program: Command): void {
   agents
     .command("model")
     .description("set or reset a provider model")
-    .argument("<provider>", "claude, codex, or cursor")
+    .argument("<provider>", "claude or codex")
     .argument("[model]", "provider-specific model id")
     .option("--default", "reset to provider default")
     .action(async (
@@ -141,9 +141,9 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("setup")
-    .description("install the hook + CLAUDE.md guides (bare codealmanac alias)")
+    .description("set up codealmanac for Claude and Codex")
     .option("-y, --yes", "skip prompts; install everything")
-    .option("--agent <agent>", "default agent: claude, codex, or cursor")
+    .option("--agent <agent>", "default agent: claude or codex")
     .option("--model <model>", "default model for the selected agent")
     .option("--skip-hook", "opt out of the SessionEnd hook")
     .option("--skip-guides", "opt out of the CLAUDE.md guides")

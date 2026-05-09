@@ -4,7 +4,13 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import type { ClaudeAuthStatus } from "../../agent/providers/claude/index.js";
-import { IMPORT_LINE } from "../setup.js";
+import {
+  hasCodexInstructions,
+  resolveCodexAgentsPath,
+} from "../../agent/providers/codex-instructions.js";
+import {
+  IMPORT_LINE,
+} from "../setup.js";
 import {
   classifyInstallPath,
   detectInstallPath,
@@ -45,6 +51,8 @@ export async function gatherInstallChecks(
   const claudeDir = options.claudeDir ?? path.join(homedir(), ".claude");
   checks.push(describeGuides(claudeDir));
   checks.push(await describeImportLine(claudeDir));
+  const codexDir = options.codexDir ?? path.join(homedir(), ".codex");
+  checks.push(await describeCodexInstructions(codexDir));
 
   return checks;
 }
@@ -235,4 +243,40 @@ async function describeImportLine(claudeDir: string): Promise<Check> {
       message: `could not read ${claudeMd}: ${msg}`,
     };
   }
+}
+
+async function describeCodexInstructions(codexDir: string): Promise<Check> {
+  const agentsFile = await resolveCodexAgentsPath(codexDir);
+  if (!existsSync(agentsFile)) {
+    return {
+      status: "problem",
+      key: "install.codexInstructions",
+      message: `Codex AGENTS instructions missing (${path.basename(agentsFile)} not found)`,
+      fix: "run: almanac setup --yes",
+    };
+  }
+  try {
+    const contents = await readFile(agentsFile, "utf8");
+    if (hasCodexInstructions(contents)) {
+      return {
+        status: "ok",
+        key: "install.codexInstructions",
+        message: `Codex AGENTS instructions present (${path.basename(agentsFile)})`,
+      };
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      status: "problem",
+      key: "install.codexInstructions",
+      message: `could not read ${agentsFile}: ${msg}`,
+    };
+  }
+
+  return {
+    status: "problem",
+    key: "install.codexInstructions",
+    message: `Codex AGENTS instructions missing (${path.basename(agentsFile)})`,
+    fix: "run: almanac setup --yes",
+  };
 }

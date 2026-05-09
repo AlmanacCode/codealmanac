@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -71,7 +72,7 @@ describe("almanac hook install", () => {
     });
   });
 
-  it("can install Codex and Cursor hooks alongside Claude", async () => {
+  it("can install Codex hooks alongside Claude", async () => {
     await withTempHome(async (home) => {
       const { settingsPath, hookScriptPath } = await setup(home);
 
@@ -84,7 +85,7 @@ describe("almanac hook install", () => {
       expect(out.exitCode).toBe(0);
       expect(out.stdout).toMatch(/SessionEnd hook installed/);
       expect(out.stdout).toMatch(/Codex Stop hook installed/);
-      expect(out.stdout).toMatch(/Cursor sessionEnd hook installed/);
+      expect(out.stdout).not.toMatch(/Cursor sessionEnd hook installed/);
 
       const claude = (await readJson(settingsPath)) as {
         hooks: { SessionEnd: WrappedEntry[] };
@@ -105,11 +106,37 @@ describe("almanac hook install", () => {
         readFile(join(home, ".codex", "config.toml"), "utf8"),
       ).resolves.toMatch(/codex_hooks = true/);
 
-      const cursor = (await readJson(join(home, ".cursor", "hooks.json"))) as {
-        hooks: { sessionEnd: { command: string; timeout: number }[] };
-      };
-      expect(cursor.hooks.sessionEnd[0]!.command).toBe(hookScriptPath);
+      expect(existsSync(join(home, ".cursor", "hooks.json"))).toBe(false);
     });
+  });
+
+  it("can install Cursor hooks when the feature flag is enabled", async () => {
+    const original = process.env.CODEALMANAC_ENABLE_CURSOR;
+    process.env.CODEALMANAC_ENABLE_CURSOR = "1";
+    try {
+      await withTempHome(async (home) => {
+        const { settingsPath, hookScriptPath } = await setup(home);
+
+        const out = await runHookInstall({
+          source: "all",
+          settingsPath,
+          hookScriptPath,
+        });
+
+        expect(out.exitCode).toBe(0);
+        expect(out.stdout).toMatch(/Cursor sessionEnd hook installed/);
+        const cursor = (await readJson(join(home, ".cursor", "hooks.json"))) as {
+          hooks: { sessionEnd: { command: string; timeout: number }[] };
+        };
+        expect(cursor.hooks.sessionEnd[0]!.command).toBe(hookScriptPath);
+      });
+    } finally {
+      if (original === undefined) {
+        delete process.env.CODEALMANAC_ENABLE_CURSOR;
+      } else {
+        process.env.CODEALMANAC_ENABLE_CURSOR = original;
+      }
+    }
   });
 
   it("replaces an existing codex_hooks=false flag instead of duplicating it", async () => {

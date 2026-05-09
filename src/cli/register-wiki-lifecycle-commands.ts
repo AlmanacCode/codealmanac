@@ -19,7 +19,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
       "scaffold a wiki in this repo via an AI agent (requires ANTHROPIC_API_KEY or Claude subscription)",
     )
     .option("--quiet", "suppress per-tool streaming; print only the final line")
-    .option("--agent <agent>", "agent provider: claude, codex, or cursor")
+    .option("--agent <agent>", "agent provider: claude or codex")
     .option("--model <model>", "override the agent model")
     .option("--force", "overwrite an existing populated wiki (default: refuse)")
     .option("--json", "emit structured CommandOutcome JSON")
@@ -49,7 +49,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .description("run the writer/reviewer pipeline on a session (usually automatic)")
     .option("--session <id>", "target a specific session by ID")
     .option("--quiet", "suppress per-tool streaming; print only the final summary")
-    .option("--agent <agent>", "agent provider: claude, codex, or cursor")
+    .option("--agent <agent>", "agent provider: claude or codex")
     .option("--model <model>", "override the agent model")
     .option("--json", "emit structured CommandOutcome JSON")
     .action(
@@ -113,7 +113,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
   hook
     .command("install")
     .description("add a SessionEnd entry that runs 'almanac capture' on session end")
-    .option("--source <source>", "claude, codex, cursor, or all")
+    .option("--source <source>", "claude, codex, or all")
     .action(async (opts: { source?: string }) => {
       const result = await runHookInstall({
         source: normalizeHookSource(opts.source),

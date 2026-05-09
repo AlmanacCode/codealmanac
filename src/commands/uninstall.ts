@@ -4,7 +4,11 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import { runHookUninstall } from "./hook.js";
-import { IMPORT_LINE } from "./setup.js";
+import {
+  CODEX_INSTRUCTIONS_END,
+  CODEX_INSTRUCTIONS_START,
+  IMPORT_LINE,
+} from "./setup.js";
 
 /**
  * `almanac uninstall` — the reverse of `setup`.
@@ -19,7 +23,8 @@ import { IMPORT_LINE } from "./setup.js";
  *      as zero bytes.
  *   2. The guide files `~/.claude/codealmanac.md` and
  *      `~/.claude/codealmanac-reference.md`.
- *   3. The SessionEnd hook entry (delegated to `runHookUninstall`, which
+ *   3. The managed codealmanac block from Codex's global AGENTS file.
+ *   4. The SessionEnd hook entry (delegated to `runHookUninstall`, which
  *      already knows how to leave foreign entries alone).
  *
  * Flags:
@@ -40,6 +45,7 @@ export interface UninstallOptions {
   settingsPath?: string;
   hookScriptPath?: string;
   claudeDir?: string;
+  codexDir?: string;
   isTTY?: boolean;
   stdout?: NodeJS.WritableStream;
 }
@@ -62,6 +68,7 @@ export async function runUninstall(
     options.isTTY ?? (process.stdin.isTTY === true);
   const interactive = isTTY && options.yes !== true;
   const claudeDir = options.claudeDir ?? path.join(homedir(), ".claude");
+  const codexDir = options.codexDir ?? path.join(homedir(), ".codex");
 
   out.write("\n");
 
@@ -96,12 +103,12 @@ export async function runUninstall(
   } else if (interactive) {
     removeGuides = await confirm(
       out,
-      "Remove the guides + CLAUDE.md import line?",
+      "Remove agent instructions?",
       true,
     );
   }
   if (removeGuides) {
-    const summary = await removeGuideFiles(claudeDir);
+    const summary = await removeGuideFiles(claudeDir, codexDir);
     if (summary.anyChanges) {
       out.write(
         `  ${BLUE}\u25c7${RST}  Guides removed (${summary.filesTouched.join(", ")})\n`,
@@ -125,6 +132,7 @@ interface RemoveGuidesResult {
 
 async function removeGuideFiles(
   claudeDir: string,
+  codexDir: string,
 ): Promise<RemoveGuidesResult> {
   const touched: string[] = [];
 
@@ -156,6 +164,27 @@ async function removeGuideFiles(
         await writeFile(claudeMd, body, "utf8");
         touched.push("CLAUDE.md");
       }
+    }
+  }
+
+  for (const agentsFile of [
+    path.join(codexDir, "AGENTS.md"),
+    path.join(codexDir, "AGENTS.override.md"),
+  ]) {
+    if (!existsSync(agentsFile)) continue;
+    const existing = await readFile(agentsFile, "utf8");
+    const { changed, body } = removeManagedBlock(
+      existing,
+      CODEX_INSTRUCTIONS_START,
+      CODEX_INSTRUCTIONS_END,
+    );
+    if (!changed) continue;
+    if (body.trim().length === 0) {
+      await rm(agentsFile, { force: true });
+      touched.push(`${path.basename(agentsFile)} (deleted)`);
+    } else {
+      await writeFile(agentsFile, body, "utf8");
+      touched.push(path.basename(agentsFile));
     }
   }
 
@@ -195,6 +224,24 @@ export function removeImportLine(contents: string): {
   // normalize the whole file.
   body = body.replace(/\n\n\n+/g, "\n\n");
 
+  return { changed: true, body };
+}
+
+export function removeManagedBlock(
+  contents: string,
+  start: string,
+  end: string,
+): { changed: boolean; body: string } {
+  const startIndex = contents.indexOf(start);
+  const endIndex = contents.indexOf(end);
+  if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+    return { changed: false, body: contents };
+  }
+
+  const afterEnd = endIndex + end.length;
+  let body = `${contents.slice(0, startIndex)}${contents.slice(afterEnd)}`;
+  body = body.replace(/\n\n\n+/g, "\n\n");
+  body = body.replace(/^\n+/, "");
   return { changed: true, body };
 }
 
