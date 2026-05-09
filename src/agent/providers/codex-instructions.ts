@@ -15,6 +15,9 @@ Use codealmanac before answering codebase questions:
 
 ${CODEX_INSTRUCTIONS_END}`;
 
+// Codex currently treats `@file` references inside AGENTS.md as plain text
+// rather than expanding them like Claude does in CLAUDE.md. Keep the managed
+// instructions inline so they are actually present in Codex's prompt input.
 export async function ensureCodexInstructions(
   codexDir: string,
 ): Promise<boolean> {

@@ -70,9 +70,9 @@ import {
  *   4. An `@~/.claude/codealmanac.md` import line in `~/.claude/CLAUDE.md`
  *      so Claude Code picks up the short guide globally.
  *   5. An inline managed codealmanac section in `~/.codex/AGENTS.md`
- *      (or `AGENTS.override.md` when that is the active non-empty file),
- *      so Codex picks up the same guidance without relying on Claude's
- *      `@file` import syntax.
+ *      (or `AGENTS.override.md` when that is the active non-empty file).
+ *      Codex does not expand Claude-style `@file` imports in AGENTS files,
+ *      so the instructions must live inline to be model-visible.
  *
  * Everything is idempotent — running setup again is safe. `--skip-hook`
  * and `--skip-guides` opt out of the individual installs. `--yes` or a
@@ -831,7 +831,9 @@ interface InstallGuidesResult {
 /**
  * Copy the two Claude guide files into `~/.claude/`, append an `@import`
  * line to `~/.claude/CLAUDE.md`, and add inline Codex guidance to the
- * active global Codex AGENTS file. Every step is idempotent:
+ * active global Codex AGENTS file. Codex AGENTS files treat `@file`
+ * references as plain text, unlike Claude's import behavior, so setup
+ * writes the managed Codex block directly. Every step is idempotent:
  *
  *   - Guide files are compared by bytes before we write. If the content
  *     matches the bundled version, we skip (so `setup` doesn't cause a
