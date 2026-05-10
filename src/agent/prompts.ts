@@ -40,12 +40,21 @@ import { fileURLToPath } from "node:url";
  * we're running from `dist/` or `src/`.
  */
 
-export type PromptName = "bootstrap" | "writer" | "reviewer";
+export type PromptName =
+  | "bootstrap"
+  | "writer"
+  | "reviewer"
+  | "operations/build"
+  | "operations/absorb"
+  | "operations/garden";
 
 const PROMPT_NAMES: readonly PromptName[] = [
   "bootstrap",
   "writer",
   "reviewer",
+  "operations/build",
+  "operations/absorb",
+  "operations/garden",
 ];
 
 /**
@@ -112,5 +121,31 @@ function isPromptsDir(dir: string): boolean {
 
 export async function loadPrompt(name: PromptName): Promise<string> {
   const dir = resolvePromptsDir();
-  return readFile(path.join(dir, `${name}.md`), "utf8");
+  return readFile(resolvePromptPath(dir, name), "utf8");
+}
+
+function resolvePromptPath(dir: string, name: PromptName): string {
+  if (
+    name.length === 0 ||
+    path.isAbsolute(name) ||
+    name.includes("\\") ||
+    name.split("/").some((part) => part === "" || part === "." || part === "..")
+  ) {
+    throw new Error(`invalid prompt name: ${name}`);
+  }
+  const file = path.resolve(dir, `${name}.md`);
+  const relative = path.relative(dir, file);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`invalid prompt name: ${name}`);
+  }
+  return file;
+}
+
+export function joinPrompts(
+  parts: Array<string | null | undefined>,
+): string {
+  return parts
+    .map((part) => part?.trim())
+    .filter((part): part is string => part !== undefined && part.length > 0)
+    .join("\n\n---\n\n");
 }

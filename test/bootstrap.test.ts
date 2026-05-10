@@ -8,6 +8,7 @@ import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { SpawnCliFn } from "../src/agent/providers/claude/index.js";
 import { runBootstrap, StreamingFormatter } from "../src/commands/bootstrap.js";
 import {
+  joinPrompts,
   loadPrompt,
   resolvePromptsDir,
   setPromptsDirForTesting,
@@ -791,20 +792,29 @@ describe("prompts loader", () => {
     setPromptsDirForTesting(null);
   });
 
-  it("locates the bundled prompts directory and loads all three prompts", async () => {
+  it("locates the bundled prompts directory and loads bundled prompts", async () => {
     const dir = resolvePromptsDir();
     expect(existsSync(join(dir, "bootstrap.md"))).toBe(true);
     expect(existsSync(join(dir, "writer.md"))).toBe(true);
     expect(existsSync(join(dir, "reviewer.md"))).toBe(true);
+    expect(existsSync(join(dir, "operations", "build.md"))).toBe(true);
+    expect(existsSync(join(dir, "operations", "absorb.md"))).toBe(true);
+    expect(existsSync(join(dir, "operations", "garden.md"))).toBe(true);
 
     const bootstrap = await loadPrompt("bootstrap");
     const writer = await loadPrompt("writer");
     const reviewer = await loadPrompt("reviewer");
+    const build = await loadPrompt("operations/build");
+    const absorb = await loadPrompt("operations/absorb");
+    const garden = await loadPrompt("operations/garden");
 
     // Each prompt has its canonical opening phrase.
     expect(bootstrap).toMatch(/bootstrap agent/i);
     expect(writer).toMatch(/writer/i);
     expect(reviewer).toMatch(/reviewer/i);
+    expect(build).toMatch(/build operation/i);
+    expect(absorb).toMatch(/absorb operation/i);
+    expect(garden).toMatch(/garden operation/i);
   });
 
   it("honors the test-only override for custom prompt dirs", async () => {
@@ -816,12 +826,35 @@ describe("prompts loader", () => {
       await writeFile(join(dir, "bootstrap.md"), "BOOT", "utf8");
       await writeFile(join(dir, "writer.md"), "WRIT", "utf8");
       await writeFile(join(dir, "reviewer.md"), "REV", "utf8");
+      await import("node:fs/promises").then((fs) =>
+        fs.mkdir(join(dir, "operations"), { recursive: true }),
+      );
+      await writeFile(join(dir, "operations", "build.md"), "BUILD", "utf8");
 
       setPromptsDirForTesting(dir);
       expect(await loadPrompt("bootstrap")).toBe("BOOT");
       expect(await loadPrompt("writer")).toBe("WRIT");
       expect(await loadPrompt("reviewer")).toBe("REV");
+      expect(await loadPrompt("operations/build")).toBe("BUILD");
     });
+  });
+
+  it("rejects prompt names that escape the prompts directory", async () => {
+    await expect(loadPrompt("../package" as never)).rejects.toThrow(
+      /invalid prompt name/,
+    );
+    await expect(loadPrompt("operations/../build" as never)).rejects.toThrow(
+      /invalid prompt name/,
+    );
+    await expect(loadPrompt("/tmp/prompt" as never)).rejects.toThrow(
+      /invalid prompt name/,
+    );
+  });
+
+  it("joins prompt parts with a clear separator and skips empty parts", () => {
+    expect(joinPrompts([" first ", undefined, "", null, "second"])).toBe(
+      "first\n\n---\n\nsecond",
+    );
   });
 });
 

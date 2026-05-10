@@ -29,3 +29,14 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
 - Tests run: `npm test -- test/auth.test.ts test/bootstrap.test.ts test/capture.test.ts`
 - Result: 3 test files passed, 58 tests passed.
 - Next: Phase 1.2 path-based prompt loader and `joinPrompts`.
+
+## 2026-05-09 19:44 PDT
+
+- Built: Phase 1.2 path-based prompt loading and `joinPrompts`.
+- Files changed:
+  - `src/agent/prompts.ts`
+  - `test/bootstrap.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+- Tests run: `npm test -- test/bootstrap.test.ts`
+- Result: 1 test file passed, 28 tests passed.
+- Next: Phase 2.1 provider-neutral harness types/events/tools.
