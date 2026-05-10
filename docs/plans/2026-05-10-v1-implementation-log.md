@@ -189,3 +189,16 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
 - Result: 2 test files passed, 19 tests passed; TypeScript lint passed.
 - Next: Phase 5.2 internal Absorb operation for capture/ingest.
+
+## 2026-05-09 20:11 PDT
+
+- Built: Phase 5.2 internal Absorb operation.
+- Files changed:
+  - `src/operations/absorb.ts`
+  - `test/absorb-operation.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+- Tests run:
+  - `npm test -- test/absorb-operation.test.ts`
+  - `npm run lint`
+- Result: 1 test file passed, 4 tests passed; TypeScript lint passed.
+- Next: Phase 5.3 Garden operation.
