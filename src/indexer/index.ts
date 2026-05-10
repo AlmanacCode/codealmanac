@@ -82,18 +82,27 @@ export async function ensureFreshIndex(ctx: IndexContext): Promise<IndexResult> 
     return emptyResult();
   }
 
-  if (
-    !existsSync(dbPath) ||
-    isIndexSchemaStale(dbPath) ||
-    // Keep read-side freshness even when CLI/agent write paths eagerly
-    // reindex: users can still change `.almanac/pages/` directly via
-    // manual edits, git pulls, merges, or branch switches.
-    pagesNewerThan(pagesDir, dbPath) ||
-    topicsYamlNewerThan(almanacDir, dbPath)
-  ) {
+  if (indexNeedsRefresh({ almanacDir, dbPath, pagesDir })) {
     return runIndexer(ctx);
   }
   return emptyResult();
+}
+
+function indexNeedsRefresh(args: {
+  almanacDir: string;
+  dbPath: string;
+  pagesDir: string;
+}): boolean {
+  if (!existsSync(args.dbPath)) return true;
+  if (isIndexSchemaStale(args.dbPath)) return true;
+
+  // Keep read-side freshness even when CLI/agent write paths eagerly
+  // reindex: users can still change `.almanac/pages/` directly via
+  // manual edits, git pulls, merges, or branch switches.
+  return (
+    pagesNewerThan(args.pagesDir, args.dbPath) ||
+    topicsYamlNewerThan(args.almanacDir, args.dbPath)
+  );
 }
 
 function emptyResult(): IndexResult {

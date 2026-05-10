@@ -2,7 +2,7 @@ import { Command } from "commander";
 
 import { runHealth } from "../commands/health.js";
 import { listWikis } from "../commands/list.js";
-import { runSearch } from "../commands/search.js";
+import { runSearch, type SearchOutputMode } from "../commands/search.js";
 import { runShow } from "../commands/show.js";
 import { autoRegisterIfNeeded } from "../registry/autoregister.js";
 import {
@@ -68,11 +68,7 @@ export function registerQueryCommands(program: Command): void {
           includeArchive: opts.includeArchive,
           archived: opts.archived,
           wiki: opts.wiki,
-          json: opts.json,
-          slugs: opts.slugs,
-          summaries:
-            opts.summaries === true ||
-            (opts.slugs !== true && opts.json !== true && (process.stdout.isTTY ?? false)),
+          output: resolveSearchOutputMode(opts),
           limit: opts.limit,
         });
         emit(result);
@@ -198,4 +194,17 @@ export function registerQueryCommands(program: Command): void {
         process.exitCode = result.exitCode;
       }
     });
+}
+
+function resolveSearchOutputMode(opts: {
+  json?: boolean;
+  slugs?: boolean;
+  summaries?: boolean;
+}): SearchOutputMode {
+  if (opts.json === true) return "json";
+  if (opts.slugs === true) return "slugs";
+  if (opts.summaries === true || (process.stdout.isTTY ?? false)) {
+    return "summaries";
+  }
+  return "slugs";
 }

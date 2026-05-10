@@ -20,11 +20,11 @@ export interface SearchOptions {
   includeArchive?: boolean;
   archived?: boolean;
   wiki?: string;
-  json?: boolean;
-  slugs?: boolean;
-  summaries?: boolean;
+  output?: SearchOutputMode;
   limit?: number;
 }
+
+export type SearchOutputMode = "slugs" | "summaries" | "json";
 
 export interface SearchResult {
   slug: string;
@@ -356,13 +356,14 @@ function formatResults(
   rows: SearchResult[],
   options: SearchOptions,
 ): string {
-  if (options.json === true) {
+  const output = options.output ?? "slugs";
+  if (output === "json") {
     return `${JSON.stringify(rows, null, 2)}\n`;
   }
   // Empty result = empty output (not "no results found") — makes piping
   // into xargs / subsequent commands degrade gracefully.
   if (rows.length === 0) return "";
-  if (options.slugs === true || options.summaries !== true) {
+  if (output === "slugs") {
     return `${rows.map((r) => `${BLUE}${r.slug}${RST}`).join("\n")}\n`;
   }
   return `${rows.map(formatSearchResult).join("\n")}\n`;
@@ -377,7 +378,7 @@ function formatSearchResult(row: SearchResult): string {
 function buildStderr(rows: SearchResult[], options: SearchOptions): string {
   // Spec: "print warns if >50 when not --json". The warning goes to
   // stderr so it doesn't corrupt pipelines that filter stdout.
-  if (options.json === true) return "";
+  if (options.output === "json") return "";
   // Empty-result breadcrumb (v0.1.3). Interviews showed users saw blank
   // stdout and concluded the wiki was broken rather than the query
   // genuinely matched nothing. A single `# 0 results` line to stderr

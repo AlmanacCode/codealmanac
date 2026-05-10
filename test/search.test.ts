@@ -263,7 +263,7 @@ body
         cwd: repo,
         query: "synchronous",
         topics: [],
-        json: true,
+        output: "json",
       });
       const parsed = JSON.parse(r.stdout);
       expect(Array.isArray(parsed)).toBe(true);
@@ -297,7 +297,7 @@ checkout body
         cwd: repo,
         query: "operation harness",
         topics: [],
-        summaries: true,
+        output: "summaries",
       });
       expect(r.stdout).toBe(
         "checkout-flow\n  Checkout sessions enter through the operation harness.\n",
@@ -325,7 +325,7 @@ checkout body
         cwd: repo,
         query: "checkout",
         topics: [],
-        slugs: true,
+        output: "slugs",
       });
       expect(r.stdout).toBe("checkout-flow\n");
     });
@@ -561,7 +561,7 @@ body
         cwd: repo,
         query: "nonsense-query-that-matches-nothing-xyz",
         topics: [],
-        json: true,
+        output: "json",
       });
       expect(r.exitCode).toBe(0);
       expect(r.stderr).toBe("");
