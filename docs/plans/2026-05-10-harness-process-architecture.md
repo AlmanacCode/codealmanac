@@ -538,10 +538,15 @@ Prompt-writing philosophy is already defined elsewhere:
   criteria, while deterministic code handles setup, logs, snapshots, indexing,
   and summaries.
 
-Start with this minimal layout:
+The implemented prompt layout is still simple, but now has a small shared base
+that every operation receives:
 
 ```text
 prompts/
+  base/
+    purpose.md
+    notability.md
+    syntax.md
   operations/
     build.md
     absorb.md
@@ -554,9 +559,23 @@ prompts/
 for future helper-agent prompts without keeping the old hardcoded reviewer/scout
 architecture.
 
+The base prompts separate stable wiki guidance from operation algorithms:
+
+- `purpose.md`: what the wiki is, including cultivated project memory,
+  deep-research cache, project-world map, inputs as raw material, and synthesis
+  over logs.
+- `notability.md`: what deserves a page/topic/hub, including entities,
+  dependencies, influences, research synthesis, market/product synthesis,
+  clusters, splitting, merging, archiving, and supersession.
+- `syntax.md`: frontmatter, source grounding, natural slugs, wikilink syntax,
+  topic tagging, page shape, and writing conventions.
+
 The prompt loader should support slash paths:
 
 ```ts
+loadPrompt("base/purpose")
+loadPrompt("base/notability")
+loadPrompt("base/syntax")
 loadPrompt("operations/build")
 loadPrompt("operations/absorb")
 loadPrompt("operations/garden")
@@ -566,6 +585,9 @@ Prompt composition should be plain string joining:
 
 ```ts
 joinPrompts([
+  await loadPrompt("base/purpose"),
+  await loadPrompt("base/notability"),
+  await loadPrompt("base/syntax"),
   await loadPrompt("operations/absorb"),
   "This run is absorbing a coding session transcript.",
   `Transcript: ${transcriptPath}`,
@@ -573,18 +595,18 @@ joinPrompts([
 ]);
 ```
 
-No manifest, prompt graph, or source/evidence abstraction is needed at this
-stage. Operations can load markdown prompt files and append runtime strings:
+No manifest, prompt graph, writer/reviewer pipeline, or source/evidence
+abstraction is needed. Operations load markdown prompt files and append runtime
+strings:
 
 ```text
-operation prompt
+base purpose
++ base notability
++ base syntax
++ operation prompt
 + optional runtime context string
 + concrete file/session/wiki paths
 ```
-
-Future prompt folders such as `prompts/base/` or provider/context-specific
-files can be added when real duplication appears. The initial architecture only
-requires operation prompts.
 
 This does not need a separate "source" or "evidence" abstraction.
 

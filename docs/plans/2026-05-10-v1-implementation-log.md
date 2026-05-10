@@ -433,3 +433,39 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm test -- test/process-background.test.ts test/process-manager.test.ts test/harness-provider-registry.test.ts`
   - `npm run lint`
 - Result: focused tests passed and TypeScript lint passed.
+
+## 2026-05-10 Prompt Doctrine Split
+
+- Built: shared base prompt modules for project-memory doctrine, page
+  notability/graph structure, and page syntax/writing conventions.
+- Files added:
+  - `prompts/base/purpose.md`
+  - `prompts/base/notability.md`
+  - `prompts/base/syntax.md`
+- Files changed:
+  - `prompts/operations/build.md`
+  - `prompts/operations/absorb.md`
+  - `prompts/operations/garden.md`
+  - `src/agent/prompts.ts`
+  - `src/operations/run.ts`
+  - operation prompt tests
+  - `.almanac/pages/operation-prompts.md`
+  - V1 architecture/implementation docs
+- Behavior:
+  - All operation specs now assemble `base/purpose`, `base/notability`,
+    `base/syntax`, the selected operation prompt, runtime context, and
+    command-specific context.
+  - Build/Absorb/Garden prompts now describe soft algorithms and optional
+    helper/subagent usage without reintroducing fixed writer/reviewer roles.
+  - Base syntax guidance covers frontmatter, grounding, natural slugs, topics,
+    hubs, wikilinks, `files:`, and prompt-level `sources:` conventions.
+- Tests run:
+  - `npm test -- build-operation.test.ts absorb-operation.test.ts garden-operation.test.ts`
+  - `npm run lint`
+  - `npm test`
+  - `npm run build`
+  - `node dist/codealmanac.js health`
+  - `git diff --check`
+- Result: targeted operation tests passed with 3 files and 12 tests; TypeScript
+  lint passed; full suite passed with 44 files and 427 tests; build passed;
+  wiki health was clean; diff whitespace check passed.

@@ -35,7 +35,12 @@ describe("build operation", () => {
           targetPaths: [repo],
         },
       });
-      expect(spec.prompt).toContain("You are building the first useful CodeAlmanac wiki");
+      expect(spec.prompt).toContain("CodeAlmanac is cultivated project memory");
+      expect(spec.prompt).toContain("Page Notability And Graph Structure");
+      expect(spec.prompt).toContain("Page Syntax And Writing Conventions");
+      expect(spec.prompt).toContain(
+        "You are building the first substantial CodeAlmanac wiki",
+      );
       expect(spec.prompt).toContain(`Repository root: ${repo}`);
       expect(spec.prompt).toContain("Extra context.");
     });

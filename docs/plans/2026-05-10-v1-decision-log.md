@@ -302,3 +302,33 @@ Update 2026-05-09 21:09 PDT: Claude structured output is also marked false
 until the adapter maps `AgentRunSpec.output` into Claude SDK options. Codex
 keeps structured output true because its adapter maps `schemaPath` to
 `--output-schema`.
+
+## 2026-05-10 Prompt Base Split
+
+Decision: Split shared prompt guidance into `purpose.md`, `notability.md`, and
+`syntax.md`, then concatenate those before every operation prompt.
+
+Context: The operation prompts need shared guidance for the broader wiki
+philosophy: project memory, deep-research cache, codebase as anchor but not
+boundary, entities, external dependencies, influences, research/product/market
+synthesis, topics, hubs, frontmatter, source grounding, and wikilink syntax.
+Keeping all of that inside each operation prompt would duplicate prose and make
+Build/Absorb/Garden harder to keep aligned.
+
+Alternatives:
+- Keep one large `wiki-doctrine.md`.
+- Keep only the three operation prompts and duplicate shared rules.
+- Split into many tiny modules such as `topics.md`, `links.md`, `style.md`,
+  and `notability.md`.
+
+Why: Three base modules keep the distinction clear without creating prompt
+plumbing sprawl:
+
+- `purpose.md`: why the wiki exists.
+- `notability.md`: what deserves pages/topics/hubs and how clusters evolve.
+- `syntax.md`: how pages are written and grounded.
+
+Consequences: `src/operations/run.ts` now loads base prompts before the
+operation prompt. Future improvements to wiki philosophy can usually land in a
+base prompt without touching operation algorithms. Helper/subagent guidance
+stays in operation prompts because it is execution behavior, not wiki doctrine.

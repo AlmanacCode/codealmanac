@@ -33,7 +33,9 @@ Read these files first, in this order:
 - Prefer deleting stale abstractions over adapting them awkwardly.
 - Do not create a source/evidence pipeline.
 - Do not recreate the hardcoded writer/reviewer capture architecture.
-- Prompts start simple: `prompts/operations/build.md`, `absorb.md`, `garden.md`, plus empty `prompts/agents/.gitkeep`.
+- Prompts use a small shared base (`prompts/base/purpose.md`,
+  `notability.md`, `syntax.md`) plus `prompts/operations/build.md`,
+  `absorb.md`, `garden.md`, and empty `prompts/agents/.gitkeep`.
 - Prompt assembly is simple string joining with `loadPrompt()` and `joinPrompts()`.
 - All write-capable AI commands create CodeAlmanac jobs.
 - `init` defaults foreground; `capture`, `ingest`, and `garden` default background.
@@ -145,9 +147,12 @@ boundaries should remain.
 
 ## Phase 1: Prompt System Reset
 
-### Task 1.1: Replace Flat Prompts With Operation Prompts
+### Task 1.1: Replace Flat Prompts With Base And Operation Prompts
 
 **Files:**
+- Create: `prompts/base/purpose.md`
+- Create: `prompts/base/notability.md`
+- Create: `prompts/base/syntax.md`
 - Create: `prompts/operations/build.md`
 - Create: `prompts/operations/absorb.md`
 - Create: `prompts/operations/garden.md`
@@ -157,14 +162,24 @@ boundaries should remain.
 - Update log: `docs/plans/2026-05-10-v1-implementation-log.md`
 
 **Steps:**
-1. Create the operation prompt files with concise first versions.
-2. `build.md`: first useful wiki, repo survey, durable anchors, no placeholder spam.
-3. `absorb.md`: improve wiki from starting context, input is not output, no-op valid.
-4. `garden.md`: improve whole wiki graph, merge/split/archive/relink/retopic, avoid churn.
-5. Leave `prompts/agents/` empty except `.gitkeep`.
-6. Run `npm test -- test/auth.test.ts test/bootstrap.test.ts test/capture.test.ts` to see what old tests break before code changes.
-7. Record result in implementation log.
-8. Commit and push.
+1. Create the base and operation prompt files.
+2. `purpose.md`: cultivated project memory, deep-research cache,
+   project-world map, inputs as raw material, synthesis over logs.
+3. `notability.md`: page existence, entities, dependencies, influences,
+   research/product/market synthesis, topics, clusters, hubs, temporal pages,
+   splitting, merging, archiving, and supersession.
+4. `syntax.md`: frontmatter, source grounding, natural slugs, wikilinks,
+   topic tagging, lead-first page shape, citations, and anti-patterns.
+5. `build.md`: deep first construction pass, corpus exploration, substantial
+   initial wiki, optional bounded helper/subagent investigations.
+6. `absorb.md`: improve wiki from starting context, input is not output,
+   prefer evolving synthesis pages, no-op valid.
+7. `garden.md`: improve whole wiki graph, merge/split/archive/relink/retopic,
+   cultivate clusters and hubs, avoid churn.
+8. Leave `prompts/agents/` empty except `.gitkeep`.
+9. Run targeted operation prompt tests.
+10. Record result in implementation log.
+11. Commit and push.
 
 ### Task 1.2: Add Path-Based Prompt Loader And Join Helper
 
@@ -180,6 +195,7 @@ boundaries should remain.
 4. Join with clear separators, not a complex manifest.
 5. Keep compatibility for old prompt names only if needed during transition.
 6. Add tests for:
+   - `loadPrompt("base/purpose")`
    - `loadPrompt("operations/build")`
    - nested prompt path traversal rejection
    - `joinPrompts` skips empty parts
@@ -552,4 +568,3 @@ almanac jobs cancel <run-id>
    - tests
    - remaining risks
    - follow-up tasks
-

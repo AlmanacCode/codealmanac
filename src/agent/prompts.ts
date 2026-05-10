@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 
 /**
  * Loads bundled prompt text from the `prompts/` directory that ships with
- * the npm package. V1 operation prompts live under `prompts/operations/`.
+ * the npm package. V1 prompts are split into shared base modules and
+ * operation-specific instructions.
  *
  * ## Why not embed the prompts as TS string literals?
  *
@@ -34,17 +35,23 @@ import { fileURLToPath } from "node:url";
  *      lands at the repo root, where `prompts/` also lives.
  *
  * We probe a small list of candidates in order and use the first that
- * contains the required operation prompt files. This keeps a single source of
- * truth — the `prompts/` directory on disk — without baking in whether
+ * contains the required prompt files. This keeps a single source of truth —
+ * the `prompts/` directory on disk — without baking in whether
  * we're running from `dist/` or `src/`.
  */
 
 export type PromptName =
+  | "base/purpose"
+  | "base/notability"
+  | "base/syntax"
   | "operations/build"
   | "operations/absorb"
   | "operations/garden";
 
 const PROMPT_NAMES: readonly PromptName[] = [
+  "base/purpose",
+  "base/notability",
+  "base/syntax",
   "operations/build",
   "operations/absorb",
   "operations/garden",
@@ -75,7 +82,7 @@ export function resolvePromptsDir(): string {
 
   // Candidates, most-specific first. Each path is where `prompts/` MIGHT
   // live given some plausible bundle layout. The first one that exists
-  // and contains our expected operation files wins.
+  // and contains our expected prompt files wins.
   const candidates = [
     // Bundled dist layout: `.../<pkg>/dist/codealmanac.js` → `../prompts`
     path.resolve(here, "..", "prompts"),
@@ -105,8 +112,8 @@ export function resolvePromptsDir(): string {
 
 function isPromptsDir(dir: string): boolean {
   if (!existsSync(dir)) return false;
-  // Require all operation prompts to be present. A half-populated directory
-  // is worse than not finding one — we'd rather error early.
+  // Require all base and operation prompts to be present. A half-populated
+  // directory is worse than not finding one — we'd rather error early.
   return PROMPT_NAMES.every((name) =>
     existsSync(path.join(dir, `${name}.md`)),
   );

@@ -23,6 +23,12 @@ const BASE_OPERATION_TOOLS: ToolRequest[] = [
   { id: "shell" },
 ];
 
+const BASE_PROMPTS = [
+  "base/purpose",
+  "base/notability",
+  "base/syntax",
+] as const;
+
 export async function createOperationRunSpec(args: {
   operation: OperationKind;
   promptName: string;
@@ -32,8 +38,12 @@ export async function createOperationRunSpec(args: {
   targetKind?: string;
   targetPaths?: string[];
 }): Promise<AgentRunSpec> {
+  const basePrompts = await Promise.all(
+    BASE_PROMPTS.map((name) => loadPrompt(name)),
+  );
   const operationPrompt = await loadPrompt(args.promptName);
   const prompt = joinPrompts([
+    ...basePrompts,
     operationPrompt,
     operationRuntimeContext(args.repoRoot),
     args.context,
