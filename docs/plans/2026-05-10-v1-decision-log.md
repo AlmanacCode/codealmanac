@@ -36,3 +36,22 @@ manager, harness SDK, provider adapters, and simple prompt assembly.
 
 Consequences: Implementation should delete stale architecture where it conflicts
 with the new model.
+
+## 2026-05-09 19:47 PDT
+
+Decision: Add harness provider registry with placeholder adapters before porting
+Claude and Codex.
+
+Context: The new operation/process layers need a stable provider-neutral
+registry and capability model before real provider ports are implemented.
+
+Alternatives:
+- Port Claude immediately while defining the registry.
+- Reuse `src/agent/providers/*` directly.
+
+Why: Placeholder adapters let the project compile and test the new boundary
+without mixing old `RunAgentOptions` semantics into `AgentRunSpec`.
+
+Consequences: Any command using the new harness before provider ports land will
+fail clearly with "not implemented yet." Real Claude/Codex behavior lands in the
+provider adapter phase.

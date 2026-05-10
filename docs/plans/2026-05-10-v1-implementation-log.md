@@ -56,3 +56,23 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
 - Result: 1 test file passed, 5 tests passed; TypeScript lint passed.
 - Next: Phase 2.2 harness provider registry.
+
+## 2026-05-09 19:47 PDT
+
+- Built: Phase 2.2 harness provider registry with explicit provider metadata and placeholder adapters.
+- Files changed:
+  - `src/harness/providers/index.ts`
+  - `src/harness/providers/metadata.ts`
+  - `src/harness/providers/not-implemented.ts`
+  - `src/harness/providers/claude.ts`
+  - `src/harness/providers/codex.ts`
+  - `src/harness/providers/cursor.ts`
+  - `src/harness/index.ts`
+  - `test/harness-provider-registry.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+  - `docs/plans/2026-05-10-v1-decision-log.md`
+- Tests run:
+  - `npm test -- test/harness-types.test.ts test/harness-provider-registry.test.ts`
+  - `npm run lint`
+- Result: 2 test files passed, 9 tests passed; TypeScript lint passed.
+- Next: Phase 3.1 process run records and ids.
