@@ -11,6 +11,11 @@ export {
   toRunView,
   writeRunRecord,
 } from "./records.js";
+export {
+  diffPageSnapshots,
+  isNoopPageDelta,
+  snapshotPages,
+} from "./snapshots.js";
 export type {
   DisplayRunStatus,
   RunRecord,
@@ -18,3 +23,8 @@ export type {
   RunSummary,
   RunView,
 } from "./types.js";
+export type {
+  PageSnapshot,
+  PageSnapshotDelta,
+  PageSnapshotEntry,
+} from "./snapshots.js";
