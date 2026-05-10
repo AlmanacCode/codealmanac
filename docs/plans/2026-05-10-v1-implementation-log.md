@@ -40,3 +40,19 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
 - Tests run: `npm test -- test/bootstrap.test.ts`
 - Result: 1 test file passed, 28 tests passed.
 - Next: Phase 2.1 provider-neutral harness types/events/tools.
+
+## 2026-05-09 19:45 PDT
+
+- Built: Phase 2.1 provider-neutral harness types, events, and base tool registry.
+- Files changed:
+  - `src/harness/types.ts`
+  - `src/harness/events.ts`
+  - `src/harness/tools.ts`
+  - `src/harness/index.ts`
+  - `test/harness-types.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+- Tests run:
+  - `npm test -- test/harness-types.test.ts`
+  - `npm run lint`
+- Result: 1 test file passed, 5 tests passed; TypeScript lint passed.
+- Next: Phase 2.2 harness provider registry.
