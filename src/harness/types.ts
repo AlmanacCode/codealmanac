@@ -88,7 +88,7 @@ export interface ProviderStatus {
 }
 
 export interface HarnessRunHooks {
-  onEvent?: (event: HarnessEvent) => void;
+  onEvent?: (event: HarnessEvent) => void | Promise<void>;
 }
 
 export interface HarnessProvider {

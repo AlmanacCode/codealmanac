@@ -1,4 +1,6 @@
 export { createRunId } from "./ids.js";
+export { appendRunEvent, initializeRunLog } from "./logs.js";
+export { startForegroundProcess } from "./manager.js";
 export {
   buildStartedRunRecord,
   finishRunRecord,
@@ -16,6 +18,11 @@ export {
   isNoopPageDelta,
   snapshotPages,
 } from "./snapshots.js";
+export type { RunLogEntry } from "./logs.js";
+export type {
+  StartProcessOptions,
+  StartProcessResult,
+} from "./manager.js";
 export type {
   DisplayRunStatus,
   RunRecord,
