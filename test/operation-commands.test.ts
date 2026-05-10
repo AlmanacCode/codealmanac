@@ -1,3 +1,4 @@
+import { mkdir, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -107,6 +108,7 @@ describe("operation command wrappers", () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "cmd-capture-garden");
       await initWiki({ cwd: repo, name: "cmd-capture-garden", description: "" });
+      await writeFile(join(repo, "session.jsonl"), "{}\n");
 
       const capture = await runCaptureCommand({
         cwd: repo,
@@ -151,17 +153,70 @@ describe("operation command wrappers", () => {
     });
   });
 
-  it("does not launch capture without a transcript file yet", async () => {
+  it("auto-resolves the latest Claude transcript for capture", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-capture-auto");
+      await initWiki({ cwd: repo, name: "cmd-capture-auto", description: "" });
+      const projectsDir = join(home, "claude-projects");
+      const projectDir = join(projectsDir, "project");
+      await mkdir(projectDir, { recursive: true });
+      const older = join(projectDir, "older.jsonl");
+      const newer = join(projectDir, "newer.jsonl");
+      await writeFile(older, `{"cwd":"${repo}"}\n`);
+      await writeFile(newer, `{"cwd":"${repo}"}\n`);
+      const oldDate = new Date("2026-05-09T20:00:00.000Z");
+      const newDate = new Date("2026-05-09T20:01:00.000Z");
+      await Promise.all([
+        utimes(older, oldDate, oldDate),
+        utimes(newer, newDate, newDate),
+      ]);
+      const seen: unknown[] = [];
+
+      const result = await runCaptureCommand({
+        cwd: repo,
+        claudeProjectsDir: projectsDir,
+        startBackground: async (options) => {
+          seen.push(options);
+          return {
+            runId: "run_capture_auto",
+            childPid: 333,
+            record: {
+              version: 1,
+              id: "run_capture_auto",
+              operation: "absorb",
+              status: "queued",
+              repoRoot: options.repoRoot,
+              pid: 0,
+              provider: options.spec.provider.id,
+              startedAt: "2026-05-09T20:20:00.000Z",
+              logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+            },
+          };
+        },
+      });
+
+      expect(result.stdout).toBe("capture started: run_capture_auto\n");
+      expect(seen[0]).toMatchObject({
+        spec: {
+          metadata: {
+            operation: "absorb",
+            targetKind: "session",
+            targetPaths: [newer],
+          },
+        },
+      });
+    });
+  });
+
+  it("does not launch unsupported app capture without a transcript file", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "cmd-capture-empty");
       await initWiki({ cwd: repo, name: "cmd-capture-empty", description: "" });
 
-      const result = await runCaptureCommand({ cwd: repo });
+      const result = await runCaptureCommand({ cwd: repo, app: "codex" });
 
       expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain(
-        "capture session discovery is not implemented",
-      );
+      expect(result.stderr).toContain("capture discovery for codex sessions");
     });
   });
 });

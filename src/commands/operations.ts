@@ -6,6 +6,7 @@ import type { HarnessProviderId } from "../harness/types.js";
 import { runAbsorbOperation } from "../operations/absorb.js";
 import { runBuildOperation } from "../operations/build.js";
 import { runGardenOperation } from "../operations/garden.js";
+import { resolveCaptureTranscripts } from "./session-transcripts.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,
@@ -40,6 +41,7 @@ export interface CaptureCommandOptions extends OperationCommandDeps {
   foreground?: boolean;
   json?: boolean;
   yes?: boolean;
+  claudeProjectsDir?: string;
 }
 
 export interface IngestCommandOptions extends OperationCommandDeps {
@@ -93,16 +95,22 @@ export async function runCaptureCommand(
   }
 
   try {
-    const paths = (options.sessionFiles ?? []).map((path) =>
-      resolve(options.cwd, path),
-    );
-    if (paths.length === 0) {
+    const repoRoot = await resolveCaptureRepoRoot(options.cwd, options.json);
+    if (typeof repoRoot !== "string") return repoRoot;
+    const resolved = await resolveCaptureTranscripts({
+      repoRoot,
+      cwd: options.cwd,
+      files: options.sessionFiles,
+      app: options.app,
+      session: options.session,
+      claudeProjectsDir: options.claudeProjectsDir,
+    });
+    if (!resolved.ok) {
       return renderOutcome(
         {
           type: "needs-action",
-          message:
-            "capture session discovery is not implemented in the V1 job path",
-          fix: "pass one or more transcript files, or use almanac ingest <file-or-folder>",
+          message: resolved.error,
+          fix: resolved.fix,
           data: {
             app: options.app,
             session: options.session,
@@ -115,6 +123,7 @@ export async function runCaptureCommand(
         { json: options.json },
       );
     }
+    const paths = resolved.paths;
     const result = await runAbsorbOperation({
       cwd: options.cwd,
       provider: provider.value,
@@ -265,6 +274,23 @@ function renderOperationError(
     );
   }
   return renderOutcome({ type: "error", message }, { json });
+}
+
+async function resolveCaptureRepoRoot(
+  cwd: string,
+  json: boolean | undefined,
+): Promise<string | CommandResult> {
+  const { findNearestAlmanacDir } = await import("../paths.js");
+  const repoRoot = findNearestAlmanacDir(cwd);
+  if (repoRoot !== null) return repoRoot;
+  return renderOutcome(
+    {
+      type: "needs-action",
+      message: "no .almanac/ found in this directory or any parent",
+      fix: "run: almanac init",
+    },
+    { json },
+  );
 }
 
 function jsonForegroundError(): CommandResult {

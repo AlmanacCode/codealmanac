@@ -204,6 +204,10 @@ provider/session discovery layer is designed.
 Consequences: Explicit transcript-file capture works. No-arg/latest-session and
 flag-based session discovery are a documented follow-up before V1 is complete.
 
+Update 2026-05-09 20:33 PDT: Claude latest-session and `--session <id>`
+discovery now work in the V1 command path. Codex/Cursor session discovery and
+bulk filters remain explicit follow-up work.
+
 ## 2026-05-09 20:30 PDT
 
 Decision: Codex `exec` adapter rejects unsupported per-run fields instead of

@@ -280,4 +280,24 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
 - Remaining known follow-up:
   - `jobs attach` still needs a true streaming/tail implementation.
   - Foreground mode records normalized events but needs a human-readable live event renderer.
-  - Capture session discovery for `--app`, `--session`, `--since`, `--limit`, `--all`, and no-arg latest-session mode still needs the provider-specific resolver layer.
+  - Capture session discovery for Codex/Cursor, `--since`, `--limit`, and `--all` still needs the provider-specific resolver layer.
+
+## 2026-05-09 20:33 PDT
+
+- Built: Claude transcript discovery for V1 `capture`.
+- Files changed:
+  - `src/commands/session-transcripts.ts`
+  - `src/commands/operations.ts`
+  - `test/operation-commands.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+  - `docs/plans/2026-05-10-v1-decision-log.md`
+- Behavior:
+  - Explicit transcript files are validated and passed to Absorb.
+  - No-arg `capture` defaults to Claude transcript discovery.
+  - `capture --session <id>` finds matching Claude `<id>.jsonl`.
+  - Codex/Cursor capture discovery still fails clearly unless transcript files are provided.
+- Tests run:
+  - `npm test`
+  - `npm run lint`
+  - `git diff --check`
+- Result: 47 test files passed, 474 tests passed; TypeScript lint passed; diff whitespace check passed.
