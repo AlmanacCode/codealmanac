@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Almanac</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <div id="app" class="ca-shell">
+      <aside class="ca-left">
+        <div class="ca-brand">
+          <div class="ca-brand-mark">A</div>
+          <div>
+            <div class="ca-brand-title">Almanac</div>
+            <div class="ca-brand-subtitle">Local wiki viewer</div>
+          </div>
+        </div>
+        <form id="search-form" class="ca-search">
+          <input id="search-input" type="search" placeholder="Search pages" autocomplete="off" />
+        </form>
+        <nav class="ca-nav">
+          <button data-route="/" class="ca-nav-item is-active">Overview</button>
+          <button data-route="/search" class="ca-nav-item">Recent pages</button>
+        </nav>
+        <section class="ca-left-section">
+          <h2>Topics</h2>
+          <div id="topic-list" class="ca-link-list"></div>
+        </section>
+        <section class="ca-left-section">
+          <h2>Recent</h2>
+          <div id="recent-list" class="ca-link-list"></div>
+        </section>
+      </aside>
+
+      <main class="ca-main">
+        <div id="reader" class="ca-reader"></div>
+      </main>
+
+      <aside class="ca-right">
+        <section class="ca-meta-block">
+          <h2>Page</h2>
+          <div id="page-meta" class="ca-meta-empty">Select a page.</div>
+        </section>
+        <section class="ca-meta-block">
+          <h2>Backlinks</h2>
+          <div id="backlinks" class="ca-link-list"></div>
+        </section>
+        <section class="ca-meta-block">
+          <h2>Files</h2>
+          <div id="file-refs" class="ca-link-list"></div>
+        </section>
+      </aside>
+    </div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

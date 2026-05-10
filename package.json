@@ -28,6 +28,7 @@
   },
   "files": [
     "dist",
+    "viewer",
     "prompts",
     "hooks",
     "guides",

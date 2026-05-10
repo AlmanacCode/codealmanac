@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { runHealth } from "../commands/health.js";
 import { listWikis } from "../commands/list.js";
 import { runSearch, type SearchOutputMode } from "../commands/search.js";
+import { runServe } from "../commands/serve.js";
 import { runShow } from "../commands/show.js";
 import { autoRegisterIfNeeded } from "../registry/autoregister.js";
 import {
@@ -15,6 +16,20 @@ import {
 } from "./helpers.js";
 
 export function registerQueryCommands(program: Command): void {
+  program
+    .command("serve")
+    .description("start the local read-only wiki viewer")
+    .option("--host <host>", "host to bind", "127.0.0.1")
+    .option("--port <n>", "port to bind", parsePositiveInt, 3927)
+    .action(async (opts: { host?: string; port?: number }) => {
+      await autoRegisterIfNeeded(process.cwd());
+      await runServe({
+        cwd: process.cwd(),
+        host: opts.host,
+        port: opts.port,
+      });
+    });
+
   program
     .command("search [query]")
     .description("find pages by text, topic, file mentions, freshness")

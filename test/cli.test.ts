@@ -120,6 +120,7 @@ describe("registerCommands", () => {
     registerCommands(program);
 
     expect(program.commands.map((cmd) => cmd.name())).toEqual([
+      "serve",
       "search",
       "show",
       "health",
@@ -192,6 +193,9 @@ describe("registerCommands", () => {
     );
     expect(optionFlags(findCommand(program, ["search"]))).toContain(
       "--summaries",
+    );
+    expect(optionFlags(findCommand(program, ["serve"]))).toContain(
+      "--port <n>",
     );
     expect(optionFlags(findCommand(program, ["list"]))).toContain(
       "--drop <name>",
