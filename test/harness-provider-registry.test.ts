@@ -36,8 +36,8 @@ describe("harness provider registry", () => {
 
   it("keeps unported adapters explicit", async () => {
     await expect(
-      getHarnessProvider("codex").run({
-        provider: { id: "codex" },
+      getHarnessProvider("cursor").run({
+        provider: { id: "cursor" },
         cwd: "/repo",
         prompt: "hello",
         metadata: { operation: "build" },

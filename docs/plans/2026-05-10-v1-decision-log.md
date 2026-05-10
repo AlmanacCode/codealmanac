@@ -101,3 +101,27 @@ Consequences: Tool registry entries remain provider-neutral, but the Claude
 adapter is now responsible for name expansion such as `search` to `Glob`/`Grep`
 and `web` to `WebSearch`/`WebFetch`. MCP server configs are passed through, but
 specific MCP tool names are not invented by the registry.
+
+## 2026-05-09 20:06 PDT
+
+Decision: The Codex V1 adapter uses `codex exec --json` and rejects per-run
+programmatic `agents`.
+
+Context: The Codex CLI has official subagents and custom-agent concepts, but
+the simple non-interactive `exec` path does not expose a Claude-equivalent
+in-memory `agents` map with enforced per-agent tool scopes.
+
+Alternatives:
+- Inline requested agents into the prompt as a fallback.
+- Generate `.codex/agents/*.toml` files per run.
+- Wait for a fuller Codex app-server/thread lifecycle integration before
+  supporting Codex agents.
+
+Why: The V1 provider layer should report and enforce the actual primitive it can
+control. `codex exec --json` is enough for Build/Absorb/Garden filesystem work,
+but pretending it supports Claude-style per-run agents would make the abstraction
+misleading.
+
+Consequences: Operation builders should only include `agents` when the selected
+provider capability supports `programmaticPerRun`. Codex still gets the same
+assembled prompt/system text and can use its own configured harness features.

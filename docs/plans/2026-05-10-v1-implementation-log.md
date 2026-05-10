@@ -156,3 +156,19 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
 - Result: 2 test files passed, 6 tests passed; TypeScript lint passed.
 - Next: Phase 4.2 Codex harness adapter port.
+
+## 2026-05-09 20:06 PDT
+
+- Built: Phase 4.2 Codex harness adapter port.
+- Files changed:
+  - `src/harness/providers/codex.ts`
+  - `test/codex-harness-provider.test.ts`
+  - `test/harness-provider-registry.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+  - `docs/plans/2026-05-10-v1-decision-log.md`
+- Tests run:
+  - `npm test -- test/codex-harness-provider.test.ts test/harness-provider-registry.test.ts`
+  - `npm run lint`
+- Result: 2 test files passed, 9 tests passed; TypeScript lint passed.
+- Next: Phase 4.3 Cursor harness adapter or Phase 5 operation spec builders,
+  depending on whether we keep Cursor in V1.
