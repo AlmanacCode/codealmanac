@@ -15,7 +15,7 @@
 
 set -u
 
-# CodeAlmanac's own bootstrap/capture agents run Claude Code internally.
+# CodeAlmanac's own build/capture agents may run provider CLIs internally.
 # Their SessionEnd events must not trigger another capture, or one capture
 # can become an unbounded capture chain.
 if [ "${CODEALMANAC_INTERNAL_SESSION:-}" = "1" ]; then
@@ -50,7 +50,7 @@ fi
 DIR="$CWD"
 while [ "$DIR" != "/" ] && [ -n "$DIR" ]; do
   if [ -d "$DIR/.almanac" ]; then
-    LOG_DIR="$DIR/.almanac/logs"
+    LOG_DIR="$DIR/.almanac/runs"
     mkdir -p "$LOG_DIR" || exit 0
     # Prefer `almanac` on PATH; fall back to `npx codealmanac` if the
     # binary isn't linked (happens with non-global installs).
@@ -65,8 +65,8 @@ while [ "$DIR" != "/" ] && [ -n "$DIR" ]; do
 
     run_capture() {
       cd "$DIR" && \
-      $CMD capture "$TRANSCRIPT" --session "$SESSION_ID" --quiet \
-        > "$LOG_DIR/.capture-$SESSION_ID.log" 2>&1
+      $CMD capture "$TRANSCRIPT" --session "$SESSION_ID" \
+        > "$LOG_DIR/.capture-$SESSION_ID.hook.log" 2>&1
     }
 
     # Codex Stop is turn-scoped, not session-scoped. Debounce it so an
@@ -90,10 +90,9 @@ while [ "$DIR" != "/" ] && [ -n "$DIR" ]; do
       exit 0
     fi
 
-    # Background the capture, redirect all output to a session-scoped log.
-    # `--quiet` keeps streaming off (the log still captures the raw
-    # SDK transcript); `--session` lets the capture command name its
-    # own log file consistently if desired.
+    # Background the capture start, redirect all output to a session-scoped
+    # hook sidecar. The process manager writes canonical run records and JSONL
+    # event logs under the same `.almanac/runs/` directory.
     ( run_capture ) &
     # Detach so the shell doesn't wait on the subprocess.
     disown $! 2>/dev/null || true
