@@ -101,7 +101,7 @@ describe("Codex harness provider", () => {
     ).toMatchObject({
       command: "codex",
       cwd: "/repo",
-      args: ["app-server", "--listen", "stdio://"],
+      args: ["app-server", "--config", "mcp_servers={}", "--listen", "stdio://"],
       env: expect.objectContaining({
         CODEALMANAC_INTERNAL_SESSION: "1",
       }),
@@ -222,7 +222,7 @@ describe("Codex harness provider", () => {
           cachedInputTokens: 2,
           outputTokens: 4,
           reasoningOutputTokens: 1,
-          totalTokens: 14,
+          totalTokens: 15,
         },
         total: {
           inputTokens: 100,
@@ -238,7 +238,7 @@ describe("Codex harness provider", () => {
       cachedInputTokens: 2,
       outputTokens: 4,
       reasoningOutputTokens: 1,
-      totalTokens: 14,
+      totalTokens: 15,
       totalProcessedTokens: 140,
       maxTokens: 200000,
     });
@@ -453,6 +453,42 @@ rl.on("line", (line) => {
       );
     } finally {
       process.env.PATH = oldPath;
+    }
+  });
+
+  it("fails instead of hanging when app-server does not answer an RPC", async () => {
+    const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-silent-bin-"));
+    const codexPath = join(binDir, "codex");
+    await writeFile(
+      codexPath,
+      `#!/usr/bin/env node
+setInterval(() => {}, 1000);
+`,
+    );
+    await chmod(codexPath, 0o755);
+    const oldPath = process.env.PATH;
+    const oldTimeout = process.env.CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS;
+    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    process.env.CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS = "25";
+    try {
+      await expect(
+        runCodexAppServer({
+          provider: { id: "codex" },
+          cwd: binDir,
+          prompt: "run",
+          metadata: { operation: "garden" },
+        }),
+      ).resolves.toMatchObject({
+        success: false,
+        error: expect.stringContaining("initialize timed out after 25ms"),
+      });
+    } finally {
+      process.env.PATH = oldPath;
+      if (oldTimeout === undefined) {
+        delete process.env.CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS;
+      } else {
+        process.env.CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS = oldTimeout;
+      }
     }
   });
 

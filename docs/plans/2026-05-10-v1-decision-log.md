@@ -137,7 +137,12 @@ those can be mapped cleanly.
 Security note: app-server turns run with workspace-write filesystem access and
 `networkAccess: false` by default. Server-initiated approval and user-input
 requests are answered noninteractively with denial or empty answers so lifecycle
-commands remain pipeable and do not grant extra authority mid-run.
+commands remain pipeable and do not grant extra authority mid-run. The spawned
+app-server also gets `--config mcp_servers={}` so user-level Codex MCP servers
+do not leak into CodeAlmanac runs while the provider metadata says MCP is
+unsupported. Handshake JSON-RPC calls have a timeout so a stalled or incompatible
+app-server becomes a recorded provider failure instead of a permanently running
+job.
 
 ## 2026-05-09 20:09 PDT
 

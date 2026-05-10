@@ -342,6 +342,10 @@ interface PendingRequest {
   reject: (err: Error) => void;
 }
 
+const CODEX_APP_SERVER_RPC_TIMEOUT_MS = 30_000;
+const CODEX_APP_SERVER_RPC_TIMEOUT_ENV =
+  "CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS";
+
 export interface CodexAppServerRequest {
   command: "codex";
   args: string[];
@@ -358,7 +362,7 @@ export function buildCodexAppServerRequest(spec: AgentRunSpec): CodexAppServerRe
   }
   return {
     command: "codex",
-    args: ["app-server", "--listen", "stdio://"],
+    args: ["app-server", "--config", "mcp_servers={}", "--listen", "stdio://"],
     cwd: spec.cwd,
     env: {
       ...process.env,
@@ -372,6 +376,7 @@ export async function runCodexAppServer(
   hooks?: HarnessRunHooks,
 ): Promise<HarnessResult> {
   const request = buildCodexAppServerRequest(spec);
+  const rpcTimeoutMs = codexAppServerRpcTimeoutMs(request.env);
   return new Promise((resolve) => {
     const child = spawn(request.command, request.args, {
       cwd: request.cwd,
@@ -417,15 +422,29 @@ export async function runCodexAppServer(
 
     const requestRpc = (method: string, params?: unknown): Promise<unknown> => {
       const id = nextRequestId++;
-      write({
-        id,
-        method,
-        ...(params !== undefined ? { params } : {}),
-      });
       return new Promise((requestResolve, requestReject) => {
+        const timeout = setTimeout(() => {
+          pending.delete(String(id));
+          requestReject(
+            new Error(
+              `Codex app-server ${method} timed out after ${rpcTimeoutMs}ms`,
+            ),
+          );
+        }, rpcTimeoutMs);
         pending.set(String(id), {
-          resolve: requestResolve,
-          reject: requestReject,
+          resolve: (value) => {
+            clearTimeout(timeout);
+            requestResolve(value);
+          },
+          reject: (err) => {
+            clearTimeout(timeout);
+            requestReject(err);
+          },
+        });
+        write({
+          id,
+          method,
+          ...(params !== undefined ? { params } : {}),
         });
       });
     };
@@ -791,6 +810,10 @@ export function parseCodexAppServerUsage(value: unknown): AgentUsage | undefined
   if (direct === undefined) return undefined;
   return pruneUndefined({
     ...direct,
+    totalTokens:
+      numberField(last, "totalTokens") ??
+      numberField(last, "total_tokens") ??
+      direct.totalTokens,
     totalProcessedTokens:
       numberField(total, "totalTokens") ?? numberField(total, "total_tokens"),
     maxTokens:
@@ -798,6 +821,14 @@ export function parseCodexAppServerUsage(value: unknown): AgentUsage | undefined
       numberField(usage, "model_context_window") ??
       null,
   });
+}
+
+function codexAppServerRpcTimeoutMs(env: NodeJS.ProcessEnv): number {
+  const raw = env[CODEX_APP_SERVER_RPC_TIMEOUT_ENV];
+  if (raw === undefined) return CODEX_APP_SERVER_RPC_TIMEOUT_MS;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) return CODEX_APP_SERVER_RPC_TIMEOUT_MS;
+  return parsed;
 }
 
 function codexItemToToolEvent(

@@ -516,3 +516,35 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
 - Result: real Codex app-server smoke completed; focused tests passed with 37
   tests; TypeScript lint passed; full suite passed with 44 files and 435 tests;
   build passed.
+
+## 2026-05-10 Codex App-Server Review Fixes
+
+- Built: final code-quality review fixes for the Codex app-server provider.
+- Behavior:
+  - App-server launches now include `--config mcp_servers={}` so configured
+    user-level Codex MCP servers are not exposed during CodeAlmanac runs.
+  - `initialize`, `thread/start`, and `turn/start` JSON-RPC calls now fail with
+    a provider error after a timeout instead of hanging forever.
+  - App-server usage now trusts `tokenUsage.last.totalTokens` as the
+    authoritative per-turn total.
+  - Codex provider metadata now reports `contextUsage: true` because the
+    app-server adapter emits `context_usage` events.
+- Files changed:
+  - `src/harness/providers/codex.ts`
+  - `src/harness/providers/metadata.ts`
+  - `test/codex-harness-provider.test.ts`
+  - `test/harness-provider-registry.test.ts`
+  - `.almanac/pages/harness-providers.md`
+  - `docs/plans/2026-05-10-v1-decision-log.md`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+- Tests run:
+  - `npm test -- test/codex-harness-provider.test.ts test/harness-provider-registry.test.ts`
+  - `almanac health`
+  - `npm run lint`
+  - `npm test`
+  - `npm run build`
+  - Real temp-wiki smoke: `dist/codealmanac.js ingest note.txt --foreground
+    --using codex`
+- Result: focused tests passed with 2 files and 16 tests; wiki health was clean;
+  TypeScript lint passed; full suite passed with 44 files and 439 tests; build
+  passed; real Codex app-server smoke completed with the new config override.
