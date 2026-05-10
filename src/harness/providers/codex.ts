@@ -1,6 +1,13 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { readFile } from "node:fs/promises";
 
-import type { AgentUsage, HarnessFailure, HarnessResult } from "../events.js";
+import type {
+  AgentUsage,
+  HarnessEvent,
+  HarnessFailure,
+  HarnessResult,
+  HarnessToolDisplay,
+} from "../events.js";
 import type {
   AgentRunSpec,
   HarnessProvider,
@@ -21,6 +28,11 @@ export type CodexCliRunFn = (
   hooks?: HarnessRunHooks,
 ) => Promise<HarnessResult>;
 
+export type CodexAppServerRunFn = (
+  spec: AgentRunSpec,
+  hooks?: HarnessRunHooks,
+) => Promise<HarnessResult>;
+
 export interface CodexHarnessProviderDeps {
   commandExists?: (command: string) => boolean;
   runStatus?: (command: string, args: string[]) => Promise<{
@@ -28,9 +40,10 @@ export interface CodexHarnessProviderDeps {
     detail: string;
   }>;
   runCli?: CodexCliRunFn;
+  runAppServer?: CodexAppServerRunFn;
 }
 
-interface CodexRunState {
+export interface CodexRunState {
   success: boolean;
   result: string;
   providerSessionId?: string;
@@ -46,7 +59,7 @@ export function createCodexHarnessProvider(
   const metadata = HARNESS_PROVIDER_METADATA.codex;
   const commandExists = deps.commandExists ?? defaultCommandExists;
   const runStatus = deps.runStatus ?? defaultRunStatus;
-  const runCli = deps.runCli ?? runCodexCli;
+  const runAppServer = deps.runAppServer ?? runCodexAppServer;
 
   return {
     metadata,
@@ -84,7 +97,13 @@ export function createCodexHarnessProvider(
           },
         };
       }
-      return runCli(buildCodexExecRequest(spec), hooks);
+      const unsupported = unsupportedCodexSpecFields(spec);
+      if (unsupported.length > 0) {
+        throw new Error(
+          `Codex app-server adapter does not support: ${unsupported.join(", ")}`,
+        );
+      }
+      return runAppServer(spec, hooks);
     },
   };
 }
@@ -127,7 +146,6 @@ export function buildCodexExecRequest(spec: AgentRunSpec): CodexExecRequest {
 
 function unsupportedCodexSpecFields(spec: AgentRunSpec): string[] {
   const unsupported: string[] = [];
-  if (spec.provider.effort !== undefined) unsupported.push("provider.effort");
   if (spec.skills !== undefined && spec.skills.length > 0) unsupported.push("skills");
   if (spec.mcpServers !== undefined && Object.keys(spec.mcpServers).length > 0) {
     unsupported.push("mcpServers");
@@ -304,6 +322,560 @@ function toHarnessResult(state: CodexRunState): HarnessResult {
   };
 }
 
+interface JsonRpcResponse {
+  id: number | string;
+  result?: unknown;
+  error?: {
+    message?: string;
+    code?: number;
+    data?: unknown;
+  };
+}
+
+export interface JsonRpcNotification {
+  method: string;
+  params?: unknown;
+}
+
+interface PendingRequest {
+  resolve: (value: unknown) => void;
+  reject: (err: Error) => void;
+}
+
+export interface CodexAppServerRequest {
+  command: "codex";
+  args: string[];
+  cwd: string;
+  env: NodeJS.ProcessEnv;
+}
+
+export function buildCodexAppServerRequest(spec: AgentRunSpec): CodexAppServerRequest {
+  const unsupported = unsupportedCodexSpecFields(spec);
+  if (unsupported.length > 0) {
+    throw new Error(
+      `Codex app-server adapter does not support: ${unsupported.join(", ")}`,
+    );
+  }
+  return {
+    command: "codex",
+    args: ["app-server", "--listen", "stdio://"],
+    cwd: spec.cwd,
+    env: {
+      ...process.env,
+      CODEALMANAC_INTERNAL_SESSION: "1",
+    },
+  };
+}
+
+export async function runCodexAppServer(
+  spec: AgentRunSpec,
+  hooks?: HarnessRunHooks,
+): Promise<HarnessResult> {
+  const request = buildCodexAppServerRequest(spec);
+  return new Promise((resolve) => {
+    const child = spawn(request.command, request.args, {
+      cwd: request.cwd,
+      env: request.env,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    const pending = new Map<string, PendingRequest>();
+    const state: CodexRunState = { success: false, result: "" };
+    const eventWrites: Promise<void>[] = [];
+    let nextRequestId = 1;
+    let stdoutBuf = "";
+    let stderr = "";
+    let settled = false;
+    let activeTurnId: string | undefined;
+
+    const finish = async (result: HarnessResult): Promise<void> => {
+      if (settled) return;
+      settled = true;
+      for (const entry of pending.values()) {
+        entry.reject(new Error("Codex app-server run finished"));
+      }
+      pending.clear();
+      await Promise.allSettled(eventWrites);
+      if (!child.killed) child.kill();
+      resolve(result);
+    };
+
+    const fail = (raw: string): void => {
+      const failure = classifyCodexFailure(raw);
+      state.success = false;
+      state.error = failure.message;
+      state.failure = failure;
+      eventWrites.push(
+        hooks?.onEvent?.({ type: "error", error: failure.message, failure }) ??
+          Promise.resolve(),
+      );
+      void finish(toHarnessResult(state));
+    };
+
+    const write = (message: Record<string, unknown>): void => {
+      child.stdin?.write(`${JSON.stringify(message)}\n`);
+    };
+
+    const requestRpc = (method: string, params?: unknown): Promise<unknown> => {
+      const id = nextRequestId++;
+      write({
+        id,
+        method,
+        ...(params !== undefined ? { params } : {}),
+      });
+      return new Promise((requestResolve, requestReject) => {
+        pending.set(String(id), {
+          resolve: requestResolve,
+          reject: requestReject,
+        });
+      });
+    };
+
+    const respondUnsupported = (id: string | number, method: string): void => {
+      write({
+        id,
+        error: {
+          code: -32601,
+          message: `CodeAlmanac does not handle Codex app-server request ${method}`,
+        },
+      });
+    };
+
+    const handleResponse = (message: JsonRpcResponse): void => {
+      const item = pending.get(String(message.id));
+      if (item === undefined) return;
+      pending.delete(String(message.id));
+      if (message.error !== undefined) {
+        item.reject(new Error(message.error.message ?? "Codex app-server request failed"));
+        return;
+      }
+      item.resolve(message.result);
+    };
+
+    const handleNotification = (message: JsonRpcNotification): void => {
+      const events = mapCodexAppServerNotification(message, state, activeTurnId);
+      const turnId = stringField(asRecord(message.params), "turnId");
+      activeTurnId = activeTurnId ?? turnId;
+      for (const event of events) {
+        eventWrites.push(hooks?.onEvent?.(event) ?? Promise.resolve());
+      }
+      if (message.method === "turn/completed") {
+        state.success = state.failure === undefined;
+        state.turns = 1;
+        eventWrites.push(
+          hooks?.onEvent?.({
+            type: "done",
+            result: state.result,
+            providerSessionId: state.providerSessionId,
+            turns: state.turns,
+            usage: state.usage,
+            error: state.error,
+            failure: state.failure,
+          }) ?? Promise.resolve(),
+        );
+        void finish(toHarnessResult(state));
+      }
+    };
+
+    const handleMessage = (message: unknown): void => {
+      if (message === null || typeof message !== "object") return;
+      const record = message as Record<string, unknown>;
+      if ("id" in record && "method" in record) {
+        respondUnsupported(record.id as string | number, String(record.method));
+        return;
+      }
+      if ("id" in record) {
+        handleResponse(record as unknown as JsonRpcResponse);
+        return;
+      }
+      if ("method" in record) {
+        handleNotification(record as unknown as JsonRpcNotification);
+      }
+    };
+
+    const flushLines = (): void => {
+      let idx = stdoutBuf.indexOf("\n");
+      while (idx !== -1) {
+        const rawLine = stdoutBuf.slice(0, idx);
+        stdoutBuf = stdoutBuf.slice(idx + 1);
+        const line = rawLine.trim();
+        if (line.length > 0) {
+          try {
+            handleMessage(JSON.parse(line) as unknown);
+          } catch {
+            // Ignore non-JSON chatter; stderr is captured for failures.
+          }
+        }
+        idx = stdoutBuf.indexOf("\n");
+      }
+    };
+
+    child.stdout?.on("data", (chunk) => {
+      stdoutBuf += chunk.toString("utf8");
+      flushLines();
+    });
+    child.stderr?.on("data", (chunk) => {
+      stderr += chunk.toString("utf8");
+    });
+    child.on("error", (err: NodeJS.ErrnoException) => {
+      fail(err.code === "ENOENT" ? `${request.command} not found on PATH` : err.message);
+    });
+    child.on("close", (code) => {
+      if (settled) return;
+      flushLines();
+      const firstStderr = stderr.trim().split("\n")[0];
+      fail(
+        firstStderr !== undefined && firstStderr.length > 0
+          ? firstStderr
+          : `${request.command} app-server exited ${code ?? 1}`,
+      );
+    });
+
+    void (async () => {
+      try {
+        await requestRpc("initialize", {
+          clientInfo: {
+            name: "codealmanac",
+            title: "Code Almanac",
+            version: "0.2.7",
+          },
+          capabilities: {
+            experimentalApi: true,
+          },
+        });
+        const thread = asRecord(
+          await requestRpc("thread/start", {
+            cwd: spec.cwd,
+            model: spec.provider.model ?? null,
+            approvalPolicy: "never",
+            sandbox: "workspace-write",
+            developerInstructions: spec.systemPrompt ?? null,
+            ephemeral: true,
+          }),
+        );
+        const threadObj = asRecord(thread.thread);
+        const threadId = stringField(threadObj, "id");
+        if (threadId === undefined) {
+          throw new Error("Codex app-server thread/start did not return a thread id");
+        }
+        state.providerSessionId = threadId;
+        const outputSchema = await readOutputSchema(spec.output?.schemaPath);
+        const turn = asRecord(
+          await requestRpc("turn/start", {
+            threadId,
+            cwd: spec.cwd,
+            input: [
+              {
+                type: "text",
+                text: combineCodexPrompt({ ...spec, systemPrompt: undefined }),
+                text_elements: [],
+              },
+            ],
+            approvalPolicy: "never",
+            sandboxPolicy: {
+              type: "workspaceWrite",
+              writableRoots: [spec.cwd],
+              networkAccess: true,
+              excludeTmpdirEnvVar: false,
+              excludeSlashTmp: false,
+            },
+            model: spec.provider.model ?? null,
+            effort: spec.provider.effort ?? null,
+            outputSchema,
+          }),
+        );
+        activeTurnId = stringField(asRecord(turn.turn), "id");
+      } catch (err: unknown) {
+        fail(err instanceof Error ? err.message : String(err));
+      }
+    })();
+  });
+}
+
+async function readOutputSchema(schemaPath: string | undefined): Promise<unknown> {
+  if (schemaPath === undefined) return null;
+  const raw = await readFile(schemaPath, "utf8");
+  return JSON.parse(raw) as unknown;
+}
+
+export function mapCodexAppServerNotification(
+  notification: JsonRpcNotification,
+  state: CodexRunState,
+  activeTurnId?: string,
+): HarnessEvent[] {
+  const params = asRecord(notification.params);
+  const threadId = stringField(params, "threadId");
+  if (state.providerSessionId === undefined && threadId !== undefined) {
+    state.providerSessionId = threadId;
+  }
+
+  if (notification.method === "item/agentMessage/delta") {
+    const delta = stringField(params, "delta");
+    return delta !== undefined ? [{ type: "text_delta", content: delta }] : [];
+  }
+
+  if (notification.method === "item/plan/delta") {
+    const delta = stringField(params, "delta");
+    return delta !== undefined ? [{ type: "tool_summary", summary: delta }] : [];
+  }
+
+  if (notification.method === "turn/plan/updated") {
+    const explanation = stringField(params, "explanation");
+    const plan = Array.isArray(params.plan)
+      ? params.plan
+          .map((step) => stringField(asRecord(step), "step"))
+          .filter((step): step is string => step !== undefined)
+      : [];
+    const summary = [explanation, ...plan].filter(Boolean).join(" | ");
+    return summary.length > 0 ? [{ type: "tool_summary", summary }] : [];
+  }
+
+  if (notification.method === "thread/tokenUsage/updated") {
+    const usage = parseCodexUsage(params.tokenUsage);
+    if (usage !== undefined) state.usage = usage;
+    return usage !== undefined ? [{ type: "context_usage", usage }] : [];
+  }
+
+  if (notification.method === "item/started") {
+    const item = asRecord(params.item);
+    const mapped = codexItemToToolEvent(item, "started");
+    return mapped !== undefined ? [mapped] : [];
+  }
+
+  if (notification.method === "item/completed") {
+    const item = asRecord(params.item);
+    if (item.type === "agentMessage") {
+      const text = stringField(item, "text");
+      if (text !== undefined) {
+        state.result = text;
+        return [{ type: "text", content: text }];
+      }
+      return [];
+    }
+    const display = codexItemDisplay(item, "completed");
+    if (display === undefined) return [];
+    return [
+      {
+        type: "tool_result",
+        id: stringField(item, "id"),
+        content: item.aggregatedOutput ?? item.result ?? item.error,
+        isError:
+          display.status === "failed" ||
+          (typeof item.success === "boolean" && item.success === false),
+        display,
+      },
+    ];
+  }
+
+  if (
+    notification.method === "item/commandExecution/outputDelta" ||
+    notification.method === "command/exec/outputDelta" ||
+    notification.method === "item/fileChange/outputDelta"
+  ) {
+    const delta =
+      stringField(params, "delta") ?? decodeBase64(stringField(params, "deltaBase64"));
+    return delta !== undefined && delta.trim().length > 0
+      ? [{ type: "tool_summary", summary: delta.trim() }]
+      : [];
+  }
+
+  if (notification.method === "turn/completed") {
+    const turn = asRecord(params.turn);
+    const error = asRecord(turn.error);
+    const errorMessage = stringField(error, "message");
+    if (errorMessage !== undefined) {
+      const failure = classifyCodexFailure(errorMessage);
+      state.success = false;
+      state.error = failure.message;
+      state.failure = failure;
+      return [{ type: "error", error: failure.message, failure }];
+    }
+    state.success = true;
+    state.turns = activeTurnId !== undefined ? 1 : 1;
+    return [];
+  }
+
+  if (notification.method === "error" || notification.method === "warning") {
+    const message = stringField(params, "message") ?? notification.method;
+    const failure = classifyCodexFailure(message);
+    state.success = false;
+    state.error = failure.message;
+    state.failure = failure;
+    return [{ type: "error", error: failure.message, failure }];
+  }
+
+  return [];
+}
+
+function codexItemToToolEvent(
+  item: Record<string, unknown>,
+  status: NonNullable<HarnessToolDisplay["status"]>,
+): HarnessEvent | undefined {
+  const display = codexItemDisplay(item, status);
+  if (display === undefined) return undefined;
+  return {
+    type: "tool_use",
+    id: stringField(item, "id"),
+    tool: itemTypeToolName(item),
+    input: stringifyInput(item),
+    display,
+  };
+}
+
+function codexItemDisplay(
+  item: Record<string, unknown>,
+  fallbackStatus: NonNullable<HarnessToolDisplay["status"]>,
+): HarnessToolDisplay | undefined {
+  const type = stringField(item, "type");
+  if (type === "commandExecution") {
+    return commandExecutionDisplay(item, fallbackStatus);
+  }
+  if (type === "fileChange") {
+    return {
+      kind: "edit",
+      title: "Editing file",
+      status: itemStatus(item, fallbackStatus),
+      durationMs: numberField(item, "durationMs") ?? null,
+      raw: item,
+    };
+  }
+  if (type === "mcpToolCall") {
+    return {
+      kind: "mcp",
+      title: `MCP ${stringField(item, "tool") ?? "tool"}`,
+      status: itemStatus(item, fallbackStatus),
+      raw: item,
+    };
+  }
+  if (type === "dynamicToolCall") {
+    const tool = stringField(item, "tool") ?? "Tool";
+    return {
+      kind: inferToolKind(tool),
+      title: toolTitle(tool),
+      status: itemStatus(item, fallbackStatus),
+      raw: item,
+    };
+  }
+  if (type === "webSearch") {
+    return {
+      kind: "web",
+      title: "Web search",
+      summary: stringField(item, "query"),
+      status: itemStatus(item, fallbackStatus),
+      raw: item,
+    };
+  }
+  if (type === "imageView") {
+    return {
+      kind: "image",
+      title: "Viewing image",
+      path: stringField(item, "path"),
+      status: itemStatus(item, fallbackStatus),
+      raw: item,
+    };
+  }
+  if (type === "collabAgentToolCall") {
+    return {
+      kind: "agent",
+      title: `Agent ${stringField(item, "tool") ?? "tool"}`,
+      status: itemStatus(item, fallbackStatus),
+      raw: item,
+    };
+  }
+  return undefined;
+}
+
+function commandExecutionDisplay(
+  item: Record<string, unknown>,
+  fallbackStatus: NonNullable<HarnessToolDisplay["status"]>,
+): HarnessToolDisplay {
+  const command = stringField(item, "command");
+  const action = firstCommandAction(item);
+  const actionType = stringField(action, "type");
+  const title =
+    actionType === "read"
+      ? "Reading file"
+      : actionType === "listFiles"
+        ? "Listing files"
+        : actionType === "search"
+          ? "Searching"
+          : "Running command";
+  return {
+    kind:
+      actionType === "read"
+        ? "read"
+        : actionType === "listFiles" || actionType === "search"
+          ? "search"
+          : "shell",
+    title,
+    path: stringField(action, "path"),
+    command,
+    cwd: stringField(item, "cwd"),
+    status: itemStatus(item, fallbackStatus),
+    exitCode: numberField(item, "exitCode") ?? null,
+    durationMs: numberField(item, "durationMs") ?? null,
+    raw: item,
+  };
+}
+
+function firstCommandAction(item: Record<string, unknown>): Record<string, unknown> {
+  const actions = item.commandActions;
+  return Array.isArray(actions) ? asRecord(actions[0]) : {};
+}
+
+function itemStatus(
+  item: Record<string, unknown>,
+  fallback: NonNullable<HarnessToolDisplay["status"]>,
+): NonNullable<HarnessToolDisplay["status"]> {
+  const status = stringField(item, "status");
+  if (status === "completed" || status === "failed" || status === "declined") {
+    return status;
+  }
+  return fallback;
+}
+
+function itemTypeToolName(item: Record<string, unknown>): string {
+  return stringField(item, "type") ?? "tool";
+}
+
+function inferToolKind(tool: string): HarnessToolDisplay["kind"] {
+  const normalized = tool.toLowerCase();
+  if (normalized.includes("read")) return "read";
+  if (normalized.includes("write")) return "write";
+  if (normalized.includes("edit") || normalized.includes("patch")) return "edit";
+  if (normalized.includes("search") || normalized.includes("find")) return "search";
+  if (normalized.includes("bash") || normalized.includes("shell")) return "shell";
+  if (normalized.includes("agent")) return "agent";
+  return "unknown";
+}
+
+function toolTitle(tool: string): string {
+  switch (inferToolKind(tool)) {
+    case "read":
+      return "Reading file";
+    case "write":
+      return "Writing file";
+    case "edit":
+      return "Editing file";
+    case "search":
+      return "Searching";
+    case "shell":
+      return "Running command";
+    case "agent":
+      return "Agent tool";
+    default:
+      return tool;
+  }
+}
+
+function decodeBase64(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  try {
+    return Buffer.from(value, "base64").toString("utf8");
+  } catch {
+    return undefined;
+  }
+}
+
 function unwrapCodexJsonlEvent(
   input: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -454,6 +1026,12 @@ function objectField(
   return value !== null && typeof value === "object"
     ? (value as Record<string, unknown>)
     : undefined;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 function stringField(

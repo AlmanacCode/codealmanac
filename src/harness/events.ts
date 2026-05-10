@@ -19,15 +19,47 @@ export interface HarnessFailure {
   details?: Record<string, unknown>;
 }
 
+export type HarnessToolDisplayKind =
+  | "read"
+  | "write"
+  | "edit"
+  | "search"
+  | "shell"
+  | "mcp"
+  | "web"
+  | "agent"
+  | "image"
+  | "unknown";
+
+export interface HarnessToolDisplay {
+  kind?: HarnessToolDisplayKind;
+  title?: string;
+  path?: string;
+  command?: string;
+  cwd?: string;
+  status?: "started" | "completed" | "failed" | "declined";
+  exitCode?: number | null;
+  durationMs?: number | null;
+  summary?: string;
+  raw?: unknown;
+}
+
 export type HarnessEvent =
   | { type: "text_delta"; content: string }
   | { type: "text"; content: string }
-  | { type: "tool_use"; id?: string; tool: string; input?: string }
+  | {
+      type: "tool_use";
+      id?: string;
+      tool: string;
+      input?: string;
+      display?: HarnessToolDisplay;
+    }
   | {
       type: "tool_result";
       id?: string;
       content?: unknown;
       isError?: boolean;
+      display?: HarnessToolDisplay;
     }
   | { type: "tool_summary"; summary: string }
   | { type: "context_usage"; usage: AgentUsage }

@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyCodexJsonlEvent,
+  buildCodexAppServerRequest,
   buildCodexExecRequest,
   combineCodexPrompt,
   createCodexHarnessProvider,
+  mapCodexAppServerNotification,
   parseCodexUsage,
 } from "../src/harness/providers/codex.js";
 import type { AgentRunSpec } from "../src/harness/types.js";
@@ -45,10 +47,10 @@ describe("Codex harness provider", () => {
   });
 
   it("uses injected CLI runner and reports unsupported per-run agents", async () => {
-    const requests: unknown[] = [];
+    const specs: unknown[] = [];
     const provider = createCodexHarnessProvider({
-      runCli: async (request) => {
-        requests.push(request);
+      runAppServer: async (spec) => {
+        specs.push(spec);
         return { success: true, result: "done", turns: 1 };
       },
     });
@@ -61,7 +63,7 @@ describe("Codex harness provider", () => {
         metadata: { operation: "absorb" },
       }),
     ).resolves.toMatchObject({ success: true, result: "done" });
-    expect(requests).toHaveLength(1);
+    expect(specs).toHaveLength(1);
 
     await expect(
       provider.run({
@@ -79,14 +81,30 @@ describe("Codex harness provider", () => {
     });
   });
 
-  it("rejects unsupported Codex exec run spec fields", async () => {
+  it("builds app-server requests and rejects unsupported fields", async () => {
     const provider = createCodexHarnessProvider({
-      runCli: async () => ({ success: true, result: "unused" }),
+      runAppServer: async () => ({ success: true, result: "unused" }),
+    });
+
+    expect(
+      buildCodexAppServerRequest({
+        provider: { id: "codex", model: "gpt-5.4", effort: "high" },
+        cwd: "/repo",
+        prompt: "run",
+        metadata: { operation: "garden" },
+      }),
+    ).toMatchObject({
+      command: "codex",
+      cwd: "/repo",
+      args: ["app-server", "--listen", "stdio://"],
+      env: expect.objectContaining({
+        CODEALMANAC_INTERNAL_SESSION: "1",
+      }),
     });
 
     await expect(
       provider.run({
-        provider: { id: "codex", effort: "high" },
+        provider: { id: "codex" },
         cwd: "/repo",
         prompt: "run",
         skills: ["skill"],
@@ -95,8 +113,100 @@ describe("Codex harness provider", () => {
         metadata: { operation: "garden" },
       }),
     ).rejects.toThrow(
-      "Codex exec adapter does not support: provider.effort, skills, mcpServers, limits.maxCostUsd",
+      "Codex app-server adapter does not support: skills, mcpServers, limits.maxCostUsd",
     );
+  });
+
+  it("maps app-server notifications to structured harness events", () => {
+    const state = { success: false, result: "" };
+
+    expect(
+      mapCodexAppServerNotification(
+        {
+          method: "item/started",
+          params: {
+            threadId: "thread-1",
+            turnId: "turn-1",
+            item: {
+              type: "commandExecution",
+              id: "item-1",
+              command: "sed -n '1,80p' src/cli.ts",
+              cwd: "/repo",
+              status: "inProgress",
+              commandActions: [
+                {
+                  type: "read",
+                  path: "src/cli.ts",
+                },
+              ],
+            },
+          },
+        },
+        state,
+      ),
+    ).toEqual([
+      {
+        type: "tool_use",
+        id: "item-1",
+        tool: "commandExecution",
+        input: expect.any(String),
+        display: expect.objectContaining({
+          kind: "read",
+          title: "Reading file",
+          path: "src/cli.ts",
+          command: "sed -n '1,80p' src/cli.ts",
+          cwd: "/repo",
+          status: "started",
+        }),
+      },
+    ]);
+
+    expect(
+      mapCodexAppServerNotification(
+        {
+          method: "item/completed",
+          params: {
+            item: {
+              type: "commandExecution",
+              id: "item-1",
+              command: "almanac health",
+              cwd: "/repo",
+              status: "completed",
+              commandActions: [],
+              aggregatedOutput: "ok",
+              exitCode: 0,
+              durationMs: 12,
+            },
+          },
+        },
+        state,
+      ),
+    ).toEqual([
+      {
+        type: "tool_result",
+        id: "item-1",
+        content: "ok",
+        isError: false,
+        display: expect.objectContaining({
+          kind: "shell",
+          title: "Running command",
+          command: "almanac health",
+          status: "completed",
+          exitCode: 0,
+          durationMs: 12,
+        }),
+      },
+    ]);
+
+    expect(
+      mapCodexAppServerNotification(
+        {
+          method: "item/agentMessage/delta",
+          params: { delta: "hello" },
+        },
+        state,
+      ),
+    ).toEqual([{ type: "text_delta", content: "hello" }]);
   });
 
   it("normalizes Codex JSONL events and usage", async () => {

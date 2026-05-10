@@ -65,7 +65,7 @@ export const HARNESS_PROVIDER_METADATA: Record<HarnessProviderId, ProviderMetada
     capabilities: {
       ...BASE_CAPABILITIES,
       modelOptions: true,
-      reasoningEffort: false,
+      reasoningEffort: true,
       sessionPersistence: false,
       threadResume: false,
       interrupt: false,

@@ -234,6 +234,29 @@ describe("formatForegroundEvent", () => {
     expect(formatForegroundEvent({ type: "tool_use", tool: "Bash" })).toBe(
       "[tool] Bash",
     );
+    expect(
+      formatForegroundEvent({
+        type: "tool_use",
+        tool: "Read",
+        display: {
+          kind: "read",
+          title: "Reading file",
+          path: ".almanac/pages/farzapedia.md",
+        },
+      }),
+    ).toBe("[tool] Reading file .almanac/pages/farzapedia.md");
+    expect(
+      formatForegroundEvent({
+        type: "tool_result",
+        display: {
+          kind: "shell",
+          title: "Ran command",
+          command: "almanac health",
+          status: "completed",
+          exitCode: 0,
+        },
+      }),
+    ).toBe("[tool] Ran command almanac health exit 0");
     expect(formatForegroundEvent({ type: "done" })).toBe("[done]");
   });
 });

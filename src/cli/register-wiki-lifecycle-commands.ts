@@ -320,7 +320,11 @@ export function formatForegroundEvent(event: HarnessEvent): string | null {
     case "text":
       return event.content.trim().length > 0 ? event.content.trim() : null;
     case "tool_use":
-      return `[tool] ${event.tool}`;
+      return `[tool] ${formatToolDisplay(event.tool, event.display)}`;
+    case "tool_result":
+      return event.display !== undefined
+        ? `[tool] ${formatToolDisplay("tool", event.display)}`
+        : null;
     case "tool_summary":
       return `[tool] ${event.summary}`;
     case "error":
@@ -330,6 +334,24 @@ export function formatForegroundEvent(event: HarnessEvent): string | null {
     default:
       return null;
   }
+}
+
+function formatToolDisplay(
+  fallbackTool: string,
+  display: import("../harness/events.js").HarnessToolDisplay | undefined,
+): string {
+  if (display === undefined) return fallbackTool;
+  const title = display.title ?? fallbackTool;
+  const target = display.path ?? display.command ?? display.summary;
+  const status =
+    display.status === "completed" && display.exitCode !== undefined
+      ? `exit ${display.exitCode}`
+      : display.status === "failed"
+        ? "failed"
+        : display.status === "declined"
+          ? "declined"
+          : undefined;
+  return [title, target, status].filter(Boolean).join(" ");
 }
 
 function normalizeHookSource(
