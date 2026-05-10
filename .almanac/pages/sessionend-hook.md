@@ -20,12 +20,12 @@ The SessionEnd hook wires codealmanac into Claude Code's lifecycle. `almanac hoo
 
 ## Backgrounding
 
-The hook runs `almanac capture` backgrounded so the Claude Code session exit is not blocked. Because capture runs headlessly with no terminal attached, auth must be via the saved credential store (`~/.claude/credentials/`) rather than interactive login. `ANTHROPIC_API_KEY` also works if set in the environment.
+The hook runs `almanac capture`, which now starts a V1 background job by default. The hook should return quickly after the parent writes the queued run record under [[process-manager-runs]]. Because capture runs headlessly with no terminal attached, provider auth must already be available; Claude can use the saved credential store (`~/.claude/credentials/`) or `ANTHROPIC_API_KEY`.
 
 ## What capture auto-resolves
 
-When triggered by the hook (no explicit transcript path), `capture` auto-resolves the most recent transcript under `~/.claude/projects/` whose `cwd` matches the current repo. This is the normal path for automated captures.
+When triggered by the hook with no explicit transcript path, `capture` uses Claude transcript discovery for the current repo. V1 currently supports Claude latest-session and filtered discovery; Codex/Cursor session discovery is future work. See [[capture-flow]] for the current resolver contract.
 
 ## Failure behavior
 
-Capture failure during a hook-triggered run produces no visible output (the session has already ended). Errors are written to the `.capture-*.log` file in `.almanac/`. `almanac hook status` can confirm the hook is wired; examining the log file is the postmortem path.
+Capture failure during a hook-triggered run produces no visible output in the ended Claude session. The postmortem path is `almanac jobs`, `almanac jobs show <run-id>`, and `almanac jobs logs <run-id>` for the current wiki. `almanac hook status` only confirms the hook is wired.

@@ -29,4 +29,4 @@ Entries are never auto-dropped. `almanac list --drop <name>` is the only removal
 
 ## Multi-wiki queries
 
-`almanac search --wiki <name>` resolves the name via the registry. `almanac search --all` iterates every registered entry, skipping unreachable ones. Cross-wiki links (`[[wiki:slug]]`) resolve using the registry at query time.
+`almanac search --wiki <name>` resolves the name via the registry. `almanac search --all` iterates every registered entry, skipping unreachable ones. Cross-wiki links resolve `wiki:slug` targets through the registry at query time.

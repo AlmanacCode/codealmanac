@@ -387,3 +387,30 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm test`
   - `git diff --check`
 - Result: focused tests passed, TypeScript lint passed, full suite passed with 44 test files and 424 tests, and diff whitespace check passed.
+
+## 2026-05-09 21:05 PDT
+
+- Built: code-quality review fixes and wiki gardening.
+- Review findings addressed:
+  - Running-job cancellation can no longer be overwritten by a stale in-memory foreground record.
+  - Process finalization failures now still attempt to write a terminal failed run record.
+  - Codex and Cursor harness metadata now describes current adapter behavior instead of aspirational provider capabilities.
+  - Build, Absorb, and Garden now share the common operation run-spec and process-dispatch plumbing in `src/operations/run.ts`.
+- Wiki gardened:
+  - Removed stale `bootstrap-agent` page.
+  - Added V1 pages for lifecycle operations, process manager runs, harness providers, lifecycle CLI, operation prompts, and build operation.
+  - Updated capture/session/harness pages to describe Absorb, `.almanac/runs/`, provider adapters, and old pipeline removal.
+  - Updated `.almanac/README.md` and topics so the wiki no longer points future agents at writer/reviewer/bootstrap as current architecture.
+- Files changed:
+  - `src/process/manager.ts`
+  - `src/harness/providers/metadata.ts`
+  - `src/operations/run.ts`
+  - `src/operations/build.ts`
+  - `src/operations/absorb.ts`
+  - `src/operations/garden.ts`
+  - `.almanac/` wiki pages and taxonomy
+  - process/provider tests
+- Tests run:
+  - `npm test -- test/process-manager.test.ts test/harness-provider-registry.test.ts test/build-operation.test.ts test/absorb-operation.test.ts test/garden-operation.test.ts test/operation-commands.test.ts`
+  - `npm run lint`
+- Result: focused tests passed and TypeScript lint passed.

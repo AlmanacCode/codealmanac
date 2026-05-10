@@ -25,9 +25,9 @@ Defined in `src/indexer/schema.ts` and applied idempotently on every open (`CREA
 - `topics` — topic metadata (slug, title, description); populated from `topics.yaml` at reindex time
 - `page_topics` — page↔topic many-to-many; FK cascade-deletes on page removal
 - `topic_parents` — DAG edges; has a `CHECK (child_slug != parent_slug)` constraint
-- `file_refs` — parsed `[[src/...]]` links; stores both `path` (lowercased, for GLOB queries) and `original_path` (as-written, for display and case-sensitive dead-ref checks)
-- `wikilinks` — page-slug links (`[[some-page]]`)
-- `cross_wiki_links` — cross-wiki links (`[[wiki:slug]]`)
+- `file_refs` — parsed file/folder links; stores both `path` (lowercased, for GLOB queries) and `original_path` (as-written, for display and case-sensitive dead-ref checks)
+- `wikilinks` — page-slug links
+- `cross_wiki_links` — cross-wiki links
 - `fts_pages` — FTS5 virtual table (slug + title + content); ON DELETE CASCADE does NOT apply; the indexer must DELETE explicitly before replacing a page row
 
 ## Schema versioning

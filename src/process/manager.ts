@@ -9,6 +9,7 @@ import { appendRunEvent, initializeRunLog } from "./logs.js";
 import {
   buildStartedRunRecord,
   finishRunRecord,
+  readRunRecord,
   runRecordPath,
   writeRunRecord,
 } from "./records.js";
@@ -51,8 +52,6 @@ export async function startForegroundProcess(
 
   await writeRunRecord(recordPath, started);
   await initializeRunLog(started.logPath);
-  const pagesDir = join(options.repoRoot, ".almanac", "pages");
-  const before = await snapshotPages(pagesDir);
 
   const harnessRun =
     options.harnessRun ??
@@ -60,9 +59,49 @@ export async function startForegroundProcess(
   const eventWrites: Promise<void>[] = [];
 
   let result: HarnessResult;
+  let finalRecord: RunRecord;
   try {
-    result = await harnessRun(options.spec, {
-      onEvent: eventLogger(started.logPath, now, eventWrites, options.onEvent),
+    const pagesDir = join(options.repoRoot, ".almanac", "pages");
+    const before = await snapshotPages(pagesDir);
+    try {
+      result = await harnessRun(options.spec, {
+        onEvent: eventLogger(started.logPath, now, eventWrites, options.onEvent),
+      });
+    } catch (err: unknown) {
+      result = {
+        success: false,
+        result: "",
+        error: err instanceof Error ? err.message : String(err),
+      };
+      await appendRunEvent(started.logPath, {
+        type: "error",
+        error: result.error ?? "unknown error",
+      }, now());
+    }
+    await Promise.allSettled(eventWrites);
+
+    const after = await snapshotPages(pagesDir);
+    const delta = diffPageSnapshots(before, after);
+    if (result.success) {
+      await runIndexer({ repoRoot: options.repoRoot });
+    }
+
+    const summary: RunSummary = {
+      created: delta.created,
+      updated: delta.updated,
+      archived: delta.archived,
+      costUsd: result.costUsd,
+      turns: result.turns,
+      usage: result.usage,
+    };
+    finalRecord = await finishUnlessCancelled({
+      recordPath,
+      fallback: started,
+      status: result.success ? "done" : "failed",
+      finishedAt: now(),
+      providerSessionId: result.providerSessionId,
+      summary,
+      error: result.error,
     });
   } catch (err: unknown) {
     result = {
@@ -70,38 +109,57 @@ export async function startForegroundProcess(
       result: "",
       error: err instanceof Error ? err.message : String(err),
     };
-    await appendRunEvent(started.logPath, {
-      type: "error",
-      error: result.error ?? "unknown error",
-    }, now());
+    try {
+      await appendRunEvent(started.logPath, {
+        type: "error",
+        error: result.error ?? "unknown error",
+      }, now());
+    } catch {
+      // The run record is the source of truth; do not let a broken log write
+      // prevent terminal status recording.
+    }
+    await Promise.allSettled(eventWrites);
+    finalRecord = await finishUnlessCancelled({
+      recordPath,
+      fallback: started,
+      status: "failed",
+      finishedAt: now(),
+      error: result.error,
+    });
   }
-  await Promise.allSettled(eventWrites);
 
-  const after = await snapshotPages(pagesDir);
-  const delta = diffPageSnapshots(before, after);
-  if (result.success) {
-    await runIndexer({ repoRoot: options.repoRoot });
+  if (finalRecord.status === "cancelled" && result.success) {
+    result = {
+      success: false,
+      result: "",
+      error: "run cancelled before final status",
+    };
   }
+  return { runId, record: finalRecord, result };
+}
 
-  const summary: RunSummary = {
-    created: delta.created,
-    updated: delta.updated,
-    archived: delta.archived,
-    costUsd: result.costUsd,
-    turns: result.turns,
-    usage: result.usage,
-  };
+async function finishUnlessCancelled(args: {
+  recordPath: string;
+  fallback: RunRecord;
+  status: "done" | "failed";
+  finishedAt: Date;
+  providerSessionId?: string;
+  summary?: RunSummary;
+  error?: string;
+}): Promise<RunRecord> {
+  const current = await readRunRecord(args.recordPath);
+  if (current?.status === "cancelled") return current;
+  const base = current ?? args.fallback;
   const finished = finishRunRecord({
-    record: started,
-    status: result.success ? "done" : "failed",
-    finishedAt: now(),
-    providerSessionId: result.providerSessionId,
-    summary,
-    error: result.error,
+    record: base,
+    status: args.status,
+    finishedAt: args.finishedAt,
+    providerSessionId: args.providerSessionId,
+    summary: args.summary,
+    error: args.error,
   });
-  await writeRunRecord(recordPath, finished);
-
-  return { runId, record: finished, result };
+  await writeRunRecord(args.recordPath, finished);
+  return finished;
 }
 
 function eventLogger(

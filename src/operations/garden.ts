@@ -1,16 +1,12 @@
-import { joinPrompts, loadPrompt } from "../agent/prompts.js";
 import type { AgentRunSpec } from "../harness/types.js";
 import { findNearestAlmanacDir } from "../paths.js";
-import {
-  startBackgroundProcess,
-  startForegroundProcess,
-} from "../process/index.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,
   StartBackgroundProcess,
   StartForegroundProcess,
 } from "./types.js";
+import { createOperationRunSpec, runOperationProcess } from "./run.js";
 
 export interface GardenOperationOptions {
   cwd: string;
@@ -28,33 +24,15 @@ export async function createGardenRunSpec(args: {
   provider?: OperationProviderSelection;
   context?: string;
 }): Promise<AgentRunSpec> {
-  const operationPrompt = await loadPrompt("operations/garden");
-  const prompt = joinPrompts([
-    operationPrompt,
-    gardenRuntimeContext(args.repoRoot),
-    args.context,
-  ]);
-
-  return {
+  return createOperationRunSpec({
+    operation: "garden",
+    promptName: "operations/garden",
     provider: args.provider ?? { id: "claude" },
-    cwd: args.repoRoot,
-    prompt,
-    tools: [
-      { id: "read" },
-      { id: "write" },
-      { id: "edit" },
-      { id: "search" },
-      { id: "shell" },
-    ],
-    limits: {
-      maxTurns: 150,
-    },
-    metadata: {
-      operation: "garden",
-      targetKind: "wiki",
-      targetPaths: [`${args.repoRoot}/.almanac`],
-    },
-  };
+    repoRoot: args.repoRoot,
+    context: args.context,
+    targetKind: "wiki",
+    targetPaths: [`${args.repoRoot}/.almanac`],
+  });
 }
 
 export async function runGardenOperation(
@@ -70,29 +48,13 @@ export async function runGardenOperation(
     context: options.context,
   });
 
-  if (options.background !== false) {
-    const background = await (options.startBackground ?? startBackgroundProcess)({
-      repoRoot,
-      spec,
-      runId: options.runId,
-    });
-    return { mode: "background", runId: background.runId, background };
-  }
-
-  const foreground = await (options.startForeground ?? startForegroundProcess)({
+  return runOperationProcess({
     repoRoot,
     spec,
+    background: options.background !== false,
     runId: options.runId,
     onEvent: options.onEvent,
+    startForeground: options.startForeground,
+    startBackground: options.startBackground,
   });
-  return { mode: "foreground", runId: foreground.runId, foreground };
-}
-
-function gardenRuntimeContext(repoRoot: string): string {
-  return [
-    "Runtime context:",
-    `- Repository root: ${repoRoot}`,
-    `- Almanac directory: ${repoRoot}/.almanac`,
-    `- Wiki pages directory: ${repoRoot}/.almanac/pages`,
-  ].join("\n");
 }

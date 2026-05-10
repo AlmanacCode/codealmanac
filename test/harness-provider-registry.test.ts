@@ -30,7 +30,10 @@ describe("harness provider registry", () => {
     expect(
       HARNESS_PROVIDER_METADATA.codex.capabilities.subagents.programmaticPerRun,
     ).toBe(false);
+    expect(HARNESS_PROVIDER_METADATA.codex.capabilities.subagents.supported).toBe(false);
+    expect(HARNESS_PROVIDER_METADATA.codex.capabilities.sessionPersistence).toBe(false);
     expect(HARNESS_PROVIDER_METADATA.codex.capabilities.contextUsage).toBe(false);
+    expect(HARNESS_PROVIDER_METADATA.cursor.capabilities.fileWrite).toBe(false);
     expect(HARNESS_PROVIDER_METADATA.claude.capabilities.contextUsage).toBe(false);
   });
 

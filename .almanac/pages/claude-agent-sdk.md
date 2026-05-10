@@ -2,35 +2,39 @@
 title: Claude Agent SDK
 topics: [stack, agents]
 files:
-  - src/agent/sdk.ts
-  - src/agent/auth.ts
+  - src/harness/providers/claude.ts
+  - src/harness/types.ts
+  - src/harness/events.ts
+  - src/agent/providers/claude/auth.ts
   - src/agent/prompts.ts
-  - src/commands/bootstrap.ts
-  - src/commands/capture.ts
 ---
 
 # Claude Agent SDK
 
-`@anthropic-ai/claude-agent-sdk` v0.2.x is the Anthropic-maintained TypeScript SDK used to run agentic loops in `bootstrap` and `capture`. The repo pins to `^0.2.110`. The SDK's primary export is `query()`, which drives a multi-turn conversation against a Claude model, executing tool calls and returning `SDKMessage` events.
+`@anthropic-ai/claude-agent-sdk` is now used through the V1 Claude harness adapter, not through the deleted bootstrap/capture SDK wrapper. The repo keeps Claude-specific SDK types inside `src/harness/providers/claude.ts`; operation code only sees [[harness-providers]] types such as `AgentRunSpec`, `HarnessEvent`, and `HarnessResult`.
 
 <!-- stub: fill in gotchas, model pinning details, and auth behavior as discovered -->
 
 ## Where we use it
 
-- `src/agent/sdk.ts` — the sole import site for the SDK. Every other module imports the `runAgent` wrapper from here rather than touching the SDK directly.
-- `src/agent/auth.ts` — pre-flight auth gate; calls `claude auth status` via subprocess before the SDK generator starts.
-- `src/agent/prompts.ts` — loads `prompts/*.md` from the npm package install path and passes them as system prompts.
-- `src/commands/bootstrap.ts` — calls `runAgent` with `BOOTSTRAP_TOOLS = ["Read","Write","Edit","Glob","Grep","Bash"]`.
-- `src/commands/capture.ts` — calls `runAgent` with the writer agent and passes a `{ reviewer: AgentDefinition }` subagent map.
+- `src/harness/providers/claude.ts` — imports `query()` and maps `AgentRunSpec` to Claude SDK options.
+- `src/agent/providers/claude/auth.ts` — checks installed/authenticated Claude CLI state for provider status.
+- `src/agent/prompts.ts` — loads V1 operation prompts from the bundled `prompts/` directory.
 
-## SDK wrapper design
+## Adapter mapping
 
-`runAgent` in `src/agent/sdk.ts` sets defaults (model `claude-sonnet-4-6`, `maxTurns: 100`, `includePartialMessages: true`) and translates the SDK's stream into a `{cost, turns, success, error}` summary. It accepts an `onMessage` callback that both commands use to stream tool-use lines to stdout and write raw JSON to a `.bootstrap-*.log` / `.capture-*.log` file.
+The adapter maps base tool requests to Claude tool names: read to `Read`, write to `Write`, edit to `Edit`, search to `Glob` and `Grep`, shell to `Bash`, and web to `WebSearch` and `WebFetch`. It passes the mapped list to both `tools` and `allowedTools`, sets `permissionMode: "dontAsk"`, sets `includePartialMessages: true`, and injects `CODEALMANAC_INTERNAL_SESSION=1`.
+
+When `AgentRunSpec.agents` is present, the adapter maps each helper `AgentSpec` to a Claude `AgentDefinition` and ensures the main tool list includes `Agent`. V1 operations do not hardcode a reviewer agent; helper agents are generic harness data.
+
+## Event normalization
+
+Claude `SDKMessage` events are translated to `HarnessEvent` records. Text deltas, assistant text, tool uses, tool results, errors, and final result messages all flow through the same event hook used by [[process-manager-runs]]. Cost, turns, usage, and provider session id are preserved when the SDK exposes them.
 
 ## Auth
 
-Two paths: Claude subscription OAuth (reads `~/.claude/credentials/`) or `ANTHROPIC_API_KEY` env var. `assertClaudeAuth` checks `claude auth status` via a spawned subprocess; if neither credential is present it exits non-zero before the SDK generator starts. See [[sessionend-hook]] for how capture runs headlessly.
+Two paths: Claude subscription OAuth via the Claude CLI credential store, or `ANTHROPIC_API_KEY`. The provider status path reports installed/authenticated state; lifecycle execution still fails at the adapter layer if the SDK cannot run. See [[sessionend-hook]] for headless capture behavior.
 
-## Tool input quirk
+## Old wrapper removal
 
-`tool_use.input` from the SDK arrives as either a parsed object or a JSON-encoded string. `normalizeToolInput()` in `src/commands/bootstrap.ts` handles both forms before the formatter touches any field.
+`src/agent/sdk.ts`, `src/commands/bootstrap.ts`, `src/commands/capture.ts`, and the `.bootstrap-*.log` / `.capture-*.log` flows were removed during the V1 cleanup. Do not reintroduce a command-specific Claude runner; add mapping behavior inside the provider adapter.

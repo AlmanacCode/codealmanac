@@ -2,19 +2,15 @@ import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
-import { joinPrompts, loadPrompt } from "../agent/prompts.js";
 import type { AgentRunSpec } from "../harness/types.js";
 import { initWiki } from "../commands/init.js";
-import {
-  startBackgroundProcess,
-  startForegroundProcess,
-} from "../process/index.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,
   StartBackgroundProcess,
   StartForegroundProcess,
 } from "./types.js";
+import { createOperationRunSpec, runOperationProcess } from "./run.js";
 
 export interface BuildOperationOptions {
   cwd: string;
@@ -33,33 +29,15 @@ export async function createBuildRunSpec(args: {
   provider?: OperationProviderSelection;
   context?: string;
 }): Promise<AgentRunSpec> {
-  const operationPrompt = await loadPrompt("operations/build");
-  const prompt = joinPrompts([
-    operationPrompt,
-    buildRuntimeContext(args.repoRoot),
-    args.context,
-  ]);
-
-  return {
+  return createOperationRunSpec({
+    operation: "build",
+    promptName: "operations/build",
     provider: args.provider ?? { id: "claude" },
-    cwd: args.repoRoot,
-    prompt,
-    tools: [
-      { id: "read" },
-      { id: "write" },
-      { id: "edit" },
-      { id: "search" },
-      { id: "shell" },
-    ],
-    limits: {
-      maxTurns: 150,
-    },
-    metadata: {
-      operation: "build",
-      targetKind: "repo",
-      targetPaths: [args.repoRoot],
-    },
-  };
+    repoRoot: args.repoRoot,
+    context: args.context,
+    targetKind: "repo",
+    targetPaths: [args.repoRoot],
+  });
 }
 
 export async function runBuildOperation(
@@ -79,31 +57,15 @@ export async function runBuildOperation(
     context: options.context,
   });
 
-  if (options.background === true) {
-    const background = await (options.startBackground ?? startBackgroundProcess)({
-      repoRoot,
-      spec,
-      runId: options.runId,
-    });
-    return { mode: "background", runId: background.runId, background };
-  }
-
-  const foreground = await (options.startForeground ?? startForegroundProcess)({
+  return runOperationProcess({
     repoRoot,
     spec,
+    background: options.background === true,
     runId: options.runId,
     onEvent: options.onEvent,
+    startForeground: options.startForeground,
+    startBackground: options.startBackground,
   });
-  return { mode: "foreground", runId: foreground.runId, foreground };
-}
-
-function buildRuntimeContext(repoRoot: string): string {
-  return [
-    "Runtime context:",
-    `- Repository root: ${repoRoot}`,
-    `- Almanac directory: ${repoRoot}/.almanac`,
-    `- Wiki pages directory: ${repoRoot}/.almanac/pages`,
-  ].join("\n");
 }
 
 async function countWikiPages(repoRoot: string): Promise<number> {

@@ -254,3 +254,46 @@ that configuration instead of creating a second default system.
 Consequences: `init`, `capture`, `ingest`, and `garden` resolve configured
 provider/model defaults through `readConfig({ cwd })`. Explicit `--using`
 continues to win for that run only.
+
+## 2026-05-09 21:05 PDT
+
+Decision: Run records are terminal-state guarded by the process manager.
+
+Context: A running job can be cancelled from the `jobs` command while its child
+process is still executing. The foreground manager also performs post-harness
+work such as page snapshots, indexing, summaries, and final record writes.
+
+Alternatives:
+- Let the child always overwrite the record with its final status.
+- Treat cancellation as advisory and rely on stale detection.
+
+Why: `.almanac/runs/<run-id>.json` is the lifecycle source of truth. Once a
+record is cancelled, later in-memory process state should not resurrect it as
+done or failed. Separately, finalization errors should be visible as failed run
+records rather than becoming stale running records.
+
+Consequences: Foreground finalization re-reads the current record before writing
+terminal status. If the current record is already cancelled, it returns that
+record. Finalization errors are caught and recorded as failed runs where
+possible.
+
+## 2026-05-09 21:05 PDT
+
+Decision: Harness provider metadata describes implemented adapter behavior, not
+the broader provider product.
+
+Context: Codex and Cursor have broader product capabilities than the current V1
+adapters. Codex V1 is a one-shot `codex exec --json` adapter, and Cursor is an
+explicit not-implemented placeholder.
+
+Alternatives:
+- Advertise broader provider capabilities so future work is visible.
+- Remove Cursor from the registry until implemented.
+
+Why: Operation code will eventually branch on capability metadata. Aspirational
+metadata makes that boundary unsafe because callers can trust features that the
+adapter rejects or cannot run.
+
+Consequences: Codex metadata no longer advertises session persistence, resume,
+interrupt, or subagents in V1. Cursor remains listed but advertises no executable
+runtime capabilities until its adapter is implemented.

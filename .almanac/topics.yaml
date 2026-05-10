@@ -21,7 +21,7 @@ topics:
 
   - slug: agents
     title: Agents
-    description: AI agent integration — SDK usage, prompts, bootstrap, capture
+    description: AI agent integration — harness providers, operation prompts, Build, Absorb, Garden
     parents: [flows, stack]
 
   - slug: cli

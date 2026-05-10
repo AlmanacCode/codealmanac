@@ -2,42 +2,39 @@
 title: Capture Flow
 topics: [agents, flows]
 files:
-  - src/commands/capture.ts
-  - prompts/writer.md
-  - prompts/reviewer.md
-  - src/agent/sdk.ts
+  - src/commands/operations.ts
+  - src/commands/session-transcripts.ts
+  - src/operations/absorb.ts
+  - prompts/operations/absorb.md
   - src/commands/hook.ts
 ---
 
 # Capture Flow
 
-`almanac capture` is the ongoing knowledge-maintenance path. It takes a Claude Code session transcript, runs a writer agent that reads the existing wiki and drafts page changes, and invokes a reviewer subagent that critiques against the wider graph. The writer applies the final versions. It is triggered automatically by [[sessionend-hook]] after each Claude Code session.
+`almanac capture` is the session-ingest command for the V1 Absorb operation. It resolves one or more coding-session transcript files, builds command context, and calls [[wiki-lifecycle-operations]] with `targetKind: "session"`. The operation then runs through [[process-manager-runs]] and [[harness-providers]] like every other AI write path.
 
-<!-- stub: fill in writer/reviewer prompt details, transcript resolution edge cases, and notability decisions as discovered -->
+The old hardcoded writer/reviewer capture pipeline was removed. There is no `prompts/writer.md`, `prompts/reviewer.md`, `src/commands/capture.ts`, `src/agent/sdk.ts`, `.capture-*.log`, or capture-specific `StreamingFormatter` in V1.
 
 ## Transcript resolution
 
-Three resolution modes (first match wins):
-1. Explicit path positional arg: `almanac capture /path/to/transcript.jsonl`
-2. `--session <id>`: searches `~/.claude/projects/` for a file matching the session ID
-3. Auto-resolve: finds the most recent transcript under `~/.claude/projects/` whose `cwd` field matches the current repo
+Resolution lives in `src/commands/session-transcripts.ts` before Absorb starts:
 
-## Writer agent
+- Explicit transcript file args are validated and passed through.
+- No-arg capture defaults to Claude transcript discovery.
+- `--session <id>` finds a matching Claude `<id>.jsonl`.
+- `--since`, `--limit`, and `--all` filter Claude discovery.
+- Codex/Cursor discovery and `--all-apps` still fail clearly unless transcript files are provided.
 
-Loads `prompts/writer.md`. Allowed tools include Read/Write/Edit/Glob/Grep/Bash plus the `Agent` tool to invoke the reviewer subagent. The writer reads existing pages via `almanac show` (Bash tool), drafts additions or edits, then calls the reviewer as a subagent. The writer decides what to incorporate from the reviewer's text critique and writes the final pages directly — no proposal JSON, no `--apply` step.
+## Absorb execution
 
-## Reviewer subagent
+Capture appends session-file context to `prompts/operations/absorb.md` through [[operation-prompts]]. `src/operations/absorb.ts` requests read, write, edit, search, and shell tools, sets `metadata.operation = "absorb"`, and defaults to background execution unless `--foreground` is passed.
 
-Defined as an `AgentDefinition` passed in the `agents: { reviewer }` map to `runAgent`. Loaded from `prompts/reviewer.md`. The reviewer reads across the graph, flags: duplicates, missing wikilinks, missing topic assignments, inference dressed as fact, cohesion problems. Returns a text critique; the writer reads it and decides.
+Provider-specific behavior is adapter-owned. Claude may support helper agents through [[harness-providers]], but Capture no longer hardcodes a reviewer subagent or a capture-only SDK wrapper.
 
 ## No-op captures
 
-Capture writes nothing if no session content meets the notability bar. Silence is a valid outcome; the absence of a git diff is the signal.
+Capture can produce no page changes if the transcript does not meet the notability bar. In V1 the observable record is a completed run with zero created, updated, and archived pages in `.almanac/runs/`.
 
 ## Log files
 
-Raw SDK messages are written to `.almanac/.capture-<timestamp>.log` (one JSON per line, grep-able). The log file is created before the agent starts so streaming begins immediately.
-
-## Reuses StreamingFormatter
-
-`capture.ts` imports `StreamingFormatter` from `bootstrap.ts` and calls `formatter.setAgent("writer")` so tool-use lines display `[writer] reading ...` not `[bootstrap] reading ...`.
+Raw provider events are normalized and written to `.almanac/runs/<run-id>.jsonl`. Run status, target paths, provider/model, PID, summary counts, and errors live in `.almanac/runs/<run-id>.json`.

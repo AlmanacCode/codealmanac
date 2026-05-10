@@ -19,10 +19,10 @@ The indexer in `src/indexer/wikilinks.ts` classifies each `[[...]]` link into on
 
 | Pattern | Category | Example |
 |---------|----------|---------|
-| Contains `:` before any `/` | Cross-wiki | `[[openalmanac:supabase]]` |
-| Contains `/` (no preceding `:`) | File ref | `[[src/checkout/handler.ts]]` |
-| Trailing `/` | Folder ref | `[[src/checkout/]]` |
-| None of the above | Page slug | `[[checkout-flow]]` |
+| Contains `:` before any `/` | Cross-wiki | `openalmanac:supabase` inside brackets |
+| Contains `/` (no preceding `:`) | File ref | `src/checkout/handler.ts` inside brackets |
+| Trailing `/` | Folder ref | `src/checkout/` inside brackets |
+| None of the above | Page slug | `checkout-flow` inside brackets |
 
 ## Storage
 
@@ -36,4 +36,4 @@ The indexer in `src/indexer/wikilinks.ts` classifies each `[[...]]` link into on
 
 ## Why one syntax
 
-A second syntax (e.g. `[text](slug)` vs `[[slug]]`) would require the reviewer to learn two conventions and the indexer to maintain two parsers. Disambiguation by content keeps authoring unambiguous and the classifier trivially correct for the common cases.
+A second syntax (e.g. markdown links versus bracketed slugs) would require agents to learn two conventions and the indexer to maintain two parsers. Disambiguation by content keeps authoring unambiguous and the classifier trivially correct for the common cases.
