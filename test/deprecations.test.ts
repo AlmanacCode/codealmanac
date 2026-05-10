@@ -77,7 +77,7 @@ describe("deprecated CLI surfaces", () => {
     });
   });
 
-  it("warns for ps but not capture status", async () => {
+  it("warns for old status aliases", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "capture-status-deprecation");
       await scaffoldWiki(repo);

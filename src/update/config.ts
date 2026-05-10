@@ -16,7 +16,7 @@ export function isAgentProviderId(value: string): value is AgentProviderId {
 }
 
 export interface AgentConfig {
-  /** Default provider for bootstrap/capture. Default: "claude". */
+  /** Default provider for agent-backed lifecycle commands. Default: "claude". */
   default: AgentProviderId;
   /** Optional per-provider model override. `null` means provider default. */
   models: Partial<Record<AgentProviderId, string | null>>;
@@ -32,7 +32,7 @@ export interface AgentConfig {
 export interface GlobalConfig {
   /** When `false`, suppress the pre-command update-nag banner. Default: true. */
   update_notifier: boolean;
-  /** Agent-provider settings for bootstrap/capture. */
+  /** Agent-provider settings for agent-backed lifecycle commands. */
   agent: AgentConfig;
 }
 

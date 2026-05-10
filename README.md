@@ -28,7 +28,7 @@ A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, ha
 
 Each repo gets a committed `.almanac/pages/` directory of markdown files. Auto-capture hooks fire when Claude Code, Codex, or Cursor Agent sessions end and run `almanac capture` in the background. CodeAlmanac builds one provider-neutral run spec, starts it through the process manager, and records local run state in `.almanac/runs/`. New and updated pages show up in your next `git status`; you review them like any other commit.
 
-The CLI never reads or writes page content except in `capture` and `bootstrap`. Every other command (`search`, `show`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
+The CLI only invokes AI for the write-capable lifecycle commands: `init`, `capture`, `ingest`, and `garden`. Every query or organization command (`search`, `show`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
 
 ## Install
 
@@ -53,7 +53,7 @@ The setup is idempotent — safe to re-run. Opt out with `--skip-hook` or `--ski
 
 Two binaries ship, both pointing at the same entry: `codealmanac` (install surface) and `almanac` (day-to-day). Requires Node 20 or 22.
 
-`bootstrap` and `capture` invoke your configured default agent. Claude uses the bundled Claude Agent SDK, Codex uses `codex exec --json`, and Cursor uses `cursor-agent --print --output-format stream-json`. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
+`init`, `capture`, `ingest`, and `garden` invoke your configured default provider unless `--using <provider[/model]>` overrides it. Claude uses the bundled Claude Agent SDK, Codex uses `codex exec --json`, and Cursor is currently an explicit future-work adapter. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
 
 ## Authentication
 
