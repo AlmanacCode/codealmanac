@@ -35,6 +35,8 @@ export function registerQueryCommands(program: Command): void {
     .option("--archived", "archived pages only")
     .option("--wiki <name>", "target a specific registered wiki")
     .option("--json", "emit structured JSON")
+    .option("--slugs", "emit only result slugs, one per line")
+    .option("--summaries", "emit result slugs with one-line summaries")
     .option("--limit <n>", "cap results", parsePositiveInt)
     .action(
       async (
@@ -49,6 +51,8 @@ export function registerQueryCommands(program: Command): void {
           archived?: boolean;
           wiki?: string;
           json?: boolean;
+          slugs?: boolean;
+          summaries?: boolean;
           limit?: number;
         },
       ) => {
@@ -65,6 +69,10 @@ export function registerQueryCommands(program: Command): void {
           archived: opts.archived,
           wiki: opts.wiki,
           json: opts.json,
+          slugs: opts.slugs,
+          summaries:
+            opts.summaries === true ||
+            (opts.slugs !== true && opts.json !== true && (process.stdout.isTTY ?? false)),
           limit: opts.limit,
         });
         emit(result);

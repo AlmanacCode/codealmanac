@@ -7,6 +7,7 @@ describe("parseFrontmatter", () => {
     const fm = parseFrontmatter(
       `---
 title: Checkout Flow
+summary: Checkout decisions and invariants for future agents.
 topics: [checkout, flows]
 files:
   - src/checkout/handler.ts
@@ -19,6 +20,7 @@ Body goes here.
 `,
     );
     expect(fm.title).toBe("Checkout Flow");
+    expect(fm.summary).toBe("Checkout decisions and invariants for future agents.");
     expect(fm.topics).toEqual(["checkout", "flows"]);
     expect(fm.files).toEqual(["src/checkout/handler.ts", "src/checkout/"]);
     expect(fm.body).toMatch(/^# Checkout Flow/m);

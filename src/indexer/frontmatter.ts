@@ -2,6 +2,7 @@ import yaml from "js-yaml";
 
 export interface Frontmatter {
   title?: string;
+  summary?: string;
   topics: string[];
   files: string[];
   archived_at: number | null;
@@ -82,6 +83,7 @@ export function parseFrontmatter(raw: string): Frontmatter {
 
   return {
     title: coerceString(obj.title),
+    summary: coerceString(obj.summary),
     topics: coerceStringArray(obj.topics),
     files: coerceStringArray(obj.files),
     archived_at: coerceEpochSeconds(obj.archived_at),

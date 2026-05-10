@@ -26,6 +26,7 @@ async function seed(repo: string): Promise<void> {
     "checkout-flow",
     `---
 title: Checkout Flow
+summary: Checkout flow explains the entrypoint and related payment links.
 topics: [checkout, flows]
 files:
   - src/checkout/handler.ts
@@ -77,6 +78,7 @@ describe("almanac show — default view", () => {
       expect(r.exitCode).toBe(0);
       // Metadata is above the `---` separator.
       expect(r.stdout).toMatch(/slug:\s+checkout-flow/);
+      expect(r.stdout).toMatch(/summary:\s+Checkout flow explains/);
       expect(r.stdout).toMatch(/topics:\s+checkout, flows/);
       // Body follows, with the separator.
       expect(r.stdout).toMatch(/\n---\n/);
@@ -157,6 +159,9 @@ describe("almanac show — view modes", () => {
       const parsed = JSON.parse(r.stdout);
       expect(Array.isArray(parsed)).toBe(false);
       expect(parsed.slug).toBe("checkout-flow");
+      expect(parsed.summary).toBe(
+        "Checkout flow explains the entrypoint and related payment links.",
+      );
       expect(parsed.topics).toEqual(["checkout", "flows"]);
       expect(parsed.wikilinks_out).toEqual(["stripe-async"]);
       expect(parsed.cross_wiki_links).toEqual([

@@ -190,6 +190,9 @@ describe("registerCommands", () => {
     expect(optionFlags(findCommand(program, ["search"]))).toContain(
       "--mentions <path>",
     );
+    expect(optionFlags(findCommand(program, ["search"]))).toContain(
+      "--summaries",
+    );
     expect(optionFlags(findCommand(program, ["list"]))).toContain(
       "--drop <name>",
     );

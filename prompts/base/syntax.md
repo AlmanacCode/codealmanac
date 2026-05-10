@@ -17,6 +17,7 @@ Common fields:
 ```yaml
 ---
 title: Human Readable Title
+summary: One direct sentence explaining what this page helps future agents understand.
 topics: [topic-one, topic-two]
 files:
   - src/path/to/file.ts
@@ -31,9 +32,13 @@ archived_at: 2026-05-10
 ---
 ```
 
-`title`, `topics`, `files`, `archived_at`, `supersedes`, and
+`title`, `summary`, `topics`, `files`, `archived_at`, `supersedes`, and
 `superseded_by` are understood by current tooling. Other fields are allowed as
 durable prompt-level conventions and future index inputs.
+
+Use `summary:` as the page's search-result snippet: one factual sentence,
+not a paragraph, explaining what the page is about and why an agent would
+open it.
 
 Use `files:` for repo files and folders that support the page. Use `sources:`
 for external docs, papers, URLs, transcripts, notes, market reads, research

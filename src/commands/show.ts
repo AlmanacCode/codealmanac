@@ -75,6 +75,7 @@ export interface ShowCommandOutput {
 export interface ShowRecord {
   slug: string;
   title: string | null;
+  summary: string | null;
   file_path: string;
   updated_at: number;
   archived_at: number | null;
@@ -152,13 +153,14 @@ async function fetchRecord(
       {
         slug: string;
         title: string | null;
+        summary: string | null;
         file_path: string;
         updated_at: number;
         archived_at: number | null;
         superseded_by: string | null;
       }
     >(
-      "SELECT slug, title, file_path, updated_at, archived_at, superseded_by FROM pages WHERE slug = ?",
+      "SELECT slug, title, summary, file_path, updated_at, archived_at, superseded_by FROM pages WHERE slug = ?",
     )
     .get(slug);
   if (pageRow === undefined) return null;
@@ -220,6 +222,7 @@ async function fetchRecord(
   return {
     slug: pageRow.slug,
     title: pageRow.title,
+    summary: pageRow.summary,
     file_path: pageRow.file_path,
     updated_at: pageRow.updated_at,
     archived_at: pageRow.archived_at,
@@ -465,6 +468,9 @@ function metadataHeader(rec: ShowRecord): string {
   const lines: string[] = [];
   lines.push(`${DIM}slug:${RST}       ${BLUE}${rec.slug}${RST}`);
   lines.push(`${DIM}title:${RST}      ${rec.title ?? "—"}`);
+  if (rec.summary !== null && rec.summary.trim().length > 0) {
+    lines.push(`${DIM}summary:${RST}    ${rec.summary.trim()}`);
+  }
   lines.push(
     `${DIM}topics:${RST}     ${rec.topics.length > 0 ? rec.topics.join(", ") : "—"}`,
   );

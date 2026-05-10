@@ -152,10 +152,13 @@ almanac update                               # update to latest version
 
 `init`, `capture`, `ingest`, and `garden` resolve provider settings through `--using <provider[/model]>`, then provider config.
 
-All query commands output slugs one per line. Add `--json` for structured output. Pipe with `--stdin`:
+Query commands stay pipe-friendly: use slug-only output for scripts and `--json`
+for structured output. `almanac search --summaries` adds one-line page
+summaries for scan-friendly terminal browsing; `--slugs` forces slug-only
+output. Pipe with `--stdin`:
 
 ```bash
-almanac search --topic flows | almanac show --stdin
+almanac search --topic flows --slugs | almanac show --stdin
 almanac search --stale 90d | almanac tag --stdin needs-review
 ```
 
