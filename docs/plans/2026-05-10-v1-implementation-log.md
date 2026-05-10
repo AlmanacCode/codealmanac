@@ -202,3 +202,16 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
 - Result: 1 test file passed, 4 tests passed; TypeScript lint passed.
 - Next: Phase 5.3 Garden operation.
+
+## 2026-05-09 20:12 PDT
+
+- Built: Phase 5.3 Garden operation.
+- Files changed:
+  - `src/operations/garden.ts`
+  - `test/garden-operation.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+- Tests run:
+  - `npm test -- test/garden-operation.test.ts`
+  - `npm run lint`
+- Result: 1 test file passed, 4 tests passed; TypeScript lint passed.
+- Next: Phase 6.1 CLI command surface and shared `--using` parsing.
