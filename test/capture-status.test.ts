@@ -164,7 +164,7 @@ describe("almanac capture status", () => {
 });
 
 describe("capture status CLI aliases", () => {
-  it("routes alm ps and almanac c status to capture status", async () => {
+  it("routes alm ps and almanac c status to jobs", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "cli-aliases");
       await scaffoldWiki(repo);
@@ -200,9 +200,10 @@ describe("capture status CLI aliases", () => {
         process.chdir(originalCwd);
       }
 
-      expect(captured.join("")).toContain("No capture jobs found.");
-      expect(captured.join("").match(/Capture jobs/g)).toHaveLength(2);
+      expect(captured.join("")).toContain("No jobs found.");
+      expect(captured.join("").match(/Jobs/g)).toHaveLength(2);
       expect(stderr.join("")).toContain("almanac ps");
+      expect(stderr.join("")).toContain("almanac capture status");
       expect(stderr.join("")).toContain("deprecated");
     });
   });

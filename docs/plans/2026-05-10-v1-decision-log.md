@@ -164,3 +164,62 @@ make `.almanac/runs/` the single local process-state directory.
 Consequences: Existing repos may still have older ignored paths, but newly
 generated V1 ignore blocks only include the derived SQLite files and
 `.almanac/runs/`.
+
+## 2026-05-09 20:30 PDT
+
+Decision: Retire public `almanac bootstrap` wiring in the V1 CLI surface.
+
+Context: `bootstrap` is the old write-capable AI path. It bypasses the V1
+operation/process/harness layers and writes old `.almanac/logs/` artifacts.
+
+Alternatives:
+- Keep `bootstrap` as a deprecated alias to `init`.
+- Leave it public until a later cleanup phase.
+
+Why: The agreed public V1 write commands are `init`, `capture`, `ingest`, and
+`garden`. Keeping a second public build path would preserve architecture drift.
+
+Consequences: The old `runBootstrap` implementation still exists for historical
+tests and later deletion, but it is no longer registered as a public lifecycle
+command.
+
+## 2026-05-09 20:30 PDT
+
+Decision: `capture` refuses to start a job when no transcript file is provided
+until V1 session discovery is implemented.
+
+Context: The first CLI wiring accepted no-arg capture and launched Absorb with
+only text saying no session was provided. That created a job without the source
+context the operation needs.
+
+Alternatives:
+- Keep launching and let the prompt infer what to do.
+- Reuse the old Claude-only transcript resolver immediately.
+- Implement full Claude/Codex/Cursor discovery in this review-fix pass.
+
+Why: Failing clearly is safer than running an empty Absorb job. The old resolver
+is Claude-specific and would reintroduce the wrong abstraction before the
+provider/session discovery layer is designed.
+
+Consequences: Explicit transcript-file capture works. No-arg/latest-session and
+flag-based session discovery are a documented follow-up before V1 is complete.
+
+## 2026-05-09 20:30 PDT
+
+Decision: Codex `exec` adapter rejects unsupported per-run fields instead of
+advertising and silently dropping them.
+
+Context: Codex metadata previously said reasoning effort, MCP, skills, and
+context usage were supported, but the `codex exec --json` adapter did not map
+those fields.
+
+Alternatives:
+- Keep the broader capability flags for future Codex SDK/app-server support.
+- Convert unsupported fields into prompt text.
+
+Why: Provider capabilities must describe the actual adapter primitive, not the
+provider ecosystem in general.
+
+Consequences: Current Codex V1 runs support the simple exec path: prompt, cwd,
+model, workspace-write sandbox, output schema, JSONL events, and usage parsing.
+Future richer Codex transports can re-enable capabilities when implemented.

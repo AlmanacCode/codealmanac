@@ -73,6 +73,7 @@ export async function runInitCommand(
       provider: provider.value,
       background,
       context: initContext(options),
+      force: options.force,
       startForeground: options.startForeground,
       startBackground: options.startBackground,
     });
@@ -95,6 +96,25 @@ export async function runCaptureCommand(
     const paths = (options.sessionFiles ?? []).map((path) =>
       resolve(options.cwd, path),
     );
+    if (paths.length === 0) {
+      return renderOutcome(
+        {
+          type: "needs-action",
+          message:
+            "capture session discovery is not implemented in the V1 job path",
+          fix: "pass one or more transcript files, or use almanac ingest <file-or-folder>",
+          data: {
+            app: options.app,
+            session: options.session,
+            since: options.since,
+            limit: options.limit,
+            all: options.all,
+            allApps: options.allApps,
+          },
+        },
+        { json: options.json },
+      );
+    }
     const result = await runAbsorbOperation({
       cwd: options.cwd,
       provider: provider.value,

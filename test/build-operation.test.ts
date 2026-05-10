@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -124,6 +124,38 @@ describe("build operation", () => {
           record: { status: "queued", operation: "build" },
         },
       });
+    });
+  });
+
+  it("refuses to rebuild a populated wiki without force", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "build-force");
+      await runBuildOperation({
+        cwd: repo,
+        startForeground: async (options) => ({
+          runId: "run_first",
+          record: {
+            version: 1,
+            id: "run_first",
+            operation: "build",
+            status: "done",
+            repoRoot: options.repoRoot,
+            pid: 1,
+            provider: options.spec.provider.id,
+            startedAt: "2026-05-09T20:16:00.000Z",
+            logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+          },
+          result: { success: true, result: "done" },
+        }),
+      });
+      await writeFile(
+        join(repo, ".almanac", "pages", "existing.md"),
+        "# Existing\n",
+      );
+
+      await expect(runBuildOperation({ cwd: repo })).rejects.toThrow(
+        "pass --force to rebuild",
+      );
     });
   });
 });

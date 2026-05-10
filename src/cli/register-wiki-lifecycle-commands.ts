@@ -1,7 +1,5 @@
 import { Command } from "commander";
 
-import { runBootstrap } from "../commands/bootstrap.js";
-import { runCaptureStatus } from "../commands/captureStatus.js";
 import {
   runHookInstall,
   runHookStatus,
@@ -53,36 +51,6 @@ export function registerWikiLifecycleCommands(program: Command): void {
           json: opts.json,
           force: opts.force,
           yes: opts.yes,
-        });
-        emit(result);
-      },
-    );
-
-  program
-    .command("bootstrap")
-    .description(
-      "scaffold a wiki in this repo via an AI agent (requires ANTHROPIC_API_KEY or Claude subscription)",
-    )
-    .option("--quiet", "suppress per-tool streaming; print only the final line")
-    .option("--agent <agent>", "agent provider: claude, codex, or cursor")
-    .option("--model <model>", "override the agent model")
-    .option("--force", "overwrite an existing populated wiki (default: refuse)")
-    .option("--json", "emit structured CommandOutcome JSON")
-    .action(
-      async (opts: {
-        quiet?: boolean;
-        agent?: string;
-        model?: string;
-        force?: boolean;
-        json?: boolean;
-      }) => {
-        const result = await runBootstrap({
-          cwd: process.cwd(),
-          quiet: opts.quiet,
-          agent: opts.agent,
-          model: opts.model,
-          force: opts.force,
-          json: opts.json,
         });
         emit(result);
       },
@@ -263,15 +231,17 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   capture
     .command("status")
-    .description("show running and recent capture jobs")
+    .description("deprecated alias for jobs")
     .option("--json", "emit structured JSON")
     .action(async (opts: { json?: boolean }) => {
-      await autoRegisterIfNeeded(process.cwd());
-      const result = await runCaptureStatus({
+      const result = await runJobsList({
         cwd: process.cwd(),
         json: opts.json,
       });
-      emit(result);
+      emit(withWarning(
+        result,
+        deprecationWarning("almanac capture status", "almanac jobs"),
+      ));
     });
 
   program
@@ -279,14 +249,13 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .description("deprecated alias for capture status")
     .option("--json", "emit structured JSON")
     .action(async (opts: { json?: boolean }) => {
-      await autoRegisterIfNeeded(process.cwd());
-      const result = await runCaptureStatus({
+      const result = await runJobsList({
         cwd: process.cwd(),
         json: opts.json,
       });
       emit(withWarning(
         result,
-        deprecationWarning("almanac ps", "almanac capture status"),
+        deprecationWarning("almanac ps", "almanac jobs"),
       ));
     });
 

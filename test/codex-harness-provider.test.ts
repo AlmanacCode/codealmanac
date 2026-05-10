@@ -79,6 +79,26 @@ describe("Codex harness provider", () => {
     });
   });
 
+  it("rejects unsupported Codex exec run spec fields", async () => {
+    const provider = createCodexHarnessProvider({
+      runCli: async () => ({ success: true, result: "unused" }),
+    });
+
+    await expect(
+      provider.run({
+        provider: { id: "codex", effort: "high" },
+        cwd: "/repo",
+        prompt: "run",
+        skills: ["skill"],
+        mcpServers: { local: { command: "mcp" } },
+        limits: { maxCostUsd: 1 },
+        metadata: { operation: "garden" },
+      }),
+    ).rejects.toThrow(
+      "Codex exec adapter does not support: provider.effort, skills, mcpServers, limits.maxCostUsd",
+    );
+  });
+
   it("normalizes Codex JSONL events and usage", async () => {
     const events: unknown[] = [];
     const state = { success: false, result: "" };

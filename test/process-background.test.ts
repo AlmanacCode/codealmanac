@@ -3,11 +3,13 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  finishRunRecord,
   readRunRecord,
   readRunSpec,
   runBackgroundChild,
   runRecordPath,
   startBackgroundProcess,
+  writeRunRecord,
 } from "../src/process/index.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 
@@ -176,6 +178,48 @@ describe("process manager background execution", () => {
         status: "failed",
         error: "spawn denied",
       });
+    });
+  });
+
+  it("does not run a child whose queued record was cancelled first", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "background-cancelled");
+      await scaffoldWiki(repo);
+
+      const started = await startBackgroundProcess({
+        repoRoot: repo,
+        runId: "run_20260509195900_cancelled",
+        entrypoint: "/tmp/codealmanac.js",
+        now: fixedClock(["2026-05-09T19:59:00.000Z"]),
+        spec: {
+          provider: { id: "codex" },
+          cwd: repo,
+          prompt: "garden",
+          metadata: { operation: "garden" },
+        },
+        spawnBackground: () => ({ pid: 111 }),
+      });
+      await writeRunRecord(
+        runRecordPath(repo, started.runId),
+        finishRunRecord({
+          record: started.record,
+          status: "cancelled",
+          finishedAt: new Date("2026-05-09T19:59:01.000Z"),
+        }),
+      );
+
+      const child = await runBackgroundChild({
+        repoRoot: repo,
+        runId: started.runId,
+        harnessRun: async () => {
+          throw new Error("should not run");
+        },
+      });
+
+      expect(child.record.status).toBe("cancelled");
+      expect(child.result.error).toBe("run cancelled before start");
+      await expect(readRunRecord(runRecordPath(repo, started.runId))).resolves
+        .toMatchObject({ status: "cancelled" });
     });
   });
 });

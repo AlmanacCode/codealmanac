@@ -9,6 +9,7 @@ import { startForegroundProcess, type StartProcessResult } from "./manager.js";
 import {
   buildQueuedRunRecord,
   finishRunRecord,
+  readRunRecord,
   runRecordPath,
   writeRunRecord,
 } from "./records.js";
@@ -116,6 +117,18 @@ export interface RunBackgroundChildOptions {
 export async function runBackgroundChild(
   options: RunBackgroundChildOptions,
 ): Promise<StartProcessResult> {
+  const existing = await readRunRecord(runRecordPath(options.repoRoot, options.runId));
+  if (existing?.status === "cancelled") {
+    return {
+      runId: options.runId,
+      record: existing,
+      result: {
+        success: false,
+        result: "",
+        error: "run cancelled before start",
+      },
+    };
+  }
   const spec = await readRunSpec(options.repoRoot, options.runId);
   return startForegroundProcess({
     repoRoot: options.repoRoot,

@@ -245,3 +245,39 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
 - Result: 2 test files passed, 24 tests passed; TypeScript lint passed.
 - Next: run broader V1 verification, then request review.
+
+## 2026-05-09 20:30 PDT
+
+- Built: Review fixes after V1 review agent.
+- Files changed:
+  - `src/cli/help.ts`
+  - `src/cli/register-wiki-lifecycle-commands.ts`
+  - `src/commands/operations.ts`
+  - `src/harness/providers/codex.ts`
+  - `src/harness/providers/metadata.ts`
+  - `src/operations/build.ts`
+  - `src/process/background.ts`
+  - `test/build-operation.test.ts`
+  - `test/capture-status.test.ts`
+  - `test/cli.test.ts`
+  - `test/codex-harness-provider.test.ts`
+  - `test/deprecations.test.ts`
+  - `test/harness-provider-registry.test.ts`
+  - `test/operation-commands.test.ts`
+  - `test/process-background.test.ts`
+- Review findings addressed:
+  - Retired public `almanac bootstrap` command wiring from V1 lifecycle commands.
+  - Added populated-wiki guard for `almanac init` unless `--force` is passed.
+  - Stopped empty `capture` invocations from launching an Absorb run without transcript context.
+  - Added child-side cancelled-record check before a background job starts harness execution.
+  - Rerouted `capture status` and `ps` to the V1 jobs surface with deprecation warnings.
+  - Tightened Codex capabilities and rejected unsupported Codex exec fields.
+- Tests run:
+  - `npm test`
+  - `npm run lint`
+  - `git diff --check`
+- Result: 47 test files passed, 473 tests passed; TypeScript lint passed; diff whitespace check passed.
+- Remaining known follow-up:
+  - `jobs attach` still needs a true streaming/tail implementation.
+  - Foreground mode records normalized events but needs a human-readable live event renderer.
+  - Capture session discovery for `--app`, `--session`, `--since`, `--limit`, `--all`, and no-arg latest-session mode still needs the provider-specific resolver layer.

@@ -84,6 +84,12 @@ export function createCodexHarnessProvider(
 export const codexHarnessProvider = createCodexHarnessProvider();
 
 export function buildCodexExecRequest(spec: AgentRunSpec): CodexExecRequest {
+  const unsupported = unsupportedCodexSpecFields(spec);
+  if (unsupported.length > 0) {
+    throw new Error(
+      `Codex exec adapter does not support: ${unsupported.join(", ")}`,
+    );
+  }
   const args = [
     "exec",
     "--json",
@@ -109,6 +115,17 @@ export function buildCodexExecRequest(spec: AgentRunSpec): CodexExecRequest {
       CODEALMANAC_INTERNAL_SESSION: "1",
     },
   };
+}
+
+function unsupportedCodexSpecFields(spec: AgentRunSpec): string[] {
+  const unsupported: string[] = [];
+  if (spec.provider.effort !== undefined) unsupported.push("provider.effort");
+  if (spec.skills !== undefined && spec.skills.length > 0) unsupported.push("skills");
+  if (spec.mcpServers !== undefined && Object.keys(spec.mcpServers).length > 0) {
+    unsupported.push("mcpServers");
+  }
+  if (spec.limits?.maxCostUsd !== undefined) unsupported.push("limits.maxCostUsd");
+  return unsupported;
 }
 
 export function combineCodexPrompt(spec: AgentRunSpec): string {

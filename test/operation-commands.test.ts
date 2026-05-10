@@ -150,4 +150,18 @@ describe("operation command wrappers", () => {
       expect(garden.stdout).toBe("garden started: run_garden\n");
     });
   });
+
+  it("does not launch capture without a transcript file yet", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-capture-empty");
+      await initWiki({ cwd: repo, name: "cmd-capture-empty", description: "" });
+
+      const result = await runCaptureCommand({ cwd: repo });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain(
+        "capture session discovery is not implemented",
+      );
+    });
+  });
 });

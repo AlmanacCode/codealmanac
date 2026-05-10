@@ -127,7 +127,6 @@ describe("registerCommands", () => {
       "untag",
       "topics",
       "init",
-      "bootstrap",
       "capture",
       "ingest",
       "garden",
