@@ -122,3 +122,22 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
 - Result: 1 test file passed, 2 tests passed; TypeScript lint passed.
 - Next: Phase 3.4 background job execution.
+
+## 2026-05-09 19:58 PDT
+
+- Built: Phase 3.4 background job execution.
+- Files changed:
+  - `src/process/background.ts`
+  - `src/process/spec.ts`
+  - `src/process/types.ts`
+  - `src/process/records.ts`
+  - `src/process/index.ts`
+  - `src/cli.ts`
+  - `test/process-background.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+  - `docs/plans/2026-05-10-v1-decision-log.md`
+- Tests run:
+  - `npm test -- test/process-records.test.ts test/process-manager.test.ts test/process-background.test.ts`
+  - `npm run lint`
+- Result: 3 test files passed, 10 tests passed; TypeScript lint passed.
+- Next: Phase 4.1 Claude harness adapter port.

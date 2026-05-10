@@ -51,9 +51,27 @@ export function buildStartedRunRecord(args: {
   };
 }
 
+export function buildQueuedRunRecord(args: {
+  runId: string;
+  repoRoot: string;
+  spec: AgentRunSpec;
+  queuedAt: Date;
+}): RunRecord {
+  return {
+    ...buildStartedRunRecord({
+      runId: args.runId,
+      repoRoot: args.repoRoot,
+      spec: args.spec,
+      startedAt: args.queuedAt,
+      pid: 0,
+    }),
+    status: "queued",
+  };
+}
+
 export function finishRunRecord(args: {
   record: RunRecord;
-  status: Exclude<RunStatus, "running">;
+  status: Extract<RunStatus, "done" | "failed" | "cancelled">;
   finishedAt: Date;
   providerSessionId?: string;
   summary?: RunSummary;
@@ -139,7 +157,8 @@ export function isRunRecord(value: unknown): value is RunRecord {
     typeof v.id === "string" &&
     v.id.startsWith("run_") &&
     (v.operation === "build" || v.operation === "absorb" || v.operation === "garden") &&
-    (v.status === "running" ||
+    (v.status === "queued" ||
+      v.status === "running" ||
       v.status === "done" ||
       v.status === "failed" ||
       v.status === "cancelled") &&

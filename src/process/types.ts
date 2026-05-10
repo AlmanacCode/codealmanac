@@ -1,7 +1,7 @@
 import type { AgentUsage } from "../harness/events.js";
 import type { HarnessProviderId, OperationKind } from "../harness/types.js";
 
-export type RunStatus = "running" | "done" | "failed" | "cancelled";
+export type RunStatus = "queued" | "running" | "done" | "failed" | "cancelled";
 export type DisplayRunStatus = RunStatus | "stale";
 
 export interface RunSummary {

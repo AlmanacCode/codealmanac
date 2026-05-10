@@ -52,6 +52,10 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
     return;
   }
 
+  if (await tryRunInternalJob(argv.slice(2))) {
+    return;
+  }
+
   const programName = getProgramName(argv);
 
   announceUpdateFn(process.stderr);
@@ -103,6 +107,20 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
   configureGroupedHelp(program);
 
   await program.parseAsync(argv);
+}
+
+async function tryRunInternalJob(args: string[]): Promise<boolean> {
+  if (args[0] !== "__run-job") return false;
+  const runId = args[1];
+  if (runId === undefined || !runId.startsWith("run_")) {
+    throw new Error("internal job requires a run id");
+  }
+  const { runBackgroundChild } = await import("./process/index.js");
+  await runBackgroundChild({
+    repoRoot: process.cwd(),
+    runId,
+  });
+  return true;
 }
 
 function getProgramName(argv: string[]): "almanac" | "codealmanac" {

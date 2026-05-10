@@ -55,3 +55,26 @@ without mixing old `RunAgentOptions` semantics into `AgentRunSpec`.
 Consequences: Any command using the new harness before provider ports land will
 fail clearly with "not implemented yet." Real Claude/Codex behavior lands in the
 provider adapter phase.
+
+## 2026-05-09 19:58 PDT
+
+Decision: Background launches write a `queued` run record before spawning the
+detached child. The child then rehydrates the spec and owns the transition to
+`running`, `done`, or `failed`.
+
+Context: If the parent spawned the child first and then wrote a `running`
+record, a fast child could complete and write `done` before the parent wrote its
+late `running` record, regressing the final status.
+
+Alternatives:
+- Parent writes `running` after spawn with the child PID.
+- Parent writes `running` before spawn with PID `0`.
+- Add a larger process supervisor before the CLI job path exists.
+
+Why: `queued` keeps jobs visible immediately, avoids a parent/child record write
+race, and lets the foreground process manager remain the single owner of actual
+harness execution.
+
+Consequences: A just-started background job may briefly show as `queued` until
+the child begins. PID visibility comes from the child-owned `running` record
+rather than the parent start response.
