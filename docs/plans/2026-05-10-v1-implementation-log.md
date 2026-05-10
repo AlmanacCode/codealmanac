@@ -555,3 +555,9 @@ Follow-up review found that the first timeout patch bounded only the handshake
 RPCs, not the post-`turn/start` execution phase. Added an accepted-turn timeout
 and regression coverage for a fake app-server that acknowledges `turn/start` and
 then never sends `turn/completed`.
+
+Second follow-up review found a same-flush completion race: `turn/start` could
+resolve and `turn/completed` could settle the run before the async continuation
+started the watchdog. Added settled guards before late failure/watchdog paths and
+coverage for a fake app-server that emits the `turn/start` response and
+`turn/completed` notification back-to-back.

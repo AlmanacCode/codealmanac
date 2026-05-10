@@ -414,6 +414,7 @@ export async function runCodexAppServer(
     };
 
     const fail = (raw: string): void => {
+      if (settled) return;
       const failure = classifyCodexFailure(raw);
       state.success = false;
       state.error = failure.message;
@@ -426,6 +427,7 @@ export async function runCodexAppServer(
     };
 
     const startTurnWatchdog = (): void => {
+      if (settled) return;
       if (turnTimeout !== undefined) clearTimeout(turnTimeout);
       turnTimeout = setTimeout(() => {
         fail(`Codex app-server turn timed out after ${turnTimeoutMs}ms`);

@@ -546,6 +546,59 @@ setInterval(() => {}, 1000);
     }
   });
 
+  it("does not start the turn watchdog after same-flush completion", async () => {
+    const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-fast-bin-"));
+    const codexPath = join(binDir, "codex");
+    await writeFile(
+      codexPath,
+      `#!/usr/bin/env node
+const readline = require("node:readline");
+const rl = readline.createInterface({ input: process.stdin });
+function send(msg) { process.stdout.write(JSON.stringify(msg) + "\\n"); }
+rl.on("line", (line) => {
+  const msg = JSON.parse(line);
+  if (msg.method === "initialize") {
+    send({ id: msg.id, result: { userAgent: "fake-codex" } });
+    return;
+  }
+  if (msg.method === "thread/start") {
+    send({ id: msg.id, result: { thread: { id: "thread-1" } } });
+    return;
+  }
+  if (msg.method === "turn/start") {
+    process.stdout.write(JSON.stringify({ id: msg.id, result: { turn: { id: "turn-1" } } }) + "\\n" + JSON.stringify({ method: "turn/completed", params: { threadId: "thread-1", turnId: "turn-1", turn: { id: "turn-1", status: "completed", error: null } } }) + "\\n");
+  }
+});
+`,
+    );
+    await chmod(codexPath, 0o755);
+    const oldPath = process.env.PATH;
+    const oldTurnTimeout = process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
+    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS = "25";
+    try {
+      await expect(
+        runCodexAppServer({
+          provider: { id: "codex" },
+          cwd: binDir,
+          prompt: "run",
+          metadata: { operation: "garden" },
+        }),
+      ).resolves.toMatchObject({
+        success: true,
+        providerSessionId: "thread-1",
+      });
+    } finally {
+      process.env.PATH = oldPath;
+      if (oldTurnTimeout === undefined) {
+        delete process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
+      } else {
+        process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS =
+          oldTurnTimeout;
+      }
+    }
+  });
+
   it("normalizes Codex JSONL events and usage", async () => {
     const events: unknown[] = [];
     const state = { success: false, result: "" };
