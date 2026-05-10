@@ -125,3 +125,42 @@ misleading.
 Consequences: Operation builders should only include `agents` when the selected
 provider capability supports `programmaticPerRun`. Codex still gets the same
 assembled prompt/system text and can use its own configured harness features.
+
+## 2026-05-09 20:09 PDT
+
+Decision: Keep Cursor as future work in V1 and leave the harness adapter as an
+explicit placeholder.
+
+Context: The architecture doc says Cursor is future work and not to implement it
+for this rewrite. Claude and Codex are enough to validate the provider boundary
+and process manager.
+
+Alternatives:
+- Port the old `cursor-agent --print --output-format stream-json` adapter now.
+- Remove Cursor from the provider registry entirely.
+
+Why: Keeping the placeholder preserves the intended extension point without
+spending implementation time on a provider that the current V1 scope explicitly
+defers.
+
+Consequences: Any Cursor run fails clearly until a later Cursor adapter lands.
+
+## 2026-05-09 20:09 PDT
+
+Decision: New init/build scaffolding gitignores `.almanac/runs/` instead of
+`.almanac/logs/` or old root-level capture/bootstrap globs.
+
+Context: V1 stores process records and JSONL event logs together under
+`.almanac/runs/`. Separate `.almanac/logs/` state belongs to the old capture and
+bootstrap architecture.
+
+Alternatives:
+- Keep ignoring both `.almanac/logs/` and `.almanac/runs/`.
+- Keep the old legacy globs for backwards compatibility.
+
+Why: The user explicitly called out that logs and runs overlap, and V1 should
+make `.almanac/runs/` the single local process-state directory.
+
+Consequences: Existing repos may still have older ignored paths, but newly
+generated V1 ignore blocks only include the derived SQLite files and
+`.almanac/runs/`.

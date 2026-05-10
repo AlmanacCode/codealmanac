@@ -53,7 +53,7 @@ export async function initWiki(options: InitOptions): Promise<InitResult> {
     await writeFile(readmePath, starterReadme(), "utf8");
   }
 
-  await ensureGitignoreHasIndexDb(repoRoot);
+  await ensureGitignoreHasRuntimeArtifacts(repoRoot);
 
   const name = toKebabCase(options.name ?? basename(repoRoot));
   if (name.length === 0) {
@@ -77,18 +77,12 @@ export async function initWiki(options: InitOptions): Promise<InitResult> {
 }
 
 /**
- * Ensure `.gitignore` in the repo root contains the codealmanac-derived
- * files that should never be committed.
+ * Ensure `.gitignore` in the repo root contains the CodeAlmanac-derived
+ * runtime files that should never be committed.
  *
- * We ignore three paths:
- *   - `.almanac/index.db`        — the SQLite index (derived)
- *   - `.almanac/index.db-wal`    — WAL mode sidecar (present during writes)
- *   - `.almanac/index.db-shm`    — shared-memory sidecar (WAL mode)
- *
- * All three are derived from the markdown pages. The sidecars only show
- * up while better-sqlite3 has the DB open and can vanish between `git
- * status` calls, but explicitly ignoring them prevents "dirty worktree"
- * noise during active reindexing.
+ * The SQLite index is derived from markdown pages. Run records are local
+ * process state and JSONL event logs; they can be large and are not wiki
+ * content.
  *
  * We add the block regardless of whether the file exists (creating
  * `.gitignore` if needed), and we add any target lines that aren't
@@ -100,19 +94,13 @@ export async function initWiki(options: InitOptions): Promise<InitResult> {
  * header is already present but new targets need adding, we just append
  * the missing lines (no duplicate header).
  */
-async function ensureGitignoreHasIndexDb(cwd: string): Promise<void> {
+async function ensureGitignoreHasRuntimeArtifacts(cwd: string): Promise<void> {
   const path = join(cwd, ".gitignore");
   const targets = [
     ".almanac/index.db",
     ".almanac/index.db-wal",
     ".almanac/index.db-shm",
-    // Runtime logs written by the AI pipeline. These can be multi-megabyte
-    // JSONL files and should never be committed. Keep the old root-level
-    // globs too so repos initialized by earlier releases stay quiet.
-    ".almanac/logs/",
-    ".almanac/.capture-*",
-    ".almanac/.bootstrap-*",
-    ".almanac/.ingest-*",
+    ".almanac/runs/",
   ];
 
   let existing = "";
