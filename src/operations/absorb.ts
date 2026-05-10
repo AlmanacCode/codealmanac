@@ -20,6 +20,7 @@ export interface AbsorbOperationOptions {
   targetKind?: string;
   targetPaths?: string[];
   runId?: string;
+  onEvent?: (event: import("../harness/events.js").HarnessEvent) => void | Promise<void>;
   startForeground?: StartForegroundProcess;
   startBackground?: StartBackgroundProcess;
 }
@@ -88,6 +89,7 @@ export async function runAbsorbOperation(
     repoRoot,
     spec,
     runId: options.runId,
+    onEvent: options.onEvent,
   });
   return { mode: "foreground", runId: foreground.runId, foreground };
 }

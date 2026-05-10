@@ -118,6 +118,43 @@ describe("process manager foreground execution", () => {
       expect(log).toContain("provider exploded");
     });
   });
+
+  it("forwards foreground events to an observer while still logging them", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "foreground-observer");
+      await scaffoldWiki(repo);
+      const events: unknown[] = [];
+
+      const result = await startForegroundProcess({
+        repoRoot: repo,
+        runId: "run_20260509203000_observer",
+        now: fixedClock([
+          "2026-05-09T20:30:00.000Z",
+          "2026-05-09T20:30:01.000Z",
+          "2026-05-09T20:30:02.000Z",
+        ]),
+        spec: {
+          provider: { id: "claude" },
+          cwd: repo,
+          prompt: "build",
+          metadata: { operation: "build" },
+        },
+        onEvent: (event) => {
+          events.push(event);
+        },
+        harnessRun: async (_spec, hooks) => {
+          await hooks?.onEvent?.({ type: "text", content: "observed" });
+          return { success: true, result: "done" };
+        },
+      });
+
+      expect(result.record.status).toBe("done");
+      expect(events).toEqual([{ type: "text", content: "observed" }]);
+      await expect(readFile(result.record.logPath, "utf8")).resolves.toContain(
+        "observed",
+      );
+    });
+  });
 });
 
 function fixedClock(values: string[]): () => Date {

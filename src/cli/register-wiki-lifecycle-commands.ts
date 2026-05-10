@@ -18,6 +18,7 @@ import {
   runIngestCommand,
   runInitCommand,
 } from "../commands/operations.js";
+import type { HarnessEvent } from "../harness/events.js";
 import { runReindex } from "../commands/reindex.js";
 import { autoRegisterIfNeeded } from "../registry/autoregister.js";
 import {
@@ -51,6 +52,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
           json: opts.json,
           force: opts.force,
           yes: opts.yes,
+          onEvent: opts.background === true ? undefined : writeForegroundEvent,
         });
         emit(result);
       },
@@ -100,6 +102,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
           foreground: opts.foreground,
           json: opts.json,
           yes: opts.yes,
+          onEvent: opts.foreground === true ? writeForegroundEvent : undefined,
         });
         emit(result);
       },
@@ -130,6 +133,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
           foreground: opts.foreground,
           json: opts.json,
           yes: opts.yes,
+          onEvent: opts.foreground === true ? writeForegroundEvent : undefined,
         });
         emit(result);
       },
@@ -156,6 +160,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
           foreground: opts.foreground,
           json: opts.json,
           yes: opts.yes,
+          onEvent: opts.foreground === true ? writeForegroundEvent : undefined,
         });
         emit(result);
       },
@@ -303,6 +308,28 @@ export function registerWikiLifecycleCommands(program: Command): void {
       process.stdout.write(result.stdout);
       if (result.exitCode !== 0) process.exitCode = result.exitCode;
     });
+}
+
+function writeForegroundEvent(event: HarnessEvent): void {
+  const line = formatForegroundEvent(event);
+  if (line !== null) process.stdout.write(`${line}\n`);
+}
+
+function formatForegroundEvent(event: HarnessEvent): string | null {
+  switch (event.type) {
+    case "text":
+      return event.content.trim().length > 0 ? event.content.trim() : null;
+    case "tool_use":
+      return `[tool] ${event.tool}`;
+    case "tool_summary":
+      return `[tool] ${event.summary}`;
+    case "error":
+      return `[error] ${event.error}`;
+    case "done":
+      return event.error !== undefined ? `[done] ${event.error}` : "[done]";
+    default:
+      return null;
+  }
 }
 
 function normalizeHookSource(

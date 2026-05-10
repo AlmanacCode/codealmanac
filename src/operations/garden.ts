@@ -18,6 +18,7 @@ export interface GardenOperationOptions {
   background?: boolean;
   context?: string;
   runId?: string;
+  onEvent?: (event: import("../harness/events.js").HarnessEvent) => void | Promise<void>;
   startForeground?: StartForegroundProcess;
   startBackground?: StartBackgroundProcess;
 }
@@ -82,6 +83,7 @@ export async function runGardenOperation(
     repoRoot,
     spec,
     runId: options.runId,
+    onEvent: options.onEvent,
   });
   return { mode: "foreground", runId: foreground.runId, foreground };
 }

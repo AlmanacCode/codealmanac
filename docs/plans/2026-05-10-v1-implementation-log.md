@@ -279,7 +279,6 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
 - Result: 47 test files passed, 473 tests passed; TypeScript lint passed; diff whitespace check passed.
 - Remaining known follow-up:
   - `jobs attach` still needs a true streaming/tail implementation.
-  - Foreground mode records normalized events but needs a human-readable live event renderer.
   - Capture session discovery for Codex/Cursor, `--since`, `--limit`, and `--all` still needs the provider-specific resolver layer.
 
 ## 2026-05-09 20:33 PDT
@@ -301,3 +300,26 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
   - `git diff --check`
 - Result: 47 test files passed, 474 tests passed; TypeScript lint passed; diff whitespace check passed.
+
+## 2026-05-09 20:35 PDT
+
+- Built: foreground event observer path.
+- Files changed:
+  - `src/process/manager.ts`
+  - `src/process/background.ts`
+  - `src/operations/types.ts`
+  - `src/operations/build.ts`
+  - `src/operations/absorb.ts`
+  - `src/operations/garden.ts`
+  - `src/commands/operations.ts`
+  - `src/cli/register-wiki-lifecycle-commands.ts`
+  - `test/process-manager.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+- Behavior: foreground operations can now receive normalized harness events
+  while the process manager also writes them to the JSONL run log. CLI
+  foreground commands print compact progress lines for text, tool use, errors,
+  and done events.
+- Tests run:
+  - `npm test -- test/process-manager.test.ts test/operation-commands.test.ts test/cli.test.ts`
+  - `npm run lint`
+- Result: 3 test files passed, 30 tests passed; TypeScript lint passed.

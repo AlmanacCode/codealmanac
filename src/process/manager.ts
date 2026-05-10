@@ -21,6 +21,7 @@ export interface StartProcessOptions {
   runId?: string;
   now?: () => Date;
   pid?: number;
+  onEvent?: (event: HarnessEvent) => void | Promise<void>;
   harnessRun?: (
     spec: AgentRunSpec,
     hooks?: HarnessRunHooks,
@@ -61,7 +62,7 @@ export async function startForegroundProcess(
   let result: HarnessResult;
   try {
     result = await harnessRun(options.spec, {
-      onEvent: eventLogger(started.logPath, now, eventWrites),
+      onEvent: eventLogger(started.logPath, now, eventWrites, options.onEvent),
     });
   } catch (err: unknown) {
     result = {
@@ -107,8 +108,12 @@ function eventLogger(
   path: string,
   now: () => Date,
   writes: Promise<void>[],
+  observer?: (event: HarnessEvent) => void | Promise<void>,
 ): (event: HarnessEvent) => void {
   return (event) => {
     writes.push(appendRunEvent(path, event, now()));
+    if (observer !== undefined) {
+      writes.push(Promise.resolve(observer(event)));
+    }
   };
 }

@@ -1,4 +1,5 @@
 import type { AgentRunSpec, HarnessProviderId } from "../harness/types.js";
+import type { HarnessEvent } from "../harness/events.js";
 import type {
   StartBackgroundProcessResult,
   StartProcessResult,
@@ -23,6 +24,7 @@ export type StartForegroundProcess = (options: {
   repoRoot: string;
   spec: AgentRunSpec;
   runId?: string;
+  onEvent?: (event: HarnessEvent) => void | Promise<void>;
 }) => Promise<StartProcessResult>;
 
 export type StartBackgroundProcess = (options: {

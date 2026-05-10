@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 
 import type { CommandResult } from "../cli/helpers.js";
 import { renderOutcome } from "../cli/outcome.js";
+import type { HarnessEvent } from "../harness/events.js";
 import type { HarnessProviderId } from "../harness/types.js";
 import { runAbsorbOperation } from "../operations/absorb.js";
 import { runBuildOperation } from "../operations/build.js";
@@ -17,6 +18,7 @@ import type {
 export interface OperationCommandDeps {
   startForeground?: StartForegroundProcess;
   startBackground?: StartBackgroundProcess;
+  onEvent?: (event: HarnessEvent) => void | Promise<void>;
 }
 
 export interface InitCommandOptions extends OperationCommandDeps {
@@ -76,6 +78,7 @@ export async function runInitCommand(
       background,
       context: initContext(options),
       force: options.force,
+      onEvent: options.onEvent,
       startForeground: options.startForeground,
       startBackground: options.startBackground,
     });
@@ -131,6 +134,7 @@ export async function runCaptureCommand(
       context: captureContext({ ...options, sessionFiles: paths }),
       targetKind: "session",
       targetPaths: paths,
+      onEvent: options.onEvent,
       startForeground: options.startForeground,
       startBackground: options.startBackground,
     });
@@ -164,6 +168,7 @@ export async function runIngestCommand(
       context: ingestContext(paths),
       targetKind: "path",
       targetPaths: paths,
+      onEvent: options.onEvent,
       startForeground: options.startForeground,
       startBackground: options.startBackground,
     });
@@ -187,6 +192,7 @@ export async function runGardenCommand(
       cwd: options.cwd,
       provider: provider.value,
       background: options.foreground !== true,
+      onEvent: options.onEvent,
       startForeground: options.startForeground,
       startBackground: options.startBackground,
     });

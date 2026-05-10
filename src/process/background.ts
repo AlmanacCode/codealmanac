@@ -108,6 +108,7 @@ export interface RunBackgroundChildOptions {
   runId: string;
   now?: () => Date;
   pid?: number;
+  onEvent?: (event: import("../harness/events.js").HarnessEvent) => void | Promise<void>;
   harnessRun?: (
     spec: AgentRunSpec,
     hooks?: HarnessRunHooks,
@@ -136,6 +137,7 @@ export async function runBackgroundChild(
     runId: options.runId,
     now: options.now,
     pid: options.pid,
+    onEvent: options.onEvent,
     harnessRun: options.harnessRun,
   });
 }
