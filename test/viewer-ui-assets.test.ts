@@ -6,9 +6,14 @@ import { describe, expect, it } from "vitest";
 describe("viewer UI assets", () => {
   it("ships structured sidebar topic links with active styling", async () => {
     const indexHtml = await readFile(join(process.cwd(), "viewer", "index.html"), "utf8");
+    const mark = await readFile(join(process.cwd(), "viewer", "almanac-mark.png"));
     const appJs = await readFile(join(process.cwd(), "viewer", "app.js"), "utf8");
     const appCss = await readFile(join(process.cwd(), "viewer", "app.css"), "utf8");
 
+    expect(mark.byteLength).toBeGreaterThan(0);
+    expect(indexHtml).toContain('src="/almanac-mark.png"');
+    expect(indexHtml).toContain("Your code wiki");
+    expect(indexHtml).not.toContain("Local wiki viewer");
     expect(indexHtml).toContain('data-route="/getting-started"');
     expect(indexHtml).not.toContain("recent-list");
     expect(appJs).not.toContain("recentList");
@@ -37,6 +42,8 @@ describe("viewer UI assets", () => {
     expect(appJs).not.toContain("<br><small>");
 
     expect(appCss).toContain(".ca-topic-link");
+    expect(appCss).toContain(".ca-brand-mark-image");
+    expect(appCss).toContain("brightness(0.68)");
     expect(appCss).toContain(".ca-left .ca-link-button.is-active");
     expect(appCss).toContain(".ca-shell.is-rail-hidden");
     expect(appCss).toContain("overflow-wrap: anywhere");
