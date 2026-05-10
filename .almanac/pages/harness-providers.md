@@ -10,6 +10,7 @@ files:
   - src/harness/providers/claude.ts
   - src/harness/providers/codex.ts
   - src/harness/providers/cursor.ts
+  - test/codex-harness-provider.test.ts
 ---
 
 # Harness Providers
@@ -26,11 +27,21 @@ The V1 harness layer is CodeAlmanac's provider-neutral execution boundary. Opera
 
 The Claude adapter maps base tools to Claude Agent SDK tools, passes `tools` and `allowedTools`, sets `permissionMode: "dontAsk"`, supports programmatic per-run subagents, and reports cost/usage when available. Claude-specific auth and capability flags are documented in [[claude-agent-sdk]].
 
-The Codex adapter uses `codex app-server --listen stdio://`, starts an ephemeral thread, sends one turn, and maps app-server notifications into `HarnessEvent`. It supports model override, reasoning effort, structured output schema, usage, and structured command/file/tool display details. The turn runs with `workspaceWrite` filesystem access and `networkAccess: false` by default. Server-initiated approval or user-input requests are answered noninteractively with denial or empty answers so lifecycle commands do not block.
+The Codex adapter uses `codex app-server --listen stdio://` with a three-phase JSON-RPC handshake: `initialize` (sends `clientInfo` and `capabilities: { experimentalApi: true }`), then `thread/start` (sets `approvalPolicy: "never"`, `sandbox: "workspace-write"`, `ephemeral: true`, `developerInstructions` from the system prompt), then `turn/start` (sends the combined prompt as a single text input item with `sandboxPolicy: { type: "workspaceWrite", networkAccess: false }`). The adapter streams notifications until `turn/completed` and then kills the child process. The environment always sets `CODEALMANAC_INTERNAL_SESSION=1` to let the subprocess identify itself as a background agent.
 
-The older `codex exec --json` helpers remain in the file as compatibility and failure-parsing utilities, but the default V1 run path is app-server.
+App-server notifications map to `HarnessEvent` as follows: `item/agentMessage/delta` → `text_delta`; `item/plan/delta` and `turn/plan/updated` → `tool_summary`; `item/started` and `item/completed` → `tool_use` / `tool_result` with structured display kind (shell, edit, mcp, web, agent, read, write); `item/commandExecution/outputDelta` and `item/fileChange/outputDelta` → `tool_summary`; `thread/tokenUsage/updated` → `context_usage` with usage parsed from `tokenUsage.last` (per-turn counts); `turn/completed` → terminal state; `error` notification → `error` event. The exec-path `parseCodexUsage` reads a flat token shape; the app-server path uses `parseCodexAppServerUsage`, which reads `tokenUsage.last` for per-turn counts and `tokenUsage.total.totalTokens` for cumulative processed tokens.
+
+Server-initiated requests are handled noninteractively so lifecycle commands never block. Known response patterns: `item/commandExecution/requestApproval` and `item/fileChange/requestApproval` → `{ decision: "decline" }`; legacy `execCommandApproval` / `applyPatchApproval` → `{ decision: "denied" }`; `item/tool/requestUserInput` → `{ answers: {} }`; `mcpServer/elicitation/request` → `{ action: "decline", content: null }`; `item/tool/call` → `{ contentItems: [], success: false }`; `item/permissions/requestApproval` → `{ permissions: {}, scope: "turn", strictAutoReview: true }` (empty permission grant); `account/chatgptAuthTokens/refresh` → JSON-RPC error `-32001` (CodeAlmanac does not manage ChatGPT auth tokens). Unrecognized server requests return JSON-RPC error `-32601`.
+
+`warning` notifications are non-terminal: the adapter maps them to `tool_summary` events (`Warning: <message>`) so a config or model warning during a turn does not fail the run. `error` notifications read the message from `params.error.message`, `params.error.detail`, or `params.message` and classify the failure via `classifyCodexFailure`.
+
+The adapter supports model override, reasoning effort, structured output schema (passed as `outputSchema` on the turn), and usage reporting. Per-run programmatic subagents, MCP, skills, and max-cost are unsupported and rejected at spec validation time. The older `codex exec --json` helpers remain in [[src/harness/providers/codex.ts]] as compatibility and failure-parsing utilities, but the default V1 run path is app-server.
 
 Cursor remains an explicit placeholder provider in V1. It is present in metadata as the future extension point, but runs fail clearly until a real adapter lands.
+
+## Test coverage
+
+The Codex adapter has a unit test suite at `test/codex-harness-provider.test.ts` backed by an in-process fake app-server. The fake server covers command approval, permission requests, explicit ChatGPT token-refresh failure, structured tool display, warning notifications, nested error notifications, token usage, and turn completion.
 
 ## Capability rule
 

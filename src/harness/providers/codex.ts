@@ -437,14 +437,22 @@ export async function runCodexAppServer(
       });
     };
 
-    const respondUnsupported = (id: string | number, method: string): void => {
+    const respondError = (id: string | number, code: number, message: string): void => {
       write({
         id,
         error: {
-          code: -32601,
-          message: `CodeAlmanac does not handle Codex app-server request ${method}`,
+          code,
+          message,
         },
       });
+    };
+
+    const respondUnsupported = (id: string | number, method: string): void => {
+      respondError(
+        id,
+        -32601,
+        `CodeAlmanac does not handle Codex app-server request ${method}`,
+      );
     };
 
     const handleResponse = (message: JsonRpcResponse): void => {
@@ -491,6 +499,7 @@ export async function runCodexAppServer(
           record.id as string | number,
           String(record.method),
           respond,
+          respondError,
           respondUnsupported,
         );
         return;
@@ -607,6 +616,7 @@ function respondToServerRequest(
   id: string | number,
   method: string,
   respond: (id: string | number, result: unknown) => void,
+  respondError: (id: string | number, code: number, message: string) => void,
   respondUnsupported: (id: string | number, method: string) => void,
 ): void {
   switch (method) {
@@ -628,6 +638,20 @@ function respondToServerRequest(
       return;
     case "item/tool/call":
       respond(id, { contentItems: [], success: false });
+      return;
+    case "item/permissions/requestApproval":
+      respond(id, {
+        permissions: {},
+        scope: "turn",
+        strictAutoReview: true,
+      });
+      return;
+    case "account/chatgptAuthTokens/refresh":
+      respondError(
+        id,
+        -32001,
+        "CodeAlmanac does not manage ChatGPT auth tokens for Codex app-server.",
+      );
       return;
     default:
       respondUnsupported(id, method);
@@ -737,8 +761,18 @@ export function mapCodexAppServerNotification(
     return [];
   }
 
-  if (notification.method === "error" || notification.method === "warning") {
-    const message = stringField(params, "message") ?? notification.method;
+  if (notification.method === "warning") {
+    const message = stringField(params, "message") ?? "Codex warning";
+    return [{ type: "tool_summary", summary: `Warning: ${message}` }];
+  }
+
+  if (notification.method === "error") {
+    const error = asRecord(params.error);
+    const message =
+      stringField(error, "message") ??
+      stringField(error, "detail") ??
+      stringField(params, "message") ??
+      "Codex error";
     const failure = classifyCodexFailure(message);
     state.success = false;
     state.error = failure.message;

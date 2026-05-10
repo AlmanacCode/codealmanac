@@ -244,6 +244,52 @@ describe("Codex harness provider", () => {
     });
   });
 
+  it("maps app-server warnings and nested errors", () => {
+    const warningState = { success: false, result: "" };
+    expect(
+      mapCodexAppServerNotification(
+        {
+          method: "warning",
+          params: { message: "auth token refresh failed but turn continues" },
+        },
+        warningState,
+      ),
+    ).toEqual([
+      {
+        type: "tool_summary",
+        summary: "Warning: auth token refresh failed but turn continues",
+      },
+    ]);
+    expect(warningState).toEqual({ success: false, result: "" });
+
+    const errorState = { success: false, result: "" };
+    expect(
+      mapCodexAppServerNotification(
+        {
+          method: "error",
+          params: {
+            error: {
+              message: "401 Unauthorized",
+            },
+          },
+        },
+        errorState,
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        type: "error",
+        error: "Codex is not authenticated in this environment.",
+        failure: expect.objectContaining({
+          code: "codex.not_authenticated",
+        }),
+      }),
+    ]);
+    expect(errorState).toMatchObject({
+      success: false,
+      error: "Codex is not authenticated in this environment.",
+    });
+  });
+
   it("runs against a fake app-server process and emits structured events", async () => {
     const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-bin-"));
     const codexPath = join(binDir, "codex");
@@ -252,9 +298,66 @@ describe("Codex harness provider", () => {
       `#!/usr/bin/env node
 const readline = require("node:readline");
 const rl = readline.createInterface({ input: process.stdin });
+const seen = { approval: false, permissions: false, auth: false };
 function send(msg) { process.stdout.write(JSON.stringify(msg) + "\\n"); }
+function fail(message) {
+  send({ method: "error", params: { error: { message }, willRetry: false } });
+}
+function maybeComplete() {
+  if (!seen.approval || !seen.permissions || !seen.auth) return;
+  send({ method: "item/agentMessage/delta", params: { threadId: "thread-1", turnId: "turn-1", itemId: "msg-1", delta: "done" } });
+  send({ method: "warning", params: { threadId: "thread-1", turnId: "turn-1", message: "non-terminal warning" } });
+  send({
+    method: "item/completed",
+    params: {
+      threadId: "thread-1",
+      turnId: "turn-1",
+      item: { type: "agentMessage", id: "msg-1", text: "final text", phase: null, memoryCitation: null }
+    }
+  });
+  send({
+    method: "thread/tokenUsage/updated",
+    params: {
+      threadId: "thread-1",
+      turnId: "turn-1",
+      tokenUsage: {
+        last: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 2, reasoningOutputTokens: 0, totalTokens: 3 },
+        total: { inputTokens: 5, cachedInputTokens: 0, outputTokens: 7, reasoningOutputTokens: 0, totalTokens: 12 },
+        modelContextWindow: 100
+      }
+    }
+  });
+  send({ method: "turn/completed", params: { threadId: "thread-1", turnId: "turn-1", turn: { id: "turn-1", status: "completed", error: null } } });
+}
 rl.on("line", (line) => {
   const msg = JSON.parse(line);
+  if (msg.id === "approval-1") {
+    if (msg.result?.decision !== "decline") {
+      fail("approval was not declined");
+      return;
+    }
+    seen.approval = true;
+    maybeComplete();
+    return;
+  }
+  if (msg.id === "permissions-1") {
+    if (msg.result?.scope !== "turn" || msg.result?.strictAutoReview !== true || !msg.result?.permissions) {
+      fail("permission request was not answered with turn-scoped empty permissions");
+      return;
+    }
+    seen.permissions = true;
+    maybeComplete();
+    return;
+  }
+  if (msg.id === "auth-1") {
+    if (msg.error?.code !== -32001 || !String(msg.error?.message ?? "").includes("does not manage ChatGPT auth tokens")) {
+      fail("auth refresh request did not receive explicit managed-token error");
+      return;
+    }
+    seen.auth = true;
+    maybeComplete();
+    return;
+  }
   if (msg.method === "initialize") {
     send({ id: msg.id, result: { userAgent: "fake-codex" } });
     return;
@@ -265,11 +368,13 @@ rl.on("line", (line) => {
   }
   if (msg.method === "turn/start") {
     if (msg.params.sandboxPolicy.networkAccess !== false) {
-      send({ method: "error", params: { message: "network should be disabled" } });
+      fail("network should be disabled");
       return;
     }
     send({ id: msg.id, result: { turn: { id: "turn-1" } } });
     send({ method: "item/commandExecution/requestApproval", id: "approval-1", params: {} });
+    send({ method: "item/permissions/requestApproval", id: "permissions-1", params: { threadId: "thread-1", turnId: "turn-1", itemId: "permissions-item" } });
+    send({ method: "account/chatgptAuthTokens/refresh", id: "auth-1", params: { reason: "expired" } });
     send({
       method: "item/started",
       params: {
@@ -285,28 +390,6 @@ rl.on("line", (line) => {
         }
       }
     });
-    send({ method: "item/agentMessage/delta", params: { threadId: "thread-1", turnId: "turn-1", itemId: "msg-1", delta: "done" } });
-    send({
-      method: "item/completed",
-      params: {
-        threadId: "thread-1",
-        turnId: "turn-1",
-        item: { type: "agentMessage", id: "msg-1", text: "final text", phase: null, memoryCitation: null }
-      }
-    });
-    send({
-      method: "thread/tokenUsage/updated",
-      params: {
-        threadId: "thread-1",
-        turnId: "turn-1",
-        tokenUsage: {
-          last: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 2, reasoningOutputTokens: 0, totalTokens: 3 },
-          total: { inputTokens: 5, cachedInputTokens: 0, outputTokens: 7, reasoningOutputTokens: 0, totalTokens: 12 },
-          modelContextWindow: 100
-        }
-      }
-    });
-    send({ method: "turn/completed", params: { threadId: "thread-1", turnId: "turn-1", turn: { id: "turn-1", status: "completed", error: null } } });
   }
 });
 `,
@@ -349,6 +432,10 @@ rl.on("line", (line) => {
               path: "note.txt",
             }),
           }),
+          {
+            type: "tool_summary",
+            summary: "Warning: non-terminal warning",
+          },
           { type: "text_delta", content: "done" },
           { type: "text", content: "final text" },
           expect.objectContaining({
