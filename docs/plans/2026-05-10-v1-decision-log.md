@@ -229,3 +229,24 @@ provider ecosystem in general.
 Consequences: Current Codex V1 runs support the simple exec path: prompt, cwd,
 model, workspace-write sandbox, output schema, JSONL events, and usage parsing.
 Future richer Codex transports can re-enable capabilities when implemented.
+
+## 2026-05-09 20:54 PDT
+
+Decision: Lifecycle command provider selection uses config only when `--using`
+is omitted.
+
+Context: V1 initially parsed a missing `--using` value as Claude. That matched
+the historical default but ignored user and project config, contradicting the
+public command contract.
+
+Alternatives:
+- Keep hardcoded Claude as the lifecycle default.
+- Require `--using` on every write-capable lifecycle command.
+
+Why: `almanac agents use`, `almanac agents model`, and project config are the
+existing provider preference surfaces. The V1 lifecycle commands should share
+that configuration instead of creating a second default system.
+
+Consequences: `init`, `capture`, `ingest`, and `garden` resolve configured
+provider/model defaults through `readConfig({ cwd })`. Explicit `--using`
+continues to win for that run only.

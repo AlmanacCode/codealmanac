@@ -10,6 +10,7 @@ import {
   runIngestCommand,
   runInitCommand,
 } from "../src/commands/operations.js";
+import { writeConfig } from "../src/update/config.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
 describe("operation command wrappers", () => {
@@ -58,7 +59,114 @@ describe("operation command wrappers", () => {
         json: true,
       });
       expect(jsonForeground.exitCode).toBe(1);
-      expect(jsonForeground.stderr).toContain("--json is only supported");
+      expect(jsonForeground.stderr).toBe("");
+      expect(JSON.parse(jsonForeground.stdout)).toMatchObject({
+        type: "error",
+        message: "--json is only supported for background job start responses",
+      });
+    });
+  });
+
+  it("uses configured provider defaults when --using is omitted", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-configured-provider");
+      await initWiki({ cwd: repo, name: "cmd-configured-provider", description: "" });
+      await writeConfig({
+        update_notifier: true,
+        agent: {
+          default: "codex",
+          models: {
+            claude: null,
+            codex: "gpt-5.4",
+            cursor: null,
+          },
+        },
+      });
+      const seen: unknown[] = [];
+
+      const result = await runGardenCommand({
+        cwd: repo,
+        startBackground: async (options) => {
+          seen.push(options);
+          return {
+            runId: "run_config_provider",
+            childPid: 123,
+            record: {
+              version: 1,
+              id: "run_config_provider",
+              operation: "garden",
+              status: "queued",
+              repoRoot: options.repoRoot,
+              pid: 0,
+              provider: options.spec.provider.id,
+              model: options.spec.provider.model,
+              startedAt: "2026-05-09T20:17:00.000Z",
+              logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+            },
+          };
+        },
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe("garden started: run_config_provider\n");
+      expect(seen[0]).toMatchObject({
+        spec: {
+          provider: {
+            id: "codex",
+            model: "gpt-5.4",
+          },
+        },
+      });
+    });
+  });
+
+  it("reports foreground run failures as command failures", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-foreground-failure");
+
+      const result = await runInitCommand({
+        cwd: repo,
+        using: "cursor",
+        startForeground: async (options) => ({
+          runId: "run_failed",
+          record: {
+            version: 1,
+            id: "run_failed",
+            operation: "build",
+            status: "failed",
+            repoRoot: options.repoRoot,
+            pid: 1,
+            provider: options.spec.provider.id,
+            startedAt: "2026-05-09T20:16:00.000Z",
+            logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+            error: "cursor adapter is not implemented",
+          },
+          result: {
+            success: false,
+            result: "",
+            error: "cursor adapter is not implemented",
+          },
+        }),
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("init failed: run_failed");
+      expect(result.stderr).toContain("cursor adapter is not implemented");
+    });
+  });
+
+  it("emits JSON validation errors when --json is requested", async () => {
+    const result = await runGardenCommand({
+      cwd: "/tmp",
+      using: "bad",
+      json: true,
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe("");
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      type: "error",
+      message: 'invalid --using "bad" (expected claude, codex, or cursor)',
     });
   });
 
@@ -153,7 +261,7 @@ describe("operation command wrappers", () => {
     });
   });
 
-  it("auto-resolves the latest Claude transcript for capture", async () => {
+  it("auto-resolves Claude transcript scopes for capture", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "cmd-capture-auto");
       await initWiki({ cwd: repo, name: "cmd-capture-auto", description: "" });
@@ -161,13 +269,17 @@ describe("operation command wrappers", () => {
       const projectDir = join(projectsDir, "project");
       await mkdir(projectDir, { recursive: true });
       const older = join(projectDir, "older.jsonl");
+      const middle = join(projectDir, "middle.jsonl");
       const newer = join(projectDir, "newer.jsonl");
       await writeFile(older, `{"cwd":"${repo}"}\n`);
+      await writeFile(middle, `{"cwd":"${repo}"}\n`);
       await writeFile(newer, `{"cwd":"${repo}"}\n`);
       const oldDate = new Date("2026-05-09T20:00:00.000Z");
+      const middleDate = new Date("2026-05-09T20:00:30.000Z");
       const newDate = new Date("2026-05-09T20:01:00.000Z");
       await Promise.all([
         utimes(older, oldDate, oldDate),
+        utimes(middle, middleDate, middleDate),
         utimes(newer, newDate, newDate),
       ]);
       const seen: unknown[] = [];
@@ -175,6 +287,8 @@ describe("operation command wrappers", () => {
       const result = await runCaptureCommand({
         cwd: repo,
         claudeProjectsDir: projectsDir,
+        all: true,
+        limit: 2,
         startBackground: async (options) => {
           seen.push(options);
           return {
@@ -201,7 +315,7 @@ describe("operation command wrappers", () => {
           metadata: {
             operation: "absorb",
             targetKind: "session",
-            targetPaths: [newer],
+            targetPaths: [newer, middle],
           },
         },
       });

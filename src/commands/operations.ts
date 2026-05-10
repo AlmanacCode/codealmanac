@@ -7,6 +7,7 @@ import type { HarnessProviderId } from "../harness/types.js";
 import { runAbsorbOperation } from "../operations/absorb.js";
 import { runBuildOperation } from "../operations/build.js";
 import { runGardenOperation } from "../operations/garden.js";
+import { readConfig } from "../update/config.js";
 import { resolveCaptureTranscripts } from "./session-transcripts.js";
 import type {
   OperationProviderSelection,
@@ -66,10 +67,10 @@ export interface GardenCommandOptions extends OperationCommandDeps {
 export async function runInitCommand(
   options: InitCommandOptions,
 ): Promise<CommandResult> {
-  const provider = parseUsingOrOutcome(options.using);
+  const provider = await resolveProviderOrOutcome(options);
   if ("error" in provider) return provider.error;
   const background = options.background === true;
-  if (options.json === true && !background) return jsonForegroundError();
+  if (options.json === true && !background) return jsonForegroundError(options.json);
 
   try {
     const result = await runBuildOperation({
@@ -91,10 +92,10 @@ export async function runInitCommand(
 export async function runCaptureCommand(
   options: CaptureCommandOptions,
 ): Promise<CommandResult> {
-  const provider = parseUsingOrOutcome(options.using);
+  const provider = await resolveProviderOrOutcome(options);
   if ("error" in provider) return provider.error;
   if (options.json === true && options.foreground === true) {
-    return jsonForegroundError();
+    return jsonForegroundError(options.json);
   }
 
   try {
@@ -106,6 +107,10 @@ export async function runCaptureCommand(
       files: options.sessionFiles,
       app: options.app,
       session: options.session,
+      since: options.since,
+      limit: options.limit,
+      all: options.all,
+      allApps: options.allApps,
       claudeProjectsDir: options.claudeProjectsDir,
     });
     if (!resolved.ok) {
@@ -147,7 +152,7 @@ export async function runCaptureCommand(
 export async function runIngestCommand(
   options: IngestCommandOptions,
 ): Promise<CommandResult> {
-  const provider = parseUsingOrOutcome(options.using);
+  const provider = await resolveProviderOrOutcome(options);
   if ("error" in provider) return provider.error;
   if (options.paths.length === 0) {
     return renderOutcome(
@@ -156,7 +161,7 @@ export async function runIngestCommand(
     );
   }
   if (options.json === true && options.foreground === true) {
-    return jsonForegroundError();
+    return jsonForegroundError(options.json);
   }
 
   try {
@@ -181,10 +186,10 @@ export async function runIngestCommand(
 export async function runGardenCommand(
   options: GardenCommandOptions,
 ): Promise<CommandResult> {
-  const provider = parseUsingOrOutcome(options.using);
+  const provider = await resolveProviderOrOutcome(options);
   if ("error" in provider) return provider.error;
   if (options.json === true && options.foreground === true) {
-    return jsonForegroundError();
+    return jsonForegroundError(options.json);
   }
 
   try {
@@ -219,15 +224,26 @@ export function parseUsing(value: string | undefined): OperationProviderSelectio
   };
 }
 
-function parseUsingOrOutcome(
-  value: string | undefined,
-): { value: OperationProviderSelection } | { error: CommandResult } {
+async function resolveProviderOrOutcome(
+  options: {
+    cwd: string;
+    using?: string;
+    json?: boolean;
+  },
+): Promise<{ value: OperationProviderSelection } | { error: CommandResult }> {
   try {
-    return { value: parseUsing(value) };
+    if (options.using !== undefined) {
+      return { value: parseUsing(options.using) };
+    }
+    const config = await readConfig({ cwd: options.cwd });
+    const id = config.agent.default;
+    const model = config.agent.models[id] ?? undefined;
+    return { value: { id, model: model ?? undefined } };
   } catch (err: unknown) {
     return {
       error: renderOutcome(
         { type: "error", message: err instanceof Error ? err.message : String(err) },
+        { json: options.json },
       ),
     };
   }
@@ -244,6 +260,31 @@ function renderOperationResult(
 ): CommandResult {
   const record = result.background?.record ?? result.foreground?.record;
   const status = record?.status;
+  const foregroundResult = result.foreground?.result;
+  if (
+    result.mode === "foreground" &&
+    (foregroundResult?.success === false || status === "failed")
+  ) {
+    return renderOutcome(
+      {
+        type: "error",
+        message:
+          foregroundResult?.error !== undefined
+            ? `${operation} failed: ${result.runId}: ${foregroundResult.error}`
+            : `${operation} failed: ${result.runId}`,
+        data: {
+          operation,
+          runId: result.runId,
+          mode: result.mode,
+          status,
+          pid: record?.pid,
+          logPath: record?.logPath,
+          error: foregroundResult?.error,
+        },
+      },
+      { json },
+    );
+  }
   return renderOutcome(
     {
       type: "success",
@@ -299,11 +340,11 @@ async function resolveCaptureRepoRoot(
   );
 }
 
-function jsonForegroundError(): CommandResult {
+function jsonForegroundError(json: boolean | undefined): CommandResult {
   return renderOutcome({
     type: "error",
     message: "--json is only supported for background job start responses",
-  });
+  }, { json });
 }
 
 function initContext(options: InitCommandOptions): string {

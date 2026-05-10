@@ -3,12 +3,19 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
+import { parseDuration } from "../indexer/duration.js";
+
 export interface ResolveCaptureTranscriptsOptions {
   repoRoot: string;
   cwd: string;
   files?: string[];
   app?: string;
   session?: string;
+  since?: string;
+  limit?: number;
+  all?: boolean;
+  allApps?: boolean;
+  now?: () => Date;
   claudeProjectsDir?: string;
 }
 
@@ -39,6 +46,13 @@ export async function resolveCaptureTranscripts(
   }
 
   const app = options.app ?? "claude";
+  if (options.allApps === true) {
+    return {
+      ok: false,
+      error: "capture --all-apps discovery is not implemented yet",
+      fix: "run capture per app, pass transcript files explicitly, or use almanac ingest <file-or-folder>",
+    };
+  }
   if (app !== "claude") {
     return {
       ok: false,
@@ -60,6 +74,13 @@ export async function resolveCaptureTranscripts(
 
   const transcripts = await collectTranscripts(projectsDir);
   if (options.session !== undefined && options.session.length > 0) {
+    if (hasBulkScope(options)) {
+      return {
+        ok: false,
+        error: "capture --session cannot be combined with --since, --limit, --all, or --all-apps",
+        fix: "use --session for one transcript, or remove --session to capture a filtered set",
+      };
+    }
     const expected = `${options.session}.jsonl`;
     const match = transcripts.find((entry) => basename(entry.path) === expected);
     if (match === undefined) {
@@ -72,7 +93,13 @@ export async function resolveCaptureTranscripts(
     return { ok: true, paths: [match.path], app: "claude" };
   }
 
-  const matches = await filterTranscriptsByCwd(transcripts, options.repoRoot);
+  let matches = await filterTranscriptsByCwd(transcripts, options.repoRoot);
+  const cutoff = parseSinceCutoff(options.since, options.now?.() ?? new Date());
+  if (!cutoff.ok) return cutoff;
+  const cutoffMtime = cutoff.mtime;
+  if (cutoffMtime !== undefined) {
+    matches = matches.filter((entry) => entry.mtime >= cutoffMtime);
+  }
   if (matches.length === 0) {
     return {
       ok: false,
@@ -82,7 +109,59 @@ export async function resolveCaptureTranscripts(
     };
   }
   matches.sort((a, b) => b.mtime - a.mtime);
-  return { ok: true, paths: [matches[0]!.path], app: "claude" };
+  const limit = normalizeLimit(options.limit);
+  if (!limit.ok) return limit;
+  const count = options.all === true ? limit.value ?? matches.length : limit.value ?? 1;
+  return {
+    ok: true,
+    paths: matches.slice(0, count).map((entry) => entry.path),
+    app: "claude",
+  };
+}
+
+function hasBulkScope(options: ResolveCaptureTranscriptsOptions): boolean {
+  return (
+    options.since !== undefined ||
+    options.limit !== undefined ||
+    options.all === true ||
+    options.allApps === true
+  );
+}
+
+function normalizeLimit(
+  limit: number | undefined,
+): { ok: true; value?: number } | { ok: false; error: string; fix: string } {
+  if (limit === undefined) return { ok: true };
+  if (Number.isInteger(limit) && limit > 0) {
+    return { ok: true, value: limit };
+  }
+  return {
+    ok: false,
+    error: "capture --limit must be a positive integer",
+    fix: "pass --limit 1 or higher",
+  };
+}
+
+function parseSinceCutoff(
+  since: string | undefined,
+  now: Date,
+): { ok: true; mtime?: number } | { ok: false; error: string; fix: string } {
+  if (since === undefined || since.trim().length === 0) return { ok: true };
+  const trimmed = since.trim();
+  const parsedDate = Date.parse(trimmed);
+  if (!Number.isNaN(parsedDate)) return { ok: true, mtime: parsedDate };
+  try {
+    return {
+      ok: true,
+      mtime: now.getTime() - parseDuration(trimmed) * 1000,
+    };
+  } catch {
+    return {
+      ok: false,
+      error: `invalid --since "${since}"`,
+      fix: "pass a date or a duration like 2w, 30d, 12h, or 45m",
+    };
+  }
 }
 
 async function collectTranscripts(

@@ -367,3 +367,23 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
   - `npm test`
 - Result: TypeScript lint passed; full suite passed with 44 test files and 421 tests.
+
+## 2026-05-09 20:54 PDT
+
+- Built: review-fix pass after V1 review agent.
+- Files changed:
+  - `src/commands/operations.ts`
+  - `src/commands/session-transcripts.ts`
+  - `test/operation-commands.test.ts`
+- Review findings addressed:
+  - Foreground operation failures now render error outcomes and nonzero exits.
+  - Lifecycle commands now use configured provider/model defaults when `--using` is omitted.
+  - Validation errors such as invalid `--using` and `--json` foreground conflicts now honor JSON output.
+  - Claude capture discovery now applies `--all`, `--limit`, and `--since`, and fails clearly for unsupported `--all-apps` discovery.
+- Tests run:
+  - `npm test -- test/operation-commands.test.ts`
+  - `npm run lint`
+  - `npm test -- test/operation-commands.test.ts test/cli.test.ts`
+  - `npm test`
+  - `git diff --check`
+- Result: focused tests passed, TypeScript lint passed, full suite passed with 44 test files and 424 tests, and diff whitespace check passed.
