@@ -18,6 +18,7 @@ import {
   readConfigWithOrigins,
   serializeConfig,
 } from "../update/config.js";
+import { formatTextTable } from "./table.js";
 
 export interface ConfigResult {
   stdout: string;
@@ -37,11 +38,16 @@ export async function runConfigList(opts: {
   if (opts.json === true) {
     return ok(`${JSON.stringify(rows, null, 2)}\n`);
   }
-  const lines = rows.map((row) => {
-    const value = formatConfigValue(row.value);
-    return opts.showOrigin === true
-      ? `${row.key.padEnd(20)} ${value.padEnd(24)} ${row.origin}`
-      : `${row.key.padEnd(20)} ${value}`;
+  const lines = formatTextTable({
+    headers: opts.showOrigin === true
+      ? ["KEY", "VALUE", "ORIGIN"]
+      : ["KEY", "VALUE"],
+    rows: rows.map((row) => {
+      const value = formatConfigValue(row.value);
+      return opts.showOrigin === true
+        ? [row.key, value, row.origin]
+        : [row.key, value];
+    }),
   });
   return ok(`${lines.join("\n")}\n`);
 }

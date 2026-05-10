@@ -3,6 +3,7 @@ import { ensureFreshIndex } from "../../indexer/index.js";
 import { resolveWikiRoot } from "../../indexer/resolve-wiki.js";
 import { openIndex } from "../../indexer/schema.js";
 import { indexDbPath } from "../../topics/paths.js";
+import { formatTextTable } from "../table.js";
 import type { TopicsCommandOutput, TopicsListOptions } from "./types.js";
 
 /**
@@ -57,11 +58,12 @@ export async function runTopicsList(
       };
     }
 
-    const slugWidth = rows.reduce((w, r) => Math.max(w, r.slug.length), 0);
-    const lines = rows.map((r) => {
-      const slug = r.slug.padEnd(slugWidth);
-      const count = `(${r.page_count} page${r.page_count === 1 ? "" : "s"})`;
-      return `${BLUE}${slug}${RST}  ${DIM}${count}${RST}`;
+    const lines = formatTextTable({
+      headers: ["TOPIC", "PAGES"],
+      rows: rows.map((r) => {
+        const count = `(${r.page_count} page${r.page_count === 1 ? "" : "s"})`;
+        return [`${BLUE}${r.slug}${RST}`, `${DIM}${count}${RST}`];
+      }),
     });
     return { stdout: `${lines.join("\n")}\n`, stderr: "", exitCode: 0 };
   } finally {

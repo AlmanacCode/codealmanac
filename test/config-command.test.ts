@@ -18,6 +18,7 @@ describe("config command", () => {
       const result = await runConfigList({ showOrigin: true });
 
       expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("KEY                  VALUE    ORIGIN");
       expect(result.stdout).toContain("agent.default");
       expect(result.stdout).toContain("agent.models.claude");
       expect(result.stdout).toContain("default");

@@ -594,7 +594,7 @@ export async function runCodexAppServer(
           clientInfo: {
             name: "codealmanac",
             title: "Code Almanac",
-            version: "0.2.7",
+            version: "0.2.8",
           },
           capabilities: {
             experimentalApi: true,

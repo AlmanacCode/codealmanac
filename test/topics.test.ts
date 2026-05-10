@@ -313,6 +313,10 @@ describe("almanac topics", () => {
       const rows = JSON.parse(result.stdout);
       const shared = rows.find((r: { slug: string }) => r.slug === "shared");
       expect(shared?.page_count).toBe(1);
+
+      const text = await runTopicsList({ cwd: repo });
+      expect(text.stdout).toContain("TOPIC   PAGES");
+      expect(text.stdout).toContain("shared  (1 page)");
     });
   });
 

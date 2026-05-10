@@ -2,6 +2,7 @@ import {
   buildProviderSetupView,
   parseAgentSelection,
   type ProviderReadiness,
+  type ProviderSetupView,
 } from "../agent/provider-view.js";
 import {
   isAgentProviderId,
@@ -9,6 +10,7 @@ import {
   writeConfig,
   type AgentProviderId,
 } from "../update/config.js";
+import { formatTextTable } from "./table.js";
 
 export interface AgentsResult {
   stdout: string;
@@ -16,25 +18,24 @@ export interface AgentsResult {
   exitCode: number;
 }
 
-export async function runAgentsList(): Promise<AgentsResult> {
-  const view = await buildProviderSetupView();
+export async function runAgentsList(opts: {
+  view?: ProviderSetupView;
+} = {}): Promise<AgentsResult> {
+  const view = opts.view ?? await buildProviderSetupView();
   const lines = ["codealmanac agents\n"];
-  for (const choice of view.choices) {
-    const selected = choice.selected ? "*" : " ";
-    const recommended = choice.recommended ? "recommended" : "";
-    const model = choice.effectiveModel ?? "provider default";
-    const detail = choice.account ?? choice.fixCommand ?? choice.detail;
-    lines.push(
-      [
-        selected,
-        choice.label.padEnd(6),
-        readinessLabel(choice.readiness).padEnd(15),
-        recommended.padEnd(11),
-        `model: ${model}`.padEnd(31),
-        detail,
-      ].join(" ").trimEnd(),
-    );
-  }
+  lines.push(
+    ...formatTextTable({
+      headers: ["DEFAULT", "AGENT", "STATUS", "RECOMMENDED", "MODEL", "DETAIL"],
+      rows: view.choices.map((choice) => [
+        choice.selected ? "*" : "",
+        choice.label,
+        readinessLabel(choice.readiness),
+        choice.recommended ? "recommended" : "",
+        choice.effectiveModel ?? "provider default",
+        choice.account ?? choice.fixCommand ?? choice.detail,
+      ]),
+    }),
+  );
   lines.push(
     "\nUse: almanac agents use <claude|codex|cursor>",
     "Set model: almanac agents model <provider> <model>",

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import type { CommandResult } from "../cli/helpers.js";
 import { renderOutcome } from "../cli/outcome.js";
 import { findNearestAlmanacDir } from "../paths.js";
+import { formatTextTable } from "./table.js";
 import {
   finishRunRecord,
   markRunCancelled,
@@ -48,12 +49,7 @@ export async function runJobsList(
   if (views.length === 0) {
     return { stdout: "Jobs\n\nNo jobs found.\n", stderr: "", exitCode: 0 };
   }
-  const lines = ["Jobs", ""];
-  for (const view of views) {
-    lines.push(
-      `${view.id}  ${view.operation}  ${view.displayStatus}  ${formatMs(view.elapsedMs)}`,
-    );
-  }
+  const lines = ["Jobs", "", ...formatJobRows(views)];
   return { stdout: `${lines.join("\n")}\n`, stderr: "", exitCode: 0 };
 }
 
@@ -299,6 +295,18 @@ function formatMs(ms: number): string {
   const minutes = Math.round(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
   return `${Math.round(minutes / 60)}h`;
+}
+
+function formatJobRows(views: RunView[]): string[] {
+  return formatTextTable({
+    headers: ["ID", "OPERATION", "STATUS", "ELAPSED"],
+    rows: views.map((view) => [
+      view.id,
+      view.operation,
+      view.displayStatus,
+      formatMs(view.elapsedMs),
+    ]),
+  });
 }
 
 function terminalAttachSummary(view: RunView): string {

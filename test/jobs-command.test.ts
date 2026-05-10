@@ -55,8 +55,9 @@ describe("jobs command", () => {
         isPidAlive: () => false,
       });
       expect(text.stdout).toContain("Jobs");
-      expect(text.stdout).toContain("run_20260509202100_second  garden  stale");
-      expect(text.stdout).toContain("run_20260509202000_first  build  queued");
+      expect(text.stdout).toContain("ID                         OPERATION  STATUS  ELAPSED");
+      expect(text.stdout).toContain("run_20260509202100_second  garden     stale   1m");
+      expect(text.stdout).toContain("run_20260509202000_first   build      queued  2m");
 
       const json = await runJobsList({
         cwd: repo,
