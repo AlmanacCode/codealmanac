@@ -34,10 +34,10 @@ describe("harness provider registry", () => {
     expect(HARNESS_PROVIDER_METADATA.claude.capabilities.contextUsage).toBe(false);
   });
 
-  it("placeholder adapters fail clearly until provider ports land", async () => {
+  it("keeps unported adapters explicit", async () => {
     await expect(
-      getHarnessProvider("claude").run({
-        provider: { id: "claude" },
+      getHarnessProvider("codex").run({
+        provider: { id: "codex" },
         cwd: "/repo",
         prompt: "hello",
         metadata: { operation: "build" },

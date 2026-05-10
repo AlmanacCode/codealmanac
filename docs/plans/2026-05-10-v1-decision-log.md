@@ -78,3 +78,26 @@ harness execution.
 Consequences: A just-started background job may briefly show as `queued` until
 the child begins. PID visibility comes from the child-owned `running` record
 rather than the parent start response.
+
+## 2026-05-09 20:03 PDT
+
+Decision: The Claude harness adapter maps CodeAlmanac `tools` to both Claude
+SDK `tools` and `allowedTools`.
+
+Context: Claude SDK docs distinguish availability (`tools`) from auto-approval
+(`allowedTools`). The old adapter only set `allowedTools`, which could be
+mistaken for a strict capability boundary.
+
+Alternatives:
+- Continue setting only `allowedTools`.
+- Use the full Claude Code preset and rely on prompts for tool discipline.
+- Build a separate CodeAlmanac permission hook before the provider port.
+
+Why: Passing the same mapped tool list to `tools` and `allowedTools` gives the
+main agent a concrete available tool surface while keeping background runs
+non-interactive with `permissionMode: "dontAsk"`.
+
+Consequences: Tool registry entries remain provider-neutral, but the Claude
+adapter is now responsible for name expansion such as `search` to `Glob`/`Grep`
+and `web` to `WebSearch`/`WebFetch`. MCP server configs are passed through, but
+specific MCP tool names are not invented by the registry.

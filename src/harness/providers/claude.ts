@@ -1,7 +1,353 @@
-import type { HarnessProvider } from "../types.js";
-import { HARNESS_PROVIDER_METADATA } from "./metadata.js";
-import { createNotImplementedProvider } from "./not-implemented.js";
+import {
+  query,
+  type AgentDefinition,
+  type Options as ClaudeOptions,
+  type SDKMessage,
+} from "@anthropic-ai/claude-agent-sdk";
 
-export const claudeHarnessProvider: HarnessProvider = createNotImplementedProvider(
-  HARNESS_PROVIDER_METADATA.claude,
-);
+import type { HarnessEvent, HarnessResult } from "../events.js";
+import type { ToolRequest } from "../tools.js";
+import type {
+  AgentRunSpec,
+  AgentSpec,
+  HarnessProvider,
+  HarnessRunHooks,
+  ProviderStatus,
+} from "../types.js";
+import { HARNESS_PROVIDER_METADATA } from "./metadata.js";
+import {
+  checkClaudeAuth,
+  resolveClaudeExecutable,
+  type ClaudeAuthStatus,
+} from "../../agent/providers/claude/auth.js";
+
+type ClaudeQuery = AsyncIterable<SDKMessage>;
+type ClaudeQueryFn = (params: {
+  prompt: string;
+  options?: ClaudeOptions;
+}) => ClaudeQuery;
+
+export interface ClaudeHarnessProviderDeps {
+  query?: ClaudeQueryFn;
+  checkAuth?: () => Promise<ClaudeAuthStatus>;
+  resolveExecutable?: () => string | undefined;
+}
+
+export function createClaudeHarnessProvider(
+  deps: ClaudeHarnessProviderDeps = {},
+): HarnessProvider {
+  const queryFn = deps.query ?? query;
+  const checkAuthFn = deps.checkAuth ?? (() => checkClaudeAuth());
+  const resolveExecutable = deps.resolveExecutable ?? resolveClaudeExecutable;
+  const metadata = HARNESS_PROVIDER_METADATA.claude;
+
+  return {
+    metadata,
+    checkStatus: async (): Promise<ProviderStatus> => {
+      let auth: ClaudeAuthStatus = { loggedIn: false };
+      try {
+        auth = await checkAuthFn();
+      } catch {
+        auth = { loggedIn: false };
+      }
+      const hasApiKey =
+        process.env.ANTHROPIC_API_KEY !== undefined &&
+        process.env.ANTHROPIC_API_KEY.length > 0;
+      const installed = resolveExecutable() !== undefined;
+      const authenticated = auth.loggedIn || hasApiKey;
+      const detail = authenticated
+        ? auth.email ?? (hasApiKey ? "ANTHROPIC_API_KEY set" : "logged in")
+        : installed
+          ? "not logged in"
+          : "claude not found on PATH";
+      return { id: metadata.id, installed, authenticated, detail };
+    },
+    run: async (spec, hooks): Promise<HarnessResult> =>
+      runClaudeHarness(spec, hooks, queryFn, resolveExecutable),
+  };
+}
+
+export const claudeHarnessProvider = createClaudeHarnessProvider();
+
+async function runClaudeHarness(
+  spec: AgentRunSpec,
+  hooks: HarnessRunHooks | undefined,
+  queryFn: ClaudeQueryFn,
+  resolveExecutable: () => string | undefined,
+): Promise<HarnessResult> {
+  const options = buildClaudeOptions(spec, resolveExecutable);
+  const stream = queryFn({
+    prompt: spec.prompt,
+    options,
+  });
+
+  let costUsd: number | undefined;
+  let turns: number | undefined;
+  let result = "";
+  let providerSessionId: string | undefined;
+  let success = false;
+  let error: string | undefined;
+  let usage: HarnessResult["usage"];
+
+  try {
+    for await (const message of stream) {
+      providerSessionId = providerSessionId ?? getSessionId(message);
+      for (const event of toHarnessEvents(message)) {
+        await hooks?.onEvent?.(event);
+      }
+
+      if (message.type === "result") {
+        costUsd = message.total_cost_usd;
+        turns = message.num_turns;
+        usage = mapUsage(message.usage);
+        providerSessionId = providerSessionId ?? message.session_id;
+        if (message.subtype === "success") {
+          success = true;
+          result = message.result;
+        } else {
+          success = false;
+          error =
+            message.errors.length > 0
+              ? message.errors.join("; ")
+              : `agent error: ${message.subtype}`;
+        }
+      }
+    }
+  } catch (err: unknown) {
+    success = false;
+    error = err instanceof Error ? err.message : String(err);
+    await hooks?.onEvent?.({ type: "error", error });
+  }
+
+  await hooks?.onEvent?.({
+    type: "done",
+    result,
+    providerSessionId,
+    costUsd,
+    turns,
+    usage,
+    error,
+  });
+
+  return {
+    success,
+    result,
+    providerSessionId,
+    costUsd,
+    turns,
+    usage,
+    error,
+  };
+}
+
+function buildClaudeOptions(
+  spec: AgentRunSpec,
+  resolveExecutable: () => string | undefined,
+): ClaudeOptions {
+  const tools = toClaudeTools(spec.tools ?? []);
+  const agents = toClaudeAgents(spec.agents ?? {});
+  if (Object.keys(agents).length > 0 && !tools.includes("Agent")) {
+    tools.push("Agent");
+  }
+
+  const claudeExecutable = resolveExecutable();
+  return pruneUndefined({
+    systemPrompt: spec.systemPrompt,
+    cwd: spec.cwd,
+    model: spec.provider.model ?? HARNESS_PROVIDER_METADATA.claude.defaultModel ?? undefined,
+    effort: toClaudeEffort(spec.provider.effort),
+    tools,
+    allowedTools: tools,
+    agents,
+    mcpServers: spec.mcpServers as ClaudeOptions["mcpServers"],
+    maxTurns: spec.limits?.maxTurns ?? 100,
+    maxBudgetUsd: spec.limits?.maxCostUsd,
+    permissionMode: "dontAsk",
+    includePartialMessages: true,
+    env: {
+      ...process.env,
+      CODEALMANAC_INTERNAL_SESSION: "1",
+    },
+    ...(claudeExecutable !== undefined
+      ? { pathToClaudeCodeExecutable: claudeExecutable }
+      : {}),
+  });
+}
+
+function toClaudeAgents(
+  agents: Record<string, AgentSpec>,
+): Record<string, AgentDefinition> {
+  const out: Record<string, AgentDefinition> = {};
+  for (const [name, agent] of Object.entries(agents)) {
+    out[name] = pruneUndefined({
+      description: agent.description,
+      prompt: agent.prompt,
+      tools: agent.tools !== undefined ? toClaudeTools(agent.tools) : undefined,
+      model: agent.model,
+      maxTurns: agent.maxTurns,
+      mcpServers: agent.mcpServers as AgentDefinition["mcpServers"],
+      skills: agent.skills,
+    });
+  }
+  return out;
+}
+
+function toClaudeTools(tools: readonly ToolRequest[]): string[] {
+  const out = new Set<string>();
+  for (const tool of tools) {
+    switch (tool.id) {
+      case "read":
+        out.add("Read");
+        break;
+      case "write":
+        out.add("Write");
+        break;
+      case "edit":
+        out.add("Edit");
+        break;
+      case "search":
+        out.add("Glob");
+        out.add("Grep");
+        break;
+      case "shell":
+        out.add("Bash");
+        break;
+      case "web":
+        out.add("WebSearch");
+        out.add("WebFetch");
+        break;
+      case "mcp":
+        break;
+    }
+  }
+  return [...out];
+}
+
+function toClaudeEffort(effort: string | undefined): ClaudeOptions["effort"] {
+  if (
+    effort === "low" ||
+    effort === "medium" ||
+    effort === "high" ||
+    effort === "max"
+  ) {
+    return effort;
+  }
+  return undefined;
+}
+
+function toHarnessEvents(message: SDKMessage): HarnessEvent[] {
+  if (message.type === "stream_event") {
+    const text = getTextDelta(message.event);
+    return text !== undefined ? [{ type: "text_delta", content: text }] : [];
+  }
+
+  if (message.type === "assistant") {
+    const content = message.message.content;
+    if (!Array.isArray(content)) return [];
+    const events: HarnessEvent[] = [];
+    for (const block of content) {
+      if (block.type === "text") {
+        events.push({ type: "text", content: block.text });
+        continue;
+      }
+      if (block.type === "tool_use") {
+        events.push({
+          type: "tool_use",
+          id: block.id,
+          tool: block.name,
+          input: stringifyInput(block.input),
+        });
+      }
+    }
+    return events;
+  }
+
+  if (message.type === "user") {
+    const content = message.message.content;
+    if (!Array.isArray(content)) return [];
+    return content.flatMap((block) => {
+      if (block.type !== "tool_result") return [];
+      return [
+        {
+          type: "tool_result",
+          id: block.tool_use_id,
+          content: block.content,
+          isError: block.is_error,
+        } satisfies HarnessEvent,
+      ];
+    });
+  }
+
+  if (message.type === "tool_use_summary") {
+    return [{ type: "tool_summary", summary: message.summary }];
+  }
+
+  if (message.type === "result" && message.subtype !== "success") {
+    return message.errors.map((err) => ({ type: "error", error: err }));
+  }
+
+  return [];
+}
+
+function getTextDelta(event: unknown): string | undefined {
+  if (event === null || typeof event !== "object") return undefined;
+  const raw = event as {
+    type?: unknown;
+    delta?: { type?: unknown; text?: unknown };
+  };
+  return raw.type === "content_block_delta" &&
+    raw.delta?.type === "text_delta" &&
+    typeof raw.delta.text === "string"
+    ? raw.delta.text
+    : undefined;
+}
+
+function getSessionId(message: SDKMessage): string | undefined {
+  return "session_id" in message && typeof message.session_id === "string"
+    ? message.session_id
+    : undefined;
+}
+
+function stringifyInput(input: unknown): string | undefined {
+  if (input === undefined) return undefined;
+  if (typeof input === "string") return input;
+  try {
+    return JSON.stringify(input);
+  } catch {
+    return String(input);
+  }
+}
+
+function mapUsage(value: unknown): HarnessResult["usage"] {
+  if (value === null || typeof value !== "object") return undefined;
+  const usage = value as Record<string, unknown>;
+  const inputTokens = numberField(usage, "input_tokens");
+  const cachedInputTokens = numberField(usage, "cache_read_input_tokens");
+  const outputTokens = numberField(usage, "output_tokens");
+  return pruneUndefined({
+    inputTokens,
+    cachedInputTokens,
+    outputTokens,
+    totalTokens:
+      inputTokens !== undefined || outputTokens !== undefined
+        ? (inputTokens ?? 0) + (outputTokens ?? 0)
+        : undefined,
+  });
+}
+
+function numberField(
+  record: Record<string, unknown>,
+  field: string,
+): number | undefined {
+  const value = record[field];
+  return typeof value === "number" ? value : undefined;
+}
+
+function pruneUndefined<T extends Record<string, unknown>>(value: T): T {
+  for (const key of Object.keys(value)) {
+    if (value[key] === undefined) {
+      delete value[key];
+    }
+  }
+  return value;
+}

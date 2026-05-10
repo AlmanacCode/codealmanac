@@ -141,3 +141,18 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
 - Result: 3 test files passed, 10 tests passed; TypeScript lint passed.
 - Next: Phase 4.1 Claude harness adapter port.
+
+## 2026-05-09 20:03 PDT
+
+- Built: Phase 4.1 Claude harness adapter port.
+- Files changed:
+  - `src/harness/providers/claude.ts`
+  - `test/claude-harness-provider.test.ts`
+  - `test/harness-provider-registry.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+  - `docs/plans/2026-05-10-v1-decision-log.md`
+- Tests run:
+  - `npm test -- test/claude-harness-provider.test.ts test/harness-provider-registry.test.ts`
+  - `npm run lint`
+- Result: 2 test files passed, 6 tests passed; TypeScript lint passed.
+- Next: Phase 4.2 Codex harness adapter port.
