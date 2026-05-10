@@ -210,6 +210,10 @@ Update 2026-05-09 20:33 PDT: Claude latest-session and `--session <id>`
 discovery now work in the V1 command path. Codex/Cursor session discovery and
 bulk filters remain explicit follow-up work.
 
+Update 2026-05-09 20:54 PDT: Claude `--since`, `--limit`, and `--all` filters
+now work in the V1 command path. Codex/Cursor discovery and cross-app
+`--all-apps` remain explicit future work and fail clearly.
+
 ## 2026-05-09 20:30 PDT
 
 Decision: Codex `exec` adapter rejects unsupported per-run fields instead of

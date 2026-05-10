@@ -278,7 +278,7 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `git diff --check`
 - Result: 47 test files passed, 473 tests passed; TypeScript lint passed; diff whitespace check passed.
 - Remaining known follow-up:
-  - Capture session discovery for Codex/Cursor, `--since`, `--limit`, and `--all` still needs the provider-specific resolver layer.
+  - Capture session discovery for Codex/Cursor and cross-app `--all-apps` still needs the provider-specific resolver layer.
 
 ## 2026-05-09 20:33 PDT
 
