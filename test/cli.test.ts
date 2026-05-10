@@ -131,6 +131,7 @@ describe("registerCommands", () => {
       "capture",
       "ingest",
       "garden",
+      "jobs",
       "ps",
       "hook",
       "reindex",
@@ -158,6 +159,8 @@ describe("registerCommands", () => {
       .toEqual(["install", "uninstall", "status"]);
     expect(findCommand(program, ["capture"]).commands.map((cmd) => cmd.name()))
       .toEqual(["status"]);
+    expect(findCommand(program, ["jobs"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["list", "show", "logs", "attach", "cancel"]);
     expect(findCommand(program, ["agents"]).commands.map((cmd) => cmd.name()))
       .toEqual(["list", "doctor", "use", "model"]);
     expect(findCommand(program, ["config"]).commands.map((cmd) => cmd.name()))

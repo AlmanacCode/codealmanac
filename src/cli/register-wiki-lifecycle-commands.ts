@@ -8,6 +8,13 @@ import {
   runHookUninstall,
 } from "../commands/hook.js";
 import {
+  runJobsAttach,
+  runJobsCancel,
+  runJobsList,
+  runJobsLogs,
+  runJobsShow,
+} from "../commands/jobs.js";
+import {
   runCaptureCommand,
   runGardenCommand,
   runIngestCommand,
@@ -185,6 +192,74 @@ export function registerWikiLifecycleCommands(program: Command): void {
         emit(result);
       },
     );
+
+  const jobs = program
+    .command("jobs")
+    .description("show and manage CodeAlmanac background jobs");
+
+  jobs
+    .command("list", { isDefault: true })
+    .description("list runs for this wiki")
+    .option("--json", "emit structured JSON")
+    .action(async (opts: { json?: boolean }) => {
+      const result = await runJobsList({
+        cwd: process.cwd(),
+        json: opts.json,
+      });
+      emit(result);
+    });
+
+  jobs
+    .command("show <run-id>")
+    .description("show one run record")
+    .option("--json", "emit structured JSON")
+    .action(async (runId: string, opts: { json?: boolean }) => {
+      const result = await runJobsShow({
+        cwd: process.cwd(),
+        runId,
+        json: opts.json,
+      });
+      emit(result);
+    });
+
+  jobs
+    .command("logs <run-id>")
+    .description("print a run's JSONL event log")
+    .option("--json", "emit structured errors as JSON")
+    .action(async (runId: string, opts: { json?: boolean }) => {
+      const result = await runJobsLogs({
+        cwd: process.cwd(),
+        runId,
+        json: opts.json,
+      });
+      emit(result);
+    });
+
+  jobs
+    .command("attach <run-id>")
+    .description("print the current log for a run")
+    .option("--json", "emit structured errors as JSON")
+    .action(async (runId: string, opts: { json?: boolean }) => {
+      const result = await runJobsAttach({
+        cwd: process.cwd(),
+        runId,
+        json: opts.json,
+      });
+      emit(result);
+    });
+
+  jobs
+    .command("cancel <run-id>")
+    .description("cancel a running or queued job")
+    .option("--json", "emit structured JSON")
+    .action(async (runId: string, opts: { json?: boolean }) => {
+      const result = await runJobsCancel({
+        cwd: process.cwd(),
+        runId,
+        json: opts.json,
+      });
+      emit(result);
+    });
 
   capture
     .command("status")
