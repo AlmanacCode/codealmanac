@@ -278,7 +278,6 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `git diff --check`
 - Result: 47 test files passed, 473 tests passed; TypeScript lint passed; diff whitespace check passed.
 - Remaining known follow-up:
-  - `jobs attach` still needs a true streaming/tail implementation.
   - Capture session discovery for Codex/Cursor, `--since`, `--limit`, and `--all` still needs the provider-specific resolver layer.
 
 ## 2026-05-09 20:33 PDT
@@ -323,3 +322,19 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm test -- test/process-manager.test.ts test/operation-commands.test.ts test/cli.test.ts`
   - `npm run lint`
 - Result: 3 test files passed, 30 tests passed; TypeScript lint passed.
+
+## 2026-05-09 20:39 PDT
+
+- Built: streaming `jobs attach` path.
+- Files changed:
+  - `src/commands/jobs.ts`
+  - `src/cli/register-wiki-lifecycle-commands.ts`
+  - `test/jobs-command.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+- Behavior: `almanac jobs attach <run-id>` now tails a run log until the run is terminal instead of printing only the current log snapshot.
+- Tests run:
+  - `npm test -- test/jobs-command.test.ts test/cli.test.ts`
+  - `npm run lint`
+  - `npm test`
+  - `git diff --check`
+- Result: focused tests passed, TypeScript lint passed, full suite passed with 47 test files and 476 tests, and diff whitespace check passed.

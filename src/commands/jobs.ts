@@ -24,6 +24,11 @@ export interface JobByIdOptions extends JobsOptions {
   runId: string;
 }
 
+export interface JobAttachStreamOptions extends JobByIdOptions {
+  write?: (chunk: string) => void;
+  pollMs?: number;
+}
+
 export async function runJobsList(
   options: JobsOptions,
 ): Promise<CommandResult> {
@@ -121,6 +126,37 @@ export async function runJobsAttach(
   };
 }
 
+export async function streamJobsAttach(
+  options: JobAttachStreamOptions,
+): Promise<CommandResult> {
+  const repoRoot = resolveWikiOrResult(options.cwd, options.json);
+  if (typeof repoRoot !== "string") return repoRoot;
+  const initial = await readRunRecord(runRecordPath(repoRoot, options.runId));
+  if (initial === null) return missingRun(options.runId, options.json);
+
+  const write = options.write ?? ((chunk: string) => process.stdout.write(chunk));
+  let offset = 0;
+  while (true) {
+    const record = await readRunRecord(runRecordPath(repoRoot, options.runId));
+    if (record === null) return missingRun(options.runId, options.json);
+    offset = await writeLogChunk(record.logPath, offset, write);
+    const view = toRunView({
+      record,
+      now: options.now?.() ?? new Date(),
+      isPidAlive: options.isPidAlive ?? isPidAlive,
+    });
+    if (
+      view.displayStatus === "done" ||
+      view.displayStatus === "failed" ||
+      view.displayStatus === "cancelled" ||
+      view.displayStatus === "stale"
+    ) {
+      return { stdout: "", stderr: "", exitCode: 0 };
+    }
+    await sleep(options.pollMs ?? 500);
+  }
+}
+
 export async function runJobsCancel(
   options: JobByIdOptions,
 ): Promise<CommandResult> {
@@ -213,6 +249,27 @@ function missingRun(runId: string, json: boolean | undefined): CommandResult {
     { type: "error", message: `run not found: ${runId}` },
     { json },
   );
+}
+
+async function writeLogChunk(
+  path: string,
+  offset: number,
+  write: (chunk: string) => void,
+): Promise<number> {
+  let text = "";
+  try {
+    text = await readFile(path, "utf8");
+  } catch {
+    return offset;
+  }
+  if (text.length <= offset) return offset;
+  const chunk = text.slice(offset);
+  write(chunk);
+  return text.length;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function isPidAlive(pid: number): boolean {

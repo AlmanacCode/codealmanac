@@ -6,11 +6,11 @@ import {
   runHookUninstall,
 } from "../commands/hook.js";
 import {
-  runJobsAttach,
   runJobsCancel,
   runJobsList,
   runJobsLogs,
   runJobsShow,
+  streamJobsAttach,
 } from "../commands/jobs.js";
 import {
   runCaptureCommand,
@@ -210,10 +210,10 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   jobs
     .command("attach <run-id>")
-    .description("print the current log for a run")
+    .description("stream a run log until the job exits")
     .option("--json", "emit structured errors as JSON")
     .action(async (runId: string, opts: { json?: boolean }) => {
-      const result = await runJobsAttach({
+      const result = await streamJobsAttach({
         cwd: process.cwd(),
         runId,
         json: opts.json,

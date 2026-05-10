@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { initWiki } from "../src/commands/init.js";
 import {
   runJobsCancel,
+  streamJobsAttach,
   runJobsList,
   runJobsLogs,
   runJobsShow,
@@ -138,6 +139,44 @@ describe("jobs command", () => {
         status: "cancelled",
         durationMs: 30000,
       });
+    });
+  });
+
+  it("streams attach output until the run is terminal", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "jobs-attach");
+      await initWiki({ cwd: repo, name: "jobs-attach", description: "" });
+      const record = buildStartedRunRecord({
+        runId: "run_20260509202400_attach",
+        repoRoot: repo,
+        startedAt: new Date("2026-05-09T20:24:00.000Z"),
+        spec: {
+          provider: { id: "claude" },
+          cwd: repo,
+          prompt: "garden",
+          metadata: { operation: "garden" },
+        },
+      });
+      const finished = {
+        ...record,
+        status: "done" as const,
+        finishedAt: "2026-05-09T20:24:01.000Z",
+        durationMs: 1000,
+      };
+      await writeRunRecord(runRecordPath(repo, record.id), finished);
+      await writeFile(runLogPath(repo, record.id), "{\"event\":\"done\"}\n");
+      let streamed = "";
+
+      const result = await streamJobsAttach({
+        cwd: repo,
+        runId: record.id,
+        write: (chunk) => {
+          streamed += chunk;
+        },
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(streamed).toBe("{\"event\":\"done\"}\n");
     });
   });
 });
