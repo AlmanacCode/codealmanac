@@ -1,18 +1,56 @@
 import { Command } from "commander";
 
 import { runBootstrap } from "../commands/bootstrap.js";
-import { runCapture } from "../commands/capture.js";
 import { runCaptureStatus } from "../commands/captureStatus.js";
 import {
   runHookInstall,
   runHookStatus,
   runHookUninstall,
 } from "../commands/hook.js";
+import {
+  runCaptureCommand,
+  runGardenCommand,
+  runIngestCommand,
+  runInitCommand,
+} from "../commands/operations.js";
 import { runReindex } from "../commands/reindex.js";
 import { autoRegisterIfNeeded } from "../registry/autoregister.js";
-import { deprecationWarning, emit, withWarning } from "./helpers.js";
+import {
+  deprecationWarning,
+  emit,
+  parsePositiveInt,
+  withWarning,
+} from "./helpers.js";
 
 export function registerWikiLifecycleCommands(program: Command): void {
+  program
+    .command("init")
+    .description("initialize and build this repo's CodeAlmanac wiki")
+    .option("--using <provider[/model]>", "provider and optional model")
+    .option("--background", "start as a background job")
+    .option("--json", "emit structured JSON for background job start")
+    .option("--force", "allow rebuilding an existing wiki")
+    .option("-y, --yes", "confirm non-interactively")
+    .action(
+      async (opts: {
+        using?: string;
+        background?: boolean;
+        json?: boolean;
+        force?: boolean;
+        yes?: boolean;
+      }) => {
+        const result = await runInitCommand({
+          cwd: process.cwd(),
+          using: opts.using,
+          background: opts.background,
+          json: opts.json,
+          force: opts.force,
+          yes: opts.yes,
+        });
+        emit(result);
+      },
+    );
+
   program
     .command("bootstrap")
     .description(
@@ -44,34 +82,105 @@ export function registerWikiLifecycleCommands(program: Command): void {
     );
 
   const capture = program
-    .command("capture [transcript]")
+    .command("capture [sessionFiles...]")
     .alias("c")
-    .description("run the writer/reviewer pipeline on a session (usually automatic)")
+    .description("absorb coding-session knowledge into the wiki")
+    .option("--app <app>", "source app: claude, codex, cursor, or generic")
     .option("--session <id>", "target a specific session by ID")
-    .option("--quiet", "suppress per-tool streaming; print only the final summary")
-    .option("--agent <agent>", "agent provider: claude, codex, or cursor")
-    .option("--model <model>", "override the agent model")
-    .option("--json", "emit structured CommandOutcome JSON")
+    .option("--since <duration-or-date>", "capture sessions since a time")
+    .option("--limit <n>", "maximum sessions to capture", parsePositiveInt)
+    .option("--all", "capture all matching sessions")
+    .option("--all-apps", "capture from all supported apps")
+    .option("--using <provider[/model]>", "provider and optional model")
+    .option("--foreground", "run now instead of starting a background job")
+    .option("--json", "emit structured JSON for background job start")
+    .option("-y, --yes", "confirm non-interactively")
     .action(
       async (
-        transcript: string | undefined,
+        sessionFiles: string[],
         opts: {
+          app?: string;
           session?: string;
-          quiet?: boolean;
-          agent?: string;
-          model?: string;
+          since?: string;
+          limit?: number;
+          all?: boolean;
+          allApps?: boolean;
+          using?: string;
+          foreground?: boolean;
           json?: boolean;
+          yes?: boolean;
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
-        const result = await runCapture({
+        const result = await runCaptureCommand({
           cwd: process.cwd(),
-          transcriptPath: transcript,
-          sessionId: opts.session,
-          quiet: opts.quiet,
-          agent: opts.agent,
-          model: opts.model,
+          sessionFiles,
+          app: opts.app,
+          session: opts.session,
+          since: opts.since,
+          limit: opts.limit,
+          all: opts.all,
+          allApps: opts.allApps,
+          using: opts.using,
+          foreground: opts.foreground,
           json: opts.json,
+          yes: opts.yes,
+        });
+        emit(result);
+      },
+    );
+
+  program
+    .command("ingest <paths...>")
+    .description("absorb knowledge from one or more files or folders")
+    .option("--using <provider[/model]>", "provider and optional model")
+    .option("--foreground", "run now instead of starting a background job")
+    .option("--json", "emit structured JSON for background job start")
+    .option("-y, --yes", "confirm non-interactively")
+    .action(
+      async (
+        paths: string[],
+        opts: {
+          using?: string;
+          foreground?: boolean;
+          json?: boolean;
+          yes?: boolean;
+        },
+      ) => {
+        await autoRegisterIfNeeded(process.cwd());
+        const result = await runIngestCommand({
+          cwd: process.cwd(),
+          paths,
+          using: opts.using,
+          foreground: opts.foreground,
+          json: opts.json,
+          yes: opts.yes,
+        });
+        emit(result);
+      },
+    );
+
+  program
+    .command("garden")
+    .description("clean up, reconcile, and improve the wiki")
+    .option("--using <provider[/model]>", "provider and optional model")
+    .option("--foreground", "run now instead of starting a background job")
+    .option("--json", "emit structured JSON for background job start")
+    .option("-y, --yes", "confirm non-interactively")
+    .action(
+      async (opts: {
+        using?: string;
+        foreground?: boolean;
+        json?: boolean;
+        yes?: boolean;
+      }) => {
+        await autoRegisterIfNeeded(process.cwd());
+        const result = await runGardenCommand({
+          cwd: process.cwd(),
+          using: opts.using,
+          foreground: opts.foreground,
+          json: opts.json,
+          yes: opts.yes,
         });
         emit(result);
       },

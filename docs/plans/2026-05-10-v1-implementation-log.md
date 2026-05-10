@@ -215,3 +215,18 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
 - Result: 1 test file passed, 4 tests passed; TypeScript lint passed.
 - Next: Phase 6.1 CLI command surface and shared `--using` parsing.
+
+## 2026-05-09 20:15 PDT
+
+- Built: Phase 6.1 CLI command surface and shared `--using` parsing.
+- Files changed:
+  - `src/commands/operations.ts`
+  - `src/cli/register-wiki-lifecycle-commands.ts`
+  - `test/operation-commands.test.ts`
+  - `test/cli.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+- Tests run:
+  - `npm test -- test/operation-commands.test.ts test/cli.test.ts`
+  - `npm run lint`
+- Result: 2 test files passed, 25 tests passed; TypeScript lint passed.
+- Next: Phase 6.2 Jobs commands over `.almanac/runs/`.

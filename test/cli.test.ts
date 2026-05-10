@@ -126,8 +126,11 @@ describe("registerCommands", () => {
       "tag",
       "untag",
       "topics",
+      "init",
       "bootstrap",
       "capture",
+      "ingest",
+      "garden",
       "ps",
       "hook",
       "reindex",
@@ -168,6 +171,16 @@ describe("registerCommands", () => {
       "--model <model>",
     );
     expect(optionFlags(findCommand(program, ["doctor"]))).toContain("--json");
+    expect(optionFlags(findCommand(program, ["init"]))).toContain(
+      "--using <provider[/model]>",
+    );
+    expect(optionFlags(findCommand(program, ["capture"]))).toContain(
+      "--foreground",
+    );
+    expect(optionFlags(findCommand(program, ["ingest"]))).toContain(
+      "--using <provider[/model]>",
+    );
+    expect(optionFlags(findCommand(program, ["garden"]))).toContain("--json");
     expect(optionFlags(findCommand(program, ["topics", "show"]))).toContain(
       "--descendants",
     );
