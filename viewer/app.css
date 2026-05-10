@@ -42,6 +42,18 @@ input {
   min-height: 100vh;
 }
 
+.ca-shell.is-rail-hidden {
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.ca-shell.is-rail-hidden .ca-right {
+  display: none;
+}
+
+.ca-shell.is-rail-hidden .ca-reader {
+  max-width: 960px;
+}
+
 .ca-left,
 .ca-right {
   position: sticky;
@@ -170,7 +182,9 @@ input {
 }
 
 .ca-link-button {
-  padding: 7px 9px;
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
   border-radius: 5px;
   color: var(--ca-accent);
   font-size: 14px;
@@ -182,7 +196,11 @@ input {
   color: var(--ca-accent-hover);
 }
 
-.ca-link-button small {
+.ca-link-label {
+  min-width: 0;
+}
+
+.ca-link-detail {
   color: var(--ca-muted);
   font-size: 12px;
   line-height: 1.35;
@@ -194,6 +212,67 @@ input {
 
 .ca-left .ca-link-button:hover {
   color: var(--ca-accent);
+}
+
+.ca-topic-link {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+}
+
+.ca-topic-link .ca-link-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ca-topic-link .ca-link-detail {
+  padding: 2px 7px;
+  border: 1px solid var(--ca-border-light);
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.54);
+  color: var(--ca-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.ca-topic-depth-1 {
+  width: calc(100% - 16px);
+  margin-left: 16px;
+}
+
+.ca-topic-depth-2 {
+  width: calc(100% - 32px);
+  margin-left: 32px;
+}
+
+.ca-topic-depth-3 {
+  width: calc(100% - 48px);
+  margin-left: 48px;
+}
+
+.ca-topic-depth-4 {
+  width: calc(100% - 64px);
+  margin-left: 64px;
+}
+
+.ca-topic-toggle {
+  margin-top: 4px;
+  border: 1px solid var(--ca-border-light);
+  color: var(--ca-accent);
+}
+
+.ca-left .ca-link-button.is-active {
+  background: var(--ca-accent);
+  color: var(--ca-bg);
+}
+
+.ca-left .ca-link-button.is-active .ca-link-detail {
+  border-color: rgba(250, 246, 237, 0.28);
+  background: rgba(250, 246, 237, 0.12);
+  color: rgba(250, 246, 237, 0.8);
 }
 
 .ca-reader {
@@ -387,6 +466,15 @@ input {
   background: var(--ca-surface-deep);
   font-family: var(--ca-mono);
   font-size: 0.88em;
+}
+
+.ca-file-code {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  vertical-align: bottom;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .ca-prose pre {

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import type Database from "better-sqlite3";
@@ -7,6 +8,9 @@ import { looksLikeDir, normalizePath } from "../indexer/paths.js";
 import { openIndex } from "../indexer/schema.js";
 import { getPageView, type PageView } from "../query/page-view.js";
 import { toKebabCase } from "../slug.js";
+import { topicsYamlPath } from "../topics/paths.js";
+
+const SIDEBAR_TAG_LIMIT = 8;
 
 export interface ViewerApiContext {
   repoRoot: string;
@@ -28,7 +32,24 @@ export interface ViewerOverview {
   pageCount: number;
   topicCount: number;
   recentPages: ViewerPageSummary[];
-  rootTopics: Array<{ slug: string; title: string | null; description: string | null; page_count: number }>;
+  topics: ViewerTopicSummary[];
+  rootTopics: ViewerTopicSummary[];
+  topicNavigation: {
+    source: "curated" | "tags";
+    sidebarLimit: number;
+  };
+  featuredPages: {
+    projectOverview: ViewerPageSummary | null;
+    gettingStarted: ViewerPageSummary | null;
+  };
+}
+
+export interface ViewerTopicSummary {
+  slug: string;
+  title: string | null;
+  description: string | null;
+  page_count: number;
+  parents: string[];
 }
 
 export interface ViewerTopic {
@@ -52,6 +73,10 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
   return {
     async overview() {
       return withFreshDb(ctx.repoRoot, (db) => {
+        const topicNavigation = {
+          source: existsSync(topicsYamlPath(ctx.repoRoot)) ? "curated" as const : "tags" as const,
+          sidebarLimit: SIDEBAR_TAG_LIMIT,
+        };
         const counts = db
           .prepare<[], { page_count: number; topic_count: number }>(
             `SELECT
@@ -66,28 +91,16 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
           pageCount: counts.page_count,
           topicCount: counts.topic_count,
           recentPages: pageSummaries(db, recentPagesSql(), []),
-          rootTopics: db
-            .prepare<
-              [],
-              {
-                slug: string;
-                title: string | null;
-                description: string | null;
-                page_count: number;
-              }
-            >(
-              `SELECT t.slug, t.title, t.description, COUNT(p.slug) AS page_count
-               FROM topics t
-               LEFT JOIN topic_parents parent ON parent.child_slug = t.slug
-               LEFT JOIN page_topics pt ON pt.topic_slug = t.slug
-               LEFT JOIN pages p ON p.slug = pt.page_slug AND p.archived_at IS NULL
-               WHERE parent.parent_slug IS NULL
-               GROUP BY t.slug, t.title, t.description
-               ORDER BY page_count DESC, t.slug ASC
-               LIMIT 12`,
-            )
-            .all()
-            .map((topic) => ({ ...topic, page_count: Number(topic.page_count) })),
+          topics: topicSummaries(db, { rootsOnly: false }),
+          rootTopics: topicSummaries(db, {
+            rootsOnly: true,
+            limit: topicNavigation.source === "curated" ? 24 : topicNavigation.sidebarLimit,
+          }),
+          topicNavigation,
+          featuredPages: {
+            projectOverview: pageSummaryBySlug(db, "project-overview"),
+            gettingStarted: pageSummaryBySlug(db, "getting-started"),
+          },
         };
       });
     },
@@ -228,6 +241,49 @@ function pageSummaries(
   return rows.map((row) => ({
     ...row,
     topics: topicsStmt.all(row.slug).map((r) => r.topic_slug),
+  }));
+}
+
+function pageSummaryBySlug(db: Database.Database, slug: string): ViewerPageSummary | null {
+  return pageSummaries(
+    db,
+    `SELECT slug, title, summary, updated_at, archived_at, superseded_by
+     FROM pages
+     WHERE archived_at IS NULL AND slug = ?
+     LIMIT 1`,
+    [slug],
+  )[0] ?? null;
+}
+
+function topicSummaries(
+  db: Database.Database,
+  options: { rootsOnly: boolean; limit?: number },
+): ViewerTopicSummary[] {
+  const rootJoin = options.rootsOnly
+    ? "LEFT JOIN topic_parents parent ON parent.child_slug = t.slug"
+    : "";
+  const rootWhere = options.rootsOnly ? "WHERE parent.parent_slug IS NULL" : "";
+  const limit = options.limit === undefined ? "" : `LIMIT ${options.limit}`;
+  const rows = db
+    .prepare<[], Omit<ViewerTopicSummary, "parents">>(
+      `SELECT t.slug, t.title, t.description, COUNT(p.slug) AS page_count
+       FROM topics t
+       ${rootJoin}
+       LEFT JOIN page_topics pt ON pt.topic_slug = t.slug
+       LEFT JOIN pages p ON p.slug = pt.page_slug AND p.archived_at IS NULL
+       ${rootWhere}
+       GROUP BY t.slug, t.title, t.description
+       ORDER BY page_count DESC, t.slug ASC
+       ${limit}`,
+    )
+    .all();
+  const parentsStmt = db.prepare<[string], { parent_slug: string }>(
+    "SELECT parent_slug FROM topic_parents WHERE child_slug = ? ORDER BY parent_slug ASC",
+  );
+  return rows.map((topic) => ({
+    ...topic,
+    page_count: Number(topic.page_count),
+    parents: parentsStmt.all(topic.slug).map((row) => row.parent_slug),
   }));
 }
 

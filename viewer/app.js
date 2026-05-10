@@ -1,13 +1,16 @@
+const SIDEBAR_TAG_LIMIT = 8;
+
 const state = {
   overview: null,
   currentPage: null,
   pageTitles: new Map(),
+  showAllTopics: false,
 };
 
 const els = {
+  shell: document.querySelector("#app"),
   reader: document.querySelector("#reader"),
   topicList: document.querySelector("#topic-list"),
-  recentList: document.querySelector("#recent-list"),
   pageMeta: document.querySelector("#page-meta"),
   backlinks: document.querySelector("#backlinks"),
   fileRefs: document.querySelector("#file-refs"),
@@ -27,6 +30,15 @@ async function boot() {
 
 function wireEvents() {
   document.addEventListener("click", (event) => {
+    const topicToggle = event.target.closest("[data-topic-toggle]");
+    if (topicToggle !== null) {
+      event.preventDefault();
+      state.showAllTopics = !state.showAllTopics;
+      renderChrome();
+      setActiveNav(location.pathname);
+      return;
+    }
+
     const target = event.target.closest("[data-route]");
     if (target === null) return;
     event.preventDefault();
@@ -47,9 +59,16 @@ function wireEvents() {
 async function route(pathname, search = "", push = true) {
   if (push) history.pushState(null, "", pathname + search);
   setActiveNav(pathname);
+  setRailVisible(pathname.startsWith("/page/"));
 
   if (pathname === "/") {
-    renderOverview();
+    await renderOverview();
+    clearPageRail();
+    return;
+  }
+
+  if (pathname === "/getting-started") {
+    await renderGettingStarted();
     clearPageRail();
     return;
   }
@@ -96,22 +115,80 @@ async function api(path) {
 }
 
 function renderChrome() {
-  els.topicList.innerHTML = state.overview.rootTopics
-    .map((topic) => linkButton(topic.title ?? topic.slug, `/topic/${topic.slug}`, `${topic.page_count} pages`))
-    .join("");
+  const topics = state.overview.topics;
+  const topicNavigation = state.overview.topicNavigation;
+  const isCurated = topicNavigation?.source === "curated";
+  const limit = topicNavigation?.sidebarLimit ?? SIDEBAR_TAG_LIMIT;
+  const visibleTopics = isCurated || state.showAllTopics ? topics : topics.slice(0, limit);
+  const toggle = !isCurated && topics.length > limit
+    ? topicToggleButton(state.showAllTopics, topics.length - limit)
+    : "";
+  els.topicList.innerHTML = `${renderTopicTree(visibleTopics)}${toggle}`;
+}
 
-  els.recentList.innerHTML = state.overview.recentPages
-    .slice(0, 8)
-    .map((page) => linkButton(pageTitle(page), `/page/${page.slug}`, page.summary ?? ""))
+function renderTopicTree(topics) {
+  const bySlug = new Map(topics.map((topic) => [topic.slug, topic]));
+  const childrenByParent = new Map();
+  const roots = [];
+
+  for (const topic of topics) {
+    const parents = Array.isArray(topic.parents)
+      ? topic.parents.filter((parent) => bySlug.has(parent))
+      : [];
+    if (parents.length === 0) {
+      roots.push(topic.slug);
+      continue;
+    }
+    for (const parent of parents) {
+      const children = childrenByParent.get(parent) ?? [];
+      children.push(topic.slug);
+      childrenByParent.set(parent, children);
+    }
+  }
+
+  return renderTopicBranch(roots, bySlug, childrenByParent, 0, new Set());
+}
+
+function renderTopicBranch(slugs, bySlug, childrenByParent, depth, path) {
+  return slugs
+    .map((slug) => {
+      if (path.has(slug)) return "";
+      const topic = bySlug.get(slug);
+      if (topic === undefined) return "";
+      const nextPath = new Set(path);
+      nextPath.add(slug);
+      const displayDepth = Math.min(depth, 4);
+      return [
+        linkButton(
+          topic.title ?? topic.slug,
+          `/topic/${topic.slug}`,
+          `${topic.page_count} pages`,
+          `ca-topic-link ca-topic-depth-${displayDepth}`,
+        ),
+        renderTopicBranch(childrenByParent.get(slug) ?? [], bySlug, childrenByParent, depth + 1, nextPath),
+      ].join("");
+    })
     .join("");
 }
 
-function renderOverview() {
+function topicToggleButton(showAll, hiddenCount) {
+  const label = showAll ? "Show fewer topics" : "Show all topics";
+  const detail = showAll ? "" : `${hiddenCount} more`;
+  return `
+    <button class="ca-link-button ca-topic-toggle" type="button" data-topic-toggle>
+      <span class="ca-link-label">${escapeHtml(label)}</span>
+      ${detail ? `<span class="ca-link-detail">${escapeHtml(detail)}</span>` : ""}
+    </button>
+  `;
+}
+
+async function renderOverview() {
   const overview = state.overview;
+  document.title = "Project overview - Almanac";
   els.reader.innerHTML = `
     <section class="ca-hero">
-      <div class="ca-kicker">Local wiki</div>
-      <h1 class="ca-title">${escapeHtml(overview.wikiTitle)}</h1>
+      <div class="ca-kicker">Project overview</div>
+      <h1 class="ca-title">${escapeHtml(projectName(overview.repoRoot))}</h1>
       <p class="ca-subtitle">
         ${escapeHtml(overview.pageCount)} active pages and ${escapeHtml(overview.topicCount)} topics indexed from
         <span class="ca-file-code">${escapeHtml(overview.repoRoot)}</span>.
@@ -137,10 +214,47 @@ function renderOverview() {
   `;
 }
 
+async function optionalPage(summary) {
+  if (summary === undefined || summary === null) return null;
+  try {
+    return await api(`/api/page/${encodeURIComponent(summary.slug)}`);
+  } catch {
+    return null;
+  }
+}
+
+async function renderGettingStarted() {
+  const gettingStarted = await optionalPage(
+    state.overview.featuredPages?.gettingStarted ?? state.overview.featuredPages?.projectOverview,
+  );
+  if (gettingStarted !== null) {
+    rememberPages([gettingStarted]);
+    renderPageArticle(gettingStarted);
+    return;
+  }
+
+  document.title = "Getting started - Almanac";
+  els.reader.innerHTML = `
+    <section class="ca-hero">
+      <div class="ca-kicker">Getting started</div>
+      <h1 class="ca-title">No getting started page</h1>
+      <p class="ca-subtitle">
+        Add <span class="ca-file-code">.almanac/pages/getting-started.md</span> or
+        <span class="ca-file-code">.almanac/pages/project-overview.md</span> to show page content here.
+      </p>
+    </section>
+  `;
+}
+
 async function renderPage(slug) {
   const page = await api(`/api/page/${encodeURIComponent(slug)}`);
   state.currentPage = page;
   rememberPages([page, ...(page.related_pages ?? [])]);
+  renderPageArticle(page);
+  renderPageRail(page);
+}
+
+function renderPageArticle(page) {
   document.title = `${page.title ?? page.slug} - Almanac`;
   els.reader.innerHTML = `
     <article class="ca-article">
@@ -155,7 +269,6 @@ async function renderPage(slug) {
       <div class="ca-prose">${renderMarkdown(page.body)}</div>
     </article>
   `;
-  renderPageRail(page);
 }
 
 async function renderTopic(slug) {
@@ -195,6 +308,7 @@ async function renderSearch(query) {
   els.searchInput.value = query;
   const result = await api(`/api/search?q=${encodeURIComponent(query)}`);
   rememberPages(result.pages);
+  document.title = `${query ? `Search: ${query}` : "Recent pages"} - Almanac`;
   els.reader.innerHTML = `
     <section class="ca-hero">
       <div class="ca-kicker">${query ? "Search" : "Recent"}</div>
@@ -259,8 +373,8 @@ function pageRow(page) {
 function linkButton(label, route, detail = "", extraClass = "") {
   return `
     <button class="ca-link-button ${escapeAttr(extraClass)}" data-route="${escapeAttr(route)}">
-      ${escapeHtml(label)}
-      ${detail ? `<br><small>${escapeHtml(detail)}</small>` : ""}
+      <span class="ca-link-label">${escapeHtml(label)}</span>
+      ${detail ? `<span class="ca-link-detail">${escapeHtml(detail)}</span>` : ""}
     </button>
   `;
 }
@@ -333,9 +447,17 @@ function formatDate(epochSeconds) {
 }
 
 function setActiveNav(pathname) {
-  document.querySelectorAll(".ca-nav-item").forEach((button) => {
+  document.querySelectorAll(".ca-left [data-route]").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.route === pathname);
   });
+}
+
+function setRailVisible(visible) {
+  els.shell.classList.toggle("is-rail-hidden", !visible);
+}
+
+function projectName(repoRoot) {
+  return repoRoot.split("/").filter(Boolean).at(-1) ?? "Project";
 }
 
 function renderError(error) {
