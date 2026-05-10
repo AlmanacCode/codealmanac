@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { chmod, mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   applyCodexJsonlEvent,
@@ -7,7 +10,9 @@ import {
   combineCodexPrompt,
   createCodexHarnessProvider,
   mapCodexAppServerNotification,
+  parseCodexAppServerUsage,
   parseCodexUsage,
+  runCodexAppServer,
 } from "../src/harness/providers/codex.js";
 import type { AgentRunSpec } from "../src/harness/types.js";
 
@@ -207,6 +212,161 @@ describe("Codex harness provider", () => {
         state,
       ),
     ).toEqual([{ type: "text_delta", content: "hello" }]);
+  });
+
+  it("maps app-server token usage from last and total buckets", () => {
+    expect(
+      parseCodexAppServerUsage({
+        last: {
+          inputTokens: 10,
+          cachedInputTokens: 2,
+          outputTokens: 4,
+          reasoningOutputTokens: 1,
+          totalTokens: 14,
+        },
+        total: {
+          inputTokens: 100,
+          cachedInputTokens: 20,
+          outputTokens: 40,
+          reasoningOutputTokens: 10,
+          totalTokens: 140,
+        },
+        modelContextWindow: 200000,
+      }),
+    ).toEqual({
+      inputTokens: 10,
+      cachedInputTokens: 2,
+      outputTokens: 4,
+      reasoningOutputTokens: 1,
+      totalTokens: 14,
+      totalProcessedTokens: 140,
+      maxTokens: 200000,
+    });
+  });
+
+  it("runs against a fake app-server process and emits structured events", async () => {
+    const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-bin-"));
+    const codexPath = join(binDir, "codex");
+    await writeFile(
+      codexPath,
+      `#!/usr/bin/env node
+const readline = require("node:readline");
+const rl = readline.createInterface({ input: process.stdin });
+function send(msg) { process.stdout.write(JSON.stringify(msg) + "\\n"); }
+rl.on("line", (line) => {
+  const msg = JSON.parse(line);
+  if (msg.method === "initialize") {
+    send({ id: msg.id, result: { userAgent: "fake-codex" } });
+    return;
+  }
+  if (msg.method === "thread/start") {
+    send({ id: msg.id, result: { thread: { id: "thread-1" } } });
+    return;
+  }
+  if (msg.method === "turn/start") {
+    if (msg.params.sandboxPolicy.networkAccess !== false) {
+      send({ method: "error", params: { message: "network should be disabled" } });
+      return;
+    }
+    send({ id: msg.id, result: { turn: { id: "turn-1" } } });
+    send({ method: "item/commandExecution/requestApproval", id: "approval-1", params: {} });
+    send({
+      method: "item/started",
+      params: {
+        threadId: "thread-1",
+        turnId: "turn-1",
+        item: {
+          type: "commandExecution",
+          id: "item-1",
+          command: "sed -n '1,80p' note.txt",
+          cwd: process.cwd(),
+          status: "inProgress",
+          commandActions: [{ type: "read", path: "note.txt" }]
+        }
+      }
+    });
+    send({ method: "item/agentMessage/delta", params: { threadId: "thread-1", turnId: "turn-1", itemId: "msg-1", delta: "done" } });
+    send({
+      method: "item/completed",
+      params: {
+        threadId: "thread-1",
+        turnId: "turn-1",
+        item: { type: "agentMessage", id: "msg-1", text: "final text", phase: null, memoryCitation: null }
+      }
+    });
+    send({
+      method: "thread/tokenUsage/updated",
+      params: {
+        threadId: "thread-1",
+        turnId: "turn-1",
+        tokenUsage: {
+          last: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 2, reasoningOutputTokens: 0, totalTokens: 3 },
+          total: { inputTokens: 5, cachedInputTokens: 0, outputTokens: 7, reasoningOutputTokens: 0, totalTokens: 12 },
+          modelContextWindow: 100
+        }
+      }
+    });
+    send({ method: "turn/completed", params: { threadId: "thread-1", turnId: "turn-1", turn: { id: "turn-1", status: "completed", error: null } } });
+  }
+});
+`,
+    );
+    await chmod(codexPath, 0o755);
+    const oldPath = process.env.PATH;
+    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    try {
+      const events: unknown[] = [];
+      await expect(
+        runCodexAppServer(
+          {
+            provider: { id: "codex" },
+            cwd: binDir,
+            prompt: "run",
+            metadata: { operation: "garden" },
+          },
+          {
+            onEvent: (event) => {
+              events.push(event);
+            },
+          },
+        ),
+      ).resolves.toMatchObject({
+        success: true,
+        result: "final text",
+        providerSessionId: "thread-1",
+        usage: {
+          totalTokens: 3,
+          totalProcessedTokens: 12,
+        },
+      });
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "tool_use",
+            display: expect.objectContaining({
+              kind: "read",
+              title: "Reading file",
+              path: "note.txt",
+            }),
+          }),
+          { type: "text_delta", content: "done" },
+          { type: "text", content: "final text" },
+          expect.objectContaining({
+            type: "context_usage",
+            usage: expect.objectContaining({
+              totalTokens: 3,
+              totalProcessedTokens: 12,
+            }),
+          }),
+          expect.objectContaining({
+            type: "done",
+            result: "final text",
+          }),
+        ]),
+      );
+    } finally {
+      process.env.PATH = oldPath;
+    }
   });
 
   it("normalizes Codex JSONL events and usage", async () => {

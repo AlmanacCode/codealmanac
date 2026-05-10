@@ -430,6 +430,13 @@ export async function runCodexAppServer(
       });
     };
 
+    const respond = (id: string | number, result: unknown): void => {
+      write({
+        id,
+        result,
+      });
+    };
+
     const respondUnsupported = (id: string | number, method: string): void => {
       write({
         id,
@@ -480,7 +487,12 @@ export async function runCodexAppServer(
       if (message === null || typeof message !== "object") return;
       const record = message as Record<string, unknown>;
       if ("id" in record && "method" in record) {
-        respondUnsupported(record.id as string | number, String(record.method));
+        respondToServerRequest(
+          record.id as string | number,
+          String(record.method),
+          respond,
+          respondUnsupported,
+        );
         return;
       }
       if ("id" in record) {
@@ -574,7 +586,7 @@ export async function runCodexAppServer(
             sandboxPolicy: {
               type: "workspaceWrite",
               writableRoots: [spec.cwd],
-              networkAccess: true,
+              networkAccess: false,
               excludeTmpdirEnvVar: false,
               excludeSlashTmp: false,
             },
@@ -589,6 +601,37 @@ export async function runCodexAppServer(
       }
     })();
   });
+}
+
+function respondToServerRequest(
+  id: string | number,
+  method: string,
+  respond: (id: string | number, result: unknown) => void,
+  respondUnsupported: (id: string | number, method: string) => void,
+): void {
+  switch (method) {
+    case "item/commandExecution/requestApproval":
+      respond(id, { decision: "decline" });
+      return;
+    case "item/fileChange/requestApproval":
+      respond(id, { decision: "decline" });
+      return;
+    case "execCommandApproval":
+    case "applyPatchApproval":
+      respond(id, { decision: "denied" });
+      return;
+    case "item/tool/requestUserInput":
+      respond(id, { answers: {} });
+      return;
+    case "mcpServer/elicitation/request":
+      respond(id, { action: "decline", content: null, _meta: null });
+      return;
+    case "item/tool/call":
+      respond(id, { contentItems: [], success: false });
+      return;
+    default:
+      respondUnsupported(id, method);
+  }
 }
 
 async function readOutputSchema(schemaPath: string | undefined): Promise<unknown> {
@@ -630,7 +673,7 @@ export function mapCodexAppServerNotification(
   }
 
   if (notification.method === "thread/tokenUsage/updated") {
-    const usage = parseCodexUsage(params.tokenUsage);
+    const usage = parseCodexAppServerUsage(params.tokenUsage);
     if (usage !== undefined) state.usage = usage;
     return usage !== undefined ? [{ type: "context_usage", usage }] : [];
   }
@@ -704,6 +747,23 @@ export function mapCodexAppServerNotification(
   }
 
   return [];
+}
+
+export function parseCodexAppServerUsage(value: unknown): AgentUsage | undefined {
+  const usage = asRecord(value);
+  const last = asRecord(usage.last);
+  const total = asRecord(usage.total);
+  const direct = parseCodexUsage(last);
+  if (direct === undefined) return undefined;
+  return pruneUndefined({
+    ...direct,
+    totalProcessedTokens:
+      numberField(total, "totalTokens") ?? numberField(total, "total_tokens"),
+    maxTokens:
+      numberField(usage, "modelContextWindow") ??
+      numberField(usage, "model_context_window") ??
+      null,
+  });
 }
 
 function codexItemToToolEvent(

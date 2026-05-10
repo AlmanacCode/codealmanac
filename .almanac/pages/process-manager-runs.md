@@ -26,7 +26,7 @@ Runs are per wiki under `.almanac/runs/`:
 .almanac/runs/<run-id>.cancel
 ```
 
-The JSON record stores status, operation, provider, model, PID, target metadata, log path, timestamps, final summary, and errors. The JSONL file stores normalized `HarnessEvent` records from [[harness-providers]]. The optional cancel marker is a race guard so a queued cancellation cannot be overwritten during child startup. New wiki scaffolding gitignores `.almanac/runs/` and `.almanac/index.db`.
+The JSON record stores status, operation, provider, model, PID, target metadata, log path, timestamps, final summary, and errors. The JSONL file stores normalized `HarnessEvent` records from [[harness-providers]], including structured tool display details when an adapter can provide them. The optional cancel marker is a race guard so a queued cancellation cannot be overwritten during child startup. New wiki scaffolding gitignores `.almanac/runs/` and `.almanac/index.db`.
 
 ## Status lifecycle
 
@@ -40,4 +40,4 @@ The manager snapshots `.almanac/pages/*.md` before and after the harness run. It
 
 ## Jobs CLI
 
-`almanac jobs` lists runs for the current wiki only. `jobs show <run-id>` reads one record. `jobs logs <run-id>` prints the JSONL log. `jobs attach <run-id>` tails until the run is terminal. `jobs cancel <run-id>` sends `SIGTERM` when a PID is known and marks the record cancelled.
+`almanac jobs` lists runs for the current wiki only. `jobs show <run-id>` reads one record. `jobs logs <run-id>` prints the JSONL log. `jobs attach <run-id>` tails until the run is terminal and renders structured tool events into concise status lines such as reading, searching, editing, and command execution. `jobs cancel <run-id>` sends `SIGTERM` when a PID is known and marks the record cancelled.

@@ -126,6 +126,19 @@ Consequences: Operation builders should only include `agents` when the selected
 provider capability supports `programmaticPerRun`. Codex still gets the same
 assembled prompt/system text and can use its own configured harness features.
 
+Update 2026-05-10 09:55 PDT: Codex lifecycle runs now use `codex app-server
+--listen stdio://` instead of the simple `codex exec --json` path. This keeps
+the same provider-neutral boundary, but maps app-server thread/turn/item
+notifications into richer `HarnessEvent` records. The app-server path supports
+model override, reasoning effort, structured output schema, and token usage, but
+still rejects programmatic per-run agents, MCP, skills, and max-cost fields until
+those can be mapped cleanly.
+
+Security note: app-server turns run with workspace-write filesystem access and
+`networkAccess: false` by default. Server-initiated approval and user-input
+requests are answered noninteractively with denial or empty answers so lifecycle
+commands remain pipeable and do not grant extra authority mid-run.
+
 ## 2026-05-09 20:09 PDT
 
 Decision: Keep Cursor as future work in V1 and leave the harness adapter as an

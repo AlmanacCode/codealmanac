@@ -469,3 +469,50 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
 - Result: targeted operation tests passed with 3 files and 12 tests; TypeScript
   lint passed; full suite passed with 44 files and 427 tests; build passed;
   wiki health was clean; diff whitespace check passed.
+
+## 2026-05-10 Codex App-Server Provider
+
+- Built: Codex lifecycle operations now run through `codex app-server --listen
+  stdio://` instead of `codex exec --json`.
+- Behavior:
+  - The Codex adapter keeps the same `AgentRunSpec` and `HarnessEvent`
+    provider boundary.
+  - It starts an ephemeral app-server thread, sends one turn, maps
+    thread/turn/item notifications into normalized events, then shuts down the
+    child process.
+  - Structured tool display details are now preserved on `tool_use` and
+    `tool_result` events so foreground output and run logs can show readable
+    activity like reading files, listing files, searching, editing, and running
+    commands.
+  - Codex app-server turns use workspace-write filesystem access with network
+    disabled by default.
+  - Server-initiated approval and user-input requests get noninteractive denial
+    or empty-answer responses instead of protocol errors.
+  - App-server token usage is mapped from `tokenUsage.last` and
+    `tokenUsage.total`.
+- Files changed:
+  - `src/harness/providers/codex.ts`
+  - `src/harness/events.ts`
+  - `src/cli/register-wiki-lifecycle-commands.ts`
+  - `src/harness/providers/metadata.ts`
+  - `test/codex-harness-provider.test.ts`
+  - `test/cli.test.ts`
+  - `test/harness-provider-registry.test.ts`
+  - `.almanac/pages/harness-providers.md`
+  - `.almanac/pages/process-manager-runs.md`
+- Review:
+  - Code-quality review found network access expansion, unsupported server
+    request responses, wrong app-server token usage shape, and missing fake
+    process coverage.
+  - Fixes added no-network policy, valid denial/empty request responses,
+    app-server usage parsing, and a fake `codex` app-server integration test.
+- Tests run:
+  - Real temp-wiki smoke: `dist/codealmanac.js ingest note.txt --foreground
+    --using codex`
+  - `npm test -- test/codex-harness-provider.test.ts test/cli.test.ts test/harness-provider-registry.test.ts`
+  - `npm run lint`
+  - `npm test`
+  - `npm run build`
+- Result: real Codex app-server smoke completed; focused tests passed with 37
+  tests; TypeScript lint passed; full suite passed with 44 files and 435 tests;
+  build passed.
