@@ -5,6 +5,7 @@ import { renderOutcome } from "../cli/outcome.js";
 import { findNearestAlmanacDir } from "../paths.js";
 import {
   finishRunRecord,
+  markRunCancelled,
   listRunRecords,
   readRunRecord,
   runRecordPath,
@@ -175,6 +176,8 @@ export async function runJobsCancel(
       { json: options.json },
     );
   }
+
+  await markRunCancelled(repoRoot, record.id);
 
   if (record.pid > 0) {
     try {

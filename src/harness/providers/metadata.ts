@@ -44,7 +44,7 @@ export const HARNESS_PROVIDER_METADATA: Record<HarnessProviderId, ProviderMetada
       usage: true,
       cost: true,
       contextUsage: false,
-      structuredOutput: true,
+      structuredOutput: false,
       subagents: {
         supported: true,
         programmaticPerRun: true,

@@ -18,6 +18,26 @@ export function runLogPath(repoRoot: string, runId: string): string {
   return join(runsDir(repoRoot), `${runId}.jsonl`);
 }
 
+export function runCancelPath(repoRoot: string, runId: string): string {
+  return join(runsDir(repoRoot), `${runId}.cancel`);
+}
+
+export async function markRunCancelled(
+  repoRoot: string,
+  runId: string,
+): Promise<void> {
+  const path = runCancelPath(repoRoot, runId);
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, "cancelled\n", "utf8");
+}
+
+export function isRunCancellationRequested(
+  repoRoot: string,
+  runId: string,
+): boolean {
+  return existsSync(runCancelPath(repoRoot, runId));
+}
+
 export async function writeRunRecord(
   path: string,
   record: RunRecord,

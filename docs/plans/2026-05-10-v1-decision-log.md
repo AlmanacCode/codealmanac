@@ -297,3 +297,8 @@ adapter rejects or cannot run.
 Consequences: Codex metadata no longer advertises session persistence, resume,
 interrupt, or subagents in V1. Cursor remains listed but advertises no executable
 runtime capabilities until its adapter is implemented.
+
+Update 2026-05-09 21:09 PDT: Claude structured output is also marked false
+until the adapter maps `AgentRunSpec.output` into Claude SDK options. Codex
+keeps structured output true because its adapter maps `schemaPath` to
+`--output-schema`.

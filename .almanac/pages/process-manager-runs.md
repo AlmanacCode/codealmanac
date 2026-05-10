@@ -23,15 +23,16 @@ Runs are per wiki under `.almanac/runs/`:
 ```text
 .almanac/runs/<run-id>.json
 .almanac/runs/<run-id>.jsonl
+.almanac/runs/<run-id>.cancel
 ```
 
-The JSON record stores status, operation, provider, model, PID, target metadata, log path, timestamps, final summary, and errors. The JSONL file stores normalized `HarnessEvent` records from [[harness-providers]]. New wiki scaffolding gitignores `.almanac/runs/` and `.almanac/index.db`.
+The JSON record stores status, operation, provider, model, PID, target metadata, log path, timestamps, final summary, and errors. The JSONL file stores normalized `HarnessEvent` records from [[harness-providers]]. The optional cancel marker is a race guard so a queued cancellation cannot be overwritten during child startup. New wiki scaffolding gitignores `.almanac/runs/` and `.almanac/index.db`.
 
 ## Status lifecycle
 
 Background starts write a `queued` record before spawning a detached child. The child rehydrates the saved spec, transitions through foreground execution, and owns the terminal status. Foreground runs write a started record immediately and stream events to the optional observer while also appending them to JSONL.
 
-Terminal statuses are `done`, `failed`, and `cancelled`. `jobs` can display `stale` when a running PID is no longer alive.
+Terminal statuses are `done`, `failed`, and `cancelled`. `jobs` can display `stale` when a running PID is no longer alive. The foreground manager re-reads the record before terminal writes; if a run was cancelled, finalization returns the cancelled record instead of resurrecting it as done or failed.
 
 ## Snapshot accounting
 

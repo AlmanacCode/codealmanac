@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   finishRunRecord,
+  markRunCancelled,
   readRunRecord,
   readRunSpec,
   runBackgroundChild,
@@ -211,6 +212,42 @@ describe("process manager background execution", () => {
       const child = await runBackgroundChild({
         repoRoot: repo,
         runId: started.runId,
+        harnessRun: async () => {
+          throw new Error("should not run");
+        },
+      });
+
+      expect(child.record.status).toBe("cancelled");
+      expect(child.result.error).toBe("run cancelled before start");
+      await expect(readRunRecord(runRecordPath(repo, started.runId))).resolves
+        .toMatchObject({ status: "cancelled" });
+    });
+  });
+
+  it("does not overwrite a queued cancellation marker during child startup", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "background-cancel-marker");
+      await scaffoldWiki(repo);
+
+      const started = await startBackgroundProcess({
+        repoRoot: repo,
+        runId: "run_20260509210500_cancel_marker",
+        entrypoint: "/tmp/codealmanac.js",
+        now: fixedClock(["2026-05-09T21:05:00.000Z"]),
+        spec: {
+          provider: { id: "codex" },
+          cwd: repo,
+          prompt: "garden",
+          metadata: { operation: "garden" },
+        },
+        spawnBackground: () => ({ pid: 222 }),
+      });
+      await markRunCancelled(repo, started.runId);
+
+      const child = await runBackgroundChild({
+        repoRoot: repo,
+        runId: started.runId,
+        pid: 222,
         harnessRun: async () => {
           throw new Error("should not run");
         },

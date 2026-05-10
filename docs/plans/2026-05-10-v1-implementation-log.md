@@ -414,3 +414,22 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm test -- test/process-manager.test.ts test/harness-provider-registry.test.ts test/build-operation.test.ts test/absorb-operation.test.ts test/garden-operation.test.ts test/operation-commands.test.ts`
   - `npm run lint`
 - Result: focused tests passed and TypeScript lint passed.
+
+## 2026-05-09 21:09 PDT
+
+- Built: second code-quality review fixes.
+- Review findings addressed:
+  - Queued cancellation markers now prevent the child startup transition from overwriting cancellation before harness execution.
+  - Claude harness metadata no longer advertises structured output until the adapter maps `spec.output`.
+- Files changed:
+  - `src/process/records.ts`
+  - `src/process/manager.ts`
+  - `src/commands/jobs.ts`
+  - `src/harness/providers/metadata.ts`
+  - `test/process-background.test.ts`
+  - `test/harness-provider-registry.test.ts`
+  - `.almanac/pages/process-manager-runs.md`
+- Tests run:
+  - `npm test -- test/process-background.test.ts test/process-manager.test.ts test/harness-provider-registry.test.ts`
+  - `npm run lint`
+- Result: focused tests passed and TypeScript lint passed.

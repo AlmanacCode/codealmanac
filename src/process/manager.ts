@@ -9,6 +9,7 @@ import { appendRunEvent, initializeRunLog } from "./logs.js";
 import {
   buildStartedRunRecord,
   finishRunRecord,
+  isRunCancellationRequested,
   readRunRecord,
   runRecordPath,
   writeRunRecord,
@@ -50,8 +51,45 @@ export async function startForegroundProcess(
     pid: options.pid,
   });
 
+  const preStart = await cancelledRecordIfRequested({
+    recordPath,
+    repoRoot: options.repoRoot,
+    runId,
+    fallback: started,
+    finishedAt: now(),
+  });
+  if (preStart !== null) {
+    return {
+      runId,
+      record: preStart,
+      result: {
+        success: false,
+        result: "",
+        error: "run cancelled before start",
+      },
+    };
+  }
+
   await writeRunRecord(recordPath, started);
   await initializeRunLog(started.logPath);
+  const afterStart = await cancelledRecordIfRequested({
+    recordPath,
+    repoRoot: options.repoRoot,
+    runId,
+    fallback: started,
+    finishedAt: now(),
+  });
+  if (afterStart !== null) {
+    return {
+      runId,
+      record: afterStart,
+      result: {
+        success: false,
+        result: "",
+        error: "run cancelled before start",
+      },
+    };
+  }
 
   const harnessRun =
     options.harnessRun ??
@@ -148,7 +186,16 @@ async function finishUnlessCancelled(args: {
   error?: string;
 }): Promise<RunRecord> {
   const current = await readRunRecord(args.recordPath);
-  if (current?.status === "cancelled") return current;
+  if (
+    current?.status === "cancelled" ||
+    isRunCancellationRequested(args.fallback.repoRoot, args.fallback.id)
+  ) {
+    return finishCancelled({
+      recordPath: args.recordPath,
+      fallback: current ?? args.fallback,
+      finishedAt: args.finishedAt,
+    });
+  }
   const base = current ?? args.fallback;
   const finished = finishRunRecord({
     record: base,
@@ -160,6 +207,44 @@ async function finishUnlessCancelled(args: {
   });
   await writeRunRecord(args.recordPath, finished);
   return finished;
+}
+
+async function cancelledRecordIfRequested(args: {
+  recordPath: string;
+  repoRoot: string;
+  runId: string;
+  fallback: RunRecord;
+  finishedAt: Date;
+}): Promise<RunRecord | null> {
+  const current = await readRunRecord(args.recordPath);
+  if (
+    current?.status !== "cancelled" &&
+    !isRunCancellationRequested(args.repoRoot, args.runId)
+  ) {
+    return null;
+  }
+  return finishCancelled({
+    recordPath: args.recordPath,
+    fallback: current ?? args.fallback,
+    finishedAt: args.finishedAt,
+  });
+}
+
+async function finishCancelled(args: {
+  recordPath: string;
+  fallback: RunRecord;
+  finishedAt: Date;
+}): Promise<RunRecord> {
+  const cancelled =
+    args.fallback.status === "cancelled"
+      ? args.fallback
+      : finishRunRecord({
+          record: args.fallback,
+          status: "cancelled",
+          finishedAt: args.finishedAt,
+        });
+  await writeRunRecord(args.recordPath, cancelled);
+  return cancelled;
 }
 
 function eventLogger(
