@@ -221,16 +221,22 @@ async function renderFile(path) {
 function renderPageRail(page) {
   els.pageMeta.innerHTML = `
     <div class="ca-meta-title">${escapeHtml(pageTitle(page))}</div>
-    <div class="ca-meta-line"><strong>Updated:</strong> ${new Date(page.updated_at * 1000).toLocaleString()}</div>
-    <div class="ca-meta-line"><strong>Markdown:</strong><br><span class="ca-file-code">${escapeHtml(page.file_path)}</span></div>
-    ${page.archived_at ? `<div class="ca-meta-line"><strong>Archived:</strong> ${new Date(page.archived_at * 1000).toLocaleDateString()}</div>` : ""}
-    ${page.superseded_by ? `<div class="ca-meta-line"><strong>Superseded by:</strong> <a class="ca-meta-link" href="/page/${escapeAttr(page.superseded_by)}" data-route="/page/${escapeAttr(page.superseded_by)}">${escapeHtml(pageLabel(page.superseded_by))}</a></div>` : ""}
+    <div class="ca-meta-line">
+      <span class="ca-meta-label">Updated</span>
+      <span class="ca-meta-value">${new Date(page.updated_at * 1000).toLocaleString()}</span>
+    </div>
+    <div class="ca-meta-line">
+      <span class="ca-meta-label">Markdown</span>
+      <span class="ca-file-code">${escapeHtml(page.file_path)}</span>
+    </div>
+    ${page.archived_at ? `<div class="ca-meta-line"><span class="ca-meta-label">Archived</span><span class="ca-meta-value">${new Date(page.archived_at * 1000).toLocaleDateString()}</span></div>` : ""}
+    ${page.superseded_by ? `<div class="ca-meta-line"><span class="ca-meta-label">Superseded by</span><a class="ca-meta-link" href="/page/${escapeAttr(page.superseded_by)}" data-route="/page/${escapeAttr(page.superseded_by)}">${escapeHtml(pageLabel(page.superseded_by))}</a></div>` : ""}
   `;
   els.backlinks.innerHTML = page.wikilinks_in.length > 0
     ? page.wikilinks_in.map((slug) => linkButton(pageLabel(slug), `/page/${slug}`)).join("")
     : `<div class="ca-meta-empty">No backlinks.</div>`;
   els.fileRefs.innerHTML = page.file_refs.length > 0
-    ? page.file_refs.map((ref) => linkButton(ref.path, `/file?path=${encodeURIComponent(ref.path)}`)).join("")
+    ? page.file_refs.map((ref) => linkButton(ref.path, `/file?path=${encodeURIComponent(ref.path)}`, "", "ca-file-link")).join("")
     : `<div class="ca-meta-empty">No file refs.</div>`;
 }
 
@@ -250,9 +256,9 @@ function pageRow(page) {
   `;
 }
 
-function linkButton(label, route, detail = "") {
+function linkButton(label, route, detail = "", extraClass = "") {
   return `
-    <button class="ca-link-button" data-route="${escapeAttr(route)}">
+    <button class="ca-link-button ${escapeAttr(extraClass)}" data-route="${escapeAttr(route)}">
       ${escapeHtml(label)}
       ${detail ? `<br><small>${escapeHtml(detail)}</small>` : ""}
     </button>

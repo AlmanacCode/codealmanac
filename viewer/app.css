@@ -38,7 +38,7 @@ input {
 
 .ca-shell {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 300px;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
   min-height: 100vh;
 }
 
@@ -53,12 +53,12 @@ input {
 
 .ca-left {
   border-right: 1px solid var(--ca-border);
-  padding: 20px 16px;
+  padding: 24px 18px;
 }
 
 .ca-right {
   border-left: 1px solid var(--ca-border);
-  padding: 22px 18px;
+  padding: 24px 18px;
 }
 
 .ca-main {
@@ -70,7 +70,7 @@ input {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-bottom: 18px;
+  padding-bottom: 22px;
   border-bottom: 1px solid var(--ca-border);
 }
 
@@ -83,36 +83,36 @@ input {
   color: var(--ca-bg);
   border-radius: 4px;
   font-family: var(--ca-mono);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0;
   box-shadow: 0 10px 26px var(--ca-accent-glow);
 }
 
 .ca-brand-title {
-  font-size: 18px;
+  font-size: 22px;
   line-height: 1.1;
 }
 
 .ca-brand-subtitle {
   margin-top: 3px;
   color: var(--ca-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .ca-search {
-  margin: 18px 0 14px;
+  margin: 22px 0 16px;
 }
 
 .ca-search input {
   width: 100%;
-  height: 38px;
-  padding: 0 12px;
+  height: 42px;
+  padding: 0 13px;
   border: 1px solid var(--ca-border);
   border-radius: 5px;
   outline: none;
   background: var(--ca-paper);
   color: var(--ca-text);
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .ca-search input:focus {
@@ -122,8 +122,8 @@ input {
 
 .ca-nav {
   display: grid;
-  gap: 4px;
-  margin-bottom: 22px;
+  gap: 6px;
+  margin-bottom: 26px;
 }
 
 .ca-nav-item,
@@ -137,9 +137,10 @@ input {
 }
 
 .ca-nav-item {
-  padding: 9px 10px;
+  padding: 10px 11px;
   border-radius: 5px;
-  font-size: 13px;
+  font-size: 15px;
+  line-height: 1.25;
 }
 
 .ca-nav-item:hover,
@@ -150,14 +151,14 @@ input {
 
 .ca-left-section,
 .ca-meta-block {
-  margin-top: 24px;
+  margin-top: 26px;
 }
 
 .ca-left-section h2,
 .ca-meta-block h2 {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   color: var(--ca-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -165,15 +166,15 @@ input {
 
 .ca-link-list {
   display: grid;
-  gap: 5px;
+  gap: 6px;
 }
 
 .ca-link-button {
-  padding: 6px 8px;
-  border-radius: 4px;
+  padding: 7px 9px;
+  border-radius: 5px;
   color: var(--ca-accent);
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 14px;
+  line-height: 1.32;
 }
 
 .ca-link-button:hover {
@@ -183,6 +184,16 @@ input {
 
 .ca-link-button small {
   color: var(--ca-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.ca-left .ca-link-button {
+  color: var(--ca-text);
+}
+
+.ca-left .ca-link-button:hover {
+  color: var(--ca-accent);
 }
 
 .ca-reader {
@@ -392,28 +403,77 @@ input {
   background: transparent;
 }
 
+.ca-meta-block {
+  position: relative;
+  margin-top: 16px;
+  padding: 16px 15px;
+  border: 1px solid var(--ca-border);
+  border-top: 3px solid var(--ca-accent);
+  border-radius: 6px;
+  background: radial-gradient(ellipse 80% 100% at 50% 0%, var(--ca-paper), var(--ca-surface) 75%);
+}
+
+.ca-meta-block + .ca-meta-block {
+  margin-top: 14px;
+}
+
+.ca-meta-block h2 {
+  color: var(--ca-accent);
+}
+
 .ca-meta-empty,
 .ca-meta-line {
   color: var(--ca-muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.55;
 }
 
 .ca-meta-line {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .ca-meta-title {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   color: var(--ca-text);
-  font-size: 17px;
+  font-size: 19px;
   line-height: 1.25;
+}
+
+.ca-meta-label {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--ca-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ca-meta-value {
+  color: var(--ca-text);
 }
 
 .ca-meta-link {
   color: var(--ca-accent);
   text-decoration: none;
   border-bottom: 1px dotted var(--ca-accent);
+}
+
+.ca-right .ca-link-button {
+  border: 1px solid transparent;
+  background: rgba(255, 250, 240, 0.34);
+}
+
+.ca-right .ca-link-button:hover {
+  border-color: var(--ca-border-light);
+  background: var(--ca-paper);
+}
+
+.ca-file-link {
+  font-family: var(--ca-mono);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .ca-meta-link:hover {
