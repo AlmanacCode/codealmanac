@@ -345,6 +345,9 @@ interface PendingRequest {
 const CODEX_APP_SERVER_RPC_TIMEOUT_MS = 30_000;
 const CODEX_APP_SERVER_RPC_TIMEOUT_ENV =
   "CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS";
+const CODEX_APP_SERVER_TURN_TIMEOUT_MS = 30 * 60_000;
+const CODEX_APP_SERVER_TURN_TIMEOUT_ENV =
+  "CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS";
 
 export interface CodexAppServerRequest {
   command: "codex";
@@ -377,6 +380,7 @@ export async function runCodexAppServer(
 ): Promise<HarnessResult> {
   const request = buildCodexAppServerRequest(spec);
   const rpcTimeoutMs = codexAppServerRpcTimeoutMs(request.env);
+  const turnTimeoutMs = codexAppServerTurnTimeoutMs(request.env);
   return new Promise((resolve) => {
     const child = spawn(request.command, request.args, {
       cwd: request.cwd,
@@ -391,10 +395,15 @@ export async function runCodexAppServer(
     let stderr = "";
     let settled = false;
     let activeTurnId: string | undefined;
+    let turnTimeout: NodeJS.Timeout | undefined;
 
     const finish = async (result: HarnessResult): Promise<void> => {
       if (settled) return;
       settled = true;
+      if (turnTimeout !== undefined) {
+        clearTimeout(turnTimeout);
+        turnTimeout = undefined;
+      }
       for (const entry of pending.values()) {
         entry.reject(new Error("Codex app-server run finished"));
       }
@@ -414,6 +423,13 @@ export async function runCodexAppServer(
           Promise.resolve(),
       );
       void finish(toHarnessResult(state));
+    };
+
+    const startTurnWatchdog = (): void => {
+      if (turnTimeout !== undefined) clearTimeout(turnTimeout);
+      turnTimeout = setTimeout(() => {
+        fail(`Codex app-server turn timed out after ${turnTimeoutMs}ms`);
+      }, turnTimeoutMs);
     };
 
     const write = (message: Record<string, unknown>): void => {
@@ -624,6 +640,7 @@ export async function runCodexAppServer(
           }),
         );
         activeTurnId = stringField(asRecord(turn.turn), "id");
+        startTurnWatchdog();
       } catch (err: unknown) {
         fail(err instanceof Error ? err.message : String(err));
       }
@@ -824,10 +841,23 @@ export function parseCodexAppServerUsage(value: unknown): AgentUsage | undefined
 }
 
 function codexAppServerRpcTimeoutMs(env: NodeJS.ProcessEnv): number {
-  const raw = env[CODEX_APP_SERVER_RPC_TIMEOUT_ENV];
-  if (raw === undefined) return CODEX_APP_SERVER_RPC_TIMEOUT_MS;
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed <= 0) return CODEX_APP_SERVER_RPC_TIMEOUT_MS;
+  return parsePositiveEnvInt(
+    env[CODEX_APP_SERVER_RPC_TIMEOUT_ENV],
+    CODEX_APP_SERVER_RPC_TIMEOUT_MS,
+  );
+}
+
+function codexAppServerTurnTimeoutMs(env: NodeJS.ProcessEnv): number {
+  return parsePositiveEnvInt(
+    env[CODEX_APP_SERVER_TURN_TIMEOUT_ENV],
+    CODEX_APP_SERVER_TURN_TIMEOUT_MS,
+  );
+}
+
+function parsePositiveEnvInt(value: string | undefined, fallback: number): number {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return parsed;
 }
 

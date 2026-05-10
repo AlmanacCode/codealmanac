@@ -525,6 +525,8 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
     user-level Codex MCP servers are not exposed during CodeAlmanac runs.
   - `initialize`, `thread/start`, and `turn/start` JSON-RPC calls now fail with
     a provider error after a timeout instead of hanging forever.
+  - Accepted turns now also have a terminal timeout, so an app-server that
+    accepts `turn/start` but never emits `turn/completed` is recorded as failed.
   - App-server usage now trusts `tokenUsage.last.totalTokens` as the
     authoritative per-turn total.
   - Codex provider metadata now reports `contextUsage: true` because the
@@ -548,3 +550,8 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
 - Result: focused tests passed with 2 files and 16 tests; wiki health was clean;
   TypeScript lint passed; full suite passed with 44 files and 439 tests; build
   passed; real Codex app-server smoke completed with the new config override.
+
+Follow-up review found that the first timeout patch bounded only the handshake
+RPCs, not the post-`turn/start` execution phase. Added an accepted-turn timeout
+and regression coverage for a fake app-server that acknowledges `turn/start` and
+then never sends `turn/completed`.

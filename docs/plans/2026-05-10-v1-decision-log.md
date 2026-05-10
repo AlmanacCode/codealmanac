@@ -142,7 +142,8 @@ app-server also gets `--config mcp_servers={}` so user-level Codex MCP servers
 do not leak into CodeAlmanac runs while the provider metadata says MCP is
 unsupported. Handshake JSON-RPC calls have a timeout so a stalled or incompatible
 app-server becomes a recorded provider failure instead of a permanently running
-job.
+job. An accepted turn also has a terminal timeout, because a provider can accept
+`turn/start` and then fail to emit `turn/completed`.
 
 ## 2026-05-09 20:09 PDT
 

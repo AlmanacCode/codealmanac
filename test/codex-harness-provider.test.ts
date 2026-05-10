@@ -492,6 +492,60 @@ setInterval(() => {}, 1000);
     }
   });
 
+  it("fails instead of hanging when app-server accepts a turn but never completes", async () => {
+    const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-stall-bin-"));
+    const codexPath = join(binDir, "codex");
+    await writeFile(
+      codexPath,
+      `#!/usr/bin/env node
+const readline = require("node:readline");
+const rl = readline.createInterface({ input: process.stdin });
+function send(msg) { process.stdout.write(JSON.stringify(msg) + "\\n"); }
+rl.on("line", (line) => {
+  const msg = JSON.parse(line);
+  if (msg.method === "initialize") {
+    send({ id: msg.id, result: { userAgent: "fake-codex" } });
+    return;
+  }
+  if (msg.method === "thread/start") {
+    send({ id: msg.id, result: { thread: { id: "thread-1" } } });
+    return;
+  }
+  if (msg.method === "turn/start") {
+    send({ id: msg.id, result: { turn: { id: "turn-1" } } });
+  }
+});
+setInterval(() => {}, 1000);
+`,
+    );
+    await chmod(codexPath, 0o755);
+    const oldPath = process.env.PATH;
+    const oldTurnTimeout = process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
+    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS = "25";
+    try {
+      await expect(
+        runCodexAppServer({
+          provider: { id: "codex" },
+          cwd: binDir,
+          prompt: "run",
+          metadata: { operation: "garden" },
+        }),
+      ).resolves.toMatchObject({
+        success: false,
+        error: expect.stringContaining("turn timed out after 25ms"),
+      });
+    } finally {
+      process.env.PATH = oldPath;
+      if (oldTurnTimeout === undefined) {
+        delete process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
+      } else {
+        process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS =
+          oldTurnTimeout;
+      }
+    }
+  });
+
   it("normalizes Codex JSONL events and usage", async () => {
     const events: unknown[] = [];
     const state = { success: false, result: "" };
