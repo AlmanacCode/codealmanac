@@ -11,7 +11,7 @@ const BLUE_DIM = "\x1b[38;5;69m";
 /**
  * Print the "Next steps" box. When `existingPageCount` is greater than 0,
  * the current working directory already has a wiki with committed pages.
- * In that case we skip the `almanac bootstrap` step and tell the user to
+ * In that case we skip the `almanac init` step and tell the user to
  * start querying.
  */
 export function printNextSteps(
@@ -50,7 +50,7 @@ export function printNextSteps(
     );
     out.write(
       row(
-        `  ${BLUE}2.${RST}  ${BOLD}almanac bootstrap${RST}  ${DIM}# scaffold the wiki${RST}`,
+        `  ${BLUE}2.${RST}  ${BOLD}almanac init${RST}  ${DIM}# build the wiki${RST}`,
       ),
     );
     out.write(

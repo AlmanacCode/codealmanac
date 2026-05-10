@@ -206,7 +206,7 @@ describe("registerCommands", () => {
     expect(help).toMatch(/Setup:[\s\S]*config\s+read and write codealmanac settings/);
     expect(help).toContain("Deprecated:");
     expect(help).toMatch(/set <key> \[value\.\.\.\]\s+configure codealmanac defaults/);
-    expect(help).toMatch(/ps \[options\]\s+deprecated alias for capture status/);
+    expect(help).toMatch(/ps \[options\]\s+deprecated alias for jobs/);
   });
 });
 

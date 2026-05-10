@@ -179,9 +179,11 @@ Alternatives:
 Why: The agreed public V1 write commands are `init`, `capture`, `ingest`, and
 `garden`. Keeping a second public build path would preserve architecture drift.
 
-Consequences: The old `runBootstrap` implementation still exists for historical
-tests and later deletion, but it is no longer registered as a public lifecycle
-command.
+Consequences: The public command was removed first, then the old
+`runBootstrap`, old hardcoded `runCapture`, capture-status state reader, and
+the old `bootstrap`/`writer`/`reviewer` prompt files were deleted in the Phase 8
+cleanup. Historical slice plans still describe that path, but V1 runtime code no
+longer carries it.
 
 ## 2026-05-09 20:30 PDT
 

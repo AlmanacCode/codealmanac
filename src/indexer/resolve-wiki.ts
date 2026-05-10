@@ -45,7 +45,7 @@ export async function resolveWikiRoot(params: {
   const nearest = findNearestAlmanacDir(params.cwd);
   if (nearest === null) {
     throw new Error(
-      "no .almanac/ found in this directory or any parent; run `almanac bootstrap` first",
+      "no .almanac/ found in this directory or any parent; run `almanac init` first",
     );
   }
   return nearest;

@@ -354,7 +354,7 @@ export async function runSetup(
   // already has a wiki with pages. This fixes Bug #6 from
   // codealmanac-known-bugs.md: Engineer B clones a repo that already has
   // `.almanac/pages/` (committed by Engineer A) and gets told to run
-  // `almanac bootstrap`, which is wrong — the wiki already exists.
+  // `almanac init`, which is wrong — the wiki already exists.
   const existingPageCount = countExistingPages(process.cwd());
   printNextSteps(out, existingPageCount);
 

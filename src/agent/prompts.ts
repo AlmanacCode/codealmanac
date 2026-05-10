@@ -5,8 +5,7 @@ import { fileURLToPath } from "node:url";
 
 /**
  * Loads bundled prompt text from the `prompts/` directory that ships with
- * the npm package. Used by `almanac bootstrap` (slice 4) and `almanac
- * capture` (slice 5).
+ * the npm package. V1 operation prompts live under `prompts/operations/`.
  *
  * ## Why not embed the prompts as TS string literals?
  *
@@ -35,23 +34,17 @@ import { fileURLToPath } from "node:url";
  *      lands at the repo root, where `prompts/` also lives.
  *
  * We probe a small list of candidates in order and use the first that
- * contains all three expected prompt files. This keeps a single source of
+ * contains the required operation prompt files. This keeps a single source of
  * truth — the `prompts/` directory on disk — without baking in whether
  * we're running from `dist/` or `src/`.
  */
 
 export type PromptName =
-  | "bootstrap"
-  | "writer"
-  | "reviewer"
   | "operations/build"
   | "operations/absorb"
   | "operations/garden";
 
 const PROMPT_NAMES: readonly PromptName[] = [
-  "bootstrap",
-  "writer",
-  "reviewer",
   "operations/build",
   "operations/absorb",
   "operations/garden",
@@ -82,7 +75,7 @@ export function resolvePromptsDir(): string {
 
   // Candidates, most-specific first. Each path is where `prompts/` MIGHT
   // live given some plausible bundle layout. The first one that exists
-  // and contains our three expected files wins.
+  // and contains our expected operation files wins.
   const candidates = [
     // Bundled dist layout: `.../<pkg>/dist/codealmanac.js` → `../prompts`
     path.resolve(here, "..", "prompts"),
@@ -112,19 +105,19 @@ export function resolvePromptsDir(): string {
 
 function isPromptsDir(dir: string): boolean {
   if (!existsSync(dir)) return false;
-  // Require all three prompts to be present. A half-populated directory
+  // Require all operation prompts to be present. A half-populated directory
   // is worse than not finding one — we'd rather error early.
   return PROMPT_NAMES.every((name) =>
     existsSync(path.join(dir, `${name}.md`)),
   );
 }
 
-export async function loadPrompt(name: PromptName): Promise<string> {
+export async function loadPrompt(name: PromptName | string): Promise<string> {
   const dir = resolvePromptsDir();
   return readFile(resolvePromptPath(dir, name), "utf8");
 }
 
-function resolvePromptPath(dir: string, name: PromptName): string {
+function resolvePromptPath(dir: string, name: string): string {
   if (
     name.length === 0 ||
     path.isAbsolute(name) ||

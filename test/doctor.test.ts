@@ -328,7 +328,7 @@ describe("almanac doctor — install section", () => {
 });
 
 describe("almanac doctor — wiki section", () => {
-  it("reports `No wiki` + bootstrap hint when cwd has no .almanac/", async () => {
+  it("reports `No wiki` + init hint when cwd has no .almanac/", async () => {
     await withTempHome(async (home) => {
       const env = await scaffoldHealthyClaudeDir(home);
       const repo = await makeRepo(home, "empty-repo");
@@ -348,7 +348,7 @@ describe("almanac doctor — wiki section", () => {
       const parsed = JSON.parse(r.stdout);
       expect(parsed.wiki).toHaveLength(1);
       expect(parsed.wiki[0].key).toBe("wiki.none");
-      expect(parsed.wiki[0].fix).toMatch(/almanac bootstrap/);
+      expect(parsed.wiki[0].fix).toMatch(/almanac init/);
     });
   });
 

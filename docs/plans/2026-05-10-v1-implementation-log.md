@@ -338,3 +338,32 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm test`
   - `git diff --check`
 - Result: focused tests passed, TypeScript lint passed, full suite passed with 47 test files and 476 tests, and diff whitespace check passed.
+
+## 2026-05-09 20:45 PDT
+
+- Built: Phase 8 old architecture cleanup.
+- Files removed:
+  - `src/commands/bootstrap.ts`
+  - `src/commands/capture.ts`
+  - `src/commands/captureStatus.ts`
+  - `src/agent/sdk.ts`
+  - `src/agent/selection.ts`
+  - `prompts/bootstrap.md`
+  - `prompts/writer.md`
+  - `prompts/reviewer.md`
+  - old bootstrap/capture/capture-status test suites
+- Files changed:
+  - `src/agent/prompts.ts`
+  - `src/agent/providers/prompt.ts`
+  - user-facing hints in list, doctor, setup, and wiki resolution
+  - `README.md`
+  - V1 implementation and decision logs
+- Behavior:
+  - V1 operation prompts under `prompts/operations/` are the required bundled prompts.
+  - Public guidance now points at `almanac init`, not the removed `almanac bootstrap`.
+  - Legacy capture status state readers are gone; status-like UX is the V1 `jobs` surface.
+  - Generic non-programmatic-subagent fallback no longer hardcodes reviewer semantics.
+- Tests run:
+  - `npm run lint`
+  - `npm test`
+- Result: TypeScript lint passed; full suite passed with 44 test files and 421 tests.

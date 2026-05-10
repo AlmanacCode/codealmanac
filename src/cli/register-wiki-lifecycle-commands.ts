@@ -251,7 +251,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   program
     .command("ps")
-    .description("deprecated alias for capture status")
+    .description("deprecated alias for jobs")
     .option("--json", "emit structured JSON")
     .action(async (opts: { json?: boolean }) => {
       const result = await runJobsList({

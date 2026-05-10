@@ -26,7 +26,7 @@ A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, ha
 
 ## How it works
 
-Each repo gets a committed `.almanac/pages/` directory of markdown files. Auto-capture hooks fire when Claude Code, Codex, or Cursor Agent sessions end and run `almanac capture` in the background. A writer agent reads the session transcript and existing pages, drafts changes, and runs a reviewer pass against the wider graph. The writer applies the final versions. New and updated pages show up in your next `git status`; you review them like any other commit.
+Each repo gets a committed `.almanac/pages/` directory of markdown files. Auto-capture hooks fire when Claude Code, Codex, or Cursor Agent sessions end and run `almanac capture` in the background. CodeAlmanac builds one provider-neutral run spec, starts it through the process manager, and records local run state in `.almanac/runs/`. New and updated pages show up in your next `git status`; you review them like any other commit.
 
 The CLI never reads or writes page content except in `capture` and `bootstrap`. Every other command (`search`, `show`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
 
@@ -99,7 +99,7 @@ codealmanac                   # interactive setup wizard; choose provider + mode
                               # (or: codealmanac --yes)
 
 cd your-repo
-almanac bootstrap             # default agent reads the repo and seeds pages + topic DAG
+almanac init                  # default provider reads the repo and builds the wiki
 
 almanac search "auth"         # full-text search across pages
 almanac show checkout-flow    # read a page
@@ -109,7 +109,7 @@ almanac show checkout-flow    # read a page
 # based on what happened in the session.
 ```
 
-No `almanac init`. A wiki is scaffolded two ways: run `almanac bootstrap` yourself, or clone a repo that already has `.almanac/` committed (codealmanac auto-registers it on the first query).
+A wiki is scaffolded two ways: run `almanac init` yourself, or clone a repo that already has `.almanac/` committed (codealmanac auto-registers it on the first query).
 
 Sanity-check the install with `almanac doctor` and `almanac agents list` — they report binary location, native SQLite binding, provider readiness, hook status, guides, import line, and current-wiki stats.
 
@@ -133,9 +133,12 @@ almanac tag <page> <topic...>                # add topics to a page
 almanac health                               # graph integrity report
 
 # Wiki lifecycle
-almanac bootstrap --agent codex              # seed a new wiki from the repo
-almanac capture --agent cursor <transcript>  # update wiki from a transcript
+almanac init --using codex                   # build a new wiki from the repo
+almanac capture --using claude <transcript>  # update wiki from a session transcript
 almanac capture --json <transcript>          # structured CommandOutcome output
+almanac ingest docs/adr.md                   # absorb files or folders into the wiki
+almanac garden                               # audit and improve the wiki
+almanac jobs                                 # list local background runs
 almanac hook install --source all            # auto-capture for Claude/Codex/Cursor
 
 # Setup & diagnose
@@ -147,8 +150,7 @@ almanac doctor                               # check install + wiki health
 almanac update                               # update to latest version
 ```
 
-`bootstrap` and `capture` resolve provider settings in the standard order:
-`--agent` / `--model`, then `ALMANAC_AGENT` / `ALMANAC_MODEL`, then config.
+`init`, `capture`, `ingest`, and `garden` resolve provider settings through `--using <provider[/model]>`, then provider config.
 
 All query commands output slugs one per line. Add `--json` for structured output. Pipe with `--stdin`:
 
@@ -161,15 +163,15 @@ Run `almanac <command> --help` for the full flag surface.
 
 ## How capture works
 
-When a Claude, Codex, or Cursor session ends, the installed hook backgrounds `almanac capture`. The writer agent reads the session transcript, runs `almanac search` and `almanac show` against the existing wiki, drafts changes to pages under `.almanac/pages/`, and performs a reviewer pass. Claude uses its SDK's read-only reviewer subagent; Codex and Cursor perform the reviewer pass from prompt guidance until stricter provider enforcement lands. The reviewer checks duplicates, missing wikilinks, missing topics, inference dressed as fact, and cohesion problems. The writer decides what to incorporate and writes the final versions.
+When a Claude, Codex, or Cursor session ends, the installed hook backgrounds `almanac capture`. Capture resolves the session transcript, builds the same Absorb operation used by `almanac ingest`, and starts a provider run through the process manager. The provider adapter decides how to express the requested prompt, tools, and future subagents for Claude, Codex, or Cursor.
 
 Capture writes nothing if nothing in the session meets the notability bar — silence is a valid outcome.
 
-No proposal files, no `--apply` step, no state machine between writer and reviewer. The changes land in `git status` and you commit them like anything else.
+No proposal files, no `--apply` step, no hardcoded reviewer/scout/researcher pipeline. The changes land in `git status` and you commit them like anything else.
 
 ### The notability bar
 
-Every repo's `.almanac/README.md` contains a notability bar: the threshold for what deserves a page. The default is "non-obvious knowledge that will help a future agent" — decisions that took research, gotchas discovered through failure, cross-cutting flows, constraints not visible in code. The writer consults the bar before writing; the reviewer enforces it. Edit the bar to match your repo's taste.
+Every repo's `.almanac/README.md` contains a notability bar: the threshold for what deserves a page. The default is "non-obvious knowledge that will help a future agent" — decisions that took research, gotchas discovered through failure, cross-cutting flows, constraints not visible in code. The operation prompt consults the bar before writing. Edit the bar to match your repo's taste.
 
 ### Archive vs edit
 
@@ -223,7 +225,10 @@ src/
 │   └── paths.ts        ← path normalization
 ├── registry/           ← global wiki registry (~/.almanac/registry.json)
 ├── topics/             ← topic DAG + frontmatter rewriting
-├── agent/              ← Claude Agent SDK integration
+├── harness/            ← provider-neutral run specs and provider adapters
+├── process/            ← local run records, logs, background jobs
+├── operations/         ← build, absorb, and garden operation specs
+├── agent/              ← provider setup/status helpers and prompt loading
 ├── paths.ts            ← find nearest .almanac/ (like git finds .git/)
 └── slug.ts             ← kebab-case canonicalization
 ```
