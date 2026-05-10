@@ -3,6 +3,7 @@ import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import type { AgentRunSpec } from "../harness/types.js";
+import type { HarnessFailure } from "../harness/events.js";
 import { getRepoAlmanacDir } from "../paths.js";
 import type { RunRecord, RunStatus, RunSummary, RunView } from "./types.js";
 
@@ -96,6 +97,7 @@ export function finishRunRecord(args: {
   providerSessionId?: string;
   summary?: RunSummary;
   error?: string;
+  failure?: HarnessFailure;
 }): RunRecord {
   const started = Date.parse(args.record.startedAt);
   const finished = args.finishedAt.getTime();
@@ -109,6 +111,7 @@ export function finishRunRecord(args: {
       : undefined,
     summary: args.summary,
     error: args.error,
+    failure: args.failure,
   };
 }
 

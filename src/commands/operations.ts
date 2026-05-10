@@ -265,13 +265,16 @@ function renderOperationResult(
     result.mode === "foreground" &&
     (foregroundResult?.success === false || status === "failed")
   ) {
+    const failure = foregroundResult?.failure ?? record?.failure;
     return renderOutcome(
       {
         type: "error",
-        message:
-          foregroundResult?.error !== undefined
-            ? `${operation} failed: ${result.runId}: ${foregroundResult.error}`
-            : `${operation} failed: ${result.runId}`,
+        message: renderOperationFailureMessage({
+          operation,
+          runId: result.runId,
+          error: foregroundResult?.error,
+          failure,
+        }),
         data: {
           operation,
           runId: result.runId,
@@ -280,6 +283,7 @@ function renderOperationResult(
           pid: record?.pid,
           logPath: record?.logPath,
           error: foregroundResult?.error,
+          failure,
         },
       },
       { json },
@@ -303,6 +307,22 @@ function renderOperationResult(
     },
     { json },
   );
+}
+
+function renderOperationFailureMessage(args: {
+  operation: string;
+  runId: string;
+  error?: string;
+  failure?: import("../harness/events.js").HarnessFailure;
+}): string {
+  const lines = [`${args.operation} failed: ${args.runId}`];
+  if (args.failure !== undefined) {
+    lines.push(`Reason: ${args.failure.message}`);
+    if (args.failure.fix !== undefined) lines.push(`Fix: ${args.failure.fix}`);
+    return lines.join("\n");
+  }
+  if (args.error !== undefined) lines[0] += `: ${args.error}`;
+  return lines.join("\n");
 }
 
 function renderOperationError(

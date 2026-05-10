@@ -155,6 +155,59 @@ describe("operation command wrappers", () => {
     });
   });
 
+  it("renders structured foreground failure reason and fix", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-foreground-structured-failure");
+
+      const result = await runInitCommand({
+        cwd: repo,
+        using: "codex/gpt-5.5",
+        startForeground: async (options) => ({
+          runId: "run_failed_structured",
+          record: {
+            version: 1,
+            id: "run_failed_structured",
+            operation: "build",
+            status: "failed",
+            repoRoot: options.repoRoot,
+            pid: 1,
+            provider: options.spec.provider.id,
+            model: options.spec.provider.model,
+            startedAt: "2026-05-09T20:16:00.000Z",
+            logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+            error: "Codex model gpt-5.5 requires a newer Codex CLI.",
+            failure: {
+              provider: "codex",
+              code: "codex.model_requires_newer_cli",
+              message: "Codex model gpt-5.5 requires a newer Codex CLI.",
+              fix: "Upgrade Codex, or run with --using codex/<supported-model>.",
+            },
+          },
+          result: {
+            success: false,
+            result: "",
+            error: "Codex model gpt-5.5 requires a newer Codex CLI.",
+            failure: {
+              provider: "codex",
+              code: "codex.model_requires_newer_cli",
+              message: "Codex model gpt-5.5 requires a newer Codex CLI.",
+              fix: "Upgrade Codex, or run with --using codex/<supported-model>.",
+            },
+          },
+        }),
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("init failed: run_failed_structured");
+      expect(result.stderr).toContain(
+        "Reason: Codex model gpt-5.5 requires a newer Codex CLI.",
+      );
+      expect(result.stderr).toContain(
+        "Fix: Upgrade Codex, or run with --using codex/<supported-model>.",
+      );
+    });
+  });
+
   it("emits JSON validation errors when --json is requested", async () => {
     const result = await runGardenCommand({
       cwd: "/tmp",

@@ -1,4 +1,4 @@
-import type { AgentUsage } from "../harness/events.js";
+import type { AgentUsage, HarnessFailure } from "../harness/events.js";
 import type { HarnessProviderId, OperationKind } from "../harness/types.js";
 
 export type RunStatus = "queued" | "running" | "done" | "failed" | "cancelled";
@@ -31,6 +31,7 @@ export interface RunRecord {
   targetPaths?: string[];
   summary?: RunSummary;
   error?: string;
+  failure?: HarnessFailure;
 }
 
 export interface RunView extends RunRecord {

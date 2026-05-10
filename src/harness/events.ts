@@ -1,3 +1,5 @@
+import type { HarnessProviderId } from "./types.js";
+
 export interface AgentUsage {
   inputTokens?: number;
   cachedInputTokens?: number;
@@ -6,6 +8,15 @@ export interface AgentUsage {
   totalTokens?: number;
   totalProcessedTokens?: number;
   maxTokens?: number | null;
+}
+
+export interface HarnessFailure {
+  provider: HarnessProviderId;
+  message: string;
+  fix?: string;
+  code?: string;
+  raw?: string;
+  details?: Record<string, unknown>;
 }
 
 export type HarnessEvent =
@@ -20,7 +31,7 @@ export type HarnessEvent =
     }
   | { type: "tool_summary"; summary: string }
   | { type: "context_usage"; usage: AgentUsage }
-  | { type: "error"; error: string }
+  | { type: "error"; error: string; failure?: HarnessFailure }
   | {
       type: "done";
       result?: string;
@@ -29,6 +40,7 @@ export type HarnessEvent =
       turns?: number;
       usage?: AgentUsage;
       error?: string;
+      failure?: HarnessFailure;
     };
 
 export type HarnessEventType = HarnessEvent["type"];
@@ -41,4 +53,5 @@ export interface HarnessResult {
   turns?: number;
   usage?: AgentUsage;
   error?: string;
+  failure?: HarnessFailure;
 }

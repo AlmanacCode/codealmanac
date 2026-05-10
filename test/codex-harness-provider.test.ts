@@ -191,6 +191,52 @@ describe("Codex harness provider", () => {
     ]);
   });
 
+  it("unwraps Codex JSONL envelopes and classifies provider failures", async () => {
+    const events: unknown[] = [];
+    const state = { success: false, result: "" };
+
+    await applyCodexJsonlEvent(
+      state,
+      {
+        id: "0",
+        msg: {
+          type: "error",
+          message:
+            "unexpected status 400 Bad Request: {\"detail\":\"The 'gpt-5.5' model requires a newer version of Codex. Please upgrade to the latest app or CLI and try again.\"}",
+        },
+      },
+      {
+        onEvent: (event) => {
+          events.push(event);
+        },
+      },
+    );
+
+    expect(state).toMatchObject({
+      success: false,
+      error: "Codex model gpt-5.5 requires a newer Codex CLI.",
+      failure: {
+        provider: "codex",
+        code: "codex.model_requires_newer_cli",
+        message: "Codex model gpt-5.5 requires a newer Codex CLI.",
+        fix: "Upgrade Codex, or run with --using codex/<supported-model>.",
+        details: {
+          model: "gpt-5.5",
+          statusCode: 400,
+        },
+      },
+    });
+    expect(events).toEqual([
+      {
+        type: "error",
+        error: "Codex model gpt-5.5 requires a newer Codex CLI.",
+        failure: expect.objectContaining({
+          code: "codex.model_requires_newer_cli",
+        }),
+      },
+    ]);
+  });
+
   it("checks Codex CLI readiness", async () => {
     const ready = createCodexHarnessProvider({
       commandExists: () => true,

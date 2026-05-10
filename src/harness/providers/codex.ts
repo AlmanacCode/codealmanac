@@ -1,6 +1,6 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 
-import type { AgentUsage, HarnessResult } from "../events.js";
+import type { AgentUsage, HarnessFailure, HarnessResult } from "../events.js";
 import type {
   AgentRunSpec,
   HarnessProvider,
@@ -37,6 +37,7 @@ interface CodexRunState {
   turns?: number;
   usage?: AgentUsage;
   error?: string;
+  failure?: HarnessFailure;
 }
 
 export function createCodexHarnessProvider(
@@ -74,6 +75,13 @@ export function createCodexHarnessProvider(
           result: "",
           error:
             "Codex exec adapter does not support per-run programmatic agents",
+          failure: {
+            provider: "codex",
+            code: "codex.unsupported_feature",
+            message:
+              "Codex exec adapter does not support per-run programmatic agents.",
+            fix: "Run this operation with a provider that supports per-run subagents.",
+          },
         };
       }
       return runCli(buildCodexExecRequest(spec), hooks);
@@ -212,14 +220,16 @@ export function runCodexCli(
       }
 
       const firstStderr = stderr.trim().split("\n")[0];
+      const fallbackError =
+        firstStderr !== undefined && firstStderr.length > 0
+          ? firstStderr
+          : `${request.command} exited ${code ?? 1}`;
+      const failure = state.failure ?? classifyCodexFailure(fallbackError);
       resolve({
         ...toHarnessResult(state),
         success: false,
-        error:
-          state.error ??
-          (firstStderr !== undefined && firstStderr.length > 0
-            ? firstStderr
-            : `${request.command} exited ${code ?? 1}`),
+        error: state.error ?? failure.message,
+        failure,
       });
     });
   });
@@ -227,9 +237,10 @@ export function runCodexCli(
 
 export async function applyCodexJsonlEvent(
   state: CodexRunState,
-  msg: Record<string, unknown>,
+  input: Record<string, unknown>,
   hooks?: HarnessRunHooks,
 ): Promise<void> {
+  const msg = unwrapCodexJsonlEvent(input);
   const sessionId = stringField(msg, "session_id") ?? stringField(msg, "thread_id");
   if (state.providerSessionId === undefined && sessionId !== undefined) {
     state.providerSessionId = sessionId;
@@ -266,11 +277,18 @@ export async function applyCodexJsonlEvent(
 
   if (msg.type === "turn.failed" || msg.type === "error") {
     state.success = false;
-    state.error =
+    const raw =
       stringField(msg, "message") ??
       stringField(msg, "error") ??
       "codex turn failed";
-    await hooks?.onEvent?.({ type: "error", error: state.error });
+    const failure = classifyCodexFailure(raw);
+    state.error = failure.message;
+    state.failure = failure;
+    await hooks?.onEvent?.({
+      type: "error",
+      error: state.error,
+      failure,
+    });
   }
 }
 
@@ -282,7 +300,110 @@ function toHarnessResult(state: CodexRunState): HarnessResult {
     turns: state.turns,
     usage: state.usage,
     error: state.error,
+    failure: state.failure,
   };
+}
+
+function unwrapCodexJsonlEvent(
+  input: Record<string, unknown>,
+): Record<string, unknown> {
+  const msg = objectField(input, "msg");
+  return msg ?? input;
+}
+
+function classifyCodexFailure(raw: string): HarnessFailure {
+  const detail = extractJsonDetail(raw);
+  const text = detail ?? raw;
+  const statusCode = extractStatusCode(raw);
+  const model =
+    matchFirst(text, /The '([^']+)' model requires a newer version of Codex/) ??
+    matchFirst(text, /The '([^']+)' model is not supported/);
+
+  if (text.includes("requires a newer version of Codex") && model !== undefined) {
+    return {
+      provider: "codex",
+      code: "codex.model_requires_newer_cli",
+      message: `Codex model ${model} requires a newer Codex CLI.`,
+      fix: "Upgrade Codex, or run with --using codex/<supported-model>.",
+      raw,
+      details: codexFailureDetails({ model, statusCode }),
+    };
+  }
+
+  if (text.includes("model is not supported") && model !== undefined) {
+    return {
+      provider: "codex",
+      code: "codex.model_unavailable",
+      message: `Codex model ${model} is not available for this account.`,
+      fix: "Choose a supported model with --using codex/<model>, or update the configured Codex model.",
+      raw,
+      details: codexFailureDetails({ model, statusCode }),
+    };
+  }
+
+  if (text.includes("401 Unauthorized") || text.includes("Unauthorized")) {
+    return {
+      provider: "codex",
+      code: "codex.not_authenticated",
+      message: "Codex is not authenticated in this environment.",
+      fix: "Run `codex login` in the same environment, or make the existing Codex auth available to this process.",
+      raw,
+      details: codexFailureDetails({ statusCode: statusCode ?? 401 }),
+    };
+  }
+
+  if (text.includes("not found on PATH")) {
+    return {
+      provider: "codex",
+      code: "codex.not_installed",
+      message: "Codex was not found on PATH.",
+      fix: "Install Codex or update PATH so the `codex` command is available.",
+      raw,
+    };
+  }
+
+  return {
+    provider: "codex",
+    code: "codex.process_failed",
+    message: text,
+    raw,
+    details: codexFailureDetails({ statusCode }),
+  };
+}
+
+function codexFailureDetails(
+  details: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  const pruned = pruneUndefined(details);
+  return Object.keys(pruned).length > 0 ? pruned : undefined;
+}
+
+function extractJsonDetail(raw: string): string | undefined {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start === -1 || end <= start) return undefined;
+  try {
+    const parsed = JSON.parse(raw.slice(start, end + 1)) as unknown;
+    if (parsed !== null && typeof parsed === "object") {
+      const detail = (parsed as Record<string, unknown>).detail;
+      return typeof detail === "string" && detail.length > 0 ? detail : undefined;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+function extractStatusCode(raw: string): number | undefined {
+  const match = raw.match(/status\s+(\d{3})|(\d{3})\s+(?:Bad Request|Unauthorized)/);
+  if (match === null) return undefined;
+  const value = match[1] ?? match[2];
+  return value !== undefined ? Number.parseInt(value, 10) : undefined;
+}
+
+function matchFirst(text: string, pattern: RegExp): string | undefined {
+  const match = text.match(pattern);
+  return match?.[1];
 }
 
 async function emitToolUse(

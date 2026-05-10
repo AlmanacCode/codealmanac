@@ -315,7 +315,7 @@ function writeForegroundEvent(event: HarnessEvent): void {
   if (line !== null) process.stdout.write(`${line}\n`);
 }
 
-function formatForegroundEvent(event: HarnessEvent): string | null {
+export function formatForegroundEvent(event: HarnessEvent): string | null {
   switch (event.type) {
     case "text":
       return event.content.trim().length > 0 ? event.content.trim() : null;
@@ -324,9 +324,9 @@ function formatForegroundEvent(event: HarnessEvent): string | null {
     case "tool_summary":
       return `[tool] ${event.summary}`;
     case "error":
-      return `[error] ${event.error}`;
+      return null;
     case "done":
-      return event.error !== undefined ? `[done] ${event.error}` : "[done]";
+      return event.error !== undefined ? null : "[done]";
     default:
       return null;
   }

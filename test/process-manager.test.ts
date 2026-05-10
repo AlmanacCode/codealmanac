@@ -121,6 +121,59 @@ describe("process manager foreground execution", () => {
     });
   });
 
+  it("persists structured harness failures on failed runs", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "foreground-structured-failure");
+      await scaffoldWiki(repo);
+
+      const result = await startForegroundProcess({
+        repoRoot: repo,
+        runId: "run_20260509195600_structured_failure",
+        now: fixedClock([
+          "2026-05-09T19:56:00.000Z",
+          "2026-05-09T19:56:01.000Z",
+          "2026-05-09T19:56:02.000Z",
+        ]),
+        spec: {
+          provider: { id: "codex", model: "gpt-5.5" },
+          cwd: repo,
+          prompt: "garden",
+          metadata: { operation: "garden", targetKind: "wiki" },
+        },
+        harnessRun: async () => ({
+          success: false,
+          result: "",
+          error: "Codex model gpt-5.5 requires a newer Codex CLI.",
+          failure: {
+            provider: "codex",
+            code: "codex.model_requires_newer_cli",
+            message: "Codex model gpt-5.5 requires a newer Codex CLI.",
+            fix: "Upgrade Codex, or run with --using codex/<supported-model>.",
+            raw: "unexpected status 400 Bad Request",
+            details: { model: "gpt-5.5" },
+          },
+        }),
+      });
+
+      expect(result.record).toMatchObject({
+        status: "failed",
+        error: "Codex model gpt-5.5 requires a newer Codex CLI.",
+        failure: {
+          provider: "codex",
+          code: "codex.model_requires_newer_cli",
+          message: "Codex model gpt-5.5 requires a newer Codex CLI.",
+          fix: "Upgrade Codex, or run with --using codex/<supported-model>.",
+        },
+      });
+      await expect(readRunRecord(runRecordPath(repo, result.runId))).resolves
+        .toMatchObject({
+          failure: {
+            code: "codex.model_requires_newer_cli",
+          },
+        });
+    });
+  });
+
   it("forwards foreground events to an observer while still logging them", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "foreground-observer");

@@ -140,6 +140,7 @@ export async function startForegroundProcess(
       providerSessionId: result.providerSessionId,
       summary,
       error: result.error,
+      failure: result.failure,
     });
   } catch (err: unknown) {
     result = {
@@ -163,6 +164,7 @@ export async function startForegroundProcess(
       status: "failed",
       finishedAt: now(),
       error: result.error,
+      failure: result.failure,
     });
   }
 
@@ -184,6 +186,7 @@ async function finishUnlessCancelled(args: {
   providerSessionId?: string;
   summary?: RunSummary;
   error?: string;
+  failure?: import("../harness/events.js").HarnessFailure;
 }): Promise<RunRecord> {
   const current = await readRunRecord(args.recordPath);
   if (
@@ -204,6 +207,7 @@ async function finishUnlessCancelled(args: {
     providerSessionId: args.providerSessionId,
     summary: args.summary,
     error: args.error,
+    failure: args.failure,
   });
   await writeRunRecord(args.recordPath, finished);
   return finished;

@@ -102,6 +102,60 @@ describe("jobs command", () => {
     });
   });
 
+  it("shows structured failure reason and fix for failed jobs", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "jobs-show-failure");
+      await initWiki({ cwd: repo, name: "jobs-show-failure", description: "" });
+      const record = {
+        ...buildStartedRunRecord({
+          runId: "run_20260509202230_failure",
+          repoRoot: repo,
+          startedAt: new Date("2026-05-09T20:22:30.000Z"),
+          pid: 123,
+          spec: {
+            provider: { id: "codex", model: "gpt-5.5" },
+            cwd: repo,
+            prompt: "absorb",
+            metadata: { operation: "absorb" },
+          },
+        }),
+        status: "failed" as const,
+        finishedAt: "2026-05-09T20:22:35.000Z",
+        durationMs: 5000,
+        error: "Codex model gpt-5.5 requires a newer Codex CLI.",
+        failure: {
+          provider: "codex" as const,
+          code: "codex.model_requires_newer_cli",
+          message: "Codex model gpt-5.5 requires a newer Codex CLI.",
+          fix: "Upgrade Codex, or run with --using codex/<supported-model>.",
+          raw: "unexpected status 400 Bad Request",
+        },
+      };
+      await writeRunRecord(runRecordPath(repo, record.id), record);
+
+      const show = await runJobsShow({
+        cwd: repo,
+        runId: record.id,
+        now: () => new Date("2026-05-09T20:22:40.000Z"),
+        isPidAlive: () => false,
+      });
+      expect(show.stdout).toContain(
+        "Reason: Codex model gpt-5.5 requires a newer Codex CLI.",
+      );
+      expect(show.stdout).toContain(
+        "Fix: Upgrade Codex, or run with --using codex/<supported-model>.",
+      );
+
+      const json = await runJobsShow({ cwd: repo, runId: record.id, json: true });
+      expect(JSON.parse(json.stdout)).toMatchObject({
+        failure: {
+          code: "codex.model_requires_newer_cli",
+          raw: "unexpected status 400 Bad Request",
+        },
+      });
+    });
+  });
+
   it("cancels queued or running jobs by updating the run record", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "jobs-cancel");
@@ -177,6 +231,58 @@ describe("jobs command", () => {
 
       expect(result.exitCode).toBe(0);
       expect(streamed).toBe("{\"event\":\"done\"}\n");
+    });
+  });
+
+  it("streams a terminal failure summary when attaching to a failed job", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "jobs-attach-failure");
+      await initWiki({ cwd: repo, name: "jobs-attach-failure", description: "" });
+      const record = {
+        ...buildStartedRunRecord({
+          runId: "run_20260509202430_attach_failure",
+          repoRoot: repo,
+          startedAt: new Date("2026-05-09T20:24:30.000Z"),
+          spec: {
+            provider: { id: "codex", model: "gpt-5.5" },
+            cwd: repo,
+            prompt: "garden",
+            metadata: { operation: "garden" },
+          },
+        }),
+        status: "failed" as const,
+        finishedAt: "2026-05-09T20:24:35.000Z",
+        durationMs: 5000,
+        error: "Codex model gpt-5.5 requires a newer Codex CLI.",
+        failure: {
+          provider: "codex" as const,
+          code: "codex.model_requires_newer_cli",
+          message: "Codex model gpt-5.5 requires a newer Codex CLI.",
+          fix: "Upgrade Codex, or run with --using codex/<supported-model>.",
+        },
+      };
+      await writeRunRecord(runRecordPath(repo, record.id), record);
+      await writeFile(runLogPath(repo, record.id), "");
+      let streamed = "";
+
+      const result = await streamJobsAttach({
+        cwd: repo,
+        runId: record.id,
+        write: (chunk) => {
+          streamed += chunk;
+        },
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(streamed).toContain(
+        "job failed: run_20260509202430_attach_failure",
+      );
+      expect(streamed).toContain(
+        "Reason: Codex model gpt-5.5 requires a newer Codex CLI.",
+      );
+      expect(streamed).toContain(
+        "Fix: Upgrade Codex, or run with --using codex/<supported-model>.",
+      );
     });
   });
 });

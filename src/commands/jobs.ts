@@ -82,7 +82,12 @@ export async function runJobsShow(
         `Provider: ${view.provider}${view.model !== undefined ? `/${view.model}` : ""}`,
         `Elapsed: ${formatMs(view.elapsedMs)}`,
         `Log: ${view.logPath}`,
-        view.error !== undefined ? `Error: ${view.error}` : undefined,
+        view.failure !== undefined
+          ? `Reason: ${view.failure.message}`
+          : view.error !== undefined
+            ? `Error: ${view.error}`
+            : undefined,
+        view.failure?.fix !== undefined ? `Fix: ${view.failure.fix}` : undefined,
       ].filter((line): line is string => line !== undefined).join("\n") + "\n",
     stderr: "",
     exitCode: 0,
@@ -152,6 +157,8 @@ export async function streamJobsAttach(
       view.displayStatus === "cancelled" ||
       view.displayStatus === "stale"
     ) {
+      const summary = terminalAttachSummary(view);
+      if (summary.length > 0) write(summary);
       return { stdout: "", stderr: "", exitCode: 0 };
     }
     await sleep(options.pollMs ?? 500);
@@ -292,4 +299,18 @@ function formatMs(ms: number): string {
   const minutes = Math.round(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
   return `${Math.round(minutes / 60)}h`;
+}
+
+function terminalAttachSummary(view: RunView): string {
+  if (view.displayStatus !== "failed" && view.displayStatus !== "stale") {
+    return "";
+  }
+  const lines = [`job ${view.displayStatus}: ${view.id}`];
+  if (view.failure !== undefined) {
+    lines.push(`Reason: ${view.failure.message}`);
+    if (view.failure.fix !== undefined) lines.push(`Fix: ${view.failure.fix}`);
+  } else if (view.error !== undefined) {
+    lines.push(`Error: ${view.error}`);
+  }
+  return `${lines.join("\n")}\n`;
 }

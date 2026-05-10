@@ -4,6 +4,7 @@ import { Command } from "commander";
 import { run, tryParseSetupShortcut } from "../src/cli.js";
 import { configureGroupedHelp } from "../src/cli/help.js";
 import { registerCommands } from "../src/cli/register-commands.js";
+import { formatForegroundEvent } from "../src/cli/register-wiki-lifecycle-commands.js";
 import type { SetupResult } from "../src/commands/setup.js";
 
 /**
@@ -207,6 +208,33 @@ describe("registerCommands", () => {
     expect(help).toContain("Deprecated:");
     expect(help).toMatch(/set <key> \[value\.\.\.\]\s+configure codealmanac defaults/);
     expect(help).toMatch(/ps \[options\]\s+deprecated alias for jobs/);
+  });
+});
+
+describe("formatForegroundEvent", () => {
+  it("suppresses provider error events so final command errors are not duplicated", () => {
+    expect(
+      formatForegroundEvent({
+        type: "error",
+        error: "Codex model gpt-5.5 requires a newer Codex CLI.",
+      }),
+    ).toBeNull();
+    expect(
+      formatForegroundEvent({
+        type: "done",
+        error: "Claude is not authenticated in this environment.",
+      }),
+    ).toBeNull();
+  });
+
+  it("still formats foreground text, tool, and done events", () => {
+    expect(formatForegroundEvent({ type: "text", content: " hello \n" })).toBe(
+      "hello",
+    );
+    expect(formatForegroundEvent({ type: "tool_use", tool: "Bash" })).toBe(
+      "[tool] Bash",
+    );
+    expect(formatForegroundEvent({ type: "done" })).toBe("[done]");
   });
 });
 
