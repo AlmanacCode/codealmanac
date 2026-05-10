@@ -76,3 +76,19 @@ This log tracks implementation checkpoints for the V1 harness/process refactor.
   - `npm run lint`
 - Result: 2 test files passed, 9 tests passed; TypeScript lint passed.
 - Next: Phase 3.1 process run records and ids.
+
+## 2026-05-09 19:49 PDT
+
+- Built: Phase 3.1 process run ids, run records, atomic writes, listing, finishing, and stale detection.
+- Files changed:
+  - `src/process/types.ts`
+  - `src/process/ids.ts`
+  - `src/process/records.ts`
+  - `src/process/index.ts`
+  - `test/process-records.test.ts`
+  - `docs/plans/2026-05-10-v1-implementation-log.md`
+- Tests run:
+  - `npm test -- test/process-records.test.ts`
+  - `npm run lint`
+- Result: 1 test file passed, 5 tests passed; TypeScript lint passed.
+- Next: Phase 3.2 wiki page snapshot and delta accounting.
