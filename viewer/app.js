@@ -1,6 +1,7 @@
 const state = {
   overview: null,
   currentPage: null,
+  pageTitles: new Map(),
 };
 
 const els = {
@@ -19,6 +20,7 @@ boot().catch((error) => renderError(error));
 async function boot() {
   wireEvents();
   state.overview = await api("/api/overview");
+  rememberPages(state.overview.recentPages);
   renderChrome();
   await route(location.pathname, location.search, false);
 }
@@ -100,7 +102,7 @@ function renderChrome() {
 
   els.recentList.innerHTML = state.overview.recentPages
     .slice(0, 8)
-    .map((page) => linkButton(page.title ?? page.slug, `/page/${page.slug}`, page.summary ?? page.slug))
+    .map((page) => linkButton(pageTitle(page), `/page/${page.slug}`, page.summary ?? ""))
     .join("");
 }
 
@@ -138,13 +140,18 @@ function renderOverview() {
 async function renderPage(slug) {
   const page = await api(`/api/page/${encodeURIComponent(slug)}`);
   state.currentPage = page;
+  rememberPages([page, ...(page.related_pages ?? [])]);
   document.title = `${page.title ?? page.slug} - Almanac`;
   els.reader.innerHTML = `
     <article class="ca-article">
-      <h1>${escapeHtml(page.title ?? page.slug)}</h1>
-      <div class="ca-chip-row">
-        ${page.topics.map((topic) => `<button class="ca-chip" data-route="/topic/${escapeAttr(topic)}">${escapeHtml(topic)}</button>`).join("")}
-      </div>
+      <header class="ca-page-header">
+        <h1>${escapeHtml(pageTitle(page))}</h1>
+        <div class="ca-page-header-meta">Last revised ${escapeHtml(formatDate(page.updated_at))}</div>
+        <div class="ca-chip-row" style="justify-content: center;">
+          ${page.topics.map((topic) => `<button class="ca-chip" data-route="/topic/${escapeAttr(topic)}">${escapeHtml(topic)}</button>`).join("")}
+        </div>
+        <div class="ca-page-ornament"><span>✥</span></div>
+      </header>
       <div class="ca-prose">${renderMarkdown(page.body)}</div>
     </article>
   `;
@@ -153,6 +160,7 @@ async function renderPage(slug) {
 
 async function renderTopic(slug) {
   const topic = await api(`/api/topic/${encodeURIComponent(slug)}`);
+  rememberPages(topic.pages);
   document.title = `${topic.title ?? topic.slug} - Almanac`;
   els.reader.innerHTML = `
     <section class="ca-hero">
@@ -186,6 +194,7 @@ async function renderTopic(slug) {
 async function renderSearch(query) {
   els.searchInput.value = query;
   const result = await api(`/api/search?q=${encodeURIComponent(query)}`);
+  rememberPages(result.pages);
   els.reader.innerHTML = `
     <section class="ca-hero">
       <div class="ca-kicker">${query ? "Search" : "Recent"}</div>
@@ -198,6 +207,7 @@ async function renderSearch(query) {
 
 async function renderFile(path) {
   const result = await api(`/api/file?path=${encodeURIComponent(path)}`);
+  rememberPages(result.pages);
   els.reader.innerHTML = `
     <section class="ca-hero">
       <div class="ca-kicker">File reference</div>
@@ -210,14 +220,14 @@ async function renderFile(path) {
 
 function renderPageRail(page) {
   els.pageMeta.innerHTML = `
-    <div class="ca-meta-line"><strong>Slug:</strong> ${escapeHtml(page.slug)}</div>
+    <div class="ca-meta-title">${escapeHtml(pageTitle(page))}</div>
     <div class="ca-meta-line"><strong>Updated:</strong> ${new Date(page.updated_at * 1000).toLocaleString()}</div>
-    <div class="ca-meta-line"><strong>Path:</strong><br><span class="ca-file-code">${escapeHtml(page.file_path)}</span></div>
+    <div class="ca-meta-line"><strong>Markdown:</strong><br><span class="ca-file-code">${escapeHtml(page.file_path)}</span></div>
     ${page.archived_at ? `<div class="ca-meta-line"><strong>Archived:</strong> ${new Date(page.archived_at * 1000).toLocaleDateString()}</div>` : ""}
-    ${page.superseded_by ? `<div class="ca-meta-line"><strong>Superseded by:</strong> ${escapeHtml(page.superseded_by)}</div>` : ""}
+    ${page.superseded_by ? `<div class="ca-meta-line"><strong>Superseded by:</strong> <a class="ca-meta-link" href="/page/${escapeAttr(page.superseded_by)}" data-route="/page/${escapeAttr(page.superseded_by)}">${escapeHtml(pageLabel(page.superseded_by))}</a></div>` : ""}
   `;
   els.backlinks.innerHTML = page.wikilinks_in.length > 0
-    ? page.wikilinks_in.map((slug) => linkButton(slug, `/page/${slug}`)).join("")
+    ? page.wikilinks_in.map((slug) => linkButton(pageLabel(slug), `/page/${slug}`)).join("")
     : `<div class="ca-meta-empty">No backlinks.</div>`;
   els.fileRefs.innerHTML = page.file_refs.length > 0
     ? page.file_refs.map((ref) => linkButton(ref.path, `/file?path=${encodeURIComponent(ref.path)}`)).join("")
@@ -233,8 +243,8 @@ function clearPageRail() {
 function pageRow(page) {
   return `
     <div class="ca-page-row" data-route="/page/${escapeAttr(page.slug)}">
-      <div class="ca-page-row-title">${escapeHtml(page.title ?? page.slug)}</div>
-      <div class="ca-page-row-summary">${escapeHtml(page.summary ?? page.slug)}</div>
+      <div class="ca-page-row-title">${escapeHtml(pageTitle(page))}</div>
+      <div class="ca-page-row-summary">${escapeHtml(page.summary ?? formatDate(page.updated_at))}</div>
       <div class="ca-chip-row">${page.topics.slice(0, 4).map((topic) => `<span class="ca-chip">${escapeHtml(topic)}</span>`).join("")}</div>
     </div>
   `;
@@ -288,9 +298,32 @@ function inline(text) {
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\[\[([^\]]+)\]\]/g, (_, target) => {
       const route = target.includes("/") ? `/file?path=${encodeURIComponent(target)}` : `/page/${encodeURIComponent(target)}`;
-      return `<a href="${escapeAttr(route)}" data-route="${escapeAttr(route)}">${escapeHtml(target)}</a>`;
+      const label = target.includes("/") ? target : pageLabel(target);
+      return `<a href="${escapeAttr(route)}" data-route="${escapeAttr(route)}">${escapeHtml(label)}</a>`;
     })
     .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+}
+
+function rememberPages(pages) {
+  for (const page of pages ?? []) {
+    if (page?.slug) state.pageTitles.set(page.slug, pageTitle(page));
+  }
+}
+
+function pageTitle(page) {
+  return page.title ?? page.slug;
+}
+
+function pageLabel(slug) {
+  return state.pageTitles.get(slug) ?? slug;
+}
+
+function formatDate(epochSeconds) {
+  return new Date(epochSeconds * 1000).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 function setActiveNav(pathname) {

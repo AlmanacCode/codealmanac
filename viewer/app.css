@@ -26,11 +26,7 @@
 
 body {
   margin: 0;
-  background:
-    linear-gradient(90deg, rgba(216, 208, 192, 0.24) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(216, 208, 192, 0.18) 1px, transparent 1px),
-    var(--ca-bg);
-  background-size: 42px 42px;
+  background: var(--ca-bg);
   color: var(--ca-text);
   font-family: var(--ca-serif);
 }
@@ -52,8 +48,7 @@ input {
   top: 0;
   height: 100vh;
   overflow: auto;
-  background: rgba(244, 239, 228, 0.9);
-  backdrop-filter: blur(14px);
+  background: var(--ca-surface);
 }
 
 .ca-left {
@@ -68,7 +63,7 @@ input {
 
 .ca-main {
   min-width: 0;
-  padding: 42px 48px 80px;
+  padding: 48px 52px 86px;
 }
 
 .ca-brand {
@@ -176,13 +171,18 @@ input {
 .ca-link-button {
   padding: 6px 8px;
   border-radius: 4px;
+  color: var(--ca-accent);
   font-size: 12px;
   line-height: 1.35;
 }
 
 .ca-link-button:hover {
-  background: rgba(38, 49, 58, 0.06);
-  color: var(--ca-ink);
+  background: var(--ca-accent-soft);
+  color: var(--ca-accent-hover);
+}
+
+.ca-link-button small {
+  color: var(--ca-muted);
 }
 
 .ca-reader {
@@ -290,19 +290,49 @@ input {
 }
 
 .ca-article {
-  border-top: 3px solid var(--ca-accent);
-  background: rgba(255, 250, 240, 0.6);
-  padding: 34px 42px 48px;
-  box-shadow: 0 24px 60px -45px rgba(52, 47, 37, 0.75);
+  max-width: 760px;
+  margin: 0 auto;
+  background: transparent;
 }
 
-.ca-article h1 {
-  margin: 0 0 18px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--ca-border);
-  font-size: 38px;
+.ca-page-header {
+  margin-bottom: 34px;
+  text-align: center;
+}
+
+.ca-page-header h1 {
+  margin: 0;
+  font-size: 44px;
   font-weight: 400;
   line-height: 1.15;
+}
+
+.ca-page-header-meta {
+  margin-top: 12px;
+  color: var(--ca-muted);
+  font-size: 13px;
+}
+
+.ca-page-ornament {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin: 24px auto 0;
+  max-width: 520px;
+  color: var(--ca-accent);
+}
+
+.ca-page-ornament::before,
+.ca-page-ornament::after {
+  content: "";
+  height: 1px;
+  background: var(--ca-border);
+}
+
+.ca-page-ornament span {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .ca-prose h2 {
@@ -371,6 +401,23 @@ input {
 
 .ca-meta-line {
   margin-bottom: 8px;
+}
+
+.ca-meta-title {
+  margin-bottom: 10px;
+  color: var(--ca-text);
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.ca-meta-link {
+  color: var(--ca-accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--ca-accent);
+}
+
+.ca-meta-link:hover {
+  border-bottom-style: solid;
 }
 
 .ca-error {

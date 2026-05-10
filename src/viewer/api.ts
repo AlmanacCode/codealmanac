@@ -93,7 +93,20 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
     },
 
     async page(slug) {
-      return withFreshDb(ctx.repoRoot, (db) => getPageView(db, toKebabCase(slug)));
+      return withFreshDb(ctx.repoRoot, async (db) => {
+        const page = await getPageView(db, toKebabCase(slug));
+        if (page === null) return null;
+        const relatedSlugs = Array.from(new Set([
+          ...page.wikilinks_in,
+          ...page.wikilinks_out,
+          ...page.supersedes,
+          ...(page.superseded_by !== null ? [page.superseded_by] : []),
+        ]));
+        const related_pages = relatedSlugs.length > 0
+          ? pageSummaries(db, pagesBySlugSql(relatedSlugs.length), relatedSlugs)
+          : [];
+        return { ...page, related_pages };
+      });
     },
 
     async topic(slug) {
@@ -191,6 +204,14 @@ function recentPagesSql(limit = 12): string {
           WHERE archived_at IS NULL
           ORDER BY updated_at DESC, slug ASC
           LIMIT ${limit}`;
+}
+
+function pagesBySlugSql(count: number): string {
+  const placeholders = Array.from({ length: count }, () => "?").join(", ");
+  return `SELECT slug, title, summary, updated_at, archived_at, superseded_by
+          FROM pages
+          WHERE slug IN (${placeholders})
+          ORDER BY title COLLATE NOCASE, slug ASC`;
 }
 
 function pageSummaries(
