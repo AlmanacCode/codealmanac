@@ -11,7 +11,7 @@ files:
 
 # Wiki Lifecycle Operations
 
-V1 names the AI write surface as three product operations: Build, Absorb, and Garden. The CLI expresses user intent, but the operation layer owns wiki semantics and constructs the provider-neutral `AgentRunSpec` that [[process-manager-runs]] executes through [[harness-providers]].
+V1 names the AI write surface as three product operations: Build, Absorb, and Garden. The [[lifecycle-cli]] expresses user intent, but the operation layer owns wiki semantics and constructs the provider-neutral `AgentRunSpec` that [[process-manager-runs]] executes through [[harness-providers]].
 
 ## Operation meanings
 
@@ -19,7 +19,7 @@ Build creates the first useful wiki for a repo. It is exposed as `almanac init` 
 
 Absorb improves the wiki from bounded starting context. `almanac capture` calls Absorb with coding-session transcript context; `almanac ingest <file-or-folder>` calls the same operation with user-provided file or folder context. Absorb is not a public command name.
 
-Garden improves the wiki as a whole graph. `almanac garden` gives the agent the existing `.almanac/` graph and asks for merge, split, archive, relink, retopic, and no-op judgment without a session-specific source.
+Garden improves the wiki as a whole graph. `almanac garden` gives the agent the existing `.almanac/` graph and asks for merge, split, archive, relink, retopic, and no-op judgment without a session-specific source. Those graph-shape outcomes are the editorial layer described in [[wiki-organization-primitives]].
 
 ## Boundary
 

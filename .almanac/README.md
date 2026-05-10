@@ -52,7 +52,7 @@ Four shapes cover most pages here. They are suggestions, not a schema.
 
 ## Linking
 
-One `[[...]]` syntax, disambiguated by content:
+One double-bracket syntax, disambiguated by content:
 
 - `[[capture-flow]]` — page slug (no slash)
 - `[[src/indexer/schema.ts]]` — file reference (has slash)

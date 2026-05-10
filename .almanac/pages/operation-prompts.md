@@ -40,7 +40,7 @@ V1 prompt layout is base doctrine plus operation algorithms. The bundled base pr
 
 `notability.md` defines what deserves a page, topic, cluster, or hub. It treats page genres as vocabulary, not schema, and explicitly includes internal entities, external dependencies, influences, research synthesis, market/product synthesis, and hubs.
 
-`syntax.md` defines frontmatter, source grounding, natural slugs, wikilink syntax, page shape, and writing conventions. It keeps current indexed fields (`title`, `topics`, `files`, archive/supersession fields) while allowing prompt-level fields such as `sources`, `status`, `verified`, and `external_version`.
+`syntax.md` defines frontmatter, source grounding, natural slugs, wikilink syntax, page shape, and writing conventions. It keeps current indexed fields (`title`, `topics`, `files`, archive/supersession fields) while allowing prompt-level fields such as `sources`, `status`, `verified`, and `external_version`. The anti-cramming / anti-thinning failure modes documented in [[farzapedia]] and the prohibited-phrase list there are sharper enforcement vocabulary than what `syntax.md` currently names; they are a candidate for a future `syntax.md` revision.
 
 ## Operation algorithms
 
@@ -48,7 +48,7 @@ Build is a deep first construction pass. It should explore the corpus from multi
 
 Absorb starts from an input and distills reusable project understanding into the existing graph. It prefers evolving synthesis pages over date-stamped fragments, and creates temporal pages only when time or event context is part of the meaning.
 
-Garden cultivates the graph. It improves clusters, hubs, topics, links, page boundaries, staleness, archive/supersession chains, and synthesis quality.
+Garden cultivates the graph. It improves clusters, hubs, topics, links, page boundaries, staleness, archive/supersession chains, and synthesis quality. The editorial model behind those outcomes is captured in [[wiki-organization-primitives]].
 
 ## Design implication
 

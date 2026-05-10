@@ -10,7 +10,30 @@ files:
 
 The SessionEnd hook wires codealmanac into Claude Code's lifecycle. `almanac hook install` writes a `SessionEnd` entry to `~/.claude/settings.json` that runs `almanac capture` in the background after each Claude Code session ends.
 
-<!-- stub: fill in the exact settings.json shape, backgrounding behavior, and failure modes as discovered -->
+## Settings.json shape
+
+Claude Code validates `settings.json` against a strict schema. Each event array entry (e.g. `SessionEnd`) is a `{ matcher, hooks: [...] }` container; actual command objects live inside the nested `hooks` array. `matcher` is always `""` for `SessionEnd`, which matches every session.
+
+```json
+{
+  "hooks": {
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "/path/to/almanac-capture.sh" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Versions v0.1.0–v0.1.4 of codealmanac wrote command objects directly at the event-array level; that shape is rejected by newer Claude Code. `almanac hook install` migrates any legacy entry it recognizes (by `command` ending in `almanac-capture.sh`) to the wrapped form on install.
+
+## Script path
+
+The hook script is `hooks/almanac-capture.sh`. On install, `almanac hook install` copies it to `~/.claude/hooks/almanac-capture.sh` (the stable path written into `settings.json`). This path survives npm version bumps, npx cache evictions, and nvm version switches — the settings entry never points at an ephemeral path inside `~/.npm/_npx/<sha>/`.
 
 ## Install/uninstall
 

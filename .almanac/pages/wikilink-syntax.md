@@ -9,13 +9,11 @@ files:
 
 # Wikilink Syntax
 
-codealmanac uses a single `[[...]]` syntax for all intra-page references, disambiguated by content at index time. There is no second link form — `[[...]]` covers page slugs, file refs, folder refs, and cross-wiki refs.
-
-<!-- stub: fill in edge cases and classifier gotchas as discovered -->
+codealmanac uses a single double-bracket syntax for all intra-page references, disambiguated by content at index time. There is no second link form: the same bracket form covers page slugs, file refs, folder refs, and cross-wiki refs.
 
 ## Classification rules
 
-The indexer in `src/indexer/wikilinks.ts` classifies each `[[...]]` link into one of four categories:
+The indexer in `src/indexer/wikilinks.ts` classifies each double-bracket link into one of four categories:
 
 | Pattern | Category | Example |
 |---------|----------|---------|
@@ -26,9 +24,11 @@ The indexer in `src/indexer/wikilinks.ts` classifies each `[[...]]` link into on
 
 ## Storage
 
-- Page slugs → `wikilinks` table (`source_slug`, `target_slug`)
-- File/folder refs → `file_refs` table (`page_slug`, `path`, `original_path`, `is_dir`)
-- Cross-wiki → `cross_wiki_links` table (`source_slug`, `target_wiki`, `target_slug`)
+- Page slugs -> `wikilinks` table (`source_slug`, `target_slug`)
+- File/folder refs -> `file_refs` table (`page_slug`, `path`, `original_path`, `is_dir`)
+- Cross-wiki -> `cross_wiki_links` table (`source_slug`, `target_wiki`, `target_slug`)
+
+These tables are maintained by [[sqlite-indexer]]. Cross-wiki targets use [[global-registry]] for wiki-name resolution.
 
 ## Path normalization in file_refs
 

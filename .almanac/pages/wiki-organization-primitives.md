@@ -12,7 +12,7 @@ files:
 
 # Wiki Organization Primitives
 
-`codealmanac` already has three core wiki primitives: pages, `[[...]]` links, and a topic DAG. That is enough to store knowledge and query it, but it is not enough to keep the wiki coherent as capture volume grows. The missing pieces are editorial rather than storage-oriented: canonical homes for subjects, curated navigation for dense areas, explicit structural operations, and a maintenance loop that protects the graph over time.
+`codealmanac` already has three core wiki primitives: pages, double-bracket links, and a topic DAG. That is enough to store knowledge and query it, but it is not enough to keep the wiki coherent as capture volume grows. The missing pieces are editorial rather than storage-oriented: canonical homes for subjects, curated navigation for dense areas, explicit structural operations, and a maintenance loop that protects the graph over time.
 
 This matters because a self-updating wiki fails by drift, not by lack of content. If the system can only create pages and append to pages, it tends to overproduce narrow pages, under-merge overlap, and leave readers with a technically linked graph that is still hard to traverse. V1 addresses part of that gap by making Garden a first-class operation beside Build and Absorb; anchors, hub pages, redirects, and alias behavior are still editorial primitives rather than enforced storage objects.
 
@@ -21,7 +21,7 @@ This matters because a self-updating wiki fails by drift, not by lack of content
 The committed design and implementation provide these primitives:
 
 - **Page**: one markdown file per slug in `.almanac/pages/`
-- **Link**: unified `[[...]]` syntax for page, file, folder, and cross-wiki references
+- **Link**: unified double-bracket syntax for page, file, folder, and cross-wiki references
 - **Topic**: a multi-parent DAG serialized in `.almanac/topics.yaml`
 - **File reference**: explicit `files:` frontmatter plus inline file/folder wikilinks
 - **Lineage for reversals**: `archived_at`, `superseded_by`, `supersedes`
@@ -55,7 +55,7 @@ Examples in this repo behave like anchors even though the storage model does not
 - [[wiki-lifecycle-operations]]
 - [[process-manager-runs]]
 
-The Build prompt is the first place that can identify anchors for a new wiki. Absorb and Garden should protect those anchors by updating the canonical page unless the new material clearly deserves an independent subject.
+The Build operation prompt is the first place that identifies anchors for a new wiki. Absorb and Garden should protect those anchors by updating the canonical page unless the new material clearly deserves an independent subject.
 
 Anchor pages are how the wiki gets a single source of truth for major subjects. Without them, every ingest has to rediscover where a fact belongs.
 
@@ -137,23 +137,17 @@ The page-worthiness bar is also different. A general wiki asks whether a topic h
 
 This is why a codebase wiki should default more strongly to updating anchors than a general-purpose research wiki would.
 
-## Current issues in `codealmanac`
+## Current gaps in `codealmanac`
 
-The repo's current design has four organizational gaps.
+Three organizational gaps remain after V1.
 
-1. **Anchors are informal.**
-   Bootstrap identifies them, but the rest of the model does not give them explicit protection.
+1. **Anchors are informal.** Build identifies them through the operation prompt, but the storage model and subsequent Absorb/Garden runs have no explicit mechanism to protect them from fragmentation.
 
-2. **Topics carry too much responsibility.**
-   The current mental model treats topics as the main organization tool. Topics are necessary, but they are weak at annotation, sequencing, and front-door navigation.
+2. **Topics carry too much responsibility.** Topics are an index, not a map. They answer "what belongs together?" but cannot express reading order, distinguish canonical architecture from archived history, or annotate which page is the primary overview for an area.
 
-3. **Redirects are under-modeled.**
-   The design has archival lineage but not a lightweight answer for alternate names or collapsed pages that should resolve to a canonical home.
+3. **Redirects are under-modeled.** The design has archival lineage (`superseded_by`, `archived_at`) but no lightweight equivalent for alternate names or collapsed pages that should resolve to a canonical home.
 
-4. **Gardening exists as an operation, but its conventions are still young.**
-   V1 adds `almanac garden`; future work is to harden prompt criteria and wiki conventions around when to merge, split, archive, retopic, redirect, or no-op.
-
-These are design gaps, not indexing gaps. The storage model is already strong enough to support them.
+These are design gaps, not indexing gaps. The storage model is already strong enough to support all three.
 
 ## Git history and wiki pollution
 
@@ -178,26 +172,6 @@ There are four viable operating modes:
    Clean separation, weakest locality.
 
 For `codealmanac`, the best near-term default is "same repo, separate wiki commits". The best medium-term option is an opt-in dedicated wiki branch mode.
-
-## Recommended priority order
-
-For a generalized wiki:
-
-1. pages, canonical slugs, links, search
-2. lightweight topics/categories
-3. page-worthiness policy and canonical page selection
-4. merge / split / redirect / archive / no-op as editorial outcomes
-5. hub / index pages
-6. gardening loop
-
-For `codealmanac` specifically:
-
-1. make anchors an explicit editorial primitive
-2. define when a topic needs a hub page
-3. define redirect / alias behavior
-4. strengthen Garden and Absorb criteria around merge / split / no-op
-5. make recurring Garden runs operationally routine
-6. decide how wiki history should be committed: separate commits or dedicated branch
 
 ## The core model
 

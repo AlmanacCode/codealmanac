@@ -13,9 +13,7 @@ files:
 
 # SQLite Indexer
 
-The indexer (`src/indexer/`) builds and maintains `.almanac/index.db` — a SQLite database that powers all query commands (`search`, `show`, `health`, `topics show`). It runs silently before every query command, comparing page file mtimes against the stored `content_hash`; only changed or new pages are re-parsed.
-
-<!-- stub: fill in FTS5 gotchas, GLOB vs LIKE decision, path normalization details as discovered -->
+The indexer (`src/indexer/`) builds and maintains `.almanac/index.db` — a SQLite database that powers all query commands (`search`, `show`, `health`, `topics show`). It runs silently before every query command. Freshness checks compare page and topic-file mtimes against the database mtime; once a reindex starts, unchanged page rows are skipped by `content_hash` and `file_path`.
 
 ## Schema
 
@@ -28,7 +26,7 @@ Defined in `src/indexer/schema.ts` and applied idempotently on every open (`CREA
 - `file_refs` — parsed file/folder links; stores both `path` (lowercased, for GLOB queries) and `original_path` (as-written, for display and case-sensitive dead-ref checks)
 - `wikilinks` — page-slug links
 - `cross_wiki_links` — cross-wiki links
-- `fts_pages` — FTS5 virtual table (slug + title + content); ON DELETE CASCADE does NOT apply; the indexer must DELETE explicitly before replacing a page row
+- `fts_pages` — FTS5 virtual table (slug + title + content); **ON DELETE CASCADE does NOT apply to FTS5 virtual tables**; the indexer must issue an explicit `DELETE FROM fts_pages WHERE slug = ?` before re-inserting a changed page row, or the old content remains searchable alongside the new content
 
 ## Schema versioning
 
@@ -40,4 +38,4 @@ All stored paths are lowercase + forward-slashes + no `./` prefix (normalized at
 
 ## Freshness
 
-`better-sqlite3` (sync SQLite driver). WAL journal mode is set on first open and persists in the DB header. The indexer compares each `.md` file's mtime against `updated_at`; if equal or older, the row is skipped. `almanac reindex` clears hashes to force a full rebuild.
+`better-sqlite3` (sync SQLite driver). WAL journal mode is set on first open and persists in the DB header. `almanac reindex` clears hashes to force a full rebuild even when the index is otherwise fresh.

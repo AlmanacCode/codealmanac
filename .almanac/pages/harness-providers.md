@@ -24,7 +24,7 @@ The V1 harness layer is CodeAlmanac's provider-neutral execution boundary. Opera
 
 ## Adapters
 
-The Claude adapter maps base tools to Claude Agent SDK tools, passes `tools` and `allowedTools`, sets `permissionMode: "dontAsk"`, supports programmatic per-run subagents, and reports cost/usage when available. Claude-specific auth lives below the adapter boundary.
+The Claude adapter maps base tools to Claude Agent SDK tools, passes `tools` and `allowedTools`, sets `permissionMode: "dontAsk"`, supports programmatic per-run subagents, and reports cost/usage when available. Claude-specific auth and capability flags are documented in [[claude-agent-sdk]].
 
 The Codex adapter currently uses `codex exec --json` with `workspace-write`, `--skip-git-repo-check`, `-C <cwd>`, and an optional model/output schema. It rejects per-run programmatic agents, MCP, skills, reasoning effort, and max-cost fields because this transport does not implement them.
 

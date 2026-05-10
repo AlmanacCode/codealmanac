@@ -10,7 +10,7 @@ files:
 
 # Lifecycle CLI
 
-The V1 lifecycle CLI routes write-capable wiki work into [[wiki-lifecycle-operations]] and [[process-manager-runs]]. Query and organization commands remain deterministic over the filesystem and SQLite index; AI execution is limited to the lifecycle commands.
+The V1 lifecycle CLI routes write-capable wiki work into [[wiki-lifecycle-operations]] and [[process-manager-runs]]. Query and organization commands remain deterministic over the filesystem, [[global-registry]], and SQLite index; AI execution is limited to the lifecycle commands.
 
 ## Write-capable commands
 

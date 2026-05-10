@@ -13,6 +13,7 @@ coverage/
 .almanac/index.db
 .almanac/index.db-wal
 .almanac/index.db-shm
+.almanac/runs/
 .almanac/logs/
 .almanac/.capture-*
 .almanac/.bootstrap-*

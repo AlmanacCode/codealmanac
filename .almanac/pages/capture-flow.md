@@ -13,7 +13,7 @@ files:
 
 `almanac capture` is the session-ingest command for the V1 Absorb operation. It resolves one or more coding-session transcript files, builds command context, and calls [[wiki-lifecycle-operations]] with `targetKind: "session"`. The operation then runs through [[process-manager-runs]] and [[harness-providers]] like every other AI write path.
 
-The old hardcoded writer/reviewer capture pipeline was removed. There is no `prompts/writer.md`, `prompts/reviewer.md`, `src/commands/capture.ts`, `src/agent/sdk.ts`, `.capture-*.log`, or capture-specific `StreamingFormatter` in V1.
+The old hardcoded writer/reviewer capture pipeline was removed. There is no `prompts/writer.md`, `prompts/reviewer.md`, `src/commands/capture.ts`, `src/agent/sdk.ts`, or capture-specific `StreamingFormatter` in V1. Old root-level `.capture-*.log` provider logs were replaced by [[process-manager-runs]] JSON/JSONL records; the SessionEnd hook can still write short `.capture-<session>.hook.log` sidecar files under `.almanac/runs/`.
 
 ## Transcript resolution
 
