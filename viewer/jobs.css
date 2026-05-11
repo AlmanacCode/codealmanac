@@ -63,13 +63,13 @@
 
 .ca-job-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(205px, auto);
-  align-items: stretch;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: center;
+  gap: 22px;
   border: 1px solid var(--ca-border-light);
   border-radius: 5px;
   background: rgba(255, 250, 240, 0.58);
-  padding: 14px 15px;
+  padding: 15px 16px;
   cursor: pointer;
 }
 
@@ -79,17 +79,17 @@
 }
 
 .ca-job-row-title {
-  margin-top: 7px;
+  margin-top: 8px;
   color: var(--ca-text);
-  font-size: 18px;
+  font-size: 19px;
   line-height: 1.25;
 }
 
-.ca-job-row-topline {
+.ca-job-row-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .ca-job-op {
@@ -101,28 +101,92 @@
 }
 
 .ca-job-row-summary {
-  margin-top: 6px;
-  max-width: 680px;
+  margin-top: 7px;
+  max-width: 620px;
   color: var(--ca-muted);
   font-size: 13px;
   line-height: 1.5;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .ca-job-row-meta {
-  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 10px;
   color: var(--ca-muted);
   font-family: var(--ca-mono);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.ca-job-row-meta span {
+  min-width: 0;
+}
+
+.ca-job-row-meta span:not(:last-child)::after {
+  content: "·";
+  margin-left: 10px;
+  color: var(--ca-border);
 }
 
 .ca-job-status {
   border: 1px solid var(--ca-border);
   border-radius: 999px;
-  padding: 3px 8px;
+  padding: 2px 8px;
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
+}
+
+.ca-job-impact {
+  display: grid;
+  gap: 9px;
+  align-self: stretch;
+  border-left: 1px solid var(--ca-border-light);
+  padding-left: 18px;
+}
+
+.ca-job-impact-primary {
+  align-self: end;
+  color: var(--ca-text);
+  font-family: var(--ca-mono);
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.ca-job-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ca-job-impact-grid div {
+  min-width: 0;
+}
+
+.ca-job-impact-grid span {
+  display: block;
+  color: var(--ca-muted);
+  font-family: var(--ca-mono);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.ca-job-impact-grid div.is-active span {
+  color: var(--ca-accent);
+}
+
+.ca-job-impact-grid small {
+  display: block;
+  margin-top: 4px;
+  color: var(--ca-muted);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .ca-status-running,
@@ -504,6 +568,13 @@
 
   .ca-job-row {
     grid-template-columns: 1fr;
+  }
+
+  .ca-job-impact {
+    border-top: 1px solid var(--ca-border-light);
+    border-left: 0;
+    padding-top: 12px;
+    padding-left: 0;
   }
 
   .ca-run-outcome-compact {

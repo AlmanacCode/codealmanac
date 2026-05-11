@@ -130,19 +130,55 @@ export function createJobsView(deps) {
     return `
       <div class="ca-job-row" data-route="/jobs/${deps.escapeAttr(run.id)}">
         <div class="ca-job-row-main">
-          <div class="ca-job-row-topline">
+          <div class="ca-job-row-head">
             <span class="ca-job-op">${deps.escapeHtml(run.operation)}</span>
             <span class="ca-job-status ca-status-${deps.escapeAttr(run.displayStatus)}">${deps.escapeHtml(statusLabel(run.displayStatus))}</span>
           </div>
           <div class="ca-job-row-title">${deps.escapeHtml(run.displayTitle)}</div>
-          <div class="ca-job-row-summary">${deps.escapeHtml(run.displaySubtitle ?? runFallbackSubtitle(run))}</div>
+          <div class="ca-job-row-summary">${deps.escapeHtml(cleanSummary(run.displaySubtitle ?? runFallbackSubtitle(run)))}</div>
           <div class="ca-job-row-meta">
-            ${deps.escapeHtml(deps.formatTimestamp(run.startedAt))} &middot; ${deps.escapeHtml(providerLabel(run))} &middot; ${deps.escapeHtml(run.id)}
+            <span>${deps.escapeHtml(deps.formatTimestamp(run.startedAt))}</span>
+            <span>${deps.escapeHtml(providerLabel(run))}</span>
+            <span>${deps.escapeHtml(run.id)}</span>
           </div>
         </div>
-        ${runOutcomeStrip(run, true)}
+        ${jobImpact(run)}
       </div>
     `;
+  }
+
+  function jobImpact(run) {
+    const created = run.summary?.created ?? 0;
+    const updated = run.summary?.updated ?? 0;
+    const archived = run.summary?.archived ?? 0;
+    const primary = primaryImpact(created, updated, archived);
+    return `
+      <div class="ca-job-impact">
+        <div class="ca-job-impact-primary">${deps.escapeHtml(primary)}</div>
+        <div class="ca-job-impact-grid">
+          ${impactCell("Created", created)}
+          ${impactCell("Updated", updated)}
+          ${impactCell("Archived", archived)}
+        </div>
+      </div>
+    `;
+  }
+
+  function impactCell(label, value) {
+    return `
+      <div class="${value > 0 ? "is-active" : ""}">
+        <span>${deps.escapeHtml(value)}</span>
+        <small>${deps.escapeHtml(label)}</small>
+      </div>
+    `;
+  }
+
+  function primaryImpact(created, updated, archived) {
+    const total = created + updated + archived;
+    if (total === 0) return "No wiki changes";
+    if (created > 0) return `${created} created`;
+    if (updated > 0) return `${updated} updated`;
+    return `${archived} archived`;
   }
 
   function runOutcomeStrip(run, compact = false) {
@@ -312,6 +348,14 @@ export function createJobsView(deps) {
       deps.formatElapsed(run.elapsedMs),
       run.targetKind,
     ].filter(Boolean).join(" | ");
+  }
+
+  function cleanSummary(value) {
+    return String(value)
+      .replace(/\*\*/g, "")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   return {

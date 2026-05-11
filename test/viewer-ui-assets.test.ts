@@ -52,6 +52,8 @@ describe("viewer UI assets", () => {
     expect(jobsJs).toContain('from "./jobs-transcript.js"');
     expect(jobsJs).toContain("transcriptEntry");
     expect(jobsJs).toContain("runOutcomeStrip");
+    expect(jobsJs).toContain("jobImpact");
+    expect(jobsJs).toContain("cleanSummary");
     expect(jobsJs).toContain("displayTitle");
     expect(jobsJs).toContain("displaySubtitle");
     expect(jobsJs).toContain("ca-tool-card");
@@ -79,6 +81,7 @@ describe("viewer UI assets", () => {
     expect(appCss).toContain(".ca-shell.is-rail-hidden");
     expect(appCss).not.toContain(".ca-job-row");
     expect(jobsCss).toContain(".ca-job-row");
+    expect(jobsCss).toContain(".ca-job-impact");
     expect(jobsCss).toContain(".ca-job-stream");
     expect(jobsCss).toContain(".ca-run-ledger");
     expect(jobsCss).toContain(".ca-transcript");
