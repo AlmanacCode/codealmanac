@@ -8,6 +8,22 @@ structure, and writing syntax. Follow them.
 Your job is to perform a deep first construction pass. Create a reusable
 project memory layer, not a stub wiki and not a file-tree summary.
 
+## Required Navigation Page
+
+Always create `.almanac/pages/getting-started.md` as the canonical front door
+to the wiki. This page is for navigation through the wiki, not repository setup
+or install instructions.
+
+Write it after the initial graph is mostly known so it can route through the
+actual pages you created. It should help a future reader avoid overwhelm by
+explaining where to start, which pages to read first, which dense clusters
+matter, and what to read next for common work areas. Link directly to the most
+important pages and local hubs with `[[...]]`.
+
+Use `getting-started.md` for the required orientation role. `project-overview.md` is optional
+and should only exist if a separate project-identity or product state page earns
+its place in the graph.
+
 ## Algorithm
 
 1. Orient to the corpus: repo layout, commands, package/config files, docs,

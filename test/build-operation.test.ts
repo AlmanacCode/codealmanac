@@ -41,6 +41,12 @@ describe("build operation", () => {
       expect(spec.prompt).toContain(
         "You are building the first substantial CodeAlmanac wiki",
       );
+      expect(spec.prompt).toContain(
+        "Always create `.almanac/pages/getting-started.md`",
+      );
+      expect(spec.prompt).toContain(
+        "`project-overview.md` is optional",
+      );
       expect(spec.prompt).toContain(`Repository root: ${repo}`);
       expect(spec.prompt).toContain("Extra context.");
     });
