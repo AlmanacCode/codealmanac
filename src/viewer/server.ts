@@ -1,11 +1,15 @@
 import { createServer, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import { createViewerApi } from "./api.js";
+import type { ViewerApi } from "./api.js";
+import {
+  createGlobalViewerApi,
+  UnknownWikiError,
+  UnreachableWikiError,
+} from "./global-api.js";
 import { readViewerAsset, readViewerIndex } from "./static.js";
 
 export interface ViewerServerOptions {
-  repoRoot: string;
   host?: string;
   port?: number;
 }
@@ -20,7 +24,7 @@ export async function startViewerServer(
 ): Promise<StartedViewerServer> {
   const host = options.host ?? "127.0.0.1";
   const port = options.port ?? 3927;
-  const api = createViewerApi({ repoRoot: options.repoRoot });
+  const api = createGlobalViewerApi();
 
   const server = createServer(async (req, res) => {
     try {
@@ -57,50 +61,74 @@ export async function startViewerServer(
 async function handleApi(
   url: URL,
   res: ServerResponse,
-  api: ReturnType<typeof createViewerApi>,
+  api: ReturnType<typeof createGlobalViewerApi>,
 ): Promise<void> {
-  if (url.pathname === "/api/overview") {
-    sendJson(res, 200, await api.overview());
+  if (url.pathname === "/api/wikis") {
+    sendJson(res, 200, await api.wikis());
     return;
   }
 
-  const pageMatch = url.pathname.match(/^\/api\/page\/([^/]+)$/);
+  const wikiMatch = url.pathname.match(/^\/api\/wikis\/([^/]+)(\/.*)?$/);
+  if (wikiMatch === null) {
+    sendJson(res, 404, { error: "not found" });
+    return;
+  }
+
+  const wikiName = decodeURIComponent(wikiMatch[1]!);
+  const wikiPath = wikiMatch[2] ?? "";
+  let wikiApi: ViewerApi;
+  try {
+    wikiApi = await api.forWiki(wikiName);
+  } catch (error) {
+    if (isUnknownWikiError(error)) {
+      sendJson(res, 404, { error: error.message });
+      return;
+    }
+    throw error;
+  }
+
+  if (wikiPath === "/overview") {
+    sendJson(res, 200, await wikiApi.overview());
+    return;
+  }
+
+  const pageMatch = wikiPath.match(/^\/page\/([^/]+)$/);
   if (pageMatch !== null) {
-    const page = await api.page(decodeURIComponent(pageMatch[1]!));
+    const page = await wikiApi.page(decodeURIComponent(pageMatch[1]!));
     sendJson(res, page === null ? 404 : 200, page ?? { error: "page not found" });
     return;
   }
 
-  const topicMatch = url.pathname.match(/^\/api\/topic\/([^/]+)$/);
+  const topicMatch = wikiPath.match(/^\/topic\/([^/]+)$/);
   if (topicMatch !== null) {
-    const topic = await api.topic(decodeURIComponent(topicMatch[1]!));
+    const topic = await wikiApi.topic(decodeURIComponent(topicMatch[1]!));
     sendJson(res, topic === null ? 404 : 200, topic ?? { error: "topic not found" });
     return;
   }
 
-  if (url.pathname === "/api/search") {
-    sendJson(res, 200, await api.search(url.searchParams.get("q") ?? ""));
+  if (wikiPath === "/search") {
+    sendJson(res, 200, await wikiApi.search(url.searchParams.get("q") ?? ""));
     return;
   }
 
-  if (url.pathname === "/api/suggest") {
-    sendJson(res, 200, await api.suggest(url.searchParams.get("q") ?? ""));
+  if (wikiPath === "/suggest") {
+    sendJson(res, 200, await wikiApi.suggest(url.searchParams.get("q") ?? ""));
     return;
   }
 
-  if (url.pathname === "/api/file") {
-    sendJson(res, 200, await api.file(url.searchParams.get("path") ?? ""));
+  if (wikiPath === "/file") {
+    sendJson(res, 200, await wikiApi.file(url.searchParams.get("path") ?? ""));
     return;
   }
 
-  if (url.pathname === "/api/jobs") {
-    sendJson(res, 200, await api.jobs());
+  if (wikiPath === "/jobs") {
+    sendJson(res, 200, await wikiApi.jobs());
     return;
   }
 
-  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)$/);
+  const jobMatch = wikiPath.match(/^\/jobs\/([^/]+)$/);
   if (jobMatch !== null) {
-    const job = await api.job(decodeURIComponent(jobMatch[1]!));
+    const job = await wikiApi.job(decodeURIComponent(jobMatch[1]!));
     sendJson(res, job === null ? 404 : 200, job ?? { error: "job not found" });
     return;
   }
@@ -133,6 +161,10 @@ function sendJson(res: ServerResponse, status: number, value: unknown): void {
     "cache-control": "no-store",
   });
   res.end(`${JSON.stringify(value)}\n`);
+}
+
+function isUnknownWikiError(error: unknown): error is Error {
+  return error instanceof UnknownWikiError || error instanceof UnreachableWikiError;
 }
 
 export async function waitForInterrupt(): Promise<void> {

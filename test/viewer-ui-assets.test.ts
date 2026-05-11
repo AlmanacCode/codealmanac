@@ -8,6 +8,7 @@ describe("viewer UI assets", () => {
     const indexHtml = await readFile(join(process.cwd(), "viewer", "index.html"), "utf8");
     const mark = await readFile(join(process.cwd(), "viewer", "almanac-mark.png"));
     const appJs = await readFile(join(process.cwd(), "viewer", "app.js"), "utf8");
+    const routesJs = await readFile(join(process.cwd(), "viewer", "routes.js"), "utf8");
     const jobsJs = await readFile(join(process.cwd(), "viewer", "jobs-view.js"), "utf8");
     const jobsTranscriptJs = await readFile(join(process.cwd(), "viewer", "jobs-transcript.js"), "utf8");
     const searchSuggestionsJs = await readFile(join(process.cwd(), "viewer", "search-suggestions.js"), "utf8");
@@ -19,6 +20,7 @@ describe("viewer UI assets", () => {
     expect(indexHtml).toContain('href="/jobs.css"');
     expect(indexHtml).toContain("Your code wiki");
     expect(indexHtml).not.toContain("Local wiki viewer");
+    expect(indexHtml).toContain('data-route="/"');
     expect(indexHtml).toContain('data-route="/getting-started"');
     expect(indexHtml).toContain('data-route="/jobs"');
     expect(indexHtml).not.toContain("recent-list");
@@ -27,6 +29,12 @@ describe("viewer UI assets", () => {
     expect(appJs).toContain("featuredPages?.gettingStarted");
     expect(appJs).toContain("featuredPages?.gettingStarted ?? state.overview.featuredPages?.projectOverview");
     expect(appJs).not.toContain("const projectOverview = await optionalPage");
+    expect(appJs).toContain("state.wikis");
+    expect(appJs).toContain("state.currentWiki");
+    expect(appJs).toContain("renderWikiDirectory");
+    expect(appJs).toContain('from "./routes.js"');
+    expect(appJs).toContain("/api/wikis");
+    expect(appJs).toContain('pathname.startsWith("/w/")');
     expect(appJs).toContain("state.overview.topics");
     expect(appJs).toContain("topicNavigation?.source === \"curated\"");
     expect(appJs).toContain("const SIDEBAR_TAG_LIMIT = 8");
@@ -37,10 +45,10 @@ describe("viewer UI assets", () => {
     expect(appJs).toContain("topic.parents");
     expect(appJs).toContain("ca-topic-depth-");
     expect(appJs).toContain("state.overview.featuredPages");
-    expect(appJs).toContain('pathname === "/getting-started"');
+    expect(appJs).toContain('wikiPath === "/getting-started"');
     expect(appJs).toContain("renderGettingStarted");
-    expect(appJs).toContain('pathname === "/jobs"');
-    expect(appJs).toContain('pathname.startsWith("/jobs/")');
+    expect(appJs).toContain('wikiPath === "/jobs"');
+    expect(appJs).toContain('wikiPath.startsWith("/jobs/")');
     expect(appJs).toContain('import { createJobsView } from "./jobs-view.js"');
     expect(appJs).toContain('import { createSearchSuggestions } from "./search-suggestions.js"');
     expect(appJs).toContain("searchSuggestions.wire");
@@ -64,16 +72,21 @@ describe("viewer UI assets", () => {
     expect(jobsTranscriptJs).toContain("getToolCardModel");
     expect(jobsTranscriptJs).toContain("toolsById");
     expect(searchSuggestionsJs).toContain("export function createSearchSuggestions");
-    expect(searchSuggestionsJs).toContain("/api/suggest");
-    expect(jobsJs).toContain('deps.api("/api/jobs")');
-    expect(jobsJs).toContain('deps.api(`/api/jobs/${encodeURIComponent(runId)}`)');
+    expect(searchSuggestionsJs).toContain("deps.suggestPath");
+    expect(searchSuggestionsJs).not.toContain("/api/suggest");
+    expect(jobsJs).toContain("deps.jobsPath()");
+    expect(jobsJs).toContain("deps.jobPath(runId)");
+    expect(jobsJs).toContain("deps.jobRoute(run.id)");
+    expect(jobsJs).toContain("deps.isCurrentJobRoute(runId)");
     expect(jobsJs).toContain("schedulePoll");
     expect(appJs).not.toContain("Start with the map");
-    expect(appJs).toContain('setRailVisible(pathname.startsWith("/page/"))');
+    expect(appJs).toContain("setRailVisible(isWikiPageRoute(pathname))");
     expect(appJs).toContain("ca-topic-link");
     expect(appJs).toContain("ca-link-label");
     expect(appJs).toContain("ca-link-detail");
     expect(appJs).toContain('querySelectorAll(".ca-left [data-route]")');
+    expect(routesJs).toContain("isCrossWikiTarget");
+    expect(routesJs).toContain('return `/w/${encodeURIComponent(wiki)}/page/${encodeURIComponent(slug)}`');
     expect(appJs).not.toContain("<br><small>");
 
     expect(appCss).toContain(".ca-topic-link");
@@ -101,6 +114,8 @@ describe("viewer UI assets", () => {
     expect(jobsCss).toContain(".ca-status-tone-alert");
     expect(appCss).toContain(".ca-suggest");
     expect(appCss).toContain(".ca-suggest-item");
+    expect(appCss).toContain(".ca-wiki-directory");
+    expect(appCss).toContain(".ca-wiki-stats");
     expect(appCss).toContain("overflow-wrap: anywhere");
   });
 });

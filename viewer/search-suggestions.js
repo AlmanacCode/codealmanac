@@ -42,7 +42,7 @@ export function createSearchSuggestions(deps) {
     debounceTimer = window.setTimeout(async () => {
       abortController = new AbortController();
       try {
-        const result = await deps.api(`/api/suggest?q=${encodeURIComponent(query)}`, {
+        const result = await deps.api(deps.suggestPath(query), {
           signal: abortController.signal,
         });
         suggestions = result.pages ?? [];
@@ -138,7 +138,7 @@ export function createSearchSuggestions(deps) {
     if (!page) return;
     setOpen(false);
     deps.input.value = "";
-    deps.navigate(`/page/${page.slug}`);
+    deps.navigate(deps.pageRoute(page));
   }
 
   function setOpen(nextOpen) {

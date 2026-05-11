@@ -241,6 +241,17 @@ input {
   color: var(--ca-accent);
 }
 
+.ca-nav-item:disabled {
+  cursor: default;
+  color: var(--ca-faint);
+  opacity: 0.62;
+}
+
+.ca-nav-item:disabled:hover {
+  background: transparent;
+  color: var(--ca-faint);
+}
+
 .ca-left-section,
 .ca-meta-block {
   margin-top: 26px;
@@ -425,6 +436,31 @@ input {
 .ca-page-row:hover {
   border-color: var(--ca-border);
   background: var(--ca-paper);
+}
+
+.ca-wiki-directory {
+  max-width: 820px;
+}
+
+.ca-wiki-row {
+  display: grid;
+  gap: 8px;
+}
+
+.ca-wiki-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--ca-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ca-wiki-stats span {
+  padding: 2px 7px;
+  border: 1px solid var(--ca-border-light);
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.58);
 }
 
 .ca-page-row-title {

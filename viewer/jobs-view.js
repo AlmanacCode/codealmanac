@@ -9,7 +9,7 @@ export function createJobsView(deps) {
   let pollTimer = null;
 
   async function renderList() {
-    const result = await deps.api("/api/jobs");
+    const result = await deps.api(deps.jobsPath());
     document.title = "Jobs - Almanac";
     const runs = result.runs;
     const counts = countJobs(runs);
@@ -30,7 +30,7 @@ export function createJobsView(deps) {
   }
 
   async function renderDetail(runId) {
-    const detail = await deps.api(`/api/jobs/${encodeURIComponent(runId)}`);
+    const detail = await deps.api(deps.jobPath(runId));
     const run = detail.run;
     const transcript = buildTranscript(detail.events);
     document.title = `${run.displayTitle} - Almanac Jobs`;
@@ -85,7 +85,7 @@ export function createJobsView(deps) {
     clearPoll();
     pollTimer = window.setTimeout(() => {
       pollTimer = null;
-      if (deps.getPathname() === `/jobs/${runId}`) {
+      if (deps.isCurrentJobRoute(runId)) {
         renderDetail(runId).catch((error) => deps.renderError(error));
       }
     }, 1500);
@@ -123,7 +123,7 @@ export function createJobsView(deps) {
 
   function logEntry(run) {
     return `
-      <a class="ca-log-entry" href="/jobs/${deps.escapeAttr(run.id)}" data-route="/jobs/${deps.escapeAttr(run.id)}">
+      <a class="ca-log-entry" href="${deps.escapeAttr(deps.jobRoute(run.id))}" data-route="${deps.escapeAttr(deps.jobRoute(run.id))}">
         <time class="ca-log-time">${deps.escapeHtml(formatClock(run.startedAt))}</time>
         <div class="ca-log-entry-body">
           <div class="ca-log-kicker">${deps.escapeHtml(`${run.operation} · ${providerLabel(run)}`)}</div>

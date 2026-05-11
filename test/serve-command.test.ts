@@ -5,6 +5,7 @@ import {
   runRecordPath,
   writeRunRecord,
 } from "../src/process/index.js";
+import { addEntry } from "../src/registry/index.js";
 import { startViewerServer } from "../src/viewer/server.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
@@ -31,34 +32,48 @@ describe("viewer server", () => {
       });
       await writeRunRecord(runRecordPath(repo, record.id), record);
 
-      const server = await startViewerServer({ repoRoot: repo, port: 0 });
+      await addEntry({
+        name: "alpha",
+        description: "Alpha wiki",
+        path: repo,
+        registered_at: "2026-05-11T12:00:00.000Z",
+      });
+
+      const server = await startViewerServer({ port: 0 });
       try {
         const html = await fetch(server.url).then((r) => r.text());
         expect(html).toContain("Almanac");
 
-        const overview = await fetch(`${server.url}/api/overview`).then((r) => r.json()) as {
+        const wikis = await fetch(`${server.url}/api/wikis`).then((r) => r.json()) as {
+          wikis: Array<{ name: string; pageCount: number }>;
+        };
+        expect(wikis.wikis).toEqual([
+          expect.objectContaining({ name: "alpha", pageCount: 1 }),
+        ]);
+
+        const overview = await fetch(`${server.url}/api/wikis/alpha/overview`).then((r) => r.json()) as {
           pageCount: number;
         };
         expect(overview.pageCount).toBe(1);
 
-        const page = await fetch(`${server.url}/api/page/capture-flow`).then((r) => r.json()) as {
+        const page = await fetch(`${server.url}/api/wikis/alpha/page/capture-flow`).then((r) => r.json()) as {
           title: string;
           body: string;
         };
         expect(page.title).toBe("Capture Flow");
         expect(page.body).toContain("# Capture Flow");
 
-        const suggest = await fetch(`${server.url}/api/suggest?q=capture`).then((r) => r.json()) as {
+        const suggest = await fetch(`${server.url}/api/wikis/alpha/suggest?q=capture`).then((r) => r.json()) as {
           pages: Array<{ slug: string }>;
         };
         expect(suggest.pages.map((p) => p.slug)).toEqual(["capture-flow"]);
 
-        const jobs = await fetch(`${server.url}/api/jobs`).then((r) => r.json()) as {
+        const jobs = await fetch(`${server.url}/api/wikis/alpha/jobs`).then((r) => r.json()) as {
           runs: Array<{ id: string }>;
         };
         expect(jobs.runs.map((run) => run.id)).toEqual([record.id]);
 
-        const job = await fetch(`${server.url}/api/jobs/${record.id}`).then((r) => r.json()) as {
+        const job = await fetch(`${server.url}/api/wikis/alpha/jobs/${record.id}`).then((r) => r.json()) as {
           run: { id: string };
           events: unknown[];
         };

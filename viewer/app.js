@@ -1,9 +1,20 @@
 import { createJobsView } from "./jobs-view.js";
+import {
+  isWikiPageRoute,
+  labelForWikilink,
+  parseWikiPath,
+  routeForWikilink,
+  routeFromElement,
+  wikiApi as buildWikiApi,
+  wikiRoute as buildWikiRoute,
+} from "./routes.js";
 import { createSearchSuggestions } from "./search-suggestions.js";
 
 const SIDEBAR_TAG_LIMIT = 8;
 
 const state = {
+  wikis: [],
+  currentWiki: null,
   overview: null,
   currentPage: null,
   pageTitles: new Map(),
@@ -24,7 +35,10 @@ const els = {
 const jobsView = createJobsView({
   api,
   reader: els.reader,
-  getPathname: () => location.pathname,
+  jobsPath: () => wikiApi("/jobs"),
+  jobPath: (runId) => wikiApi(`/jobs/${encodeURIComponent(runId)}`),
+  jobRoute: (runId) => wikiRoute(`/jobs/${runId}`),
+  isCurrentJobRoute: (runId) => location.pathname === wikiRoute(`/jobs/${runId}`),
   renderError,
   renderMarkdown,
   escapeHtml,
@@ -39,6 +53,8 @@ const searchSuggestions = createSearchSuggestions({
   form: els.searchForm,
   input: els.searchInput,
   navigate,
+  suggestPath: (query) => wikiApi(`/suggest?q=${encodeURIComponent(query)}`),
+  pageRoute: (page) => wikiRoute(`/page/${page.slug}`),
   escapeHtml,
   escapeAttr,
 });
@@ -47,8 +63,8 @@ boot().catch((error) => renderError(error));
 
 async function boot() {
   wireEvents();
-  state.overview = await api("/api/overview");
-  rememberPages(state.overview.recentPages);
+  const result = await api("/api/wikis");
+  state.wikis = result.wikis ?? [];
   renderChrome();
   await route(location.pathname, location.search, false);
 }
@@ -67,15 +83,18 @@ function wireEvents() {
     }
 
     const target = event.target.closest("[data-route]");
-    if (target === null) return;
+    if (target === null || target.disabled === true) return;
     event.preventDefault();
-    navigate(target.dataset.route);
+    navigate(routeFromElement(target.dataset.route, state.currentWiki));
   });
 
   els.searchForm.addEventListener("submit", (event) => {
     event.preventDefault();
+    if (state.currentWiki === null) return;
     const query = els.searchInput.value.trim();
-    navigate(query.length > 0 ? `/search?q=${encodeURIComponent(query)}` : "/search");
+    navigate(query.length > 0
+      ? wikiRoute(`/search?q=${encodeURIComponent(query)}`)
+      : wikiRoute("/search"));
   });
 
   window.addEventListener("popstate", () => {
@@ -86,59 +105,81 @@ function wireEvents() {
 async function route(pathname, search = "", push = true) {
   if (push) history.pushState(null, "", pathname + search);
   jobsView.clearPoll();
-  setActiveNav(pathname);
-  setRailVisible(pathname.startsWith("/page/"));
 
-  if (pathname === "/") {
+  if (pathname === "/" || !pathname.startsWith("/w/")) {
+    state.currentWiki = null;
+    state.overview = null;
+    state.currentPage = null;
+    renderChrome();
+    setActiveNav(pathname);
+    setRailVisible(false);
+    clearPageRail();
+    renderWikiDirectory();
+    return;
+  }
+
+  const parsed = parseWikiPath(pathname);
+  if (parsed === null) {
+    navigate("/");
+    return;
+  }
+
+  await selectWiki(parsed.wiki);
+  renderChrome();
+  setActiveNav(pathname);
+  setRailVisible(isWikiPageRoute(pathname));
+
+  const wikiPath = parsed.path;
+  if (wikiPath === "" || wikiPath === "/") {
     await renderOverview();
     clearPageRail();
     return;
   }
 
-  if (pathname === "/getting-started") {
+  if (wikiPath === "/getting-started") {
     await renderGettingStarted();
     clearPageRail();
     return;
   }
 
-  if (pathname.startsWith("/page/")) {
-    await renderPage(decodeURIComponent(pathname.slice("/page/".length)));
+  if (wikiPath.startsWith("/page/")) {
+    await renderPage(decodeURIComponent(wikiPath.slice("/page/".length)));
     return;
   }
 
-  if (pathname.startsWith("/topic/")) {
-    await renderTopic(decodeURIComponent(pathname.slice("/topic/".length)));
+  if (wikiPath.startsWith("/topic/")) {
+    await renderTopic(decodeURIComponent(wikiPath.slice("/topic/".length)));
     clearPageRail();
     return;
   }
 
-  if (pathname === "/search") {
+  if (wikiPath === "/search") {
     const params = new URLSearchParams(search);
     await renderSearch(params.get("q") ?? "");
     clearPageRail();
     return;
   }
 
-  if (pathname === "/jobs") {
+  if (wikiPath === "/jobs") {
     await jobsView.renderList();
     clearPageRail();
     return;
   }
 
-  if (pathname.startsWith("/jobs/")) {
-    await jobsView.renderDetail(decodeURIComponent(pathname.slice("/jobs/".length)));
+  if (wikiPath.startsWith("/jobs/")) {
+    await jobsView.renderDetail(decodeURIComponent(wikiPath.slice("/jobs/".length)));
     clearPageRail();
     return;
   }
 
-  if (pathname === "/file") {
+  if (wikiPath === "/file") {
     const params = new URLSearchParams(search);
     await renderFile(params.get("path") ?? "");
     clearPageRail();
     return;
   }
 
-  renderOverview();
+  await renderOverview();
   clearPageRail();
 }
 
@@ -157,7 +198,42 @@ async function api(path, options = {}) {
   return body;
 }
 
+async function selectWiki(name) {
+  if (state.currentWiki !== name) {
+    state.currentWiki = name;
+    state.overview = null;
+    state.currentPage = null;
+    state.pageTitles = new Map();
+    state.showAllTopics = false;
+  }
+  if (state.overview === null) {
+    state.overview = await api(wikiApi("/overview"));
+    rememberPages(state.overview.recentPages);
+  }
+}
+
+function wikiRoute(path = "") {
+  return buildWikiRoute(state.currentWiki, path);
+}
+
+function wikiApi(path = "") {
+  return buildWikiApi(state.currentWiki, path);
+}
+
 function renderChrome() {
+  const inWiki = state.currentWiki !== null && state.overview !== null;
+  els.searchInput.disabled = !inWiki;
+  els.searchInput.placeholder = inWiki ? "Search pages" : "Open a wiki to search";
+
+  document.querySelectorAll(".ca-nav [data-route]").forEach((button) => {
+    button.disabled = !inWiki && button.dataset.route !== "/";
+  });
+
+  if (!inWiki) {
+    els.topicList.innerHTML = `<div class="ca-meta-empty">Open a wiki to browse topics.</div>`;
+    return;
+  }
+
   const topics = state.overview.topics;
   const topicNavigation = state.overview.topicNavigation;
   const isCurated = topicNavigation?.source === "curated";
@@ -204,7 +280,7 @@ function renderTopicBranch(slugs, bySlug, childrenByParent, depth, path) {
       return [
         linkButton(
           topic.title ?? topic.slug,
-          `/topic/${topic.slug}`,
+          wikiRoute(`/topic/${topic.slug}`),
           `${topic.page_count} pages`,
           `ca-topic-link ca-topic-depth-${displayDepth}`,
         ),
@@ -225,9 +301,42 @@ function topicToggleButton(showAll, hiddenCount) {
   `;
 }
 
+function renderWikiDirectory() {
+  document.title = "All wikis - Almanac";
+  const rows = state.wikis.length > 0
+    ? state.wikis.map(wikiRow).join("")
+    : `<div class="ca-meta-empty">No wikis registered yet. Run <span class="ca-file-code">almanac init</span> in a repo.</div>`;
+  els.reader.innerHTML = `
+    <section class="ca-hero">
+      <div class="ca-kicker">Local library</div>
+      <h1 class="ca-title">All wikis</h1>
+      <p class="ca-subtitle">
+        Browse every reachable CodeAlmanac wiki registered on this computer.
+      </p>
+    </section>
+    <section class="ca-wiki-directory">
+      <div class="ca-page-list">${rows}</div>
+    </section>
+  `;
+}
+
+function wikiRow(wiki) {
+  return `
+    <div class="ca-page-row ca-wiki-row" data-route="/w/${escapeAttr(encodeURIComponent(wiki.name))}">
+      <div class="ca-page-row-title">${escapeHtml(wiki.name)}</div>
+      <div class="ca-page-row-summary">${escapeHtml(wiki.description || "No description.")}</div>
+      <div class="ca-wiki-stats">
+        <span>${escapeHtml(wiki.pageCount)} active pages</span>
+        <span>${escapeHtml(wiki.topicCount)} topics</span>
+      </div>
+      <div class="ca-file-code">${escapeHtml(wiki.path)}</div>
+    </div>
+  `;
+}
+
 async function renderOverview() {
   const overview = state.overview;
-  document.title = "Project overview - Almanac";
+  document.title = `${state.currentWiki} - Almanac`;
   els.reader.innerHTML = `
     <section class="ca-hero">
       <div class="ca-kicker">Project overview</div>
@@ -246,7 +355,7 @@ async function renderOverview() {
         <h2>Root topics</h2>
         <div class="ca-page-list">
           ${overview.rootTopics.map((topic) => `
-            <div class="ca-page-row" data-route="/topic/${escapeAttr(topic.slug)}">
+            <div class="ca-page-row" data-route="${escapeAttr(wikiRoute(`/topic/${topic.slug}`))}">
               <div class="ca-page-row-title">${escapeHtml(topic.title ?? topic.slug)}</div>
               <div class="ca-page-row-summary">${escapeHtml(topic.description ?? `${topic.page_count} active pages`)}</div>
             </div>
@@ -260,7 +369,7 @@ async function renderOverview() {
 async function optionalPage(summary) {
   if (summary === undefined || summary === null) return null;
   try {
-    return await api(`/api/page/${encodeURIComponent(summary.slug)}`);
+    return await api(wikiApi(`/page/${encodeURIComponent(summary.slug)}`));
   } catch {
     return null;
   }
@@ -276,7 +385,7 @@ async function renderGettingStarted() {
     return;
   }
 
-  document.title = "Getting started - Almanac";
+  document.title = `Getting started - ${state.currentWiki}`;
   els.reader.innerHTML = `
     <section class="ca-hero">
       <div class="ca-kicker">Getting started</div>
@@ -290,7 +399,7 @@ async function renderGettingStarted() {
 }
 
 async function renderPage(slug) {
-  const page = await api(`/api/page/${encodeURIComponent(slug)}`);
+  const page = await api(wikiApi(`/page/${encodeURIComponent(slug)}`));
   state.currentPage = page;
   rememberPages([page, ...(page.related_pages ?? [])]);
   renderPageArticle(page);
@@ -305,7 +414,7 @@ function renderPageArticle(page) {
         <h1>${escapeHtml(pageTitle(page))}</h1>
         <div class="ca-page-header-meta">Last revised ${escapeHtml(formatDate(page.updated_at))}</div>
         <div class="ca-chip-row" style="justify-content: center;">
-          ${page.topics.map((topic) => `<button class="ca-chip" data-route="/topic/${escapeAttr(topic)}">${escapeHtml(topic)}</button>`).join("")}
+          ${page.topics.map((topic) => `<button class="ca-chip" data-route="${escapeAttr(wikiRoute(`/topic/${topic}`))}">${escapeHtml(topic)}</button>`).join("")}
         </div>
         <div class="ca-page-ornament"><span>✥</span></div>
       </header>
@@ -315,7 +424,7 @@ function renderPageArticle(page) {
 }
 
 async function renderTopic(slug) {
-  const topic = await api(`/api/topic/${encodeURIComponent(slug)}`);
+  const topic = await api(wikiApi(`/topic/${encodeURIComponent(slug)}`));
   rememberPages(topic.pages);
   document.title = `${topic.title ?? topic.slug} - Almanac`;
   els.reader.innerHTML = `
@@ -324,7 +433,7 @@ async function renderTopic(slug) {
       <h1 class="ca-title">${escapeHtml(topic.title ?? topic.slug)}</h1>
       <p class="ca-subtitle">${escapeHtml(topic.description ?? "Pages grouped under this topic.")}</p>
       <div class="ca-chip-row">
-        ${topic.parents.map((parent) => `<button class="ca-chip" data-route="/topic/${escapeAttr(parent.slug)}">${escapeHtml(parent.title ?? parent.slug)}</button>`).join("")}
+        ${topic.parents.map((parent) => `<button class="ca-chip" data-route="${escapeAttr(wikiRoute(`/topic/${parent.slug}`))}">${escapeHtml(parent.title ?? parent.slug)}</button>`).join("")}
       </div>
     </section>
     <section class="ca-grid">
@@ -336,7 +445,7 @@ async function renderTopic(slug) {
         <h2>Child topics</h2>
         <div class="ca-page-list">
           ${topic.children.map((child) => `
-            <div class="ca-page-row" data-route="/topic/${escapeAttr(child.slug)}">
+            <div class="ca-page-row" data-route="${escapeAttr(wikiRoute(`/topic/${child.slug}`))}">
               <div class="ca-page-row-title">${escapeHtml(child.title ?? child.slug)}</div>
               <div class="ca-page-row-summary">${escapeHtml(child.page_count)} active pages</div>
             </div>
@@ -349,7 +458,7 @@ async function renderTopic(slug) {
 
 async function renderSearch(query) {
   els.searchInput.value = query;
-  const result = await api(`/api/search?q=${encodeURIComponent(query)}`);
+  const result = await api(wikiApi(`/search?q=${encodeURIComponent(query)}`));
   rememberPages(result.pages);
   document.title = `${query ? `Search: ${query}` : "Recent pages"} - Almanac`;
   els.reader.innerHTML = `
@@ -363,7 +472,7 @@ async function renderSearch(query) {
 }
 
 async function renderFile(path) {
-  const result = await api(`/api/file?path=${encodeURIComponent(path)}`);
+  const result = await api(wikiApi(`/file?path=${encodeURIComponent(path)}`));
   rememberPages(result.pages);
   els.reader.innerHTML = `
     <section class="ca-hero">
@@ -387,13 +496,13 @@ function renderPageRail(page) {
       <span class="ca-file-code">${escapeHtml(page.file_path)}</span>
     </div>
     ${page.archived_at ? `<div class="ca-meta-line"><span class="ca-meta-label">Archived</span><span class="ca-meta-value">${new Date(page.archived_at * 1000).toLocaleDateString()}</span></div>` : ""}
-    ${page.superseded_by ? `<div class="ca-meta-line"><span class="ca-meta-label">Superseded by</span><a class="ca-meta-link" href="/page/${escapeAttr(page.superseded_by)}" data-route="/page/${escapeAttr(page.superseded_by)}">${escapeHtml(pageLabel(page.superseded_by))}</a></div>` : ""}
+    ${page.superseded_by ? `<div class="ca-meta-line"><span class="ca-meta-label">Superseded by</span><a class="ca-meta-link" href="${escapeAttr(wikiRoute(`/page/${page.superseded_by}`))}" data-route="${escapeAttr(wikiRoute(`/page/${page.superseded_by}`))}">${escapeHtml(pageLabel(page.superseded_by))}</a></div>` : ""}
   `;
   els.backlinks.innerHTML = page.wikilinks_in.length > 0
-    ? page.wikilinks_in.map((slug) => linkButton(pageLabel(slug), `/page/${slug}`)).join("")
+    ? page.wikilinks_in.map((slug) => linkButton(pageLabel(slug), wikiRoute(`/page/${slug}`))).join("")
     : `<div class="ca-meta-empty">No backlinks.</div>`;
   els.fileRefs.innerHTML = page.file_refs.length > 0
-    ? page.file_refs.map((ref) => linkButton(ref.path, `/file?path=${encodeURIComponent(ref.path)}`, "", "ca-file-link")).join("")
+    ? page.file_refs.map((ref) => linkButton(ref.path, wikiRoute(`/file?path=${encodeURIComponent(ref.path)}`), "", "ca-file-link")).join("")
     : `<div class="ca-meta-empty">No file refs.</div>`;
 }
 
@@ -405,7 +514,7 @@ function clearPageRail() {
 
 function pageRow(page) {
   return `
-    <div class="ca-page-row" data-route="/page/${escapeAttr(page.slug)}">
+    <div class="ca-page-row" data-route="${escapeAttr(wikiRoute(`/page/${page.slug}`))}">
       <div class="ca-page-row-title">${escapeHtml(pageTitle(page))}</div>
       <div class="ca-page-row-summary">${escapeHtml(page.summary ?? formatDate(page.updated_at))}</div>
       <div class="ca-chip-row">${page.topics.slice(0, 4).map((topic) => `<span class="ca-chip">${escapeHtml(topic)}</span>`).join("")}</div>
@@ -460,8 +569,8 @@ function inline(text) {
   return escapeHtml(text)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\[\[([^\]]+)\]\]/g, (_, target) => {
-      const route = target.includes("/") ? `/file?path=${encodeURIComponent(target)}` : `/page/${encodeURIComponent(target)}`;
-      const label = target.includes("/") ? target : pageLabel(target);
+      const route = routeForWikilink(target, state.currentWiki);
+      const label = labelForWikilink(target, pageLabel);
       return `<a href="${escapeAttr(route)}" data-route="${escapeAttr(route)}">${escapeHtml(label)}</a>`;
     })
     .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
@@ -509,9 +618,13 @@ function formatNumber(value) {
 function setActiveNav(pathname) {
   document.querySelectorAll(".ca-left [data-route]").forEach((button) => {
     const route = button.dataset.route;
-    const active = route === "/jobs"
-      ? pathname === "/jobs" || pathname.startsWith("/jobs/")
-      : route === pathname;
+    const active = route === "/"
+      ? pathname === "/"
+      : state.currentWiki !== null && (
+        route === "/jobs"
+          ? pathname === wikiRoute("/jobs") || pathname.startsWith(wikiRoute("/jobs/"))
+          : pathname === wikiRoute(route)
+      );
     button.classList.toggle("is-active", active);
   });
 }
