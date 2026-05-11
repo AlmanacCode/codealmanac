@@ -36,7 +36,7 @@ V1 prompt layout is base doctrine plus operation algorithms. The bundled base pr
 
 ## Base modules
 
-`purpose.md` defines CodeAlmanac as cultivated project memory and a deep-research cache over the project. It says the codebase is the anchor, not the boundary, and that inputs are raw material rather than outputs.
+`purpose.md` defines Almanac as cultivated project memory and a deep-research cache over the project. It says the codebase is the anchor, not the boundary, and that inputs are raw material rather than outputs.
 
 `notability.md` defines what deserves a page, topic, cluster, or hub. It treats page genres as vocabulary, not schema, and explicitly includes internal entities, external dependencies, influences, research synthesis, market/product synthesis, and hubs.
 
@@ -52,4 +52,4 @@ Garden cultivates the graph. It improves clusters, hubs, topics, links, page bou
 
 ## Design implication
 
-If Build, Absorb, or Garden need better judgment, edit the relevant base or operation prompt. Do not recreate the removed writer/reviewer/review-apply pipeline in TypeScript. Helper/subagents remain optional provider behavior described inside operation prompts, not fixed CodeAlmanac product roles.
+If Build, Absorb, or Garden need better judgment, edit the relevant base or operation prompt. Do not recreate the removed writer/reviewer/review-apply pipeline in TypeScript. Helper/subagents remain optional provider behavior described inside operation prompts, not fixed Almanac product roles.

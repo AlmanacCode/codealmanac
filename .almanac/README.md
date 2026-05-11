@@ -1,6 +1,6 @@
-# codealmanac Wiki
+# Almanac Wiki
 
-This is the codealmanac wiki for the codealmanac repo itself — the CLI and agent harness that produces and queries `.almanac/` wikis. It documents what the code can't say: design decisions, subsystem contracts, agent prompt behavior, and gotchas found in real runs.
+This is the Almanac wiki for the codealmanac repo itself — the CLI and agent harness that produces and queries `.almanac/` wikis. It documents what the code can't say: design decisions, subsystem contracts, agent prompt behavior, and gotchas found in real runs.
 
 The primary reader is an AI coding agent picking up a new session. Write accordingly: dense, factual, linked.
 

@@ -9,7 +9,7 @@ files:
 
 # Wikilink Syntax
 
-codealmanac uses a single double-bracket syntax for all intra-page references, disambiguated by content at index time. There is no second link form: the same bracket form covers page slugs, file refs, folder refs, and cross-wiki refs.
+Almanac uses a single double-bracket syntax for all intra-page references, disambiguated by content at index time. There is no second link form: the same bracket form covers page slugs, file refs, folder refs, and cross-wiki refs.
 
 ## Classification rules
 

@@ -35,7 +35,7 @@ sources:
 
 # almanac serve (Local Viewer)
 
-`almanac serve` is a lightweight local read-only web viewer for browsing a repo's CodeAlmanac wiki. It is the preferred "read the wiki" experience for humans — filesystem browsing and `browse/` pages are the fallback and editor interface, not the primary UX. Designed and implemented 2026-05-10.
+`almanac serve` is a lightweight local read-only web viewer for browsing a repo's Almanac wiki. It is the preferred "read the wiki" experience for humans — filesystem browsing and `browse/` pages are the fallback and editor interface, not the primary UX. Designed and implemented 2026-05-10.
 
 ## Rationale
 
@@ -197,7 +197,7 @@ The poll timer is private state inside `createJobsView()` in `viewer/jobs-view.j
 
 ## UI direction
 
-The frontend uses an OpenAlmanac-inspired warm paper palette and serif article typography. Color tokens live in `viewer/app.css` under the `--ca-*` namespace (ca = CodeAlmanac):
+The frontend uses an OpenAlmanac-inspired warm paper palette and serif article typography. Color tokens live in `viewer/app.css` under the `--ca-*` namespace:
 
 ```css
 --ca-bg: #faf6ed;

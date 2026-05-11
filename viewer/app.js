@@ -326,7 +326,7 @@ function renderWikiDirectory() {
       <div class="ca-kicker">Local library</div>
       <h1 class="ca-title">All wikis</h1>
       <p class="ca-subtitle">
-        Browse every reachable CodeAlmanac wiki registered on this computer.
+        Browse every reachable Almanac wiki registered on this computer.
       </p>
     </section>
     <section class="ca-wiki-directory">

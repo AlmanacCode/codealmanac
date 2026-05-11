@@ -18,7 +18,7 @@ verified: 2026-05-11
 
 The shared script backgrounds `almanac capture` after the session transcript is available. This makes hook installation part of the capture pipeline, not a Claude-only feature.
 
-A 2026-05-11 capture session verified the main Codex-specific invariant behind this mapping: current Codex builds expose `Stop` as the usable lifecycle hook surface, not a working `SessionEnd` event. For CodeAlmanac, "Codex hook support" therefore means "debounced quiet-session capture after `Stop`," not "capture exactly once when a thread is permanently closed."
+A 2026-05-11 capture session verified the main Codex-specific invariant behind this mapping: current Codex builds expose `Stop` as the usable lifecycle hook surface, not a working `SessionEnd` event. For Almanac, "Codex hook support" therefore means "debounced quiet-session capture after `Stop`," not "capture exactly once when a thread is permanently closed."
 
 ## Agent-specific install targets
 
@@ -56,7 +56,7 @@ The hook script is `hooks/almanac-capture.sh`. On install, `almanac hook install
 ## Install/uninstall
 
 `almanac hook install` — adds the configured agent hook entry or entries; idempotent (re-running is safe).
-`almanac hook uninstall` — removes codealmanac's entry; leaves all other entries in `hooks` untouched.
+`almanac hook uninstall` — removes Almanac's entry; leaves all other entries in `hooks` untouched.
 `almanac hook status` — reports whether the hook is installed, without modifying anything.
 
 `runHookInstall()` already supports `--source <claude|codex|cursor|all>`, but the CLI surface is still asymmetric: `hook uninstall` and `hook status` do not take `--source` today and still default to Claude's `~/.claude/settings.json` path. Future hook UX changes should preserve or intentionally remove that asymmetry rather than assuming all three commands are symmetric now.

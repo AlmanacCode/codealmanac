@@ -12,11 +12,11 @@ files:
 
 # Wiki Organization Primitives
 
-`codealmanac` already has three core wiki primitives: pages, double-bracket links, and a topic DAG. That is enough to store knowledge and query it, but it is not enough to keep the wiki coherent as capture volume grows. The missing pieces are editorial rather than storage-oriented: canonical homes for subjects, curated navigation for dense areas, explicit structural operations, and a maintenance loop that protects the graph over time.
+Almanac already has three core wiki primitives: pages, double-bracket links, and a topic DAG. That is enough to store knowledge and query it, but it is not enough to keep the wiki coherent as capture volume grows. The missing pieces are editorial rather than storage-oriented: canonical homes for subjects, curated navigation for dense areas, explicit structural operations, and a maintenance loop that protects the graph over time.
 
 This matters because a self-updating wiki fails by drift, not by lack of content. If the system can only create pages and append to pages, it tends to overproduce narrow pages, under-merge overlap, and leave readers with a technically linked graph that is still hard to traverse. V1 addresses part of that gap by making Garden a first-class operation beside Build and Absorb; anchors, hub pages, redirects, and alias behavior are still editorial primitives rather than enforced storage objects.
 
-## What `codealmanac` has now
+## What Almanac has now
 
 The committed design and implementation provide these primitives:
 
@@ -137,7 +137,7 @@ The page-worthiness bar is also different. A general wiki asks whether a topic h
 
 This is why a codebase wiki should default more strongly to updating anchors than a general-purpose research wiki would.
 
-## Current gaps in `codealmanac`
+## Current gaps in Almanac
 
 Three organizational gaps remain after V1.
 
@@ -171,7 +171,7 @@ There are four viable operating modes:
 4. **Separate wiki repo**
    Clean separation, weakest locality.
 
-For `codealmanac`, the best near-term default is "same repo, separate wiki commits". The best medium-term option is an opt-in dedicated wiki branch mode.
+For Almanac, the best near-term default is "same repo, separate wiki commits". The best medium-term option is an opt-in dedicated wiki branch mode.
 
 ## The core model
 
@@ -186,4 +186,4 @@ A maintainable wiki is not just "pages plus tags". It is:
 - **editorial discipline**: create/update/merge/split/redirect/archive/no-op
 - **ongoing maintenance**: gardening
 
-`codealmanac` already has the first three strongly, part of the sixth, and a V1 gardening operation for the eighth. The next design work is to make the missing primitives first-class in prompts and conventions without turning them into a rigid pipeline.
+Almanac already has the first three strongly, part of the sixth, and a V1 gardening operation for the eighth. The next design work is to make the missing primitives first-class in prompts and conventions without turning them into a rigid pipeline.

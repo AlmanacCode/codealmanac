@@ -17,7 +17,7 @@ files:
 
 # Process Manager Runs
 
-The process manager owns CodeAlmanac job lifecycle for every write-capable AI operation. Build, Absorb, and Garden produce an `AgentRunSpec`; the process manager records a run, executes or spawns it, logs normalized events, snapshots wiki pages, and reindexes after successful writes.
+The process manager owns Almanac job lifecycle for every write-capable AI operation. Build, Absorb, and Garden produce an `AgentRunSpec`; the process manager records a run, executes or spawns it, logs normalized events, snapshots wiki pages, and reindexes after successful writes.
 
 ## Storage
 
@@ -51,9 +51,9 @@ The manager snapshots `.almanac/pages/*.md` before and after the harness run. It
 
 ## Agent-thread attribution gap
 
-Current JSONL run logs are mostly flat normalized harness events. They preserve useful `collabAgentToolCall` spawn/wait details, but ordinary messages and tool calls are not guaranteed to identify whether the root agent or a helper agent produced them. A raw Codex app-server probe confirmed that root and helper item notifications do carry `params.threadId`; CodeAlmanac currently drops that ownership when mapping to `HarnessEvent`. The same probe showed helper turns emit `turn/completed`, while the current Codex adapter finishes the whole run on any `turn/completed` without checking the root turn id. This makes subagent-heavy Codex runs hard to audit and can plausibly let a helper completion become the terminal run result.
+Current JSONL run logs are mostly flat normalized harness events. They preserve useful `collabAgentToolCall` spawn/wait details, but ordinary messages and tool calls are not guaranteed to identify whether the root agent or a helper agent produced them. A raw Codex app-server probe confirmed that root and helper item notifications do carry `params.threadId`; Almanac currently drops that ownership when mapping to `HarnessEvent`. The same probe showed helper turns emit `turn/completed`, while the current Codex adapter finishes the whole run on any `turn/completed` without checking the root turn id. This makes subagent-heavy Codex runs hard to audit and can plausibly let a helper completion become the terminal run result.
 
-A live Claude SDK probe confirmed a different provenance shape. Streamed Claude root messages use `parent_tool_use_id: null`; forwarded subagent messages carry `parent_tool_use_id` pointing at the parent `Agent` tool call, and the SDK can list/read concrete subagent transcripts with `listSubagents(sessionId)` and `getSubagentMessages(sessionId, agentId)`. Claude hook and permission APIs also expose subagent ids, but ordinary streamed assistant/user messages do not include `agent_id` directly. The current Claude adapter drops `uuid`, `session_id`, and `parent_tool_use_id`, so Claude also has usable ownership signals that CodeAlmanac does not currently log.
+A live Claude SDK probe confirmed a different provenance shape. Streamed Claude root messages use `parent_tool_use_id: null`; forwarded subagent messages carry `parent_tool_use_id` pointing at the parent `Agent` tool call, and the SDK can list/read concrete subagent transcripts with `listSubagents(sessionId)` and `getSubagentMessages(sessionId, agentId)`. Claude hook and permission APIs also expose subagent ids, but ordinary streamed assistant/user messages do not include `agent_id` directly. The current Claude adapter drops `uuid`, `session_id`, and `parent_tool_use_id`, so Claude also has usable ownership signals that Almanac does not currently log.
 
 The implementation now writes new run log lines as version-2 envelopes with `version`, `sequence`, `runId`, `actor`, and normalized `event` fields while preserving backwards-compatible reading for old `{timestamp, event}` and bare event logs. Codex app-server events use provider thread ids for root/helper attribution and ignore helper `turn/completed` notifications when deciding terminal run completion. Claude events use `parent_tool_use_id` as a derived helper actor id for forwarded subagent messages.
 

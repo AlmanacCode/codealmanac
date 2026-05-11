@@ -26,7 +26,7 @@ its place in the graph.
 
 ## Tooling Boundary
 
-Build/init creates a local CodeAlmanac wiki from the current filesystem. Do
+Build/init creates a local Almanac wiki from the current filesystem. Do
 not use MCP tools, OpenAlmanac tools, remote wiki search, or external page
 search tools for this operation.
 
