@@ -111,12 +111,12 @@ async function scaffoldHealthyClaudeDir(home: string): Promise<{
     "utf8",
   );
   await writeFile(
-    join(claudeDir, "codealmanac.md"),
+    join(claudeDir, "almanac.md"),
     "# mini guide\n",
     "utf8",
   );
   await writeFile(
-    join(claudeDir, "codealmanac-reference.md"),
+    join(claudeDir, "almanac-reference.md"),
     "# reference guide\n",
     "utf8",
   );
@@ -234,7 +234,7 @@ describe("almanac doctor — install section", () => {
       const env = await scaffoldHealthyClaudeDir(home);
       // Pull the reference guide out — mini still present.
       const fs = await import("node:fs/promises");
-      await fs.rm(join(env.claudeDir, "codealmanac-reference.md"));
+      await fs.rm(join(env.claudeDir, "almanac-reference.md"));
       const r = await runDoctor({
         cwd: home,
         json: true,
@@ -250,7 +250,7 @@ describe("almanac doctor — install section", () => {
         (c: { key: string }) => c.key === "install.guides",
       );
       expect(guides.status).toBe("problem");
-      expect(guides.message).toMatch(/codealmanac-reference\.md/);
+      expect(guides.message).toMatch(/almanac-reference\.md/);
       // The mini guide is NOT in the missing list — we're specific.
       expect(guides.message).not.toMatch(/codealmanac\.md[,)]/);
     });
@@ -475,7 +475,7 @@ describe("almanac doctor — pretty output", () => {
         runHealthFn: async () => ({ stdout: "{}", stderr: "", exitCode: 0 }),
       });
       expect(r.exitCode).toBe(0);
-      expect(r.stdout).toMatch(/codealmanac v0\.1\.3/);
+      expect(r.stdout).toMatch(/Almanac v0\.1\.3/);
       expect(r.stdout).toMatch(/## Install/);
       expect(r.stdout).toMatch(/## Current wiki/);
       // Fix suggestion rendered under the failing check.

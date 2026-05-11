@@ -77,7 +77,7 @@ export async function initWiki(options: InitOptions): Promise<InitResult> {
 }
 
 /**
- * Ensure `.gitignore` in the repo root contains the CodeAlmanac-derived
+ * Ensure `.gitignore` in the repo root contains the Almanac-derived
  * runtime files that should never be committed.
  *
  * The SQLite index is derived from markdown pages. Run records are local
@@ -137,7 +137,7 @@ async function ensureGitignoreHasRuntimeArtifacts(cwd: string): Promise<void> {
 function starterReadme(): string {
   return `# Wiki
 
-This is the codealmanac wiki for this repository. It captures the knowledge
+This is the Almanac wiki for this repository. It captures the knowledge
 the code itself can't say — decisions, flows, invariants, gotchas, incidents.
 
 The primary reader is an AI coding agent. The secondary reader is a human

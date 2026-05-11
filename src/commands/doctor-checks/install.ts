@@ -57,7 +57,7 @@ function describeInstallPath(
     return {
       status: "problem",
       key: "install.path",
-      message: "could not detect codealmanac install path",
+      message: "could not detect Almanac install path",
       fix: "reinstall with: npm install -g codealmanac",
     };
   }
@@ -65,8 +65,8 @@ function describeInstallPath(
     status: isEphemeral ? "info" : "ok",
     key: "install.path",
     message: isEphemeral
-      ? `codealmanac running from ephemeral npx location: ${installPath}`
-      : `codealmanac installed at ${installPath}`,
+      ? `Almanac running from ephemeral npx location: ${installPath}`
+      : `Almanac installed at ${installPath}`,
     fix: isEphemeral
       ? "run: npm install -g codealmanac  (to make the install permanent)"
       : undefined,
@@ -172,8 +172,8 @@ async function describeHook(settingsPath: string): Promise<Check> {
 }
 
 function describeGuides(claudeDir: string): Check {
-  const mini = path.join(claudeDir, "codealmanac.md");
-  const ref = path.join(claudeDir, "codealmanac-reference.md");
+  const mini = path.join(claudeDir, "almanac.md");
+  const ref = path.join(claudeDir, "almanac-reference.md");
   const haveMini = existsSync(mini);
   const haveRef = existsSync(ref);
   if (haveMini && haveRef) {
@@ -184,8 +184,8 @@ function describeGuides(claudeDir: string): Check {
     };
   }
   const missing = [
-    haveMini ? null : "codealmanac.md",
-    haveRef ? null : "codealmanac-reference.md",
+    haveMini ? null : "almanac.md",
+    haveRef ? null : "almanac-reference.md",
   ].filter((s): s is string => s !== null);
   return {
     status: "problem",

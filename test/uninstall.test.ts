@@ -63,19 +63,19 @@ async function primeInstalled(env: Env): Promise<void> {
   );
   // Guide files.
   await writeFile(
-    join(env.claudeDir, "codealmanac.md"),
+    join(env.claudeDir, "almanac.md"),
     "# mini\n",
     "utf8",
   );
   await writeFile(
-    join(env.claudeDir, "codealmanac-reference.md"),
+    join(env.claudeDir, "almanac-reference.md"),
     "# reference\n",
     "utf8",
   );
   // CLAUDE.md with import.
   await writeFile(
     join(env.claudeDir, "CLAUDE.md"),
-    "# existing\n\n@~/.claude/codealmanac.md\n",
+    "# existing\n\n@~/.claude/almanac.md\n",
     "utf8",
   );
 }
@@ -105,8 +105,8 @@ describe("almanac uninstall", () => {
       expect(settings).not.toHaveProperty("hooks");
 
       // Guide files removed.
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
-      expect(existsSync(join(env.claudeDir, "codealmanac-reference.md"))).toBe(
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
+      expect(existsSync(join(env.claudeDir, "almanac-reference.md"))).toBe(
         false,
       );
 
@@ -116,7 +116,102 @@ describe("almanac uninstall", () => {
         "utf8",
       );
       expect(body).toMatch(/# existing/);
-      expect(body).not.toMatch(/@~\/\.claude\/codealmanac\.md/);
+      expect(body).not.toMatch(/@~\/\.claude\/almanac\.md/);
+    });
+  });
+
+  it("removes Claude, Codex, and Cursor hook entries from setup", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      await primeInstalled(env);
+
+      const codexHooksPath = join(home, ".codex", "hooks.json");
+      await mkdir(join(home, ".codex"), { recursive: true });
+      const codexForeign = {
+        hooks: [
+          {
+            type: "command",
+            command: "/usr/local/bin/keep-codex.sh",
+            timeout: 3,
+          },
+        ],
+      };
+      await writeFile(
+        codexHooksPath,
+        JSON.stringify(
+          {
+            hooks: {
+              Stop: [
+                {
+                  hooks: [
+                    {
+                      type: "command",
+                      command: env.hookScriptPath,
+                      timeout: 10,
+                    },
+                  ],
+                },
+                codexForeign,
+              ],
+            },
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+
+      const cursorHooksPath = join(home, ".cursor", "hooks.json");
+      await mkdir(join(home, ".cursor"), { recursive: true });
+      const cursorForeign = {
+        command: "/usr/local/bin/keep-cursor.sh",
+        timeout: 3,
+      };
+      await writeFile(
+        cursorHooksPath,
+        JSON.stringify(
+          {
+            hooks: {
+              sessionEnd: [
+                {
+                  command: env.hookScriptPath,
+                  timeout: 10,
+                },
+                cursorForeign,
+              ],
+            },
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+
+      const res = await runUninstall({
+        yes: true,
+        isTTY: false,
+        settingsPath: env.settingsPath,
+        hookScriptPath: env.hookScriptPath,
+        claudeDir: env.claudeDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+
+      const claude = JSON.parse(
+        await readFile(env.settingsPath, "utf8"),
+      ) as Record<string, unknown>;
+      expect(claude).not.toHaveProperty("hooks");
+
+      const codex = JSON.parse(await readFile(codexHooksPath, "utf8")) as {
+        hooks: { Stop: unknown[] };
+      };
+      expect(codex.hooks.Stop).toEqual([codexForeign]);
+
+      const cursor = JSON.parse(await readFile(cursorHooksPath, "utf8")) as {
+        hooks: { sessionEnd: unknown[] };
+      };
+      expect(cursor.hooks.sessionEnd).toEqual([cursorForeign]);
     });
   });
 
@@ -126,7 +221,7 @@ describe("almanac uninstall", () => {
       await mkdir(env.claudeDir, { recursive: true });
       await writeFile(
         join(env.claudeDir, "CLAUDE.md"),
-        "@~/.claude/codealmanac.md\n",
+        "@~/.claude/almanac.md\n",
         "utf8",
       );
 
@@ -159,7 +254,7 @@ describe("almanac uninstall", () => {
 
       expect(res.exitCode).toBe(0);
       expect(existsSync(env.settingsPath)).toBe(false);
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
     });
   });
 
@@ -192,7 +287,7 @@ describe("almanac uninstall", () => {
       expect(settings.hooks.SessionEnd[0]!.hooks[0]!.command).toBe(
         env.hookScriptPath,
       );
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
     });
   });
 
@@ -216,12 +311,52 @@ describe("almanac uninstall", () => {
       ) as Record<string, unknown>;
       expect(settings).not.toHaveProperty("hooks");
 
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(true);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(true);
       const body = await readFile(
         join(env.claudeDir, "CLAUDE.md"),
         "utf8",
       );
-      expect(body).toMatch(/@~\/\.claude\/codealmanac\.md/);
+      expect(body).toMatch(/@~\/\.claude\/almanac\.md/);
+    });
+  });
+
+  it("removes legacy codealmanac guide files and import lines", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      await mkdir(env.claudeDir, { recursive: true });
+      await writeFile(
+        join(env.claudeDir, "codealmanac.md"),
+        "# old mini\n",
+        "utf8",
+      );
+      await writeFile(
+        join(env.claudeDir, "codealmanac-reference.md"),
+        "# old reference\n",
+        "utf8",
+      );
+      await writeFile(
+        join(env.claudeDir, "CLAUDE.md"),
+        "# existing\n\n@~/.claude/codealmanac.md\n",
+        "utf8",
+      );
+
+      const res = await runUninstall({
+        yes: true,
+        isTTY: false,
+        settingsPath: env.settingsPath,
+        hookScriptPath: env.hookScriptPath,
+        claudeDir: env.claudeDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
+      expect(existsSync(join(env.claudeDir, "codealmanac-reference.md"))).toBe(
+        false,
+      );
+      const body = await readFile(join(env.claudeDir, "CLAUDE.md"), "utf8");
+      expect(body).toMatch(/# existing/);
+      expect(body).not.toMatch(/@~\/\.claude\/codealmanac\.md/);
     });
   });
 
@@ -294,10 +429,10 @@ describe("almanac uninstall", () => {
 
 describe("removeImportLine (unit)", () => {
   it("removes a single import line and reports changed", () => {
-    const src = "# hi\n\n@~/.claude/codealmanac.md\n\nother line\n";
+    const src = "# hi\n\n@~/.claude/almanac.md\n\nother line\n";
     const { changed, body } = removeImportLine(src);
     expect(changed).toBe(true);
-    expect(body).not.toMatch(/codealmanac\.md/);
+    expect(body).not.toMatch(/almanac\.md/);
     expect(body).toMatch(/# hi/);
     expect(body).toMatch(/other line/);
   });
@@ -310,14 +445,35 @@ describe("removeImportLine (unit)", () => {
   });
 
   it("removes duplicate import lines (defensive)", () => {
+    const src = "@~/.claude/almanac.md\n@~/.claude/almanac.md\n";
+    const { changed, body } = removeImportLine(src);
+    expect(changed).toBe(true);
+    expect(body).not.toMatch(/almanac\.md/);
+  });
+
+  it("removes duplicate legacy import lines (defensive)", () => {
     const src = "@~/.claude/codealmanac.md\n@~/.claude/codealmanac.md\n";
     const { changed, body } = removeImportLine(src);
     expect(changed).toBe(true);
     expect(body).not.toMatch(/codealmanac\.md/);
   });
 
+  it("removes annotated current and legacy import lines", () => {
+    const src =
+      "# hi\n" +
+      "@~/.claude/almanac.md # installed by setup\n" +
+      "@~/.claude/codealmanac.md\tlegacy import\n" +
+      "@~/.claude/almanac.md-extra\n";
+    const { changed, body } = removeImportLine(src);
+    expect(changed).toBe(true);
+    expect(body).toMatch(/# hi/);
+    expect(body).not.toMatch(/installed by setup/);
+    expect(body).not.toMatch(/legacy import/);
+    expect(body).toMatch(/@~\/\.claude\/almanac\.md-extra/);
+  });
+
   it("ignores lines that merely contain the token inside other text", () => {
-    const src = "see @~/.claude/codealmanac.md for details\n";
+    const src = "see @~/.claude/almanac.md for details\n";
     const { changed } = removeImportLine(src);
     expect(changed).toBe(false);
   });

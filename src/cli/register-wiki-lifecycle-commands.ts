@@ -31,7 +31,7 @@ import {
 export function registerWikiLifecycleCommands(program: Command): void {
   program
     .command("init")
-    .description("initialize and build this repo's CodeAlmanac wiki")
+    .description("initialize and build this repo's Almanac wiki")
     .option("--using <provider[/model]>", "provider and optional model")
     .option("--background", "start as a background job")
     .option("--json", "emit structured JSON for background job start")
@@ -168,7 +168,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   const jobs = program
     .command("jobs")
-    .description("show and manage CodeAlmanac background jobs");
+    .description("show and manage Almanac background jobs");
 
   jobs
     .command("list", { isDefault: true })
@@ -281,9 +281,12 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   hook
     .command("uninstall")
-    .description("remove codealmanac's SessionEnd entry; leaves foreign entries alone")
-    .action(async () => {
-      const result = await runHookUninstall();
+    .description("remove Almanac's SessionEnd entry; leaves foreign entries alone")
+    .option("--source <source>", "claude, codex, cursor, or all")
+    .action(async (opts: { source?: string }) => {
+      const result = await runHookUninstall({
+        source: normalizeHookSource(opts.source),
+      });
       emit(result);
     });
 

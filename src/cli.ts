@@ -19,9 +19,9 @@ import {
  * and the real update banner. Production callers pass nothing.
  */
 export interface RunDeps {
-  /** Replace the setup wizard (bare `codealmanac` / `almanac setup`). */
+  /** Replace the setup wizard (bare `almanac` / `almanac setup`). */
   runSetup?: typeof runSetup;
-  /** Replace the bare-`codealmanac` global install bootstrapper. */
+  /** Replace the bare compatibility `codealmanac` global install bootstrapper. */
   runCodealmanacBootstrap?: typeof runCodealmanacBootstrap;
   /** Replace the pre-command update-nag banner. */
   announceUpdate?: (stderr: NodeJS.WritableStream) => void;
@@ -33,7 +33,7 @@ export interface RunDeps {
 
 /**
  * Process-level CLI entrypoint. This owns invocation-level behavior:
- * update checks, bare `codealmanac` setup routing, Commander creation,
+ * update checks, bare `almanac` setup routing, Commander creation,
  * grouped help, and parsing. Individual command wiring lives in
  * `src/cli/register-commands.ts`.
  */
@@ -65,7 +65,7 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
   program
     .name(programName)
     .description(
-      "codealmanac — a living wiki for codebases, maintained by AI agents",
+      "Almanac — a living wiki for codebases, maintained by AI agents",
     )
     .version(readPackageVersion(), "-v, --version", "print version");
 
@@ -74,17 +74,20 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
     return;
   }
 
-  if (programName === "codealmanac") {
+  if (programName === "almanac" || programName === "codealmanac") {
     const setupInvocation = tryParseSetupShortcut(argv.slice(2));
     if (setupInvocation !== null) {
-      if (deps.runCodealmanacBootstrap !== undefined) {
+      if (
+        programName === "codealmanac" &&
+        deps.runCodealmanacBootstrap !== undefined
+      ) {
         emit(
           await runCodealmanacBootstrapFn({
             setupOptions: setupInvocation,
             setupArgs: argv.slice(2),
           }),
         );
-      } else if (deps.runSetup !== undefined) {
+      } else if (programName === "almanac" || deps.runSetup !== undefined) {
         emit(await runSetupFn(setupInvocation));
       } else {
         emit(
@@ -211,7 +214,7 @@ async function tryRunSqliteFreeCommand(
       return true;
     }
     if (subcommand === "uninstall") {
-      emit(await runHookUninstall());
+      emit(await runHookUninstall({ source: parseHookSource(args.slice(2)) }));
       return true;
     }
     if (subcommand === "status") {
@@ -373,7 +376,7 @@ export interface SetupShortcutOptions {
 }
 
 /**
- * Decide whether a bare `codealmanac [...args]` invocation should route
+ * Decide whether a bare `almanac [...args]` invocation should route
  * straight to `runSetup` (and if so, with which flags). Returns the
  * options object when it's a setup shortcut, or `null` when Commander
  * should parse the invocation normally.

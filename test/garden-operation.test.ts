@@ -34,7 +34,7 @@ describe("garden operation", () => {
           targetPaths: [`${repo}/.almanac`],
         },
       });
-      expect(spec.prompt).toContain("CodeAlmanac is cultivated project memory");
+      expect(spec.prompt).toContain("Almanac is cultivated project memory");
       expect(spec.prompt).toContain("Page Notability And Graph Structure");
       expect(spec.prompt).toContain("Page Syntax And Writing Conventions");
       expect(spec.prompt).toContain("Garden Operation");

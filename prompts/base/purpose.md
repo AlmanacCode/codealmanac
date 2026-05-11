@@ -1,6 +1,6 @@
 # Wiki Purpose
 
-CodeAlmanac is cultivated project memory.
+Almanac is cultivated project memory.
 
 The wiki is a deep-research cache over the project. It preserves the
 understanding that an expert agent builds after reading, tracing, comparing,

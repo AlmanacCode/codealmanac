@@ -108,7 +108,7 @@ export async function runConfigSet(opts: {
     setRawConfigValue(raw, key, getConfigValue(next, key));
     await writeRawConfig(raw, file);
     return ok(
-      `codealmanac: set ${key}=${formatConfigValue(getConfigValue(next, key))}` +
+      `almanac: set ${key}=${formatConfigValue(getConfigValue(next, key))}` +
         `${opts.project === true ? " in project config" : ""}.\n`,
     );
   } catch (err: unknown) {
@@ -142,7 +142,7 @@ export async function runConfigUnset(opts: {
   deleteRawConfigValue(raw, key);
   await writeRawConfig(raw, file);
   return ok(
-    `codealmanac: unset ${key}${opts.project === true ? " in project config" : ""}.\n`,
+    `almanac: unset ${key}${opts.project === true ? " in project config" : ""}.\n`,
   );
 }
 

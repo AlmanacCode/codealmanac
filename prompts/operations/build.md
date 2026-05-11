@@ -1,6 +1,6 @@
 # Build Operation
 
-You are building the first substantial CodeAlmanac wiki for this repository.
+You are building the first substantial Almanac wiki for this repository.
 
 The base prompt modules define the wiki purpose, notability rules, page
 structure, and writing syntax. Follow them.

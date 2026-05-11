@@ -364,6 +364,81 @@ describe("almanac hook uninstall", () => {
     });
   });
 
+  it("removes Claude, Codex, and Cursor hooks when source is all", async () => {
+    await withTempHome(async (home) => {
+      const { settingsPath, hookScriptPath } = await setup(home);
+      await runHookInstall({
+        source: "all",
+        settingsPath,
+        hookScriptPath,
+      });
+
+      const out = await runHookUninstall({
+        source: "all",
+        settingsPath,
+        hookScriptPath,
+      });
+
+      expect(out.exitCode).toBe(0);
+      expect(out.stdout).toMatch(/SessionEnd hook removed/);
+      expect(out.stdout).toMatch(/Codex Stop hook removed/);
+      expect(out.stdout).toMatch(/Cursor sessionEnd hook removed/);
+
+      const claude = (await readJson(settingsPath)) as Record<string, unknown>;
+      expect(claude).not.toHaveProperty("hooks");
+
+      const codex = (await readJson(
+        join(home, ".codex", "hooks.json"),
+      )) as Record<string, unknown>;
+      expect(codex).not.toHaveProperty("hooks");
+
+      const cursor = (await readJson(
+        join(home, ".cursor", "hooks.json"),
+      )) as Record<string, unknown>;
+      expect(cursor).not.toHaveProperty("hooks");
+    });
+  });
+
+  it("preserves foreign commands inside a Codex wrapper while removing ours", async () => {
+    await withTempHome(async (home) => {
+      const { hookScriptPath } = await setup(home);
+      await mkdir(join(home, ".codex"), { recursive: true });
+      const foreign = {
+        type: "command",
+        command: "/usr/local/bin/keep-codex.sh",
+        timeout: 3,
+      };
+      await writeFile(
+        join(home, ".codex", "hooks.json"),
+        JSON.stringify(
+          {
+            hooks: {
+              Stop: [
+                {
+                  hooks: [
+                    { type: "command", command: hookScriptPath, timeout: 10 },
+                    foreign,
+                  ],
+                },
+              ],
+            },
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+
+      const out = await runHookUninstall({ source: "codex", hookScriptPath });
+
+      expect(out.exitCode).toBe(0);
+      const codex = (await readJson(join(home, ".codex", "hooks.json"))) as {
+        hooks: { Stop: { hooks: unknown[] }[] };
+      };
+      expect(codex.hooks.Stop).toEqual([{ hooks: [foreign] }]);
+    });
+  });
+
   it("recognizes and removes a legacy unwrapped entry on uninstall", async () => {
     // A user who never re-ran setup after upgrading past v0.1.4 could
     // still have the legacy shape in their settings.json. Uninstall

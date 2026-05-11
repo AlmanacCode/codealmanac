@@ -1,5 +1,5 @@
 #!/bin/bash
-# codealmanac SessionEnd hook
+# Almanac SessionEnd hook
 #
 # Claude, Codex, and Cursor invoke this on session end/stop with JSON on stdin.
 # Common payload fields:
@@ -15,7 +15,7 @@
 
 set -u
 
-# CodeAlmanac's own build/capture agents may run provider CLIs internally.
+# Almanac's own build/capture agents may run provider CLIs internally.
 # Their SessionEnd events must not trigger another capture, or one capture
 # can become an unbounded capture chain.
 if [ "${CODEALMANAC_INTERNAL_SESSION:-}" = "1" ]; then

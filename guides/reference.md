@@ -1,6 +1,6 @@
-# codealmanac — full reference
+# Almanac — full reference
 
-Long-form manual for the `almanac` / `codealmanac` CLI. The mini guide at `~/.claude/codealmanac.md` covers *when* to reach for each command; this covers *every flag, every return shape, every edge case*. Import with `@~/.claude/codealmanac-reference.md` on demand.
+Long-form manual for the `almanac` CLI installed by the `codealmanac` npm package. The mini guide at `~/.claude/almanac.md` covers *when* to reach for each command; this covers *every flag, every return shape, every edge case*. Import with `@~/.claude/almanac-reference.md` on demand.
 
 Groupings match `almanac --help`:
 
@@ -123,7 +123,7 @@ Build the first wiki for this repo. Requires the selected provider to be install
 | Flag | Semantics |
 |---|---|
 | `--using <provider[/model]>` | Override the configured provider/model for this run. |
-| `--background` | Start as a detached CodeAlmanac job. |
+| `--background` | Start as a detached Almanac job. |
 | `--json` | Emit structured JSON for background job start. Cannot be combined with foreground mode. |
 | `--force` | Allow rebuilding an existing populated wiki. |
 | `-y, --yes` | Confirm non-interactively. |
@@ -179,7 +179,7 @@ Improve the wiki as a graph: page boundaries, links, topics, hubs, stale claims,
 
 #### `almanac jobs`
 
-Inspect and manage CodeAlmanac runs stored under `.almanac/runs/`.
+Inspect and manage Almanac runs stored under `.almanac/runs/`.
 
 ```bash
 almanac jobs
@@ -204,9 +204,9 @@ Flag: `--wiki <name>`.
 
 ### 1.4 Setup
 
-#### `almanac setup` (alias: bare `codealmanac`)
+#### `almanac setup`
 
-Install the SessionEnd hook + the two CLAUDE.md guides (`codealmanac.md`, `codealmanac-reference.md`) + the `@~/.claude/codealmanac.md` import line. Idempotent.
+Install the SessionEnd hook + the two CLAUDE.md guides (`almanac.md`, `almanac-reference.md`) + the `@~/.claude/almanac.md` import line. Idempotent.
 
 | Flag | Semantics |
 |---|---|
@@ -216,7 +216,7 @@ Install the SessionEnd hook + the two CLAUDE.md guides (`codealmanac.md`, `codea
 | `--skip-hook` | Opt out of the SessionEnd hook. |
 | `--skip-guides` | Opt out of the CLAUDE.md guides. |
 
-Both `almanac setup` and bare `codealmanac` route here. Interactive setup chooses provider first, then provider-local model. `codealmanac --yes`, `codealmanac --agent codex --model gpt-5.3-codex`, `codealmanac --skip-hook`, and `codealmanac --skip-guides` are the typical first-run invocations. Passing `--skip-hook --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn.
+Bare `almanac`, `almanac setup`, and the compatibility `npx codealmanac` bootstrap route here. Interactive setup chooses provider first, then provider-local model. `almanac --yes`, `almanac --agent codex --model gpt-5.3-codex`, `almanac --skip-hook`, and `almanac --skip-guides` are the typical first-run invocations after install. Passing `--skip-hook --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn.
 
 #### `almanac uninstall`
 
@@ -333,7 +333,7 @@ Upgrade command + the controls for the nag banner. See §11 for the full update-
 
 **Exit codes:** `0` on successful install / check / dismiss / toggle. Install propagates npm's exit code on failure. `--check` exits `1` when the registry is unreachable.
 
-**EACCES:** if `npm i -g` fails with a permission error, try `sudo npm i -g codealmanac@latest`, or switch to a version manager (nvm/volta/fnm) that doesn't require root. codealmanac will never sudo on your behalf — silent privilege escalation would violate the trust contract.
+**EACCES:** if `npm i -g` fails with a permission error, try `sudo npm i -g codealmanac@latest`, or switch to a version manager (nvm/volta/fnm) that doesn't require root. Almanac will never sudo on your behalf — silent privilege escalation would violate the trust contract.
 
 ### 1.5 `--stdin` pipe semantics
 
@@ -809,7 +809,7 @@ Case sensitivity on Linux. Schema v2 stores `original_path` for case-preserving 
 
 ### Forensics files
 
-- `.almanac/runs/<run-id>.json` — CodeAlmanac run record with status, provider, model, timings, log path, and failure metadata.
+- `.almanac/runs/<run-id>.json` — Almanac run record with status, provider, model, timings, log path, and failure metadata.
 - `.almanac/runs/<run-id>.jsonl` — provider event log for the run. Read with `almanac jobs logs <run-id>`.
 - `.almanac/runs/.capture-<session-id>.hook.log` — hook sidecar containing stdout/stderr from the capture start command. Present only for hook-invoked captures.
 

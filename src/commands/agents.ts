@@ -22,7 +22,7 @@ export async function runAgentsList(opts: {
   view?: ProviderSetupView;
 } = {}): Promise<AgentsResult> {
   const view = opts.view ?? await buildProviderSetupView();
-  const lines = ["codealmanac agents\n"];
+  const lines = ["Almanac agents\n"];
   lines.push(
     ...formatTextTable({
       headers: ["DEFAULT", "AGENT", "STATUS", "RECOMMENDED", "MODEL", "DETAIL"],
@@ -45,7 +45,7 @@ export async function runAgentsList(opts: {
 
 export async function runAgentsDoctor(): Promise<AgentsResult> {
   const view = await buildProviderSetupView();
-  const lines = ["codealmanac agent doctor\n"];
+  const lines = ["Almanac agent doctor\n"];
   for (const choice of view.choices) {
     lines.push(`${choice.ready ? "✓" : "✗"} ${choice.label}`);
     lines.push(`  status: ${readinessLabel(choice.readiness)}`);
@@ -118,8 +118,8 @@ async function setDefaultAgent(
   return {
     stdout:
       parsed.model === undefined
-        ? `codealmanac: default agent set to ${provider}.\n`
-        : `codealmanac: default agent set to ${provider}; ${provider} model set to ${parsed.model}.\n`,
+        ? `almanac: default agent set to ${provider}.\n`
+        : `almanac: default agent set to ${provider}; ${provider} model set to ${parsed.model}.\n`,
     stderr: "",
     exitCode: 0,
   };
@@ -195,8 +195,8 @@ async function setProviderModel(opts: {
   return {
     stdout:
       model === null
-        ? `codealmanac: ${provider} model reset to provider default.\n`
-        : `codealmanac: ${provider} model set to ${model}.\n`,
+        ? `almanac: ${provider} model reset to provider default.\n`
+        : `almanac: ${provider} model set to ${model}.\n`,
     stderr: "",
     exitCode: 0,
   };
