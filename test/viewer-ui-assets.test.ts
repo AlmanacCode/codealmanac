@@ -19,7 +19,11 @@ describe("viewer UI assets", () => {
     expect(indexHtml).toContain('src="/almanac-mark.png"');
     expect(indexHtml).toContain('href="/jobs.css"');
     expect(indexHtml).toContain("Your code wiki");
+    expect(indexHtml).toContain('class="ca-brand ca-brand-route"');
+    expect(indexHtml).toContain('data-route="/"');
     expect(indexHtml).not.toContain("Local wiki viewer");
+    expect(indexHtml).toContain("Linked from");
+    expect(indexHtml).not.toContain("Backlinks");
     expect(indexHtml).toContain('data-route="/"');
     expect(indexHtml).toContain('data-route="/getting-started"');
     expect(indexHtml).toContain('data-route="/jobs"');
@@ -47,6 +51,19 @@ describe("viewer UI assets", () => {
     expect(appJs).toContain("state.overview.featuredPages");
     expect(appJs).toContain('wikiPath === "/getting-started"');
     expect(appJs).toContain("renderGettingStarted");
+    expect(appJs).toContain("renderPageActions");
+    expect(appJs).toContain("goBack");
+    expect(appJs).toContain("almanacHistoryIndex");
+    expect(appJs).toContain("history.replaceState");
+    expect(appJs).toContain("event.state");
+    expect(appJs).toContain("Back");
+    expect(appJs).not.toContain("ca-page-header");
+    expect(appJs).toContain("renderHeading");
+    expect(appJs).toContain("renderMarkdown(page.body, { decorateTitle: true, summary: page.summary })");
+    expect(appJs).toContain("function renderMarkdown(source, options = {})");
+    expect(appJs).toContain("renderArticleSummary");
+    expect(appJs).toContain('const level = decorated ? "h1" : "h2";');
+    expect(appJs).toContain("ca-page-ornament");
     expect(appJs).toContain('wikiPath === "/jobs"');
     expect(appJs).toContain('wikiPath.startsWith("/jobs/")');
     expect(appJs).toContain('import { createJobsView } from "./jobs-view.js"');
@@ -78,6 +95,7 @@ describe("viewer UI assets", () => {
     expect(jobsJs).toContain("deps.jobPath(runId)");
     expect(jobsJs).toContain("deps.jobRoute(run.id)");
     expect(jobsJs).toContain("deps.isCurrentJobRoute(runId)");
+    expect(jobsJs).toContain("deps.pageActions()");
     expect(jobsJs).toContain("schedulePoll");
     expect(appJs).not.toContain("Start with the map");
     expect(appJs).toContain("setRailVisible(isWikiPageRoute(pathname))");
@@ -91,8 +109,15 @@ describe("viewer UI assets", () => {
 
     expect(appCss).toContain(".ca-topic-link");
     expect(appCss).toContain(".ca-brand-mark-image");
+    expect(appCss).toContain(".ca-brand-route");
+    expect(appCss).toContain(".ca-page-actions");
+    expect(appCss).toContain(".ca-back-button");
+    expect(appCss).toContain(".ca-article-summary");
+    expect(appCss).toContain(".ca-page-ornament");
+    expect(appCss).toContain(".ca-link-button");
     expect(appCss).toContain("brightness(0.68)");
     expect(appCss).toContain(".ca-left .ca-link-button.is-active");
+    expect(appCss).not.toContain(".ca-left .ca-link-button {\n  color: var(--ca-text);");
     expect(appCss).toContain(".ca-shell.is-rail-hidden");
     expect(appCss).not.toContain(".ca-log-entry");
     expect(jobsCss).toContain(".ca-log-entry");

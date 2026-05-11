@@ -19,6 +19,7 @@ const state = {
   currentPage: null,
   pageTitles: new Map(),
   showAllTopics: false,
+  historyIndex: 0,
 };
 
 const els = {
@@ -39,6 +40,7 @@ const jobsView = createJobsView({
   jobPath: (runId) => wikiApi(`/jobs/${encodeURIComponent(runId)}`),
   jobRoute: (runId) => wikiRoute(`/jobs/${runId}`),
   isCurrentJobRoute: (runId) => location.pathname === wikiRoute(`/jobs/${runId}`),
+  pageActions: () => renderPageActions(wikiRoute("/")),
   renderError,
   renderMarkdown,
   escapeHtml,
@@ -63,6 +65,7 @@ boot().catch((error) => renderError(error));
 
 async function boot() {
   wireEvents();
+  initializeHistoryState();
   const result = await api("/api/wikis");
   state.wikis = result.wikis ?? [];
   renderChrome();
@@ -82,6 +85,13 @@ function wireEvents() {
       return;
     }
 
+    const back = event.target.closest("[data-back]");
+    if (back !== null) {
+      event.preventDefault();
+      goBack();
+      return;
+    }
+
     const target = event.target.closest("[data-route]");
     if (target === null || target.disabled === true) return;
     event.preventDefault();
@@ -97,13 +107,18 @@ function wireEvents() {
       : wikiRoute("/search"));
   });
 
-  window.addEventListener("popstate", () => {
+  window.addEventListener("popstate", (event) => {
+    state.historyIndex = historyIndexFromState(event.state);
     route(location.pathname, location.search, false).catch((error) => renderError(error));
   });
 }
 
 async function route(pathname, search = "", push = true) {
-  if (push) history.pushState(null, "", pathname + search);
+  if (push) {
+    const nextIndex = state.historyIndex + 1;
+    state.historyIndex = nextIndex;
+    history.pushState(historyState(nextIndex), "", pathname + search);
+  }
   jobsView.clearPoll();
 
   if (pathname === "/" || !pathname.startsWith("/w/")) {
@@ -338,6 +353,7 @@ async function renderOverview() {
   const overview = state.overview;
   document.title = `${state.currentWiki} - Almanac`;
   els.reader.innerHTML = `
+    ${renderPageActions("/")}
     <section class="ca-hero">
       <div class="ca-kicker">Project overview</div>
       <h1 class="ca-title">${escapeHtml(projectName(overview.repoRoot))}</h1>
@@ -387,6 +403,7 @@ async function renderGettingStarted() {
 
   document.title = `Getting started - ${state.currentWiki}`;
   els.reader.innerHTML = `
+    ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
       <div class="ca-kicker">Getting started</div>
       <h1 class="ca-title">No getting started page</h1>
@@ -409,18 +426,16 @@ async function renderPage(slug) {
 function renderPageArticle(page) {
   document.title = `${page.title ?? page.slug} - Almanac`;
   els.reader.innerHTML = `
+    ${renderPageActions(wikiRoute("/"))}
     <article class="ca-article">
-      <header class="ca-page-header">
-        <h1>${escapeHtml(pageTitle(page))}</h1>
-        <div class="ca-page-header-meta">Last revised ${escapeHtml(formatDate(page.updated_at))}</div>
-        <div class="ca-chip-row" style="justify-content: center;">
-          ${page.topics.map((topic) => `<button class="ca-chip" data-route="${escapeAttr(wikiRoute(`/topic/${topic}`))}">${escapeHtml(topic)}</button>`).join("")}
-        </div>
-        <div class="ca-page-ornament"><span>✥</span></div>
-      </header>
-      <div class="ca-prose">${renderMarkdown(page.body)}</div>
+      <div class="ca-prose">${renderMarkdown(page.body, { decorateTitle: true, summary: page.summary })}</div>
     </article>
   `;
+}
+
+function renderArticleSummary(summary) {
+  const text = summary?.trim();
+  return text ? `<p class="ca-article-summary">${escapeHtml(text)}</p>` : "";
 }
 
 async function renderTopic(slug) {
@@ -428,6 +443,7 @@ async function renderTopic(slug) {
   rememberPages(topic.pages);
   document.title = `${topic.title ?? topic.slug} - Almanac`;
   els.reader.innerHTML = `
+    ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
       <div class="ca-kicker">Topic</div>
       <h1 class="ca-title">${escapeHtml(topic.title ?? topic.slug)}</h1>
@@ -462,6 +478,7 @@ async function renderSearch(query) {
   rememberPages(result.pages);
   document.title = `${query ? `Search: ${query}` : "Recent pages"} - Almanac`;
   els.reader.innerHTML = `
+    ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
       <div class="ca-kicker">${query ? "Search" : "Recent"}</div>
       <h1 class="ca-title">${query ? escapeHtml(query) : "Recent pages"}</h1>
@@ -475,6 +492,7 @@ async function renderFile(path) {
   const result = await api(wikiApi(`/file?path=${encodeURIComponent(path)}`));
   rememberPages(result.pages);
   els.reader.innerHTML = `
+    ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
       <div class="ca-kicker">File reference</div>
       <h1 class="ca-title">${escapeHtml(path || "File references")}</h1>
@@ -500,7 +518,7 @@ function renderPageRail(page) {
   `;
   els.backlinks.innerHTML = page.wikilinks_in.length > 0
     ? page.wikilinks_in.map((slug) => linkButton(pageLabel(slug), wikiRoute(`/page/${slug}`))).join("")
-    : `<div class="ca-meta-empty">No backlinks.</div>`;
+    : `<div class="ca-meta-empty">No pages link here.</div>`;
   els.fileRefs.innerHTML = page.file_refs.length > 0
     ? page.file_refs.map((ref) => linkButton(ref.path, wikiRoute(`/file?path=${encodeURIComponent(ref.path)}`), "", "ca-file-link")).join("")
     : `<div class="ca-meta-empty">No file refs.</div>`;
@@ -531,10 +549,20 @@ function linkButton(label, route, detail = "", extraClass = "") {
   `;
 }
 
-function renderMarkdown(source) {
+function renderPageActions(fallbackRoute) {
+  return `
+    <div class="ca-page-actions">
+      <button class="ca-back-button" type="button" data-back data-fallback-route="${escapeAttr(fallbackRoute)}">Back</button>
+    </div>
+  `;
+}
+
+function renderMarkdown(source, options = {}) {
   const blocks = [];
   let inCode = false;
   let code = [];
+  let decoratedHeading = false;
+  const decorateTitle = options.decorateTitle === true;
 
   for (const line of source.split(/\r?\n/)) {
     if (line.startsWith("```")) {
@@ -557,12 +585,22 @@ function renderMarkdown(source) {
     }
     if (line.startsWith("### ")) blocks.push(`<h3>${inline(line.slice(4))}</h3>`);
     else if (line.startsWith("## ")) blocks.push(`<h2>${inline(line.slice(3))}</h2>`);
-    else if (line.startsWith("# ")) blocks.push(`<h2>${inline(line.slice(2))}</h2>`);
+    else if (line.startsWith("# ")) {
+      blocks.push(renderHeading(line.slice(2), decorateTitle && !decoratedHeading, options.summary));
+      decoratedHeading = true;
+    }
     else if (line.startsWith("- ")) blocks.push(`<p>• ${inline(line.slice(2))}</p>`);
     else blocks.push(`<p>${inline(line)}</p>`);
   }
   if (inCode) blocks.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
   return blocks.filter(Boolean).join("\n");
+}
+
+function renderHeading(text, decorated, summary = null) {
+  const level = decorated ? "h1" : "h2";
+  const heading = `<${level}>${inline(text)}</${level}>`;
+  if (!decorated) return heading;
+  return `${heading}\n${renderArticleSummary(summary)}\n<div class="ca-page-ornament" aria-hidden="true"><span>✥</span></div>`;
 }
 
 function inline(text) {
@@ -631,6 +669,29 @@ function setActiveNav(pathname) {
 
 function setRailVisible(visible) {
   els.shell.classList.toggle("is-rail-hidden", !visible);
+}
+
+function goBack() {
+  const active = document.querySelector("[data-back]");
+  const fallbackRoute = active?.dataset?.fallbackRoute ?? "/";
+  if (state.historyIndex > 0) {
+    history.back();
+    return;
+  }
+  navigate(fallbackRoute);
+}
+
+function initializeHistoryState() {
+  state.historyIndex = historyIndexFromState(history.state);
+  history.replaceState(historyState(state.historyIndex), "", location.href);
+}
+
+function historyState(index) {
+  return { ...(history.state ?? {}), almanacHistoryIndex: index };
+}
+
+function historyIndexFromState(value) {
+  return typeof value?.almanacHistoryIndex === "number" ? value.almanacHistoryIndex : 0;
 }
 
 function projectName(repoRoot) {

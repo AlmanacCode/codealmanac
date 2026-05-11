@@ -16,6 +16,7 @@ export function createJobsView(deps) {
     const days = groupByDay(runs);
 
     deps.reader.innerHTML = `
+      ${deps.pageActions()}
       <section class="ca-hero">
         <div class="ca-kicker">Ledger</div>
         <h1 class="ca-title">Run history</h1>
@@ -35,6 +36,7 @@ export function createJobsView(deps) {
     const transcript = buildTranscript(detail.events);
     document.title = `${run.displayTitle} - Almanac Jobs`;
     deps.reader.innerHTML = `
+      ${deps.pageActions()}
       <section class="ca-hero">
         <div class="ca-kicker">${deps.escapeHtml(run.operation)}</div>
         <h1 class="ca-title">${deps.escapeHtml(run.displayTitle)}</h1>
