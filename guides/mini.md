@@ -1,4 +1,4 @@
-# codealmanac — a wiki for this codebase, maintained for you
+# Almanac — a wiki for this codebase, maintained for you
 
 This repo has a `.almanac/` directory. It's a **living wiki** written for AI agents, documenting the things the code can't say: **why** it's shaped this way, **what was tried and failed**, **what must not be violated**, **how things flow end-to-end**, and **known gotchas** discovered through real debugging.
 
@@ -45,7 +45,7 @@ The output is page slugs. Pick 1-3 that look relevant, `almanac show <slug>`, fo
 
 ## The commands you'll use
 
-Other commands exist (`list`, `tag`, `untag`, `hook`, `uninstall`, `doctor`, etc.) — most are administrative. See `almanac --help` or `@~/.claude/codealmanac-reference.md` for the full surface. In normal sessions you'll live in the four commands below.
+Other commands exist (`list`, `tag`, `untag`, `hook`, `uninstall`, `doctor`, etc.) — most are administrative. See `almanac --help` or `@~/.claude/almanac-reference.md` for the full surface. In normal sessions you'll live in the four commands below.
 
 ### 1. `almanac search` — the starting point
 
@@ -220,12 +220,12 @@ No jobs at all → the hook isn't installed, bailed before starting capture, or 
 
 ## Staying current
 
-codealmanac checks for updates in the background (once per 24h) after each
+Almanac checks for updates in the background (once per 24h) after each
 command. When a new version is available, you'll see a stderr banner on
 every subsequent invocation:
 
 ```
-! codealmanac 0.1.6 available (you're on 0.1.5) — run: almanac update
+! Almanac 0.1.6 available (you're on 0.1.5) — run: almanac update
 ```
 
 The banner shows on every command until you update or dismiss it. Run:
@@ -247,5 +247,5 @@ install) is the design. See `almanac update --help` for the full flag set.
 ## When in doubt
 
 - `.almanac/README.md` — repo-specific conventions + notability bar
-- `@~/.claude/codealmanac-reference.md` — full command reference with every flag
+- `@~/.claude/almanac-reference.md` — full command reference with every flag
 - `almanac --help`, `almanac <command> --help` — built-in

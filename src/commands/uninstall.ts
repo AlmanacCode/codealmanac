@@ -13,12 +13,13 @@ import { IMPORT_LINE } from "./setup.js";
  * artifact was never installed. We remove exactly the things setup added,
  * nothing else:
  *
- *   1. The `@~/.claude/codealmanac.md` line from `~/.claude/CLAUDE.md`.
+ *   1. The `@~/.claude/almanac.md` line from `~/.claude/CLAUDE.md`.
  *      Other content stays untouched. If removing our line leaves the
  *      file empty, we delete the file so our fingerprint doesn't persist
  *      as zero bytes.
- *   2. The guide files `~/.claude/codealmanac.md` and
- *      `~/.claude/codealmanac-reference.md`.
+ *   2. The guide files `~/.claude/almanac.md` and
+ *      `~/.claude/almanac-reference.md`. Legacy `codealmanac*.md` guide
+ *      files are removed too.
  *   3. The SessionEnd hook entry (delegated to `runHookUninstall`, which
  *      already knows how to leave foreign entries alone).
  *
@@ -53,6 +54,7 @@ export interface UninstallResult {
 const BLUE = "\x1b[38;5;75m";
 const DIM = "\x1b[2m";
 const RST = "\x1b[0m";
+const LEGACY_IMPORT_LINE = "@~/.claude/codealmanac.md";
 
 export async function runUninstall(
   options: UninstallOptions = {},
@@ -78,6 +80,7 @@ export async function runUninstall(
   }
   if (removeHook) {
     const res = await runHookUninstall({
+      source: "all",
       settingsPath: options.settingsPath,
       hookScriptPath: options.hookScriptPath,
     });
@@ -128,17 +131,20 @@ async function removeGuideFiles(
 ): Promise<RemoveGuidesResult> {
   const touched: string[] = [];
 
-  const mini = path.join(claudeDir, "codealmanac.md");
-  const ref = path.join(claudeDir, "codealmanac-reference.md");
+  const guideFiles = [
+    "almanac.md",
+    "almanac-reference.md",
+    "codealmanac.md",
+    "codealmanac-reference.md",
+  ];
   const claudeMd = path.join(claudeDir, "CLAUDE.md");
 
-  if (existsSync(mini)) {
-    await rm(mini, { force: true });
-    touched.push("codealmanac.md");
-  }
-  if (existsSync(ref)) {
-    await rm(ref, { force: true });
-    touched.push("codealmanac-reference.md");
+  for (const file of guideFiles) {
+    const fullPath = path.join(claudeDir, file);
+    if (existsSync(fullPath)) {
+      await rm(fullPath, { force: true });
+      touched.push(file);
+    }
   }
 
   if (existsSync(claudeMd)) {
@@ -178,7 +184,8 @@ export function removeImportLine(contents: string): {
 
   const indices: number[] = [];
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i]!.trim() === IMPORT_LINE) indices.push(i);
+    const line = lines[i]!.trim();
+    if (isManagedImportLine(line)) indices.push(i);
   }
   if (indices.length === 0) return { changed: false, body: contents };
 
@@ -196,6 +203,19 @@ export function removeImportLine(contents: string): {
   body = body.replace(/\n\n\n+/g, "\n\n");
 
   return { changed: true, body };
+}
+
+function isManagedImportLine(line: string): boolean {
+  return (
+    isImportLineFor(line, IMPORT_LINE) ||
+    isImportLineFor(line, LEGACY_IMPORT_LINE)
+  );
+}
+
+function isImportLineFor(line: string, importLine: string): boolean {
+  if (line === importLine) return true;
+  const rest = line.slice(importLine.length);
+  return line.startsWith(importLine) && /^[\t ]/.test(rest);
 }
 
 function confirm(

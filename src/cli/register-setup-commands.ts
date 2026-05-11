@@ -67,7 +67,7 @@ export function registerSetupCommands(program: Command): void {
 
   const config = program
     .command("config")
-    .description("read and write codealmanac settings");
+    .description("read and write Almanac settings");
 
   config
     .command("list")
@@ -116,7 +116,7 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("set")
-    .description("configure codealmanac defaults")
+    .description("configure Almanac defaults")
     .argument("<key>", "setting key, e.g. default-agent or model")
     .argument("[value...]", "setting value")
     .action(async (key: string, value: string[]) => {
@@ -141,7 +141,7 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("setup")
-    .description("install the hook + CLAUDE.md guides (bare codealmanac alias)")
+    .description("install the hook + CLAUDE.md guides")
     .option("-y, --yes", "skip prompts; install everything")
     .option("--agent <agent>", "default agent: claude, codex, or cursor")
     .option("--model <model>", "default model for the selected agent")
@@ -168,7 +168,7 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("doctor")
-    .description("report on the codealmanac install + current wiki health")
+    .description("report on the Almanac install + current wiki health")
     .option("--json", "emit structured JSON")
     .option("--install-only", "report only on the install (skip wiki checks)")
     .option("--wiki-only", "report only on the current wiki (skip install checks)")
@@ -190,7 +190,7 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("update")
-    .description("install the latest codealmanac (synchronous foreground `npm i -g`)")
+    .description("install the latest Almanac package (synchronous foreground `npm i -g`)")
     .option(
       "--dismiss",
       "silence the update banner for the current `latest_version` without installing",

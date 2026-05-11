@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   SpawnCliFn,
@@ -64,10 +64,10 @@ async function scaffoldGuides(
   dir: string,
 ): Promise<void> {
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, "mini.md"), "# codealmanac (mini)\n", "utf8");
+  await writeFile(join(dir, "mini.md"), "# almanac (mini)\n", "utf8");
   await writeFile(
     join(dir, "reference.md"),
-    "# codealmanac (reference)\n",
+    "# almanac (reference)\n",
     "utf8",
   );
 }
@@ -156,14 +156,14 @@ describe("codealmanac setup", () => {
 
       // Guides copied.
       expect(
-        await readFile(join(env.claudeDir, "codealmanac.md"), "utf8"),
-      ).toContain("codealmanac (mini)");
+        await readFile(join(env.claudeDir, "almanac.md"), "utf8"),
+      ).toContain("almanac (mini)");
       expect(
         await readFile(
-          join(env.claudeDir, "codealmanac-reference.md"),
+          join(env.claudeDir, "almanac-reference.md"),
           "utf8",
         ),
-      ).toContain("codealmanac (reference)");
+      ).toContain("almanac (reference)");
 
       // Import line added to CLAUDE.md.
       const claudeMd = await readFile(
@@ -202,7 +202,7 @@ describe("codealmanac setup", () => {
 
       // The import line is written once and only once.
       expect(secondClaudeMd).toBe(firstClaudeMd);
-      const matches = secondClaudeMd.match(/@~\/\.claude\/codealmanac\.md/g);
+      const matches = secondClaudeMd.match(/@~\/\.claude\/almanac\.md/g);
       expect(matches).toHaveLength(1);
 
       // SessionEnd still has just one wrapped entry — idempotent under
@@ -236,7 +236,7 @@ describe("codealmanac setup", () => {
 
       expect(res.exitCode).toBe(0);
       expect(existsSync(env.settingsPath)).toBe(false);
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(true);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(true);
     });
   });
 
@@ -257,7 +257,7 @@ describe("codealmanac setup", () => {
 
       expect(res.exitCode).toBe(0);
       expect(existsSync(env.settingsPath)).toBe(true);
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
       expect(existsSync(join(env.claudeDir, "CLAUDE.md"))).toBe(false);
     });
   });
@@ -278,7 +278,7 @@ describe("codealmanac setup", () => {
 
       expect(res.exitCode).toBe(0);
       expect(existsSync(env.settingsPath)).toBe(true);
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(true);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(true);
     });
   });
 
@@ -337,6 +337,31 @@ describe("codealmanac setup", () => {
         },
       });
       expect(env.stdout()).toContain("provider default");
+    });
+  });
+
+  it("describes ephemeral npx bootstrap as installing the Almanac package for the almanac command", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const spawnGlobalInstall = vi.fn().mockResolvedValue(undefined);
+      const res = await runSetup({
+        yes: true,
+        skipHook: true,
+        isTTY: false,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        settingsPath: env.settingsPath,
+        hookScriptPath: env.hookScriptPath,
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+        installPath: join(home, ".npm", "_npx", "abc", "node_modules", "codealmanac"),
+        spawnGlobalInstall,
+      });
+
+      expect(res.exitCode).toBe(0);
+      expect(spawnGlobalInstall).toHaveBeenCalledTimes(1);
+      expect(env.stdout()).toContain("Installing Almanac package globally");
+      expect(env.stdout()).toContain("Almanac installed globally (almanac now on PATH)");
     });
   });
 
@@ -462,7 +487,7 @@ describe("codealmanac setup", () => {
       );
       expect(body).toMatch(/# My global instructions/);
       expect(body).toMatch(/Always respond in rhyme/);
-      expect(body).toMatch(/@~\/\.claude\/codealmanac\.md/);
+      expect(body).toMatch(/@~\/\.claude\/almanac\.md/);
     });
   });
 
@@ -472,7 +497,7 @@ describe("codealmanac setup", () => {
       await mkdir(env.claudeDir, { recursive: true });
       await writeFile(
         join(env.claudeDir, "CLAUDE.md"),
-        "@~/.claude/codealmanac.md\n",
+        "@~/.claude/almanac.md\n",
         "utf8",
       );
 
@@ -491,7 +516,7 @@ describe("codealmanac setup", () => {
         join(env.claudeDir, "CLAUDE.md"),
         "utf8",
       );
-      const matches = body.match(/@~\/\.claude\/codealmanac\.md/g);
+      const matches = body.match(/@~\/\.claude\/almanac\.md/g);
       expect(matches).toHaveLength(1);
     });
   });
@@ -533,7 +558,7 @@ describe("codealmanac setup", () => {
       expect(res.exitCode).toBe(0);
       // Nothing should be installed.
       expect(existsSync(env.settingsPath)).toBe(false);
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
       expect(existsSync(join(env.claudeDir, "CLAUDE.md"))).toBe(false);
       // And the banner/step theater should not have rendered.
       expect(env.stdout()).not.toMatch(/CODE ALMANAC/);
@@ -543,7 +568,7 @@ describe("codealmanac setup", () => {
 
 describe("hasImportLine", () => {
   // The import line is the token setup.ts appends to CLAUDE.md.
-  const IMPORT = "@~/.claude/codealmanac.md";
+  const IMPORT = "@~/.claude/almanac.md";
 
   it("detects the bare import line", () => {
     expect(hasImportLine(`foo\n${IMPORT}\nbar\n`)).toBe(true);
@@ -557,7 +582,7 @@ describe("hasImportLine", () => {
   });
 
   it("rejects a longer-prefix accidental match", () => {
-    // `@~/.claude/codealmanac.md-extra` starts with the import line
+    // `@~/.claude/almanac.md-extra` starts with the import line
     // but isn't one — the next char is `-`, not whitespace.
     expect(hasImportLine(`${IMPORT}-extra\n`)).toBe(false);
   });

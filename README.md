@@ -1,4 +1,4 @@
-# codealmanac
+# Almanac
 
 A living wiki for your codebase, maintained by AI agents. It documents what the code can't say — decisions, flows, invariants, gotchas — as atomic, interlinked markdown pages living at `.almanac/` in your repo.
 
@@ -22,11 +22,11 @@ The primary consumer is the AI coding agent. The secondary consumer is humans.
 
 Claude Code, Cursor, and Copilot can read the code and tell you what it does. They can't tell you _why_ it's shaped that way, what approaches were tried and rejected, what invariants must not be violated, or how a flow spans four files in three services. That knowledge lives in Slack threads, PR descriptions, and people's heads. It dies when threads scroll, people leave, or an agent starts a fresh session.
 
-A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, has no graph structure, and gets stale the moment anyone commits without editing it. codealmanac replaces that one flat file with a wiki of atomic pages that agents are prompted to keep current as a side-effect of coding.
+A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, has no graph structure, and gets stale the moment anyone commits without editing it. Almanac replaces that one flat file with a wiki of atomic pages that agents are prompted to keep current as a side-effect of coding.
 
 ## How it works
 
-Each repo gets a committed `.almanac/pages/` directory of markdown files. Auto-capture hooks fire when Claude Code, Codex, or Cursor Agent sessions end and run `almanac capture` in the background. CodeAlmanac builds one provider-neutral run spec, starts it through the process manager, and records local run state in `.almanac/runs/`. New and updated pages show up in your next `git status`; you review them like any other commit.
+Each repo gets a committed `.almanac/pages/` directory of markdown files. Auto-capture hooks fire when Claude Code, Codex, or Cursor Agent sessions end and run `almanac capture` in the background. Almanac builds one provider-neutral run spec, starts it through the process manager, and records local run state in `.almanac/runs/`. New and updated pages show up in your next `git status`; you review them like any other commit.
 
 The CLI only invokes AI for the write-capable lifecycle commands: `init`, `capture`, `ingest`, and `garden`. Every query or organization command (`search`, `show`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
 
@@ -36,28 +36,29 @@ The CLI only invokes AI for the write-capable lifecycle commands: `init`, `captu
 npx codealmanac                # installs globally + runs the setup wizard
 # or, if you prefer the explicit two-step:
 npm install -g codealmanac
-codealmanac                    # interactive wizard
+almanac                        # interactive wizard
 # or fully unattended:
-codealmanac --yes
+almanac --yes
 ```
 
-`codealmanac` (the bare invocation) routes to a setup wizard that:
+The npm package is `codealmanac`; the command you use is `almanac` (or `alm`).
+Bare `almanac` routes to a setup wizard that:
 - lets you choose a default agent: Claude, Codex, or Cursor,
 - lets you choose a provider model or inherit the provider default,
 - checks local agent readiness,
 - installs auto-capture hooks for Claude, Codex, and Cursor,
-- drops two agent guides into `~/.claude/` (`codealmanac.md` mini, `codealmanac-reference.md` full),
-- appends `@~/.claude/codealmanac.md` to `~/.claude/CLAUDE.md` so every Claude Code session loads the mini guide.
+- drops two agent guides into `~/.claude/` (`almanac.md` mini, `almanac-reference.md` full),
+- appends `@~/.claude/almanac.md` to `~/.claude/CLAUDE.md` so every Claude Code session loads the mini guide.
 
 The setup is idempotent — safe to re-run. Opt out with `--skip-hook` or `--skip-guides`. Later, `almanac uninstall` reverses it.
 
-Two binaries ship, both pointing at the same entry: `codealmanac` (install surface) and `almanac` (day-to-day). Requires Node 20 or 22.
+The canonical binaries are `almanac` and `alm`. A `codealmanac` compatibility bin remains for `npx codealmanac` bootstrap and older installs. Requires Node 20 or 22.
 
 `init`, `capture`, `ingest`, and `garden` invoke your configured default provider unless `--using <provider[/model]>` overrides it. Codex is the built-in recommended default; Claude uses the bundled Claude Agent SDK, Codex uses `codex exec --json`, and Cursor is currently an explicit future-work adapter. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
 
 ## Authentication
 
-Pick the agent you want CodeAlmanac to use:
+Pick the agent you want Almanac to use:
 
 ```bash
 # Claude
@@ -88,15 +89,15 @@ almanac config set agent.models.codex gpt-5.3-codex
 almanac config set --project agent.default claude
 ```
 
-codealmanac itself never stores your provider credentials. Auth stays in each agent's normal local credential store.
+Almanac itself never stores your provider credentials. Auth stays in each agent's normal local credential store.
 User config lives in `~/.almanac/config.toml`; project agent defaults can live in `.almanac/config.toml`.
 
 ## Quickstart
 
 ```bash
 npm install -g codealmanac
-codealmanac                   # interactive setup wizard; choose provider + model
-                              # (or: codealmanac --yes)
+almanac                       # interactive setup wizard; choose provider + model
+                              # (or: almanac --yes)
 
 cd your-repo
 almanac init                  # default provider reads the repo and builds the wiki
@@ -109,11 +110,11 @@ almanac show checkout-flow    # read a page
 # based on what happened in the session.
 ```
 
-A wiki is scaffolded two ways: run `almanac init` yourself, or clone a repo that already has `.almanac/` committed (codealmanac auto-registers it on the first query).
+A wiki is scaffolded two ways: run `almanac init` yourself, or clone a repo that already has `.almanac/` committed (Almanac auto-registers it on the first query).
 
 Sanity-check the install with `almanac doctor` and `almanac agents list` — they report binary location, native SQLite binding, provider readiness, hook status, guides, import line, and current-wiki stats.
 
-New to codealmanac? Read the [Concepts guide](./docs/concepts.md) for a walkthrough of pages, topics, files, the database, and the CLI.
+New to Almanac? Read the [Concepts guide](./docs/concepts.md) for a walkthrough of pages, topics, files, the database, and the CLI.
 
 ## Commands
 
@@ -196,18 +197,18 @@ Cross-wiki references use a colon prefix: `[[openalmanac:supabase]]`. The segmen
 `v0.2.1`, pre-release. Node 20.x or 22.x. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
 ## Philosophy
 
-Intelligence lives in the prompt, not in the pipeline. Whenever a task calls for judgment — deciding what from a session is worth capturing, evaluating a proposal against the graph, picking between editing and archiving — codealmanac hands a concrete-but-open prompt to an agent. It does not wrap agents in propose/review/apply state machines, intermediate proposal files, or `--dry-run` rehearsal flags. The CLI finds and organizes; the agents do the thinking. If a future change can be expressed as a longer prompt or as more pipeline code, the prompt almost always wins.
+Intelligence lives in the prompt, not in the pipeline. Whenever a task calls for judgment — deciding what from a session is worth capturing, evaluating a proposal against the graph, picking between editing and archiving — Almanac hands a concrete-but-open prompt to an agent. It does not wrap agents in propose/review/apply state machines, intermediate proposal files, or `--dry-run` rehearsal flags. The CLI finds and organizes; the agents do the thinking. If a future change can be expressed as a longer prompt or as more pipeline code, the prompt almost always wins.
 
 ## Contributing
 
-codealmanac is open source under the MIT license. To set up a development environment:
+Almanac is open source under the MIT license. To set up a development environment:
 
 ```bash
 git clone https://github.com/AlmanacCode/codealmanac.git
 cd codealmanac
 npm install
 npm run build
-npm link                  # makes `almanac` and `codealmanac` available globally
+npm link                  # makes `almanac`, `alm`, and compatibility `codealmanac` available globally
 npm test                  # run the test suite (vitest)
 ```
 
@@ -242,7 +243,7 @@ v0.1.10, pre-release. Node 20.x or 22.x. Release process is documented in [RELEA
 
 ## Related
 
-codealmanac is part of the [OpenAlmanac](https://www.openalmanac.org) family. OpenAlmanac is a knowledge base for curious people; codealmanac is knowledge for codebases. Same writing standards, different reader.
+Almanac is part of the [OpenAlmanac](https://www.openalmanac.org) family. OpenAlmanac is a knowledge base for curious people; Almanac is knowledge for codebases. Same writing standards, different reader.
 
 ## License
 

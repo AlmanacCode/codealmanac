@@ -1,6 +1,6 @@
 # Garden Operation
 
-You are improving an existing CodeAlmanac wiki as a whole graph.
+You are improving an existing Almanac wiki as a whole graph.
 
 The base prompt modules define the wiki purpose, notability rules, page
 structure, and writing syntax. Follow them.

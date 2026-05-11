@@ -526,6 +526,50 @@ function escapeRegex(value: string): string {
 export async function runHookUninstall(
   options: HookCommandOptions = {},
 ): Promise<HookCommandResult> {
+  const source = options.source ?? "claude";
+  if (source === "all") {
+    const results = [
+      await uninstallClaudeHook(options),
+      await uninstallGenericHook({
+        label: "Codex Stop",
+        settingsPath: path.join(homedir(), ".codex", "hooks.json"),
+        eventName: "Stop",
+      }),
+      await uninstallGenericHook({
+        label: "Cursor sessionEnd",
+        settingsPath: path.join(homedir(), ".cursor", "hooks.json"),
+        eventName: "sessionEnd",
+      }),
+    ];
+    const failed = results.find((r) => r.exitCode !== 0);
+    if (failed !== undefined) return failed;
+    return {
+      stdout: results.map((r) => r.stdout.trimEnd()).join("\n") + "\n",
+      stderr: "",
+      exitCode: 0,
+    };
+  }
+  if (source === "codex") {
+    return await uninstallGenericHook({
+      label: "Codex Stop",
+      settingsPath: path.join(homedir(), ".codex", "hooks.json"),
+      eventName: "Stop",
+    });
+  }
+  if (source === "cursor") {
+    return await uninstallGenericHook({
+      label: "Cursor sessionEnd",
+      settingsPath: path.join(homedir(), ".cursor", "hooks.json"),
+      eventName: "sessionEnd",
+    });
+  }
+
+  return await uninstallClaudeHook(options);
+}
+
+async function uninstallClaudeHook(
+  options: HookCommandOptions,
+): Promise<HookCommandResult> {
   const settingsPath = resolveSettingsPath(options);
 
   if (!existsSync(settingsPath)) {
@@ -618,6 +662,106 @@ export async function runHookUninstall(
     stderr: "",
     exitCode: 0,
   };
+}
+
+async function uninstallGenericHook(args: {
+  label: string;
+  settingsPath: string;
+  eventName: string;
+}): Promise<HookCommandResult> {
+  if (!existsSync(args.settingsPath)) {
+    return {
+      stdout: `almanac: ${args.label} hook not installed (no settings file)\n`,
+      stderr: "",
+      exitCode: 0,
+    };
+  }
+
+  const settings = await readSettings(args.settingsPath);
+  const hooksObj =
+    settings.hooks !== undefined &&
+    settings.hooks !== null &&
+    typeof settings.hooks === "object"
+      ? settings.hooks
+      : undefined;
+  if (hooksObj === undefined) {
+    return {
+      stdout: `almanac: ${args.label} hook not installed\n`,
+      stderr: "",
+      exitCode: 0,
+    };
+  }
+
+  const existing = Array.isArray(hooksObj[args.eventName])
+    ? (hooksObj[args.eventName] as RawEntry[])
+    : [];
+  const kept: RawEntry[] = [];
+  let removed = 0;
+  for (const entry of existing) {
+    const result = removeOurCommandsFromGenericEntry(entry);
+    removed += result.removed;
+    if (result.entry !== undefined) kept.push(result.entry);
+  }
+  if (removed === 0) {
+    return {
+      stdout: `almanac: ${args.label} hook not installed\n`,
+      stderr: "",
+      exitCode: 0,
+    };
+  }
+
+  if (kept.length === 0) {
+    delete hooksObj[args.eventName];
+  } else {
+    hooksObj[args.eventName] = kept;
+  }
+
+  if (Object.keys(hooksObj).length === 0) {
+    delete settings.hooks;
+  } else {
+    settings.hooks = hooksObj;
+  }
+
+  await writeSettings(args.settingsPath, settings);
+
+  return {
+    stdout: `almanac: ${args.label} hook removed\n`,
+    stderr: "",
+    exitCode: 0,
+  };
+}
+
+function removeOurCommandsFromGenericEntry(entry: unknown): {
+  entry?: RawEntry;
+  removed: number;
+} {
+  if (entry === null || typeof entry !== "object") {
+    return { entry, removed: 0 };
+  }
+
+  const obj = entry as Record<string, unknown>;
+  if (typeof obj.command === "string" && isOurCommandPath(obj.command)) {
+    return { removed: 1 };
+  }
+
+  if (!Array.isArray(obj.hooks)) {
+    return { entry, removed: 0 };
+  }
+
+  const keptHooks: unknown[] = [];
+  let removed = 0;
+  for (const hook of obj.hooks) {
+    const result = removeOurCommandsFromGenericEntry(hook);
+    removed += result.removed;
+    if (result.entry !== undefined) keptHooks.push(result.entry);
+  }
+  if (removed === 0) {
+    return { entry, removed: 0 };
+  }
+  if (keptHooks.length === 0) {
+    return { removed };
+  }
+  return { entry: { ...obj, hooks: keptHooks }, removed };
 }
 
 export async function runHookStatus(

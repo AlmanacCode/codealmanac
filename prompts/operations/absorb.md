@@ -1,6 +1,6 @@
 # Absorb Operation
 
-You are improving an existing CodeAlmanac wiki from a starting context.
+You are improving an existing Almanac wiki from a starting context.
 
 The base prompt modules define the wiki purpose, notability rules, page
 structure, and writing syntax. Follow them.

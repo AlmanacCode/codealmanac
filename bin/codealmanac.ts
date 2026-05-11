@@ -1,8 +1,9 @@
 import { checkSqliteAbi } from "../src/abi-guard.js";
 
 // ABI guard: detect better-sqlite3 binding mismatch before commands that may
-// touch the indexer. Skip setup/version/update-only paths so a fresh `npx
-// codealmanac` can install/fix itself even when the native binding is broken.
+// touch the indexer. Skip setup/version/update-only paths so a fresh
+// `almanac` setup or `npx codealmanac` bootstrap can install/fix itself even
+// when the native binding is broken.
 if (shouldCheckSqliteAbi(process.argv)) {
   const abiError = checkSqliteAbi();
   if (abiError !== null) {
@@ -28,7 +29,7 @@ function shouldCheckSqliteAbi(argv: string[]): boolean {
     return false;
   }
 
-  if (invoked === "codealmanac") {
+  if (invoked === "almanac" || invoked === "codealmanac") {
     if (args.length === 0) return false;
     if (
       args.every((arg) =>

@@ -31,7 +31,7 @@ const AUTH_TIMEOUT_MS = 10_000;
 /**
  * Resolve the installed Claude Code executable from PATH. The Agent SDK can
  * accept this path via `pathToClaudeCodeExecutable`, and the auth probe uses
- * the same binary so CodeAlmanac agrees with `claude auth status`.
+ * the same binary so Almanac agrees with `claude auth status`.
  */
 export function resolveClaudeExecutable(): string | undefined {
   const result = spawnSync("sh", ["-lc", "command -v claude"], {

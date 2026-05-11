@@ -13,7 +13,7 @@ export function formatReport(
 ): string {
   const color = options.stdout === undefined && process.stdout.isTTY === true;
   const lines: string[] = [];
-  lines.push(`codealmanac v${report.version}`);
+  lines.push(`Almanac v${report.version}`);
   lines.push("");
   if (report.install.length > 0) {
     lines.push(color ? `${BOLD}## Install${RST}` : "## Install");

@@ -1,3 +1,6 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import { describe, expect, it, vi } from "vitest";
 import { Command } from "commander";
 
@@ -6,6 +9,7 @@ import { configureGroupedHelp } from "../src/cli/help.js";
 import { registerCommands } from "../src/cli/register-commands.js";
 import { formatForegroundEvent } from "../src/cli/register-wiki-lifecycle-commands.js";
 import type { SetupResult } from "../src/commands/setup.js";
+import { withTempHome } from "./helpers.js";
 
 /**
  * Unit tests for the `codealmanac` bare-binary routing logic.
@@ -158,6 +162,12 @@ describe("registerCommands", () => {
       ]);
     expect(findCommand(program, ["hook"]).commands.map((cmd) => cmd.name()))
       .toEqual(["install", "uninstall", "status"]);
+    expect(optionFlags(findCommand(program, ["hook", "install"]))).toContain(
+      "--source <source>",
+    );
+    expect(optionFlags(findCommand(program, ["hook", "uninstall"]))).toContain(
+      "--source <source>",
+    );
     expect(findCommand(program, ["capture"]).commands.map((cmd) => cmd.name()))
       .toEqual(["status"]);
     expect(findCommand(program, ["jobs"]).commands.map((cmd) => cmd.name()))
@@ -211,9 +221,9 @@ describe("registerCommands", () => {
     const help = program.helpInformation();
 
     expect(help).toMatch(/Setup:[\s\S]*agents\s+list supported AI agent providers and readiness/);
-    expect(help).toMatch(/Setup:[\s\S]*config\s+read and write codealmanac settings/);
+    expect(help).toMatch(/Setup:[\s\S]*config\s+read and write Almanac settings/);
     expect(help).toContain("Deprecated:");
-    expect(help).toMatch(/set <key> \[value\.\.\.\]\s+configure codealmanac defaults/);
+    expect(help).toMatch(/set <key> \[value\.\.\.\]\s+configure Almanac defaults/);
     expect(help).toMatch(/ps \[options\]\s+deprecated alias for jobs/);
   });
 });
@@ -268,14 +278,14 @@ describe("formatForegroundEvent", () => {
   });
 });
 
-describe("run() — codealmanac-setup shortcut routing", () => {
-  it("routes bare `codealmanac --yes` to runSetup with { yes: true }", async () => {
+describe("run() — almanac setup shortcut routing", () => {
+  it("routes bare `almanac --yes` to runSetup with { yes: true }", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 
     await run(
-      ["/abs/node", "/abs/path/codealmanac", "--yes"],
+      ["/abs/node", "/abs/path/almanac", "--yes"],
       {
         runSetup: setupMock as never,
         announceUpdate: () => {},
@@ -288,13 +298,23 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     expect(setupMock).toHaveBeenCalledWith({ yes: true });
   });
 
-  it("forwards --skip-hook alongside --yes", async () => {
+  it("forwards setup shortcut flags for bare `almanac`", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 
     await run(
-      ["/abs/node", "/abs/path/codealmanac", "--yes", "--skip-hook"],
+      [
+        "/abs/node",
+        "/abs/path/almanac",
+        "--yes",
+        "--skip-hook",
+        "--skip-guides",
+        "--agent",
+        "codex",
+        "--model",
+        "gpt-5.3-codex",
+      ],
       {
         runSetup: setupMock as never,
         announceUpdate: () => {},
@@ -303,10 +323,16 @@ describe("run() — codealmanac-setup shortcut routing", () => {
       },
     );
 
-    expect(setupMock).toHaveBeenCalledWith({ yes: true, skipHook: true });
+    expect(setupMock).toHaveBeenCalledWith({
+      yes: true,
+      skipHook: true,
+      skipGuides: true,
+      agent: "codex",
+      model: "gpt-5.3-codex",
+    });
   });
 
-  it("routes bare `codealmanac` through the global bootstrapper when provided", async () => {
+  it("routes bare compatibility `codealmanac` through the global bootstrapper when provided", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
@@ -332,13 +358,13 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     expect(setupMock).not.toHaveBeenCalled();
   });
 
-  it("routes explicit `codealmanac setup --yes` before heavy command registration", async () => {
+  it("routes explicit `almanac setup --yes` before heavy command registration", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 
     await run(
-      ["/abs/node", "/abs/path/codealmanac", "setup", "--yes"],
+      ["/abs/node", "/abs/path/almanac", "setup", "--yes"],
       {
         runSetup: setupMock as never,
         announceUpdate: () => {},
@@ -353,56 +379,16 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     });
   });
 
-  it("does NOT shortcut when the binary name is `almanac`", async () => {
-    // `almanac --yes` without a subcommand isn't a setup invocation —
-    // it's a commander error ("unknown option '--yes'"). We verify
-    // runSetup was NOT called. Commander will write to stderr;
-    // capture + silence it.
+  it("does NOT shortcut for `almanac doctor`", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 
-    // Commander prints to stderr + throws via `exitOverride` or process.exit;
-    // we swallow either to keep the test surface clean.
-    const origErr = process.stderr.write.bind(process.stderr);
-    process.stderr.write = (() => true) as typeof process.stderr.write;
-    const origExit = process.exit;
-    process.exit = ((code?: number): never => {
-      throw new Error(`process.exit called with ${code}`);
-    }) as typeof process.exit;
-
-    try {
-      await run(
-        ["/abs/node", "/abs/path/almanac", "--yes"],
-        {
-          runSetup: setupMock as never,
-          announceUpdate: () => {},
-          scheduleUpdateCheck: () => {},
-          runInternalUpdateCheck: async () => {},
-        },
-      ).catch(() => {
-        // Swallow — commander's unknown-option error bubbles here.
-      });
-    } finally {
-      process.stderr.write = origErr;
-      process.exit = origExit;
-    }
-
-    expect(setupMock).not.toHaveBeenCalled();
-  });
-
-  it("does NOT shortcut for `codealmanac doctor`", async () => {
-    const setupMock = vi
-      .fn<(opts?: unknown) => Promise<SetupResult>>()
-      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
-
-    // doctor needs args parsing; we let commander run it normally. The
-    // point of THIS test is only that setupMock isn't invoked.
     const origStdout = process.stdout.write.bind(process.stdout);
     process.stdout.write = (() => true) as typeof process.stdout.write;
     try {
       await run(
-        ["/abs/node", "/abs/path/codealmanac", "doctor", "--install-only"],
+        ["/abs/node", "/abs/path/almanac", "doctor", "--install-only"],
         {
           runSetup: setupMock as never,
           announceUpdate: () => {},
@@ -417,7 +403,109 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     expect(setupMock).not.toHaveBeenCalled();
   });
 
-  it("does NOT shortcut for `codealmanac --yes doctor` (subcommand present)", async () => {
+  it("forwards --source for sqlite-free hook uninstall", async () => {
+    await withTempHome(async (home) => {
+      const scriptPath = join(home, "hooks", "almanac-capture.sh");
+      await mkdir(join(home, ".claude"), { recursive: true });
+      await mkdir(join(home, ".codex"), { recursive: true });
+      await mkdir(join(home, ".cursor"), { recursive: true });
+      await writeFile(
+        join(home, ".claude", "settings.json"),
+        JSON.stringify({
+          hooks: {
+            SessionEnd: [
+              {
+                matcher: "",
+                hooks: [{ type: "command", command: scriptPath }],
+              },
+            ],
+          },
+        }),
+        "utf8",
+      );
+      await writeFile(
+        join(home, ".codex", "hooks.json"),
+        JSON.stringify({
+          hooks: {
+            Stop: [{ hooks: [{ type: "command", command: scriptPath }] }],
+          },
+        }),
+        "utf8",
+      );
+      await writeFile(
+        join(home, ".cursor", "hooks.json"),
+        JSON.stringify({
+          hooks: {
+            sessionEnd: [{ command: scriptPath }],
+          },
+        }),
+        "utf8",
+      );
+
+      const origStdout = process.stdout.write.bind(process.stdout);
+      process.stdout.write = (() => true) as typeof process.stdout.write;
+      try {
+        await run(
+          [
+            "/abs/node",
+            "/abs/path/almanac",
+            "hook",
+            "uninstall",
+            "--source",
+            "all",
+          ],
+          {
+            announceUpdate: () => {},
+            scheduleUpdateCheck: () => {},
+            runInternalUpdateCheck: async () => {},
+          },
+        );
+      } finally {
+        process.stdout.write = origStdout;
+      }
+
+      const claude = JSON.parse(
+        await readFile(join(home, ".claude", "settings.json"), "utf8"),
+      ) as Record<string, unknown>;
+      const codex = JSON.parse(
+        await readFile(join(home, ".codex", "hooks.json"), "utf8"),
+      ) as Record<string, unknown>;
+      const cursor = JSON.parse(
+        await readFile(join(home, ".cursor", "hooks.json"), "utf8"),
+      ) as Record<string, unknown>;
+      expect(claude).not.toHaveProperty("hooks");
+      expect(codex).not.toHaveProperty("hooks");
+      expect(cursor).not.toHaveProperty("hooks");
+    });
+  });
+
+  it("does NOT shortcut for `almanac search foo`", async () => {
+    const setupMock = vi
+      .fn<(opts?: unknown) => Promise<SetupResult>>()
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    const origErr = process.stderr.write.bind(process.stderr);
+    process.stderr.write = (() => true) as typeof process.stderr.write;
+    try {
+      await run(
+        ["/abs/node", "/abs/path/almanac", "search", "foo"],
+        {
+          runSetup: setupMock as never,
+          announceUpdate: () => {},
+          scheduleUpdateCheck: () => {},
+          runInternalUpdateCheck: async () => {},
+        },
+      ).catch(() => {
+        // This can fail because the test cwd may not contain .almanac.
+      });
+    } finally {
+      process.stderr.write = origErr;
+    }
+
+    expect(setupMock).not.toHaveBeenCalled();
+  });
+
+  it("does NOT shortcut for `almanac --yes doctor` (subcommand present)", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
@@ -428,7 +516,7 @@ describe("run() — codealmanac-setup shortcut routing", () => {
       // `--yes` before `doctor` isn't valid for doctor, but commander
       // handles that — we only care that the shortcut didn't eat it.
       await run(
-        ["/abs/node", "/abs/path/codealmanac", "--yes", "doctor"],
+        ["/abs/node", "/abs/path/almanac", "--yes", "doctor"],
         {
           runSetup: setupMock as never,
           announceUpdate: () => {},

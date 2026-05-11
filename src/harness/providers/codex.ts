@@ -488,7 +488,7 @@ export async function runCodexAppServer(
       respondError(
         id,
         -32601,
-        `CodeAlmanac does not handle Codex app-server request ${method}`,
+        `Almanac does not handle Codex app-server request ${method}`,
       );
     };
 
@@ -593,7 +593,7 @@ export async function runCodexAppServer(
         await requestRpc("initialize", {
           clientInfo: {
             name: "codealmanac",
-            title: "Code Almanac",
+            title: "Almanac",
             version: "0.2.9",
           },
           capabilities: {
@@ -688,7 +688,7 @@ function respondToServerRequest(
       respondError(
         id,
         -32001,
-        "CodeAlmanac does not manage ChatGPT auth tokens for Codex app-server.",
+        "Almanac does not manage ChatGPT auth tokens for Codex app-server.",
       );
       return;
     default:

@@ -35,11 +35,11 @@ describe("build operation", () => {
           targetPaths: [repo],
         },
       });
-      expect(spec.prompt).toContain("CodeAlmanac is cultivated project memory");
+      expect(spec.prompt).toContain("Almanac is cultivated project memory");
       expect(spec.prompt).toContain("Page Notability And Graph Structure");
       expect(spec.prompt).toContain("Page Syntax And Writing Conventions");
       expect(spec.prompt).toContain(
-        "You are building the first substantial CodeAlmanac wiki",
+        "You are building the first substantial Almanac wiki",
       );
       expect(spec.prompt).toContain(
         "Always create `.almanac/pages/getting-started.md`",
@@ -95,7 +95,7 @@ describe("build operation", () => {
       });
       await expect(
         readFile(join(repo, ".almanac", "README.md"), "utf8"),
-      ).resolves.toContain("This is the codealmanac wiki");
+      ).resolves.toContain("This is the Almanac wiki");
       await expect(readFile(join(repo, ".gitignore"), "utf8")).resolves.toContain(
         ".almanac/runs/",
       );

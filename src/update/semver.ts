@@ -12,7 +12,7 @@
  * What we don't handle:
  *   - Build metadata (`+sha.abcd`) — ignored.
  *   - Pre-release precedence rules beyond "tagged < untagged at same
- *     numeric triple". Good enough for codealmanac's linear release
+ *     numeric triple". Good enough for Almanac's linear release
  *     cadence; if we ever publish `-rc.1` vs `-rc.2` and care which
  *     comes first, revisit.
  */

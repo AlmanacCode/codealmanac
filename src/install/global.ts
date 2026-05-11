@@ -72,7 +72,7 @@ export async function runCodealmanacBootstrap(
       return {
         stdout: "",
         stderr:
-          `codealmanac: npm install failed (exit ${install.exitCode}).\n` +
+          `almanac: npm install failed (exit ${install.exitCode}).\n` +
           `If you see "EACCES" above, try: sudo npm i -g codealmanac@latest\n` +
           `Or install with a version manager (nvm, volta, fnm) to avoid sudo.\n`,
         exitCode: install.exitCode,
@@ -159,8 +159,8 @@ async function resolveGlobalPackageRoot(
     return {
       ok: false,
       stderr:
-        "codealmanac: could not find npm's global install directory.\n" +
-        "Install Node.js + npm, or install codealmanac via your package manager.\n",
+        "almanac: could not find npm's global install directory.\n" +
+        "Install Node.js + npm, or install the codealmanac package via your package manager.\n",
     };
   }
 
@@ -169,7 +169,7 @@ async function resolveGlobalPackageRoot(
     return {
       ok: false,
       stderr:
-        "codealmanac: npm returned an empty global install directory.\n" +
+        "almanac: npm returned an empty global install directory.\n" +
         "Try: npm root -g\n",
     };
   }
