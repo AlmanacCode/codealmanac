@@ -11,25 +11,21 @@ export function createJobsView(deps) {
   async function renderList() {
     const result = await deps.api("/api/jobs");
     document.title = "Jobs - Almanac";
-    const counts = countJobs(result.runs);
+    const runs = result.runs;
+    const counts = countJobs(runs);
+    const days = groupByDay(runs);
+
     deps.reader.innerHTML = `
       <section class="ca-hero">
-        <div class="ca-kicker">Jobs</div>
+        <div class="ca-kicker">Ledger</div>
         <h1 class="ca-title">Run history</h1>
-        <p class="ca-subtitle">
-          Agent operations recorded from <span class="ca-file-code">.almanac/runs</span>, including settings,
-          outcomes, and the normalized provider stream.
-        </p>
-        <div class="ca-run-ledger">
-          ${ledgerCell(result.runs.length, "Total runs")}
-          ${ledgerCell(counts.running + counts.queued, "Active")}
-          ${ledgerCell(counts.done, "Completed")}
-          ${ledgerCell(counts.failed + counts.stale, "Need attention")}
-        </div>
+        <p class="ca-subtitle">${listDeck(runs.length, counts)}</p>
       </section>
-      <div class="ca-job-list">
-        ${result.runs.map(jobRow).join("") || `<div class="ca-meta-empty">No jobs found.</div>`}
-      </div>
+      ${
+        days.length === 0
+          ? `<div class="ca-meta-empty">No jobs found.</div>`
+          : `<div class="ca-logbook">${days.map(renderDay).join("")}</div>`
+      }
     `;
   }
 
@@ -40,60 +36,38 @@ export function createJobsView(deps) {
     document.title = `${run.displayTitle} - Almanac Jobs`;
     deps.reader.innerHTML = `
       <section class="ca-hero">
-        <div class="ca-kicker">Job</div>
+        <div class="ca-kicker">${deps.escapeHtml(run.operation)}</div>
         <h1 class="ca-title">${deps.escapeHtml(run.displayTitle)}</h1>
-        <p class="ca-subtitle">
-          ${deps.escapeHtml(run.displaySubtitle ?? runFallbackSubtitle(run))}
-        </p>
-        <div class="ca-chip-row">
-          <span class="ca-chip ca-status-${deps.escapeAttr(run.displayStatus)}">${deps.escapeHtml(statusLabel(run.displayStatus))}</span>
-          <span class="ca-chip">${deps.escapeHtml(providerLabel(run))}</span>
-          <span class="ca-chip">${deps.escapeHtml(deps.formatElapsed(run.elapsedMs))}</span>
-          ${run.targetKind ? `<span class="ca-chip">${deps.escapeHtml(run.targetKind)}</span>` : ""}
+        <p class="ca-subtitle">${deps.escapeHtml(run.displaySubtitle ?? runFallbackSubtitle(run))}</p>
+        <div class="ca-run-marks">
+          ${statusMark(run.displayStatus, true)}
+          <span class="ca-run-mark">${deps.escapeHtml(providerLabel(run))}</span>
+          <span class="ca-run-mark">${deps.escapeHtml(deps.formatElapsed(run.elapsedMs))}</span>
+          ${run.targetKind ? `<span class="ca-run-mark">${deps.escapeHtml(run.targetKind)}</span>` : ""}
         </div>
       </section>
-      ${runOutcomeStrip(run)}
-      <section class="ca-grid">
-        <div class="ca-panel">
-          <h2>Settings</h2>
-          <div class="ca-job-facts">
-            ${jobFact("Operation", run.operation)}
-            ${jobFact("Provider", run.provider)}
-            ${jobFact("Model", run.model ?? "default")}
-            ${jobFact("Started", deps.formatTimestamp(run.startedAt))}
-            ${jobFact("Finished", run.finishedAt ? deps.formatTimestamp(run.finishedAt) : "not finished")}
-            ${run.providerSessionId ? jobFact("Provider session", run.providerSessionId) : ""}
-          </div>
-        </div>
-        <div class="ca-panel">
-          <h2>Outcome</h2>
-          <div class="ca-job-facts">
-            ${jobFact("Pages created", String(run.summary?.created ?? 0))}
-            ${jobFact("Pages updated", String(run.summary?.updated ?? 0))}
-            ${jobFact("Pages archived", String(run.summary?.archived ?? 0))}
-            ${run.summary?.costUsd !== undefined ? jobFact("Cost", `$${run.summary.costUsd.toFixed(4)}`) : ""}
-            ${run.summary?.turns !== undefined ? jobFact("Turns", String(run.summary.turns)) : ""}
-            ${run.summary?.usage?.totalTokens !== undefined ? jobFact("Tokens", deps.formatNumber(run.summary.usage.totalTokens)) : ""}
-            ${jobFact("Log", run.logPath)}
-            ${run.failure ? jobFact("Failure", run.failure.message) : ""}
-            ${run.failure?.fix ? jobFact("Fix", run.failure.fix) : ""}
-            ${run.error ? jobFact("Error", run.error) : ""}
-          </div>
-        </div>
+
+      <section class="ca-colophon-section">
+        <h2 class="ca-section-label">Colophon</h2>
+        <dl class="ca-colophon">
+          ${colophonEntries(run).map(colophonEntry).join("")}
+        </dl>
       </section>
-      ${run.targetPaths?.length ? `
-        <section class="ca-panel ca-job-targets">
-          <h2>Targets</h2>
-          <div class="ca-chip-row">${run.targetPaths.map((path) => `<span class="ca-chip ca-file-code">${deps.escapeHtml(path)}</span>`).join("")}</div>
-        </section>
-      ` : ""}
-      <section class="ca-job-stream">
-        <div class="ca-section-heading">
-          <h2>Transcript</h2>
-          <span>${detail.events.length} stream event${detail.events.length === 1 ? "" : "s"}</span>
-        </div>
+
+      ${failureCallout(run)}
+      ${targetsSection(run)}
+
+      <section class="ca-transcript-section">
+        <div class="ca-page-ornament"><span>✥</span></div>
+        <h2 class="ca-transcript-heading">
+          Transcript
+          <small>${detail.events.length} stream event${detail.events.length === 1 ? "" : "s"}</small>
+        </h2>
         <div class="ca-transcript">
-          ${transcript.map(transcriptEntry).join("") || `<div class="ca-meta-empty">No log events have been written yet.</div>`}
+          ${
+            transcript.map(transcriptEntry).join("")
+            || `<div class="ca-meta-empty">No log events have been written yet.</div>`
+          }
         </div>
       </section>
     `;
@@ -117,97 +91,146 @@ export function createJobsView(deps) {
     }, 1500);
   }
 
-  function ledgerCell(value, label) {
+  function listDeck(total, counts) {
+    if (total === 0) {
+      return `No runs recorded yet in <span class="ca-file-code">.almanac/runs</span>.`;
+    }
+    const active = counts.running + counts.queued;
+    const attention = counts.failed + counts.stale;
+    const parts = [];
+    if (active > 0) parts.push(`${active} active`);
+    if (counts.done > 0) parts.push(`${counts.done} completed`);
+    if (attention > 0) parts.push(`${attention} need attention`);
+    if (counts.cancelled > 0) parts.push(`${counts.cancelled} cancelled`);
+    const tail = parts.length > 0 ? ` — ${parts.join(", ")}.` : ".";
+    const noun = total === 1 ? "run" : "runs";
+    return `${total} ${noun} recorded in <span class="ca-file-code">.almanac/runs</span>${tail}`;
+  }
+
+  function renderDay(day) {
     return `
-      <div>
-        <span>${deps.escapeHtml(value)}</span>
-        <small>${deps.escapeHtml(label)}</small>
-      </div>
+      <section class="ca-log-day">
+        <header class="ca-log-day-head">
+          <h2 class="ca-log-day-label">${deps.escapeHtml(day.label)}</h2>
+          <span class="ca-log-day-count">${day.runs.length} ${day.runs.length === 1 ? "run" : "runs"}</span>
+        </header>
+        <div class="ca-log-day-list">
+          ${day.runs.map(logEntry).join("")}
+        </div>
+      </section>
     `;
   }
 
-  function jobRow(run) {
+  function logEntry(run) {
     return `
-      <div class="ca-job-row" data-route="/jobs/${deps.escapeAttr(run.id)}">
-        <div class="ca-job-row-main">
-          <div class="ca-job-row-head">
-            <span class="ca-job-op">${deps.escapeHtml(run.operation)}</span>
-            <span class="ca-job-status ca-status-${deps.escapeAttr(run.displayStatus)}">${deps.escapeHtml(statusLabel(run.displayStatus))}</span>
-          </div>
-          <div class="ca-job-row-title">${deps.escapeHtml(run.displayTitle)}</div>
-          <div class="ca-job-row-summary">${deps.escapeHtml(cleanSummary(run.displaySubtitle ?? runFallbackSubtitle(run)))}</div>
-          <div class="ca-job-row-meta">
-            <span>${deps.escapeHtml(deps.formatTimestamp(run.startedAt))}</span>
-            <span>${deps.escapeHtml(providerLabel(run))}</span>
-            <span>${deps.escapeHtml(run.id)}</span>
+      <a class="ca-log-entry" href="/jobs/${deps.escapeAttr(run.id)}" data-route="/jobs/${deps.escapeAttr(run.id)}">
+        <time class="ca-log-time">${deps.escapeHtml(formatClock(run.startedAt))}</time>
+        <div class="ca-log-entry-body">
+          <div class="ca-log-kicker">${deps.escapeHtml(`${run.operation} · ${providerLabel(run)}`)}</div>
+          <div class="ca-log-title">${deps.escapeHtml(run.displayTitle)}</div>
+          <div class="ca-log-summary">${deps.escapeHtml(cleanSummary(run.displaySubtitle ?? runFallbackSubtitle(run)))}</div>
+          <div class="ca-log-tally">
+            ${statusMark(run.displayStatus, false)}
+            ${tallyParts(run).map((part) => `<span class="ca-log-tally-part">${deps.escapeHtml(part)}</span>`).join("")}
           </div>
         </div>
-        ${jobImpact(run)}
-      </div>
+      </a>
     `;
   }
 
-  function jobImpact(run) {
+  function tallyParts(run) {
+    const parts = [];
+    const impact = impactPhrase(run);
+    if (impact) parts.push(impact);
+    if (typeof run.elapsedMs === "number") parts.push(deps.formatElapsed(run.elapsedMs));
+    if (run.summary?.turns !== undefined) {
+      parts.push(`${run.summary.turns} turn${run.summary.turns === 1 ? "" : "s"}`);
+    }
+    if (run.summary?.usage?.totalTokens !== undefined) {
+      parts.push(`${deps.formatNumber(run.summary.usage.totalTokens)} tokens`);
+    }
+    return parts;
+  }
+
+  function impactPhrase(run) {
     const created = run.summary?.created ?? 0;
     const updated = run.summary?.updated ?? 0;
     const archived = run.summary?.archived ?? 0;
-    const primary = primaryImpact(created, updated, archived);
+    const bits = [];
+    if (created > 0) bits.push(`+${created} created`);
+    if (updated > 0) bits.push(`${updated} updated`);
+    if (archived > 0) bits.push(`${archived} archived`);
+    if (bits.length === 0 && (run.displayStatus === "done")) return "no wiki changes";
+    return bits.join(", ");
+  }
+
+  function colophonEntries(run) {
+    const rows = [
+      ["Started", deps.formatTimestamp(run.startedAt)],
+      ["Finished", run.finishedAt ? deps.formatTimestamp(run.finishedAt) : "—"],
+      ["Elapsed", deps.formatElapsed(run.elapsedMs)],
+      ["Operation", run.operation],
+      ["Provider", providerLabel(run)],
+      ["Status", statusWord(run.displayStatus)],
+      ["Created", String(run.summary?.created ?? 0)],
+      ["Updated", String(run.summary?.updated ?? 0)],
+      ["Archived", String(run.summary?.archived ?? 0)],
+    ];
+    if (run.summary?.turns !== undefined) rows.push(["Turns", String(run.summary.turns)]);
+    if (run.summary?.usage?.totalTokens !== undefined) {
+      rows.push(["Tokens", deps.formatNumber(run.summary.usage.totalTokens)]);
+    }
+    if (run.summary?.costUsd !== undefined) {
+      rows.push(["Cost", `$${run.summary.costUsd.toFixed(4)}`]);
+    }
+    if (run.providerSessionId) rows.push(["Session", run.providerSessionId, "mono"]);
+    if (run.logPath) rows.push(["Log", run.logPath, "mono"]);
+    return rows;
+  }
+
+  function colophonEntry([label, value, kind]) {
+    const valueClass = kind === "mono" ? "ca-colophon-value ca-colophon-value-mono" : "ca-colophon-value";
     return `
-      <div class="ca-job-impact">
-        <div class="ca-job-impact-primary">${deps.escapeHtml(primary)}</div>
-        <div class="ca-job-impact-grid">
-          ${impactCell("Created", created)}
-          ${impactCell("Updated", updated)}
-          ${impactCell("Archived", archived)}
+      <div class="ca-colophon-row">
+        <dt class="ca-colophon-label">${deps.escapeHtml(label)}</dt>
+        <dd class="${valueClass}">${deps.escapeHtml(value)}</dd>
+      </div>
+    `;
+  }
+
+  function failureCallout(run) {
+    if (!run.failure && !run.error) return "";
+    const message = run.failure?.message ?? run.error;
+    const fix = run.failure?.fix;
+    return `
+      <aside class="ca-failure">
+        <div class="ca-failure-label">Failure</div>
+        <p class="ca-failure-message">${deps.escapeHtml(message)}</p>
+        ${fix ? `<p class="ca-failure-fix"><strong>Fix — </strong>${deps.escapeHtml(fix)}</p>` : ""}
+      </aside>
+    `;
+  }
+
+  function targetsSection(run) {
+    if (!run.targetPaths?.length) return "";
+    return `
+      <section class="ca-targets-section">
+        <h2 class="ca-section-label">Targets</h2>
+        <div class="ca-chip-row">
+          ${run.targetPaths.map((path) => `<span class="ca-chip ca-file-code">${deps.escapeHtml(path)}</span>`).join("")}
         </div>
-      </div>
+      </section>
     `;
   }
 
-  function impactCell(label, value) {
+  function statusMark(status, includeLabel) {
+    const tone = statusTone(status);
+    const word = statusWord(status);
     return `
-      <div class="${value > 0 ? "is-active" : ""}">
-        <span>${deps.escapeHtml(value)}</span>
-        <small>${deps.escapeHtml(label)}</small>
-      </div>
-    `;
-  }
-
-  function primaryImpact(created, updated, archived) {
-    const total = created + updated + archived;
-    if (total === 0) return "No wiki changes";
-    if (created > 0) return `${created} created`;
-    if (updated > 0) return `${updated} updated`;
-    return `${archived} archived`;
-  }
-
-  function runOutcomeStrip(run, compact = false) {
-    return `
-      <div class="${compact ? "ca-run-outcome ca-run-outcome-compact" : "ca-run-outcome"}">
-        ${outcomeCell("Created", run.summary?.created ?? 0)}
-        ${outcomeCell("Updated", run.summary?.updated ?? 0)}
-        ${outcomeCell("Archived", run.summary?.archived ?? 0)}
-        ${run.summary?.turns !== undefined ? outcomeCell("Turns", run.summary.turns) : ""}
-        ${run.summary?.usage?.totalTokens !== undefined ? outcomeCell("Tokens", deps.formatNumber(run.summary.usage.totalTokens)) : ""}
-      </div>
-    `;
-  }
-
-  function outcomeCell(label, value) {
-    return `
-      <div>
-        <span>${deps.escapeHtml(value)}</span>
-        <small>${deps.escapeHtml(label)}</small>
-      </div>
-    `;
-  }
-
-  function jobFact(label, value) {
-    return `
-      <div class="ca-job-fact">
-        <span>${deps.escapeHtml(label)}</span>
-        <strong>${deps.escapeHtml(value)}</strong>
-      </div>
+      <span class="ca-run-mark ca-run-mark-status ca-status-tone-${deps.escapeAttr(tone)}">
+        <span class="ca-status-dot" aria-hidden="true"></span>
+        ${includeLabel ? deps.escapeHtml(word) : `<span>${deps.escapeHtml(word)}</span>`}
+      </span>
     `;
   }
 
@@ -215,7 +238,7 @@ export function createJobsView(deps) {
     if (entry.type === "assistant") {
       return `
         <div class="ca-chat-row ca-chat-row-assistant">
-          <div class="ca-chat-avatar">A</div>
+          <div class="ca-chat-avatar" aria-hidden="true">✦</div>
           <div class="ca-chat-bubble">
             <div class="ca-chat-meta">Assistant${entry.timestamp ? ` &middot; ${deps.escapeHtml(deps.formatTimestamp(entry.timestamp))}` : ""}</div>
             <div class="ca-chat-text">${deps.renderMarkdown(entry.text.trim())}</div>
@@ -347,7 +370,7 @@ export function createJobsView(deps) {
       providerLabel(run),
       deps.formatElapsed(run.elapsedMs),
       run.targetKind,
-    ].filter(Boolean).join(" | ");
+    ].filter(Boolean).join(" · ");
   }
 
   function cleanSummary(value) {
@@ -356,6 +379,26 @@ export function createJobsView(deps) {
       .replace(/`([^`]+)`/g, "$1")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  function formatClock(iso) {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+
+  function groupByDay(runs) {
+    const buckets = new Map();
+    const order = [];
+    for (const run of runs) {
+      const key = dayKey(run.startedAt);
+      if (!buckets.has(key)) {
+        buckets.set(key, { key, label: dayLabel(run.startedAt), runs: [] });
+        order.push(key);
+      }
+      buckets.get(key).runs.push(run);
+    }
+    return order.map((key) => buckets.get(key));
   }
 
   return {
@@ -372,10 +415,40 @@ function countJobs(runs) {
   }, { queued: 0, running: 0, done: 0, failed: 0, cancelled: 0, stale: 0 });
 }
 
-function statusLabel(status) {
+function statusWord(status) {
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function statusTone(status) {
+  if (status === "done") return "done";
+  if (status === "running" || status === "queued") return "active";
+  if (status === "failed" || status === "stale") return "alert";
+  return "muted";
 }
 
 function isLiveStatus(status) {
   return status === "queued" || status === "running";
+}
+
+function dayKey(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "unknown";
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+function dayLabel(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Unknown";
+  const today = new Date();
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(today) - startOfDay(date)) / 86_400_000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays > 1 && diffDays < 7) {
+    return date.toLocaleDateString(undefined, { weekday: "long" });
+  }
+  if (date.getFullYear() === today.getFullYear()) {
+    return date.toLocaleDateString(undefined, { month: "long", day: "numeric" });
+  }
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
