@@ -50,7 +50,7 @@ export async function createOperationRunSpec(args: {
   ]);
 
   return {
-    provider: args.provider ?? { id: "claude" },
+    provider: args.provider ?? { id: "codex" },
     cwd: args.repoRoot,
     prompt,
     tools: BASE_OPERATION_TOOLS,

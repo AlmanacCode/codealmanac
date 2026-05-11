@@ -179,12 +179,22 @@ describe("almanac doctor — JSON report shape", () => {
         label: "Claude",
         status: "ok",
         readiness: "ready",
-        selected: true,
+        selected: false,
         recommended: true,
         installed: true,
         authenticated: true,
         model: "claude-sonnet-4-6",
         account: "user@example.com",
+      });
+      expect(parsed.agents[1]).toMatchObject({
+        id: "codex",
+        label: "Codex",
+        status: "problem",
+        readiness: "missing",
+        selected: true,
+        recommended: false,
+        installed: false,
+        authenticated: false,
       });
     });
   });

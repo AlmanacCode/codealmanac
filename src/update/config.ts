@@ -16,7 +16,7 @@ export function isAgentProviderId(value: string): value is AgentProviderId {
 }
 
 export interface AgentConfig {
-  /** Default provider for agent-backed lifecycle commands. Default: "claude". */
+  /** Default provider for agent-backed lifecycle commands. Default: "codex". */
   default: AgentProviderId;
   /** Optional per-provider model override. `null` means provider default. */
   models: Partial<Record<AgentProviderId, string | null>>;
@@ -40,7 +40,7 @@ export function defaultConfig(): GlobalConfig {
   return {
     update_notifier: true,
     agent: {
-      default: "claude",
+      default: "codex",
       models: {
         claude: null,
         codex: null,

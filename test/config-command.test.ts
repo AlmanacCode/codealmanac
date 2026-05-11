@@ -93,7 +93,7 @@ describe("config command", () => {
   it("prints single values and rejects unknown keys", async () => {
     await withTempHome(async () => {
       const get = await runConfigGet({ key: "agent.default" });
-      expect(get.stdout).toBe("claude\n");
+      expect(get.stdout).toBe("codex\n");
 
       const bad = await runConfigSet({
         key: "agent.default",
@@ -133,9 +133,8 @@ describe("config command", () => {
 
       const toml = await readFile(join(home, ".almanac", "config.toml"), "utf8");
       expect(toml).toContain("update_notifier = false");
-      expect(toml).toContain("[agent]");
-      expect(toml).toContain('default = "codex"');
       expect(toml).toContain("[agent.models]");
+      expect(toml).toContain('codex = "gpt-5.3-codex"');
     });
   });
 

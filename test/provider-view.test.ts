@@ -45,13 +45,13 @@ describe("provider setup view", () => {
 
     const view = await buildProviderSetupView({ config, statuses });
 
-    expect(view.recommendedProvider).toBe("claude");
+    expect(view.recommendedProvider).toBe("codex");
     expect(view.choices).toMatchObject([
       {
         id: "claude",
         label: "Claude",
         selected: true,
-        recommended: true,
+        recommended: false,
         readiness: "ready",
         effectiveModel: "claude-opus-4-6",
         account: "Claude account: rohan@example.com",
@@ -78,6 +78,7 @@ describe("provider setup view", () => {
       {
         id: "codex",
         label: "Codex",
+        recommended: true,
         readiness: "ready",
         effectiveModel: null,
         account: "ChatGPT account: rohan@example.com",
@@ -104,14 +105,9 @@ describe("provider setup view", () => {
     ]);
   });
 
-  it("falls back to first ready provider when Claude is not ready", () => {
+  it("recommends Codex when it is ready", () => {
     expect(chooseRecommendedProvider([
-      {
-        id: "claude",
-        installed: true,
-        authenticated: false,
-        detail: "not logged in",
-      },
+      statuses[0]!,
       statuses[1]!,
       statuses[2]!,
     ])).toBe("codex");

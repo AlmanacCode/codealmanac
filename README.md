@@ -53,7 +53,7 @@ The setup is idempotent — safe to re-run. Opt out with `--skip-hook` or `--ski
 
 Two binaries ship, both pointing at the same entry: `codealmanac` (install surface) and `almanac` (day-to-day). Requires Node 20 or 22.
 
-`init`, `capture`, `ingest`, and `garden` invoke your configured default provider unless `--using <provider[/model]>` overrides it. Claude uses the bundled Claude Agent SDK, Codex uses `codex exec --json`, and Cursor is currently an explicit future-work adapter. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
+`init`, `capture`, `ingest`, and `garden` invoke your configured default provider unless `--using <provider[/model]>` overrides it. Codex is the built-in recommended default; Claude uses the bundled Claude Agent SDK, Codex uses `codex exec --json`, and Cursor is currently an explicit future-work adapter. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
 
 ## Authentication
 
@@ -143,7 +143,7 @@ almanac hook install --source all            # auto-capture for Claude/Codex/Cur
 
 # Setup & diagnose
 almanac agents list                          # provider readiness + default
-almanac agents use codex                     # change default provider
+almanac agents use codex                     # restore the recommended default provider
 almanac agents model claude claude-opus-4-6  # set provider model
 almanac config list --show-origin            # scriptable settings view
 almanac doctor                               # check install + wiki health

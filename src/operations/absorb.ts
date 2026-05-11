@@ -31,7 +31,7 @@ export async function createAbsorbRunSpec(args: {
   return createOperationRunSpec({
     operation: "absorb",
     promptName: "operations/absorb",
-    provider: args.provider ?? { id: "claude" },
+    provider: args.provider,
     repoRoot: args.repoRoot,
     context: args.context,
     targetKind: args.targetKind,

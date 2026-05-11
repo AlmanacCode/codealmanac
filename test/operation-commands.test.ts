@@ -15,13 +15,53 @@ import { makeRepo, withTempHome } from "./helpers.js";
 
 describe("operation command wrappers", () => {
   it("parses --using provider/model values", () => {
-    expect(parseUsing(undefined)).toEqual({ id: "claude" });
+    expect(parseUsing(undefined)).toEqual({ id: "codex" });
     expect(parseUsing("codex")).toEqual({ id: "codex" });
     expect(parseUsing("claude/claude-sonnet-4-6")).toEqual({
       id: "claude",
       model: "claude-sonnet-4-6",
     });
     expect(() => parseUsing("bad")).toThrow("invalid --using");
+  });
+
+  it("uses Codex as the built-in provider when no config or --using exists", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-default-provider");
+      await initWiki({ cwd: repo, name: "cmd-default-provider", description: "" });
+      const seen: unknown[] = [];
+
+      const result = await runGardenCommand({
+        cwd: repo,
+        startBackground: async (options) => {
+          seen.push(options);
+          return {
+            runId: "run_default_provider",
+            childPid: 123,
+            record: {
+              version: 1,
+              id: "run_default_provider",
+              operation: "garden",
+              status: "queued",
+              repoRoot: options.repoRoot,
+              pid: 0,
+              provider: options.spec.provider.id,
+              model: options.spec.provider.model,
+              startedAt: "2026-05-09T20:17:00.000Z",
+              logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+            },
+          };
+        },
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(seen[0]).toMatchObject({
+        spec: {
+          provider: {
+            id: "codex",
+          },
+        },
+      });
+    });
   });
 
   it("runs init in foreground by default and rejects --json foreground", async () => {

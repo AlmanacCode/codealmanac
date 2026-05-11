@@ -32,7 +32,7 @@ export async function createBuildRunSpec(args: {
   return createOperationRunSpec({
     operation: "build",
     promptName: "operations/build",
-    provider: args.provider ?? { id: "claude" },
+    provider: args.provider,
     repoRoot: args.repoRoot,
     context: args.context,
     targetKind: "repo",

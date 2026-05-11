@@ -209,7 +209,7 @@ export async function runGardenCommand(
 
 export function parseUsing(value: string | undefined): OperationProviderSelection {
   if (value === undefined || value.trim().length === 0) {
-    return { id: "claude" };
+    return { id: "codex" };
   }
   const [rawProvider, ...modelParts] = value.split("/");
   if (!isProviderId(rawProvider)) {

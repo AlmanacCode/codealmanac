@@ -71,7 +71,7 @@ describe("agents command", () => {
 
   it("does not materialize untouched model origins when changing providers", async () => {
     await withTempHome(async () => {
-      await expect(runAgentsUse({ provider: "codex" })).resolves.toMatchObject({
+      await expect(runAgentsUse({ provider: "claude" })).resolves.toMatchObject({
         exitCode: 0,
       });
 

@@ -290,12 +290,12 @@ Provider-focused settings and readiness.
 ```bash
 almanac agents list
 almanac agents doctor
-almanac agents use claude
+almanac agents use codex
 almanac agents model claude claude-opus-4-6
 almanac agents model claude --default
 ```
 
-`agents use` writes the default provider. `agents model` writes the provider-local model override; `--default`, `default`, or `null` resets the provider to its own default. The older `almanac set default-agent ...` and `almanac set model ...` commands remain compatibility aliases and print deprecation warnings.
+`agents use` writes the default provider; Codex is the built-in recommended default. `agents model` writes the provider-local model override; `--default`, `default`, or `null` resets the provider to its own default. The older `almanac set default-agent ...` and `almanac set model ...` commands remain compatibility aliases and print deprecation warnings.
 
 `init`, `capture`, `ingest`, and `garden` resolve provider settings in this order:
 

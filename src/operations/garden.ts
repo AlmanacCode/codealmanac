@@ -27,7 +27,7 @@ export async function createGardenRunSpec(args: {
   return createOperationRunSpec({
     operation: "garden",
     promptName: "operations/garden",
-    provider: args.provider ?? { id: "claude" },
+    provider: args.provider,
     repoRoot: args.repoRoot,
     context: args.context,
     targetKind: "wiki",

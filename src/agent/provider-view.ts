@@ -158,11 +158,11 @@ export function chooseRecommendedProvider(
   const ready = statuses
     .filter((status) => status.installed && status.authenticated)
     .map((status) => status.id);
-  if (ready.includes("claude")) return "claude";
+  if (ready.includes("codex")) return "codex";
   for (const id of AGENT_PROVIDER_IDS) {
     if (ready.includes(id)) return id;
   }
-  return "claude";
+  return "codex";
 }
 
 export function parseAgentSelection(value: string): {
