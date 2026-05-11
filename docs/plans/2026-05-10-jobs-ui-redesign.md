@@ -124,4 +124,39 @@ Transcript · {N} events
 
 ## After-thoughts (filled in as work progresses)
 
-- _(to be appended)_
+### Round 1 review (claude review agent, 2026-05-10)
+
+Findings accepted and applied:
+
+- **`.ca-tool_result` typo** — but reviewer was wrong on the rename direction.
+  `tool_result` is never a `kind` value (only `read/write/edit/search/shell/
+  mcp/web/agent/image/unknown` per `normalizeToolKind`). The selector was
+  dead. Same for `.ca-tool-error`. Both deleted rather than renamed.
+- **`statusMark(includeLabel)` confused param** — accepted; flag removed,
+  word always wraps in `<span class="ca-status-word">`.
+- **`prefers-reduced-motion` guard** — accepted, added.
+- **Elapsed duplicated in chips row and colophon** — accepted; removed
+  from colophon. Chips row is the scannable home for duration.
+- **Tally density** — accepted; turns and tokens removed from list tally.
+  Headline facts (status, impact, elapsed) only. Colophon carries the
+  rest.
+- **Orphan-row border bug** — accepted; the `nth-last-child(2):nth-child
+  (odd)` rule only worked for specific row counts. Replaced with simple
+  `:last-child` and the outer `<dl>` border closes the block visually.
+- **`display: grid` no-op on `.ca-log-day-list`** — accepted; switched
+  to `display: block`.
+- **Local-time comment** — accepted; added at `dayKey`.
+
+Findings rejected / overridden:
+
+- None outright. The reviewer was conservative and right on all six
+  should-fixes. The one place I diverged was the must-fix rename: the
+  dead selectors should be deleted, not renamed, since the kind values
+  they purported to match don't exist.
+
+Open questions, settled:
+
+1. "Ledger" kicker — kept. Reviewer leaned same way, flagged "Logbook"
+   as a future option. Revisit if real users get confused.
+2. Two-column colophon — kept with the simpler border rule.
+3. Day grouping in local time — kept, comment added.

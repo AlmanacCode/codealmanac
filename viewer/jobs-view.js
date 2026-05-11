@@ -40,7 +40,7 @@ export function createJobsView(deps) {
         <h1 class="ca-title">${deps.escapeHtml(run.displayTitle)}</h1>
         <p class="ca-subtitle">${deps.escapeHtml(run.displaySubtitle ?? runFallbackSubtitle(run))}</p>
         <div class="ca-run-marks">
-          ${statusMark(run.displayStatus, true)}
+          ${statusMark(run.displayStatus)}
           <span class="ca-run-mark">${deps.escapeHtml(providerLabel(run))}</span>
           <span class="ca-run-mark">${deps.escapeHtml(deps.formatElapsed(run.elapsedMs))}</span>
           ${run.targetKind ? `<span class="ca-run-mark">${deps.escapeHtml(run.targetKind)}</span>` : ""}
@@ -130,7 +130,7 @@ export function createJobsView(deps) {
           <div class="ca-log-title">${deps.escapeHtml(run.displayTitle)}</div>
           <div class="ca-log-summary">${deps.escapeHtml(cleanSummary(run.displaySubtitle ?? runFallbackSubtitle(run)))}</div>
           <div class="ca-log-tally">
-            ${statusMark(run.displayStatus, false)}
+            ${statusMark(run.displayStatus)}
             ${tallyParts(run).map((part) => `<span class="ca-log-tally-part">${deps.escapeHtml(part)}</span>`).join("")}
           </div>
         </div>
@@ -143,12 +143,6 @@ export function createJobsView(deps) {
     const impact = impactPhrase(run);
     if (impact) parts.push(impact);
     if (typeof run.elapsedMs === "number") parts.push(deps.formatElapsed(run.elapsedMs));
-    if (run.summary?.turns !== undefined) {
-      parts.push(`${run.summary.turns} turn${run.summary.turns === 1 ? "" : "s"}`);
-    }
-    if (run.summary?.usage?.totalTokens !== undefined) {
-      parts.push(`${deps.formatNumber(run.summary.usage.totalTokens)} tokens`);
-    }
     return parts;
   }
 
@@ -168,7 +162,6 @@ export function createJobsView(deps) {
     const rows = [
       ["Started", deps.formatTimestamp(run.startedAt)],
       ["Finished", run.finishedAt ? deps.formatTimestamp(run.finishedAt) : "—"],
-      ["Elapsed", deps.formatElapsed(run.elapsedMs)],
       ["Operation", run.operation],
       ["Provider", providerLabel(run)],
       ["Status", statusWord(run.displayStatus)],
@@ -223,13 +216,13 @@ export function createJobsView(deps) {
     `;
   }
 
-  function statusMark(status, includeLabel) {
+  function statusMark(status) {
     const tone = statusTone(status);
     const word = statusWord(status);
     return `
       <span class="ca-run-mark ca-run-mark-status ca-status-tone-${deps.escapeAttr(tone)}">
         <span class="ca-status-dot" aria-hidden="true"></span>
-        ${includeLabel ? deps.escapeHtml(word) : `<span>${deps.escapeHtml(word)}</span>`}
+        <span class="ca-status-word">${deps.escapeHtml(word)}</span>
       </span>
     `;
   }
@@ -431,6 +424,7 @@ function isLiveStatus(status) {
 }
 
 function dayKey(iso) {
+  // Intentionally local time — this viewer is single-user local only.
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "unknown";
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;

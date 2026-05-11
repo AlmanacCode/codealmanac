@@ -34,7 +34,7 @@
 }
 
 .ca-log-day-list {
-  display: grid;
+  display: block;
 }
 
 .ca-log-entry {
@@ -194,6 +194,12 @@
   50% { opacity: 0.45; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .ca-status-tone-active .ca-status-dot {
+    animation: none;
+  }
+}
+
 /* ───────── Detail: colophon ───────── */
 
 .ca-colophon-section,
@@ -230,8 +236,7 @@
   border-bottom: 1px solid var(--ca-border-light);
 }
 
-.ca-colophon-row:last-child,
-.ca-colophon-row:nth-last-child(2):nth-child(odd) {
+.ca-colophon-row:last-child {
   border-bottom: 0;
 }
 
@@ -612,8 +617,6 @@
 }
 
 .ca-tool-step-error .ca-tool-step-icon,
-.ca-tool_result .ca-tool-step-icon,
-.ca-tool-error .ca-tool-step-icon,
 .ca-tool-status-error .ca-tool-step-icon,
 .ca-tool-unknown .ca-tool-step-icon {
   color: #73402b;
@@ -625,10 +628,6 @@
   .ca-colophon {
     grid-template-columns: 1fr;
     gap: 0;
-  }
-
-  .ca-colophon-row:nth-last-child(2):nth-child(odd) {
-    border-bottom: 1px solid var(--ca-border-light);
   }
 
   .ca-log-entry {
