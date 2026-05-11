@@ -88,6 +88,18 @@ async function handleApi(
     return;
   }
 
+  if (url.pathname === "/api/jobs") {
+    sendJson(res, 200, await api.jobs());
+    return;
+  }
+
+  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)$/);
+  if (jobMatch !== null) {
+    const job = await api.job(decodeURIComponent(jobMatch[1]!));
+    sendJson(res, job === null ? 404 : 200, job ?? { error: "job not found" });
+    return;
+  }
+
   sendJson(res, 404, { error: "not found" });
 }
 

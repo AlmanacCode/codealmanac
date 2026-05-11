@@ -3,6 +3,13 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import {
+  buildStartedRunRecord,
+  finishRunRecord,
+  runLogPath,
+  runRecordPath,
+  writeRunRecord,
+} from "../src/process/index.js";
 import { createViewerApi } from "../src/viewer/api.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
@@ -167,6 +174,131 @@ describe("viewer api", () => {
       expect(overview.topicNavigation).toEqual({ source: "tags", sidebarLimit: 8 });
       expect(overview.topics).toHaveLength(10);
       expect(overview.rootTopics).toHaveLength(8);
+    });
+  });
+
+  it("returns job runs and parsed stream events", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      const started = buildStartedRunRecord({
+        runId: "run_20260510120000_viewer",
+        repoRoot: repo,
+        startedAt: new Date("2026-05-10T12:00:00.000Z"),
+        pid: process.pid,
+        spec: {
+          provider: { id: "codex", model: "gpt-5.5" },
+          cwd: repo,
+          prompt: "garden",
+          metadata: {
+            operation: "garden",
+            targetKind: "wiki",
+            targetPaths: ["src/viewer/api.ts"],
+          },
+        },
+      });
+      const finished = finishRunRecord({
+        record: started,
+        status: "done",
+        finishedAt: new Date("2026-05-10T12:01:00.000Z"),
+        providerSessionId: "session-123",
+        summary: {
+          created: 1,
+          updated: 2,
+          archived: 0,
+          usage: { totalTokens: 1234 },
+        },
+      });
+      await writeRunRecord(runRecordPath(repo, finished.id), finished);
+      await writeFile(
+        runLogPath(repo, finished.id),
+        [
+          JSON.stringify({
+            timestamp: "2026-05-10T12:00:30.000Z",
+            event: { type: "text_delta", content: "hello" },
+          }),
+          "not json",
+          JSON.stringify({
+            timestamp: "2026-05-10T12:00:31.000Z",
+            event: {
+              type: "tool_use",
+              tool: "shell",
+              display: { kind: "shell", command: "npm test", status: "started" },
+            },
+          }),
+          "",
+        ].join("\n"),
+        "utf8",
+      );
+
+      const api = createViewerApi({ repoRoot: repo });
+      const jobs = await api.jobs();
+      expect(jobs.runs.map((run) => run.id)).toEqual([finished.id]);
+      expect(jobs.runs[0]?.displayStatus).toBe("done");
+      expect(jobs.runs[0]?.summary?.updated).toBe(2);
+      expect(jobs.runs[0]?.displayTitle).toBe("Garden wiki");
+
+      const detail = await api.job(finished.id);
+      expect(detail?.run.provider).toBe("codex");
+      expect(detail?.run.model).toBe("gpt-5.5");
+      expect(detail?.run.providerSessionId).toBe("session-123");
+      expect(detail?.run.displaySubtitle).toBe("src/viewer/api.ts");
+      expect(detail?.events).toHaveLength(3);
+      expect(detail?.events[0]).toEqual({
+        line: 1,
+        timestamp: "2026-05-10T12:00:30.000Z",
+        event: { type: "text_delta", content: "hello" },
+      });
+      expect(detail?.events[1]).toMatchObject({
+        line: 2,
+        invalid: true,
+        raw: "not json",
+      });
+      expect(detail?.events[2]).toMatchObject({
+        line: 3,
+        timestamp: "2026-05-10T12:00:31.000Z",
+        event: { type: "tool_use", tool: "shell" },
+      });
+      await expect(api.job("run_20260510120000_missing")).resolves.toBeNull();
+    });
+  });
+
+  it("keeps job detail lookups inside the run store", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      const started = buildStartedRunRecord({
+        runId: "run_20260510120500_secure",
+        repoRoot: repo,
+        startedAt: new Date("2026-05-10T12:05:00.000Z"),
+        pid: process.pid,
+        spec: {
+          provider: { id: "claude" },
+          cwd: repo,
+          prompt: "absorb",
+          metadata: { operation: "absorb" },
+        },
+      });
+      const leakedLogPath = join(home, "outside-log.jsonl");
+      await writeFile(
+        leakedLogPath,
+        `${JSON.stringify({
+          timestamp: "2026-05-10T12:05:01.000Z",
+          event: { type: "text", content: "outside file" },
+        })}\n`,
+        "utf8",
+      );
+      await writeRunRecord(runRecordPath(repo, started.id), {
+        ...started,
+        logPath: leakedLogPath,
+      });
+
+      const api = createViewerApi({ repoRoot: repo });
+
+      await expect(api.job("../run_20260510120500_secure")).resolves.toBeNull();
+      const detail = await api.job(started.id);
+      expect(detail?.events).toEqual([]);
+      expect(detail?.run.displaySubtitle).toBeNull();
     });
   });
 });

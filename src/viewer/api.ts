@@ -9,6 +9,12 @@ import { openIndex } from "../indexer/schema.js";
 import { getPageView, type PageView } from "../query/page-view.js";
 import { toKebabCase } from "../slug.js";
 import { topicsYamlPath } from "../topics/paths.js";
+import {
+  getViewerJob,
+  listViewerJobs,
+  type ViewerJobDetail,
+  type ViewerJobRun,
+} from "./jobs.js";
 
 const SIDEBAR_TAG_LIMIT = 8;
 
@@ -67,6 +73,8 @@ export interface ViewerApi {
   topic(slug: string): Promise<ViewerTopic | null>;
   search(query: string): Promise<{ query: string; pages: ViewerPageSummary[] }>;
   file(path: string): Promise<{ path: string; pages: ViewerPageSummary[] }>;
+  jobs(): Promise<{ runs: ViewerJobRun[] }>;
+  job(runId: string): Promise<ViewerJobDetail | null>;
 }
 
 export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
@@ -194,6 +202,14 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
           : pageSummaries(db, fileMentionSql(trimmed), fileMentionParams(trimmed));
         return { path: trimmed, pages };
       });
+    },
+
+    async jobs() {
+      return listViewerJobs(ctx.repoRoot);
+    },
+
+    async job(runId) {
+      return getViewerJob(ctx.repoRoot, runId);
     },
   };
 }

@@ -23,7 +23,7 @@ Topics form a DAG serialized in `.almanac/topics.yaml`. A page can belong to mul
 | Topic | What belongs here |
 |-------|------------------|
 | `stack` | Third-party libraries and services we depend on |
-| `systems` | Custom subsystems built in this repo (indexer, registry, DAG) |
+| `systems` | Custom subsystems built in this repo (indexer, registry, DAG, viewer) |
 | `flows` | Multi-step processes spanning files (capture, build, jobs) |
 | `decisions` | Architectural choices — "why X over Y" |
 | `agents` | AI agent integration: harness providers, operation prompts, Build/Absorb/Garden (child of `flows` + `stack`) |
@@ -64,3 +64,11 @@ Every entity page should be linked from the pages that depend on it. A page with
 ## Pages live in `.almanac/pages/`
 
 One markdown file per page, kebab-case slug. Frontmatter carries `title:`, `topics:`, and `files:` (list the specific files where this thing lives). The rest is prose.
+
+The flat layout is intentional. Topics are a multi-parent DAG — a single page can belong to `flows`, `decisions`, `storage`, and `cli` simultaneously. Nesting pages under topic folders would either lose those relationships or require duplication.
+
+## Human browsing
+
+`almanac serve` starts a local read-only viewer at `http://localhost:3927`. It is the primary way for humans to read the wiki: rendered markdown, clickable wikilinks, FTS search, topic browser, and backlinks panel per page. See [[almanac-serve]] for architecture and design details.
+
+The filesystem (`.almanac/pages/`) is the source of truth and the editing surface. The viewer is disposable — kill it, restart it, get the same wiki.

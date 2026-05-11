@@ -1,3 +1,5 @@
+import { createJobsView } from "./jobs-view.js";
+
 const SIDEBAR_TAG_LIMIT = 8;
 
 const state = {
@@ -17,6 +19,19 @@ const els = {
   searchForm: document.querySelector("#search-form"),
   searchInput: document.querySelector("#search-input"),
 };
+
+const jobsView = createJobsView({
+  api,
+  reader: els.reader,
+  getPathname: () => location.pathname,
+  renderError,
+  renderMarkdown,
+  escapeHtml,
+  escapeAttr,
+  formatTimestamp,
+  formatElapsed,
+  formatNumber,
+});
 
 boot().catch((error) => renderError(error));
 
@@ -58,6 +73,7 @@ function wireEvents() {
 
 async function route(pathname, search = "", push = true) {
   if (push) history.pushState(null, "", pathname + search);
+  jobsView.clearPoll();
   setActiveNav(pathname);
   setRailVisible(pathname.startsWith("/page/"));
 
@@ -87,6 +103,18 @@ async function route(pathname, search = "", push = true) {
   if (pathname === "/search") {
     const params = new URLSearchParams(search);
     await renderSearch(params.get("q") ?? "");
+    clearPageRail();
+    return;
+  }
+
+  if (pathname === "/jobs") {
+    await jobsView.renderList();
+    clearPageRail();
+    return;
+  }
+
+  if (pathname.startsWith("/jobs/")) {
+    await jobsView.renderDetail(decodeURIComponent(pathname.slice("/jobs/".length)));
     clearPageRail();
     return;
   }
@@ -446,9 +474,30 @@ function formatDate(epochSeconds) {
   });
 }
 
+function formatTimestamp(iso) {
+  return new Date(iso).toLocaleString();
+}
+
+function formatElapsed(ms) {
+  if (ms < 1_000) return `${ms}ms`;
+  const seconds = Math.round(ms / 1_000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.round(minutes / 60)}h`;
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+}
+
 function setActiveNav(pathname) {
   document.querySelectorAll(".ca-left [data-route]").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.route === pathname);
+    const route = button.dataset.route;
+    const active = route === "/jobs"
+      ? pathname === "/jobs" || pathname.startsWith("/jobs/")
+      : route === pathname;
+    button.classList.toggle("is-active", active);
   });
 }
 

@@ -26,6 +26,10 @@ The V1 lifecycle CLI routes write-capable wiki work into [[wiki-lifecycle-operat
 
 `--using <provider[/model]>` overrides the configured provider/model for one run. Without it, command handling reads the configured default provider/model. `--foreground` keeps capture, ingest, and garden attached. `--background` detaches init. `--json` is for background start responses and cannot be combined with foreground streaming.
 
+## Viewer command
+
+`almanac serve` starts a local read-only HTTP viewer for the wiki. It is not an AI lifecycle command — it runs no agent, writes no pages, and makes no AI calls. It is a pure query command over the same `index.db` and `pages/*.md` data the CLI already uses. See [[almanac-serve]] for the full implementation, routes, and design rationale.
+
 ## Jobs commands
 
 `almanac jobs`, `jobs show`, `jobs logs`, `jobs attach`, and `jobs cancel` are pure process-inspection commands over `.almanac/runs/`. They do not run AI and do not read or write wiki page content except through normal run records and logs.

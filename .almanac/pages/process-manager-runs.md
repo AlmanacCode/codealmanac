@@ -10,6 +10,9 @@ files:
   - src/process/spec.ts
   - src/process/types.ts
   - src/commands/jobs.ts
+  - src/viewer/jobs.ts
+  - viewer/jobs-view.js
+  - viewer/jobs.css
 ---
 
 # Process Manager Runs
@@ -41,3 +44,7 @@ The manager snapshots `.almanac/pages/*.md` before and after the harness run. It
 ## Jobs CLI
 
 `almanac jobs` lists runs for the current wiki only. `jobs show <run-id>` reads one record. `jobs logs <run-id>` prints the JSONL log. `jobs attach <run-id>` tails until the run is terminal and renders structured tool events into concise status lines such as reading, searching, editing, and command execution. `jobs cancel <run-id>` sends `SIGTERM` when a PID is known and marks the record cancelled.
+
+## Jobs viewer
+
+`almanac serve` exposes the same run data through the local viewer API at `/api/jobs` (list) and `/api/jobs/:runId` (detail with JSONL events). See [[almanac-serve]] for the type shapes and polling design. The viewer uses `listRunRecords`, `readRunRecord`, `runRecordPath`, `runLogPath`, and `toRunView` from `src/process/index.ts` — no storage logic is duplicated. Jobs API logic (type definitions, display title/subtitle derivation, JSONL parsing, safe run-id validation) lives in `src/viewer/jobs.ts`; the frontend UI is split across `viewer/jobs-view.js` and `viewer/jobs.css`.
