@@ -236,7 +236,7 @@
   border-bottom: 1px solid var(--ca-border-light);
 }
 
-.ca-colophon-row:last-child {
+.ca-colophon-row:nth-last-child(-n+2) {
   border-bottom: 0;
 }
 
@@ -628,6 +628,10 @@
   .ca-colophon {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .ca-colophon-row:nth-last-child(2) {
+    border-bottom: 1px solid var(--ca-border-light);
   }
 
   .ca-log-entry {
