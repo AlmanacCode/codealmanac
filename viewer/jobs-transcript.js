@@ -125,9 +125,12 @@ export function buildTranscript(entries) {
 export function getToolCardModel(step) {
   const display = step.display ?? {};
   const resultDisplay = step.resultDisplay ?? {};
-  const kind = normalizeToolKind(display.kind ?? inferToolKind(step.name, display));
+  const args = parseJsonObject(step.input);
+  const kind = normalizeToolKind(display.kind ?? inferToolKind(step.name, display, args));
+  const target = toolTarget(step.name, display, args);
   const title = display.title ?? titleFromToolName(step.name, kind);
   const preview =
+    target ??
     display.path ??
     display.command ??
     display.summary ??
@@ -141,6 +144,7 @@ export function getToolCardModel(step) {
     kind,
     icon: iconForKind(kind, isError),
     title,
+    target,
     preview,
     status,
     statusLabel: statusLabel(status, isError),
@@ -164,7 +168,7 @@ export function parseJsonObject(text) {
   }
 }
 
-function inferToolKind(name, display) {
+function inferToolKind(name, display, args) {
   const normalized = String(name ?? "").toLowerCase();
   if (display.command) return "shell";
   if (display.path) {
@@ -172,6 +176,12 @@ function inferToolKind(name, display) {
     if (normalized.includes("edit") || normalized.includes("patch")) return "edit";
     return "read";
   }
+  if (normalized === "read" || normalized.includes("read")) return "read";
+  if (normalized === "write" || normalized.includes("write")) return "write";
+  if (normalized === "edit" || normalized.includes("edit")) return "edit";
+  if (normalized === "bash" || normalized === "shell" || normalized.includes("bash")) return "shell";
+  if (args?.command) return "shell";
+  if (args?.file_path || args?.path) return "read";
   if (normalized === "agent" || normalized.includes("agent")) return "agent";
   if (normalized.includes("search")) return "search";
   if (normalized.includes("web") || normalized.includes("url")) return "web";
@@ -187,13 +197,25 @@ function normalizeToolKind(kind) {
 
 function titleFromToolName(name, kind) {
   if (kind === "agent") return "Subagent";
-  if (kind === "shell") return "Shell command";
+  if (kind === "shell") return String(name ?? "").toLowerCase() === "bash" ? "Bash" : "Shell";
   if (kind === "search") return "Search";
   if (kind === "web") return "Web";
   if (kind === "read") return "Read";
   if (kind === "write") return "Write";
   if (kind === "edit") return "Edit";
   return String(name ?? "Tool").replace(/[_-]/g, " ");
+}
+
+function toolTarget(name, display, args) {
+  if (display.path) return compactPath(display.path);
+  if (display.command) return display.summary ?? display.command;
+  if (typeof args?.file_path === "string") return compactPath(args.file_path);
+  if (typeof args?.path === "string") return compactPath(args.path);
+  if (typeof args?.command === "string") return args.description ?? args.command;
+  if (typeof args?.description === "string") return args.description;
+  if (typeof args?.query === "string") return args.query;
+  if (typeof args?.url === "string") return args.url;
+  return null;
 }
 
 function getInputPreview(input) {
@@ -229,4 +251,11 @@ function statusLabel(status, isError) {
 function truncate(text, limit) {
   if (text.length <= limit) return text;
   return `${text.slice(0, limit - 3)}...`;
+}
+
+function compactPath(path) {
+  const normalized = path.replace(/\\/g, "/");
+  const parts = normalized.split("/").filter(Boolean);
+  if (parts.length <= 3) return normalized;
+  return `.../${parts.slice(-3).join("/")}`;
 }

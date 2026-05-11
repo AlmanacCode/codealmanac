@@ -62,7 +62,7 @@ describe("viewer jobs transcript projection", () => {
     if (tool?.type !== "tool") throw new Error("expected tool transcript entry");
     expect(getToolCardModel(tool)).toMatchObject({
       kind: "shell",
-      title: "Shell command",
+      title: "Shell",
       preview: "npm test",
       statusLabel: "completed",
     });
@@ -130,6 +130,31 @@ describe("viewer jobs transcript projection", () => {
       icon: "A",
       title: "Subagent",
       preview: "Review stream UI",
+    });
+  });
+
+  it("uses action-specific labels and compact targets for file reads", () => {
+    const transcript = buildTranscript([
+      {
+        line: 1,
+        timestamp: "2026-05-11T01:00:00.000Z",
+        event: {
+          type: "tool_use",
+          id: "read-1",
+          tool: "Read",
+          input: "{\"file_path\":\"/Users/rohan/Desktop/Projects/codealmanac/src/viewer/jobs.ts\"}",
+        },
+      },
+    ]);
+
+    const tool = transcript[0];
+    expect(tool?.type).toBe("tool");
+    if (tool?.type !== "tool") throw new Error("expected tool transcript entry");
+    expect(getToolCardModel(tool)).toMatchObject({
+      kind: "read",
+      title: "Read",
+      target: ".../src/viewer/jobs.ts",
+      preview: ".../src/viewer/jobs.ts",
     });
   });
 });

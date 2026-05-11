@@ -216,15 +216,16 @@ export function createJobsView(deps) {
 
   function toolStep(step) {
     const model = getToolCardModel(step);
-    const detailsOpen = model.isError ? " open" : "";
     return `
-      <div class="ca-tool-step ca-tool-${deps.escapeAttr(model.kind)}">
-        <div class="ca-tool-step-icon">${deps.escapeHtml(model.icon)}</div>
-        <details class="ca-tool-card"${detailsOpen}>
+      <div class="ca-tool-flow ca-tool-${deps.escapeAttr(model.kind)}">
+        <details class="ca-tool-card">
           <summary class="ca-tool-summary">
-            <span class="ca-tool-title">${deps.escapeHtml(model.title)}</span>
-            ${model.preview ? `<span class="ca-tool-preview">${deps.escapeHtml(model.preview)}</span>` : ""}
-            <span class="ca-tool-state ca-tool-state-${deps.escapeAttr(model.statusLabel)}">${deps.escapeHtml(model.statusLabel)}</span>
+            <span class="ca-tool-step-icon">${deps.escapeHtml(model.icon)}</span>
+            <span class="ca-tool-copy">
+              <span class="ca-tool-title">${deps.escapeHtml(model.title)}</span>
+              ${model.target ? `<span class="ca-tool-preview">${deps.escapeHtml(model.target)}</span>` : ""}
+            </span>
+            ${toolState(model)}
           </summary>
           <div class="ca-tool-body">
             ${toolOverview(step, model)}
@@ -234,6 +235,11 @@ export function createJobsView(deps) {
         </details>
       </div>
     `;
+  }
+
+  function toolState(model) {
+    if (model.statusLabel === "completed") return "";
+    return `<span class="ca-tool-state ca-tool-state-${deps.escapeAttr(model.statusLabel)}">${deps.escapeHtml(model.statusLabel)}</span>`;
   }
 
   function toolOverview(step, model) {

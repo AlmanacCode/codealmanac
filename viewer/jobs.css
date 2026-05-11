@@ -183,22 +183,29 @@
 
 .ca-transcript {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
-.ca-chat-row,
-.ca-tool-step {
+.ca-chat-row {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
   gap: 12px;
 }
 
+.ca-tool-flow,
 .ca-tool-step {
   margin-left: 46px;
 }
 
-.ca-chat-avatar,
-.ca-tool-step-icon {
+.ca-tool-flow + .ca-tool-flow {
+  margin-top: -12px;
+}
+
+.ca-tool-flow + .ca-tool-flow .ca-tool-card {
+  border-top: 0;
+}
+
+.ca-chat-avatar {
   display: grid;
   place-items: center;
   width: 34px;
@@ -209,6 +216,18 @@
   color: var(--ca-accent);
   font-family: var(--ca-mono);
   font-size: 12px;
+}
+
+.ca-tool-step-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--ca-accent);
+  font-family: var(--ca-mono);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .ca-chat-bubble {
@@ -279,16 +298,36 @@
 
 .ca-tool-card {
   overflow: hidden;
+  border-color: var(--ca-border);
+  border-radius: 0;
+  background: var(--ca-surface);
+  font-family: var(--ca-serif);
+}
+
+.ca-tool-flow:first-child .ca-tool-card,
+.ca-chat-row + .ca-tool-flow .ca-tool-card,
+.ca-tool-step + .ca-tool-flow .ca-tool-card {
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+}
+
+.ca-tool-flow:has(+ .ca-chat-row) .ca-tool-card,
+.ca-tool-flow:has(+ .ca-tool-step) .ca-tool-card,
+.ca-tool-flow:last-child .ca-tool-card {
+  border-bottom-right-radius: 2px;
+  border-bottom-left-radius: 2px;
 }
 
 .ca-tool-summary {
-  display: grid;
-  grid-template-columns: minmax(120px, max-content) minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  min-width: 0;
   padding: 10px 12px;
   cursor: pointer;
   list-style: none;
+  text-align: left;
 }
 
 .ca-tool-summary::-webkit-details-marker {
@@ -297,13 +336,39 @@
 
 .ca-tool-card[open] .ca-tool-summary {
   border-bottom: 1px solid var(--ca-border-light);
-  background: rgba(255, 250, 240, 0.58);
+  background: var(--ca-surface);
+}
+
+.ca-tool-summary::after {
+  content: "⌄";
+  margin-left: auto;
+  color: var(--ca-muted);
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.ca-tool-card[open] .ca-tool-summary::after {
+  transform: rotate(180deg);
 }
 
 .ca-tool-title {
-  color: var(--ca-text);
-  font-size: 14px;
+  flex: 0 0 auto;
+  color: var(--ca-accent);
+  font-family: var(--ca-serif);
+  font-size: 13px;
+  font-weight: 400;
   line-height: 1.3;
+  white-space: nowrap;
+}
+
+.ca-tool-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: baseline;
+  gap: 12px;
+  overflow: hidden;
 }
 
 .ca-tool-preview {
@@ -318,6 +383,7 @@
 }
 
 .ca-tool-state {
+  flex: 0 0 auto;
   border: 1px solid var(--ca-border);
   border-radius: 999px;
   padding: 2px 7px;
@@ -341,7 +407,8 @@
 .ca-tool-body {
   display: grid;
   gap: 10px;
-  padding: 11px 12px 12px;
+  border-top: 1px solid var(--ca-border-light);
+  padding: 8px 12px 12px;
 }
 
 .ca-tool-facts {
@@ -392,7 +459,7 @@
 }
 
 .ca-tool-agent .ca-tool-step-icon {
-  background: #e9eef0;
+  color: var(--ca-accent);
 }
 
 .ca-tool-shell .ca-tool-step-icon {
@@ -431,7 +498,6 @@
 @media (max-width: 760px) {
   .ca-run-ledger,
   .ca-run-outcome,
-  .ca-tool-summary,
   .ca-tool-facts {
     grid-template-columns: 1fr;
   }
@@ -444,7 +510,12 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .ca-tool-step {
+  .ca-tool-step,
+  .ca-tool-flow {
     margin-left: 0;
+  }
+
+  .ca-tool-state {
+    width: max-content;
   }
 }

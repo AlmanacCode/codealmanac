@@ -55,6 +55,7 @@ export interface ToolCardModel {
   kind: string;
   icon: string;
   title: string;
+  target: string | null;
   preview: string;
   status: string;
   statusLabel: string;
