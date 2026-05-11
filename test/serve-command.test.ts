@@ -48,6 +48,11 @@ describe("viewer server", () => {
         expect(page.title).toBe("Capture Flow");
         expect(page.body).toContain("# Capture Flow");
 
+        const suggest = await fetch(`${server.url}/api/suggest?q=capture`).then((r) => r.json()) as {
+          pages: Array<{ slug: string }>;
+        };
+        expect(suggest.pages.map((p) => p.slug)).toEqual(["capture-flow"]);
+
         const jobs = await fetch(`${server.url}/api/jobs`).then((r) => r.json()) as {
           runs: Array<{ id: string }>;
         };

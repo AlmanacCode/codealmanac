@@ -107,6 +107,12 @@ describe("viewer api", () => {
       const search = await api.search("Derived search");
       expect(search.pages.map((p) => p.slug)).toEqual(["sqlite-indexer"]);
 
+      const suggestions = await api.suggest("Derived");
+      expect(suggestions.pages.map((p) => p.slug)).toEqual(["sqlite-indexer"]);
+      const partialSuggestions = await api.suggest("Deriv");
+      expect(partialSuggestions.pages.map((p) => p.slug)).toEqual(["sqlite-indexer"]);
+      await expect(api.suggest("\"")).resolves.toEqual({ query: "\"", pages: [] });
+
       const file = await api.file("src/indexer/index.ts");
       expect(file.pages.map((p) => p.slug).sort()).toEqual([
         "sqlite-indexer",

@@ -83,6 +83,11 @@ async function handleApi(
     return;
   }
 
+  if (url.pathname === "/api/suggest") {
+    sendJson(res, 200, await api.suggest(url.searchParams.get("q") ?? ""));
+    return;
+  }
+
   if (url.pathname === "/api/file") {
     sendJson(res, 200, await api.file(url.searchParams.get("path") ?? ""));
     return;

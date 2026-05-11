@@ -14,15 +14,19 @@ files:
   - viewer/app.js
   - viewer/app.css
   - viewer/jobs-view.js
+  - viewer/jobs-transcript.js
   - viewer/jobs.css
+  - viewer/search-suggestions.js
   - viewer/js/
   - viewer/styles/
   - test/serve-command.test.ts
   - test/viewer-api.test.ts
+  - test/viewer-jobs-transcript.test.ts
   - test/viewer-ui-assets.test.ts
 sources:
   - docs/plans/2026-05-10-local-viewer.md
   - docs/plans/2026-05-10-viewer-jobs-dashboard.md
+  - docs/plans/2026-05-11-jobs-stream-ui-garden.md
   - ../openalmanac/frontend/src/components/wiki/wiki-theme.css
   - ../openalmanac/frontend/src/components/wiki/wiki-chrome.css
   - ../openalmanac/frontend/src/components/wiki/vintage-prose.css
@@ -65,6 +69,8 @@ The viewer reads `.almanac/pages/*.md` and `.almanac/index.db`. It triggers an i
 /jobs/:runId               job detail — settings, status, stream timeline
 ```
 
+The left-rail search box uses `/api/suggest` while typing, then `/search?q=...` for submitted searches. Suggestions are bounded to the top eight pages and reuse the same FTS path as search.
+
 The page rail (left and right panels) is hidden for `/jobs` and `/jobs/:runId` routes — these views use a dedicated full-width layout rather than the three-panel wiki layout.
 
 ## What the viewer provides
@@ -72,6 +78,7 @@ The page rail (left and right panels) is hidden for `/jobs` and `/jobs/:runId` r
 - Page reading with rendered markdown
 - Wikilinks clickable (navigate within viewer)
 - Full-text search
+- Instant page suggestions in the left-rail search box
 - Topic browser
 - Backlinks panel per page
 - File reference listings (pages mentioning a given source file)
@@ -99,7 +106,9 @@ codealmanac package:
     app.css              # served CSS: --ca-* tokens, wiki layout
     app.js               # router and chrome glue; wiki views inline
     jobs-view.js         # jobs dashboard and detail view rendering
+    jobs-transcript.js   # pure projection of JSONL events into chat/tool transcript rows
     jobs.css             # jobs-specific CSS
+    search-suggestions.js # debounced left-rail search suggestions
 
     # companion modular structure (exists, not linked by index.html):
     js/                  # modular vanilla JS — api.js, dom.js, markdown.js, router.js
@@ -132,7 +141,7 @@ src/
     serve.ts          # thin CLI wrapper: resolve wiki root, start server, wait for Ctrl+C
 
   viewer/
-    api.ts            # createViewerApi(): overview(), page(), topic(), search(), file(), jobs(), job()
+    api.ts            # createViewerApi(): overview(), page(), topic(), search(), suggest(), file(), jobs(), job()
     jobs.ts           # jobs API logic: listViewerJobs(), getViewerJob(), display title/subtitle,
                       #   JSONL parsing, isSafeRunId(), isPidAlive()
     server.ts         # startViewerServer(): HTTP routing for /api/* and static assets
@@ -146,18 +155,20 @@ viewer/               # bundled static frontend (no build step required at runti
   app.js              # router and chrome glue; wiki views (home, page, topic, search, file) inline
   app.css             # all wiki tokens and layout CSS
   jobs-view.js        # jobs list and job detail UI rendering (loaded by index.html alongside app.js)
+  jobs-transcript.js  # pure transcript projection and tool-card display model
   jobs.css            # jobs-specific CSS (loaded by index.html)
+  search-suggestions.js # left-rail search suggestion controller
   js/                 # modular companion (not loaded by index.html)
   styles/             # modular companion CSS (not loaded by index.html)
 ```
 
-`serve.ts` owns only the CLI interface. `server.ts` owns HTTP. `api.ts` owns wiki-API payload assembly and delegates jobs concerns to `src/viewer/jobs.ts`. `jobs.ts` owns all run-record concerns: storage access, display title/subtitle derivation, JSONL log parsing, run-id validation, and PID liveness. `page-view.ts` is extracted shared logic: the `show` command and viewer API both call it. The frontend in `viewer/` is plain HTML + vanilla JS with no compile step. `app.js` handles routing and wiki views; `jobs-view.js` handles jobs rendering and is loaded alongside it.
+`serve.ts` owns only the CLI interface. `server.ts` owns HTTP. `api.ts` owns wiki-API payload assembly and delegates jobs concerns to `src/viewer/jobs.ts`. `jobs.ts` owns all run-record concerns: storage access, display title/subtitle derivation, JSONL log parsing, run-id validation, and PID liveness. `page-view.ts` is extracted shared logic: the `show` command and viewer API both call it. The frontend in `viewer/` is plain HTML + vanilla JS with no compile step. `app.js` handles routing and wiki views; `jobs-view.js` handles jobs rendering; `jobs-transcript.js` handles stream projection and tool/result pairing; `search-suggestions.js` owns the debounced search suggestion interaction.
 
 `jobs.ts` delegates to `src/process/index.ts` — specifically `listRunRecords()`, `readRunRecord()`, `runRecordPath()`, `runLogPath()`, and `toRunView()` — for all run storage access. The viewer does not duplicate the storage rules or introduce its own process model.
 
 ## Key API types
 
-`ViewerApi` exposes seven methods: `overview()` (wiki stats + recent pages + root topics), `page(slug)` (full `PageView` including body markdown, backlinks, topics, file refs, and a `related_pages` array), `topic(slug)` (topic metadata + children + pages), `search(query)` (FTS results or recent pages when query is empty), `file(path)` (pages from `file_refs` matching path semantics), `jobs()` (list of all run records as `ViewerJobRun[]`), and `job(runId)` (one `ViewerJobRun` plus its JSONL event log).
+`ViewerApi` exposes eight methods: `overview()` (wiki stats + recent pages + root topics), `page(slug)` (full `PageView` including body markdown, backlinks, topics, file refs, and a `related_pages` array), `topic(slug)` (topic metadata + children + pages), `search(query)` (FTS results or recent pages when query is empty), `suggest(query)` (top eight FTS page hits for instant suggestions), `file(path)` (pages from `file_refs` matching path semantics), `jobs()` (list of all run records as `ViewerJobRun[]`), and `job(runId)` (one `ViewerJobRun` plus its JSONL event log).
 
 `PageView` is defined in `src/query/page-view.ts` and includes: slug, title, summary, file\_path, updated\_at, archived\_at, superseded\_by, supersedes, topics, file\_refs, wikilinks\_out, wikilinks\_in, cross\_wiki\_links, and body (raw markdown). When returned by the viewer API `page()` method, a `related_pages` field is appended — page summaries for all wikilinks\_in, wikilinks\_out, and supersedes/superseded\_by targets, deduplicated, for the frontend to render titles without extra fetches.
 
@@ -176,7 +187,7 @@ The job detail view (`/jobs/:runId`) renders two fact panels followed by a strea
 - **Settings panel**: operation, provider, model, started-at timestamp, finished-at timestamp, and provider session ID if present.
 - **Outcomes panel**: pages created/updated/archived counts, cost (USD), token count, log file path, failure message and fix suggestion if present, error string if present.
 - **Targets section**: display of the run's targets (populated from `RunView.targetPaths`).
-- **Stream timeline**: each JSONL event rendered as a timeline entry. Invalid lines render as error rows showing the raw content and parse error.
+- **Stream timeline**: assistant text renders as chat bubbles; tool calls render as compact expandable tool cards; tool results are paired with their tool call by ID where possible; invalid lines render as error rows showing the raw content and parse error.
 
 Polling behavior: while `displayStatus` is `queued` or `running`, the detail view schedules a re-fetch every ~1.5 seconds via `jobs-view.js`. On re-render, any existing poll timer is cancelled before scheduling a new one. Polling stops automatically when the route changes or the status reaches a terminal state.
 

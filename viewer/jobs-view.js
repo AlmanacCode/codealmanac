@@ -1,3 +1,10 @@
+import {
+  buildTranscript,
+  getToolCardModel,
+  parseJsonObject,
+  stringifyEventValue,
+} from "./jobs-transcript.js";
+
 export function createJobsView(deps) {
   let pollTimer = null;
 
@@ -188,74 +195,105 @@ export function createJobsView(deps) {
         </div>
       `;
     }
-    return toolStep(entry.event, entry.timestamp);
+    if (entry.type === "status") return statusStep(entry);
+    return toolStep(entry);
   }
 
-  function toolStep(event, timestamp) {
-    const display = event.display ?? {};
-    const title = eventTitle(event, display);
-    const detail = eventDetail(event, display);
+  function statusStep(entry) {
     return `
-      <div class="ca-tool-step ca-tool-${deps.escapeAttr(event.type)}">
-        <div class="ca-tool-step-icon">${deps.escapeHtml(toolIcon(event, display))}</div>
+      <div class="ca-tool-step ca-tool-status ca-tool-status-${deps.escapeAttr(entry.tone)}">
+        <div class="ca-tool-step-icon">${entry.tone === "error" ? "!" : "-"}</div>
         <div class="ca-tool-step-body">
-          <div class="ca-tool-step-title">${deps.escapeHtml(title)}</div>
+          <div class="ca-tool-step-title">${deps.escapeHtml(entry.title)}</div>
           <div class="ca-tool-step-meta">
-            ${deps.escapeHtml(toolMeta(event, display))}${timestamp ? ` &middot; ${deps.escapeHtml(deps.formatTimestamp(timestamp))}` : ""}
+            ${deps.escapeHtml(entry.tone)}${entry.timestamp ? ` &middot; ${deps.escapeHtml(deps.formatTimestamp(entry.timestamp))}` : ""}
           </div>
-          ${detail ? `<pre>${deps.escapeHtml(detail)}</pre>` : ""}
+          ${entry.detail ? `<pre>${deps.escapeHtml(entry.detail)}</pre>` : ""}
         </div>
       </div>
     `;
   }
 
-  function eventTitle(event, display) {
-    if (display.title) return display.title;
-    if (event.type === "text_delta" || event.type === "text") return event.content.slice(0, 120) || "Text";
-    if (event.type === "tool_use") return event.tool;
-    if (event.type === "tool_result") return display.status ?? (event.isError ? "Tool error" : "Tool result");
-    if (event.type === "tool_summary") return event.summary.slice(0, 120);
-    if (event.type === "context_usage") return "Context usage";
-    if (event.type === "error") return event.error;
-    if (event.type === "done") return event.error ?? event.result ?? "Done";
-    return event.type;
+  function toolStep(step) {
+    const model = getToolCardModel(step);
+    const detailsOpen = model.isError ? " open" : "";
+    return `
+      <div class="ca-tool-step ca-tool-${deps.escapeAttr(model.kind)}">
+        <div class="ca-tool-step-icon">${deps.escapeHtml(model.icon)}</div>
+        <details class="ca-tool-card"${detailsOpen}>
+          <summary class="ca-tool-summary">
+            <span class="ca-tool-title">${deps.escapeHtml(model.title)}</span>
+            ${model.preview ? `<span class="ca-tool-preview">${deps.escapeHtml(model.preview)}</span>` : ""}
+            <span class="ca-tool-state ca-tool-state-${deps.escapeAttr(model.statusLabel)}">${deps.escapeHtml(model.statusLabel)}</span>
+          </summary>
+          <div class="ca-tool-body">
+            ${toolOverview(step, model)}
+            ${toolInput(step)}
+            ${toolResult(step)}
+          </div>
+        </details>
+      </div>
+    `;
   }
 
-  function toolIcon(event, display) {
-    const kind = display.kind ?? event.tool ?? event.type;
-    if (kind === "read") return "R";
-    if (kind === "write" || kind === "edit") return "E";
-    if (kind === "search") return "S";
-    if (kind === "shell") return "$";
-    if (kind === "web") return "W";
-    if (kind === "agent") return "A";
-    if (event.type === "tool_result") return event.isError ? "!" : "OK";
-    if (event.type === "error") return "!";
-    return "-";
+  function toolOverview(step, model) {
+    const rows = [
+      ["Tool", step.name],
+      ["Kind", model.kind],
+      ["Started", step.timestamp ? deps.formatTimestamp(step.timestamp) : ""],
+      ["Result", step.resultTimestamp ? deps.formatTimestamp(step.resultTimestamp) : ""],
+      ["Path", step.display?.path],
+      ["Command", step.display?.command],
+      ["Cwd", step.display?.cwd],
+      ["Exit", step.display?.exitCode ?? step.resultDisplay?.exitCode],
+    ].filter(([, value]) => value !== undefined && value !== null && String(value).length > 0);
+
+    if (model.kind === "agent") {
+      const parsed = parseJsonObject(step.input);
+      rows.push(
+        ...[
+          ["Agent type", parsed?.subagent_type],
+          ["Description", parsed?.description],
+        ].filter(([, value]) => typeof value === "string" && value.length > 0),
+      );
+    }
+
+    if (rows.length === 0) return "";
+    return `
+      <div class="ca-tool-facts">
+        ${rows.map(([label, value]) => `
+          <div class="ca-tool-fact">
+            <span>${deps.escapeHtml(label)}</span>
+            <strong>${deps.escapeHtml(value)}</strong>
+          </div>
+        `).join("")}
+      </div>
+    `;
   }
 
-  function toolMeta(event, display) {
-    if (display.path) return display.path;
-    if (display.command) return display.command;
-    if (display.status) return display.status;
-    if (event.type === "tool_summary") return "status";
-    if (event.type === "tool_result") return event.isError ? "tool error" : "tool result";
-    return display.kind ?? event.type;
+  function toolInput(step) {
+    if (!step.input) return "";
+    const parsed = parseJsonObject(step.input);
+    const prompt = parsed?.prompt;
+    const input = parsed !== null ? JSON.stringify(parsed, null, 2) : step.input;
+    return `
+      <div class="ca-tool-section">
+        <div class="ca-tool-section-title">${typeof prompt === "string" ? "Task" : "Input"}</div>
+        <pre>${deps.escapeHtml(typeof prompt === "string" ? prompt : input)}</pre>
+      </div>
+    `;
   }
 
-  function eventDetail(event, display) {
-    const parts = [];
-    if (display.path) parts.push(display.path);
-    if (display.command) parts.push(display.command);
-    if (display.summary) parts.push(display.summary);
-    if (event.type === "text_delta" || event.type === "text") parts.push(event.content);
-    if (event.type === "tool_use" && event.input) parts.push(event.input);
-    if (event.type === "tool_result" && event.content !== undefined) parts.push(stringifyEventValue(event.content));
-    if (event.type === "tool_summary") parts.push(event.summary);
-    if (event.type === "context_usage") parts.push(stringifyEventValue(event.usage));
-    if (event.type === "error" && event.failure?.fix) parts.push(event.failure.fix);
-    if (event.type === "done" && event.usage) parts.push(stringifyEventValue(event.usage));
-    return parts.filter(Boolean).join("\n");
+  function toolResult(step) {
+    if (!step.hasResult) {
+      return `<div class="ca-tool-pending">Waiting for result...</div>`;
+    }
+    return `
+      <div class="ca-tool-section">
+        <div class="ca-tool-section-title">${step.isError ? "Error result" : "Result"}</div>
+        <pre>${deps.escapeHtml(stringifyEventValue(step.result))}</pre>
+      </div>
+    `;
   }
 
   function providerLabel(run) {
@@ -275,45 +313,6 @@ export function createJobsView(deps) {
     renderDetail,
     renderList,
   };
-}
-
-function buildTranscript(entries) {
-  const transcript = [];
-  let assistant = null;
-  const ensureAssistant = (timestamp) => {
-    if (assistant === null) {
-      assistant = { type: "assistant", timestamp, text: "" };
-      transcript.push(assistant);
-    }
-    return assistant;
-  };
-
-  for (const entry of entries) {
-    if (entry.invalid) {
-      assistant = null;
-      transcript.push({ type: "invalid", line: entry.line, raw: entry.raw });
-      continue;
-    }
-    const event = entry.event;
-    if (event.type === "text_delta" || event.type === "text") {
-      ensureAssistant(entry.timestamp).text += event.content;
-      continue;
-    }
-    if (event.type === "done" && event.result) {
-      ensureAssistant(entry.timestamp).text += `${assistant?.text ? "\n\n" : ""}${event.result}`;
-      continue;
-    }
-    assistant = null;
-    if (event.type === "tool_use" || event.type === "tool_result" || event.type === "tool_summary" || event.type === "error") {
-      transcript.push({ type: "tool", timestamp: entry.timestamp, event });
-    }
-  }
-
-  return transcript.filter((entry) => entry.type !== "assistant" || entry.text.trim().length > 0);
-}
-
-function stringifyEventValue(value) {
-  return typeof value === "string" ? value : JSON.stringify(value, null, 2);
 }
 
 function countJobs(runs) {

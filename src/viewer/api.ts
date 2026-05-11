@@ -72,6 +72,7 @@ export interface ViewerApi {
   page(slug: string): Promise<PageView | null>;
   topic(slug: string): Promise<ViewerTopic | null>;
   search(query: string): Promise<{ query: string; pages: ViewerPageSummary[] }>;
+  suggest(query: string): Promise<{ query: string; pages: ViewerPageSummary[] }>;
   file(path: string): Promise<{ path: string; pages: ViewerPageSummary[] }>;
   jobs(): Promise<{ runs: ViewerJobRun[] }>;
   job(runId: string): Promise<ViewerJobDetail | null>;
@@ -181,16 +182,24 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
     async search(query) {
       return withFreshDb(ctx.repoRoot, (db) => {
         const trimmed = query.trim();
-        const sql = trimmed.length > 0
-          ? `SELECT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
-             FROM pages p
-             JOIN fts_pages f ON f.slug = p.slug
-             WHERE p.archived_at IS NULL AND fts_pages MATCH ?
-             ORDER BY f.rank ASC, p.updated_at DESC, p.slug ASC
-             LIMIT 50`
-          : recentPagesSql(50);
-        const params = trimmed.length > 0 ? [buildFtsQuery(trimmed)] : [];
+        const ftsQuery = trimmed.length > 0 ? buildFtsQuery(trimmed) : "";
+        if (trimmed.length > 0 && ftsQuery.length === 0) return { query: trimmed, pages: [] };
+        const sql = trimmed.length > 0 ? pageSearchSql(50) : recentPagesSql(50);
+        const params = trimmed.length > 0 ? [ftsQuery] : [];
         return { query: trimmed, pages: pageSummaries(db, sql, params) };
+      });
+    },
+
+    async suggest(query) {
+      return withFreshDb(ctx.repoRoot, (db) => {
+        const trimmed = query.trim();
+        if (trimmed.length === 0) return { query: trimmed, pages: [] };
+        const ftsQuery = buildFtsQuery(trimmed);
+        if (ftsQuery.length === 0) return { query: trimmed, pages: [] };
+        return {
+          query: trimmed,
+          pages: pageSummaries(db, pageSearchSql(8), [buildFtsPrefixQuery(trimmed)]),
+        };
       });
     },
 
@@ -241,6 +250,15 @@ function pagesBySlugSql(count: number): string {
           FROM pages
           WHERE slug IN (${placeholders})
           ORDER BY title COLLATE NOCASE, slug ASC`;
+}
+
+function pageSearchSql(limit: number): string {
+  return `SELECT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
+          FROM pages p
+          JOIN fts_pages f ON f.slug = p.slug
+          WHERE p.archived_at IS NULL AND fts_pages MATCH ?
+          ORDER BY f.rank ASC, p.updated_at DESC, p.slug ASC
+          LIMIT ${limit}`;
 }
 
 function pageSummaries(
@@ -309,6 +327,15 @@ function buildFtsQuery(input: string): string {
     .map((term) => term.replace(/"/g, ""))
     .filter((term) => term.length > 0)
     .map((term) => `"${term}"`)
+    .join(" AND ");
+}
+
+function buildFtsPrefixQuery(input: string): string {
+  return input
+    .split(/\s+/)
+    .map((term) => term.replace(/["*]/g, ""))
+    .filter((term) => term.length > 0)
+    .map((term) => `"${term}"*`)
     .join(" AND ");
 }
 

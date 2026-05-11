@@ -1,4 +1,5 @@
 import { createJobsView } from "./jobs-view.js";
+import { createSearchSuggestions } from "./search-suggestions.js";
 
 const SIDEBAR_TAG_LIMIT = 8;
 
@@ -33,6 +34,15 @@ const jobsView = createJobsView({
   formatNumber,
 });
 
+const searchSuggestions = createSearchSuggestions({
+  api,
+  form: els.searchForm,
+  input: els.searchInput,
+  navigate,
+  escapeHtml,
+  escapeAttr,
+});
+
 boot().catch((error) => renderError(error));
 
 async function boot() {
@@ -44,6 +54,8 @@ async function boot() {
 }
 
 function wireEvents() {
+  searchSuggestions.wire();
+
   document.addEventListener("click", (event) => {
     const topicToggle = event.target.closest("[data-topic-toggle]");
     if (topicToggle !== null) {
@@ -135,8 +147,11 @@ function navigate(path) {
   route(url.pathname, url.search).catch((error) => renderError(error));
 }
 
-async function api(path) {
-  const response = await fetch(path, { headers: { accept: "application/json" } });
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: { accept: "application/json", ...(options.headers ?? {}) },
+  });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? `Request failed: ${response.status}`);
   return body;
