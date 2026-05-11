@@ -22,6 +22,10 @@ Provider selection comes from `--using <provider[/model]>` when present. Otherwi
 
 `src/operations/build.ts` loads `prompts/operations/build.md`, appends runtime context containing the repository root and `.almanac/` paths, and requests the base file-editing tools: read, write, edit, search, and shell. The spec metadata is `{ operation: "build", targetKind: "repo" }`.
 
+The build prompt explicitly tells agents not to use MCP tools, OpenAlmanac tools, remote wiki search, or external page-search tools during init/build. Build is meant to create the local CodeAlmanac wiki from the current filesystem, so agents should use filesystem reads, shell/search commands, and direct writes under `.almanac/pages/`. Empty or unavailable local wiki search is not a blocker for first construction.
+
+The helper-agent guidance also separates scout work from build completion. Helpers may be given read-only investigation tasks, but their output is only evidence. The main build agent must not adopt helper read-only constraints for `.almanac/`; after helpers return, it still owns synthesis and must write actual markdown pages instead of ending with page candidates or a "pages to add later" report.
+
 Build does not call a bootstrap-specific SDK wrapper. It uses the same [[harness-providers]] boundary as Absorb and Garden.
 
 ## Old bootstrap removal

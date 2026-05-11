@@ -257,22 +257,24 @@ describe("Claude harness provider", () => {
     );
 
     expect(result.success).toBe(true);
-    expect(events).toEqual([
-      { type: "text_delta", content: "hello" },
-      { type: "text", content: "Reading" },
+    expect(events).toMatchObject([
+      { type: "text_delta", content: "hello", actor: expect.objectContaining({ role: "root" }) },
+      { type: "text", content: "Reading", actor: expect.objectContaining({ role: "root" }) },
       {
         type: "tool_use",
         id: "tool-1",
         tool: "Read",
         input: '{"file_path":"package.json"}',
+        actor: expect.objectContaining({ role: "root" }),
       },
       {
         type: "tool_result",
         id: "tool-1",
         content: "contents",
         isError: undefined,
+        actor: expect.objectContaining({ role: "root" }),
       },
-      { type: "tool_summary", summary: "read package.json" },
+      { type: "tool_summary", summary: "read package.json", actor: expect.objectContaining({ role: "root" }) },
       {
         type: "done",
         result: "done",
@@ -286,8 +288,142 @@ describe("Claude harness provider", () => {
           totalTokens: 3,
         },
         error: undefined,
+        sourceRole: "root",
+        sourceThreadId: "session-1",
       },
     ]);
+  });
+
+  it("marks Claude helpers completed from Agent tool results, not forwarded progress text", async () => {
+    const events: unknown[] = [];
+    const provider = createClaudeHarnessProvider({
+      resolveExecutable: () => undefined,
+      query: () =>
+        messages([
+          sdk({
+            type: "assistant",
+            message: {
+              id: "root-msg",
+              type: "message",
+              role: "assistant",
+              model: "claude-sonnet-4-6",
+              content: [
+                {
+                  type: "tool_use",
+                  id: "agent-1",
+                  name: "Agent",
+                  input: { description: "Inspect files", prompt: "look around" },
+                },
+              ],
+              stop_reason: null,
+              stop_sequence: null,
+              usage: { input_tokens: 1, output_tokens: 1 },
+            },
+            parent_tool_use_id: null,
+            uuid: "root-agent",
+            session_id: "session-1",
+          }),
+          sdk({
+            type: "assistant",
+            message: {
+              id: "helper-progress",
+              type: "message",
+              role: "assistant",
+              model: "claude-sonnet-4-6",
+              content: [{ type: "text", text: "Still reading files" }],
+              stop_reason: null,
+              stop_sequence: null,
+              usage: { input_tokens: 1, output_tokens: 1 },
+            },
+            parent_tool_use_id: "agent-1",
+            uuid: "helper-progress",
+            session_id: "session-1",
+          }),
+          sdk({
+            type: "user",
+            message: {
+              role: "user",
+              content: [
+                {
+                  type: "tool_result",
+                  tool_use_id: "agent-1",
+                  content: "Final helper report",
+                },
+              ],
+            },
+            parent_tool_use_id: null,
+            uuid: "agent-result",
+            session_id: "session-1",
+          }),
+          sdk({
+            type: "result",
+            subtype: "success",
+            duration_ms: 1,
+            duration_api_ms: 1,
+            is_error: false,
+            num_turns: 1,
+            result: "done",
+            stop_reason: null,
+            total_cost_usd: 0.01,
+            usage: {
+              input_tokens: 1,
+              cache_creation_input_tokens: 0,
+              cache_read_input_tokens: 0,
+              output_tokens: 2,
+              server_tool_use: null,
+              service_tier: "standard",
+            },
+            modelUsage: {},
+            permission_denials: [],
+            uuid: "result",
+            session_id: "session-1",
+          }),
+        ]),
+    });
+
+    await provider.run(
+      {
+        provider: { id: "claude" },
+        cwd: "/repo",
+        prompt: "go",
+        tools: [{ id: "read" }],
+        metadata: { operation: "build" },
+      },
+      {
+        onEvent: (event) => {
+          events.push(event);
+        },
+      },
+    );
+
+    const progressIndex = events.findIndex(
+      (event) =>
+        typeof event === "object" &&
+        event !== null &&
+        "type" in event &&
+        event.type === "text" &&
+        "content" in event &&
+        event.content === "Still reading files",
+    );
+    const completedIndex = events.findIndex(
+      (event) =>
+        typeof event === "object" &&
+        event !== null &&
+        "type" in event &&
+        event.type === "agent_completed",
+    );
+
+    expect(progressIndex).toBeGreaterThan(-1);
+    expect(completedIndex).toBeGreaterThan(progressIndex);
+    expect(events[completedIndex]).toMatchObject({
+      type: "agent_completed",
+      threadId: "agent-1",
+      result: "Final helper report",
+      actor: expect.objectContaining({
+        role: "helper",
+        threadId: "agent-1",
+      }),
+    });
   });
 });
 

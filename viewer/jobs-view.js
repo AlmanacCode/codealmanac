@@ -33,7 +33,8 @@ export function createJobsView(deps) {
   async function renderDetail(runId) {
     const detail = await deps.api(deps.jobPath(runId));
     const run = detail.run;
-    const transcript = buildTranscript(detail.events);
+    const agents = detail.agents ?? [];
+    const transcript = buildTranscript(detail.events, agents);
     document.title = `${run.displayTitle} - Almanac Jobs`;
     deps.reader.innerHTML = `
       ${deps.pageActions()}
@@ -57,6 +58,8 @@ export function createJobsView(deps) {
       </section>
 
       ${failureCallout(run)}
+      ${warningsSection(detail.warnings ?? [])}
+      ${agentsSection(agents, run)}
       ${targetsSection(run)}
 
       <section class="ca-transcript-section">
@@ -65,6 +68,7 @@ export function createJobsView(deps) {
           Transcript
           <small>${detail.events.length} stream event${detail.events.length === 1 ? "" : "s"}</small>
         </h2>
+        ${transcriptFilters(agents)}
         <div class="ca-transcript">
           ${
             transcript.map(transcriptEntry).join("")
@@ -73,6 +77,7 @@ export function createJobsView(deps) {
         </div>
       </section>
     `;
+    wireTranscriptFilters();
     if (isLiveStatus(run.displayStatus)) schedulePoll(run.id);
   }
 
@@ -206,6 +211,131 @@ export function createJobsView(deps) {
     `;
   }
 
+  function warningsSection(warnings) {
+    if (!warnings.length) return "";
+    return `
+      <section class="ca-warnings-section">
+        <h2 class="ca-section-label">Warnings</h2>
+        <div class="ca-warning-list">
+          ${warnings.map((warning) => `
+            <aside class="ca-run-warning ca-run-warning-${deps.escapeAttr(warning.severity)}">
+              <div class="ca-run-warning-code">${deps.escapeHtml(warning.code)}</div>
+              <p>${deps.escapeHtml(warning.message)}</p>
+              ${warning.threadId ? `<div class="ca-run-warning-meta">${deps.escapeHtml(warning.threadId)}</div>` : ""}
+            </aside>
+          `).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function agentsSection(agents, run) {
+    if (!agents.length) return "";
+    const root = agents.find((agent) => agent.role === "root");
+    const endedBy = doneActorLabel(agents, run);
+    return `
+      <section class="ca-agents-section">
+        <div class="ca-agents-head">
+          <div>
+            <h2 class="ca-section-label">Agents</h2>
+            <p>${deps.escapeHtml(agentDeck(root, agents, endedBy))}</p>
+          </div>
+          ${endedBy ? `<span class="ca-agent-ended">Ended by ${deps.escapeHtml(endedBy)}</span>` : ""}
+        </div>
+        <div class="ca-agent-grid">
+          ${agents.map((agent) => agentCard(agent)).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function agentCard(agent) {
+    return `
+      <article class="ca-agent-card ca-agent-${deps.escapeAttr(agent.role)}">
+        <header class="ca-agent-card-head">
+          <div class="ca-agent-avatar">${deps.escapeHtml(agentInitial(agent))}</div>
+          <div>
+            <h3>${deps.escapeHtml(agent.label)}</h3>
+            <div class="ca-agent-role">${deps.escapeHtml(agent.role)} · ${deps.escapeHtml(agent.status)}</div>
+          </div>
+        </header>
+        <div class="ca-agent-stats">
+          <span>${deps.escapeHtml(`${agent.eventCount} events`)}</span>
+          <span>${deps.escapeHtml(`${agent.toolCount} tools`)}</span>
+          ${agent.children?.length ? `<span>${deps.escapeHtml(`${agent.children.length} children`)}</span>` : ""}
+        </div>
+        <div class="ca-agent-id">${deps.escapeHtml(agent.threadId)}</div>
+        ${agent.prompt ? `
+          <details class="ca-agent-prompt">
+            <summary>Prompt</summary>
+            <pre>${deps.escapeHtml(agent.prompt)}</pre>
+          </details>
+        ` : ""}
+        ${agent.finalMessage ? `<p>${deps.escapeHtml(cleanSummary(agent.finalMessage))}</p>` : ""}
+      </article>
+    `;
+  }
+
+  function agentDeck(root, agents, endedBy) {
+    const helpers = agents.filter((agent) => agent.role === "helper").length;
+    const rootName = root?.label ?? "Main";
+    const helperText = helpers === 1 ? "1 helper" : `${helpers} helpers`;
+    const endText = endedBy ? ` The terminal result came from ${endedBy}.` : "";
+    return `${rootName} coordinated ${helperText}.${endText}`;
+  }
+
+  function doneActorLabel(agents, run) {
+    const root = agents.find((agent) => agent.threadId === run.providerSessionId && agent.role === "root");
+    return root?.label ?? agents.find((agent) => agent.role === "root")?.label ?? null;
+  }
+
+  function agentInitial(agent) {
+    if (agent.role === "root") return "M";
+    const match = agent.label.match(/\d+/);
+    return match ? match[0] : "H";
+  }
+
+  function transcriptFilters(agents) {
+    const filters = [
+      ["all", "All"],
+      ["main", "Main"],
+      ...agents.filter((agent) => agent.role === "helper").map((agent) => [agent.threadId, agent.label]),
+      ["tools", "Tools"],
+      ["raw", "Raw"],
+    ];
+    return `
+      <div class="ca-transcript-filters" role="toolbar" aria-label="Transcript filters">
+        ${filters.map(([value, label], index) => `
+          <button type="button" class="ca-transcript-filter${index === 0 ? " is-active" : ""}" data-filter="${deps.escapeAttr(value)}">
+            ${deps.escapeHtml(label)}
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function wireTranscriptFilters() {
+    const buttons = deps.reader.querySelectorAll(".ca-transcript-filter");
+    const rows = deps.reader.querySelectorAll("[data-actor-filter]");
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const filter = button.getAttribute("data-filter") ?? "all";
+        buttons.forEach((candidate) => candidate.classList.toggle("is-active", candidate === button));
+        rows.forEach((row) => {
+          const actor = row.getAttribute("data-actor-filter") ?? "";
+          const kind = row.getAttribute("data-kind-filter") ?? "";
+          const visible =
+            filter === "all" ||
+            (filter === "main" && actor === "root") ||
+            (filter === "tools" && (kind === "tool" || kind === "status" || kind === "lifecycle")) ||
+            (filter === "raw" && (kind === "status" || kind === "invalid")) ||
+            actor === filter;
+          row.hidden = !visible;
+        });
+      });
+    });
+  }
+
   function targetsSection(run) {
     if (!run.targetPaths?.length) return "";
     return `
@@ -232,10 +362,10 @@ export function createJobsView(deps) {
   function transcriptEntry(entry) {
     if (entry.type === "assistant") {
       return `
-        <div class="ca-chat-row ca-chat-row-assistant">
-          <div class="ca-chat-avatar" aria-hidden="true">✦</div>
+        <div class="ca-chat-row ca-chat-row-assistant ${actorClass(entry.actor)}" ${actorData(entry.actor, "message")}>
+          <div class="ca-chat-avatar" aria-hidden="true">${deps.escapeHtml(actorGlyph(entry.actor))}</div>
           <div class="ca-chat-bubble">
-            <div class="ca-chat-meta">Assistant${entry.timestamp ? ` &middot; ${deps.escapeHtml(deps.formatTimestamp(entry.timestamp))}` : ""}</div>
+            <div class="ca-chat-meta">${actorPill(entry.actor)}${entry.timestamp ? ` <span>${deps.escapeHtml(deps.formatTimestamp(entry.timestamp))}</span>` : ""}</div>
             <div class="ca-chat-text">${deps.renderMarkdown(entry.text.trim())}</div>
           </div>
         </div>
@@ -243,26 +373,26 @@ export function createJobsView(deps) {
     }
     if (entry.type === "invalid") {
       return `
-        <div class="ca-tool-step ca-tool-step-error">
+        <div class="ca-tool-step ca-tool-step-error" data-actor-filter="raw" data-kind-filter="invalid">
           <div class="ca-tool-step-title">Invalid JSON at line ${deps.escapeHtml(entry.line)}</div>
           <pre>${deps.escapeHtml(entry.raw)}</pre>
         </div>
       `;
     }
-    if (entry.type === "status") return statusStep(entry);
+    if (entry.type === "status" || entry.type === "lifecycle") return statusStep(entry);
     return toolStep(entry);
   }
 
   function statusStep(entry) {
     return `
-      <div class="ca-tool-step ca-tool-status ca-tool-status-${deps.escapeAttr(entry.tone)}">
-        <div class="ca-tool-step-icon">${entry.tone === "error" ? "!" : "-"}</div>
+      <div class="ca-tool-step ca-tool-status ca-tool-status-${deps.escapeAttr(entry.tone)} ${actorClass(entry.actor)}" ${actorData(entry.actor, entry.type)}>
+        <div class="ca-tool-step-icon">${entry.tone === "error" ? "!" : entry.type === "lifecycle" ? "A" : "-"}</div>
         <div class="ca-tool-step-body">
           <div class="ca-tool-step-title">${deps.escapeHtml(entry.title)}</div>
           <div class="ca-tool-step-meta">
-            ${deps.escapeHtml(entry.tone)}${entry.timestamp ? ` &middot; ${deps.escapeHtml(deps.formatTimestamp(entry.timestamp))}` : ""}
+            ${actorPill(entry.actor)}<span>${deps.escapeHtml(entry.type === "lifecycle" ? "agent lifecycle" : entry.tone)}</span>${entry.timestamp ? ` <span>${deps.escapeHtml(deps.formatTimestamp(entry.timestamp))}</span>` : ""}
           </div>
-          ${entry.detail ? `<pre>${deps.escapeHtml(entry.detail)}</pre>` : ""}
+          ${entry.detail ? `<details class="ca-status-detail"${entry.type === "lifecycle" ? "" : ""}><summary>Details</summary><pre>${deps.escapeHtml(entry.detail)}</pre></details>` : ""}
         </div>
       </div>
     `;
@@ -271,11 +401,12 @@ export function createJobsView(deps) {
   function toolStep(step) {
     const model = getToolCardModel(step);
     return `
-      <div class="ca-tool-flow ca-tool-${deps.escapeAttr(model.kind)}">
+      <div class="ca-tool-flow ca-tool-${deps.escapeAttr(model.kind)} ${actorClass(step.actor)}" ${actorData(step.actor, "tool")}>
         <details class="ca-tool-card">
           <summary class="ca-tool-summary">
             <span class="ca-tool-step-icon">${deps.escapeHtml(model.icon)}</span>
             <span class="ca-tool-copy">
+              ${actorPill(step.actor)}
               <span class="ca-tool-title">${deps.escapeHtml(model.title)}</span>
               ${model.target ? `<span class="ca-tool-preview">${deps.escapeHtml(model.target)}</span>` : ""}
             </span>
@@ -299,6 +430,7 @@ export function createJobsView(deps) {
   function toolOverview(step, model) {
     const rows = [
       ["Tool", step.name],
+      ["Actor", actorLabel(step.actor)],
       ["Kind", model.kind],
       ["Started", step.timestamp ? deps.formatTimestamp(step.timestamp) : ""],
       ["Result", step.resultTimestamp ? deps.formatTimestamp(step.resultTimestamp) : ""],
@@ -358,6 +490,37 @@ export function createJobsView(deps) {
 
   function providerLabel(run) {
     return run.provider + (run.model ? ` / ${run.model}` : "");
+  }
+
+  function actorLabel(actor) {
+    if (!actor) return null;
+    return actor.label ?? (actor.role === "root" ? "Main" : actor.role === "helper" ? "Helper" : "Unknown actor");
+  }
+
+  function actorClass(actor) {
+    if (!actor) return "ca-actor-run";
+    return `ca-actor-${deps.escapeAttr(actor.role)}`;
+  }
+
+  function actorData(actor, kind) {
+    const value = actor?.role === "root" ? "root" : actor?.threadId ?? "run";
+    return `data-actor-filter="${deps.escapeAttr(value)}" data-kind-filter="${deps.escapeAttr(kind)}"`;
+  }
+
+  function actorGlyph(actor) {
+    if (!actor) return "-";
+    if (actor.role === "root") return "M";
+    if (actor.role === "helper") {
+      const match = (actor.label ?? "").match(/\d+/);
+      return match ? match[0] : "H";
+    }
+    return "?";
+  }
+
+  function actorPill(actor) {
+    const label = actorLabel(actor) ?? "Run";
+    const role = actor?.role ?? "system";
+    return `<span class="ca-actor-pill ca-actor-pill-${deps.escapeAttr(role)}">${deps.escapeHtml(label)}</span>`;
   }
 
   function runFallbackSubtitle(run) {

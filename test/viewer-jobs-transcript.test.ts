@@ -22,6 +22,22 @@ describe("viewer jobs transcript projection", () => {
     ]);
   });
 
+  it("replaces streamed deltas with a matching full text snapshot", () => {
+    const transcript = buildTranscript([
+      { line: 1, timestamp: "2026-05-11T01:00:00.000Z", event: { type: "text_delta", content: "hello" } },
+      { line: 2, timestamp: "2026-05-11T01:00:01.000Z", event: { type: "text_delta", content: " world" } },
+      { line: 3, timestamp: "2026-05-11T01:00:02.000Z", event: { type: "text", content: "hello world" } },
+    ]);
+
+    expect(transcript).toEqual([
+      {
+        type: "assistant",
+        timestamp: "2026-05-11T01:00:00.000Z",
+        text: "hello world",
+      },
+    ]);
+  });
+
   it("pairs tool results with matching tool calls", () => {
     const transcript = buildTranscript([
       {

@@ -7,6 +7,7 @@ import type {
   HarnessFailure,
   HarnessResult,
   HarnessToolDisplay,
+  RunActor,
 } from "../events.js";
 import type {
   AgentRunSpec,
@@ -51,6 +52,14 @@ export interface CodexRunState {
   usage?: AgentUsage;
   error?: string;
   failure?: HarnessFailure;
+  rootThreadId?: string;
+  rootTurnId?: string;
+  resultSourceThreadId?: string;
+  resultSourceTurnId?: string;
+  resultSourceRole?: "root" | "helper" | "unknown";
+  agentParents?: Record<string, string | null>;
+  agentLabels?: Record<string, string>;
+  completedAgents?: Record<string, boolean>;
 }
 
 export function createCodexHarnessProvider(
@@ -504,13 +513,28 @@ export async function runCodexAppServer(
     };
 
     const handleNotification = (message: JsonRpcNotification): void => {
-      const events = mapCodexAppServerNotification(message, state, activeTurnId);
       const turnId = stringField(asRecord(message.params), "turnId");
-      activeTurnId = activeTurnId ?? turnId;
+      if (
+        activeTurnId === undefined &&
+        turnId !== undefined &&
+        isRootThreadNotification(message, state)
+      ) {
+        activeTurnId = turnId;
+      }
+      const isRootCompletion = isRootTurnCompletion(message, state, activeTurnId);
+      const events = mapCodexAppServerNotification(message, state, {
+        activeTurnId,
+        rootThreadId: state.rootThreadId,
+        rootTurnId: state.rootTurnId,
+        isRootCompletion,
+      });
       for (const event of events) {
         eventWrites.push(hooks?.onEvent?.(event) ?? Promise.resolve());
       }
       if (message.method === "turn/completed") {
+        if (isRootCompletion === false) {
+          return;
+        }
         state.success = state.failure === undefined;
         state.turns = 1;
         eventWrites.push(
@@ -522,6 +546,9 @@ export async function runCodexAppServer(
             usage: state.usage,
             error: state.error,
             failure: state.failure,
+            sourceThreadId: state.resultSourceThreadId,
+            sourceTurnId: state.resultSourceTurnId,
+            sourceRole: state.resultSourceRole,
           }) ?? Promise.resolve(),
         );
         void finish(toHarnessResult(state));
@@ -616,6 +643,7 @@ export async function runCodexAppServer(
           throw new Error("Codex app-server thread/start did not return a thread id");
         }
         state.providerSessionId = threadId;
+        state.rootThreadId = threadId;
         const outputSchema = await readOutputSchema(spec.output?.schemaPath);
         const turn = asRecord(
           await requestRpc("turn/start", {
@@ -642,12 +670,43 @@ export async function runCodexAppServer(
           }),
         );
         activeTurnId = stringField(asRecord(turn.turn), "id");
+        state.rootTurnId = activeTurnId;
         startTurnWatchdog();
       } catch (err: unknown) {
         fail(err instanceof Error ? err.message : String(err));
       }
     })();
   });
+}
+
+function isRootTurnCompletion(
+  message: JsonRpcNotification,
+  state: CodexRunState,
+  activeTurnId: string | undefined,
+): boolean | undefined {
+  if (message.method !== "turn/completed") return undefined;
+  const params = asRecord(message.params);
+  const completedTurnId = stringField(params, "turnId");
+  const completedThreadId = stringField(params, "threadId");
+  const isRootTurn =
+    (state.rootTurnId !== undefined && completedTurnId === state.rootTurnId) ||
+    (state.rootTurnId === undefined &&
+      activeTurnId !== undefined &&
+      completedTurnId === activeTurnId);
+  const isRootThread =
+    state.rootThreadId !== undefined && completedThreadId === state.rootThreadId;
+  return isRootTurn || isRootThread;
+}
+
+function isRootThreadNotification(
+  message: JsonRpcNotification,
+  state: CodexRunState,
+): boolean {
+  const completedThreadId = stringField(asRecord(message.params), "threadId");
+  return (
+    state.rootThreadId !== undefined &&
+    completedThreadId === state.rootThreadId
+  );
 }
 
 function respondToServerRequest(
@@ -705,22 +764,29 @@ async function readOutputSchema(schemaPath: string | undefined): Promise<unknown
 export function mapCodexAppServerNotification(
   notification: JsonRpcNotification,
   state: CodexRunState,
-  activeTurnId?: string,
+  context: {
+    activeTurnId?: string;
+    rootThreadId?: string;
+    rootTurnId?: string;
+    isRootCompletion?: boolean;
+  } = {},
 ): HarnessEvent[] {
   const params = asRecord(notification.params);
   const threadId = stringField(params, "threadId");
+  const turnId = stringField(params, "turnId");
+  const actor = actorForCodexThread(state, threadId, context.rootThreadId);
   if (state.providerSessionId === undefined && threadId !== undefined) {
     state.providerSessionId = threadId;
   }
 
   if (notification.method === "item/agentMessage/delta") {
     const delta = stringField(params, "delta");
-    return delta !== undefined ? [{ type: "text_delta", content: delta }] : [];
+    return delta !== undefined ? [{ type: "text_delta", content: delta, actor }] : [];
   }
 
   if (notification.method === "item/plan/delta") {
     const delta = stringField(params, "delta");
-    return delta !== undefined ? [{ type: "tool_summary", summary: delta }] : [];
+    return delta !== undefined ? [{ type: "tool_summary", summary: delta, actor }] : [];
   }
 
   if (notification.method === "turn/plan/updated") {
@@ -731,19 +797,20 @@ export function mapCodexAppServerNotification(
           .filter((step): step is string => step !== undefined)
       : [];
     const summary = [explanation, ...plan].filter(Boolean).join(" | ");
-    return summary.length > 0 ? [{ type: "tool_summary", summary }] : [];
+    return summary.length > 0 ? [{ type: "tool_summary", summary, actor }] : [];
   }
 
   if (notification.method === "thread/tokenUsage/updated") {
     const usage = parseCodexAppServerUsage(params.tokenUsage);
     if (usage !== undefined) state.usage = usage;
-    return usage !== undefined ? [{ type: "context_usage", usage }] : [];
+    return usage !== undefined ? [{ type: "context_usage", usage, actor }] : [];
   }
 
   if (notification.method === "item/started") {
     const item = asRecord(params.item);
-    const mapped = codexItemToToolEvent(item, "started");
-    return mapped !== undefined ? [mapped] : [];
+    const mapped = codexItemToToolEvent(item, "started", actor, { threadId, turnId });
+    const lifecycle = codexLifecycleEvents(state, item, actor, "started");
+    return [mapped, ...lifecycle].filter((event): event is HarnessEvent => event !== undefined);
   }
 
   if (notification.method === "item/completed") {
@@ -751,24 +818,44 @@ export function mapCodexAppServerNotification(
     if (item.type === "agentMessage") {
       const text = stringField(item, "text");
       if (text !== undefined) {
-        state.result = text;
-        return [{ type: "text", content: text }];
+        const role = actor.role;
+        if (role === "root") {
+          state.result = text;
+          state.resultSourceThreadId = threadId;
+          state.resultSourceTurnId = turnId;
+          state.resultSourceRole = role;
+        }
+        const events: HarnessEvent[] = [{ type: "text", content: text, actor }];
+        if (role === "helper" && threadId !== undefined) {
+          markAgentCompleted(state, threadId);
+          events.push({
+            type: "agent_completed",
+            threadId,
+            parentThreadId: state.agentParents?.[threadId] ?? null,
+            result: text,
+            actor,
+          });
+        }
+        return events;
       }
       return [];
     }
-    const display = codexItemDisplay(item, "completed");
+    const display = codexItemDisplay(item, "completed", actor, { threadId, turnId });
     if (display === undefined) return [];
-    return [
+    const events: HarnessEvent[] = [
       {
         type: "tool_result",
         id: stringField(item, "id"),
         content: item.aggregatedOutput ?? item.result ?? item.error,
         isError:
           display.status === "failed" ||
-          (typeof item.success === "boolean" && item.success === false),
+            (typeof item.success === "boolean" && item.success === false),
         display,
+        actor,
       },
     ];
+    events.push(...codexLifecycleEvents(state, item, actor, "completed"));
+    return events;
   }
 
   if (
@@ -779,7 +866,7 @@ export function mapCodexAppServerNotification(
     const delta =
       stringField(params, "delta") ?? decodeBase64(stringField(params, "deltaBase64"));
     return delta !== undefined && delta.trim().length > 0
-      ? [{ type: "tool_summary", summary: delta.trim() }]
+      ? [{ type: "tool_summary", summary: delta.trim(), actor }]
       : [];
   }
 
@@ -789,19 +876,23 @@ export function mapCodexAppServerNotification(
     const errorMessage = stringField(error, "message");
     if (errorMessage !== undefined) {
       const failure = classifyCodexFailure(errorMessage);
-      state.success = false;
-      state.error = failure.message;
-      state.failure = failure;
-      return [{ type: "error", error: failure.message, failure }];
+      if (context.isRootCompletion !== false) {
+        state.success = false;
+        state.error = failure.message;
+        state.failure = failure;
+      }
+      return [{ type: "error", error: failure.message, failure, actor }];
     }
-    state.success = true;
-    state.turns = activeTurnId !== undefined ? 1 : 1;
+    if (context.isRootCompletion !== false) {
+      state.success = true;
+      state.turns = context.activeTurnId !== undefined ? 1 : 1;
+    }
     return [];
   }
 
   if (notification.method === "warning") {
     const message = stringField(params, "message") ?? "Codex warning";
-    return [{ type: "tool_summary", summary: `Warning: ${message}` }];
+    return [{ type: "tool_summary", summary: `Warning: ${message}`, actor }];
   }
 
   if (notification.method === "error") {
@@ -815,7 +906,7 @@ export function mapCodexAppServerNotification(
     state.success = false;
     state.error = failure.message;
     state.failure = failure;
-    return [{ type: "error", error: failure.message, failure }];
+    return [{ type: "error", error: failure.message, failure, actor }];
   }
 
   return [];
@@ -866,8 +957,10 @@ function parsePositiveEnvInt(value: string | undefined, fallback: number): numbe
 function codexItemToToolEvent(
   item: Record<string, unknown>,
   status: NonNullable<HarnessToolDisplay["status"]>,
+  actor: RunActor,
+  providerIds?: { threadId?: string; turnId?: string },
 ): HarnessEvent | undefined {
-  const display = codexItemDisplay(item, status);
+  const display = codexItemDisplay(item, status, actor, providerIds);
   if (display === undefined) return undefined;
   return {
     type: "tool_use",
@@ -875,16 +968,19 @@ function codexItemToToolEvent(
     tool: itemTypeToolName(item),
     input: stringifyInput(item),
     display,
+    actor,
   };
 }
 
 function codexItemDisplay(
   item: Record<string, unknown>,
   fallbackStatus: NonNullable<HarnessToolDisplay["status"]>,
+  actor: RunActor,
+  providerIds?: { threadId?: string; turnId?: string },
 ): HarnessToolDisplay | undefined {
   const type = stringField(item, "type");
   if (type === "commandExecution") {
-    return commandExecutionDisplay(item, fallbackStatus);
+    return commandExecutionDisplay(item, fallbackStatus, actor, providerIds);
   }
   if (type === "fileChange") {
     return {
@@ -892,7 +988,7 @@ function codexItemDisplay(
       title: "Editing file",
       status: itemStatus(item, fallbackStatus),
       durationMs: numberField(item, "durationMs") ?? null,
-      raw: item,
+      raw: withActor(item, actor, providerIds),
     };
   }
   if (type === "mcpToolCall") {
@@ -900,7 +996,7 @@ function codexItemDisplay(
       kind: "mcp",
       title: `MCP ${stringField(item, "tool") ?? "tool"}`,
       status: itemStatus(item, fallbackStatus),
-      raw: item,
+      raw: withActor(item, actor, providerIds),
     };
   }
   if (type === "dynamicToolCall") {
@@ -909,7 +1005,7 @@ function codexItemDisplay(
       kind: inferToolKind(tool),
       title: toolTitle(tool),
       status: itemStatus(item, fallbackStatus),
-      raw: item,
+      raw: withActor(item, actor, providerIds),
     };
   }
   if (type === "webSearch") {
@@ -918,7 +1014,7 @@ function codexItemDisplay(
       title: "Web search",
       summary: stringField(item, "query"),
       status: itemStatus(item, fallbackStatus),
-      raw: item,
+      raw: withActor(item, actor, providerIds),
     };
   }
   if (type === "imageView") {
@@ -927,7 +1023,7 @@ function codexItemDisplay(
       title: "Viewing image",
       path: stringField(item, "path"),
       status: itemStatus(item, fallbackStatus),
-      raw: item,
+      raw: withActor(item, actor, providerIds),
     };
   }
   if (type === "collabAgentToolCall") {
@@ -935,7 +1031,7 @@ function codexItemDisplay(
       kind: "agent",
       title: `Agent ${stringField(item, "tool") ?? "tool"}`,
       status: itemStatus(item, fallbackStatus),
-      raw: item,
+      raw: withActor(item, actor, providerIds),
     };
   }
   return undefined;
@@ -944,6 +1040,8 @@ function codexItemDisplay(
 function commandExecutionDisplay(
   item: Record<string, unknown>,
   fallbackStatus: NonNullable<HarnessToolDisplay["status"]>,
+  actor: RunActor,
+  providerIds?: { threadId?: string; turnId?: string },
 ): HarnessToolDisplay {
   const command = stringField(item, "command");
   const action = firstCommandAction(item);
@@ -970,7 +1068,7 @@ function commandExecutionDisplay(
     status: itemStatus(item, fallbackStatus),
     exitCode: numberField(item, "exitCode") ?? null,
     durationMs: numberField(item, "durationMs") ?? null,
-    raw: item,
+    raw: withActor(item, actor, providerIds),
   };
 }
 
@@ -1022,6 +1120,163 @@ function toolTitle(tool: string): string {
     default:
       return tool;
   }
+}
+
+function actorForCodexThread(
+  state: CodexRunState,
+  threadId: string | undefined,
+  rootThreadId: string | undefined,
+): RunActor {
+  if (threadId === undefined) {
+    return {
+      threadId: null,
+      role: "unknown",
+      confidence: "unknown",
+      label: "Unknown actor",
+    };
+  }
+  if (rootThreadId === undefined && state.rootThreadId === undefined) {
+    state.rootThreadId = threadId;
+  }
+  const effectiveRootThreadId = rootThreadId ?? state.rootThreadId;
+  if (effectiveRootThreadId !== undefined && threadId === effectiveRootThreadId) {
+    return {
+      threadId,
+      role: "root",
+      confidence: "provider",
+      label: "Main",
+    };
+  }
+  const parentThreadId = state.agentParents?.[threadId] ?? effectiveRootThreadId ?? null;
+  return {
+    threadId,
+    role: "helper",
+    parentThreadId,
+    confidence: "provider",
+    label: state.agentLabels?.[threadId] ?? helperLabel(state, threadId),
+  };
+}
+
+function codexLifecycleEvents(
+  state: CodexRunState,
+  item: Record<string, unknown>,
+  actor: RunActor,
+  phase: "started" | "completed",
+): HarnessEvent[] {
+  if (stringField(item, "type") !== "collabAgentToolCall") return [];
+  const tool = stringField(item, "tool");
+  const senderThreadId = stringField(item, "senderThreadId") ?? actor.threadId ?? null;
+  const receiverThreadIds = stringArrayField(item, "receiverThreadIds");
+
+  if (tool === "spawnAgent" && phase === "completed") {
+    const events: HarnessEvent[] = [];
+    for (const childThreadId of receiverThreadIds) {
+      registerAgent(state, childThreadId, senderThreadId, stringField(item, "model"));
+      events.push({
+        type: "agent_spawned",
+        parentThreadId: senderThreadId ?? "",
+        childThreadId,
+        prompt: stringField(item, "prompt") ?? "",
+        model: stringField(item, "model"),
+        reasoningEffort: stringField(item, "reasoningEffort"),
+        actor,
+      });
+    }
+    return events;
+  }
+
+  if (tool === "wait" && phase === "started") {
+    return [
+      {
+        type: "agent_wait_started",
+        parentThreadId: senderThreadId ?? "",
+        childThreadIds: receiverThreadIds,
+        actor,
+      },
+    ];
+  }
+
+  if (tool === "wait" && phase === "completed") {
+    return completedAgentEventsFromWait(state, item);
+  }
+
+  return [];
+}
+
+function completedAgentEventsFromWait(
+  state: CodexRunState,
+  item: Record<string, unknown>,
+): HarnessEvent[] {
+  const agentsStates = asRecord(item.agentsStates);
+  const events: HarnessEvent[] = [];
+  for (const [threadId, rawState] of Object.entries(agentsStates)) {
+    const agentState = asRecord(rawState);
+    if (stringField(agentState, "status") !== "completed") continue;
+    if (state.completedAgents?.[threadId] === true) continue;
+    const message = stringField(agentState, "message");
+    if (message === undefined) continue;
+    markAgentCompleted(state, threadId);
+    events.push({
+      type: "agent_completed",
+      threadId,
+      parentThreadId: state.agentParents?.[threadId] ?? null,
+      result: message,
+      actor: actorForCodexThread(state, threadId, state.rootThreadId),
+    });
+  }
+  return events;
+}
+
+function registerAgent(
+  state: CodexRunState,
+  childThreadId: string,
+  parentThreadId: string | null,
+  _model: string | undefined,
+): void {
+  state.agentParents = state.agentParents ?? {};
+  state.agentLabels = state.agentLabels ?? {};
+  state.agentParents[childThreadId] = parentThreadId;
+  state.agentLabels[childThreadId] = helperLabel(state, childThreadId);
+}
+
+function markAgentCompleted(state: CodexRunState, threadId: string): void {
+  state.completedAgents = state.completedAgents ?? {};
+  state.completedAgents[threadId] = true;
+}
+
+function helperLabel(state: CodexRunState, threadId: string): string {
+  state.agentLabels = state.agentLabels ?? {};
+  const existing = state.agentLabels[threadId];
+  if (existing !== undefined) return existing;
+  const count = Object.keys(state.agentLabels).length + 1;
+  const label = `Helper ${count}`;
+  state.agentLabels[threadId] = label;
+  return label;
+}
+
+function stringArrayField(
+  record: Record<string, unknown>,
+  field: string,
+): string[] {
+  const value = record[field];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.length > 0)
+    : [];
+}
+
+function withActor(
+  item: Record<string, unknown>,
+  actor: RunActor,
+  providerIds?: { threadId?: string; turnId?: string },
+): Record<string, unknown> {
+  return {
+    ...item,
+    _codealmanacActor: {
+      ...actor,
+      providerThreadId: providerIds?.threadId ?? null,
+      turnId: providerIds?.turnId ?? null,
+    },
+  };
 }
 
 function decodeBase64(value: string | undefined): string | undefined {

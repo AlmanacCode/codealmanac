@@ -6,6 +6,7 @@ import {
 } from "@anthropic-ai/claude-agent-sdk";
 
 import type { HarnessEvent, HarnessFailure, HarnessResult } from "../events.js";
+import type { RunActor } from "../events.js";
 import type { ToolRequest } from "../tools.js";
 import type {
   AgentRunSpec,
@@ -26,6 +27,13 @@ type ClaudeQueryFn = (params: {
   prompt: string;
   options?: ClaudeOptions;
 }) => ClaudeQuery;
+
+interface ClaudeTraceState {
+  sessionId?: string;
+  agentParents: Record<string, string | null>;
+  agentLabels: Record<string, string>;
+  completedAgents: Record<string, boolean>;
+}
 
 export interface ClaudeHarnessProviderDeps {
   query?: ClaudeQueryFn;
@@ -89,11 +97,17 @@ async function runClaudeHarness(
   let error: string | undefined;
   let failure: HarnessFailure | undefined;
   let usage: HarnessResult["usage"];
+  const trace: ClaudeTraceState = {
+    agentParents: {},
+    agentLabels: {},
+    completedAgents: {},
+  };
 
   try {
     for await (const message of stream) {
       providerSessionId = providerSessionId ?? getSessionId(message);
-      for (const event of toHarnessEvents(message)) {
+      trace.sessionId = trace.sessionId ?? providerSessionId;
+      for (const event of toHarnessEvents(message, trace)) {
         await hooks?.onEvent?.(event);
       }
 
@@ -131,6 +145,9 @@ async function runClaudeHarness(
     usage,
     error,
     failure,
+    sourceThreadId: providerSessionId,
+    sourceRole: success ? "root" : undefined,
+    actor: rootClaudeActor(providerSessionId),
   });
 
   return {
@@ -204,6 +221,7 @@ function buildClaudeOptions(
     maxBudgetUsd: spec.limits?.maxCostUsd,
     permissionMode: "dontAsk",
     includePartialMessages: true,
+    forwardSubagentText: true,
     env: {
       ...process.env,
       CODEALMANAC_INTERNAL_SESSION: "1",
@@ -275,10 +293,18 @@ function toClaudeEffort(effort: string | undefined): ClaudeOptions["effort"] {
   return undefined;
 }
 
-function toHarnessEvents(message: SDKMessage): HarnessEvent[] {
+function toHarnessEvents(
+  message: SDKMessage,
+  trace: ClaudeTraceState = {
+    agentParents: {},
+    agentLabels: {},
+    completedAgents: {},
+  },
+): HarnessEvent[] {
+  const actor = actorForClaudeMessage(message, trace);
   if (message.type === "stream_event") {
     const text = getTextDelta(message.event);
-    return text !== undefined ? [{ type: "text_delta", content: text }] : [];
+    return text !== undefined ? [{ type: "text_delta", content: text, actor }] : [];
   }
 
   if (message.type === "assistant") {
@@ -287,16 +313,31 @@ function toHarnessEvents(message: SDKMessage): HarnessEvent[] {
     const events: HarnessEvent[] = [];
     for (const block of content) {
       if (block.type === "text") {
-        events.push({ type: "text", content: block.text });
+        events.push({ type: "text", content: block.text, actor });
         continue;
       }
       if (block.type === "tool_use") {
+        const toolActor = actor;
         events.push({
           type: "tool_use",
           id: block.id,
           tool: block.name,
           input: stringifyInput(block.input),
+          actor: toolActor,
+          providerEventId: message.uuid,
+          providerParentToolUseId: parentToolUseIdFromMessage(message) ?? undefined,
         });
+        if (block.name === "Agent") {
+          trace.agentParents[block.id] = trace.sessionId ?? null;
+          trace.agentLabels[block.id] = helperLabel(trace, block.id);
+          events.push({
+            type: "agent_spawned",
+            parentThreadId: trace.sessionId ?? "",
+            childThreadId: block.id,
+            prompt: promptFromClaudeAgentInput(block.input),
+            actor: toolActor,
+          });
+        }
       }
     }
     return events;
@@ -307,26 +348,113 @@ function toHarnessEvents(message: SDKMessage): HarnessEvent[] {
     if (!Array.isArray(content)) return [];
     return content.flatMap((block) => {
       if (block.type !== "tool_result") return [];
-      return [
+      const events: HarnessEvent[] = [
         {
           type: "tool_result",
           id: block.tool_use_id,
           content: block.content,
           isError: block.is_error,
-        } satisfies HarnessEvent,
+          actor,
+          providerEventId: message.uuid,
+          providerParentToolUseId: parentToolUseIdFromMessage(message) ?? undefined,
+        },
       ];
+      if (
+        trace.agentParents[block.tool_use_id] !== undefined &&
+        trace.completedAgents[block.tool_use_id] !== true
+      ) {
+        trace.completedAgents[block.tool_use_id] = true;
+        const helperActor = actorForClaudeHelper(trace, block.tool_use_id);
+        events.push({
+          type: "agent_completed",
+          threadId: block.tool_use_id,
+          parentThreadId: trace.agentParents[block.tool_use_id] ?? trace.sessionId ?? null,
+          result: stringifyToolResult(block.content),
+          actor: helperActor,
+        });
+      }
+      return events;
     });
   }
 
   if (message.type === "tool_use_summary") {
-    return [{ type: "tool_summary", summary: message.summary }];
+    return [{ type: "tool_summary", summary: message.summary, actor }];
   }
 
   if (message.type === "result" && message.subtype !== "success") {
-    return message.errors.map((err) => ({ type: "error", error: err }));
+    return message.errors.map((err) => ({ type: "error", error: err, actor }));
   }
 
   return [];
+}
+
+function actorForClaudeMessage(
+  message: SDKMessage,
+  trace: ClaudeTraceState,
+): RunActor {
+  const sessionId = getSessionId(message) ?? trace.sessionId;
+  trace.sessionId = trace.sessionId ?? sessionId;
+  const parentToolUseId = parentToolUseIdFromMessage(message);
+  if (parentToolUseId === null) {
+    return rootClaudeActor(sessionId);
+  }
+  trace.agentParents[parentToolUseId] = trace.agentParents[parentToolUseId] ?? sessionId ?? null;
+  trace.agentLabels[parentToolUseId] = trace.agentLabels[parentToolUseId] ?? helperLabel(trace, parentToolUseId);
+  return {
+    threadId: parentToolUseId,
+    role: "helper",
+    parentThreadId: trace.agentParents[parentToolUseId] ?? null,
+    confidence: "derived",
+    label: trace.agentLabels[parentToolUseId],
+  };
+}
+
+function rootClaudeActor(sessionId: string | undefined): RunActor {
+  return {
+    threadId: sessionId ?? null,
+    role: sessionId === undefined ? "unknown" : "root",
+    confidence: sessionId === undefined ? "unknown" : "provider",
+    label: sessionId === undefined ? "Unknown actor" : "Main",
+  };
+}
+
+function actorForClaudeHelper(trace: ClaudeTraceState, toolUseId: string): RunActor {
+  return {
+    threadId: toolUseId,
+    role: "helper",
+    parentThreadId: trace.agentParents[toolUseId] ?? trace.sessionId ?? null,
+    confidence: "derived",
+    label: trace.agentLabels[toolUseId] ?? helperLabel(trace, toolUseId),
+  };
+}
+
+function stringifyToolResult(content: unknown): string {
+  if (typeof content === "string") return content;
+  return stringifyInput(content) ?? "";
+}
+
+function parentToolUseIdFromMessage(message: SDKMessage): string | null {
+  if (!("parent_tool_use_id" in message)) return null;
+  const value = message.parent_tool_use_id;
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function helperLabel(trace: ClaudeTraceState, id: string): string {
+  const existing = trace.agentLabels[id];
+  if (existing !== undefined) return existing;
+  const label = `Helper ${Object.keys(trace.agentLabels).length + 1}`;
+  trace.agentLabels[id] = label;
+  return label;
+}
+
+function promptFromClaudeAgentInput(input: unknown): string {
+  if (input !== null && typeof input === "object") {
+    const prompt = (input as { prompt?: unknown }).prompt;
+    if (typeof prompt === "string") return prompt;
+    const description = (input as { description?: unknown }).description;
+    if (typeof description === "string") return description;
+  }
+  return "";
 }
 
 function getTextDelta(event: unknown): string | undefined {

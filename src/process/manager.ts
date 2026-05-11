@@ -103,7 +103,7 @@ export async function startForegroundProcess(
     const before = await snapshotPages(pagesDir);
     try {
       result = await harnessRun(options.spec, {
-        onEvent: eventLogger(started.logPath, now, eventWrites, options.onEvent),
+        onEvent: eventLogger(started.logPath, runId, now, eventWrites, options.onEvent),
       });
     } catch (err: unknown) {
       result = {
@@ -114,7 +114,7 @@ export async function startForegroundProcess(
       await appendRunEvent(started.logPath, {
         type: "error",
         error: result.error ?? "unknown error",
-      }, now());
+      }, now(), { runId, sequence: eventWrites.length + 1 });
     }
     await Promise.allSettled(eventWrites);
 
@@ -152,7 +152,7 @@ export async function startForegroundProcess(
       await appendRunEvent(started.logPath, {
         type: "error",
         error: result.error ?? "unknown error",
-      }, now());
+      }, now(), { runId, sequence: eventWrites.length + 1 });
     } catch {
       // The run record is the source of truth; do not let a broken log write
       // prevent terminal status recording.
@@ -253,12 +253,15 @@ async function finishCancelled(args: {
 
 function eventLogger(
   path: string,
+  runId: string,
   now: () => Date,
   writes: Promise<void>[],
   observer?: (event: HarnessEvent) => void | Promise<void>,
 ): (event: HarnessEvent) => void {
+  let sequence = 0;
   return (event) => {
-    writes.push(appendRunEvent(path, event, now()));
+    sequence += 1;
+    writes.push(appendRunEvent(path, event, now(), { runId, sequence }));
     if (observer !== undefined) {
       writes.push(Promise.resolve(observer(event)));
     }

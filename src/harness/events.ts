@@ -44,7 +44,23 @@ export interface HarnessToolDisplay {
   raw?: unknown;
 }
 
-export type HarnessEvent =
+export interface RunActor {
+  threadId: string | null;
+  role: "root" | "helper" | "unknown";
+  parentThreadId?: string | null;
+  label?: string;
+  confidence: "provider" | "derived" | "unknown";
+}
+
+export interface HarnessEventEnvelopeFields {
+  actor?: RunActor;
+  raw?: unknown;
+  providerEventId?: string;
+  providerParentToolUseId?: string;
+}
+
+export type HarnessEvent = HarnessEventEnvelopeFields &
+  (
   | { type: "text_delta"; content: string }
   | { type: "text"; content: string }
   | {
@@ -73,7 +89,30 @@ export type HarnessEvent =
       usage?: AgentUsage;
       error?: string;
       failure?: HarnessFailure;
-    };
+      sourceThreadId?: string;
+      sourceTurnId?: string;
+      sourceRole?: "root" | "helper" | "unknown";
+    }
+  | {
+      type: "agent_spawned";
+      parentThreadId: string;
+      childThreadId: string;
+      prompt: string;
+      model?: string;
+      reasoningEffort?: string;
+    }
+  | {
+      type: "agent_wait_started";
+      parentThreadId: string;
+      childThreadIds: string[];
+    }
+  | {
+      type: "agent_completed";
+      threadId: string;
+      parentThreadId: string | null;
+      result: string;
+    }
+  );
 
 export type HarnessEventType = HarnessEvent["type"];
 

@@ -1,11 +1,15 @@
-export function buildTranscript(entries) {
+export function buildTranscript(entries, agents = []) {
   const transcript = [];
   const toolsById = new Map();
+  const agentLabels = new Map(agents.map((agent) => [agent.threadId, agent.label]));
   let assistant = null;
 
-  const ensureAssistant = (timestamp) => {
+  const ensureAssistant = (timestamp, actor) => {
+    if (!sameActor(assistant?.actor, actor)) assistant = null;
     if (assistant === null) {
       assistant = { type: "assistant", timestamp, text: "" };
+      const labeledActor = withAgentLabel(actor, agentLabels);
+      if (labeledActor) assistant.actor = labeledActor;
       transcript.push(assistant);
     }
     return assistant;
@@ -23,13 +27,19 @@ export function buildTranscript(entries) {
     }
 
     const event = entry.event;
+    const actor = withAgentLabel(entry.actor ?? event.actor ?? null, agentLabels);
     if (event.type === "text_delta" || event.type === "text") {
-      ensureAssistant(entry.timestamp).text += event.content;
+      const bubble = ensureAssistant(entry.timestamp, actor);
+      if (event.type === "text" && bubble.text.length > 0 && event.content.startsWith(bubble.text)) {
+        bubble.text = event.content;
+      } else {
+        bubble.text += event.content;
+      }
       continue;
     }
 
     if (event.type === "done" && event.result) {
-      const bubble = ensureAssistant(entry.timestamp);
+      const bubble = ensureAssistant(entry.timestamp, actor);
       bubble.text += `${bubble.text ? "\n\n" : ""}${event.result}`;
       if (!event.error) continue;
     }
@@ -49,6 +59,7 @@ export function buildTranscript(entries) {
         resultDisplay: null,
         resultTimestamp: null,
         isError: false,
+        actor,
       };
       transcript.push(tool);
       if (tool.id) toolsById.set(tool.id, tool);
@@ -77,12 +88,51 @@ export function buildTranscript(entries) {
         resultDisplay: event.display ?? null,
         resultTimestamp: entry.timestamp,
         isError: Boolean(event.isError),
+        actor,
+      });
+      continue;
+    }
+
+    if (event.type === "agent_spawned") {
+      transcript.push({
+        type: "lifecycle",
+        timestamp: entry.timestamp,
+        tone: "agent",
+        title: `${actorName(actor, agentLabels)} spawned ${agentName(event.childThreadId, agentLabels)}`,
+        detail: event.prompt,
+        threadId: event.childThreadId,
+        actor,
+      });
+      continue;
+    }
+
+    if (event.type === "agent_wait_started") {
+      transcript.push({
+        type: "lifecycle",
+        timestamp: entry.timestamp,
+        tone: "agent",
+        title: `${actorName(actor, agentLabels)} waiting for ${event.childThreadIds.length} helper${event.childThreadIds.length === 1 ? "" : "s"}`,
+        detail: event.childThreadIds.map((id) => `${agentName(id, agentLabels)} · ${id}`).join("\n"),
+        actor,
+      });
+      continue;
+    }
+
+    if (event.type === "agent_completed") {
+      transcript.push({
+        type: "lifecycle",
+        timestamp: entry.timestamp,
+        tone: "agent",
+        title: `${agentName(event.threadId, agentLabels)} completed`,
+        detail: event.result,
+        threadId: event.threadId,
+        actor,
       });
       continue;
     }
 
     if (event.type === "tool_summary") {
-      transcript.push({ type: "status", timestamp: entry.timestamp, tone: "neutral", title: "Tool summary", detail: event.summary });
+      transcript.push({ type: "status", timestamp: entry.timestamp, tone: "neutral", title: "Tool summary", detail: event.summary, actor });
       continue;
     }
 
@@ -93,6 +143,7 @@ export function buildTranscript(entries) {
         tone: "neutral",
         title: "Context usage",
         detail: stringifyEventValue(event.usage),
+        actor,
       });
       continue;
     }
@@ -104,6 +155,7 @@ export function buildTranscript(entries) {
         tone: "error",
         title: event.error || "Error",
         detail: event.failure?.fix ?? event.failure?.raw ?? "",
+        actor,
       });
       continue;
     }
@@ -115,11 +167,40 @@ export function buildTranscript(entries) {
         tone: "error",
         title: event.error,
         detail: event.failure?.fix ?? event.failure?.raw ?? "",
+        actor,
       });
     }
   }
 
   return transcript.filter((entry) => entry.type !== "assistant" || entry.text.trim().length > 0);
+}
+
+function sameActor(a, b) {
+  const aId = a?.threadId ?? a?.role ?? null;
+  const bId = b?.threadId ?? b?.role ?? null;
+  return aId === bId;
+}
+
+function withAgentLabel(actor, labels) {
+  if (!actor) return null;
+  const label = actor.threadId ? labels.get(actor.threadId) : undefined;
+  return label ? { ...actor, label } : actor;
+}
+
+function actorName(actor, labels) {
+  if (!actor) return "Run";
+  return actor.label ?? agentName(actor.threadId, labels);
+}
+
+function agentName(threadId, labels) {
+  if (!threadId) return "unknown helper";
+  return labels.get(threadId) ?? `Helper ${shortId(threadId)}`;
+}
+
+function shortId(value) {
+  if (!value) return "unknown";
+  const text = String(value);
+  return text.length > 12 ? text.slice(0, 8) : text;
 }
 
 export function getToolCardModel(step) {

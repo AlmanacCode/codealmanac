@@ -4,16 +4,32 @@ export interface TranscriptLogEntry {
   raw?: string;
   error?: string;
   timestamp?: string | null;
+  actor?: RunActor | null;
   event?: {
     type: string;
+    actor?: RunActor | null;
     [key: string]: unknown;
   };
+}
+
+export interface RunActor {
+  threadId?: string | null;
+  role: "root" | "helper" | "unknown";
+  parentThreadId?: string | null;
+  label?: string;
+  confidence?: "provider" | "derived" | "unknown";
+}
+
+export interface TranscriptAgent {
+  threadId: string;
+  label: string;
 }
 
 export interface AssistantTranscriptEntry {
   type: "assistant";
   timestamp?: string | null;
   text: string;
+  actor?: RunActor | null;
 }
 
 export interface InvalidTranscriptEntry {
@@ -26,9 +42,20 @@ export interface InvalidTranscriptEntry {
 export interface StatusTranscriptEntry {
   type: "status";
   timestamp?: string | null;
-  tone: "neutral" | "error";
+  tone: "neutral" | "error" | "agent";
   title: string;
-  detail: string;
+  detail?: string;
+  actor?: RunActor | null;
+}
+
+export interface LifecycleTranscriptEntry {
+  type: "lifecycle";
+  timestamp?: string | null;
+  tone: "agent";
+  title: string;
+  detail?: string;
+  threadId?: string;
+  actor?: RunActor | null;
 }
 
 export interface ToolTranscriptEntry {
@@ -43,12 +70,14 @@ export interface ToolTranscriptEntry {
   resultDisplay?: Record<string, unknown> | null;
   resultTimestamp?: string | null;
   isError: boolean;
+  actor?: RunActor | null;
 }
 
 export type TranscriptEntry =
   | AssistantTranscriptEntry
   | InvalidTranscriptEntry
   | StatusTranscriptEntry
+  | LifecycleTranscriptEntry
   | ToolTranscriptEntry;
 
 export interface ToolCardModel {
@@ -62,7 +91,10 @@ export interface ToolCardModel {
   isError: boolean;
 }
 
-export function buildTranscript(entries: TranscriptLogEntry[]): TranscriptEntry[];
+export function buildTranscript(
+  entries: TranscriptLogEntry[],
+  agents?: TranscriptAgent[],
+): TranscriptEntry[];
 export function getToolCardModel(step: ToolTranscriptEntry): ToolCardModel;
 export function stringifyEventValue(value: unknown): string;
 export function parseJsonObject(text: unknown): Record<string, unknown> | null;

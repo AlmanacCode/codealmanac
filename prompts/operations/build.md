@@ -24,6 +24,17 @@ Use `getting-started.md` for the required orientation role. `project-overview.md
 and should only exist if a separate project-identity or product state page earns
 its place in the graph.
 
+## Tooling Boundary
+
+Build/init creates a local CodeAlmanac wiki from the current filesystem. Do
+not use MCP tools, OpenAlmanac tools, remote wiki search, or external page
+search tools for this operation.
+
+Use filesystem reads, shell/search commands, and direct writes under
+`.almanac/pages/`. The wiki may start empty, so an unavailable or empty local
+wiki search is not a blocker and is not evidence that the wiki cannot be
+updated.
+
 ## Algorithm
 
 1. Orient to the corpus: repo layout, commands, package/config files, docs,
@@ -58,6 +69,15 @@ cluster.
 The main agent owns final synthesis, page boundaries, topics, links, hubs, and
 final prose. Do not let helpers independently create disconnected final wiki
 structure.
+
+Helper output is evidence, not completion. If a helper is asked to investigate
+read-only or avoid editing files, that restriction applies to the helper's
+task only. The main build agent is still responsible for writing the final wiki
+under `.almanac/pages/`.
+
+Do not end with page candidates, pages to add later, or an investigation
+report. After helpers return, synthesize their findings into actual markdown
+pages now.
 
 ## Output Standard
 

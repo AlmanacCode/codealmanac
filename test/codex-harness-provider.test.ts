@@ -149,12 +149,13 @@ describe("Codex harness provider", () => {
         },
         state,
       ),
-    ).toEqual([
+    ).toMatchObject([
       {
         type: "tool_use",
         id: "item-1",
         tool: "commandExecution",
         input: expect.any(String),
+        actor: expect.objectContaining({ role: "root", threadId: "thread-1" }),
         display: expect.objectContaining({
           kind: "read",
           title: "Reading file",
@@ -186,12 +187,13 @@ describe("Codex harness provider", () => {
         },
         state,
       ),
-    ).toEqual([
+    ).toMatchObject([
       {
         type: "tool_result",
         id: "item-1",
         content: "ok",
         isError: false,
+        actor: expect.objectContaining({ role: "unknown" }),
         display: expect.objectContaining({
           kind: "shell",
           title: "Running command",
@@ -211,7 +213,7 @@ describe("Codex harness provider", () => {
         },
         state,
       ),
-    ).toEqual([{ type: "text_delta", content: "hello" }]);
+    ).toMatchObject([{ type: "text_delta", content: "hello" }]);
   });
 
   it("maps app-server token usage from last and total buckets", () => {
@@ -254,10 +256,11 @@ describe("Codex harness provider", () => {
         },
         warningState,
       ),
-    ).toEqual([
+    ).toMatchObject([
       {
         type: "tool_summary",
         summary: "Warning: auth token refresh failed but turn continues",
+        actor: expect.objectContaining({ role: "unknown" }),
       },
     ]);
     expect(warningState).toEqual({ success: false, result: "" });
@@ -432,12 +435,12 @@ rl.on("line", (line) => {
               path: "note.txt",
             }),
           }),
-          {
+          expect.objectContaining({
             type: "tool_summary",
             summary: "Warning: non-terminal warning",
-          },
-          { type: "text_delta", content: "done" },
-          { type: "text", content: "final text" },
+          }),
+          expect.objectContaining({ type: "text_delta", content: "done" }),
+          expect.objectContaining({ type: "text", content: "final text" }),
           expect.objectContaining({
             type: "context_usage",
             usage: expect.objectContaining({
@@ -448,6 +451,109 @@ rl.on("line", (line) => {
           expect.objectContaining({
             type: "done",
             result: "final text",
+          }),
+        ]),
+      );
+    } finally {
+      process.env.PATH = oldPath;
+    }
+  });
+
+  it("does not let helper turn failures poison the root app-server result", async () => {
+    const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-helper-fail-bin-"));
+    const codexPath = join(binDir, "codex");
+    await writeFile(
+      codexPath,
+      `#!/usr/bin/env node
+const readline = require("node:readline");
+const rl = readline.createInterface({ input: process.stdin });
+function send(msg) { process.stdout.write(JSON.stringify(msg) + "\\n"); }
+rl.on("line", (line) => {
+  const msg = JSON.parse(line);
+  if (msg.method === "initialize") {
+    send({ id: msg.id, result: { userAgent: "fake-codex" } });
+    return;
+  }
+  if (msg.method === "thread/start") {
+    send({ id: msg.id, result: { thread: { id: "root-thread" } } });
+    return;
+  }
+  if (msg.method === "turn/start") {
+    send({ id: msg.id, result: { turn: { id: "root-turn" } } });
+    send({
+      method: "turn/completed",
+      params: {
+        threadId: "helper-thread",
+        turnId: "helper-turn",
+        turn: {
+          id: "helper-turn",
+          status: "failed",
+          error: { message: "helper exploded" }
+        }
+      }
+    });
+    send({
+      method: "item/completed",
+      params: {
+        threadId: "root-thread",
+        turnId: "root-turn",
+        item: { type: "agentMessage", id: "msg-1", text: "root success" }
+      }
+    });
+    send({
+      method: "turn/completed",
+      params: {
+        threadId: "root-thread",
+        turnId: "root-turn",
+        turn: { id: "root-turn", status: "completed", error: null }
+      }
+    });
+  }
+});
+`,
+    );
+    await chmod(codexPath, 0o755);
+    const oldPath = process.env.PATH;
+    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    try {
+      const events: unknown[] = [];
+      await expect(
+        runCodexAppServer(
+          {
+            provider: { id: "codex" },
+            cwd: binDir,
+            prompt: "run",
+            metadata: { operation: "garden" },
+          },
+          {
+            onEvent: (event) => {
+              events.push(event);
+            },
+          },
+        ),
+      ).resolves.toMatchObject({
+        success: true,
+        result: "root success",
+        providerSessionId: "root-thread",
+        error: undefined,
+        failure: undefined,
+      });
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "error",
+            error: "helper exploded",
+            actor: expect.objectContaining({
+              role: "helper",
+              threadId: "helper-thread",
+            }),
+          }),
+          expect.objectContaining({
+            type: "done",
+            result: "root success",
+            error: undefined,
+            failure: undefined,
+            sourceRole: "root",
           }),
         ]),
       );
