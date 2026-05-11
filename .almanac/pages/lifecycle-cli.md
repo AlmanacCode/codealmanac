@@ -18,7 +18,7 @@ The V1 lifecycle CLI routes write-capable wiki work into [[wiki-lifecycle-operat
 
 `almanac capture` maps to Absorb with coding-session transcript context and defaults background. Explicit transcript files work. Claude latest-session, `--session`, `--since`, `--limit`, and `--all` discovery are implemented; Codex/Cursor discovery and `--all-apps` still fail clearly unless transcript files are provided.
 
-`almanac ingest <file-or-folder>` maps to Absorb with user-provided file/folder context and defaults background.
+[[ingest-operation]] (`almanac ingest <file-or-folder>`) maps to Absorb with user-provided file/folder context and defaults background.
 
 `almanac garden` maps to Garden and defaults background because it can make broad graph edits.
 
@@ -33,6 +33,10 @@ The V1 lifecycle CLI routes write-capable wiki work into [[wiki-lifecycle-operat
 ## Jobs commands
 
 `almanac jobs`, `jobs show`, `jobs logs`, `jobs attach`, and `jobs cancel` are pure process-inspection commands over `.almanac/runs/`. They do not run AI and do not read or write wiki page content except through normal run records and logs.
+
+## Hook commands
+
+`almanac hook install --source <claude|codex|cursor|all>` wires auto-capture into the app-specific lifecycle hooks described in [[sessionend-hook]]. Install already supports all three apps, but `hook status` and `hook uninstall` remain Claude-centric today.
 
 ## Removed public paths
 

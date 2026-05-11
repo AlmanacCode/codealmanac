@@ -1,11 +1,16 @@
 ---
 title: Build Operation
+summary: "Build is the `almanac init` operation for first-pass project memory, not a generic compiler from arbitrary files to a wiki."
 topics: [agents, flows, cli]
 files:
   - src/operations/build.ts
   - src/commands/init.ts
   - src/commands/operations.ts
   - prompts/operations/build.md
+sources:
+  - /Users/kushagrachitkara/.codex/sessions/2026/05/10/rollout-2026-05-10T14-49-00-019e13dd-740e-7421-9d32-51615ab7c84f.jsonl
+status: active
+verified: 2026-05-11
 ---
 
 # Build Operation
@@ -27,6 +32,20 @@ The build prompt explicitly tells agents not to use MCP tools, OpenAlmanac tools
 The helper-agent guidance also separates scout work from build completion. Helpers may be given read-only investigation tasks, but their output is only evidence. The main build agent must not adopt helper read-only constraints for `.almanac/`; after helpers return, it still owns synthesis and must write actual markdown pages instead of ending with page candidates or a "pages to add later" report.
 
 Build does not call a bootstrap-specific SDK wrapper. It uses the same [[harness-providers]] boundary as Absorb and Garden.
+
+## Non-code corpus boundary
+
+A 2026-05-10 session tested `almanac init --using codex -y` inside a folder that contained five menopause-related `.xlsx` files rather than a software repo. The run completed and inspected the workbooks, but the final summary was a no-op: `created: 0`, `updated: 0`, `archived: 0`.
+
+The important learning was semantic, not mechanical. Build could read the corpus well enough to extract sheet structure, article groupings, supplement rows, and term hits. The failure mode was that the prompt and operation semantics still framed the task as "build first-pass project memory for this repo" rather than "compile a standalone knowledge wiki from an arbitrary source bundle."
+
+That boundary matters when interpreting `init` behavior:
+
+- Build/init is reliable for first-pass CodeAlmanac project memory over the current filesystem.
+- Successful inspection of files does not guarantee page creation when the corpus is not meaningfully a project/codebase and the prompt framing still asks for project memory.
+- A generic corpus-to-wiki compiler is conceptually closer to [[farzapedia]] than to CodeAlmanac's current Build semantics.
+
+The same session also motivated the stricter tool boundary now captured in [[operation-prompts]] and this page: Build should use local filesystem reads plus direct writes under `.almanac/pages/`, and an empty or unavailable local wiki search must not be treated as a reason to avoid writing the first wiki pages.
 
 ## Old bootstrap removal
 

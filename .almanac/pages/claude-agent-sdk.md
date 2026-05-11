@@ -39,7 +39,7 @@ Default model is `claude-sonnet-4-6` (from `HARNESS_PROVIDER_METADATA.claude.def
 
 Two paths: Claude subscription OAuth via the Claude CLI, or `ANTHROPIC_API_KEY`. Auth probe runs `claude auth status --json` with a 10-second timeout. On SDK 0.2.129+ the legacy `cli.js` probe is attempted as a fallback when the primary `claude` binary probe returns `loggedIn: false`. Any spawn error, timeout, non-JSON stdout, or non-zero exit with empty stdout returns `{ loggedIn: false }` rather than propagating an error. `ANTHROPIC_API_KEY` is accepted as the second gate — `assertClaudeAuth()` returns a synthetic `{ loggedIn: true, authMethod: "apiKey" }` when the key is set.
 
-`resolveClaudeExecutable()` uses `command -v claude` to find the installed binary. The resolved path is passed as `pathToClaudeCodeExecutable` so the SDK and the auth probe agree on which binary to use. See [[sessionend-hook]] for headless capture behavior.
+`resolveClaudeExecutable()` uses `command -v claude` to find the installed binary. The resolved path is passed as `pathToClaudeCodeExecutable` so the SDK and the auth probe agree on which binary to use. See [[sessionend-hook]] for headless capture behavior across Claude, Codex, and Cursor installs.
 
 ## Capabilities
 
