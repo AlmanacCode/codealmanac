@@ -4,30 +4,29 @@ topics: [decisions, systems, agents]
 files:
   - AGENTS.md
   - .almanac/README.md
-  - docs/plans/slice-4-bootstrap.md
-  - docs/plans/slice-5-capture.md
-  - prompts/bootstrap.md
-  - prompts/writer.md
-  - prompts/reviewer.md
+  - docs/plans/2026-05-10-harness-process-architecture.md
+  - prompts/operations/build.md
+  - prompts/operations/absorb.md
+  - prompts/operations/garden.md
 ---
 
 # Wiki Organization Primitives
 
-`codealmanac` already has three core wiki primitives: pages, `[[...]]` links, and a topic DAG. That is enough to store knowledge and query it, but it is not enough to keep the wiki coherent as capture volume grows. The missing pieces are editorial rather than storage-oriented: canonical homes for subjects, curated navigation for dense areas, explicit structural operations, and a maintenance loop that protects the graph over time.
+Almanac already has three core wiki primitives: pages, double-bracket links, and a topic DAG. That is enough to store knowledge and query it, but it is not enough to keep the wiki coherent as capture volume grows. The missing pieces are editorial rather than storage-oriented: canonical homes for subjects, curated navigation for dense areas, explicit structural operations, and a maintenance loop that protects the graph over time.
 
-This matters because a self-updating wiki fails by drift, not by lack of content. If the system can only create pages and append to pages, it tends to overproduce narrow pages, under-merge overlap, and leave readers with a technically linked graph that is still hard to traverse. The current repo already hints at the right direction: [[bootstrap-agent]] identifies anchors, [[capture-flow]] gives the reviewer authority over graph quality, and [[topic-dag]] treats topics as first-class structure. The design gap is that anchors, hub pages, redirects, and gardening are not yet explicit parts of the model.
+This matters because a self-updating wiki fails by drift, not by lack of content. If the system can only create pages and append to pages, it tends to overproduce narrow pages, under-merge overlap, and leave readers with a technically linked graph that is still hard to traverse. V1 addresses part of that gap by making Garden a first-class operation beside Build and Absorb; anchors, hub pages, redirects, and alias behavior are still editorial primitives rather than enforced storage objects.
 
-## What `codealmanac` has now
+## What Almanac has now
 
 The committed design and implementation provide these primitives:
 
 - **Page**: one markdown file per slug in `.almanac/pages/`
-- **Link**: unified `[[...]]` syntax for page, file, folder, and cross-wiki references
+- **Link**: unified double-bracket syntax for page, file, folder, and cross-wiki references
 - **Topic**: a multi-parent DAG serialized in `.almanac/topics.yaml`
-- **File reference**: explicit `files:` frontmatter plus inline `[[path]]` refs
+- **File reference**: explicit `files:` frontmatter plus inline file/folder wikilinks
 - **Lineage for reversals**: `archived_at`, `superseded_by`, `supersedes`
 - **Indexer-backed query surface**: search, show, list, topics, health
-- **Writer/reviewer capture flow**: writer owns edits; reviewer evaluates graph impact
+- **Operation prompts**: Build, Absorb, and Garden prompts name page-worthiness and graph-maintenance outcomes
 
 These are real primitives, not just conventions. The SQLite index persists them, query commands read them, and the prompts rely on them. They are enough to answer "what pages exist?", "what links where?", and "what topic is this in?".
 
@@ -47,14 +46,16 @@ Without these, the agent can still edit files, but the default behavior is biase
 
 An anchor page is the canonical home for a major subject. Future knowledge about that subject should usually update that page rather than create a sibling page.
 
-Examples in this repo already behave like anchors even though the model does not name them:
+Examples in this repo behave like anchors even though the storage model does not name them:
 
 - [[sqlite-indexer]]
 - [[topic-dag]]
 - [[capture-flow]]
-- [[bootstrap-agent]]
+- [[build-operation]]
+- [[wiki-lifecycle-operations]]
+- [[process-manager-runs]]
 
-The bootstrap prompt already instructs the agent to identify anchors. The missing step is to treat anchorhood as an editorial primitive that the writer and reviewer both protect. If the agent learns something new about the SQLite indexer, the default action should be "update [[sqlite-indexer]]" unless the new material clearly deserves an independent page.
+The Build operation prompt is the first place that identifies anchors for a new wiki. Absorb and Garden should protect those anchors by updating the canonical page unless the new material clearly deserves an independent subject.
 
 Anchor pages are how the wiki gets a single source of truth for major subjects. Without them, every ingest has to rediscover where a fact belongs.
 
@@ -72,10 +73,10 @@ That is the job of a hub page. A hub page is a normal wiki page whose subject is
 
 A payments hub in a codebase wiki could say:
 
-- read [[checkout-flow]] first for request-time behavior
-- treat [[stripe-async]] as the canonical current design
+- read checkout-flow first for request-time behavior
+- treat stripe-async as the canonical current design
 - read incident pages only after the architecture page
-- treat [[stripe-sync]] as archived history, not current guidance
+- treat stripe-sync as archived history, not current guidance
 
 Topics cannot express that kind of editorial ordering or annotation. A topic is an index. A hub is a map.
 
@@ -120,7 +121,7 @@ These are what keep the graph navigable and keep synonymous or overlapping subje
 
 - page-worthiness policy
 - merge / split / redirect / archive / no-op as allowed outcomes
-- reviewer or steward responsible for graph quality
+- steward or gardening pass responsible for graph quality
 - recurring gardening pass over the whole graph
 
 Without the maintenance layer, ingestion keeps adding content but does not keep the graph healthy.
@@ -130,29 +131,23 @@ Without the maintenance layer, ingestion keeps adding content but does not keep 
 A codebase wiki needs two additional primitives earlier than a general wiki does:
 
 - **file / folder refs** because pages need to point into the repo
-- **strong reviewer authority** because the main challenge is preserving the shape of the graph while code changes quickly
+- **strong steward authority** because the main challenge is preserving the shape of the graph while code changes quickly
 
 The page-worthiness bar is also different. A general wiki asks whether a topic has enough independent substance and sources. A codebase wiki asks whether the page captures non-obvious knowledge that the code cannot say on its own: decisions, constraints, flows, incidents, migration state, and gotchas.
 
 This is why a codebase wiki should default more strongly to updating anchors than a general-purpose research wiki would.
 
-## Current issues in `codealmanac`
+## Current gaps in Almanac
 
-The repo's current design has four organizational gaps.
+Three organizational gaps remain after V1.
 
-1. **Anchors are informal.**
-   Bootstrap identifies them, but the rest of the model does not give them explicit protection.
+1. **Anchors are informal.** Build identifies them through the operation prompt, but the storage model and subsequent Absorb/Garden runs have no explicit mechanism to protect them from fragmentation.
 
-2. **Topics carry too much responsibility.**
-   The current mental model treats topics as the main organization tool. Topics are necessary, but they are weak at annotation, sequencing, and front-door navigation.
+2. **Topics carry too much responsibility.** Topics are an index, not a map. They answer "what belongs together?" but cannot express reading order, distinguish canonical architecture from archived history, or annotate which page is the primary overview for an area.
 
-3. **Redirects are under-modeled.**
-   The design has archival lineage but not a lightweight answer for alternate names or collapsed pages that should resolve to a canonical home.
+3. **Redirects are under-modeled.** The design has archival lineage (`superseded_by`, `archived_at`) but no lightweight equivalent for alternate names or collapsed pages that should resolve to a canonical home.
 
-4. **Capture is editorially strong on delta review, weak on ongoing gardening.**
-   The reviewer checks the current change set. There is not yet a dedicated pass whose success metric is "is the wiki more coherent this week than last week?".
-
-These are design gaps, not indexing gaps. The storage model is already strong enough to support them.
+These are design gaps, not indexing gaps. The storage model is already strong enough to support all three.
 
 ## Git history and wiki pollution
 
@@ -176,27 +171,7 @@ There are four viable operating modes:
 4. **Separate wiki repo**
    Clean separation, weakest locality.
 
-For `codealmanac`, the best near-term default is "same repo, separate wiki commits". The best medium-term option is an opt-in dedicated wiki branch mode.
-
-## Recommended priority order
-
-For a generalized wiki:
-
-1. pages, canonical slugs, links, search
-2. lightweight topics/categories
-3. page-worthiness policy and canonical page selection
-4. merge / split / redirect / archive / no-op as editorial outcomes
-5. hub / index pages
-6. gardening loop
-
-For `codealmanac` specifically:
-
-1. make anchors an explicit editorial primitive
-2. define when a topic needs a hub page
-3. define redirect / alias behavior
-4. strengthen reviewer criteria around merge / split / no-op
-5. add a separate gardening pass over the full graph
-6. decide how wiki history should be committed: separate commits or dedicated branch
+For Almanac, the best near-term default is "same repo, separate wiki commits". The best medium-term option is an opt-in dedicated wiki branch mode.
 
 ## The core model
 
@@ -211,4 +186,4 @@ A maintainable wiki is not just "pages plus tags". It is:
 - **editorial discipline**: create/update/merge/split/redirect/archive/no-op
 - **ongoing maintenance**: gardening
 
-`codealmanac` already has the first three strongly, part of the sixth, and the beginnings of the seventh via the reviewer. The next design work is to make the missing primitives first-class in the prompts, conventions, and review criteria without turning them into a rigid pipeline.
+Almanac already has the first three strongly, part of the sixth, and a V1 gardening operation for the eighth. The next design work is to make the missing primitives first-class in prompts and conventions without turning them into a rigid pipeline.

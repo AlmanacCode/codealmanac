@@ -21,13 +21,18 @@ topics:
 
   - slug: agents
     title: Agents
-    description: AI agent integration — SDK usage, prompts, bootstrap, capture
+    description: AI agent integration — harness providers, operation prompts, Build, Absorb, Garden
     parents: [flows, stack]
 
   - slug: cli
     title: CLI
     description: Command-line interface commands and surface area
     parents: [systems]
+
+  - slug: automation
+    title: Automation
+    description: Scheduled background behaviors and their control surfaces
+    parents: [flows, cli]
 
   - slug: storage
     title: Storage

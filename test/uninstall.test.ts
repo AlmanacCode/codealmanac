@@ -1,141 +1,71 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 
-import {
-  removeImportLine,
-  removeManagedBlock,
-  runUninstall,
-} from "../src/commands/uninstall.js";
+import { removeImportLine, runUninstall } from "../src/commands/uninstall.js";
 import { withTempHome } from "./helpers.js";
 
-/**
- * Tests for `almanac uninstall`. Exercises the same DI surface as setup —
- * we supply `settingsPath`, `hookScriptPath`, `claudeDir`, and an explicit
- * `stdout` so tests don't leak ANSI into the vitest output. `yes: true`
- * keeps every run non-interactive.
- */
-
-interface Env {
-  settingsPath: string;
-  hookScriptPath: string;
+async function scaffold(home: string): Promise<{
+  plistPath: string;
   claudeDir: string;
-  codexDir: string;
   out: PassThrough;
-}
-
-async function scaffold(home: string): Promise<Env> {
-  const settingsPath = join(home, ".claude", "settings.json");
-  const hookScriptPath = join(home, "fake-hooks", "almanac-capture.sh");
-  await mkdir(join(home, "fake-hooks"), { recursive: true });
-  await writeFile(hookScriptPath, "#!/bin/bash\nexit 0\n", "utf8");
+}> {
+  const plistPath = join(home, "Library", "LaunchAgents", "com.codealmanac.capture-sweep.plist");
   const claudeDir = join(home, ".claude");
-  const codexDir = join(home, ".codex");
   const out = new PassThrough();
-  // Drain so backpressure never stalls runUninstall's writes.
   out.on("data", () => {});
-  return { settingsPath, hookScriptPath, claudeDir, codexDir, out };
+  return { plistPath, claudeDir, out };
 }
 
-async function primeInstalled(env: Env): Promise<void> {
+async function primeInstalled(env: {
+  plistPath: string;
+  claudeDir: string;
+}): Promise<void> {
+  await mkdir(dirname(env.plistPath), { recursive: true });
   await mkdir(env.claudeDir, { recursive: true });
-  // Hook entry in the wrapped schema (`{matcher, hooks: [...]}`) that
-  // Claude Code's validator accepts.
+  await writeFile(env.plistPath, "<plist></plist>\n", "utf8");
+  await writeFile(join(env.claudeDir, "almanac.md"), "# mini\n", "utf8");
   await writeFile(
-    env.settingsPath,
-    JSON.stringify(
-      {
-        hooks: {
-          SessionEnd: [
-            {
-              matcher: "",
-              hooks: [
-                {
-                  type: "command",
-                  command: env.hookScriptPath,
-                  timeout: 10,
-                },
-              ],
-            },
-          ],
-        },
-      },
-      null,
-      2,
-    ),
-    "utf8",
-  );
-  // Guide files.
-  await writeFile(
-    join(env.claudeDir, "codealmanac.md"),
-    "# mini\n",
-    "utf8",
-  );
-  await writeFile(
-    join(env.claudeDir, "codealmanac-reference.md"),
+    join(env.claudeDir, "almanac-reference.md"),
     "# reference\n",
     "utf8",
   );
-  // CLAUDE.md with import.
   await writeFile(
     join(env.claudeDir, "CLAUDE.md"),
-    "# existing\n\n@~/.claude/codealmanac.md\n",
-    "utf8",
-  );
-  await mkdir(env.codexDir, { recursive: true });
-  await writeFile(
-    join(env.codexDir, "AGENTS.md"),
-    "# existing codex\n\n<!-- codealmanac:start -->\n## codealmanac\n\nUse codealmanac.\n<!-- codealmanac:end -->\n",
+    "# existing\n\n@~/.claude/almanac.md\n",
     "utf8",
   );
 }
 
 describe("almanac uninstall", () => {
-  it("removes hook + guides + import line when everything is installed", async () => {
+  it("removes automation + guides + import line when everything is installed", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       await primeInstalled(env);
+      const calls: string[] = [];
 
       const res = await runUninstall({
         yes: true,
         isTTY: false,
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async (file: string, args: string[]) => {
+          calls.push([file, ...args].join(" "));
+          return {};
+        },
         claudeDir: env.claudeDir,
-        codexDir: env.codexDir,
         stdout: env.out,
       });
 
       expect(res.exitCode).toBe(0);
-
-      // Hook entry is gone — since we removed the only entry, the hooks
-      // key itself should also drop (see runHookUninstall).
-      const settings = JSON.parse(
-        await readFile(env.settingsPath, "utf8"),
-      ) as Record<string, unknown>;
-      expect(settings).not.toHaveProperty("hooks");
-
-      // Guide files removed.
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
-      expect(existsSync(join(env.claudeDir, "codealmanac-reference.md"))).toBe(
-        false,
-      );
-
-      // CLAUDE.md had non-import content, so it survives minus our line.
-      const body = await readFile(
-        join(env.claudeDir, "CLAUDE.md"),
-        "utf8",
-      );
+      expect(existsSync(env.plistPath)).toBe(false);
+      expect(calls.some((call) => call.includes("bootout"))).toBe(true);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
+      expect(existsSync(join(env.claudeDir, "almanac-reference.md"))).toBe(false);
+      const body = await readFile(join(env.claudeDir, "CLAUDE.md"), "utf8");
       expect(body).toMatch(/# existing/);
-      expect(body).not.toMatch(/@~\/\.claude\/codealmanac\.md/);
-      const codexAgents = await readFile(
-        join(env.codexDir, "AGENTS.md"),
-        "utf8",
-      );
-      expect(codexAgents).toMatch(/# existing codex/);
-      expect(codexAgents).not.toMatch(/codealmanac:start/);
+      expect(body).not.toMatch(/@~\/\.claude\/almanac\.md/);
     });
   });
 
@@ -143,17 +73,13 @@ describe("almanac uninstall", () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       await mkdir(env.claudeDir, { recursive: true });
-      await writeFile(
-        join(env.claudeDir, "CLAUDE.md"),
-        "@~/.claude/codealmanac.md\n",
-        "utf8",
-      );
+      await writeFile(join(env.claudeDir, "CLAUDE.md"), "@~/.claude/almanac.md\n", "utf8");
 
       await runUninstall({
         yes: true,
         isTTY: false,
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         stdout: env.out,
       });
@@ -162,60 +88,47 @@ describe("almanac uninstall", () => {
     });
   });
 
-  it("is idempotent — running on a clean home does nothing", async () => {
+  it("is idempotent on a clean home", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
-      // No install priming — we're running uninstall against a fresh home.
-
       const res = await runUninstall({
         yes: true,
         isTTY: false,
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         stdout: env.out,
       });
 
       expect(res.exitCode).toBe(0);
-      expect(existsSync(env.settingsPath)).toBe(false);
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
+      expect(existsSync(env.plistPath)).toBe(false);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
     });
   });
 
-  it("--keep-hook leaves the hook in place, removes everything else", async () => {
+  it("--keep-automation leaves the scheduler in place", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       await primeInstalled(env);
 
       await runUninstall({
         yes: true,
-        keepHook: true,
+        keepAutomation: true,
         isTTY: false,
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async () => {
+          throw new Error("should not run");
+        },
         claudeDir: env.claudeDir,
         stdout: env.out,
       });
 
-      const settings = JSON.parse(
-        await readFile(env.settingsPath, "utf8"),
-      ) as {
-        hooks: {
-          SessionEnd: {
-            matcher: string;
-            hooks: { command: string }[];
-          }[];
-        };
-      };
-      expect(settings.hooks.SessionEnd).toHaveLength(1);
-      expect(settings.hooks.SessionEnd[0]!.hooks[0]!.command).toBe(
-        env.hookScriptPath,
-      );
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
+      expect(existsSync(env.plistPath)).toBe(true);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
     });
   });
 
-  it("--keep-guides leaves guides + import alone, removes the hook", async () => {
+  it("--keep-guides leaves guides + import alone", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       await primeInstalled(env);
@@ -224,146 +137,31 @@ describe("almanac uninstall", () => {
         yes: true,
         keepGuides: true,
         isTTY: false,
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         stdout: env.out,
       });
 
-      const settings = JSON.parse(
-        await readFile(env.settingsPath, "utf8"),
-      ) as Record<string, unknown>;
-      expect(settings).not.toHaveProperty("hooks");
-
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(true);
-      const body = await readFile(
-        join(env.claudeDir, "CLAUDE.md"),
-        "utf8",
-      );
-      expect(body).toMatch(/@~\/\.claude\/codealmanac\.md/);
-    });
-  });
-
-  it("does not touch foreign wrapped hook entries in SessionEnd", async () => {
-    // Both ours and the foreign entry are in the wrapped schema; we
-    // strip ours and leave theirs byte-for-byte.
-    await withTempHome(async (home) => {
-      const env = await scaffold(home);
-      await mkdir(env.claudeDir, { recursive: true });
-      const foreign = {
-        matcher: "Bash",
-        hooks: [
-          {
-            type: "command",
-            command: "/usr/local/bin/notifier.sh",
-            timeout: 10,
-          },
-        ],
-      };
-      await writeFile(
-        env.settingsPath,
-        JSON.stringify(
-          {
-            hooks: {
-              SessionEnd: [
-                {
-                  matcher: "",
-                  hooks: [
-                    {
-                      type: "command",
-                      command: env.hookScriptPath,
-                      timeout: 10,
-                    },
-                  ],
-                },
-                foreign,
-              ],
-            },
-          },
-          null,
-          2,
-        ),
-        "utf8",
-      );
-
-      await runUninstall({
-        yes: true,
-        isTTY: false,
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
-        claudeDir: env.claudeDir,
-        stdout: env.out,
-      });
-
-      const settings = JSON.parse(
-        await readFile(env.settingsPath, "utf8"),
-      ) as {
-        hooks: {
-          SessionEnd: {
-            matcher: string;
-            hooks: { type: string; command: string; timeout?: number }[];
-          }[];
-        };
-      };
-      expect(settings.hooks.SessionEnd).toHaveLength(1);
-      expect(settings.hooks.SessionEnd[0]).toEqual(foreign);
+      expect(existsSync(env.plistPath)).toBe(false);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(true);
+      const body = await readFile(join(env.claudeDir, "CLAUDE.md"), "utf8");
+      expect(body).toMatch(/@~\/\.claude\/almanac\.md/);
     });
   });
 });
 
-describe("removeImportLine (unit)", () => {
-  it("removes a single import line and reports changed", () => {
-    const src = "# hi\n\n@~/.claude/codealmanac.md\n\nother line\n";
-    const { changed, body } = removeImportLine(src);
-    expect(changed).toBe(true);
-    expect(body).not.toMatch(/codealmanac\.md/);
-    expect(body).toMatch(/# hi/);
-    expect(body).toMatch(/other line/);
-  });
-
-  it("is a no-op when the import line is absent", () => {
-    const src = "# hi\n\nother line\n";
-    const { changed, body } = removeImportLine(src);
-    expect(changed).toBe(false);
-    expect(body).toBe(src);
-  });
-
-  it("removes duplicate import lines (defensive)", () => {
-    const src = "@~/.claude/codealmanac.md\n@~/.claude/codealmanac.md\n";
-    const { changed, body } = removeImportLine(src);
-    expect(changed).toBe(true);
-    expect(body).not.toMatch(/codealmanac\.md/);
-  });
-
-  it("ignores lines that merely contain the token inside other text", () => {
-    const src = "see @~/.claude/codealmanac.md for details\n";
-    const { changed } = removeImportLine(src);
-    expect(changed).toBe(false);
-  });
-});
-
-describe("removeManagedBlock (unit)", () => {
-  it("removes the marked block and preserves surrounding content", () => {
-    const src = "# hi\n\n<!-- start -->\nmanaged\n<!-- end -->\n\nother line\n";
-    const { changed, body } = removeManagedBlock(
-      src,
-      "<!-- start -->",
-      "<!-- end -->",
+describe("removeImportLine", () => {
+  it("removes one or more exact import lines", () => {
+    const result = removeImportLine(
+      "# top\n@~/.claude/almanac.md\nbody\n@~/.claude/almanac.md\n",
     );
-    expect(changed).toBe(true);
-    expect(body).toMatch(/# hi/);
-    expect(body).toMatch(/other line/);
-    expect(body).not.toMatch(/managed/);
+    expect(result.changed).toBe(true);
+    expect(result.body).toBe("# top\nbody\n");
   });
 
-  it("is a no-op when the markers are absent", () => {
-    const src = "# hi\n";
-    const { changed, body } = removeManagedBlock(
-      src,
-      "<!-- start -->",
-      "<!-- end -->",
-    );
-    expect(changed).toBe(false);
-    expect(body).toBe(src);
+  it("does not remove longer accidental matches", () => {
+    const input = "@~/.claude/almanac.md-extra\n";
+    expect(removeImportLine(input)).toEqual({ changed: false, body: input });
   });
 });

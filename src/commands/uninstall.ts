@@ -3,12 +3,17 @@ import { readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
-import { runHookUninstall } from "./hook.js";
+import { cleanupLegacyHooks, runAutomationUninstall } from "./automation.js";
 import {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
   IMPORT_LINE,
 } from "./setup.js";
+
+type AutomationExecFn = (
+  file: string,
+  args: string[],
+) => Promise<{ stdout?: string; stderr?: string }>;
 
 /**
  * `almanac uninstall` — the reverse of `setup`.
@@ -17,19 +22,19 @@ import {
  * artifact was never installed. We remove exactly the things setup added,
  * nothing else:
  *
- *   1. The `@~/.claude/codealmanac.md` line from `~/.claude/CLAUDE.md`.
+ *   1. The `@~/.claude/almanac.md` line from `~/.claude/CLAUDE.md`.
  *      Other content stays untouched. If removing our line leaves the
  *      file empty, we delete the file so our fingerprint doesn't persist
  *      as zero bytes.
- *   2. The guide files `~/.claude/codealmanac.md` and
- *      `~/.claude/codealmanac-reference.md`.
- *   3. The managed codealmanac block from Codex's global AGENTS file.
- *   4. The SessionEnd hook entry (delegated to `runHookUninstall`, which
- *      already knows how to leave foreign entries alone).
+ *   2. The guide files `~/.claude/almanac.md` and
+ *      `~/.claude/almanac-reference.md`. Legacy `codealmanac*.md` guide
+ *      files are removed too.
+ *   3. The managed Almanac block from Codex's global AGENTS file.
+ *   4. The scheduled auto-capture launchd job and legacy hook files.
  *
  * Flags:
  *   --yes           skip confirmations; remove everything
- *   --keep-hook     leave the hook alone
+ *   --keep-automation leave the scheduler alone
  *   --keep-guides   leave the guides + CLAUDE.md import alone
  *
  * Non-interactive (no TTY) → behaves as if `--yes` was passed. Same
@@ -38,12 +43,12 @@ import {
 
 export interface UninstallOptions {
   yes?: boolean;
-  keepHook?: boolean;
+  keepAutomation?: boolean;
   keepGuides?: boolean;
 
   // ─── Injection points ────────────────────────────────────────────
-  settingsPath?: string;
-  hookScriptPath?: string;
+  automationPlistPath?: string;
+  automationExec?: AutomationExecFn;
   claudeDir?: string;
   codexDir?: string;
   isTTY?: boolean;
@@ -59,6 +64,9 @@ export interface UninstallResult {
 const BLUE = "\x1b[38;5;75m";
 const DIM = "\x1b[2m";
 const RST = "\x1b[0m";
+const LEGACY_IMPORT_LINE = "@~/.claude/codealmanac.md";
+const LEGACY_CODEX_INSTRUCTIONS_START = "<!-- codealmanac:start -->";
+const LEGACY_CODEX_INSTRUCTIONS_END = "<!-- codealmanac:end -->";
 
 export async function runUninstall(
   options: UninstallOptions = {},
@@ -72,28 +80,29 @@ export async function runUninstall(
 
   out.write("\n");
 
-  // Hook removal.
-  let removeHook = true;
-  if (options.keepHook === true) {
-    removeHook = false;
+  // Scheduler removal.
+  let removeAutomation = true;
+  if (options.keepAutomation === true) {
+    removeAutomation = false;
   } else if (interactive) {
-    removeHook = await confirm(
+    removeAutomation = await confirm(
       out,
-      "Remove the SessionEnd hook from ~/.claude/settings.json?",
+      "Remove the auto-capture automation?",
       true,
     );
   }
-  if (removeHook) {
-    const res = await runHookUninstall({
-      settingsPath: options.settingsPath,
-      hookScriptPath: options.hookScriptPath,
+  if (removeAutomation) {
+    await cleanupLegacyHooks();
+    const res = await runAutomationUninstall({
+      plistPath: options.automationPlistPath,
+      exec: options.automationExec,
     });
     if (res.exitCode !== 0) {
       return { stdout: "", stderr: res.stderr, exitCode: res.exitCode };
     }
     out.write(`  ${BLUE}\u25c7${RST}  ${res.stdout.trim()}\n`);
   } else {
-    out.write(`  ${DIM}\u25cb  Hook kept${RST}\n`);
+    out.write(`  ${DIM}\u25cb  Auto-capture automation kept${RST}\n`);
   }
 
   // Guide + import removal.
@@ -136,17 +145,20 @@ async function removeGuideFiles(
 ): Promise<RemoveGuidesResult> {
   const touched: string[] = [];
 
-  const mini = path.join(claudeDir, "codealmanac.md");
-  const ref = path.join(claudeDir, "codealmanac-reference.md");
+  const guideFiles = [
+    "almanac.md",
+    "almanac-reference.md",
+    "codealmanac.md",
+    "codealmanac-reference.md",
+  ];
   const claudeMd = path.join(claudeDir, "CLAUDE.md");
 
-  if (existsSync(mini)) {
-    await rm(mini, { force: true });
-    touched.push("codealmanac.md");
-  }
-  if (existsSync(ref)) {
-    await rm(ref, { force: true });
-    touched.push("codealmanac-reference.md");
+  for (const file of guideFiles) {
+    const fullPath = path.join(claudeDir, file);
+    if (existsSync(fullPath)) {
+      await rm(fullPath, { force: true });
+      touched.push(file);
+    }
   }
 
   if (existsSync(claudeMd)) {
@@ -173,17 +185,22 @@ async function removeGuideFiles(
   ]) {
     if (!existsSync(agentsFile)) continue;
     const existing = await readFile(agentsFile, "utf8");
-    const { changed, body } = removeManagedBlock(
+    const first = removeManagedBlock(
       existing,
       CODEX_INSTRUCTIONS_START,
       CODEX_INSTRUCTIONS_END,
     );
-    if (!changed) continue;
-    if (body.trim().length === 0) {
+    const second = removeManagedBlock(
+      first.body,
+      LEGACY_CODEX_INSTRUCTIONS_START,
+      LEGACY_CODEX_INSTRUCTIONS_END,
+    );
+    if (!first.changed && !second.changed) continue;
+    if (second.body.trim().length === 0) {
       await rm(agentsFile, { force: true });
       touched.push(`${path.basename(agentsFile)} (deleted)`);
     } else {
-      await writeFile(agentsFile, body, "utf8");
+      await writeFile(agentsFile, second.body, "utf8");
       touched.push(path.basename(agentsFile));
     }
   }
@@ -207,7 +224,8 @@ export function removeImportLine(contents: string): {
 
   const indices: number[] = [];
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i]!.trim() === IMPORT_LINE) indices.push(i);
+    const line = lines[i]!.trim();
+    if (isManagedImportLine(line)) indices.push(i);
   }
   if (indices.length === 0) return { changed: false, body: contents };
 
@@ -225,6 +243,19 @@ export function removeImportLine(contents: string): {
   body = body.replace(/\n\n\n+/g, "\n\n");
 
   return { changed: true, body };
+}
+
+function isManagedImportLine(line: string): boolean {
+  return (
+    isImportLineFor(line, IMPORT_LINE) ||
+    isImportLineFor(line, LEGACY_IMPORT_LINE)
+  );
+}
+
+function isImportLineFor(line: string, importLine: string): boolean {
+  if (line === importLine) return true;
+  const rest = line.slice(importLine.length);
+  return line.startsWith(importLine) && /^[\t ]/.test(rest);
 }
 
 export function removeManagedBlock(

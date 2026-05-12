@@ -20,13 +20,16 @@ export interface SearchOptions {
   includeArchive?: boolean;
   archived?: boolean;
   wiki?: string;
-  json?: boolean;
+  output?: SearchOutputMode;
   limit?: number;
 }
+
+export type SearchOutputMode = "slugs" | "summaries" | "json";
 
 export interface SearchResult {
   slug: string;
   title: string | null;
+  summary: string | null;
   updated_at: number;
   archived_at: number | null;
   superseded_by: string | null;
@@ -81,6 +84,7 @@ export async function runSearch(
 interface PageRow {
   slug: string;
   title: string | null;
+  summary: string | null;
   updated_at: number;
   archived_at: number | null;
   superseded_by: string | null;
@@ -216,7 +220,7 @@ function executeQuery(
   if (options.query !== undefined && options.query.trim().length > 0) {
     const ftsExpr = buildFtsQuery(options.query);
     sql = `
-      SELECT p.slug, p.title, p.updated_at, p.archived_at, p.superseded_by
+      SELECT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
       FROM pages p
       JOIN fts_pages f ON f.slug = p.slug
       WHERE fts_pages MATCH ?
@@ -240,6 +244,7 @@ function executeQuery(
   const out: SearchResult[] = rows.map((row) => ({
     slug: row.slug,
     title: row.title,
+    summary: row.summary,
     updated_at: row.updated_at,
     archived_at: row.archived_at,
     superseded_by: row.superseded_by,
@@ -253,7 +258,7 @@ function buildSql(whereClauses: string[]): string {
   const where =
     whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
   return `
-    SELECT p.slug, p.title, p.updated_at, p.archived_at, p.superseded_by
+    SELECT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
     FROM pages p
     ${where}
     ORDER BY p.updated_at DESC, p.slug ASC
@@ -351,20 +356,29 @@ function formatResults(
   rows: SearchResult[],
   options: SearchOptions,
 ): string {
-  if (options.json === true) {
+  const output = options.output ?? "slugs";
+  if (output === "json") {
     return `${JSON.stringify(rows, null, 2)}\n`;
   }
-  // Default output: one slug per line. Empty result = empty output (not
-  // "no results found") — makes piping into xargs / subsequent commands
-  // degrade gracefully.
+  // Empty result = empty output (not "no results found") — makes piping
+  // into xargs / subsequent commands degrade gracefully.
   if (rows.length === 0) return "";
-  return `${rows.map((r) => `${BLUE}${r.slug}${RST}`).join("\n")}\n`;
+  if (output === "slugs") {
+    return `${rows.map((r) => `${BLUE}${r.slug}${RST}`).join("\n")}\n`;
+  }
+  return `${rows.map(formatSearchResult).join("\n")}\n`;
+}
+
+function formatSearchResult(row: SearchResult): string {
+  const head = `${BLUE}${row.slug}${RST}`;
+  if (row.summary === null || row.summary.trim().length === 0) return head;
+  return `${head}\n  ${row.summary.trim()}`;
 }
 
 function buildStderr(rows: SearchResult[], options: SearchOptions): string {
   // Spec: "print warns if >50 when not --json". The warning goes to
   // stderr so it doesn't corrupt pipelines that filter stdout.
-  if (options.json === true) return "";
+  if (options.output === "json") return "";
   // Empty-result breadcrumb (v0.1.3). Interviews showed users saw blank
   // stdout and concluded the wiki was broken rather than the query
   // genuinely matched nothing. A single `# 0 results` line to stderr

@@ -4,6 +4,7 @@ import { Command } from "commander";
 import { run, tryParseSetupShortcut } from "../src/cli.js";
 import { configureGroupedHelp } from "../src/cli/help.js";
 import { registerCommands } from "../src/cli/register-commands.js";
+import { formatForegroundEvent } from "../src/cli/register-wiki-lifecycle-commands.js";
 import type { SetupResult } from "../src/commands/setup.js";
 
 /**
@@ -29,14 +30,16 @@ describe("tryParseSetupShortcut", () => {
     expect(tryParseSetupShortcut(["-y"])).toEqual({ yes: true });
   });
 
-  it("recognizes --skip-hook and --skip-guides in any order", () => {
-    expect(tryParseSetupShortcut(["--skip-hook"])).toEqual({ skipHook: true });
+  it("recognizes --skip-automation and --skip-guides in any order", () => {
+    expect(tryParseSetupShortcut(["--skip-automation"])).toEqual({
+      skipAutomation: true,
+    });
     expect(tryParseSetupShortcut(["--skip-guides"])).toEqual({
       skipGuides: true,
     });
     expect(
-      tryParseSetupShortcut(["--skip-guides", "--skip-hook"]),
-    ).toEqual({ skipHook: true, skipGuides: true });
+      tryParseSetupShortcut(["--skip-guides", "--skip-automation"]),
+    ).toEqual({ skipAutomation: true, skipGuides: true });
   });
 
   it("recognizes --agent for the setup shortcut", () => {
@@ -62,10 +65,26 @@ describe("tryParseSetupShortcut", () => {
       });
   });
 
-  it("accepts the full flag combo (`--yes --skip-hook --skip-guides`)", () => {
+  it("recognizes --auto-capture-every", () => {
+    expect(tryParseSetupShortcut(["--auto-capture-every", "2h"]))
+      .toEqual({ automationEvery: "2h" });
+  });
+
+  it("accepts the full setup flag combo", () => {
     expect(
-      tryParseSetupShortcut(["--yes", "--skip-hook", "--skip-guides"]),
-    ).toEqual({ yes: true, skipHook: true, skipGuides: true });
+      tryParseSetupShortcut([
+        "--yes",
+        "--skip-automation",
+        "--skip-guides",
+        "--auto-capture-every",
+        "2h",
+      ]),
+    ).toEqual({
+      yes: true,
+      skipAutomation: true,
+      skipGuides: true,
+      automationEvery: "2h",
+    });
   });
 
   it("returns null for unrecognized flags", () => {
@@ -119,6 +138,7 @@ describe("registerCommands", () => {
     registerCommands(program);
 
     expect(program.commands.map((cmd) => cmd.name())).toEqual([
+      "serve",
       "search",
       "show",
       "health",
@@ -126,10 +146,13 @@ describe("registerCommands", () => {
       "tag",
       "untag",
       "topics",
-      "bootstrap",
+      "init",
       "capture",
+      "ingest",
+      "garden",
+      "jobs",
       "ps",
-      "hook",
+      "automation",
       "reindex",
       "agents",
       "config",
@@ -151,10 +174,12 @@ describe("registerCommands", () => {
         "delete",
         "describe",
       ]);
-    expect(findCommand(program, ["hook"]).commands.map((cmd) => cmd.name()))
+    expect(findCommand(program, ["automation"]).commands.map((cmd) => cmd.name()))
       .toEqual(["install", "uninstall", "status"]);
     expect(findCommand(program, ["capture"]).commands.map((cmd) => cmd.name()))
-      .toEqual(["status"]);
+      .toEqual(["sweep", "status"]);
+    expect(findCommand(program, ["jobs"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["list", "show", "logs", "attach", "cancel"]);
     expect(findCommand(program, ["agents"]).commands.map((cmd) => cmd.name()))
       .toEqual(["list", "doctor", "use", "model"]);
     expect(findCommand(program, ["config"]).commands.map((cmd) => cmd.name()))
@@ -168,11 +193,27 @@ describe("registerCommands", () => {
       "--model <model>",
     );
     expect(optionFlags(findCommand(program, ["doctor"]))).toContain("--json");
+    expect(optionFlags(findCommand(program, ["init"]))).toContain(
+      "--using <provider[/model]>",
+    );
+    expect(optionFlags(findCommand(program, ["capture"]))).toContain(
+      "--foreground",
+    );
+    expect(optionFlags(findCommand(program, ["ingest"]))).toContain(
+      "--using <provider[/model]>",
+    );
+    expect(optionFlags(findCommand(program, ["garden"]))).toContain("--json");
     expect(optionFlags(findCommand(program, ["topics", "show"]))).toContain(
       "--descendants",
     );
     expect(optionFlags(findCommand(program, ["search"]))).toContain(
       "--mentions <path>",
+    );
+    expect(optionFlags(findCommand(program, ["search"]))).toContain(
+      "--summaries",
+    );
+    expect(optionFlags(findCommand(program, ["serve"]))).toContain(
+      "--port <n>",
     );
     expect(optionFlags(findCommand(program, ["list"]))).toContain(
       "--drop <name>",
@@ -188,10 +229,60 @@ describe("registerCommands", () => {
     const help = program.helpInformation();
 
     expect(help).toMatch(/Setup:[\s\S]*agents\s+list supported AI agent providers and readiness/);
-    expect(help).toMatch(/Setup:[\s\S]*config\s+read and write codealmanac settings/);
+    expect(help).toMatch(/Setup:[\s\S]*config\s+read and write Almanac settings/);
     expect(help).toContain("Deprecated:");
-    expect(help).toMatch(/set <key> \[value\.\.\.\]\s+configure codealmanac defaults/);
-    expect(help).toMatch(/ps \[options\]\s+deprecated alias for capture status/);
+    expect(help).toMatch(/set <key> \[value\.\.\.\]\s+configure Almanac defaults/);
+    expect(help).toMatch(/ps \[options\]\s+deprecated alias for jobs/);
+  });
+});
+
+describe("formatForegroundEvent", () => {
+  it("suppresses provider error events so final command errors are not duplicated", () => {
+    expect(
+      formatForegroundEvent({
+        type: "error",
+        error: "Codex model gpt-5.5 requires a newer Codex CLI.",
+      }),
+    ).toBeNull();
+    expect(
+      formatForegroundEvent({
+        type: "done",
+        error: "Claude is not authenticated in this environment.",
+      }),
+    ).toBeNull();
+  });
+
+  it("still formats foreground text, tool, and done events", () => {
+    expect(formatForegroundEvent({ type: "text", content: " hello \n" })).toBe(
+      "hello",
+    );
+    expect(formatForegroundEvent({ type: "tool_use", tool: "Bash" })).toBe(
+      "[tool] Bash",
+    );
+    expect(
+      formatForegroundEvent({
+        type: "tool_use",
+        tool: "Read",
+        display: {
+          kind: "read",
+          title: "Reading file",
+          path: ".almanac/pages/farzapedia.md",
+        },
+      }),
+    ).toBe("[tool] Reading file .almanac/pages/farzapedia.md");
+    expect(
+      formatForegroundEvent({
+        type: "tool_result",
+        display: {
+          kind: "shell",
+          title: "Ran command",
+          command: "almanac health",
+          status: "completed",
+          exitCode: 0,
+        },
+      }),
+    ).toBe("[tool] Ran command almanac health exit 0");
+    expect(formatForegroundEvent({ type: "done" })).toBe("[done]");
   });
 });
 
@@ -215,13 +306,13 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     expect(setupMock).toHaveBeenCalledWith({ yes: true });
   });
 
-  it("forwards --skip-hook alongside --yes", async () => {
+  it("forwards --skip-automation alongside --yes", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 
     await run(
-      ["/abs/node", "/abs/path/codealmanac", "--yes", "--skip-hook"],
+      ["/abs/node", "/abs/path/codealmanac", "--yes", "--skip-automation"],
       {
         runSetup: setupMock as never,
         announceUpdate: () => {},
@@ -230,7 +321,10 @@ describe("run() — codealmanac-setup shortcut routing", () => {
       },
     );
 
-    expect(setupMock).toHaveBeenCalledWith({ yes: true, skipHook: true });
+    expect(setupMock).toHaveBeenCalledWith({
+      yes: true,
+      skipAutomation: true,
+    });
   });
 
   it("routes bare `codealmanac` through the global bootstrapper when provided", async () => {
@@ -280,42 +374,22 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     });
   });
 
-  it("does NOT shortcut when the binary name is `almanac`", async () => {
-    // `almanac --yes` without a subcommand isn't a setup invocation —
-    // it's a commander error ("unknown option '--yes'"). We verify
-    // runSetup was NOT called. Commander will write to stderr;
-    // capture + silence it.
+  it("routes bare `almanac --yes` to setup", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 
-    // Commander prints to stderr + throws via `exitOverride` or process.exit;
-    // we swallow either to keep the test surface clean.
-    const origErr = process.stderr.write.bind(process.stderr);
-    process.stderr.write = (() => true) as typeof process.stderr.write;
-    const origExit = process.exit;
-    process.exit = ((code?: number): never => {
-      throw new Error(`process.exit called with ${code}`);
-    }) as typeof process.exit;
+    await run(
+      ["/abs/node", "/abs/path/almanac", "--yes"],
+      {
+        runSetup: setupMock as never,
+        announceUpdate: () => {},
+        scheduleUpdateCheck: () => {},
+        runInternalUpdateCheck: async () => {},
+      },
+    );
 
-    try {
-      await run(
-        ["/abs/node", "/abs/path/almanac", "--yes"],
-        {
-          runSetup: setupMock as never,
-          announceUpdate: () => {},
-          scheduleUpdateCheck: () => {},
-          runInternalUpdateCheck: async () => {},
-        },
-      ).catch(() => {
-        // Swallow — commander's unknown-option error bubbles here.
-      });
-    } finally {
-      process.stderr.write = origErr;
-      process.exit = origExit;
-    }
-
-    expect(setupMock).not.toHaveBeenCalled();
+    expect(setupMock).toHaveBeenCalledWith({ yes: true });
   });
 
   it("does NOT shortcut for `codealmanac doctor`", async () => {

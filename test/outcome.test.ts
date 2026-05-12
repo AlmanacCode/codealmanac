@@ -20,12 +20,12 @@ describe("CommandOutcome renderer", () => {
     const result = renderOutcome({
       type: "needs-action",
       message: "no wiki",
-      fix: "run: almanac bootstrap",
+      fix: "run: almanac init",
     });
 
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain("almanac: no wiki");
-    expect(result.stderr).toContain("run: almanac bootstrap");
+    expect(result.stderr).toContain("run: almanac init");
   });
 });

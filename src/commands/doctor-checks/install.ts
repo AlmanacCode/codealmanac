@@ -4,13 +4,8 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import type { ClaudeAuthStatus } from "../../agent/providers/claude/index.js";
-import {
-  hasCodexInstructions,
-  resolveCodexAgentsPath,
-} from "../../agent/providers/codex-instructions.js";
-import {
-  IMPORT_LINE,
-} from "../setup.js";
+import { defaultPlistPath } from "../automation.js";
+import { IMPORT_LINE } from "../setup.js";
 import {
   classifyInstallPath,
   detectInstallPath,
@@ -44,15 +39,12 @@ export async function gatherInstallChecks(
   const auth = await safeCheckAuth(options.spawnCli);
   checks.push(describeAuth(auth));
 
-  const settingsPath =
-    options.settingsPath ?? path.join(homedir(), ".claude", "settings.json");
-  checks.push(await describeHook(settingsPath));
+  const plistPath = options.automationPlistPath ?? defaultPlistPath(homedir());
+  checks.push(describeAutomation(plistPath));
 
   const claudeDir = options.claudeDir ?? path.join(homedir(), ".claude");
   checks.push(describeGuides(claudeDir));
   checks.push(await describeImportLine(claudeDir));
-  const codexDir = options.codexDir ?? path.join(homedir(), ".codex");
-  checks.push(await describeCodexInstructions(codexDir));
 
   return checks;
 }
@@ -65,7 +57,7 @@ function describeInstallPath(
     return {
       status: "problem",
       key: "install.path",
-      message: "could not detect codealmanac install path",
+      message: "could not detect Almanac install path",
       fix: "reinstall with: npm install -g codealmanac",
     };
   }
@@ -73,8 +65,8 @@ function describeInstallPath(
     status: isEphemeral ? "info" : "ok",
     key: "install.path",
     message: isEphemeral
-      ? `codealmanac running from ephemeral npx location: ${installPath}`
-      : `codealmanac installed at ${installPath}`,
+      ? `Almanac running from ephemeral npx location: ${installPath}`
+      : `Almanac installed at ${installPath}`,
     fix: isEphemeral
       ? "run: npm install -g codealmanac  (to make the install permanent)"
       : undefined,
@@ -119,69 +111,25 @@ function describeAuth(auth: ClaudeAuthStatus): Check {
   };
 }
 
-async function describeHook(settingsPath: string): Promise<Check> {
-  if (!existsSync(settingsPath)) {
-    return {
-      status: "problem",
-      key: "install.hook",
-      message: "SessionEnd hook not installed",
-      fix: "run: almanac setup --yes",
-    };
-  }
-  try {
-    const raw = await readFile(settingsPath, "utf8");
-    const parsed = JSON.parse(raw) as {
-      hooks?: {
-        SessionEnd?: {
-          command?: string;
-          hooks?: { command?: string }[];
-        }[];
-      };
-    };
-    const entries = parsed.hooks?.SessionEnd ?? [];
-    const found = entries.some((e) => {
-      if (
-        typeof e?.command === "string" &&
-        e.command.endsWith("almanac-capture.sh")
-      ) {
-        return true;
-      }
-      if (Array.isArray(e?.hooks)) {
-        return e.hooks.some(
-          (h) =>
-            typeof h?.command === "string" &&
-            h.command.endsWith("almanac-capture.sh"),
-        );
-      }
-      return false;
-    });
-    if (!found) {
-      return {
-        status: "problem",
-        key: "install.hook",
-        message: "SessionEnd hook not installed",
-        fix: "run: almanac setup --yes",
-      };
-    }
+function describeAutomation(plistPath: string): Check {
+  if (existsSync(plistPath)) {
     return {
       status: "ok",
-      key: "install.hook",
-      message: `SessionEnd hook installed at ${settingsPath}`,
-    };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return {
-      status: "problem",
-      key: "install.hook",
-      message: `could not read ${settingsPath}: ${msg}`,
-      fix: "check the file for malformed JSON",
+      key: "install.automation",
+      message: `auto-capture automation installed at ${plistPath}`,
     };
   }
+  return {
+    status: "problem",
+    key: "install.automation",
+    message: "auto-capture automation not installed",
+    fix: "run: almanac automation install",
+  };
 }
 
 function describeGuides(claudeDir: string): Check {
-  const mini = path.join(claudeDir, "codealmanac.md");
-  const ref = path.join(claudeDir, "codealmanac-reference.md");
+  const mini = path.join(claudeDir, "almanac.md");
+  const ref = path.join(claudeDir, "almanac-reference.md");
   const haveMini = existsSync(mini);
   const haveRef = existsSync(ref);
   if (haveMini && haveRef) {
@@ -192,8 +140,8 @@ function describeGuides(claudeDir: string): Check {
     };
   }
   const missing = [
-    haveMini ? null : "codealmanac.md",
-    haveRef ? null : "codealmanac-reference.md",
+    haveMini ? null : "almanac.md",
+    haveRef ? null : "almanac-reference.md",
   ].filter((s): s is string => s !== null);
   return {
     status: "problem",
@@ -243,40 +191,4 @@ async function describeImportLine(claudeDir: string): Promise<Check> {
       message: `could not read ${claudeMd}: ${msg}`,
     };
   }
-}
-
-async function describeCodexInstructions(codexDir: string): Promise<Check> {
-  const agentsFile = await resolveCodexAgentsPath(codexDir);
-  if (!existsSync(agentsFile)) {
-    return {
-      status: "problem",
-      key: "install.codexInstructions",
-      message: `Codex AGENTS instructions missing (${path.basename(agentsFile)} not found)`,
-      fix: "run: almanac setup --yes",
-    };
-  }
-  try {
-    const contents = await readFile(agentsFile, "utf8");
-    if (hasCodexInstructions(contents)) {
-      return {
-        status: "ok",
-        key: "install.codexInstructions",
-        message: `Codex AGENTS instructions present (${path.basename(agentsFile)})`,
-      };
-    }
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return {
-      status: "problem",
-      key: "install.codexInstructions",
-      message: `could not read ${agentsFile}: ${msg}`,
-    };
-  }
-
-  return {
-    status: "problem",
-    key: "install.codexInstructions",
-    message: `Codex AGENTS instructions missing (${path.basename(agentsFile)})`,
-    fix: "run: almanac setup --yes",
-  };
 }

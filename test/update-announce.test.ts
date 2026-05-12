@@ -60,7 +60,7 @@ describe("announceUpdateIfAvailable", () => {
       });
 
       expect(output()).toMatch(
-        /codealmanac 0\.1\.6 available .*you're on 0\.1\.5.*almanac update/,
+        /Almanac 0\.1\.6 available .*you're on 0\.1\.5.*almanac update/,
       );
     });
   });

@@ -2,35 +2,57 @@
 title: Claude Agent SDK
 topics: [stack, agents]
 files:
-  - src/agent/sdk.ts
-  - src/agent/auth.ts
+  - src/harness/providers/claude.ts
+  - src/harness/types.ts
+  - src/harness/events.ts
+  - src/agent/providers/claude/auth.ts
   - src/agent/prompts.ts
-  - src/commands/bootstrap.ts
-  - src/commands/capture.ts
 ---
 
 # Claude Agent SDK
 
-`@anthropic-ai/claude-agent-sdk` v0.2.x is the Anthropic-maintained TypeScript SDK used to run agentic loops in `bootstrap` and `capture`. The repo pins to `^0.2.110`. The SDK's primary export is `query()`, which drives a multi-turn conversation against a Claude model, executing tool calls and returning `SDKMessage` events.
-
-<!-- stub: fill in gotchas, model pinning details, and auth behavior as discovered -->
+`@anthropic-ai/claude-agent-sdk` is now used through the V1 Claude harness adapter, not through the deleted bootstrap/capture SDK wrapper. The repo keeps Claude-specific SDK types inside `src/harness/providers/claude.ts`; operation code only sees [[harness-providers]] types such as `AgentRunSpec`, `HarnessEvent`, and `HarnessResult`.
 
 ## Where we use it
 
-- `src/agent/sdk.ts` — the sole import site for the SDK. Every other module imports the `runAgent` wrapper from here rather than touching the SDK directly.
-- `src/agent/auth.ts` — pre-flight auth gate; calls `claude auth status` via subprocess before the SDK generator starts.
-- `src/agent/prompts.ts` — loads `prompts/*.md` from the npm package install path and passes them as system prompts.
-- `src/commands/bootstrap.ts` — calls `runAgent` with `BOOTSTRAP_TOOLS = ["Read","Write","Edit","Glob","Grep","Bash"]`.
-- `src/commands/capture.ts` — calls `runAgent` with the writer agent and passes a `{ reviewer: AgentDefinition }` subagent map.
+- `src/harness/providers/claude.ts` — imports `query()` and maps `AgentRunSpec` to Claude SDK options.
+- `src/agent/providers/claude/auth.ts` — checks installed/authenticated Claude CLI state for provider status.
+- `src/agent/prompts.ts` — loads V1 operation prompts from the bundled `prompts/` directory.
 
-## SDK wrapper design
+## Adapter mapping
 
-`runAgent` in `src/agent/sdk.ts` sets defaults (model `claude-sonnet-4-6`, `maxTurns: 100`, `includePartialMessages: true`) and translates the SDK's stream into a `{cost, turns, success, error}` summary. It accepts an `onMessage` callback that both commands use to stream tool-use lines to stdout and write raw JSON to a `.bootstrap-*.log` / `.capture-*.log` file.
+The adapter maps base tool requests to Claude tool names: read to `Read`, write to `Write`, edit to `Edit`, search to `Glob` and `Grep`, shell to `Bash`, and web to `WebSearch` and `WebFetch`. It passes the mapped list to both `tools` and `allowedTools`, sets `permissionMode: "dontAsk"`, sets `includePartialMessages: true`, and injects `CODEALMANAC_INTERNAL_SESSION=1`.
+
+When `AgentRunSpec.agents` is present, the adapter maps each helper `AgentSpec` to a Claude `AgentDefinition` and ensures the main tool list includes `Agent`. V1 operations do not hardcode a reviewer agent; helper agents are generic harness data.
+
+## Event normalization
+
+Claude `SDKMessage` events are translated to `HarnessEvent` records. Text deltas, assistant text, tool uses, tool results, errors, and final result messages all flow through the same event hook used by [[process-manager-runs]]. Cost, turns, usage, and provider session id are preserved when the SDK exposes them.
+
+## Model and limits
+
+Default model is `claude-sonnet-4-6` (from `HARNESS_PROVIDER_METADATA.claude.defaultModel`). Per-run model override passes through `AgentRunSpec.provider.model`. Effort values `low`, `medium`, `high`, and `max` map directly to Claude SDK's `effort` option; any other value is dropped.
+
+`maxTurns` defaults to `100` in `buildClaudeOptions`; operations currently override this to `150` via `AgentRunSpec.limits.maxTurns`. `maxBudgetUsd` maps to `limits.maxCostUsd` when present.
 
 ## Auth
 
-Two paths: Claude subscription OAuth (reads `~/.claude/credentials/`) or `ANTHROPIC_API_KEY` env var. `assertClaudeAuth` checks `claude auth status` via a spawned subprocess; if neither credential is present it exits non-zero before the SDK generator starts. See [[sessionend-hook]] for how capture runs headlessly.
+Two paths: Claude subscription OAuth via the Claude CLI, or `ANTHROPIC_API_KEY`. Auth probe runs `claude auth status --json` with a 10-second timeout. On SDK 0.2.129+ the legacy `cli.js` probe is attempted as a fallback when the primary `claude` binary probe returns `loggedIn: false`. Any spawn error, timeout, non-JSON stdout, or non-zero exit with empty stdout returns `{ loggedIn: false }` rather than propagating an error. `ANTHROPIC_API_KEY` is accepted as the second gate — `assertClaudeAuth()` returns a synthetic `{ loggedIn: true, authMethod: "apiKey" }` when the key is set.
 
-## Tool input quirk
+`resolveClaudeExecutable()` uses `command -v claude` to find the installed binary. The resolved path is passed as `pathToClaudeCodeExecutable` so the SDK and the auth probe agree on which binary to use. Headless auto-capture now runs through scheduler-backed [[capture-automation]] rather than app lifecycle hooks.
 
-`tool_use.input` from the SDK arrives as either a parsed object or a JSON-encoded string. `normalizeToolInput()` in `src/commands/bootstrap.ts` handles both forms before the formatter touches any field.
+## Capabilities
+
+From `HARNESS_PROVIDER_METADATA.claude`: `sessionPersistence: true`, `threadResume: true`, `interrupt: true`, `mcp: true`, `skills: true`, `usage: true`, `cost: true`. `reasoningEffort: false` and `structuredOutput: false`. Subagents are supported with `programmaticPerRun: true` and `enforcedToolScopes: true`.
+
+## Failure classification
+
+`classifyClaudeFailure()` in `src/harness/providers/claude.ts` maps raw error strings to typed `HarnessFailure` codes:
+
+- `claude.not_authenticated` — error contains "Not logged in" or "authentication"
+- `claude.max_budget_exceeded` — subtype is `error_max_budget_usd`
+- `claude.process_failed` (or `claude.<subtype>`) — all other cases
+
+## Old wrapper removal
+
+`src/agent/sdk.ts`, `src/commands/bootstrap.ts`, `src/commands/capture.ts`, and the `.bootstrap-*.log` / `.capture-*.log` flows were removed during the V1 cleanup. Do not reintroduce a command-specific Claude runner; add mapping behavior inside the provider adapter.

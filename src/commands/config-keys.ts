@@ -1,8 +1,6 @@
 import {
   AGENT_PROVIDER_IDS,
-  formatEnabledAgentProviderList,
   isAgentProviderId,
-  isEnabledAgentProviderId,
   type AgentProviderId,
   type GlobalConfig,
 } from "../update/config.js";
@@ -10,7 +8,8 @@ import {
 export type ConfigKey =
   | "update_notifier"
   | "agent.default"
-  | `agent.models.${AgentProviderId}`;
+  | `agent.models.${AgentProviderId}`
+  | "automation.capture_since";
 
 export interface ConfigEntry {
   key: ConfigKey;
@@ -21,10 +20,15 @@ export const CONFIG_KEYS: ConfigKey[] = [
   "update_notifier",
   "agent.default",
   ...AGENT_PROVIDER_IDS.map((id) => `agent.models.${id}` as const),
+  "automation.capture_since",
 ];
 
 export function parseConfigKey(raw: string): ConfigKey | null {
-  if (raw === "update_notifier" || raw === "agent.default") return raw;
+  if (
+    raw === "update_notifier" ||
+    raw === "agent.default" ||
+    raw === "automation.capture_since"
+  ) return raw;
   const prefix = "agent.models.";
   if (!raw.startsWith(prefix)) return null;
   const provider = raw.slice(prefix.length);
@@ -38,6 +42,7 @@ export function getConfigValue(
 ): string | boolean | null {
   if (key === "update_notifier") return config.update_notifier;
   if (key === "agent.default") return config.agent.default;
+  if (key === "automation.capture_since") return config.automation.capture_since;
   const provider = providerFromModelKey(key);
   return config.agent.models[provider] ?? null;
 }
@@ -54,20 +59,23 @@ export function setConfigValue(
     };
   }
   if (key === "agent.default") {
-    if (
-      rawValue === null ||
-      !isAgentProviderId(rawValue) ||
-      !isEnabledAgentProviderId(rawValue)
-    ) {
-      throw new Error(
-        `agent.default must be one of: ${formatEnabledAgentProviderList()}`,
-      );
+    if (rawValue === null || !isAgentProviderId(rawValue)) {
+      throw new Error("agent.default must be one of: claude, codex, cursor");
     }
     return {
       ...config,
       agent: {
         ...config.agent,
         default: rawValue,
+      },
+    };
+  }
+  if (key === "automation.capture_since") {
+    return {
+      ...config,
+      automation: {
+        ...config.automation,
+        capture_since: normalizeCaptureSince(rawValue),
       },
     };
   }
@@ -116,6 +124,14 @@ function normalizeModel(value: string | null): string | null {
   if (value === "default" || value === "null") return null;
   if (value.length === 0) {
     throw new Error("model must be non-empty, default, or null");
+  }
+  return value;
+}
+
+function normalizeCaptureSince(value: string | null): string | null {
+  if (value === null || value === "default" || value === "null") return null;
+  if (!Number.isFinite(Date.parse(value))) {
+    throw new Error("automation.capture_since must be an ISO timestamp, default, or null");
   }
   return value;
 }

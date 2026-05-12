@@ -15,6 +15,12 @@ import {
   type SpawnCliFn,
 } from "../agent/providers/claude/index.js";
 import {
+  ensureCodexInstructions,
+  hasCodexInstructions,
+  CODEX_INSTRUCTIONS_END,
+  CODEX_INSTRUCTIONS_START,
+} from "../agent/providers/codex-instructions.js";
+import {
   buildProviderModelChoices,
   buildProviderSetupView,
   parseAgentSelection,
@@ -24,12 +30,6 @@ import type {
 } from "../agent/provider-view.js";
 import type { ProviderModelChoice } from "../agent/types.js";
 import {
-  ensureCodexInstructions,
-  hasCodexInstructions,
-  CODEX_INSTRUCTIONS_END,
-  CODEX_INSTRUCTIONS_START,
-} from "../agent/providers/codex-instructions.js";
-import {
   disabledAgentProviderMessage,
   formatEnabledAgentProviderList,
   isAgentProviderId,
@@ -38,7 +38,7 @@ import {
   writeConfig,
   type AgentProviderId,
 } from "../update/config.js";
-import { runHookInstall } from "./hook.js";
+import { cleanupLegacyHooks, runAutomationInstall } from "./automation.js";
 import {
   detectCurrentInstallPath,
   detectEphemeral,
@@ -49,10 +49,15 @@ import {
   printNextSteps,
 } from "./setup/next-steps.js";
 
+type AutomationExecFn = (
+  file: string,
+  args: string[],
+) => Promise<{ stdout?: string; stderr?: string }>;
+
 /**
- * `codealmanac setup` — the MCP-style branded TUI that runs when a user
- * invokes the bare `codealmanac` binary (or `almanac setup` / `codealmanac
- * setup` explicitly).
+ * `almanac setup` — the MCP-style branded TUI that runs when a user
+ * invokes bare `almanac`, explicit `almanac setup`, or the compatibility
+ * `codealmanac` npx bootstrap alias.
  *
  * Model: `mcp-ts/src/setup.ts` from openalmanac. Same ASCII banner + badge
  * + step-indicator style, same interactive + `--yes` + non-interactive
@@ -60,30 +65,32 @@ import {
  *
  * Setup installs:
  *
- *   1. Agent hooks (delegated to
- *      `runHookInstall` from `./hook.ts`).
- *   2. The short "how to use codealmanac" guide at
- *      `~/.claude/codealmanac.md`, sourced from `guides/mini.md` in the
+ *   1. A macOS launchd job that periodically runs `almanac capture sweep`.
+ *   2. The short "how to use Almanac" guide at
+ *      `~/.claude/almanac.md`, sourced from `guides/mini.md` in the
  *      package.
- *   3. The full reference at `~/.claude/codealmanac-reference.md`,
+ *   3. The full reference at `~/.claude/almanac-reference.md`,
  *      sourced from `guides/reference.md`.
- *   4. An `@~/.claude/codealmanac.md` import line in `~/.claude/CLAUDE.md`
+ *   4. An `@~/.claude/almanac.md` import line in `~/.claude/CLAUDE.md`
  *      so Claude Code picks up the short guide globally.
- *   5. An inline managed codealmanac section in `~/.codex/AGENTS.md`
+ *   5. An inline managed Almanac section in `~/.codex/AGENTS.md`
  *      (or `AGENTS.override.md` when that is the active non-empty file).
  *      Codex does not expand Claude-style `@file` imports in AGENTS files,
  *      so the instructions must live inline to be model-visible.
  *
- * Everything is idempotent — running setup again is safe. `--skip-hook`
- * and `--skip-guides` opt out of the individual installs. `--yes` or a
- * non-TTY stdin skips all prompts and installs everything.
+ * Everything is idempotent — running setup again is safe.
+ * `--skip-automation` and `--skip-guides` opt out of the individual
+ * installs. `--yes` or a non-TTY stdin skips all prompts and installs
+ * everything.
  */
 
 export interface SetupOptions {
   /** Install everything without prompting. */
   yes?: boolean;
-  /** Don't install the SessionEnd hook. */
-  skipHook?: boolean;
+  /** Don't install the scheduled auto-capture job. */
+  skipAutomation?: boolean;
+  /** Configure the scheduled auto-capture interval. Defaults to 5h. */
+  automationEvery?: string;
   /** Don't install the CLAUDE.md guides. */
   skipGuides?: boolean;
   /** Set the default agent provider during setup. */
@@ -94,12 +101,10 @@ export interface SetupOptions {
   // ─── Injection points (tests only) ────────────────────────────────
   /** Override the subprocess spawner for `claude auth status`. */
   spawnCli?: SpawnCliFn;
-  /** Override `~/.claude/settings.json` path. */
-  settingsPath?: string;
-  /** Override the bundled hook script path. */
-  hookScriptPath?: string;
-  /** Override the stable hooks directory for the hook script copy. */
-  stableHooksDir?: string;
+  /** Override the launchd plist path. */
+  automationPlistPath?: string;
+  /** Override launchctl execution. */
+  automationExec?: AutomationExecFn;
   /** Override `~/.claude/` dir for guide install. */
   claudeDir?: string;
   /** Override `~/.codex/` dir for Codex instruction install. */
@@ -146,19 +151,18 @@ const GRADIENT = [
   "\x1b[38;5;243m",
 ];
 
-// `codealmanac` 11-letter ASCII banner. Chosen for tasteful rendering —
-// same banner used in the MCP setup wizard design, retooled letters for
-// the word "codealmanac". Each glyph is 6 lines tall.
+// `Almanac` ASCII banner. Chosen for tasteful rendering. Each glyph is
+// 6 lines tall.
 //
 // If you tweak this, keep it to ≤80 visual columns wide so it fits in
 // narrow terminals (80 cols is the classic default).
 const LOGO_LINES = [
-  "  ___ ___  ___  ___   _   _    __  __   _   _  _   _   ___ ",
-  " / __/ _ \\|   \\| __| /_\\ | |  |  \\/  | /_\\ | \\| | /_\\ / __|",
-  "| (_| (_) | |) | _| / _ \\| |__| |\\/| |/ _ \\| .` |/ _ \\ (__ ",
-  " \\___\\___/|___/|___/_/ \\_\\____|_|  |_/_/ \\_\\_|\\_/_/ \\_\\___|",
-  "                                                           ",
-  "        a living wiki for codebases, for your agent         ",
+  "    _    _     __  __    _    _   _    _     ____ ",
+  "   / \\  | |   |  \\/  |  / \\  | \\ | |  / \\   / ___|",
+  "  / _ \\ | |   | |\\/| | / _ \\ |  \\| | / _ \\ | |    ",
+  " / ___ \\| |___| |  | |/ ___ \\| |\\  |/ ___ \\| |___ ",
+  "/_/   \\_\\_____|_|  |_/_/   \\_\\_| \\_/_/   \\_\\\\____|",
+  "       a living wiki for codebases, for your agent  ",
 ];
 
 const BAR = `  ${DIM}\u2502${RST}`;
@@ -173,7 +177,7 @@ function printBanner(out: NodeJS.WritableStream): void {
 }
 
 function printBadge(out: NodeJS.WritableStream): void {
-  out.write(`\n   ${ACCENT_BG} codealmanac ${RST}\n\n`);
+  out.write(`\n   ${ACCENT_BG} Almanac ${RST}\n\n`);
 }
 
 function stepDone(out: NodeJS.WritableStream, msg: string): void {
@@ -204,9 +208,9 @@ export async function runSetup(
   // single terse line and exit so the user gets honest feedback and
   // piped callers (CI, scripts) don't parse through nine lines of ANSI
   // to conclude nothing happened.
-  if (options.skipHook === true && options.skipGuides === true) {
+  if (options.skipAutomation === true && options.skipGuides === true) {
     out.write(
-      "codealmanac: nothing to install — use --help to see what setup does\n",
+      "almanac: nothing to install — use --help to see what setup does\n",
     );
     return { stdout: "", stderr: "", exitCode: 0 };
   }
@@ -271,10 +275,10 @@ export async function runSetup(
       );
     }
     if (globalAction === "install") {
-      stepActive(out, "Installing codealmanac globally…");
+      stepActive(out, "Installing Almanac package globally…");
       try {
         await (options.spawnGlobalInstall ?? spawnGlobalInstall)();
-        stepDone(out, "codealmanac installed globally (almanac now on PATH)");
+        stepDone(out, "Almanac installed globally (almanac now on PATH)");
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         stepActive(out, `Global install failed: ${msg}`);
@@ -291,40 +295,36 @@ export async function runSetup(
     out.write(BAR + "\n");
   }
 
-  // Step 2: install the hook (default yes).
-  let hookAction: InstallDecision = "install";
-  if (options.skipHook === true) {
-    hookAction = "skip";
+  // Step 2: install the scheduler (default yes).
+  let automationAction: InstallDecision = "install";
+  if (options.skipAutomation === true) {
+    automationAction = "skip";
   } else if (interactive) {
-    hookAction = await confirm(
+    automationAction = await confirm(
       out,
       "Keep your codebase wiki up to date automatically?",
       true,
     );
   }
 
-  let hookResultLine = "";
-  if (hookAction === "install") {
-    const res = await runHookInstall({
-      source: "all",
-      settingsPath: options.settingsPath,
-      hookScriptPath: options.hookScriptPath,
-      stableHooksDir: options.stableHooksDir,
+  if (automationAction === "install") {
+    await cleanupLegacyHooks();
+    const res = await runAutomationInstall({
+      every: options.automationEvery,
+      plistPath: options.automationPlistPath,
+      exec: options.automationExec,
     });
     if (res.exitCode !== 0) {
-      stepActive(out, `SessionEnd hook: ${res.stderr.trim()}`);
+      stepActive(out, `Auto-capture automation: ${res.stderr.trim()}`);
       return {
         stdout: "",
         stderr: res.stderr,
         exitCode: res.exitCode,
       };
     }
-    hookResultLine = res.stdout.includes("already installed")
-      ? `Auto-capture hooks ${DIM}already installed${RST}`
-      : `Auto-capture installed`;
-    stepDone(out, hookResultLine);
+    stepDone(out, `Auto-capture automation installed`);
   } else {
-    stepSkipped(out, `Auto-capture ${DIM}skipped${RST}`);
+    stepSkipped(out, `Auto-capture automation ${DIM}skipped${RST}`);
   }
   out.write(BAR + "\n");
 
@@ -335,7 +335,7 @@ export async function runSetup(
   } else if (interactive) {
     guidesAction = await confirm(
       out,
-      "Add codealmanac instructions for your AI agents?",
+      "Add Almanac instructions for your AI agents?",
       true,
     );
   }
@@ -372,7 +372,7 @@ export async function runSetup(
   // already has a wiki with pages. This fixes Bug #6 from
   // codealmanac-known-bugs.md: Engineer B clones a repo that already has
   // `.almanac/pages/` (committed by Engineer A) and gets told to run
-  // `almanac bootstrap`, which is wrong — the wiki already exists.
+  // `almanac init`, which is wrong — the wiki already exists.
   const existingPageCount = countExistingPages(process.cwd());
   printNextSteps(out, existingPageCount);
 
@@ -401,7 +401,7 @@ async function chooseDefaultAgent(args: {
       const choice = await selectChoice({
         out: args.out,
         title: "Choose your agent",
-        help: "Choose the AI agent codealmanac should use.",
+        help: "Choose the AI agent Almanac should use.",
         choices: view.choices.map((choice) => ({
           value: choice,
           line: formatProviderChoice(choice),
@@ -783,7 +783,7 @@ function formatModelChoice(
 function friendlyModelLabel(value: string): string {
   if (value === "claude-sonnet-4-6") return "Sonnet 4.6";
   if (value === "claude-opus-4-7") return "Opus 4.7";
-  if (value === "claude-haiku-4-5-20251001") return "Haiku 4.5";
+  if (value === "claude-haiku-4-5") return "Haiku 4.5";
   return value;
 }
 
@@ -839,7 +839,7 @@ interface InstallGuidesResult {
  *     matches the bundled version, we skip (so `setup` doesn't cause a
  *     spurious mtime bump on every invocation).
  *   - The import line is appended only if `CLAUDE.md` doesn't already
- *     contain the exact `@~/.claude/codealmanac.md` token on a line by
+ *     contain the exact `@~/.claude/almanac.md` token on a line by
  *     itself. We don't try to parse the file — any mention of the token
  *     on a non-comment line is treated as "already present".
  *
@@ -860,19 +860,23 @@ async function installGuides(
     throw new Error(`missing bundled guide: ${srcRef}`);
   }
 
-  const destMini = path.join(options.claudeDir, "codealmanac.md");
-  const destRef = path.join(options.claudeDir, "codealmanac-reference.md");
+  const destMini = path.join(options.claudeDir, "almanac.md");
+  const destRef = path.join(options.claudeDir, "almanac-reference.md");
 
+  const miniContents = await readFile(srcMini, "utf8");
   const miniChanged = await copyIfChanged(srcMini, destMini);
   const refChanged = await copyIfChanged(srcRef, destRef);
 
   const claudeMd = path.join(options.claudeDir, "CLAUDE.md");
   const importChanged = await ensureImport(claudeMd);
-  const codexChanged = await ensureCodexInstructions(options.codexDir);
+  const codexChanged = await ensureCodexInstructions(
+    options.codexDir,
+    miniContents,
+  );
 
   const filesWritten: string[] = [];
-  if (miniChanged) filesWritten.push("codealmanac.md");
-  if (refChanged) filesWritten.push("codealmanac-reference.md");
+  if (miniChanged) filesWritten.push("almanac.md");
+  if (refChanged) filesWritten.push("almanac-reference.md");
   if (importChanged) filesWritten.push("CLAUDE.md");
   if (codexChanged) filesWritten.push("AGENTS.md");
 
@@ -895,14 +899,14 @@ async function copyIfChanged(src: string, dest: string): Promise<boolean> {
 
 /** The exact import line we manage. Changing this requires updating
  * uninstall too. */
-export const IMPORT_LINE = "@~/.claude/codealmanac.md";
+export const IMPORT_LINE = "@~/.claude/almanac.md";
 
 /**
  * Append the import line to `~/.claude/CLAUDE.md` if it isn't already
  * present. Creates the file if absent. Returns true when we wrote, false
  * when the line was already there.
  *
- * We match on `@~/.claude/codealmanac.md` appearing on any non-empty
+ * We match on `@~/.claude/almanac.md` appearing on any non-empty
  * line (trimmed). This catches both the bare line we write and any
  * user-edited variant (comments, trailing whitespace). We deliberately
  * do NOT try to repair a user who deleted the newline — that's their
@@ -924,10 +928,10 @@ async function ensureImport(claudeMdPath: string): Promise<boolean> {
 
 export function hasImportLine(contents: string): boolean {
   // Match line-starts-with-token rather than exact-line equality so a
-  // user who annotated the import line (`@~/.claude/codealmanac.md #
-  // codealmanac`) doesn't cause us to re-append a duplicate below.
+  // user who annotated the import line (`@~/.claude/almanac.md #
+  // almanac`) doesn't cause us to re-append a duplicate below.
   // The trailing-character check rules out accidental matches on a
-  // longer line like `@~/.claude/codealmanac.md-extra`.
+  // longer line like `@~/.claude/almanac.md-extra`.
   const lines = contents.split(/\r?\n/).map((l) => l.trim());
   return lines.some((line) => {
     if (line === IMPORT_LINE) return true;

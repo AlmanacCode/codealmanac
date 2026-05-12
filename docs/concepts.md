@@ -123,9 +123,13 @@ The CLI is organized into four groups:
 
 Only two commands use AI: `bootstrap` (seed a wiki) and `capture` (update after a session). Everything else is pure local.
 
-Everything is designed to pipe. Commands output slugs one per line; `--json` gives structured output; `show --stdin` emits JSON Lines; `--stdin` accepts piped input where supported:
+Everything is designed to pipe. Commands that feed another command should use
+slug-only output; `--json` gives structured output; `show --stdin` emits JSON
+Lines; `--stdin` accepts piped input where supported. `search --summaries`
+adds one-line summaries for scan-friendly terminal browsing, while
+`search --slugs` forces slug-only output.
 
 ```bash
-almanac search --topic flows | almanac show --stdin
+almanac search --topic flows --slugs | almanac show --stdin
 almanac search --stale 90d | almanac tag --stdin needs-review
 ```

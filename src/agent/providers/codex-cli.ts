@@ -34,19 +34,6 @@ const metadata: AgentProviderMetadata = {
   },
 };
 
-export const codexProvider: AgentProvider = {
-  metadata,
-  checkStatus,
-  assertReady,
-  run,
-  modelChoices,
-};
-
-interface CodexCatalogModel {
-  slug: string;
-  displayName: string;
-}
-
 const CODEX_MODEL_ORDER = [
   "gpt-5.5",
   "gpt-5.4",
@@ -57,35 +44,62 @@ const CODEX_MODEL_ORDER = [
 const CODEX_MODEL_LABELS: Record<string, string> = {
   "gpt-5.5": "GPT-5.5",
   "gpt-5.4": "GPT-5.4",
-  "gpt-5.4-mini": "GPT-5.4 Mini",
+  "gpt-5.4-mini": "GPT-5.4-Mini",
   "gpt-5.3-codex": "GPT-5.3 Codex",
 };
 
-async function modelChoices(args: {
+const RECOMMENDED_CODEX_MODEL = "gpt-5.4";
+
+export const codexProvider: AgentProvider = {
+  metadata,
+  checkStatus,
+  assertReady,
+  modelChoices,
+  run,
+};
+
+async function modelChoices(opts: {
   configuredModel: string | null;
   spawnCli?: SpawnCliFn;
 }): Promise<ProviderModelChoice[]> {
-  const catalog = await readCodexModelCatalog(args.spawnCli);
   const choices: ProviderModelChoice[] = [];
-  if (args.configuredModel !== null) {
+  if (opts.configuredModel !== null) {
     choices.push({
-      value: args.configuredModel,
-      label: modelLabel(args.configuredModel, catalog),
+      value: opts.configuredModel,
+      label: CODEX_MODEL_LABELS[opts.configuredModel] ?? opts.configuredModel,
       recommended: false,
       source: "configured",
     });
   }
-  for (const slug of CODEX_MODEL_ORDER) {
-    if (choices.some((choice) => choice.value === slug)) continue;
-    if (catalog !== undefined && !catalog.some((model) => model.slug === slug)) {
+
+  const catalog = opts.spawnCli !== undefined
+    ? await listCodexModels(opts.spawnCli)
+    : [];
+  const visible = catalog.length > 0 ? catalog : [...CODEX_MODEL_ORDER];
+  for (const slug of visible) {
+    if (!CODEX_MODEL_ORDER.includes(slug as (typeof CODEX_MODEL_ORDER)[number])) {
+      continue;
+    }
+    const existing = choices.find((choice) => choice.value === slug);
+    if (existing !== undefined) {
+      existing.label = CODEX_MODEL_LABELS[slug] ?? slug;
+      existing.recommended = slug === RECOMMENDED_CODEX_MODEL;
+      existing.source = "catalog";
       continue;
     }
     choices.push({
       value: slug,
-      label: modelLabel(slug, catalog),
-      recommended: slug === "gpt-5.4",
+      label: CODEX_MODEL_LABELS[slug] ?? slug,
+      recommended: slug === RECOMMENDED_CODEX_MODEL,
       source: "catalog",
     });
+  }
+
+  if (!choices.some((choice) => choice.recommended)) {
+    const recommended = choices.find(
+      (choice) => choice.value === RECOMMENDED_CODEX_MODEL,
+    );
+    if (recommended !== undefined) recommended.recommended = true;
   }
   choices.push({
     value: "__custom__",
@@ -96,66 +110,46 @@ async function modelChoices(args: {
   return choices;
 }
 
-async function readCodexModelCatalog(
-  spawnCli?: SpawnCliFn,
-): Promise<CodexCatalogModel[] | undefined> {
-  if (spawnCli === undefined) return undefined;
-  try {
-    const result = await collectSpawn(spawnCli(["codex", "debug", "models"]));
-    if (result.code !== 0) return undefined;
-    const parsed = JSON.parse(result.stdout) as unknown;
-    if (parsed === null || typeof parsed !== "object") return undefined;
-    const models = (parsed as { models?: unknown }).models;
-    if (!Array.isArray(models)) return undefined;
-    const out: CodexCatalogModel[] = [];
-    for (const model of models) {
-      if (model === null || typeof model !== "object") continue;
-      const record = model as Record<string, unknown>;
-      if (record.visibility !== "list") continue;
-      if (typeof record.slug !== "string") continue;
-      out.push({
-        slug: record.slug,
-        displayName: typeof record.display_name === "string"
-          ? record.display_name
-          : record.slug,
-      });
-    }
-    return out;
-  } catch {
-    return undefined;
-  }
-}
-
-function collectSpawn(
-  child: ReturnType<SpawnCliFn>,
-): Promise<{ stdout: string; code: number }> {
+async function listCodexModels(spawnCli: SpawnCliFn): Promise<string[]> {
   return new Promise((resolve) => {
     let stdout = "";
     let settled = false;
-    const settle = (code: number): void => {
+    const settle = (models: string[]): void => {
       if (settled) return;
       settled = true;
-      resolve({ stdout, code });
+      resolve(models);
     };
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-    child.on("error", () => {
-      settle(1);
-    });
-    child.on("close", (codeOrError) => {
-      settle(typeof codeOrError === "number" ? codeOrError ?? 1 : 1);
-    });
+    try {
+      const child = spawnCli(["codex", "debug", "models"]);
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk.toString();
+      });
+      child.on("error", () => settle([]));
+      child.on("close", (code) => {
+        if (code !== 0) {
+          settle([]);
+          return;
+        }
+        try {
+          const parsed = JSON.parse(stdout) as {
+            models?: { slug?: unknown; visibility?: unknown }[];
+          };
+          settle(
+            (parsed.models ?? [])
+              .filter((model) =>
+                typeof model.slug === "string" &&
+                model.visibility !== "hidden"
+              )
+              .map((model) => model.slug as string),
+          );
+        } catch {
+          settle([]);
+        }
+      });
+    } catch {
+      settle([]);
+    }
   });
-}
-
-function modelLabel(
-  slug: string,
-  catalog: CodexCatalogModel[] | undefined,
-): string {
-  return CODEX_MODEL_LABELS[slug] ??
-    catalog?.find((model) => model.slug === slug)?.displayName ??
-    slug;
 }
 
 async function run(opts: RunAgentOptions): Promise<AgentResult> {
@@ -194,11 +188,11 @@ async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
   }
 
   const auth = spawnCli !== undefined
-    ? await runInjectedStatusCommand(spawnCli, [
-      metadata.executable,
-      "login",
-      "status",
-    ])
+    ? await runInjectedStatusCommand(
+        spawnCli,
+        ["login", "status"],
+        metadata.executable,
+      )
     : await runStatusCommand(metadata.executable, ["login", "status"]);
   return {
     id: metadata.id,

@@ -12,8 +12,6 @@ export const ALL_AGENT_PROVIDER_IDS = ["claude", "codex", "cursor"] as const;
 export type AgentProviderId = (typeof ALL_AGENT_PROVIDER_IDS)[number];
 export const AGENT_PROVIDER_IDS = ALL_AGENT_PROVIDER_IDS;
 export const DEFAULT_AGENT_PROVIDER_IDS = ["claude", "codex"] as const;
-export type EnabledAgentProviderId =
-  (typeof DEFAULT_AGENT_PROVIDER_IDS)[number] | AgentProviderId;
 
 export function isCursorEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.CODEALMANAC_ENABLE_CURSOR === "1";
@@ -52,10 +50,15 @@ export function isAgentProviderId(value: string): value is AgentProviderId {
 }
 
 export interface AgentConfig {
-  /** Default provider for bootstrap/capture. Default: "claude". */
+  /** Default provider for agent-backed lifecycle commands. Default: "codex". */
   default: AgentProviderId;
   /** Optional per-provider model override. `null` means provider default. */
   models: Partial<Record<AgentProviderId, string | null>>;
+}
+
+export interface AutomationConfig {
+  /** ISO timestamp from which scheduled capture should consider transcripts. */
+  capture_since: string | null;
 }
 
 /**
@@ -68,20 +71,25 @@ export interface AgentConfig {
 export interface GlobalConfig {
   /** When `false`, suppress the pre-command update-nag banner. Default: true. */
   update_notifier: boolean;
-  /** Agent-provider settings for bootstrap/capture. */
+  /** Agent-provider settings for agent-backed lifecycle commands. */
   agent: AgentConfig;
+  /** Scheduled auto-capture settings. */
+  automation: AutomationConfig;
 }
 
 export function defaultConfig(): GlobalConfig {
   return {
     update_notifier: true,
     agent: {
-      default: "claude",
+      default: "codex",
       models: {
         claude: null,
         codex: null,
         cursor: null,
       },
+    },
+    automation: {
+      capture_since: null,
     },
   };
 }
@@ -196,6 +204,18 @@ function normalizeRawConfig(raw: Record<string, unknown>): GlobalConfig {
       models[id] = null;
     }
   }
+  const rawAutomation =
+    raw.automation !== undefined &&
+    raw.automation !== null &&
+    typeof raw.automation === "object" &&
+    !Array.isArray(raw.automation)
+      ? raw.automation as Record<string, unknown>
+      : {};
+  const captureSince =
+    typeof rawAutomation.capture_since === "string" &&
+      Number.isFinite(Date.parse(rawAutomation.capture_since))
+      ? rawAutomation.capture_since
+      : defaults.automation.capture_since;
   return {
     update_notifier:
       typeof raw.update_notifier === "boolean"
@@ -204,6 +224,9 @@ function normalizeRawConfig(raw: Record<string, unknown>): GlobalConfig {
     agent: {
       default: rawDefault,
       models,
+    },
+    automation: {
+      capture_since: captureSince,
     },
   };
 }
@@ -258,6 +281,18 @@ function originsFromRaw(
   const origins: Record<string, ConfigOrigin> = {};
   if (!agentOnly && Object.prototype.hasOwnProperty.call(raw, "update_notifier")) {
     origins.update_notifier = origin;
+  }
+  const automation =
+    raw.automation !== null &&
+    typeof raw.automation === "object" &&
+    !Array.isArray(raw.automation)
+      ? raw.automation as Record<string, unknown>
+      : {};
+  if (
+    !agentOnly &&
+    Object.prototype.hasOwnProperty.call(automation, "capture_since")
+  ) {
+    origins["automation.capture_since"] = origin;
   }
   const agent =
     raw.agent !== null &&
@@ -329,6 +364,12 @@ function normalizeConfig(config: GlobalConfig | Partial<GlobalConfig>): GlobalCo
         ...defaults.agent.models,
         ...(config.agent?.models ?? {}),
       },
+    },
+    automation: {
+      capture_since: normalizeCaptureSince(
+        config.automation?.capture_since,
+        defaults.automation.capture_since,
+      ),
     },
   };
 }
@@ -421,6 +462,17 @@ function serializeTomlConfig(raw: Record<string, unknown>): string {
   if (modelLines.length > 0) {
     if (lines.length > 0) lines.push("");
     lines.push("[agent.models]", ...modelLines);
+  }
+  const automation =
+    raw.automation !== null &&
+    typeof raw.automation === "object" &&
+    !Array.isArray(raw.automation)
+      ? raw.automation as Record<string, unknown>
+      : {};
+  if (typeof automation.capture_since === "string") {
+    if (lines.length > 0) lines.push("");
+    lines.push("[automation]");
+    lines.push(`capture_since = ${tomlString(automation.capture_since)}`);
   }
   return `${lines.join("\n")}\n`;
 }
@@ -519,8 +571,43 @@ function toStoredConfigPatch(
       }
     }
   }
+  if (config.automation !== undefined) {
+    const value = normalized.automation.capture_since;
+    const currentValue = current.automation.capture_since;
+    const defaultValue = defaults.automation.capture_since;
+    if (value !== currentValue) {
+      setStoredValue(stored, ["automation", "capture_since"], value, defaultValue);
+    }
+  }
   pruneEmptyObjects(stored);
   return stored;
+}
+
+export async function ensureAutomationCaptureSince(
+  timestamp: string,
+  path?: string,
+): Promise<string> {
+  const file = path ?? getConfigPath();
+  const raw = cloneJsonObject(await readRawConfigObject(file));
+  const automation =
+    raw.automation !== null &&
+    typeof raw.automation === "object" &&
+    !Array.isArray(raw.automation)
+      ? raw.automation as Record<string, unknown>
+      : {};
+  const existing =
+    typeof automation.capture_since === "string" &&
+      Number.isFinite(Date.parse(automation.capture_since))
+      ? automation.capture_since
+      : null;
+  if (existing !== null) return existing;
+  automation.capture_since = timestamp;
+  raw.automation = automation;
+  await mkdir(dirname(file), { recursive: true });
+  const tmp = `${file}.tmp`;
+  await writeFile(tmp, serializeConfig(raw, file), "utf8");
+  await rename(tmp, file);
+  return timestamp;
 }
 
 function setStoredValue(
@@ -547,6 +634,14 @@ function setStoredValue(
 
 function cloneJsonObject(raw: Record<string, unknown>): Record<string, unknown> {
   return JSON.parse(JSON.stringify(raw)) as Record<string, unknown>;
+}
+
+function normalizeCaptureSince(
+  value: string | null | undefined,
+  fallback: string | null,
+): string | null {
+  if (typeof value !== "string") return fallback;
+  return Number.isFinite(Date.parse(value)) ? value : fallback;
 }
 
 function pruneEmptyObjects(raw: Record<string, unknown>): void {

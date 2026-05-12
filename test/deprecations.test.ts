@@ -67,17 +67,17 @@ describe("deprecated CLI surfaces", () => {
         "/abs/path/almanac",
         "agents",
         "use",
-        "codex",
+        "cursor",
       ]);
       expect(canonical.stderr).not.toContain("deprecated");
 
       const config = await readConfig();
-      expect(config.agent.default).toBe("codex");
+      expect(config.agent.default).toBe("cursor");
       expect(config.agent.models.claude).toBe("claude-opus-4-6");
     });
   });
 
-  it("warns for ps but not capture status", async () => {
+  it("warns for old status aliases", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "capture-status-deprecation");
       await scaffoldWiki(repo);
@@ -87,9 +87,9 @@ describe("deprecated CLI surfaces", () => {
         "/abs/path/almanac",
         "ps",
       ], repo);
-      expect(legacy.stdout).toContain("No capture jobs found.");
+      expect(legacy.stdout).toContain("No jobs found.");
       expect(legacy.stderr).toContain("deprecated");
-      expect(legacy.stderr).toContain("almanac capture status");
+      expect(legacy.stderr).toContain("almanac jobs");
 
       const canonical = await captureCli([
         "/abs/node",
@@ -97,8 +97,9 @@ describe("deprecated CLI surfaces", () => {
         "capture",
         "status",
       ], repo);
-      expect(canonical.stdout).toContain("No capture jobs found.");
-      expect(canonical.stderr).not.toContain("deprecated");
+      expect(canonical.stdout).toContain("No jobs found.");
+      expect(canonical.stderr).toContain("deprecated");
+      expect(canonical.stderr).toContain("almanac jobs");
     });
   });
 

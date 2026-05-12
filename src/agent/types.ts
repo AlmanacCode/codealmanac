@@ -93,9 +93,9 @@ export interface AgentProvider {
   metadata: AgentProviderMetadata;
   checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus>;
   assertReady(spawnCli?: SpawnCliFn): Promise<void>;
-  run(opts: RunAgentOptions): Promise<AgentResult>;
-  modelChoices?(args: {
+  modelChoices?(opts: {
     configuredModel: string | null;
     spawnCli?: SpawnCliFn;
   }): Promise<ProviderModelChoice[]> | ProviderModelChoice[];
+  run(opts: RunAgentOptions): Promise<AgentResult>;
 }

@@ -1,5 +1,6 @@
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -41,6 +42,7 @@ describe("indexer", () => {
         "checkout-flow",
         `---
 title: Checkout Flow
+summary: Checkout flow summary for search results.
 topics: [checkout, flows]
 files:
   - src/checkout/handler.ts
@@ -61,9 +63,13 @@ The handler at [[src/checkout/handler.ts]] validates things. See
 
       const db = openIndex(join(repo, ".almanac", "index.db"));
       try {
-        const pages = db.prepare("SELECT slug, title FROM pages").all();
+        const pages = db.prepare("SELECT slug, title, summary FROM pages").all();
         expect(pages).toEqual([
-          { slug: "checkout-flow", title: "Checkout Flow" },
+          {
+            slug: "checkout-flow",
+            title: "Checkout Flow",
+            summary: "Checkout flow summary for search results.",
+          },
         ]);
 
         const refs = db
@@ -235,6 +241,77 @@ superseded_by: stripe-async
 
       const result = await ensureFreshIndex({ repoRoot: repo });
       expect(result.changed).toBe(1);
+    });
+  });
+
+  it("migrates stale schemas before taking the freshness fast path", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "summary-only",
+        `---
+title: Summary Only
+summary: Operation harness terms live only in the summary.
+topics: [x]
+---
+
+# Summary Only
+
+Body without the indexed phrase.
+`,
+      );
+
+      const dbPath = join(repo, ".almanac", "index.db");
+      const pagePath = join(repo, ".almanac", "pages", "summary-only.md");
+      const oldDb = new Database(dbPath);
+      try {
+        oldDb.exec(`
+          CREATE TABLE pages (
+            slug          TEXT PRIMARY KEY,
+            title         TEXT,
+            file_path     TEXT NOT NULL,
+            content_hash  TEXT NOT NULL,
+            updated_at    INTEGER NOT NULL,
+            archived_at   INTEGER,
+            superseded_by TEXT
+          );
+          PRAGMA user_version = 2;
+        `);
+        oldDb
+          .prepare(
+            `INSERT INTO pages
+              (slug, title, file_path, content_hash, updated_at, archived_at, superseded_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run("summary-only", "Summary Only", pagePath, "old-hash", 1, null, null);
+      } finally {
+        oldDb.close();
+      }
+
+      const result = await ensureFreshIndex({ repoRoot: repo });
+      expect(result.changed).toBe(1);
+
+      const db = openIndex(dbPath);
+      try {
+        const page = db
+          .prepare("SELECT summary, content_hash FROM pages WHERE slug = ?")
+          .get("summary-only") as
+          | { summary: string | null; content_hash: string }
+          | undefined;
+        expect(page?.summary).toBe(
+          "Operation harness terms live only in the summary.",
+        );
+        expect(page?.content_hash).not.toBe("old-hash");
+
+        const fts = db
+          .prepare("SELECT slug FROM fts_pages WHERE fts_pages MATCH ?")
+          .all("operation* AND harness*");
+        expect(fts).toEqual([{ slug: "summary-only" }]);
+      } finally {
+        db.close();
+      }
     });
   });
 

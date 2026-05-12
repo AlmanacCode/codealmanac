@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Almanac</title>
+    <link rel="stylesheet" href="/app.css" />
+    <link rel="stylesheet" href="/jobs.css" />
+  </head>
+  <body>
+    <div id="app" class="ca-shell">
+      <aside class="ca-left">
+        <button class="ca-brand ca-brand-route" type="button" data-route="/">
+          <div class="ca-brand-mark" aria-hidden="true">
+            <img class="ca-brand-mark-image" src="/almanac-mark.png" alt="" />
+          </div>
+          <div>
+            <div class="ca-brand-title">Almanac</div>
+            <div class="ca-brand-subtitle">Your code wiki</div>
+          </div>
+        </button>
+        <form id="search-form" class="ca-search">
+          <input id="search-input" type="search" placeholder="Search pages" autocomplete="off" />
+        </form>
+        <nav class="ca-nav">
+          <button data-route="/" class="ca-nav-item is-active">All wikis</button>
+          <button data-route="/getting-started" class="ca-nav-item">Getting started</button>
+          <button data-route="/search" class="ca-nav-item">Recent pages</button>
+          <button data-route="/jobs" class="ca-nav-item">Jobs</button>
+        </nav>
+        <section class="ca-left-section">
+          <h2>Topics</h2>
+          <div id="topic-list" class="ca-link-list"></div>
+        </section>
+      </aside>
+
+      <main class="ca-main">
+        <div id="reader" class="ca-reader"></div>
+      </main>
+
+      <aside class="ca-right">
+        <section class="ca-meta-block">
+          <h2>Page</h2>
+          <div id="page-meta" class="ca-meta-empty">Select a page.</div>
+        </section>
+        <section class="ca-meta-block">
+          <h2>Linked from</h2>
+          <div id="backlinks" class="ca-link-list"></div>
+        </section>
+        <section class="ca-meta-block">
+          <h2>Files</h2>
+          <div id="file-refs" class="ca-link-list"></div>
+        </section>
+      </aside>
+    </div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

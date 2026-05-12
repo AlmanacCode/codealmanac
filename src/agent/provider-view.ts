@@ -165,11 +165,11 @@ export function chooseRecommendedProvider(
   const ready = statuses
     .filter((status) => getReadiness(status) === "ready")
     .map((status) => status.id);
-  if (ready.includes("claude")) return "claude";
+  if (ready.includes("codex")) return "codex";
   for (const id of getEnabledAgentProviderIds()) {
     if (ready.includes(id)) return id;
   }
-  return "claude";
+  return "codex";
 }
 
 export function parseAgentSelection(value: string): {
@@ -205,6 +205,10 @@ function fixFor(
   return LOGIN_FIXES[id];
 }
 
+export function enabledProviderListForMessage(): string {
+  return formatEnabledAgentProviderList();
+}
+
 function accountFromDetail(detail: string): string | null {
   const clean = detail.trim();
   if (
@@ -229,8 +233,4 @@ function missingStatus(id: AgentProviderId): ProviderStatus {
     authenticated: false,
     detail: "provider status unavailable",
   };
-}
-
-export function enabledProviderListForMessage(): string {
-  return formatEnabledAgentProviderList();
 }

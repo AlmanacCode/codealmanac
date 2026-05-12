@@ -19,7 +19,7 @@ import {
   normalizePathPreservingCase,
   looksLikeDir,
 } from "./paths.js";
-import { openIndex } from "./schema.js";
+import { isIndexSchemaStale, openIndex } from "./schema.js";
 import { applyTopicsYaml, TOPICS_YAML_FILENAME } from "./topics-yaml.js";
 import { extractWikilinks } from "./wikilinks.js";
 
@@ -82,17 +82,27 @@ export async function ensureFreshIndex(ctx: IndexContext): Promise<IndexResult> 
     return emptyResult();
   }
 
-  if (
-    !existsSync(dbPath) ||
-    // Keep read-side freshness even when CLI/agent write paths eagerly
-    // reindex: users can still change `.almanac/pages/` directly via
-    // manual edits, git pulls, merges, or branch switches.
-    pagesNewerThan(pagesDir, dbPath) ||
-    topicsYamlNewerThan(almanacDir, dbPath)
-  ) {
+  if (indexNeedsRefresh({ almanacDir, dbPath, pagesDir })) {
     return runIndexer(ctx);
   }
   return emptyResult();
+}
+
+function indexNeedsRefresh(args: {
+  almanacDir: string;
+  dbPath: string;
+  pagesDir: string;
+}): boolean {
+  if (!existsSync(args.dbPath)) return true;
+  if (isIndexSchemaStale(args.dbPath)) return true;
+
+  // Keep read-side freshness even when CLI/agent write paths eagerly
+  // reindex: users can still change `.almanac/pages/` directly via
+  // manual edits, git pulls, merges, or branch switches.
+  return (
+    pagesNewerThan(args.pagesDir, args.dbPath) ||
+    topicsYamlNewerThan(args.almanacDir, args.dbPath)
+  );
 }
 
 function emptyResult(): IndexResult {
@@ -180,6 +190,7 @@ async function indexPagesInto(
   const planned: Array<{
     slug: string;
     title: string;
+    summary: string | undefined;
     filePath: string;
     fullPath: string;
     contentHash: string;
@@ -273,6 +284,7 @@ async function indexPagesInto(
     planned.push({
       slug,
       title,
+      summary: fm.summary,
       filePath: rel,
       fullPath,
       contentHash,
@@ -299,12 +311,13 @@ async function indexPagesInto(
   );
 
   const replacePage = db.prepare<
-    [string, string, string, string, number, number | null, string | null]
+    [string, string, string | null, string, string, number, number | null, string | null]
   >(
-    `INSERT INTO pages (slug, title, file_path, content_hash, updated_at, archived_at, superseded_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO pages (slug, title, summary, file_path, content_hash, updated_at, archived_at, superseded_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(slug) DO UPDATE SET
        title         = excluded.title,
+       summary       = excluded.summary,
        file_path     = excluded.file_path,
        content_hash  = excluded.content_hash,
        updated_at    = excluded.updated_at,
@@ -382,6 +395,7 @@ async function indexPagesInto(
       replacePage.run(
         p.slug,
         p.title,
+        p.summary ?? null,
         p.fullPath,
         p.contentHash,
         p.updatedAt,
@@ -428,7 +442,11 @@ async function indexPagesInto(
         }
       }
 
-      insertFts.run(p.slug, p.title, p.content);
+      insertFts.run(
+        p.slug,
+        p.title,
+        [p.summary, p.content].filter((part) => part !== undefined).join("\n\n"),
+      );
     }
   });
   apply();

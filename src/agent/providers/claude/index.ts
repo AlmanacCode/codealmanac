@@ -42,48 +42,37 @@ export const claudeProvider: AgentProvider = {
   metadata,
   checkStatus,
   assertReady,
-  run,
   modelChoices,
+  run,
 };
 
-const CLAUDE_MODELS = [
-  {
-    value: "claude-opus-4-7",
-    label: "Opus 4.7",
-    recommended: false,
-  },
-  {
-    value: "claude-sonnet-4-6",
-    label: "Sonnet 4.6",
-    recommended: true,
-  },
-  {
-    value: "claude-haiku-4-5-20251001",
-    label: "Haiku 4.5",
-    recommended: false,
-  },
-] as const;
-
-function modelChoices(args: {
+function modelChoices(opts: {
   configuredModel: string | null;
 }): ProviderModelChoice[] {
   const choices: ProviderModelChoice[] = [];
-  if (
-    args.configuredModel !== null &&
-    !CLAUDE_MODELS.some((model) => model.value === args.configuredModel)
-  ) {
+  if (opts.configuredModel !== null) {
     choices.push({
-      value: args.configuredModel,
-      label: args.configuredModel,
+      value: opts.configuredModel,
+      label: opts.configuredModel,
       recommended: false,
       source: "configured",
     });
   }
-  for (const model of CLAUDE_MODELS) {
+  for (const choice of [
+    { value: "claude-opus-4-7", label: "Claude Opus 4.7" },
+    { value: DEFAULT_AGENT_MODEL, label: "Claude Sonnet 4.6" },
+    { value: "claude-haiku-4-5", label: "Claude Haiku 4.5" },
+  ]) {
+    const existing = choices.find((item) => item.value === choice.value);
+    if (existing !== undefined) {
+      existing.label = choice.label;
+      existing.recommended = choice.value === DEFAULT_AGENT_MODEL;
+      existing.source = "catalog";
+      continue;
+    }
     choices.push({
-      value: model.value,
-      label: model.label,
-      recommended: model.recommended,
+      ...choice,
+      recommended: choice.value === DEFAULT_AGENT_MODEL,
       source: "catalog",
     });
   }

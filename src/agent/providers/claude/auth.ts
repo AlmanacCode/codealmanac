@@ -9,7 +9,7 @@ import type { SpawnCliFn, SpawnedProcess } from "../../types.js";
  * OR an `ANTHROPIC_API_KEY` environment variable.
  *
  * Claude Code owns subscription OAuth credentials. Users who are logged in
- * via `claude auth login --claudeai` should be able to run bootstrap/capture
+ * via `claude auth login --claudeai` should be able to run agent-backed jobs
  * without exporting an API key. Conversely, users on pay-per-token API keys
  * shouldn't be required to go through the OAuth flow.
  *
@@ -31,7 +31,7 @@ const AUTH_TIMEOUT_MS = 10_000;
 /**
  * Resolve the installed Claude Code executable from PATH. The Agent SDK can
  * accept this path via `pathToClaudeCodeExecutable`, and the auth probe uses
- * the same binary so CodeAlmanac agrees with `claude auth status`.
+ * the same binary so Almanac agrees with `claude auth status`.
  */
 export function resolveClaudeExecutable(): string | undefined {
   const result = spawnSync("sh", ["-lc", "command -v claude"], {
@@ -210,7 +210,7 @@ export async function assertClaudeAuth(
   if (apiKey !== undefined && apiKey.length > 0) {
     // Signal to callers that we're on the API-key path. Not "loggedIn"
     // in the OAuth sense, but the SDK will pick up the env var and
-    // succeed — so we return a status that tells bootstrap/capture the
+    // succeed — so we return a status that tells callers the
     // gate is open.
     return { loggedIn: true, authMethod: "apiKey" };
   }

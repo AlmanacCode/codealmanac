@@ -9,26 +9,26 @@ files:
 
 # Wikilink Syntax
 
-codealmanac uses a single `[[...]]` syntax for all intra-page references, disambiguated by content at index time. There is no second link form — `[[...]]` covers page slugs, file refs, folder refs, and cross-wiki refs.
-
-<!-- stub: fill in edge cases and classifier gotchas as discovered -->
+Almanac uses a single double-bracket syntax for all intra-page references, disambiguated by content at index time. There is no second link form: the same bracket form covers page slugs, file refs, folder refs, and cross-wiki refs.
 
 ## Classification rules
 
-The indexer in `src/indexer/wikilinks.ts` classifies each `[[...]]` link into one of four categories:
+The indexer in `src/indexer/wikilinks.ts` classifies each double-bracket link into one of four categories:
 
 | Pattern | Category | Example |
 |---------|----------|---------|
-| Contains `:` before any `/` | Cross-wiki | `[[openalmanac:supabase]]` |
-| Contains `/` (no preceding `:`) | File ref | `[[src/checkout/handler.ts]]` |
-| Trailing `/` | Folder ref | `[[src/checkout/]]` |
-| None of the above | Page slug | `[[checkout-flow]]` |
+| Contains `:` before any `/` | Cross-wiki | `openalmanac:supabase` inside brackets |
+| Contains `/` (no preceding `:`) | File ref | `src/checkout/handler.ts` inside brackets |
+| Trailing `/` | Folder ref | `src/checkout/` inside brackets |
+| None of the above | Page slug | `checkout-flow` inside brackets |
 
 ## Storage
 
-- Page slugs → `wikilinks` table (`source_slug`, `target_slug`)
-- File/folder refs → `file_refs` table (`page_slug`, `path`, `original_path`, `is_dir`)
-- Cross-wiki → `cross_wiki_links` table (`source_slug`, `target_wiki`, `target_slug`)
+- Page slugs -> `wikilinks` table (`source_slug`, `target_slug`)
+- File/folder refs -> `file_refs` table (`page_slug`, `path`, `original_path`, `is_dir`)
+- Cross-wiki -> `cross_wiki_links` table (`source_slug`, `target_wiki`, `target_slug`)
+
+These tables are maintained by [[sqlite-indexer]]. Cross-wiki targets use [[global-registry]] for wiki-name resolution.
 
 ## Path normalization in file_refs
 
@@ -36,4 +36,4 @@ The indexer in `src/indexer/wikilinks.ts` classifies each `[[...]]` link into on
 
 ## Why one syntax
 
-A second syntax (e.g. `[text](slug)` vs `[[slug]]`) would require the reviewer to learn two conventions and the indexer to maintain two parsers. Disambiguation by content keeps authoring unambiguous and the classifier trivially correct for the common cases.
+A second syntax (e.g. markdown links versus bracketed slugs) would require agents to learn two conventions and the indexer to maintain two parsers. Disambiguation by content keeps authoring unambiguous and the classifier trivially correct for the common cases.

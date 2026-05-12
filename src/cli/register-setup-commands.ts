@@ -27,7 +27,7 @@ export function registerSetupCommands(program: Command): void {
 
   agents
     .command("list")
-    .description("show Claude and Codex provider status")
+    .description("show Claude, Codex, and Cursor provider status")
     .action(async () => {
       emit(await runAgentsList());
     });
@@ -42,7 +42,7 @@ export function registerSetupCommands(program: Command): void {
   agents
     .command("use")
     .description("set the default AI agent provider")
-    .argument("<provider>", "claude, codex, or claude/<model>")
+    .argument("<provider>", "claude, codex, cursor, or claude/<model>")
     .action(async (provider: string) => {
       emit(await runAgentsUse({ provider }));
     });
@@ -50,7 +50,7 @@ export function registerSetupCommands(program: Command): void {
   agents
     .command("model")
     .description("set or reset a provider model")
-    .argument("<provider>", "claude or codex")
+    .argument("<provider>", "claude, codex, or cursor")
     .argument("[model]", "provider-specific model id")
     .option("--default", "reset to provider default")
     .action(async (
@@ -67,7 +67,7 @@ export function registerSetupCommands(program: Command): void {
 
   const config = program
     .command("config")
-    .description("read and write codealmanac settings");
+    .description("read and write Almanac settings");
 
   config
     .command("list")
@@ -116,7 +116,7 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("set")
-    .description("configure codealmanac defaults")
+    .description("configure Almanac defaults")
     .argument("<key>", "setting key, e.g. default-agent or model")
     .argument("[value...]", "setting value")
     .action(async (key: string, value: string[]) => {
@@ -141,25 +141,28 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("setup")
-    .description("set up codealmanac for Claude and Codex")
+    .description("install automation + agent guides")
     .option("-y, --yes", "skip prompts; install everything")
-    .option("--agent <agent>", "default agent: claude or codex")
+    .option("--agent <agent>", "default agent: claude, codex, or cursor")
     .option("--model <model>", "default model for the selected agent")
-    .option("--skip-hook", "opt out of the SessionEnd hook")
+    .option("--skip-automation", "opt out of scheduled auto-capture")
+    .option("--auto-capture-every <duration>", "scheduled auto-capture interval (default: 5h)")
     .option("--skip-guides", "opt out of the CLAUDE.md guides")
     .action(
       async (opts: {
         yes?: boolean;
         agent?: string;
         model?: string;
-        skipHook?: boolean;
+        skipAutomation?: boolean;
+        autoCaptureEvery?: string;
         skipGuides?: boolean;
       }) => {
         const result = await runSetup({
           yes: opts.yes,
           agent: opts.agent,
           model: opts.model,
-          skipHook: opts.skipHook,
+          skipAutomation: opts.skipAutomation,
+          automationEvery: opts.autoCaptureEvery,
           skipGuides: opts.skipGuides,
         });
         emit(result);
@@ -168,7 +171,7 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("doctor")
-    .description("report on the codealmanac install + current wiki health")
+    .description("report on the Almanac install + current wiki health")
     .option("--json", "emit structured JSON")
     .option("--install-only", "report only on the install (skip wiki checks)")
     .option("--wiki-only", "report only on the current wiki (skip install checks)")
@@ -190,7 +193,7 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("update")
-    .description("install the latest codealmanac (synchronous foreground `npm i -g`)")
+    .description("install the latest Almanac package (synchronous foreground `npm i -g`)")
     .option(
       "--dismiss",
       "silence the update banner for the current `latest_version` without installing",
@@ -223,22 +226,22 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("uninstall")
-    .description("remove the hook + guides + import line")
+    .description("remove automation + guides + import line")
     .option("-y, --yes", "skip confirmations; remove everything")
-    .option("--keep-hook", "don't remove the SessionEnd hook (guides still prompted unless --yes)")
+    .option("--keep-automation", "don't remove the scheduler (guides still prompted unless --yes)")
     .option(
       "--keep-guides",
-      "don't remove the guides or CLAUDE.md import (hook still prompted unless --yes)",
+      "don't remove the guides or CLAUDE.md import (scheduler still prompted unless --yes)",
     )
     .action(
       async (opts: {
         yes?: boolean;
-        keepHook?: boolean;
+        keepAutomation?: boolean;
         keepGuides?: boolean;
       }) => {
         const result = await runUninstall({
           yes: opts.yes,
-          keepHook: opts.keepHook,
+          keepAutomation: opts.keepAutomation,
           keepGuides: opts.keepGuides,
         });
         emit(result);

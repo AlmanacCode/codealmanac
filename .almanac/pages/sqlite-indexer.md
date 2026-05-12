@@ -1,5 +1,6 @@
 ---
 title: SQLite Indexer
+summary: The SQLite indexer powers query commands but inherits `better-sqlite3`'s Node-version-sensitive native binding behavior.
 topics: [systems, storage]
 files:
   - src/indexer/schema.ts
@@ -9,13 +10,16 @@ files:
   - src/indexer/paths.ts
   - src/indexer/resolve-wiki.ts
   - src/indexer/duration.ts
+  - src/abi-guard.ts
+  - src/cli.ts
+sources:
+  - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
+verified: 2026-05-12
 ---
 
 # SQLite Indexer
 
-The indexer (`src/indexer/`) builds and maintains `.almanac/index.db` — a SQLite database that powers all query commands (`search`, `show`, `health`, `topics show`). It runs silently before every query command, comparing page file mtimes against the stored `content_hash`; only changed or new pages are re-parsed.
-
-<!-- stub: fill in FTS5 gotchas, GLOB vs LIKE decision, path normalization details as discovered -->
+The indexer (`src/indexer/`) builds and maintains `.almanac/index.db` — a SQLite database that powers all query commands (`search`, `show`, `health`, `topics show`). It runs silently before every query command. Freshness checks compare page and topic-file mtimes against the database mtime; once a reindex starts, unchanged page rows are skipped by `content_hash` and `file_path`.
 
 ## Schema
 
@@ -25,10 +29,10 @@ Defined in `src/indexer/schema.ts` and applied idempotently on every open (`CREA
 - `topics` — topic metadata (slug, title, description); populated from `topics.yaml` at reindex time
 - `page_topics` — page↔topic many-to-many; FK cascade-deletes on page removal
 - `topic_parents` — DAG edges; has a `CHECK (child_slug != parent_slug)` constraint
-- `file_refs` — parsed `[[src/...]]` links; stores both `path` (lowercased, for GLOB queries) and `original_path` (as-written, for display and case-sensitive dead-ref checks)
-- `wikilinks` — page-slug links (`[[some-page]]`)
-- `cross_wiki_links` — cross-wiki links (`[[wiki:slug]]`)
-- `fts_pages` — FTS5 virtual table (slug + title + content); ON DELETE CASCADE does NOT apply; the indexer must DELETE explicitly before replacing a page row
+- `file_refs` — parsed file/folder links; stores both `path` (lowercased, for GLOB queries) and `original_path` (as-written, for display and case-sensitive dead-ref checks)
+- `wikilinks` — page-slug links
+- `cross_wiki_links` — cross-wiki links
+- `fts_pages` — FTS5 virtual table (slug + title + content); **ON DELETE CASCADE does NOT apply to FTS5 virtual tables**; the indexer must issue an explicit `DELETE FROM fts_pages WHERE slug = ?` before re-inserting a changed page row, or the old content remains searchable alongside the new content
 
 ## Schema versioning
 
@@ -40,4 +44,12 @@ All stored paths are lowercase + forward-slashes + no `./` prefix (normalized at
 
 ## Freshness
 
-`better-sqlite3` (sync SQLite driver). WAL journal mode is set on first open and persists in the DB header. The indexer compares each `.md` file's mtime against `updated_at`; if equal or older, the row is skipped. `almanac reindex` clears hashes to force a full rebuild.
+`better-sqlite3` (sync SQLite driver). WAL journal mode is set on first open and persists in the DB header. `almanac reindex` clears hashes to force a full rebuild even when the index is otherwise fresh.
+
+## Native binding constraint
+
+The query stack inherits `better-sqlite3`'s old-ABI native binding behavior: a global or local install can work on one Node version and then fail after an `nvm`/Volta/FNM switch until the package is rebuilt for the new runtime. `src/abi-guard.ts` exists to fail fast with a repair hint instead of surfacing a later opaque `require()` crash.
+
+This constraint explains one CLI boundary elsewhere in the repo: [[lifecycle-cli]] routes `setup` and `automation install|status|uninstall` through a sqlite-free fast path in `src/cli.ts`, so basic onboarding and scheduler repair still work even when the query/index stack cannot load `better-sqlite3`.
+
+It also creates one absorb-time workflow fallback that is easy to forget: if a local or global `almanac search`/`show` command fails because the installed `better-sqlite3` binary targets the wrong Node ABI, the checked-in wiki pages under `[[.almanac/pages/]]` are still readable as plain files. Future agents should treat that as the immediate fallback for wiki context gathering instead of assuming the wiki itself is unavailable.

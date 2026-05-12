@@ -18,8 +18,10 @@ describe("config command", () => {
       const result = await runConfigList({ showOrigin: true });
 
       expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/KEY\s+VALUE\s+ORIGIN/);
       expect(result.stdout).toContain("agent.default");
       expect(result.stdout).toContain("agent.models.claude");
+      expect(result.stdout).toContain("automation.capture_since");
       expect(result.stdout).toContain("default");
     });
   });
@@ -73,6 +75,31 @@ describe("config command", () => {
     });
   });
 
+  it("sets and unsets automation.capture_since", async () => {
+    await withTempHome(async (home) => {
+      const timestamp = "2026-05-12T05:10:00.000Z";
+      await expect(runConfigSet({
+        key: "automation.capture_since",
+        value: timestamp,
+      })).resolves.toMatchObject({ exitCode: 0 });
+      await expect(readConfig()).resolves.toMatchObject({
+        automation: { capture_since: timestamp },
+      });
+
+      const path = join(home, ".almanac", "config.toml");
+      const toml = await readFile(path, "utf8");
+      expect(toml).toContain("[automation]");
+      expect(toml).toContain(`capture_since = "${timestamp}"`);
+
+      await expect(runConfigUnset({
+        key: "automation.capture_since",
+      })).resolves.toMatchObject({ exitCode: 0 });
+      await expect(readConfig()).resolves.toMatchObject({
+        automation: { capture_since: null },
+      });
+    });
+  });
+
   it("reports file origins in json even without --show-origin", async () => {
     await withTempHome(async () => {
       await runConfigSet({ key: "agent.default", value: "codex" });
@@ -92,7 +119,7 @@ describe("config command", () => {
   it("prints single values and rejects unknown keys", async () => {
     await withTempHome(async () => {
       const get = await runConfigGet({ key: "agent.default" });
-      expect(get.stdout).toBe("claude\n");
+      expect(get.stdout).toBe("codex\n");
 
       const bad = await runConfigSet({
         key: "agent.default",
@@ -118,6 +145,9 @@ describe("config command", () => {
             default: "codex",
             models: { codex: "gpt-5.3-codex" },
           },
+          automation: {
+            capture_since: "2026-05-12T05:10:00.000Z",
+          },
         }),
         "utf8",
       );
@@ -128,13 +158,17 @@ describe("config command", () => {
           default: "codex",
           models: { codex: "gpt-5.3-codex" },
         },
+        automation: {
+          capture_since: "2026-05-12T05:10:00.000Z",
+        },
       });
 
       const toml = await readFile(join(home, ".almanac", "config.toml"), "utf8");
       expect(toml).toContain("update_notifier = false");
-      expect(toml).toContain("[agent]");
-      expect(toml).toContain('default = "codex"');
       expect(toml).toContain("[agent.models]");
+      expect(toml).toContain('codex = "gpt-5.3-codex"');
+      expect(toml).toContain("[automation]");
+      expect(toml).toContain('capture_since = "2026-05-12T05:10:00.000Z"');
     });
   });
 
@@ -186,19 +220,32 @@ describe("config command", () => {
           value: "codex",
           project: true,
         })).resolves.toMatchObject({ exitCode: 0 });
-        await expect(runConfigSet({
-          key: "update_notifier",
-          value: "false",
-          project: true,
-        })).resolves.toMatchObject({
-          exitCode: 1,
-        });
-        await expect(runConfigUnset({
-          key: "update_notifier",
-          project: true,
-        })).resolves.toMatchObject({
-          exitCode: 1,
-        });
+      await expect(runConfigSet({
+        key: "update_notifier",
+        value: "false",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
+      await expect(runConfigSet({
+        key: "automation.capture_since",
+        value: "2026-05-12T05:10:00.000Z",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
+      await expect(runConfigUnset({
+        key: "update_notifier",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
+      await expect(runConfigUnset({
+        key: "automation.capture_since",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
       } finally {
         process.chdir(originalCwd);
       }

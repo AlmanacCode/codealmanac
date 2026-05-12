@@ -123,7 +123,7 @@ Signal: User wants to understand the ref token system.
 Signal: Architectural explanation of the ref token system.
 
 **Assistant problem diagnosis (from assistant text):**
-> "Root cause: the codealmanac CLI expects topics.yaml in the new list format but .almanac/topics.yaml is still in the old dict format"
+> "Root cause: the Almanac CLI expects topics.yaml in the new list format but .almanac/topics.yaml is still in the old dict format"
 Signal: Bug identification with root cause.
 
 **Subagent audit (from toolUseResult with agentType):**

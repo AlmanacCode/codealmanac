@@ -20,7 +20,7 @@ export async function gatherWikiChecks(options: DoctorOptions): Promise<Check[]>
       status: "info",
       key: "wiki.none",
       message: "No wiki in current directory",
-      fix: "run: almanac bootstrap  (to create one in this repo)",
+      fix: "run: almanac init  (to create one in this repo)",
     });
     return checks;
   }

@@ -263,13 +263,96 @@ body
         cwd: repo,
         query: "synchronous",
         topics: [],
-        json: true,
+        output: "json",
       });
       const parsed = JSON.parse(r.stdout);
       expect(Array.isArray(parsed)).toBe(true);
       expect(parsed.length).toBe(1);
       expect(parsed[0].slug).toBe("stripe-async");
+      expect(parsed[0].summary).toBeNull();
       expect(parsed[0].topics).toEqual(["payments", "stack"]);
+    });
+  });
+
+  it("--summaries includes summaries when pages define them", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "checkout-flow",
+        `---
+title: Checkout Flow
+summary: Checkout sessions enter through the operation harness.
+topics: [checkout]
+---
+
+# Checkout Flow
+
+checkout body
+`,
+      );
+
+      const r = await runSearch({
+        cwd: repo,
+        query: "operation harness",
+        topics: [],
+        output: "summaries",
+      });
+      expect(r.stdout).toBe(
+        "checkout-flow\n  Checkout sessions enter through the operation harness.\n",
+      );
+    });
+  });
+
+  it("--slugs keeps one-slug-per-line search output", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "checkout-flow",
+        `---
+summary: Checkout sessions enter through the operation harness.
+topics: [checkout]
+---
+
+checkout body
+`,
+      );
+
+      const r = await runSearch({
+        cwd: repo,
+        query: "checkout",
+        topics: [],
+        output: "slugs",
+      });
+      expect(r.stdout).toBe("checkout-flow\n");
+    });
+  });
+
+  it("default output stays slug-only for pipe compatibility", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "checkout-flow",
+        `---
+summary: Checkout sessions enter through the operation harness.
+topics: [checkout]
+---
+
+checkout body
+`,
+      );
+
+      const r = await runSearch({
+        cwd: repo,
+        query: "operation harness",
+        topics: [],
+      });
+      expect(r.stdout).toBe("checkout-flow\n");
     });
   });
 
@@ -478,7 +561,7 @@ body
         cwd: repo,
         query: "nonsense-query-that-matches-nothing-xyz",
         topics: [],
-        json: true,
+        output: "json",
       });
       expect(r.exitCode).toBe(0);
       expect(r.stderr).toBe("");

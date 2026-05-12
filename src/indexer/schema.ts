@@ -32,6 +32,7 @@ const SCHEMA_DDL = `
 CREATE TABLE IF NOT EXISTS pages (
   slug          TEXT PRIMARY KEY,
   title         TEXT,
+  summary       TEXT,
   file_path     TEXT NOT NULL,
   content_hash  TEXT NOT NULL,
   updated_at    INTEGER NOT NULL,
@@ -96,8 +97,25 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_pages USING fts5(slug, title, content);
  * Version history:
  *   1 — initial slice-2 schema
  *   2 — slice-3-review: added `file_refs.original_path`
+ *   3 — added `pages.summary`
  */
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
+
+export function isIndexSchemaStale(dbPath: string): boolean {
+  let db: Database.Database;
+  try {
+    db = new Database(dbPath, { readonly: true, fileMustExist: true });
+  } catch {
+    return true;
+  }
+  try {
+    const rawVersion = db.pragma("user_version", { simple: true });
+    const currentVersion = typeof rawVersion === "number" ? rawVersion : 0;
+    return currentVersion < SCHEMA_VERSION;
+  } finally {
+    db.close();
+  }
+}
 
 /**
  * Open `index.db` and apply the schema. Foreign keys are off by default in
@@ -129,16 +147,24 @@ export function openIndex(dbPath: string): Database.Database {
   const rawVersion = db.pragma("user_version", { simple: true });
   const currentVersion = typeof rawVersion === "number" ? rawVersion : 0;
   if (currentVersion < SCHEMA_VERSION) {
-    // Drop tables whose shape changed. `file_refs` got `original_path`
-    // as of v2; easiest to drop it entirely so CREATE IF NOT EXISTS
-    // runs with the new definition. Pages/topics/links are untouched.
-    db.exec("DROP TABLE IF EXISTS file_refs");
-    // The indexer's fast-path skips pages whose content_hash matches,
-    // which means a migration-dropped `file_refs` wouldn't get
-    // repopulated until a page changed. Clear the hash column so the
-    // next reindex treats every page as changed and rebuilds its
-    // file_refs/wikilinks/cross-wiki rows. Table may not exist yet on
-    // a brand-new DB, so swallow errors.
+    if (currentVersion < 2) {
+      // Drop tables whose shape changed. `file_refs` got `original_path`
+      // as of v2; easiest to drop it entirely so CREATE IF NOT EXISTS
+      // runs with the new definition. Pages/topics/links are untouched.
+      db.exec("DROP TABLE IF EXISTS file_refs");
+    }
+    if (currentVersion < 3) {
+      try {
+        db.exec("ALTER TABLE pages ADD COLUMN summary TEXT");
+      } catch {
+        // pages table may not exist yet, or a partially migrated DB may
+        // already have the column. The schema DDL below covers fresh DBs.
+      }
+    }
+    // The indexer's fast-path skips pages whose content_hash matches.
+    // After metadata/table migrations, clear the hash column so the next
+    // reindex treats every page as changed and repopulates derived rows.
+    // Table may not exist yet on a brand-new DB, so swallow errors.
     try {
       db.exec("UPDATE pages SET content_hash = ''");
     } catch {

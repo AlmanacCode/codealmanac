@@ -1,7 +1,6 @@
 import { buildProviderSetupView } from "../../agent/provider-view.js";
 import { checkClaudeAuth } from "../../agent/providers/claude/index.js";
 import type { ProviderStatus } from "../../agent/types.js";
-import { isCursorEnabled } from "../../update/config.js";
 import type { AgentDoctorCheck, DoctorOptions } from "./types.js";
 
 export async function gatherAgentChecks(
@@ -43,7 +42,7 @@ async function injectedProviderStatuses(
     process.env.ANTHROPIC_API_KEY !== undefined &&
     process.env.ANTHROPIC_API_KEY.length > 0;
   const claudeReady = auth.loggedIn || hasApiKey;
-  const statuses: ProviderStatus[] = [
+  return [
     {
       id: "claude",
       installed: true,
@@ -58,14 +57,11 @@ async function injectedProviderStatuses(
       authenticated: false,
       detail: "codex status not injected",
     },
-  ];
-  if (isCursorEnabled()) {
-    statuses.push({
+    {
       id: "cursor",
       installed: false,
       authenticated: false,
       detail: "cursor-agent status not injected",
-    });
-  }
-  return statuses;
+    },
+  ];
 }

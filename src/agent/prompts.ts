@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 
 /**
  * Loads bundled prompt text from the `prompts/` directory that ships with
- * the npm package. Used by `almanac bootstrap` (slice 4) and `almanac
- * capture` (slice 5).
+ * the npm package. V1 prompts are split into shared base modules and
+ * operation-specific instructions.
  *
  * ## Why not embed the prompts as TS string literals?
  *
@@ -35,17 +35,26 @@ import { fileURLToPath } from "node:url";
  *      lands at the repo root, where `prompts/` also lives.
  *
  * We probe a small list of candidates in order and use the first that
- * contains all three expected prompt files. This keeps a single source of
- * truth — the `prompts/` directory on disk — without baking in whether
+ * contains the required prompt files. This keeps a single source of truth —
+ * the `prompts/` directory on disk — without baking in whether
  * we're running from `dist/` or `src/`.
  */
 
-export type PromptName = "bootstrap" | "writer" | "reviewer";
+export type PromptName =
+  | "base/purpose"
+  | "base/notability"
+  | "base/syntax"
+  | "operations/build"
+  | "operations/absorb"
+  | "operations/garden";
 
 const PROMPT_NAMES: readonly PromptName[] = [
-  "bootstrap",
-  "writer",
-  "reviewer",
+  "base/purpose",
+  "base/notability",
+  "base/syntax",
+  "operations/build",
+  "operations/absorb",
+  "operations/garden",
 ];
 
 /**
@@ -73,7 +82,7 @@ export function resolvePromptsDir(): string {
 
   // Candidates, most-specific first. Each path is where `prompts/` MIGHT
   // live given some plausible bundle layout. The first one that exists
-  // and contains our three expected files wins.
+  // and contains our expected prompt files wins.
   const candidates = [
     // Bundled dist layout: `.../<pkg>/dist/codealmanac.js` → `../prompts`
     path.resolve(here, "..", "prompts"),
@@ -103,14 +112,40 @@ export function resolvePromptsDir(): string {
 
 function isPromptsDir(dir: string): boolean {
   if (!existsSync(dir)) return false;
-  // Require all three prompts to be present. A half-populated directory
-  // is worse than not finding one — we'd rather error early.
+  // Require all base and operation prompts to be present. A half-populated
+  // directory is worse than not finding one — we'd rather error early.
   return PROMPT_NAMES.every((name) =>
     existsSync(path.join(dir, `${name}.md`)),
   );
 }
 
-export async function loadPrompt(name: PromptName): Promise<string> {
+export async function loadPrompt(name: PromptName | string): Promise<string> {
   const dir = resolvePromptsDir();
-  return readFile(path.join(dir, `${name}.md`), "utf8");
+  return readFile(resolvePromptPath(dir, name), "utf8");
+}
+
+function resolvePromptPath(dir: string, name: string): string {
+  if (
+    name.length === 0 ||
+    path.isAbsolute(name) ||
+    name.includes("\\") ||
+    name.split("/").some((part) => part === "" || part === "." || part === "..")
+  ) {
+    throw new Error(`invalid prompt name: ${name}`);
+  }
+  const file = path.resolve(dir, `${name}.md`);
+  const relative = path.relative(dir, file);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`invalid prompt name: ${name}`);
+  }
+  return file;
+}
+
+export function joinPrompts(
+  parts: Array<string | null | undefined>,
+): string {
+  return parts
+    .map((part) => part?.trim())
+    .filter((part): part is string => part !== undefined && part.length > 0)
+    .join("\n\n---\n\n");
 }

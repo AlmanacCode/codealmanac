@@ -13,13 +13,13 @@ files:
 
 # Topic DAG
 
-Topics form a directed acyclic graph (DAG) serialized to `.almanac/topics.yaml`. Pages carry a `topics:` array in frontmatter; the DAG defines parent-child relationships between topics. A page can belong to multiple topics; a topic can have multiple parents.
-
-<!-- stub: fill in DAG traversal gotchas and frontmatter rewrite behavior as discovered -->
+Topics form a directed acyclic graph (DAG) serialized to `.almanac/topics.yaml`. Pages carry a `topics:` array in frontmatter; the DAG defines parent-child relationships between topics. A page can belong to multiple topics; a topic can have multiple parents. Topics classify reading neighborhoods; [[wiki-organization-primitives]] explains why dense neighborhoods still need anchors and hubs.
 
 ## Storage split
 
-Topic metadata (slug, title, description, parents) lives in `topics.yaml`. Which pages belong to which topics lives in page frontmatter. The indexer reconciles both into SQLite (`topics`, `page_topics`, `topic_parents` tables) on every reindex.
+Topic metadata (slug, title, description, parents) lives in `topics.yaml`. Which pages belong to which topics lives in page frontmatter. The [[sqlite-indexer]] reconciles both into SQLite (`topics`, `page_topics`, `topic_parents` tables) on every reindex.
+
+`page_topics.topic_slug` has no FK to `topics(slug)`. Topics can be declared in page frontmatter before they exist in `topics.yaml`; a strict FK would force upsert ordering that buys nothing and would prevent the "no explicit topic registration required" shorthand. Dead topic references are surfaced by `almanac health`.
 
 ## Cycle prevention
 

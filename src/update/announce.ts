@@ -67,7 +67,7 @@ export function announceUpdateIfAvailable(
   const warn = useColor ? `${YELLOW}${BOLD}\u26a0${RST}` : "!";
   const cmd = useColor ? `${BOLD}almanac update${RST}` : "almanac update";
   stderr.write(
-    `${warn} codealmanac ${state.latest_version} available ` +
+    `${warn} Almanac ${state.latest_version} available ` +
       `(you're on ${installed}) — run: ${cmd}\n`,
   );
 }

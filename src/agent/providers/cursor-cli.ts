@@ -76,10 +76,7 @@ async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
   }
 
   const auth = spawnCli !== undefined
-    ? await runInjectedStatusCommand(spawnCli, [
-      metadata.executable,
-      "status",
-    ])
+    ? await runInjectedStatusCommand(spawnCli, ["status"], metadata.executable)
     : await runStatusCommand(metadata.executable, ["status"]);
   return {
     id: metadata.id,

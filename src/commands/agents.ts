@@ -2,16 +2,15 @@ import {
   buildProviderSetupView,
   parseAgentSelection,
   type ProviderReadiness,
+  type ProviderSetupView,
 } from "../agent/provider-view.js";
 import {
-  disabledAgentProviderMessage,
-  formatEnabledAgentProviderList,
   isAgentProviderId,
-  isEnabledAgentProviderId,
   readConfig,
   writeConfig,
   type AgentProviderId,
 } from "../update/config.js";
+import { formatTextTable } from "./table.js";
 
 export interface AgentsResult {
   stdout: string;
@@ -19,27 +18,26 @@ export interface AgentsResult {
   exitCode: number;
 }
 
-export async function runAgentsList(): Promise<AgentsResult> {
-  const view = await buildProviderSetupView();
-  const lines = ["codealmanac agents\n"];
-  for (const choice of view.choices) {
-    const selected = choice.selected ? "*" : " ";
-    const recommended = choice.recommended ? "recommended" : "";
-    const model = choice.effectiveModel ?? "provider default";
-    const detail = choice.account ?? choice.fixCommand ?? choice.detail;
-    lines.push(
-      [
-        selected,
-        choice.label.padEnd(6),
-        readinessLabel(choice.readiness).padEnd(15),
-        recommended.padEnd(11),
-        `model: ${model}`.padEnd(31),
-        detail,
-      ].join(" ").trimEnd(),
-    );
-  }
+export async function runAgentsList(opts: {
+  view?: ProviderSetupView;
+} = {}): Promise<AgentsResult> {
+  const view = opts.view ?? await buildProviderSetupView();
+  const lines = ["Almanac agents\n"];
   lines.push(
-    `\nUse: almanac agents use <${formatEnabledAgentProviderList().replaceAll(", ", "|")}>`,
+    ...formatTextTable({
+      headers: ["DEFAULT", "AGENT", "STATUS", "RECOMMENDED", "MODEL", "DETAIL"],
+      rows: view.choices.map((choice) => [
+        choice.selected ? "*" : "",
+        choice.label,
+        readinessLabel(choice.readiness),
+        choice.recommended ? "recommended" : "",
+        choice.effectiveModel ?? "provider default",
+        choice.account ?? choice.fixCommand ?? choice.detail,
+      ]),
+    }),
+  );
+  lines.push(
+    "\nUse: almanac agents use <claude|codex|cursor>",
     "Set model: almanac agents model <provider> <model>",
   );
   return { stdout: `${lines.join("\n")}\n`, stderr: "", exitCode: 0 };
@@ -47,7 +45,7 @@ export async function runAgentsList(): Promise<AgentsResult> {
 
 export async function runAgentsDoctor(): Promise<AgentsResult> {
   const view = await buildProviderSetupView();
-  const lines = ["codealmanac agent doctor\n"];
+  const lines = ["Almanac agent doctor\n"];
   for (const choice of view.choices) {
     lines.push(`${choice.ready ? "✓" : "✗"} ${choice.label}`);
     lines.push(`  status: ${readinessLabel(choice.readiness)}`);
@@ -96,14 +94,11 @@ async function setDefaultAgent(
       stdout: "",
       stderr:
         `almanac: unknown agent '${opts.provider}'. ` +
-        `Expected one of: ${formatEnabledAgentProviderList()}.\n`,
+        "Expected one of: claude, codex, cursor.\n",
       exitCode: 1,
     };
   }
   const provider = parsed.provider;
-  if (!isEnabledAgentProviderId(provider)) {
-    return disabledProviderResult(provider);
-  }
   const config = await readConfig();
   const next = {
     ...config,
@@ -123,8 +118,8 @@ async function setDefaultAgent(
   return {
     stdout:
       parsed.model === undefined
-        ? `codealmanac: default agent set to ${provider}.\n`
-        : `codealmanac: default agent set to ${provider}; ${provider} model set to ${parsed.model}.\n`,
+        ? `almanac: default agent set to ${provider}.\n`
+        : `almanac: default agent set to ${provider}; ${provider} model set to ${parsed.model}.\n`,
     stderr: "",
     exitCode: 0,
   };
@@ -168,12 +163,9 @@ async function setProviderModel(opts: {
       stdout: "",
       stderr:
         `almanac: unknown agent '${opts.provider}'. ` +
-        `Expected one of: ${formatEnabledAgentProviderList()}.\n`,
+        "Expected one of: claude, codex, cursor.\n",
       exitCode: 1,
     };
-  }
-  if (!isEnabledAgentProviderId(opts.provider)) {
-    return disabledProviderResult(opts.provider);
   }
   if (
     opts.defaultModel !== true &&
@@ -203,8 +195,8 @@ async function setProviderModel(opts: {
   return {
     stdout:
       model === null
-        ? `codealmanac: ${provider} model reset to provider default.\n`
-        : `codealmanac: ${provider} model set to ${model}.\n`,
+        ? `almanac: ${provider} model reset to provider default.\n`
+        : `almanac: ${provider} model set to ${model}.\n`,
     stderr: "",
     exitCode: 0,
   };
@@ -219,14 +211,6 @@ function normalizeRequestedModel(opts: {
   if (opts.model === undefined || opts.model.length === 0) return null;
   if (opts.model === "default" || opts.model === "null") return null;
   return opts.model;
-}
-
-function disabledProviderResult(provider: string): AgentsResult {
-  return {
-    stdout: "",
-    stderr: `almanac: ${disabledAgentProviderMessage(provider)}\n`,
-    exitCode: 1,
-  };
 }
 
 function readinessLabel(readiness: ProviderReadiness): string {

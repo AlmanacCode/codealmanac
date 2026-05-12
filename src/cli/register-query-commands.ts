@@ -2,7 +2,8 @@ import { Command } from "commander";
 
 import { runHealth } from "../commands/health.js";
 import { listWikis } from "../commands/list.js";
-import { runSearch } from "../commands/search.js";
+import { runSearch, type SearchOutputMode } from "../commands/search.js";
+import { runServe } from "../commands/serve.js";
 import { runShow } from "../commands/show.js";
 import { autoRegisterIfNeeded } from "../registry/autoregister.js";
 import {
@@ -15,6 +16,20 @@ import {
 } from "./helpers.js";
 
 export function registerQueryCommands(program: Command): void {
+  program
+    .command("serve")
+    .description("start the local read-only wiki viewer")
+    .option("--host <host>", "host to bind", "127.0.0.1")
+    .option("--port <n>", "port to bind", parsePositiveInt, 3927)
+    .action(async (opts: { host?: string; port?: number }) => {
+      await autoRegisterIfNeeded(process.cwd());
+      await runServe({
+        cwd: process.cwd(),
+        host: opts.host,
+        port: opts.port,
+      });
+    });
+
   program
     .command("search [query]")
     .description("find pages by text, topic, file mentions, freshness")
@@ -35,6 +50,8 @@ export function registerQueryCommands(program: Command): void {
     .option("--archived", "archived pages only")
     .option("--wiki <name>", "target a specific registered wiki")
     .option("--json", "emit structured JSON")
+    .option("--slugs", "emit only result slugs, one per line")
+    .option("--summaries", "emit result slugs with one-line summaries")
     .option("--limit <n>", "cap results", parsePositiveInt)
     .action(
       async (
@@ -49,6 +66,8 @@ export function registerQueryCommands(program: Command): void {
           archived?: boolean;
           wiki?: string;
           json?: boolean;
+          slugs?: boolean;
+          summaries?: boolean;
           limit?: number;
         },
       ) => {
@@ -64,7 +83,7 @@ export function registerQueryCommands(program: Command): void {
           includeArchive: opts.includeArchive,
           archived: opts.archived,
           wiki: opts.wiki,
-          json: opts.json,
+          output: resolveSearchOutputMode(opts),
           limit: opts.limit,
         });
         emit(result);
@@ -190,4 +209,17 @@ export function registerQueryCommands(program: Command): void {
         process.exitCode = result.exitCode;
       }
     });
+}
+
+function resolveSearchOutputMode(opts: {
+  json?: boolean;
+  slugs?: boolean;
+  summaries?: boolean;
+}): SearchOutputMode {
+  if (opts.json === true) return "json";
+  if (opts.slugs === true) return "slugs";
+  if (opts.summaries === true || (process.stdout.isTTY ?? false)) {
+    return "summaries";
+  }
+  return "slugs";
 }

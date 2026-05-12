@@ -11,9 +11,7 @@ files:
 
 # Global Registry
 
-`~/.almanac/registry.json` is the single source of truth for which `.almanac/` wikis exist on the machine. Each entry records `name` (kebab-case slug), `description`, `path` (absolute repo root), and `registered_at`. The file lives outside any repo so it survives branch switches, clones, and deletions.
-
-<!-- stub: fill in auto-register edge cases and multi-machine behavior as discovered -->
+`~/.almanac/registry.json` is the single source of truth for which `.almanac/` wikis exist on the machine. Each entry records `name` (kebab-case slug), `description`, `path` (absolute repo root), and `registered_at`. The file lives outside any repo so it survives branch switches, clones, and deletions. The registry is local-only; there is no sync mechanism across machines. Cross-wiki links from [[wikilink-syntax]] and multi-wiki query commands resolve through this file.
 
 ## Read/write
 
@@ -29,4 +27,4 @@ Entries are never auto-dropped. `almanac list --drop <name>` is the only removal
 
 ## Multi-wiki queries
 
-`almanac search --wiki <name>` resolves the name via the registry. `almanac search --all` iterates every registered entry, skipping unreachable ones. Cross-wiki links (`[[wiki:slug]]`) resolve using the registry at query time.
+`almanac search --wiki <name>` resolves the name via the registry. `almanac search --all` iterates every registered entry, skipping unreachable ones. Cross-wiki links resolve `wiki:slug` targets through the registry at query time. Query commands still depend on each wiki's local [[sqlite-indexer]] database; the registry only answers which wiki roots to inspect.

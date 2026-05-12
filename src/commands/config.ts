@@ -18,6 +18,7 @@ import {
   readConfigWithOrigins,
   serializeConfig,
 } from "../update/config.js";
+import { formatTextTable } from "./table.js";
 
 export interface ConfigResult {
   stdout: string;
@@ -37,11 +38,16 @@ export async function runConfigList(opts: {
   if (opts.json === true) {
     return ok(`${JSON.stringify(rows, null, 2)}\n`);
   }
-  const lines = rows.map((row) => {
-    const value = formatConfigValue(row.value);
-    return opts.showOrigin === true
-      ? `${row.key.padEnd(20)} ${value.padEnd(24)} ${row.origin}`
-      : `${row.key.padEnd(20)} ${value}`;
+  const lines = formatTextTable({
+    headers: opts.showOrigin === true
+      ? ["KEY", "VALUE", "ORIGIN"]
+      : ["KEY", "VALUE"],
+    rows: rows.map((row) => {
+      const value = formatConfigValue(row.value);
+      return opts.showOrigin === true
+        ? [row.key, value, row.origin]
+        : [row.key, value];
+    }),
   });
   return ok(`${lines.join("\n")}\n`);
 }
@@ -74,10 +80,10 @@ export async function runConfigSet(opts: {
 }): Promise<ConfigResult> {
   const key = parseConfigKey(opts.key);
   if (key === null) return unknownKey(opts.key);
-  if (opts.project === true && key === "update_notifier") {
+  if (opts.project === true && isUserLevelOnlyKey(key)) {
     return {
       stdout: "",
-      stderr: "almanac: update_notifier is user-level only.\n",
+      stderr: `almanac: ${key} is user-level only.\n`,
       exitCode: 1,
     };
   }
@@ -102,7 +108,7 @@ export async function runConfigSet(opts: {
     setRawConfigValue(raw, key, getConfigValue(next, key));
     await writeRawConfig(raw, file);
     return ok(
-      `codealmanac: set ${key}=${formatConfigValue(getConfigValue(next, key))}` +
+      `almanac: set ${key}=${formatConfigValue(getConfigValue(next, key))}` +
         `${opts.project === true ? " in project config" : ""}.\n`,
     );
   } catch (err: unknown) {
@@ -117,10 +123,10 @@ export async function runConfigUnset(opts: {
 }): Promise<ConfigResult> {
   const key = parseConfigKey(opts.key);
   if (key === null) return unknownKey(opts.key);
-  if (opts.project === true && key === "update_notifier") {
+  if (opts.project === true && isUserLevelOnlyKey(key)) {
     return {
       stdout: "",
-      stderr: "almanac: update_notifier is user-level only.\n",
+      stderr: `almanac: ${key} is user-level only.\n`,
       exitCode: 1,
     };
   }
@@ -136,7 +142,7 @@ export async function runConfigUnset(opts: {
   deleteRawConfigValue(raw, key);
   await writeRawConfig(raw, file);
   return ok(
-    `codealmanac: unset ${key}${opts.project === true ? " in project config" : ""}.\n`,
+    `almanac: unset ${key}${opts.project === true ? " in project config" : ""}.\n`,
   );
 }
 
@@ -156,6 +162,10 @@ function ok(stdout: string): ConfigResult {
 
 function targetConfigPath(project: boolean): string | null {
   return project ? getProjectConfigPath(process.cwd()) : getConfigPath();
+}
+
+function isUserLevelOnlyKey(key: ConfigKey): boolean {
+  return key === "update_notifier" || key === "automation.capture_since";
 }
 
 async function readRawConfig(file = getConfigPath()): Promise<unknown> {

@@ -92,7 +92,7 @@ async function dismissLatest(opts: UpdateOptions): Promise<UpdateResult> {
   if (state.latest_version.length === 0) {
     return {
       stdout:
-        "codealmanac: no pending update to dismiss. " +
+        "almanac: no pending update to dismiss. " +
         "Run `almanac update --check` to query the registry.\n",
       stderr: "",
       exitCode: 0,
@@ -101,14 +101,14 @@ async function dismissLatest(opts: UpdateOptions): Promise<UpdateResult> {
   const installed = opts.installedVersion ?? readInstalledVersion();
   if (!isNewer(state.latest_version, installed)) {
     return {
-      stdout: `codealmanac: already on latest (${installed}); nothing to dismiss.\n`,
+      stdout: `almanac: already on latest (${installed}); nothing to dismiss.\n`,
       stderr: "",
       exitCode: 0,
     };
   }
   if (state.dismissed_versions.includes(state.latest_version)) {
     return {
-      stdout: `codealmanac: ${state.latest_version} already dismissed.\n`,
+      stdout: `almanac: ${state.latest_version} already dismissed.\n`,
       stderr: "",
       exitCode: 0,
     };
@@ -120,7 +120,7 @@ async function dismissLatest(opts: UpdateOptions): Promise<UpdateResult> {
   await writeState(next, opts.statePath);
   return {
       stdout:
-        `codealmanac: dismissed ${state.latest_version}. The nag banner ` +
+        `almanac: dismissed ${state.latest_version}. The nag banner ` +
         `will not show for this version.\n` +
         `Run \`almanac update\` to upgrade, or \`almanac config set update_notifier true\` to re-enable nags.\n`,
     stderr: "",
@@ -143,7 +143,7 @@ async function forceCheck(opts: UpdateOptions): Promise<UpdateResult> {
     return {
       stdout: "",
       stderr:
-        `codealmanac: could not reach registry.npmjs.org (timeout or network error).\n` +
+        `almanac: could not reach registry.npmjs.org (timeout or network error).\n` +
         `Installed: ${installed}. No cached latest available.\n`,
       exitCode: 1,
     };
@@ -151,7 +151,7 @@ async function forceCheck(opts: UpdateOptions): Promise<UpdateResult> {
   const latest = result.state.latest_version;
   if (latest.length === 0) {
     return {
-      stdout: `codealmanac: installed ${installed}; registry did not report a latest tag.\n`,
+      stdout: `almanac: installed ${installed}; registry did not report a latest tag.\n`,
       stderr: "",
       exitCode: 0,
     };
@@ -162,14 +162,14 @@ async function forceCheck(opts: UpdateOptions): Promise<UpdateResult> {
       : "";
     return {
       stdout:
-        `codealmanac ${latest} available (you're on ${installed})${dismissed}.\n` +
+        `Almanac ${latest} available (you're on ${installed})${dismissed}.\n` +
         `Run: almanac update\n`,
       stderr: "",
       exitCode: 0,
     };
   }
   return {
-    stdout: `codealmanac: up to date (${installed}).\n`,
+    stdout: `almanac: up to date (${installed}).\n`,
     stderr: "",
     exitCode: 0,
   };
@@ -187,9 +187,9 @@ async function toggleNotifier(
   return {
     stdout:
       enable
-        ? "codealmanac: update notifier enabled. " +
+        ? "almanac: update notifier enabled. " +
           "The pre-command banner will show when a new version is available.\n"
-        : "codealmanac: update notifier disabled. " +
+        : "almanac: update notifier disabled. " +
           "No more pre-command banners. Run `almanac update --check` to see status.\n",
     stderr: enable
       ? "almanac: warning: `almanac update --enable-notifier` is deprecated; use `almanac config set update_notifier true`.\n"
@@ -229,15 +229,15 @@ async function installLatest(opts: UpdateOptions): Promise<UpdateResult> {
         resolve({
           stdout: "",
           stderr:
-            "codealmanac: `npm` not found on PATH. " +
-            "Install Node.js + npm, or install codealmanac via your package manager.\n",
+            "almanac: `npm` not found on PATH. " +
+            "Install Node.js + npm, or install the codealmanac package via your package manager.\n",
           exitCode: 1,
         });
         return;
       }
       resolve({
         stdout: "",
-        stderr: `codealmanac: failed to run npm: ${err.message}\n`,
+        stderr: `almanac: failed to run npm: ${err.message}\n`,
         exitCode: 1,
       });
     });
@@ -249,7 +249,7 @@ async function installLatest(opts: UpdateOptions): Promise<UpdateResult> {
         // stderr, which we don't have (inherited stdio), so we rely
         // on exit code heuristics + a generic hint.
         const hint =
-          `codealmanac: npm install failed (exit ${exitCode}).\n` +
+          `almanac: npm install failed (exit ${exitCode}).\n` +
           `If you see "EACCES" above, try: sudo npm i -g codealmanac@latest\n` +
           `Or install with a version manager (nvm, volta, fnm) to avoid sudo.\n`;
         resolve({ stdout: "", stderr: hint, exitCode });
@@ -278,7 +278,7 @@ async function installLatest(opts: UpdateOptions): Promise<UpdateResult> {
         // background check and refresh state properly.
       }
       resolve({
-        stdout: "codealmanac: updated.\n",
+        stdout: "almanac: updated.\n",
         stderr: "",
         exitCode: 0,
       });

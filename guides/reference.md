@@ -1,17 +1,17 @@
-# codealmanac — full reference
+# Almanac — full reference
 
-Long-form manual for the `almanac` / `codealmanac` CLI. The mini guide at `~/.claude/codealmanac.md` covers *when* to reach for each command; this covers *every flag, every return shape, every edge case*. Import with `@~/.claude/codealmanac-reference.md` on demand.
+Long-form manual for the `almanac` CLI installed by the `codealmanac` npm package. The mini guide at `~/.claude/almanac.md` covers *when* to reach for each command; this covers *every flag, every return shape, every edge case*. Import with `@~/.claude/almanac-reference.md` on demand.
 
 Groupings match `almanac --help`:
 
 1. **Query** — `search`, `show`, `health`, `list`
 2. **Edit** — `tag`, `untag`, `topics ...`
-3. **Wiki lifecycle** — `bootstrap`, `capture`, `hook ...`, `reindex`
+3. **Wiki lifecycle** — `init`, `capture`, `ingest`, `garden`, `jobs`, `hook ...`, `reindex`
 4. **Setup** — `setup`, `uninstall`, `doctor`, `update`
 
 Every query/edit command auto-registers the current repo in `~/.almanac/registry.json` on first run. Exceptions: `list --drop` (skips auto-register so the removal intent isn't undone) and the setup group (installers, not wiki commands — they never touch the registry).
 
-There is no `almanac init` command. The two ways a wiki gets scaffolded are `almanac bootstrap` (agent reads the repo and seeds stub pages) and committing a `.almanac/` that someone else authored and cloning into it (auto-registered on first query command).
+A wiki gets scaffolded two ways: run `almanac init` yourself, or clone a repo that already has `.almanac/` committed (auto-registered on first query/edit command).
 
 ---
 
@@ -116,26 +116,81 @@ All topic subcommands accept `--wiki <name>`. `list` / `show` accept `--json`.
 
 ### 1.3 Wiki lifecycle
 
-#### `almanac bootstrap`
+#### `almanac init`
 
-Spawns an agent to create initial wiki stubs. Requires the selected provider to be installed and logged in. `--quiet` suppresses per-tool streaming. `--agent <provider>` overrides the provider for this run. `--model <model>` overrides the provider-local model. `--json` emits a structured `CommandOutcome` and suppresses streaming. `--force` overwrites an existing populated wiki. Writes `.almanac/logs/.bootstrap-<timestamp>.log`.
-
-Bootstrap is the scaffolding path — it creates `.almanac/pages/`, `.almanac/topics.yaml`, `.almanac/README.md`, and stub entity pages based on what the agent reads in the repo.
-
-#### `almanac capture [transcript]`
-
-Run the writer/reviewer pipeline on a Claude Code session transcript. Usually automatic — the `SessionEnd` hook invokes this. Refuses if no `.almanac/` exists in cwd or any parent (capture maintains wikis, doesn't create them; run `almanac bootstrap` first).
+Build the first wiki for this repo. Requires the selected provider to be installed and ready.
 
 | Flag | Semantics |
 |---|---|
-| `[transcript]` | Explicit path. Falls back to `--session` match or most-recent-by-cwd. |
-| `--session <id>` | Target a specific session by ID. Matches filename under `~/.claude/projects/`. |
-| `--quiet` | Suppress per-tool streaming; print only the final summary. |
-| `--agent <provider>` | Override the configured provider for this run. |
-| `--model <model>` | Override the agent model. |
-| `--json` | Emit a structured `CommandOutcome`; suppresses streaming so stdout is parseable. |
+| `--using <provider[/model]>` | Override the configured provider/model for this run. |
+| `--background` | Start as a detached Almanac job. |
+| `--json` | Emit structured JSON for background job start. Cannot be combined with foreground mode. |
+| `--force` | Allow rebuilding an existing populated wiki. |
+| `-y, --yes` | Confirm non-interactively. |
 
-Writes SDK transcript to `.almanac/logs/.capture-<session-id>.jsonl` (one JSON message per line). When invoked manually without `--session`, falls back to `.capture-<timestamp>.jsonl` so repeated runs don't clobber each other. A writer subagent drafts pages; a reviewer subagent enforces notability + writing conventions (§9) before drafts land.
+`init` runs foreground by default because first setup is an onboarding action. The Build operation receives the shared prompt base (`purpose`, `notability`, `syntax`) plus the Build algorithm prompt and runtime context.
+
+#### `almanac capture [sessionFiles...]`
+
+Absorb coding-session knowledge into the wiki. Usually automatic: the installed hook invokes this at session end. Refuses if no `.almanac/` exists in cwd or any parent.
+
+| Flag | Semantics |
+|---|---|
+| `[sessionFiles...]` | Explicit session transcript files. |
+| `--app <app>` | Source app: `claude`, `codex`, `cursor`, or `generic`. |
+| `--session <id>` | Target a specific session by ID. |
+| `--since <duration-or-date>` | Capture sessions since a time. |
+| `--limit <n>` | Maximum sessions to capture. |
+| `--all` | Capture all matching sessions. |
+| `--all-apps` | Capture from all supported apps. |
+| `--using <provider[/model]>` | Override the configured provider/model for this run. |
+| `--foreground` | Run attached instead of starting a background job. |
+| `--json` | Emit structured JSON for background job start. Cannot be combined with `--foreground`. |
+| `-y, --yes` | Confirm non-interactively. |
+
+`capture` maps to the internal Absorb operation with `targetKind: "session"`. It starts background by default. Run records and JSONL event logs live under `.almanac/runs/`.
+
+#### `almanac ingest <paths...>`
+
+Absorb knowledge from one or more files or folders.
+
+| Flag | Semantics |
+|---|---|
+| `<paths...>` | One or more files/folders to use as starting context. |
+| `--using <provider[/model]>` | Override the configured provider/model for this run. |
+| `--foreground` | Run attached instead of starting a background job. |
+| `--json` | Emit structured JSON for background job start. Cannot be combined with `--foreground`. |
+| `-y, --yes` | Confirm non-interactively. |
+
+`ingest` maps to the internal Absorb operation with `targetKind: "path"`. The input is raw material, not the output; Absorb updates the wiki only when it finds durable project understanding.
+
+#### `almanac garden`
+
+Improve the wiki as a graph: page boundaries, links, topics, hubs, stale claims, archive/supersession chains, and synthesis quality.
+
+| Flag | Semantics |
+|---|---|
+| `--using <provider[/model]>` | Override the configured provider/model for this run. |
+| `--foreground` | Run attached instead of starting a background job. |
+| `--json` | Emit structured JSON for background job start. Cannot be combined with `--foreground`. |
+| `-y, --yes` | Confirm non-interactively. |
+
+`garden` starts background by default.
+
+#### `almanac jobs`
+
+Inspect and manage Almanac runs stored under `.almanac/runs/`.
+
+```bash
+almanac jobs
+almanac jobs list
+almanac jobs show <run-id>
+almanac jobs logs <run-id>
+almanac jobs attach <run-id>
+almanac jobs cancel <run-id>
+```
+
+Each jobs subcommand accepts `--json`. `attach` streams the JSONL event log until the run reaches `done`, `failed`, `cancelled`, or `stale`.
 
 #### `almanac hook install | uninstall | status`
 
@@ -149,9 +204,9 @@ Flag: `--wiki <name>`.
 
 ### 1.4 Setup
 
-#### `almanac setup` (alias: bare `codealmanac`)
+#### `almanac setup`
 
-Install the SessionEnd hook + the two CLAUDE.md guides (`codealmanac.md`, `codealmanac-reference.md`) + the `@~/.claude/codealmanac.md` import line. Idempotent.
+Install the SessionEnd hook + the two CLAUDE.md guides (`almanac.md`, `almanac-reference.md`) + the `@~/.claude/almanac.md` import line. Idempotent.
 
 | Flag | Semantics |
 |---|---|
@@ -161,7 +216,7 @@ Install the SessionEnd hook + the two CLAUDE.md guides (`codealmanac.md`, `codea
 | `--skip-hook` | Opt out of the SessionEnd hook. |
 | `--skip-guides` | Opt out of the CLAUDE.md guides. |
 
-Both `almanac setup` and bare `codealmanac` route here. Interactive setup chooses provider first, then provider-local model. `codealmanac --yes`, `codealmanac --agent codex --model gpt-5.3-codex`, `codealmanac --skip-hook`, and `codealmanac --skip-guides` are the typical first-run invocations. Passing `--skip-hook --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn.
+Bare `almanac`, `almanac setup`, and the compatibility `npx codealmanac` bootstrap route here. Interactive setup chooses provider first, then provider-local model. `almanac --yes`, `almanac --agent codex --model gpt-5.3-codex`, `almanac --skip-hook`, and `almanac --skip-guides` are the typical first-run invocations after install. Passing `--skip-hook --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn.
 
 #### `almanac uninstall`
 
@@ -235,18 +290,17 @@ Provider-focused settings and readiness.
 ```bash
 almanac agents list
 almanac agents doctor
-almanac agents use claude
+almanac agents use codex
 almanac agents model claude claude-opus-4-6
 almanac agents model claude --default
 ```
 
-`agents use` writes the default provider. `agents model` writes the provider-local model override; `--default`, `default`, or `null` resets the provider to its own default. The older `almanac set default-agent ...` and `almanac set model ...` commands remain compatibility aliases and print deprecation warnings.
+`agents use` writes the default provider; Codex is the built-in recommended default. `agents model` writes the provider-local model override; `--default`, `default`, or `null` resets the provider to its own default. The older `almanac set default-agent ...` and `almanac set model ...` commands remain compatibility aliases and print deprecation warnings.
 
-`bootstrap` and `capture` resolve provider settings in this order:
+`init`, `capture`, `ingest`, and `garden` resolve provider settings in this order:
 
 ```text
---agent flag > ALMANAC_AGENT env > config.agent.default > built-in default
---model flag > ALMANAC_MODEL env > config.agent.models[provider] > provider default
+--using flag > project config > user config > provider default
 ```
 
 #### `almanac config`
@@ -279,7 +333,7 @@ Upgrade command + the controls for the nag banner. See §11 for the full update-
 
 **Exit codes:** `0` on successful install / check / dismiss / toggle. Install propagates npm's exit code on failure. `--check` exits `1` when the registry is unreachable.
 
-**EACCES:** if `npm i -g` fails with a permission error, try `sudo npm i -g codealmanac@latest`, or switch to a version manager (nvm/volta/fnm) that doesn't require root. codealmanac will never sudo on your behalf — silent privilege escalation would violate the trust contract.
+**EACCES:** if `npm i -g` fails with a permission error, try `sudo npm i -g codealmanac@latest`, or switch to a version manager (nvm/volta/fnm) that doesn't require root. Almanac will never sudo on your behalf — silent privilege escalation would violate the trust contract.
 
 ### 1.5 `--stdin` pipe semantics
 
@@ -514,8 +568,8 @@ Claude Code invokes `SessionEnd` hooks after each session. Payload on stdin:
 
 1. Parse payload with `jq`. Missing `jq` → exit 0 silently.
 2. Walk upward from `cwd` for a `.almanac/`. Bounded at filesystem root.
-3. Background `almanac capture "$TRANSCRIPT" --session "$SESSION_ID" --quiet`, redirect to `.almanac/logs/.capture-$SESSION_ID.log`, `disown`.
-4. Exit always `0`. Capture failures must never break Claude Code's session-end path.
+3. Background `almanac capture "$TRANSCRIPT" --session "$SESSION_ID"`, redirect the hook sidecar to `.almanac/runs/.capture-$SESSION_ID.hook.log`, `disown`.
+4. Exit always `0`. Capture failures must never break the host agent's session-end path.
 
 Falls back to `npx --no-install codealmanac` if `almanac` isn't on `PATH`.
 
@@ -541,21 +595,23 @@ Falls back to `npx --no-install codealmanac` if `almanac` isn't on `PATH`.
 ```bash
 almanac doctor              # catch-all — reports hook state + last capture age
 almanac hook status         # just the hook entry
-ls -lah .almanac/logs/.capture-*.log
+almanac jobs
+ls -lah .almanac/runs/
 ```
 
-Installed but no log: `SessionEnd` didn't fire (rare, hard crash), or script bailed before backgrounding (add `set -x` to trace), or no `.almanac/` upward from `cwd` (silent correct no-op).
+Installed but no job: the session-end event didn't fire, the script bailed before starting capture (add `set -x` to trace), or no `.almanac/` existed upward from `cwd` (silent correct no-op).
 
 ### Diagnosing "capture ran but wrote nothing"
 
 ```bash
-tail -200 .almanac/logs/.capture-<id>.log
+almanac jobs show <run-id>
+almanac jobs logs <run-id>
 ```
 
 Common causes:
-- `ANTHROPIC_API_KEY` not in the hook's environment. Claude Code's hook env is minimal; `~/.zshrc` is NOT sourced. Export via `~/.claude/settings.json`'s `env` key, or rely on `claude auth` OAuth credentials.
+- Provider auth is missing in the hook environment. Claude Code's hook env is minimal; `~/.zshrc` is NOT sourced. Export needed env vars via host-agent settings, or rely on provider OAuth credentials where available.
 - Transcript path didn't resolve. Capture prints resolution status early.
-- Reviewer rejected the draft for notability — rationale is in the log.
+- Absorb found no durable wiki change.
 - Session was pure-read with no decisions or discoveries. Correct no-op.
 
 ---
@@ -576,12 +632,12 @@ Common causes:
 ### Registration paths
 
 - **Silent auto-register** — every query/edit command (except `list --drop`) calls `autoRegisterIfNeeded` on cwd. A repo with `.almanac/` but no registry entry → added with `name = basename(cwd)`, no description. Makes "cloned a repo with `.almanac/` committed" just work.
-- **`almanac bootstrap`** — auto-registers as a side effect of scaffolding. `name` defaults to the repo basename; edit `~/.almanac/registry.json` or re-bootstrap to rename.
+- **`almanac init`** — creates and registers the wiki. `name` defaults to the repo basename; edit `~/.almanac/registry.json` if you need to rename it.
 - **`almanac list --drop <name>`** — the only removal path. Skips auto-register so the removal isn't immediately undone.
 
 ### `--wiki <name>`
 
-Route the command at a specific registered wiki. Used when you're in one repo but querying another. Without `--wiki`, commands resolve to the wiki whose `path` is an ancestor of cwd. If none, commands error: `almanac: no .almanac/ found in this directory or any parent; run 'almanac bootstrap' first`.
+Route the command at a specific registered wiki. Used when you're in one repo but querying another. Without `--wiki`, commands resolve to the wiki whose `path` is an ancestor of cwd. If none, commands error with a fix such as `run: almanac init`.
 
 ### Cross-wiki link resolution
 
@@ -597,7 +653,7 @@ Route the command at a specific registered wiki. Used when you're in one repo bu
 
 ## 9. Notability and writing conventions
 
-The reviewer subagent enforces these during capture. Applying them yourself reduces rework.
+The Build, Absorb, and Garden prompts enforce these during wiki-writing runs. Applying them yourself reduces rework.
 
 ### Patterns to avoid (bad → good)
 
@@ -737,10 +793,11 @@ Missing `files:` frontmatter, OR path referenced only in inline prose (not via `
 almanac doctor              # reports hook state + last capture age + auth
 claude auth status          # OAuth token present?
 echo "${ANTHROPIC_API_KEY:0:10}"   # API key fallback?
-ls -lah .almanac/logs/.capture-*.log
+almanac jobs
+ls -lah .almanac/runs/
 ```
 
-No logs at all → script bailed pre-background. Add `set -x` to `hooks/almanac-capture.sh` to trace. If the hook itself isn't installed, `almanac doctor` reports `install.hook: problem` with `run: almanac setup --yes`.
+No jobs at all → script bailed before starting capture. Add `set -x` to `hooks/almanac-capture.sh` to trace. If the hook itself isn't installed, `almanac doctor` reports `install.hook: problem` with `run: almanac setup --yes`.
 
 ### "slug collision warnings"
 
@@ -752,9 +809,9 @@ Case sensitivity on Linux. Schema v2 stores `original_path` for case-preserving 
 
 ### Forensics files
 
-- `.almanac/logs/.capture-<session-id>.jsonl` — SDK message stream from `almanac capture` (one JSON object per line). Writer + reviewer interleaved.
-- `.almanac/logs/.capture-<session-id>.log` — companion sidecar written by the SessionEnd hook: stdout+stderr of `almanac capture`, human-readable. Present only for hook-invoked captures; manual invocations emit only the `.jsonl`.
-- `.almanac/logs/.bootstrap-<timestamp>.log` — one per bootstrap. Gitignored by default.
+- `.almanac/runs/<run-id>.json` — Almanac run record with status, provider, model, timings, log path, and failure metadata.
+- `.almanac/runs/<run-id>.jsonl` — provider event log for the run. Read with `almanac jobs logs <run-id>`.
+- `.almanac/runs/.capture-<session-id>.hook.log` — hook sidecar containing stdout/stderr from the capture start command. Present only for hook-invoked captures.
 
 ---
 

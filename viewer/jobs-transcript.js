@@ -1,0 +1,342 @@
+export function buildTranscript(entries, agents = []) {
+  const transcript = [];
+  const toolsById = new Map();
+  const agentLabels = new Map(agents.map((agent) => [agent.threadId, agent.label]));
+  let assistant = null;
+
+  const ensureAssistant = (timestamp, actor) => {
+    if (!sameActor(assistant?.actor, actor)) assistant = null;
+    if (assistant === null) {
+      assistant = { type: "assistant", timestamp, text: "" };
+      const labeledActor = withAgentLabel(actor, agentLabels);
+      if (labeledActor) assistant.actor = labeledActor;
+      transcript.push(assistant);
+    }
+    return assistant;
+  };
+
+  const closeAssistant = () => {
+    assistant = null;
+  };
+
+  for (const entry of entries) {
+    if (entry.invalid) {
+      closeAssistant();
+      transcript.push({ type: "invalid", line: entry.line, raw: entry.raw, error: entry.error });
+      continue;
+    }
+
+    const event = entry.event;
+    const actor = withAgentLabel(entry.actor ?? event.actor ?? null, agentLabels);
+    if (event.type === "text_delta" || event.type === "text") {
+      const bubble = ensureAssistant(entry.timestamp, actor);
+      if (event.type === "text" && bubble.text.length > 0 && event.content.startsWith(bubble.text)) {
+        bubble.text = event.content;
+      } else {
+        bubble.text += event.content;
+      }
+      continue;
+    }
+
+    if (event.type === "done" && event.result) {
+      const bubble = ensureAssistant(entry.timestamp, actor);
+      bubble.text += `${bubble.text ? "\n\n" : ""}${event.result}`;
+      if (!event.error) continue;
+    }
+
+    closeAssistant();
+
+    if (event.type === "tool_use") {
+      const tool = {
+        type: "tool",
+        timestamp: entry.timestamp,
+        id: event.id ?? null,
+        name: event.tool,
+        input: event.input,
+        display: event.display ?? {},
+        hasResult: false,
+        result: null,
+        resultDisplay: null,
+        resultTimestamp: null,
+        isError: false,
+        actor,
+      };
+      transcript.push(tool);
+      if (tool.id) toolsById.set(tool.id, tool);
+      continue;
+    }
+
+    if (event.type === "tool_result") {
+      const paired = event.id ? toolsById.get(event.id) : null;
+      if (paired) {
+        paired.hasResult = true;
+        paired.result = event.content;
+        paired.resultDisplay = event.display ?? null;
+        paired.resultTimestamp = entry.timestamp;
+        paired.isError = Boolean(event.isError);
+        continue;
+      }
+      transcript.push({
+        type: "tool",
+        timestamp: entry.timestamp,
+        id: event.id ?? null,
+        name: "tool_result",
+        input: null,
+        display: event.display ?? {},
+        hasResult: true,
+        result: event.content,
+        resultDisplay: event.display ?? null,
+        resultTimestamp: entry.timestamp,
+        isError: Boolean(event.isError),
+        actor,
+      });
+      continue;
+    }
+
+    if (event.type === "agent_spawned") {
+      transcript.push({
+        type: "lifecycle",
+        timestamp: entry.timestamp,
+        tone: "agent",
+        title: `${actorName(actor, agentLabels)} spawned ${agentName(event.childThreadId, agentLabels)}`,
+        detail: event.prompt,
+        threadId: event.childThreadId,
+        actor,
+      });
+      continue;
+    }
+
+    if (event.type === "agent_wait_started") {
+      transcript.push({
+        type: "lifecycle",
+        timestamp: entry.timestamp,
+        tone: "agent",
+        title: `${actorName(actor, agentLabels)} waiting for ${event.childThreadIds.length} helper${event.childThreadIds.length === 1 ? "" : "s"}`,
+        detail: event.childThreadIds.map((id) => `${agentName(id, agentLabels)} · ${id}`).join("\n"),
+        actor,
+      });
+      continue;
+    }
+
+    if (event.type === "agent_completed") {
+      transcript.push({
+        type: "lifecycle",
+        timestamp: entry.timestamp,
+        tone: "agent",
+        title: `${agentName(event.threadId, agentLabels)} completed`,
+        detail: event.result,
+        threadId: event.threadId,
+        actor,
+      });
+      continue;
+    }
+
+    if (event.type === "tool_summary") {
+      transcript.push({ type: "status", timestamp: entry.timestamp, tone: "neutral", title: "Tool summary", detail: event.summary, actor });
+      continue;
+    }
+
+    if (event.type === "context_usage") {
+      transcript.push({
+        type: "status",
+        timestamp: entry.timestamp,
+        tone: "neutral",
+        title: "Context usage",
+        detail: stringifyEventValue(event.usage),
+        actor,
+      });
+      continue;
+    }
+
+    if (event.type === "error") {
+      transcript.push({
+        type: "status",
+        timestamp: entry.timestamp,
+        tone: "error",
+        title: event.error || "Error",
+        detail: event.failure?.fix ?? event.failure?.raw ?? "",
+        actor,
+      });
+      continue;
+    }
+
+    if (event.type === "done" && event.error) {
+      transcript.push({
+        type: "status",
+        timestamp: entry.timestamp,
+        tone: "error",
+        title: event.error,
+        detail: event.failure?.fix ?? event.failure?.raw ?? "",
+        actor,
+      });
+    }
+  }
+
+  return transcript.filter((entry) => entry.type !== "assistant" || entry.text.trim().length > 0);
+}
+
+function sameActor(a, b) {
+  const aId = a?.threadId ?? a?.role ?? null;
+  const bId = b?.threadId ?? b?.role ?? null;
+  return aId === bId;
+}
+
+function withAgentLabel(actor, labels) {
+  if (!actor) return null;
+  const label = actor.threadId ? labels.get(actor.threadId) : undefined;
+  return label ? { ...actor, label } : actor;
+}
+
+function actorName(actor, labels) {
+  if (!actor) return "Run";
+  return actor.label ?? agentName(actor.threadId, labels);
+}
+
+function agentName(threadId, labels) {
+  if (!threadId) return "unknown helper";
+  return labels.get(threadId) ?? `Helper ${shortId(threadId)}`;
+}
+
+function shortId(value) {
+  if (!value) return "unknown";
+  const text = String(value);
+  return text.length > 12 ? text.slice(0, 8) : text;
+}
+
+export function getToolCardModel(step) {
+  const display = step.display ?? {};
+  const resultDisplay = step.resultDisplay ?? {};
+  const args = parseJsonObject(step.input);
+  const kind = normalizeToolKind(display.kind ?? inferToolKind(step.name, display, args));
+  const target = toolTarget(step.name, display, args);
+  const title = display.title ?? titleFromToolName(step.name, kind);
+  const preview =
+    target ??
+    display.path ??
+    display.command ??
+    display.summary ??
+    getInputPreview(step.input) ??
+    resultDisplay.summary ??
+    "";
+  const status = resultDisplay.status ?? display.status ?? (step.hasResult ? "completed" : "started");
+  const isError = Boolean(step.isError) || status === "failed";
+
+  return {
+    kind,
+    icon: iconForKind(kind, isError),
+    title,
+    target,
+    preview,
+    status,
+    statusLabel: statusLabel(status, isError),
+    isError,
+  };
+}
+
+export function stringifyEventValue(value) {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "string") return value;
+  return JSON.stringify(value, null, 2);
+}
+
+export function parseJsonObject(text) {
+  if (typeof text !== "string" || text.trim().length === 0) return null;
+  try {
+    const parsed = JSON.parse(text);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function inferToolKind(name, display, args) {
+  const normalized = String(name ?? "").toLowerCase();
+  if (display.command) return "shell";
+  if (display.path) {
+    if (normalized.includes("write")) return "write";
+    if (normalized.includes("edit") || normalized.includes("patch")) return "edit";
+    return "read";
+  }
+  if (normalized === "read" || normalized.includes("read")) return "read";
+  if (normalized === "write" || normalized.includes("write")) return "write";
+  if (normalized === "edit" || normalized.includes("edit")) return "edit";
+  if (normalized === "bash" || normalized === "shell" || normalized.includes("bash")) return "shell";
+  if (args?.command) return "shell";
+  if (args?.file_path || args?.path) return "read";
+  if (normalized === "agent" || normalized.includes("agent")) return "agent";
+  if (normalized.includes("search")) return "search";
+  if (normalized.includes("web") || normalized.includes("url")) return "web";
+  if (normalized.includes("image")) return "image";
+  if (normalized.includes("mcp")) return "mcp";
+  return "unknown";
+}
+
+function normalizeToolKind(kind) {
+  const known = new Set(["read", "write", "edit", "search", "shell", "mcp", "web", "agent", "image", "unknown"]);
+  return known.has(kind) ? kind : "unknown";
+}
+
+function titleFromToolName(name, kind) {
+  if (kind === "agent") return "Subagent";
+  if (kind === "shell") return String(name ?? "").toLowerCase() === "bash" ? "Bash" : "Shell";
+  if (kind === "search") return "Search";
+  if (kind === "web") return "Web";
+  if (kind === "read") return "Read";
+  if (kind === "write") return "Write";
+  if (kind === "edit") return "Edit";
+  return String(name ?? "Tool").replace(/[_-]/g, " ");
+}
+
+function toolTarget(name, display, args) {
+  if (display.path) return compactPath(display.path);
+  if (display.command) return display.summary ?? display.command;
+  if (typeof args?.file_path === "string") return compactPath(args.file_path);
+  if (typeof args?.path === "string") return compactPath(args.path);
+  if (typeof args?.command === "string") return args.description ?? args.command;
+  if (typeof args?.description === "string") return args.description;
+  if (typeof args?.query === "string") return args.query;
+  if (typeof args?.url === "string") return args.url;
+  return null;
+}
+
+function getInputPreview(input) {
+  const parsed = parseJsonObject(input);
+  if (!parsed) return typeof input === "string" ? truncate(input, 96) : "";
+  const value = parsed.description ?? parsed.prompt ?? parsed.query ?? parsed.path ?? parsed.command ?? parsed.url;
+  if (typeof value === "string") return truncate(value, 96);
+  if (Array.isArray(value)) return truncate(value.slice(0, 3).join(", "), 96);
+  return "";
+}
+
+function iconForKind(kind, isError) {
+  if (isError) return "!";
+  if (kind === "read") return "R";
+  if (kind === "write" || kind === "edit") return "E";
+  if (kind === "search") return "S";
+  if (kind === "shell") return "$";
+  if (kind === "web") return "W";
+  if (kind === "agent") return "A";
+  if (kind === "image") return "I";
+  if (kind === "mcp") return "M";
+  return "-";
+}
+
+function statusLabel(status, isError) {
+  if (isError) return "failed";
+  if (status === "completed") return "completed";
+  if (status === "declined") return "declined";
+  if (status === "failed") return "failed";
+  return "running";
+}
+
+function truncate(text, limit) {
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit - 3)}...`;
+}
+
+function compactPath(path) {
+  const normalized = path.replace(/\\/g, "/");
+  const parts = normalized.split("/").filter(Boolean);
+  if (parts.length <= 3) return normalized;
+  return `.../${parts.slice(-3).join("/")}`;
+}

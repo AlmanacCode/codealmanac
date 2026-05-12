@@ -79,7 +79,7 @@ function isReachable(entry: RegistryEntry): boolean {
  */
 function formatPretty(entries: RegistryEntry[]): string {
   if (entries.length === 0) {
-    return `${DIM}no wikis registered. run \`almanac bootstrap\` in a repo to create one.${RST}\n`;
+    return `${DIM}no wikis registered. run \`almanac init\` in a repo to create one.${RST}\n`;
   }
 
   // Column-width the name for alignment; cap at 30 so absurd names don't

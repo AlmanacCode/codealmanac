@@ -19,9 +19,9 @@ import {
  * and the real update banner. Production callers pass nothing.
  */
 export interface RunDeps {
-  /** Replace the setup wizard (bare `codealmanac` / `almanac setup`). */
+  /** Replace the setup wizard (bare `almanac` / `almanac setup`). */
   runSetup?: typeof runSetup;
-  /** Replace the bare-`codealmanac` global install bootstrapper. */
+  /** Replace the bare compatibility `codealmanac` global install bootstrapper. */
   runCodealmanacBootstrap?: typeof runCodealmanacBootstrap;
   /** Replace the pre-command update-nag banner. */
   announceUpdate?: (stderr: NodeJS.WritableStream) => void;
@@ -33,7 +33,7 @@ export interface RunDeps {
 
 /**
  * Process-level CLI entrypoint. This owns invocation-level behavior:
- * update checks, bare `codealmanac` setup routing, Commander creation,
+ * update checks, bare `almanac` setup routing, Commander creation,
  * grouped help, and parsing. Individual command wiring lives in
  * `src/cli/register-commands.ts`.
  */
@@ -52,6 +52,10 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
     return;
   }
 
+  if (await tryRunInternalJob(argv.slice(2))) {
+    return;
+  }
+
   const programName = getProgramName(argv);
 
   announceUpdateFn(process.stderr);
@@ -61,7 +65,7 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
   program
     .name(programName)
     .description(
-      "codealmanac — a living wiki for codebases, maintained by AI agents",
+      "Almanac — a living wiki for codebases, maintained by AI agents",
     )
     .version(readPackageVersion(), "-v, --version", "print version");
 
@@ -70,17 +74,20 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
     return;
   }
 
-  if (programName === "codealmanac") {
+  if (programName === "almanac" || programName === "codealmanac") {
     const setupInvocation = tryParseSetupShortcut(argv.slice(2));
     if (setupInvocation !== null) {
-      if (deps.runCodealmanacBootstrap !== undefined) {
+      if (
+        programName === "codealmanac" &&
+        deps.runCodealmanacBootstrap !== undefined
+      ) {
         emit(
           await runCodealmanacBootstrapFn({
             setupOptions: setupInvocation,
             setupArgs: argv.slice(2),
           }),
         );
-      } else if (deps.runSetup !== undefined) {
+      } else if (programName === "almanac" || deps.runSetup !== undefined) {
         emit(await runSetupFn(setupInvocation));
       } else {
         emit(
@@ -103,6 +110,20 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
   configureGroupedHelp(program);
 
   await program.parseAsync(argv);
+}
+
+async function tryRunInternalJob(args: string[]): Promise<boolean> {
+  if (args[0] !== "__run-job") return false;
+  const runId = args[1];
+  if (runId === undefined || !runId.startsWith("run_")) {
+    throw new Error("internal job requires a run id");
+  }
+  const { runBackgroundChild } = await import("./process/index.js");
+  await runBackgroundChild({
+    repoRoot: process.cwd(),
+    runId,
+  });
+  return true;
 }
 
 function getProgramName(argv: string[]): "almanac" | "codealmanac" {
@@ -143,12 +164,12 @@ function parseUpdateFlags(args: string[]): {
 
 function parseUninstallFlags(args: string[]): {
   yes?: boolean;
-  keepHook?: boolean;
+  keepAutomation?: boolean;
   keepGuides?: boolean;
 } {
   return {
     yes: args.includes("--yes") || args.includes("-y"),
-    keepHook: args.includes("--keep-hook"),
+    keepAutomation: args.includes("--keep-automation"),
     keepGuides: args.includes("--keep-guides"),
   };
 }
@@ -184,20 +205,27 @@ async function tryRunSqliteFreeCommand(
     return true;
   }
 
-  if (command === "hook") {
-    const { runHookInstall, runHookStatus, runHookUninstall } = await import(
-      "./commands/hook.js"
-    );
+  if (command === "automation") {
+    const {
+      runAutomationInstall,
+      runAutomationStatus,
+      runAutomationUninstall,
+    } = await import("./commands/automation.js");
     if (subcommand === "install") {
-      emit(await runHookInstall({ source: parseHookSource(args.slice(2)) }));
+      const parsed = parseAutomationInstallFlags(args.slice(2));
+      if (!parsed.ok) {
+        emit({ stdout: "", stderr: `almanac: ${parsed.error}\n`, exitCode: 1 });
+        return true;
+      }
+      emit(await runAutomationInstall(parsed.options));
       return true;
     }
     if (subcommand === "uninstall") {
-      emit(await runHookUninstall());
+      emit(await runAutomationUninstall());
       return true;
     }
     if (subcommand === "status") {
-      emit(await runHookStatus());
+      emit(await runAutomationStatus());
       return true;
     }
     return false;
@@ -317,20 +345,20 @@ async function tryRunSqliteFreeCommand(
   return false;
 }
 
-function parseHookSource(
-  args: string[],
-): "claude" | "codex" | "cursor" | "all" | undefined {
-  const idx = args.indexOf("--source");
-  const value = idx === -1 ? undefined : args[idx + 1];
-  if (
-    value === "claude" ||
-    value === "codex" ||
-    value === "cursor" ||
-    value === "all"
-  ) {
-    return value;
+function parseAutomationInstallFlags(args: string[]): {
+  ok: true;
+  options: { every?: string };
+} | {
+  ok: false;
+  error: string;
+} {
+  const idx = args.indexOf("--every");
+  if (idx < 0) return { ok: true, options: {} };
+  const value = args[idx + 1];
+  if (value === undefined || value.startsWith("-")) {
+    return { ok: false, error: "missing value for --every" };
   }
-  return undefined;
+  return { ok: true, options: { every: value } };
 }
 
 function readPackageVersion(): string {
@@ -350,12 +378,13 @@ export interface SetupShortcutOptions {
   yes?: boolean;
   agent?: string;
   model?: string;
-  skipHook?: boolean;
+  skipAutomation?: boolean;
+  automationEvery?: string;
   skipGuides?: boolean;
 }
 
 /**
- * Decide whether a bare `codealmanac [...args]` invocation should route
+ * Decide whether a bare `almanac [...args]` invocation should route
  * straight to `runSetup` (and if so, with which flags). Returns the
  * options object when it's a setup shortcut, or `null` when Commander
  * should parse the invocation normally.
@@ -388,8 +417,15 @@ function parseSetupShortcutFlags(args: string[]): SetupShortcutOptions | null {
       i += 1;
       continue;
     }
-    if (arg === "--skip-hook") {
-      opts.skipHook = true;
+    if (arg === "--skip-automation") {
+      opts.skipAutomation = true;
+      continue;
+    }
+    if (arg === "--auto-capture-every") {
+      const value = args[i + 1];
+      if (value === undefined || value.startsWith("-")) return null;
+      opts.automationEvery = value;
+      i += 1;
       continue;
     }
     if (arg === "--skip-guides") {

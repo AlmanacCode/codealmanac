@@ -1,14 +1,65 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  runAgentsList,
-  runAgentsModel,
-  runAgentsUse,
-} from "../src/commands/agents.js";
+import { runAgentsList, runAgentsModel, runAgentsUse } from "../src/commands/agents.js";
 import { runConfigList } from "../src/commands/config.js";
 import { withTempHome } from "./helpers.js";
 
 describe("agents command", () => {
+  it("lists providers with column headers", async () => {
+    const result = await runAgentsList({
+      view: {
+        defaultProvider: "codex",
+        recommendedProvider: "codex",
+        choices: [
+          {
+            id: "codex",
+            label: "Codex",
+            selected: true,
+            recommended: true,
+            readiness: "ready",
+            ready: true,
+            installed: true,
+            authenticated: true,
+            effectiveModel: null,
+            providerDefaultModel: null,
+            configuredModel: null,
+            account: "user@example.com",
+            detail: "Logged in",
+            fixCommand: null,
+            modelChoices: [],
+          },
+          {
+            id: "cursor",
+            label: "Cursor",
+            selected: false,
+            recommended: false,
+            readiness: "missing",
+            ready: false,
+            installed: false,
+            authenticated: false,
+            effectiveModel: null,
+            providerDefaultModel: null,
+            configuredModel: null,
+            account: null,
+            detail: "missing",
+            fixCommand: "install cursor-agent",
+            modelChoices: [],
+          },
+        ],
+      },
+    });
+
+    expect(result.stdout).toContain(
+      "DEFAULT  AGENT   STATUS   RECOMMENDED  MODEL             DETAIL",
+    );
+    expect(result.stdout).toContain(
+      "*        Codex   ready    recommended  provider default  user@example.com",
+    );
+    expect(result.stdout).toContain(
+      "         Cursor  missing               provider default  install cursor-agent",
+    );
+  });
+
   it("requires an explicit model or --default", async () => {
     await withTempHome(async () => {
       const result = await runAgentsModel({ provider: "claude" });
@@ -20,7 +71,7 @@ describe("agents command", () => {
 
   it("does not materialize untouched model origins when changing providers", async () => {
     await withTempHome(async () => {
-      await expect(runAgentsUse({ provider: "codex" })).resolves.toMatchObject({
+      await expect(runAgentsUse({ provider: "claude" })).resolves.toMatchObject({
         exitCode: 0,
       });
 
@@ -36,35 +87,5 @@ describe("agents command", () => {
         "default",
       );
     });
-  });
-
-  it("hides Cursor by default and rejects selecting it", async () => {
-    await withTempHome(async () => {
-      const list = await runAgentsList();
-      expect(list.stdout).toContain("Claude");
-      expect(list.stdout).toContain("Codex");
-      expect(list.stdout).not.toContain("Cursor");
-
-      const result = await runAgentsUse({ provider: "cursor" });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("CODEALMANAC_ENABLE_CURSOR=1");
-    });
-  });
-
-  it("allows Cursor when the feature flag is enabled", async () => {
-    const original = process.env.CODEALMANAC_ENABLE_CURSOR;
-    process.env.CODEALMANAC_ENABLE_CURSOR = "1";
-    try {
-      await withTempHome(async () => {
-        const result = await runAgentsUse({ provider: "cursor" });
-        expect(result.exitCode).toBe(0);
-      });
-    } finally {
-      if (original === undefined) {
-        delete process.env.CODEALMANAC_ENABLE_CURSOR;
-      } else {
-        process.env.CODEALMANAC_ENABLE_CURSOR = original;
-      }
-    }
   });
 });

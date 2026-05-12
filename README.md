@@ -1,4 +1,4 @@
-# codealmanac
+# Almanac
 
 A living wiki for your codebase, maintained by AI agents. It documents what the code can't say — decisions, flows, invariants, gotchas — as atomic, interlinked markdown pages living at `.almanac/` in your repo.
 
@@ -22,13 +22,13 @@ The primary consumer is the AI coding agent. The secondary consumer is humans.
 
 Claude Code, Cursor, and Copilot can read the code and tell you what it does. They can't tell you _why_ it's shaped that way, what approaches were tried and rejected, what invariants must not be violated, or how a flow spans four files in three services. That knowledge lives in Slack threads, PR descriptions, and people's heads. It dies when threads scroll, people leave, or an agent starts a fresh session.
 
-A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, has no graph structure, and gets stale the moment anyone commits without editing it. codealmanac replaces that one flat file with a wiki of atomic pages that agents are prompted to keep current as a side-effect of coding.
+A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, has no graph structure, and gets stale the moment anyone commits without editing it. Almanac replaces that one flat file with a wiki of atomic pages that agents are prompted to keep current as a side-effect of coding.
 
 ## How it works
 
-Each repo gets a committed `.almanac/pages/` directory of markdown files. Auto-capture hooks fire when Claude Code, Codex, or Cursor Agent sessions end and run `almanac capture` in the background. A writer agent reads the session transcript and existing pages, drafts changes, and runs a reviewer pass against the wider graph. The writer applies the final versions. New and updated pages show up in your next `git status`; you review them like any other commit.
+Each repo gets a committed `.almanac/pages/` directory of markdown files. Scheduled auto-capture periodically runs `almanac capture sweep`, scans quiet Claude/Codex transcripts created after automation was enabled, and starts background capture jobs for new material. CodeAlmanac builds one provider-neutral run spec, starts it through the process manager, and records local run state in `.almanac/runs/`. New and updated pages show up in your next `git status`; you review them like any other commit.
 
-The CLI never reads or writes page content except in `capture` and `bootstrap`. Every other command (`search`, `show`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
+The CLI only invokes AI for the write-capable lifecycle commands: `init`, `capture`, `ingest`, and `garden`. Every query or organization command (`search`, `show`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
 
 ## Install
 
@@ -36,28 +36,29 @@ The CLI never reads or writes page content except in `capture` and `bootstrap`. 
 npx codealmanac                # installs globally + runs the setup wizard
 # or, if you prefer the explicit two-step:
 npm install -g codealmanac
-codealmanac                    # interactive wizard
+almanac                        # interactive wizard
 # or fully unattended:
-codealmanac --yes
+almanac --yes
 ```
 
-`codealmanac` (the bare invocation) routes to a setup wizard that:
+The npm package is `codealmanac`; the command you use is `almanac` (or `alm`).
+Bare `almanac` routes to a setup wizard that:
 - lets you choose a default agent: Claude, Codex, or Cursor,
 - lets you choose a provider model or inherit the provider default,
 - checks local agent readiness,
-- installs auto-capture hooks for Claude, Codex, and Cursor,
-- drops two agent guides into `~/.claude/` (`codealmanac.md` mini, `codealmanac-reference.md` full),
-- appends `@~/.claude/codealmanac.md` to `~/.claude/CLAUDE.md` so every Claude Code session loads the mini guide.
+- installs scheduled auto-capture with a macOS launchd job,
+- drops two agent guides into `~/.claude/` (`almanac.md` mini, `almanac-reference.md` full),
+- appends `@~/.claude/almanac.md` to `~/.claude/CLAUDE.md` so every Claude Code session loads the mini guide.
 
-The setup is idempotent — safe to re-run. Opt out with `--skip-hook` or `--skip-guides`. Later, `almanac uninstall` reverses it.
+The setup is idempotent — safe to re-run. The first time automation is enabled, CodeAlmanac records `automation.capture_since` in `~/.almanac/config.toml`; scheduled sweeps ignore transcripts older than that activation timestamp instead of backfilling your whole chat history. Opt out with `--skip-automation` or `--skip-guides`. Use `--auto-capture-every <duration>` to change the default 5h sweep interval. Later, `almanac uninstall` reverses it.
 
-Two binaries ship, both pointing at the same entry: `codealmanac` (install surface) and `almanac` (day-to-day). Requires Node 20 or 22.
+The canonical binaries are `almanac` and `alm`. A `codealmanac` compatibility bin remains for `npx codealmanac` bootstrap and older installs. Requires Node 20 or 22.
 
-`bootstrap` and `capture` invoke your configured default agent. Claude uses the bundled Claude Agent SDK, Codex uses `codex exec --json`, and Cursor uses `cursor-agent --print --output-format stream-json`. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
+`init`, `capture`, `ingest`, and `garden` invoke your configured default provider unless `--using <provider[/model]>` overrides it. Codex is the built-in recommended default; Claude uses the bundled Claude Agent SDK, Codex uses `codex exec --json`, and Cursor is currently an explicit future-work adapter. The query commands (`search`, `show`, `health`, `topics`) need no credentials at all.
 
 ## Authentication
 
-Pick the agent you want CodeAlmanac to use:
+Pick the agent you want Almanac to use:
 
 ```bash
 # Claude
@@ -88,32 +89,32 @@ almanac config set agent.models.codex gpt-5.3-codex
 almanac config set --project agent.default claude
 ```
 
-codealmanac itself never stores your provider credentials. Auth stays in each agent's normal local credential store.
+Almanac itself never stores your provider credentials. Auth stays in each agent's normal local credential store.
 User config lives in `~/.almanac/config.toml`; project agent defaults can live in `.almanac/config.toml`.
 
 ## Quickstart
 
 ```bash
 npm install -g codealmanac
-codealmanac                   # interactive setup wizard; choose provider + model
-                              # (or: codealmanac --yes)
+almanac                       # interactive setup wizard; choose provider + model
+                              # (or: almanac --yes)
 
 cd your-repo
-almanac bootstrap             # default agent reads the repo and seeds pages + topic DAG
+almanac init                  # default provider reads the repo and builds the wiki
 
 almanac search "auth"         # full-text search across pages
 almanac show checkout-flow    # read a page
 
-# From here on, just code as usual — the installed hooks invoke
-# `almanac capture` at session end, which writes and updates pages
-# based on what happened in the session.
+# From here on, just code as usual — the scheduler periodically runs
+# `almanac capture sweep`, which writes and updates pages based on
+# quiet Claude/Codex transcripts.
 ```
 
-No `almanac init`. A wiki is scaffolded two ways: run `almanac bootstrap` yourself, or clone a repo that already has `.almanac/` committed (codealmanac auto-registers it on the first query).
+A wiki is scaffolded two ways: run `almanac init` yourself, or clone a repo that already has `.almanac/` committed (Almanac auto-registers it on the first query).
 
-Sanity-check the install with `almanac doctor` and `almanac agents list` — they report binary location, native SQLite binding, provider readiness, hook status, guides, import line, and current-wiki stats.
+Sanity-check the install with `almanac doctor` and `almanac agents list` — they report binary location, native SQLite binding, provider readiness, automation status, guides, import line, and current-wiki stats.
 
-New to codealmanac? Read the [Concepts guide](./docs/concepts.md) for a walkthrough of pages, topics, files, the database, and the CLI.
+New to Almanac? Read the [Concepts guide](./docs/concepts.md) for a walkthrough of pages, topics, files, the database, and the CLI.
 
 ## Commands
 
@@ -133,27 +134,35 @@ almanac tag <page> <topic...>                # add topics to a page
 almanac health                               # graph integrity report
 
 # Wiki lifecycle
-almanac bootstrap --agent codex              # seed a new wiki from the repo
-almanac capture --agent cursor <transcript>  # update wiki from a transcript
+almanac init --using codex                   # build a new wiki from the repo
+almanac capture --using claude <transcript>  # update wiki from a session transcript
 almanac capture --json <transcript>          # structured CommandOutcome output
-almanac hook install --source all            # auto-capture for Claude/Codex/Cursor
+almanac capture sweep                        # scan quiet Claude/Codex transcripts
+almanac ingest docs/adr.md                   # absorb files or folders into the wiki
+almanac garden                               # audit and improve the wiki
+almanac jobs                                 # list local background runs
+almanac automation install                   # install 5h scheduled auto-capture
+almanac automation install --every 2h        # customize the sweep interval
+almanac automation status                    # show scheduler status
 
 # Setup & diagnose
 almanac agents list                          # provider readiness + default
-almanac agents use codex                     # change default provider
+almanac agents use codex                     # restore the recommended default provider
 almanac agents model claude claude-opus-4-6  # set provider model
 almanac config list --show-origin            # scriptable settings view
 almanac doctor                               # check install + wiki health
 almanac update                               # update to latest version
 ```
 
-`bootstrap` and `capture` resolve provider settings in the standard order:
-`--agent` / `--model`, then `ALMANAC_AGENT` / `ALMANAC_MODEL`, then config.
+`init`, `capture`, `ingest`, and `garden` resolve provider settings through `--using <provider[/model]>`, then provider config.
 
-All query commands output slugs one per line. Add `--json` for structured output. Pipe with `--stdin`:
+Query commands stay pipe-friendly: use slug-only output for scripts and `--json`
+for structured output. `almanac search --summaries` adds one-line page
+summaries for scan-friendly terminal browsing; `--slugs` forces slug-only
+output. Pipe with `--stdin`:
 
 ```bash
-almanac search --topic flows | almanac show --stdin
+almanac search --topic flows --slugs | almanac show --stdin
 almanac search --stale 90d | almanac tag --stdin needs-review
 ```
 
@@ -161,15 +170,17 @@ Run `almanac <command> --help` for the full flag surface.
 
 ## How capture works
 
-When a Claude, Codex, or Cursor session ends, the installed hook backgrounds `almanac capture`. The writer agent reads the session transcript, runs `almanac search` and `almanac show` against the existing wiki, drafts changes to pages under `.almanac/pages/`, and performs a reviewer pass. Claude uses its SDK's read-only reviewer subagent; Codex and Cursor perform the reviewer pass from prompt guidance until stricter provider enforcement lands. The reviewer checks duplicates, missing wikilinks, missing topics, inference dressed as fact, and cohesion problems. The writer decides what to incorporate and writes the final versions.
+Scheduled capture runs `almanac capture sweep`. The sweep scans Claude and Codex transcript stores, ignores transcripts older than the automation activation timestamp, ignores active transcripts until they have been quiet long enough, maps each transcript back to the nearest repo with `.almanac/`, and uses `.almanac/runs/capture-ledger.json` to remember which transcript lines/bytes were already captured. Capture still receives the original full transcript path; the sweep adds cursor guidance telling the agent where new material begins.
+
+Manual `almanac capture <transcript>` works the same way as before: it resolves transcript inputs, builds the same Absorb operation used by `almanac ingest`, and starts a provider run through the process manager. The provider adapter decides how to express the requested prompt, tools, and future subagents for Claude, Codex, or Cursor.
 
 Capture writes nothing if nothing in the session meets the notability bar — silence is a valid outcome.
 
-No proposal files, no `--apply` step, no state machine between writer and reviewer. The changes land in `git status` and you commit them like anything else.
+No proposal files, no `--apply` step, no hardcoded reviewer/scout/researcher pipeline. The changes land in `git status` and you commit them like anything else.
 
 ### The notability bar
 
-Every repo's `.almanac/README.md` contains a notability bar: the threshold for what deserves a page. The default is "non-obvious knowledge that will help a future agent" — decisions that took research, gotchas discovered through failure, cross-cutting flows, constraints not visible in code. The writer consults the bar before writing; the reviewer enforces it. Edit the bar to match your repo's taste.
+Every repo's `.almanac/README.md` contains a notability bar: the threshold for what deserves a page. The default is "non-obvious knowledge that will help a future agent" — decisions that took research, gotchas discovered through failure, cross-cutting flows, constraints not visible in code. The operation prompt consults the bar before writing. Edit the bar to match your repo's taste.
 
 ### Archive vs edit
 
@@ -191,18 +202,18 @@ Cross-wiki references use a colon prefix: `[[openalmanac:supabase]]`. The segmen
 `v0.2.1`, pre-release. Node 20.x or 22.x. Release process is documented in [RELEASE.md](./RELEASE.md). Breaking changes are possible before 1.0; they will be called out in release notes.
 ## Philosophy
 
-Intelligence lives in the prompt, not in the pipeline. Whenever a task calls for judgment — deciding what from a session is worth capturing, evaluating a proposal against the graph, picking between editing and archiving — codealmanac hands a concrete-but-open prompt to an agent. It does not wrap agents in propose/review/apply state machines, intermediate proposal files, or `--dry-run` rehearsal flags. The CLI finds and organizes; the agents do the thinking. If a future change can be expressed as a longer prompt or as more pipeline code, the prompt almost always wins.
+Intelligence lives in the prompt, not in the pipeline. Whenever a task calls for judgment — deciding what from a session is worth capturing, evaluating a proposal against the graph, picking between editing and archiving — Almanac hands a concrete-but-open prompt to an agent. It does not wrap agents in propose/review/apply state machines, intermediate proposal files, or `--dry-run` rehearsal flags. The CLI finds and organizes; the agents do the thinking. If a future change can be expressed as a longer prompt or as more pipeline code, the prompt almost always wins.
 
 ## Contributing
 
-codealmanac is source-available for noncommercial use under the PolyForm Noncommercial License 1.0.0. Commercial use requires a separate paid commercial license; see [COMMERCIAL.md](./COMMERCIAL.md). To set up a development environment:
+Almanac is open source under the MIT license. To set up a development environment:
 
 ```bash
 git clone https://github.com/AlmanacCode/codealmanac.git
 cd codealmanac
 npm install
 npm run build
-npm link                  # makes `almanac` and `codealmanac` available globally
+npm link                  # makes `almanac`, `alm`, and compatibility `codealmanac` available globally
 npm test                  # run the test suite (vitest)
 ```
 
@@ -223,7 +234,10 @@ src/
 │   └── paths.ts        ← path normalization
 ├── registry/           ← global wiki registry (~/.almanac/registry.json)
 ├── topics/             ← topic DAG + frontmatter rewriting
-├── agent/              ← Claude Agent SDK integration
+├── harness/            ← provider-neutral run specs and provider adapters
+├── process/            ← local run records, logs, background jobs
+├── operations/         ← build, absorb, and garden operation specs
+├── agent/              ← provider setup/status helpers and prompt loading
 ├── paths.ts            ← find nearest .almanac/ (like git finds .git/)
 └── slug.ts             ← kebab-case canonicalization
 ```
@@ -234,8 +248,8 @@ v0.1.10, pre-release. Node 20.x or 22.x. Release process is documented in [RELEA
 
 ## Related
 
-codealmanac is part of the [OpenAlmanac](https://www.openalmanac.org) family. OpenAlmanac is a knowledge base for curious people; codealmanac is knowledge for codebases. Same writing standards, different reader.
+Almanac is part of the [OpenAlmanac](https://www.openalmanac.org) family. OpenAlmanac is a knowledge base for curious people; Almanac is knowledge for codebases. Same writing standards, different reader.
 
 ## License
 
-PolyForm Noncommercial License 1.0.0. Commercial use requires a separate paid commercial license; see [COMMERCIAL.md](./COMMERCIAL.md). Copyright (c) 2026 Rohan Sheth. See [LICENSE](./LICENSE).
+MIT. Copyright (c) 2026 Rohan Sheth. See [LICENSE](./LICENSE).

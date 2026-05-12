@@ -1,10 +1,10 @@
-# codealmanac — a wiki for this codebase, maintained for you
+# Almanac — a wiki for this codebase, maintained for you
 
 This repo has a `.almanac/` directory. It's a **living wiki** written for AI agents, documenting the things the code can't say: **why** it's shaped this way, **what was tried and failed**, **what must not be violated**, **how things flow end-to-end**, and **known gotchas** discovered through real debugging.
 
 You are the primary reader. When the user asks you to do something, **check the wiki before you touch related code** — it will often answer the question the user didn't think to ask ("we tried that in March, here's why it broke").
 
-You don't write the wiki during normal work. A separate agent ("capture") runs automatically at session end via a Claude Code hook, reads the session transcript, and writes or updates pages. Your job during the session is: **read, use, occasionally fix obvious errors.**
+You usually don't write the wiki during normal work. `almanac capture` runs automatically at session end through the installed hook, reads the session transcript, and starts an Absorb job that writes or updates pages. Your job during the session is: **read, use, occasionally fix obvious errors.**
 
 ---
 
@@ -45,7 +45,7 @@ The output is page slugs. Pick 1-3 that look relevant, `almanac show <slug>`, fo
 
 ## The commands you'll use
 
-Other commands exist (`list`, `tag`, `untag`, `hook`, `uninstall`, `doctor`, etc.) — most are administrative. See `almanac --help` or `@~/.claude/codealmanac-reference.md` for the full surface. In normal sessions you'll live in the four commands below.
+Other commands exist (`list`, `tag`, `untag`, `hook`, `uninstall`, `doctor`, etc.) — most are administrative. See `almanac --help` or `@~/.claude/almanac-reference.md` for the full surface. In normal sessions you'll live in the four commands below.
 
 ### 1. `almanac search` — the starting point
 
@@ -165,9 +165,10 @@ You don't write anything. At session end the capture agent reads the transcript,
 
 ## What runs automatically (don't invoke these)
 
-- **`almanac capture`** — runs in the background after every Claude Code session via the `SessionEnd` hook.
+- **`almanac capture`** — starts a background Absorb job after supported agent sessions through the installed hook.
 - **`almanac reindex`** — runs implicitly before every query when pages changed.
-- **`almanac bootstrap`** — one-shot scaffolding. You almost certainly don't run this.
+
+Run `almanac init` yourself when you are creating the first wiki for a repo.
 
 ---
 
@@ -186,7 +187,7 @@ If the user has multiple repos with `.almanac/`, they're globally registered. Pa
 - **Reference code with `[[...]]`.** Inline mentions are fine but only `[[...]]` gets indexed.
 - **List files in frontmatter.** Pages about specific code need `files: [...]` to surface in `--mentions` queries.
 
-The reviewer subagent (run by capture at session end) enforces these. Stricter with yourself = less rework.
+The Absorb/Garden prompts enforce these during wiki-writing runs. Stricter with yourself = less rework.
 
 ---
 
@@ -210,20 +211,21 @@ Empty stdout plus `# 0 results` on stderr means the query ran and genuinely matc
 ```bash
 almanac doctor              # install.hook: ok/problem, wiki.capture: last capture age
 almanac hook status         # just the hook entry
-ls -lah .almanac/logs/.capture-*.log
+almanac jobs
+ls -lah .almanac/runs/
 ```
-No logs at all → the hook isn't installed, or bailed before backgrounding, or `cwd` was outside any wiki (silent correct no-op). Capture ran but wrote nothing → the reviewer rejected the draft for notability, or the session was pure-read. Check `.almanac/logs/.capture-<id>.log` for the writer/reviewer transcript.
+No jobs at all → the hook isn't installed, bailed before starting capture, or `cwd` was outside any wiki (silent correct no-op). Capture ran but wrote nothing → the Absorb run decided there was no durable wiki change, or the session was pure-read. Use `almanac jobs show <run-id>` and `almanac jobs logs <run-id>` for details.
 
 ---
 
 ## Staying current
 
-codealmanac checks for updates in the background (once per 24h) after each
+Almanac checks for updates in the background (once per 24h) after each
 command. When a new version is available, you'll see a stderr banner on
 every subsequent invocation:
 
 ```
-! codealmanac 0.1.6 available (you're on 0.1.5) — run: almanac update
+! Almanac 0.1.6 available (you're on 0.1.5) — run: almanac update
 ```
 
 The banner shows on every command until you update or dismiss it. Run:
@@ -245,5 +247,5 @@ install) is the design. See `almanac update --help` for the full flag set.
 ## When in doubt
 
 - `.almanac/README.md` — repo-specific conventions + notability bar
-- `@~/.claude/codealmanac-reference.md` — full command reference with every flag
+- `@~/.claude/almanac-reference.md` — full command reference with every flag
 - `almanac --help`, `almanac <command> --help` — built-in
