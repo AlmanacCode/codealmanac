@@ -862,12 +862,16 @@ async function installGuides(
   const destMini = path.join(options.claudeDir, "almanac.md");
   const destRef = path.join(options.claudeDir, "almanac-reference.md");
 
+  const miniContents = await readFile(srcMini, "utf8");
   const miniChanged = await copyIfChanged(srcMini, destMini);
   const refChanged = await copyIfChanged(srcRef, destRef);
 
   const claudeMd = path.join(options.claudeDir, "CLAUDE.md");
   const importChanged = await ensureImport(claudeMd);
-  const codexChanged = await ensureCodexInstructions(options.codexDir);
+  const codexChanged = await ensureCodexInstructions(
+    options.codexDir,
+    miniContents,
+  );
 
   const filesWritten: string[] = [];
   if (miniChanged) filesWritten.push("almanac.md");

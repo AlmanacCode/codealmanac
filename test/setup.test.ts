@@ -185,9 +185,7 @@ describe("codealmanac setup", () => {
         "utf8",
       );
       expect(hasCodexInstructions(codexAgents)).toBe(true);
-      expect(codexAgents).toContain("## Almanac");
-      expect(codexAgents).toContain("Use Almanac");
-      expect(codexAgents).not.toContain("## codealmanac");
+      expect(codexAgents).toContain("# almanac (mini)");
     });
   });
 

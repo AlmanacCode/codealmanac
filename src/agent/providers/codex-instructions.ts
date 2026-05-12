@@ -5,21 +5,12 @@ import path from "node:path";
 export const CODEX_INSTRUCTIONS_START = "<!-- almanac:start -->";
 export const CODEX_INSTRUCTIONS_END = "<!-- almanac:end -->";
 
-const CODEX_INSTRUCTIONS_BODY = `${CODEX_INSTRUCTIONS_START}
-## Almanac
-
-Use Almanac before answering codebase questions:
-- Search the wiki for relevant context.
-- Read matching pages before making claims about the codebase.
-- Update the wiki when implementation decisions, workflows, invariants, or gotchas change.
-
-${CODEX_INSTRUCTIONS_END}`;
-
 // Codex treats @file references inside AGENTS.md as plain text rather than
 // expanding them like Claude does in CLAUDE.md. Keep the managed instructions
 // inline so they are actually present in Codex's prompt input.
 export async function ensureCodexInstructions(
   codexDir: string,
+  guideContents: string,
 ): Promise<boolean> {
   await mkdir(codexDir, { recursive: true });
   const agentsPath = await resolveCodexAgentsPath(codexDir);
@@ -32,11 +23,17 @@ export async function ensureCodexInstructions(
     existing,
     CODEX_INSTRUCTIONS_START,
     CODEX_INSTRUCTIONS_END,
-    CODEX_INSTRUCTIONS_BODY,
+    formatCodexInstructions(guideContents),
   );
   if (next === existing) return false;
   await writeFile(agentsPath, next, "utf8");
   return true;
+}
+
+function formatCodexInstructions(guideContents: string): string {
+  return `${CODEX_INSTRUCTIONS_START}
+${guideContents.trimEnd()}
+${CODEX_INSTRUCTIONS_END}`;
 }
 
 export async function resolveCodexAgentsPath(
