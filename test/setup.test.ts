@@ -118,6 +118,30 @@ afterEach(() => {
 });
 
 describe("codealmanac setup", () => {
+  it("renders the Almanac banner with a complete final C", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const res = await runSetup({
+        yes: true,
+        skipHook: true,
+        isTTY: false,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        settingsPath: env.settingsPath,
+        hookScriptPath: env.hookScriptPath,
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      const output = env.stdout();
+      expect(output).toContain("/ ___|");
+      expect(output).toContain("| |    ");
+      expect(output).toContain("| |___");
+      expect(output).toContain("\\____|");
+    });
+  });
+
   it("installs hook + guides + CLAUDE.md import when --yes", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
