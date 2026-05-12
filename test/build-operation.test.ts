@@ -38,6 +38,8 @@ describe("build operation", () => {
       expect(spec.prompt).toContain("Almanac is cultivated project memory");
       expect(spec.prompt).toContain("Page Notability And Graph Structure");
       expect(spec.prompt).toContain("Page Syntax And Writing Conventions");
+      expect(spec.prompt).toContain("Source Control Hygiene");
+      expect(spec.prompt).toContain("almanac: <short summary>");
       expect(spec.prompt).toContain(
         "You are building the first substantial Almanac wiki",
       );
