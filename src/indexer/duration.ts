@@ -2,6 +2,7 @@
  * Parse a compact duration string of the form `<N><unit>` into seconds.
  *
  * Accepted units (from the spec, `--since` / `--stale`):
+ *   - `s` — seconds
  *   - `m` — minutes
  *   - `h` — hours
  *   - `d` — days
@@ -15,15 +16,17 @@
  */
 export function parseDuration(input: string): number {
   const trimmed = input.trim();
-  const m = trimmed.match(/^(\d+)([mhdw])$/);
+  const m = trimmed.match(/^(\d+)([smhdw])$/);
   if (m === null) {
     throw new Error(
-      `invalid duration "${input}" (expected Nw, Nd, Nh, or Nm — e.g. 2w, 30d)`,
+      `invalid duration "${input}" (expected Ns, Nm, Nh, Nd, or Nw — e.g. 30s, 45m, 2w)`,
     );
   }
   const n = Number.parseInt(m[1] ?? "0", 10);
   const unit = m[2];
   switch (unit) {
+    case "s":
+      return n;
     case "m":
       return n * 60;
     case "h":

@@ -347,18 +347,27 @@ async function tryRunSqliteFreeCommand(
 
 function parseAutomationInstallFlags(args: string[]): {
   ok: true;
-  options: { every?: string };
+  options: { every?: string; quiet?: string };
 } | {
   ok: false;
   error: string;
 } {
-  const idx = args.indexOf("--every");
-  if (idx < 0) return { ok: true, options: {} };
-  const value = args[idx + 1];
-  if (value === undefined || value.startsWith("-")) {
-    return { ok: false, error: "missing value for --every" };
+  const options: { every?: string; quiet?: string } = {};
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg !== "--every" && arg !== "--quiet") continue;
+    const value = args[i + 1];
+    if (value === undefined || value.startsWith("-")) {
+      return { ok: false, error: `missing value for ${arg}` };
+    }
+    if (arg === "--every") {
+      options.every = value;
+    } else {
+      options.quiet = value;
+    }
+    i++;
   }
-  return { ok: true, options: { every: value } };
+  return { ok: true, options };
 }
 
 function readPackageVersion(): string {
@@ -380,6 +389,7 @@ export interface SetupShortcutOptions {
   model?: string;
   skipAutomation?: boolean;
   automationEvery?: string;
+  automationQuiet?: string;
   skipGuides?: boolean;
 }
 
@@ -425,6 +435,13 @@ function parseSetupShortcutFlags(args: string[]): SetupShortcutOptions | null {
       const value = args[i + 1];
       if (value === undefined || value.startsWith("-")) return null;
       opts.automationEvery = value;
+      i += 1;
+      continue;
+    }
+    if (arg === "--auto-capture-quiet") {
+      const value = args[i + 1];
+      if (value === undefined || value.startsWith("-")) return null;
+      opts.automationQuiet = value;
       i += 1;
       continue;
     }

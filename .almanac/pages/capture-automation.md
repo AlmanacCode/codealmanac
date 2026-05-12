@@ -16,7 +16,7 @@ files:
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
 status: implemented
-verified: 2026-05-11
+verified: 2026-05-12
 ---
 
 # Capture Automation
@@ -248,7 +248,7 @@ Future work around rollout or defaults should preserve three consequences from t
 
 The final turn of the same session tightened that rollout stance further: automatic capture should not backfill historic transcripts by default at all. The implemented product behavior is to record an automation activation timestamp when the user enables scheduled capture, then have future sweeps consider only transcripts modified after that baseline. Historical transcripts can still be counted and reported as ignored, but they should not silently become the initial backlog for a new automation install.
 
-That recommendation is not yet reflected in the current implementation. `runAutomationInstall()` installs the scheduler, and `runCaptureSweepCommand()` still scans purely by quiet-window and ledger state. Future work in this area should preserve the distinction between:
+Future work in this area should preserve the distinction between:
 
 - historical transcript inventory that predates automation enablement
 - new transcript activity that happened after automation became active

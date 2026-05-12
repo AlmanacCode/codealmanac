@@ -91,6 +91,8 @@ export interface SetupOptions {
   skipAutomation?: boolean;
   /** Configure the scheduled auto-capture interval. Defaults to 5h. */
   automationEvery?: string;
+  /** Configure the scheduled auto-capture quiet window. Defaults to 45m. */
+  automationQuiet?: string;
   /** Don't install the CLAUDE.md guides. */
   skipGuides?: boolean;
   /** Set the default agent provider during setup. */
@@ -311,6 +313,7 @@ export async function runSetup(
     await cleanupLegacyHooks();
     const res = await runAutomationInstall({
       every: options.automationEvery,
+      quiet: options.automationQuiet,
       plistPath: options.automationPlistPath,
       exec: options.automationExec,
     });

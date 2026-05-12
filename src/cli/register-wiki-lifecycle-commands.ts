@@ -307,8 +307,12 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .command("install")
     .description("install the macOS launchd auto-capture job")
     .option("--every <duration>", "run interval (default: 5h)")
-    .action(async (opts: { every?: string }) => {
-      const result = await runAutomationInstall({ every: opts.every });
+    .option("--quiet <duration>", "minimum quiet time before capture (default: 45m)")
+    .action(async (opts: { every?: string; quiet?: string }) => {
+      const result = await runAutomationInstall({
+        every: opts.every,
+        quiet: opts.quiet,
+      });
       emit(result);
     });
 

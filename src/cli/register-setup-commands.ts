@@ -147,6 +147,7 @@ export function registerSetupCommands(program: Command): void {
     .option("--model <model>", "default model for the selected agent")
     .option("--skip-automation", "opt out of scheduled auto-capture")
     .option("--auto-capture-every <duration>", "scheduled auto-capture interval (default: 5h)")
+    .option("--auto-capture-quiet <duration>", "scheduled auto-capture quiet window (default: 45m)")
     .option("--skip-guides", "opt out of the CLAUDE.md guides")
     .action(
       async (opts: {
@@ -155,6 +156,7 @@ export function registerSetupCommands(program: Command): void {
         model?: string;
         skipAutomation?: boolean;
         autoCaptureEvery?: string;
+        autoCaptureQuiet?: string;
         skipGuides?: boolean;
       }) => {
         const result = await runSetup({
@@ -163,6 +165,7 @@ export function registerSetupCommands(program: Command): void {
           model: opts.model,
           skipAutomation: opts.skipAutomation,
           automationEvery: opts.autoCaptureEvery,
+          automationQuiet: opts.autoCaptureQuiet,
           skipGuides: opts.skipGuides,
         });
         emit(result);
