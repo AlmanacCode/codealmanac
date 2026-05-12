@@ -4,7 +4,11 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import { runHookUninstall } from "./hook.js";
-import { IMPORT_LINE } from "./setup.js";
+import {
+  CODEX_INSTRUCTIONS_END,
+  CODEX_INSTRUCTIONS_START,
+  IMPORT_LINE,
+} from "./setup.js";
 
 /**
  * `almanac uninstall` — the reverse of `setup`.
@@ -20,7 +24,8 @@ import { IMPORT_LINE } from "./setup.js";
  *   2. The guide files `~/.claude/almanac.md` and
  *      `~/.claude/almanac-reference.md`. Legacy `codealmanac*.md` guide
  *      files are removed too.
- *   3. The SessionEnd hook entry (delegated to `runHookUninstall`, which
+ *   3. The managed Almanac block from Codex's global AGENTS file.
+ *   4. The SessionEnd hook entry (delegated to `runHookUninstall`, which
  *      already knows how to leave foreign entries alone).
  *
  * Flags:
@@ -41,6 +46,7 @@ export interface UninstallOptions {
   settingsPath?: string;
   hookScriptPath?: string;
   claudeDir?: string;
+  codexDir?: string;
   isTTY?: boolean;
   stdout?: NodeJS.WritableStream;
 }
@@ -55,6 +61,8 @@ const BLUE = "\x1b[38;5;75m";
 const DIM = "\x1b[2m";
 const RST = "\x1b[0m";
 const LEGACY_IMPORT_LINE = "@~/.claude/codealmanac.md";
+const LEGACY_CODEX_INSTRUCTIONS_START = "<!-- codealmanac:start -->";
+const LEGACY_CODEX_INSTRUCTIONS_END = "<!-- codealmanac:end -->";
 
 export async function runUninstall(
   options: UninstallOptions = {},
@@ -64,6 +72,7 @@ export async function runUninstall(
     options.isTTY ?? (process.stdin.isTTY === true);
   const interactive = isTTY && options.yes !== true;
   const claudeDir = options.claudeDir ?? path.join(homedir(), ".claude");
+  const codexDir = options.codexDir ?? path.join(homedir(), ".codex");
 
   out.write("\n");
 
@@ -99,12 +108,12 @@ export async function runUninstall(
   } else if (interactive) {
     removeGuides = await confirm(
       out,
-      "Remove the guides + CLAUDE.md import line?",
+      "Remove agent instructions?",
       true,
     );
   }
   if (removeGuides) {
-    const summary = await removeGuideFiles(claudeDir);
+    const summary = await removeGuideFiles(claudeDir, codexDir);
     if (summary.anyChanges) {
       out.write(
         `  ${BLUE}\u25c7${RST}  Guides removed (${summary.filesTouched.join(", ")})\n`,
@@ -128,6 +137,7 @@ interface RemoveGuidesResult {
 
 async function removeGuideFiles(
   claudeDir: string,
+  codexDir: string,
 ): Promise<RemoveGuidesResult> {
   const touched: string[] = [];
 
@@ -162,6 +172,32 @@ async function removeGuideFiles(
         await writeFile(claudeMd, body, "utf8");
         touched.push("CLAUDE.md");
       }
+    }
+  }
+
+  for (const agentsFile of [
+    path.join(codexDir, "AGENTS.md"),
+    path.join(codexDir, "AGENTS.override.md"),
+  ]) {
+    if (!existsSync(agentsFile)) continue;
+    const existing = await readFile(agentsFile, "utf8");
+    const first = removeManagedBlock(
+      existing,
+      CODEX_INSTRUCTIONS_START,
+      CODEX_INSTRUCTIONS_END,
+    );
+    const second = removeManagedBlock(
+      first.body,
+      LEGACY_CODEX_INSTRUCTIONS_START,
+      LEGACY_CODEX_INSTRUCTIONS_END,
+    );
+    if (!first.changed && !second.changed) continue;
+    if (second.body.trim().length === 0) {
+      await rm(agentsFile, { force: true });
+      touched.push(`${path.basename(agentsFile)} (deleted)`);
+    } else {
+      await writeFile(agentsFile, second.body, "utf8");
+      touched.push(path.basename(agentsFile));
     }
   }
 
@@ -216,6 +252,24 @@ function isImportLineFor(line: string, importLine: string): boolean {
   if (line === importLine) return true;
   const rest = line.slice(importLine.length);
   return line.startsWith(importLine) && /^[\t ]/.test(rest);
+}
+
+export function removeManagedBlock(
+  contents: string,
+  start: string,
+  end: string,
+): { changed: boolean; body: string } {
+  const startIndex = contents.indexOf(start);
+  const endIndex = contents.indexOf(end);
+  if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+    return { changed: false, body: contents };
+  }
+
+  const afterEnd = endIndex + end.length;
+  let body = `${contents.slice(0, startIndex)}${contents.slice(afterEnd)}`;
+  body = body.replace(/\n\n\n+/g, "\n\n");
+  body = body.replace(/^\n+/, "");
+  return { changed: true, body };
 }
 
 function confirm(

@@ -8,7 +8,11 @@ import type {
   SpawnCliFn,
   SpawnedProcess,
 } from "../src/agent/providers/claude/index.js";
-import { runSetup, hasImportLine } from "../src/commands/setup.js";
+import {
+  runSetup,
+  hasCodexInstructions,
+  hasImportLine,
+} from "../src/commands/setup.js";
 import { readConfig, writeConfig } from "../src/update/config.js";
 import { withTempHome } from "./helpers.js";
 
@@ -76,6 +80,7 @@ interface Env {
   settingsPath: string;
   hookScriptPath: string;
   claudeDir: string;
+  codexDir: string;
   guidesDir: string;
   out: PassThrough;
   stdout: () => string;
@@ -88,6 +93,7 @@ async function scaffold(home: string): Promise<Env> {
   await writeFile(hookScriptPath, "#!/bin/bash\nexit 0\n", "utf8");
 
   const claudeDir = join(home, ".claude");
+  const codexDir = join(home, ".codex");
   const guidesDir = join(home, "fake-guides");
   await scaffoldGuides(guidesDir);
 
@@ -99,6 +105,7 @@ async function scaffold(home: string): Promise<Env> {
     settingsPath,
     hookScriptPath,
     claudeDir,
+    codexDir,
     guidesDir,
     out,
     stdout: () => Buffer.concat(chunks).toString("utf8"),
@@ -139,6 +146,48 @@ describe("codealmanac setup", () => {
       expect(output).toContain("| |    ");
       expect(output).toContain("| |___");
       expect(output).toContain("\\____|");
+    });
+  });
+
+  it("uses the latest setup flow while preserving Almanac naming", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const res = await runSetup({
+        yes: true,
+        skipHook: true,
+        isTTY: false,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        settingsPath: env.settingsPath,
+        hookScriptPath: env.hookScriptPath,
+        claudeDir: env.claudeDir,
+        codexDir: env.codexDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      const output = env.stdout();
+      expect(output).toContain("Set up your automatic codebase wiki");
+      expect(output).toContain("Agent:");
+      expect(output).toContain("Agent instructions added");
+      expect(output).not.toContain("Install the hook + agent guides");
+      expect(output).not.toContain("Claude auth:");
+      expect(output).not.toContain("Default agent:");
+
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(true);
+      expect(existsSync(join(env.claudeDir, "almanac-reference.md"))).toBe(
+        true,
+      );
+      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
+
+      const codexAgents = await readFile(
+        join(env.codexDir, "AGENTS.md"),
+        "utf8",
+      );
+      expect(hasCodexInstructions(codexAgents)).toBe(true);
+      expect(codexAgents).toContain("## Almanac");
+      expect(codexAgents).toContain("Use Almanac");
+      expect(codexAgents).not.toContain("## codealmanac");
     });
   });
 
@@ -228,6 +277,11 @@ describe("codealmanac setup", () => {
       expect(secondClaudeMd).toBe(firstClaudeMd);
       const matches = secondClaudeMd.match(/@~\/\.claude\/almanac\.md/g);
       expect(matches).toHaveLength(1);
+      const codexAgents = await readFile(
+        join(env.codexDir, "AGENTS.md"),
+        "utf8",
+      );
+      expect(codexAgents.match(/<!-- almanac:start -->/g)).toHaveLength(1);
 
       // SessionEnd still has just one wrapped entry — idempotent under
       // the new schema.
@@ -331,12 +385,12 @@ describe("codealmanac setup", () => {
           },
         },
       });
-      expect(env.stdout()).toContain("Default agent:");
+      expect(env.stdout()).toContain("Agent:");
       expect(env.stdout()).toContain("claude-opus-4-6");
     });
   });
 
-  it("keeps non-interactive setup on provider defaults when no model override is passed", async () => {
+  it("uses the recommended Codex model when setup selects Codex", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const res = await runSetup({
@@ -356,11 +410,11 @@ describe("codealmanac setup", () => {
         agent: {
           default: "codex",
           models: {
-            codex: null,
+            codex: "gpt-5.4",
           },
         },
       });
-      expect(env.stdout()).toContain("provider default");
+      expect(env.stdout()).toContain("gpt-5.4");
     });
   });
 
@@ -407,7 +461,7 @@ describe("codealmanac setup", () => {
         configurable: true,
       });
       queueMicrotask(() => {
-        input.write("\n");
+        input.write("1\n");
         input.write("\n");
         input.write("n\n");
         input.write("n\n");
@@ -443,7 +497,7 @@ describe("codealmanac setup", () => {
     });
   });
 
-  it("reports not-signed-in auth status without blocking setup", async () => {
+  it("does not render the old standalone Claude auth step", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const res = await runSetup({
@@ -460,12 +514,12 @@ describe("codealmanac setup", () => {
       // Install still succeeds — the user hits the auth wall on `capture`,
       // not here.
       expect(res.exitCode).toBe(0);
-      expect(env.stdout()).toMatch(/not signed in/);
+      expect(env.stdout()).not.toMatch(/Claude auth:/);
       expect(existsSync(env.settingsPath)).toBe(true);
     });
   });
 
-  it("reports ANTHROPIC_API_KEY auth path when set", async () => {
+  it("does not render ANTHROPIC_API_KEY as a standalone setup step", async () => {
     process.env.ANTHROPIC_API_KEY = "sk-ant-test-key";
     await withTempHome(async (home) => {
       const env = await scaffold(home);
@@ -480,7 +534,7 @@ describe("codealmanac setup", () => {
         stdout: env.out,
       });
 
-      expect(env.stdout()).toMatch(/ANTHROPIC_API_KEY/);
+      expect(env.stdout()).not.toMatch(/ANTHROPIC_API_KEY/);
     });
   });
 

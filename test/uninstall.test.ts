@@ -18,6 +18,7 @@ interface Env {
   settingsPath: string;
   hookScriptPath: string;
   claudeDir: string;
+  codexDir: string;
   out: PassThrough;
 }
 
@@ -27,10 +28,11 @@ async function scaffold(home: string): Promise<Env> {
   await mkdir(join(home, "fake-hooks"), { recursive: true });
   await writeFile(hookScriptPath, "#!/bin/bash\nexit 0\n", "utf8");
   const claudeDir = join(home, ".claude");
+  const codexDir = join(home, ".codex");
   const out = new PassThrough();
   // Drain so backpressure never stalls runUninstall's writes.
   out.on("data", () => {});
-  return { settingsPath, hookScriptPath, claudeDir, out };
+  return { settingsPath, hookScriptPath, claudeDir, codexDir, out };
 }
 
 async function primeInstalled(env: Env): Promise<void> {
@@ -78,6 +80,12 @@ async function primeInstalled(env: Env): Promise<void> {
     "# existing\n\n@~/.claude/almanac.md\n",
     "utf8",
   );
+  await mkdir(env.codexDir, { recursive: true });
+  await writeFile(
+    join(env.codexDir, "AGENTS.md"),
+    "# existing\n\n<!-- almanac:start -->\n## Almanac\n<!-- almanac:end -->\n",
+    "utf8",
+  );
 }
 
 describe("almanac uninstall", () => {
@@ -92,6 +100,7 @@ describe("almanac uninstall", () => {
         settingsPath: env.settingsPath,
         hookScriptPath: env.hookScriptPath,
         claudeDir: env.claudeDir,
+        codexDir: env.codexDir,
         stdout: env.out,
       });
 
@@ -117,6 +126,12 @@ describe("almanac uninstall", () => {
       );
       expect(body).toMatch(/# existing/);
       expect(body).not.toMatch(/@~\/\.claude\/almanac\.md/);
+      const codexAgents = await readFile(
+        join(env.codexDir, "AGENTS.md"),
+        "utf8",
+      );
+      expect(codexAgents).toMatch(/# existing/);
+      expect(codexAgents).not.toMatch(/<!-- almanac:start -->/);
     });
   });
 
@@ -357,6 +372,33 @@ describe("almanac uninstall", () => {
       const body = await readFile(join(env.claudeDir, "CLAUDE.md"), "utf8");
       expect(body).toMatch(/# existing/);
       expect(body).not.toMatch(/@~\/\.claude\/codealmanac\.md/);
+    });
+  });
+
+  it("removes legacy codealmanac Codex instruction blocks", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      await mkdir(env.codexDir, { recursive: true });
+      await writeFile(
+        join(env.codexDir, "AGENTS.md"),
+        "# existing\n\n<!-- codealmanac:start -->\n## codealmanac\n<!-- codealmanac:end -->\n",
+        "utf8",
+      );
+
+      const res = await runUninstall({
+        yes: true,
+        isTTY: false,
+        settingsPath: env.settingsPath,
+        hookScriptPath: env.hookScriptPath,
+        claudeDir: env.claudeDir,
+        codexDir: env.codexDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      const body = await readFile(join(env.codexDir, "AGENTS.md"), "utf8");
+      expect(body).toMatch(/# existing/);
+      expect(body).not.toMatch(/codealmanac:start/);
     });
   });
 

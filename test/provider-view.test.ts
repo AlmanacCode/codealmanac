@@ -63,14 +63,24 @@ describe("provider setup view", () => {
             source: "configured",
           },
           {
+            value: "claude-opus-4-7",
+            label: "Claude Opus 4.7",
+            source: "catalog",
+          },
+          {
             value: "claude-sonnet-4-6",
-            label: "claude-sonnet-4-6",
-            source: "provider-default",
+            label: "Claude Sonnet 4.6",
+            source: "catalog",
             recommended: true,
           },
           {
+            value: "claude-haiku-4-5",
+            label: "Claude Haiku 4.5",
+            source: "catalog",
+          },
+          {
             value: "__custom__",
-            label: "custom model id",
+            label: "Enter a model name",
             source: "custom",
           },
         ],
@@ -84,24 +94,37 @@ describe("provider setup view", () => {
         account: "ChatGPT account: rohan@example.com",
         modelChoices: [
           {
-            value: null,
-            label: "provider default",
-            source: "provider-default",
+            value: "gpt-5.5",
+            label: "GPT-5.5",
+            source: "catalog",
+          },
+          {
+            value: "gpt-5.4",
+            label: "GPT-5.4",
+            source: "catalog",
             recommended: true,
           },
           {
+            value: "gpt-5.4-mini",
+            label: "GPT-5.4-Mini",
+            source: "catalog",
+          },
+          {
+            value: "gpt-5.3-codex",
+            label: "GPT-5.3 Codex",
+            source: "catalog",
+          },
+          {
             value: "__custom__",
-            label: "custom model id",
+            label: "Enter a model name",
             source: "custom",
           },
         ],
       },
-      {
-        id: "cursor",
-        label: "Cursor",
-        readiness: "not-authenticated",
-        fixCommand: "run: cursor-agent login",
-      },
+    ]);
+    expect(view.choices.map((choice) => choice.id)).toEqual([
+      "claude",
+      "codex",
     ]);
   });
 

@@ -1,10 +1,16 @@
 import {
   AGENT_PROVIDER_METADATA,
+  getAgentProvider,
   listProviderStatuses,
 } from "./providers.js";
-import type { ProviderStatus, SpawnCliFn } from "./types.js";
+import type {
+  ProviderModelChoice,
+  ProviderStatus,
+  SpawnCliFn,
+} from "./types.js";
 import {
-  AGENT_PROVIDER_IDS,
+  formatEnabledAgentProviderList,
+  getEnabledAgentProviderIds,
   isAgentProviderId,
   readConfig,
   type AgentProviderId,
@@ -29,13 +35,6 @@ export interface ProviderSetupChoice {
   detail: string;
   fixCommand: string | null;
   modelChoices: ProviderModelChoice[];
-}
-
-export interface ProviderModelChoice {
-  value: string | null;
-  label: string;
-  recommended: boolean;
-  source: "configured" | "provider-default" | "custom";
 }
 
 export interface ProviderSetupView {
@@ -77,13 +76,14 @@ export async function buildProviderSetupView(
   const statuses = opts.statuses ?? await listProviderStatuses(opts.spawnCli);
   const statusById = new Map(statuses.map((status) => [status.id, status]));
   const recommendedProvider = chooseRecommendedProvider(statuses);
-  const choices = AGENT_PROVIDER_IDS.map((id) => {
+  const choices: ProviderSetupChoice[] = [];
+  for (const id of getEnabledAgentProviderIds()) {
     const status = statusById.get(id) ?? missingStatus(id);
     const readiness = getReadiness(status);
     const configuredModel = normalizeModel(config.agent.models[id]);
     const providerDefaultModel = getProviderDefaultModel(id);
     const effectiveModel = configuredModel ?? providerDefaultModel;
-    return {
+    choices.push({
       id,
       label: getProviderLabel(id),
       selected: id === config.agent.default,
@@ -98,9 +98,11 @@ export async function buildProviderSetupView(
       account: status.authenticated ? accountFromDetail(status.detail) : null,
       detail: status.detail,
       fixCommand: fixFor(id, readiness),
-      modelChoices: buildProviderModelChoices(id, configuredModel),
-    };
-  });
+      modelChoices: await buildProviderModelChoices(id, configuredModel, {
+        spawnCli: opts.spawnCli,
+      }),
+    });
+  }
   return {
     defaultProvider: config.agent.default,
     recommendedProvider,
@@ -111,7 +113,12 @@ export async function buildProviderSetupView(
 export function buildProviderModelChoices(
   id: AgentProviderId,
   configuredModel: string | null = null,
-): ProviderModelChoice[] {
+  opts: { spawnCli?: SpawnCliFn } = {},
+): Promise<ProviderModelChoice[]> | ProviderModelChoice[] {
+  const provider = getAgentProvider(id);
+  if (provider.modelChoices !== undefined) {
+    return provider.modelChoices({ configuredModel, spawnCli: opts.spawnCli });
+  }
   const choices: ProviderModelChoice[] = [];
   if (configuredModel !== null) {
     choices.push({
@@ -145,7 +152,7 @@ export function buildProviderModelChoices(
 
   choices.push({
     value: "__custom__",
-    label: "custom model id",
+    label: "Enter a model name",
     recommended: false,
     source: "custom",
   });
@@ -156,10 +163,10 @@ export function chooseRecommendedProvider(
   statuses: ProviderStatus[],
 ): AgentProviderId {
   const ready = statuses
-    .filter((status) => status.installed && status.authenticated)
+    .filter((status) => getReadiness(status) === "ready")
     .map((status) => status.id);
   if (ready.includes("codex")) return "codex";
-  for (const id of AGENT_PROVIDER_IDS) {
+  for (const id of getEnabledAgentProviderIds()) {
     if (ready.includes(id)) return id;
   }
   return "codex";
@@ -182,6 +189,9 @@ export function parseAgentSelection(value: string): {
 
 function getReadiness(status: ProviderStatus): ProviderReadiness {
   if (!status.installed) return "missing";
+  if (/not (logged|signed) in|not authenticated/i.test(status.detail)) {
+    return "not-authenticated";
+  }
   if (!status.authenticated) return "not-authenticated";
   return "ready";
 }
@@ -193,6 +203,10 @@ function fixFor(
   if (readiness === "ready") return null;
   if (readiness === "missing") return INSTALL_FIXES[id];
   return LOGIN_FIXES[id];
+}
+
+export function enabledProviderListForMessage(): string {
+  return formatEnabledAgentProviderList();
 }
 
 function accountFromDetail(detail: string): string | null {
