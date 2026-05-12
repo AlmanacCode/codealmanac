@@ -13,6 +13,8 @@ files:
   - src/commands/uninstall.ts
   - src/cli/register-setup-commands.ts
   - src/cli.ts
+  - test/setup.test.ts
+  - test/automation.test.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
 status: implemented
@@ -51,6 +53,25 @@ The old hook investigation documented the mismatch clearly:
 That means hook-driven automation couples CodeAlmanac to each provider's lifecycle model. A provider-neutral scanner gives CodeAlmanac its own timing and dedupe rules instead of inheriting whatever "done" means in the foreground app.
 
 Because there were no external users whose existing hook workflows had to be preserved, v1 does not present hook install and scheduled sweep as two coequal auto-capture products. The documented automatic path is scheduler-backed quiet-session capture.
+
+## Codex hook-name provenance
+
+One durable lesson from the 2026-05-11 investigation is that Codex hook naming should be treated as an observed compatibility surface, not a stable contract inferred from one doc page.
+
+The session verified this from several angles:
+
+- the live machine had Codex hooks enabled via `codex features list`
+- the installed `codex` binary resolved to the global `@openai/codex` npm package
+- searching that installed package did not reveal a local `SessionEnd` hook contract to depend on
+- public and local evidence still pointed to `Stop` for Codex, while historical Claude/Cursor-era configs and older examples also used `SessionEnd` or `sessionEnd`
+
+That is why [[src/commands/automation.ts]] removes CodeAlmanac-owned legacy hook commands by content and by multiple event names instead of assuming one canonical key. The current cleanup and tests should preserve compatibility with at least these observed shapes:
+
+- `~/.claude/settings.json` with `SessionEnd`
+- `~/.codex/hooks.json` with `Stop`
+- `~/.cursor/hooks.json` with `sessionEnd`
+
+Future agents should read this as a cleanup invariant, not just historical trivia: if scheduler migration ever regresses, the likely cause is overfitting to one provider's current hook spelling or wrapper shape.
 
 ## Product contract
 
@@ -297,6 +318,13 @@ The shared capture defaults under either posture were:
 `max sessions per sweep` remained a possible throttling control, but the more important invariant was preserved more strongly than the number: a cap may delay work, but it must not silently drop eligible sessions.
 
 The 2026-05-12 launchd stress test added one more practical calibration to those defaults. Extremely aggressive settings such as `--every 1m --quiet 1s` are useful for proving the scheduler and PATH wiring, but they are intentionally unrealistic for normal use: an active transcript can become re-eligible almost immediately after each new burst of conversation, which leads to many continuation captures against the same session over a short period. The product-level conclusion is not that the scheduler is broken; it is that the calm default posture (`5h` interval, `45m` quiet window) is part of the operational contract, not just a convenience.
+
+That stress test also made a subtler ownership rule visible. The repo-local `capture-sweep.lock` only prevents overlapping sweeps from mutating the same wiki at the same time; it does not protect against a later sweep that starts after the earlier one released its lock but before the absorb job it spawned has finished. Preventing repeated continuation captures for the same transcript therefore depends on both layers together:
+
+- the repo lock serializes sweep-side ledger mutation and enqueue decisions
+- the [[capture-ledger]] `pending` state reserves a transcript's new cursor range until the corresponding background run resolves
+
+Future debugging should keep that distinction in mind. A burst of many jobs from one transcript usually means the ledger failed to record or honor pending ownership, not that the per-repo lock stopped working.
 
 ## Installation model
 
