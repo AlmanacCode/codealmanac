@@ -99,6 +99,8 @@ The same 2026-05-11 session also clarified a boundary that should remain outside
 
 The follow-up implementation made that boundary concrete by adding `automation.capture_since` to the global config schema. The scheduler install path records this timestamp once, while the ledger remains repo-local and only records per-transcript capture progress after transcripts are in scope.
 
+That review also tightened the config contract one step further: `automation.capture_since` is user-level only, not project-configurable. `almanac config set --project automation.capture_since ...` and the matching unset path should fail, because a repo-local override would let one wiki silently redefine the user's global historical capture boundary.
+
 `capture sweep --dry-run` is intentionally read-only with respect to ledger state. The sweep still computes eligibility against any existing ledger entries, but it should not create `.almanac/runs/capture-ledger.json` or advance cursors when the user is only previewing work. The first sweep tests lock this behavior in.
 
 ## Update timing
