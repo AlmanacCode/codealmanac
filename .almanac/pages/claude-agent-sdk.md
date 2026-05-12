@@ -5,8 +5,10 @@ files:
   - src/harness/providers/claude.ts
   - src/harness/types.ts
   - src/harness/events.ts
+  - src/agent/providers/claude/index.ts
   - src/agent/providers/claude/auth.ts
   - src/agent/prompts.ts
+  - test/setup.test.ts
 ---
 
 # Claude Agent SDK
@@ -40,6 +42,8 @@ Default model is `claude-sonnet-4-6` (from `HARNESS_PROVIDER_METADATA.claude.def
 Two paths: Claude subscription OAuth via the Claude CLI, or `ANTHROPIC_API_KEY`. Auth probe runs `claude auth status --json` with a 10-second timeout. On SDK 0.2.129+ the legacy `cli.js` probe is attempted as a fallback when the primary `claude` binary probe returns `loggedIn: false`. Any spawn error, timeout, non-JSON stdout, or non-zero exit with empty stdout returns `{ loggedIn: false }` rather than propagating an error. `ANTHROPIC_API_KEY` is accepted as the second gate — `assertClaudeAuth()` returns a synthetic `{ loggedIn: true, authMethod: "apiKey" }` when the key is set.
 
 `resolveClaudeExecutable()` uses `command -v claude` to find the installed binary. The resolved path is passed as `pathToClaudeCodeExecutable` so the SDK and the auth probe agree on which binary to use. Headless auto-capture now runs through scheduler-backed [[capture-automation]] rather than app lifecycle hooks.
+
+Provider setup tests can inject a fake `spawnCli` status probe instead of depending on a real `claude` binary on PATH. When `src/agent/providers/claude/index.ts` builds setup status with an injected probe, it treats Claude as installed and derives authentication from the injected status output or `ANTHROPIC_API_KEY`; production runtime discovery still uses `resolveClaudeExecutable()`. Keep this aligned with the Codex and Cursor setup-provider behavior so CI can exercise model override setup paths without installing every provider CLI.
 
 ## Capabilities
 

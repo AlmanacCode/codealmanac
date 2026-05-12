@@ -206,18 +206,25 @@ describe("codealmanac setup", () => {
   it("writes setup model overrides", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
-      const res = await runSetup({
-        yes: true,
-        isTTY: false,
-        agent: "claude",
-        model: "claude-opus-4-6",
-        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        automationPlistPath: env.plistPath,
-        automationExec: async () => ({}),
-        claudeDir: env.claudeDir,
-        guidesDir: env.guidesDir,
-        stdout: env.out,
-      });
+      const originalPath = process.env.PATH;
+      process.env.PATH = "";
+      let res: Awaited<ReturnType<typeof runSetup>>;
+      try {
+        res = await runSetup({
+          yes: true,
+          isTTY: false,
+          agent: "claude",
+          model: "claude-opus-4-6",
+          spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+          automationPlistPath: env.plistPath,
+          automationExec: async () => ({}),
+          claudeDir: env.claudeDir,
+          guidesDir: env.guidesDir,
+          stdout: env.out,
+        });
+      } finally {
+        process.env.PATH = originalPath;
+      }
 
       expect(res.exitCode).toBe(0);
       await expect(readConfig()).resolves.toMatchObject({
