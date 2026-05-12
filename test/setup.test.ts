@@ -226,7 +226,7 @@ describe("codealmanac setup", () => {
     });
   });
 
-  it("reports auth status without blocking setup", async () => {
+  it("does not block setup when the selected agent is ready", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const res = await runSetup({
@@ -241,7 +241,7 @@ describe("codealmanac setup", () => {
       });
 
       expect(res.exitCode).toBe(0);
-      expect(env.stdout()).toMatch(/not signed in/);
+      expect(env.stdout()).toMatch(/Agent:/);
       expect(existsSync(env.plistPath)).toBe(true);
     });
   });

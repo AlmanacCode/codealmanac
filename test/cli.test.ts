@@ -229,9 +229,9 @@ describe("registerCommands", () => {
     const help = program.helpInformation();
 
     expect(help).toMatch(/Setup:[\s\S]*agents\s+list supported AI agent providers and readiness/);
-    expect(help).toMatch(/Setup:[\s\S]*config\s+read and write codealmanac settings/);
+    expect(help).toMatch(/Setup:[\s\S]*config\s+read and write Almanac settings/);
     expect(help).toContain("Deprecated:");
-    expect(help).toMatch(/set <key> \[value\.\.\.\]\s+configure codealmanac defaults/);
+    expect(help).toMatch(/set <key> \[value\.\.\.\]\s+configure Almanac defaults/);
     expect(help).toMatch(/ps \[options\]\s+deprecated alias for jobs/);
   });
 });
@@ -374,42 +374,22 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     });
   });
 
-  it("does NOT shortcut when the binary name is `almanac`", async () => {
-    // `almanac --yes` without a subcommand isn't a setup invocation —
-    // it's a commander error ("unknown option '--yes'"). We verify
-    // runSetup was NOT called. Commander will write to stderr;
-    // capture + silence it.
+  it("routes bare `almanac --yes` to setup", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 
-    // Commander prints to stderr + throws via `exitOverride` or process.exit;
-    // we swallow either to keep the test surface clean.
-    const origErr = process.stderr.write.bind(process.stderr);
-    process.stderr.write = (() => true) as typeof process.stderr.write;
-    const origExit = process.exit;
-    process.exit = ((code?: number): never => {
-      throw new Error(`process.exit called with ${code}`);
-    }) as typeof process.exit;
+    await run(
+      ["/abs/node", "/abs/path/almanac", "--yes"],
+      {
+        runSetup: setupMock as never,
+        announceUpdate: () => {},
+        scheduleUpdateCheck: () => {},
+        runInternalUpdateCheck: async () => {},
+      },
+    );
 
-    try {
-      await run(
-        ["/abs/node", "/abs/path/almanac", "--yes"],
-        {
-          runSetup: setupMock as never,
-          announceUpdate: () => {},
-          scheduleUpdateCheck: () => {},
-          runInternalUpdateCheck: async () => {},
-        },
-      ).catch(() => {
-        // Swallow — commander's unknown-option error bubbles here.
-      });
-    } finally {
-      process.stderr.write = origErr;
-      process.exit = origExit;
-    }
-
-    expect(setupMock).not.toHaveBeenCalled();
+    expect(setupMock).toHaveBeenCalledWith({ yes: true });
   });
 
   it("does NOT shortcut for `codealmanac doctor`", async () => {
