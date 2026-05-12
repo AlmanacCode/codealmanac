@@ -157,7 +157,7 @@ async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
   const hasApiKey =
     process.env.ANTHROPIC_API_KEY !== undefined &&
     process.env.ANTHROPIC_API_KEY.length > 0;
-  const installed = resolveClaudeExecutable() !== undefined;
+  const installed = spawnCli !== undefined || resolveClaudeExecutable() !== undefined;
   const authenticated = auth.loggedIn || hasApiKey;
   const detail = authenticated
     ? auth.email ?? (hasApiKey ? "ANTHROPIC_API_KEY set" : "logged in")
