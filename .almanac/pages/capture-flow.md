@@ -1,6 +1,6 @@
 ---
 title: Capture Flow
-summary: `almanac capture` resolves transcript inputs and runs the Absorb operation, while `capture sweep` adds scheduled quiet-transcript discovery for Claude and Codex.
+summary: "`almanac capture` resolves transcript inputs and runs the Absorb operation, while `capture sweep` adds scheduled quiet-transcript discovery for Claude and Codex."
 topics: [agents, flows]
 files:
   - src/commands/operations.ts
@@ -115,6 +115,8 @@ The first scheduled discovery implementation scans Claude transcripts under `~/.
 Continuation capture keeps passing the original transcript path into capture, and adds cursor context telling Absorb what transcript prefix was already captured. That preserves the "agent inspects files lazily" contract while avoiding temp delta transcript files or byte-range semantics in `almanac capture`.
 
 One open operational consequence from the same session is that "pass the original transcript path" is still compatible with a smarter first step inside Absorb. Future prompt or tooling work can keep the current command surface while instructing the agent to parse JSONL structurally before reading deeply, and can optionally add a cheap preflight size estimator or cap for unusually large first-run backlogs. Neither behavior is part of the current implementation.
+
+Discovery first tries to match transcripts by directory name hash, which is the fast path with no transcript-content IO. If no matches are found, it falls back to content scanning: each transcript is opened, and `readHead(path, 4096)` checks whether the first 4 KB contains `"cwd":"<repoRoot>"`. One known performance issue remains in that fallback: `readHead` currently calls `readFile()` to load the entire file into memory before slicing. On a Claude projects directory with many large session files this causes hundreds of MB of unnecessary IO at `almanac capture` startup. The fix is to use `fs.open().read()` or a bounded stream limited to 4,096 bytes.
 
 ## Sweep dry-run semantics
 

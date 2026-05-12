@@ -20,8 +20,16 @@ export interface DoctorOptions {
   providerStatuses?: ProviderStatus[];
   /** Override auto-capture launchd plist path. */
   automationPlistPath?: string;
+  /** Override `~/.claude/settings.json` path. */
+  settingsPath?: string;
+  /** Override `~/.almanac/` directory. */
+  almanacDir?: string;
   /** Override `~/.claude/` directory. */
   claudeDir?: string;
+  /** Override `~/.codex/` directory. */
+  codexDir?: string;
+  /** Override the bundled hooks directory lookup. */
+  hookScriptPath?: string;
   /** Override the `codealmanac` install path detector. */
   installPath?: string;
   /** Override the reported codealmanac version. */
