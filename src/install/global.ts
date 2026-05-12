@@ -10,8 +10,8 @@ import { isNewer } from "../update/semver.js";
 /**
  * Bare `codealmanac` is the npm bootstrap surface. When it is invoked
  * through `npx`, the running package can live in a temporary cache; if
- * setup installed hooks from that copy, the hook path could disappear
- * later. This helper makes the promise durable:
+ * setup installs a launchd job that calls `almanac`, the binary must still
+ * be available later. This helper makes the promise durable:
  *
  *   1. If already running from the global npm package, run setup locally.
  *   2. Otherwise ensure `npm i -g codealmanac@latest` has succeeded.

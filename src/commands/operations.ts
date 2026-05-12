@@ -45,6 +45,7 @@ export interface CaptureCommandOptions extends OperationCommandDeps {
   json?: boolean;
   yes?: boolean;
   claudeProjectsDir?: string;
+  contextNote?: string;
 }
 
 export interface IngestCommandOptions extends OperationCommandDeps {
@@ -391,6 +392,9 @@ function captureContext(options: CaptureCommandOptions): string {
   }
   if (paths.length === 0 && options.session === undefined) {
     lines.push("- No explicit session file or session id was provided.");
+  }
+  if (options.contextNote !== undefined && options.contextNote.trim().length > 0) {
+    lines.push("", options.contextNote.trim());
   }
   return lines.join("\n");
 }

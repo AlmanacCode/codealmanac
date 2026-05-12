@@ -1,5 +1,6 @@
 ---
 title: SQLite Indexer
+summary: The SQLite indexer powers query commands but inherits `better-sqlite3`'s Node-version-sensitive native binding behavior.
 topics: [systems, storage]
 files:
   - src/indexer/schema.ts
@@ -9,6 +10,11 @@ files:
   - src/indexer/paths.ts
   - src/indexer/resolve-wiki.ts
   - src/indexer/duration.ts
+  - src/abi-guard.ts
+  - src/cli.ts
+sources:
+  - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
+verified: 2026-05-12
 ---
 
 # SQLite Indexer
@@ -39,3 +45,11 @@ All stored paths are lowercase + forward-slashes + no `./` prefix (normalized at
 ## Freshness
 
 `better-sqlite3` (sync SQLite driver). WAL journal mode is set on first open and persists in the DB header. `almanac reindex` clears hashes to force a full rebuild even when the index is otherwise fresh.
+
+## Native binding constraint
+
+The query stack inherits `better-sqlite3`'s old-ABI native binding behavior: a global or local install can work on one Node version and then fail after an `nvm`/Volta/FNM switch until the package is rebuilt for the new runtime. `src/abi-guard.ts` exists to fail fast with a repair hint instead of surfacing a later opaque `require()` crash.
+
+This constraint explains one CLI boundary elsewhere in the repo: [[lifecycle-cli]] routes `setup` and `automation install|status|uninstall` through a sqlite-free fast path in `src/cli.ts`, so basic onboarding and scheduler repair still work even when the query/index stack cannot load `better-sqlite3`.
+
+It also creates one absorb-time workflow fallback that is easy to forget: if a local or global `almanac search`/`show` command fails because the installed `better-sqlite3` binary targets the wrong Node ABI, the checked-in wiki pages under `[[.almanac/pages/]]` are still readable as plain files. Future agents should treat that as the immediate fallback for wiki context gathering instead of assuming the wiki itself is unavailable.

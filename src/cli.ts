@@ -164,12 +164,12 @@ function parseUpdateFlags(args: string[]): {
 
 function parseUninstallFlags(args: string[]): {
   yes?: boolean;
-  keepHook?: boolean;
+  keepAutomation?: boolean;
   keepGuides?: boolean;
 } {
   return {
     yes: args.includes("--yes") || args.includes("-y"),
-    keepHook: args.includes("--keep-hook"),
+    keepAutomation: args.includes("--keep-automation"),
     keepGuides: args.includes("--keep-guides"),
   };
 }
@@ -205,20 +205,27 @@ async function tryRunSqliteFreeCommand(
     return true;
   }
 
-  if (command === "hook") {
-    const { runHookInstall, runHookStatus, runHookUninstall } = await import(
-      "./commands/hook.js"
-    );
+  if (command === "automation") {
+    const {
+      runAutomationInstall,
+      runAutomationStatus,
+      runAutomationUninstall,
+    } = await import("./commands/automation.js");
     if (subcommand === "install") {
-      emit(await runHookInstall({ source: parseHookSource(args.slice(2)) }));
+      const parsed = parseAutomationInstallFlags(args.slice(2));
+      if (!parsed.ok) {
+        emit({ stdout: "", stderr: `almanac: ${parsed.error}\n`, exitCode: 1 });
+        return true;
+      }
+      emit(await runAutomationInstall(parsed.options));
       return true;
     }
     if (subcommand === "uninstall") {
-      emit(await runHookUninstall({ source: parseHookSource(args.slice(2)) }));
+      emit(await runAutomationUninstall());
       return true;
     }
     if (subcommand === "status") {
-      emit(await runHookStatus());
+      emit(await runAutomationStatus());
       return true;
     }
     return false;
@@ -338,20 +345,20 @@ async function tryRunSqliteFreeCommand(
   return false;
 }
 
-function parseHookSource(
-  args: string[],
-): "claude" | "codex" | "cursor" | "all" | undefined {
-  const idx = args.indexOf("--source");
-  const value = idx === -1 ? undefined : args[idx + 1];
-  if (
-    value === "claude" ||
-    value === "codex" ||
-    value === "cursor" ||
-    value === "all"
-  ) {
-    return value;
+function parseAutomationInstallFlags(args: string[]): {
+  ok: true;
+  options: { every?: string };
+} | {
+  ok: false;
+  error: string;
+} {
+  const idx = args.indexOf("--every");
+  if (idx < 0) return { ok: true, options: {} };
+  const value = args[idx + 1];
+  if (value === undefined || value.startsWith("-")) {
+    return { ok: false, error: "missing value for --every" };
   }
-  return undefined;
+  return { ok: true, options: { every: value } };
 }
 
 function readPackageVersion(): string {
@@ -371,7 +378,8 @@ export interface SetupShortcutOptions {
   yes?: boolean;
   agent?: string;
   model?: string;
-  skipHook?: boolean;
+  skipAutomation?: boolean;
+  automationEvery?: string;
   skipGuides?: boolean;
 }
 
@@ -409,8 +417,15 @@ function parseSetupShortcutFlags(args: string[]): SetupShortcutOptions | null {
       i += 1;
       continue;
     }
-    if (arg === "--skip-hook") {
-      opts.skipHook = true;
+    if (arg === "--skip-automation") {
+      opts.skipAutomation = true;
+      continue;
+    }
+    if (arg === "--auto-capture-every") {
+      const value = args[i + 1];
+      if (value === undefined || value.startsWith("-")) return null;
+      opts.automationEvery = value;
+      i += 1;
       continue;
     }
     if (arg === "--skip-guides") {

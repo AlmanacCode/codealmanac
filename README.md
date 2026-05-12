@@ -26,7 +26,7 @@ A single `CLAUDE.md` at the repo root doesn't scale past a few hundred lines, ha
 
 ## How it works
 
-Each repo gets a committed `.almanac/pages/` directory of markdown files. Auto-capture hooks fire when Claude Code, Codex, or Cursor Agent sessions end and run `almanac capture` in the background. Almanac builds one provider-neutral run spec, starts it through the process manager, and records local run state in `.almanac/runs/`. New and updated pages show up in your next `git status`; you review them like any other commit.
+Each repo gets a committed `.almanac/pages/` directory of markdown files. Scheduled auto-capture periodically runs `almanac capture sweep`, scans quiet Claude/Codex transcripts created after automation was enabled, and starts background capture jobs for new material. CodeAlmanac builds one provider-neutral run spec, starts it through the process manager, and records local run state in `.almanac/runs/`. New and updated pages show up in your next `git status`; you review them like any other commit.
 
 The CLI only invokes AI for the write-capable lifecycle commands: `init`, `capture`, `ingest`, and `garden`. Every query or organization command (`search`, `show`, `topics`, `tag`, `health`) operates on a SQLite index that rebuilds silently whenever pages are newer than the index.
 
@@ -46,11 +46,11 @@ Bare `almanac` routes to a setup wizard that:
 - lets you choose a default agent: Claude, Codex, or Cursor,
 - lets you choose a provider model or inherit the provider default,
 - checks local agent readiness,
-- installs auto-capture hooks for Claude, Codex, and Cursor,
+- installs scheduled auto-capture with a macOS launchd job,
 - drops two agent guides into `~/.claude/` (`almanac.md` mini, `almanac-reference.md` full),
 - appends `@~/.claude/almanac.md` to `~/.claude/CLAUDE.md` so every Claude Code session loads the mini guide.
 
-The setup is idempotent — safe to re-run. Opt out with `--skip-hook` or `--skip-guides`. Later, `almanac uninstall` reverses it.
+The setup is idempotent — safe to re-run. The first time automation is enabled, CodeAlmanac records `automation.capture_since` in `~/.almanac/config.toml`; scheduled sweeps ignore transcripts older than that activation timestamp instead of backfilling your whole chat history. Opt out with `--skip-automation` or `--skip-guides`. Use `--auto-capture-every <duration>` to change the default 5h sweep interval. Later, `almanac uninstall` reverses it.
 
 The canonical binaries are `almanac` and `alm`. A `codealmanac` compatibility bin remains for `npx codealmanac` bootstrap and older installs. Requires Node 20 or 22.
 
@@ -105,14 +105,14 @@ almanac init                  # default provider reads the repo and builds the w
 almanac search "auth"         # full-text search across pages
 almanac show checkout-flow    # read a page
 
-# From here on, just code as usual — the installed hooks invoke
-# `almanac capture` at session end, which writes and updates pages
-# based on what happened in the session.
+# From here on, just code as usual — the scheduler periodically runs
+# `almanac capture sweep`, which writes and updates pages based on
+# quiet Claude/Codex transcripts.
 ```
 
 A wiki is scaffolded two ways: run `almanac init` yourself, or clone a repo that already has `.almanac/` committed (Almanac auto-registers it on the first query).
 
-Sanity-check the install with `almanac doctor` and `almanac agents list` — they report binary location, native SQLite binding, provider readiness, hook status, guides, import line, and current-wiki stats.
+Sanity-check the install with `almanac doctor` and `almanac agents list` — they report binary location, native SQLite binding, provider readiness, automation status, guides, import line, and current-wiki stats.
 
 New to Almanac? Read the [Concepts guide](./docs/concepts.md) for a walkthrough of pages, topics, files, the database, and the CLI.
 
@@ -137,10 +137,13 @@ almanac health                               # graph integrity report
 almanac init --using codex                   # build a new wiki from the repo
 almanac capture --using claude <transcript>  # update wiki from a session transcript
 almanac capture --json <transcript>          # structured CommandOutcome output
+almanac capture sweep                        # scan quiet Claude/Codex transcripts
 almanac ingest docs/adr.md                   # absorb files or folders into the wiki
 almanac garden                               # audit and improve the wiki
 almanac jobs                                 # list local background runs
-almanac hook install --source all            # auto-capture for Claude/Codex/Cursor
+almanac automation install                   # install 5h scheduled auto-capture
+almanac automation install --every 2h        # customize the sweep interval
+almanac automation status                    # show scheduler status
 
 # Setup & diagnose
 almanac agents list                          # provider readiness + default
@@ -167,7 +170,9 @@ Run `almanac <command> --help` for the full flag surface.
 
 ## How capture works
 
-When a Claude, Codex, or Cursor session ends, the installed hook backgrounds `almanac capture`. Capture resolves the session transcript, builds the same Absorb operation used by `almanac ingest`, and starts a provider run through the process manager. The provider adapter decides how to express the requested prompt, tools, and future subagents for Claude, Codex, or Cursor.
+Scheduled capture runs `almanac capture sweep`. The sweep scans Claude and Codex transcript stores, ignores transcripts older than the automation activation timestamp, ignores active transcripts until they have been quiet long enough, maps each transcript back to the nearest repo with `.almanac/`, and uses `.almanac/runs/capture-ledger.json` to remember which transcript lines/bytes were already captured. Capture still receives the original full transcript path; the sweep adds cursor guidance telling the agent where new material begins.
+
+Manual `almanac capture <transcript>` works the same way as before: it resolves transcript inputs, builds the same Absorb operation used by `almanac ingest`, and starts a provider run through the process manager. The provider adapter decides how to express the requested prompt, tools, and future subagents for Claude, Codex, or Cursor.
 
 Capture writes nothing if nothing in the session meets the notability bar — silence is a valid outcome.
 

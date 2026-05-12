@@ -141,25 +141,28 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("setup")
-    .description("install the hook + CLAUDE.md guides")
+    .description("install automation + agent guides")
     .option("-y, --yes", "skip prompts; install everything")
     .option("--agent <agent>", "default agent: claude, codex, or cursor")
     .option("--model <model>", "default model for the selected agent")
-    .option("--skip-hook", "opt out of the SessionEnd hook")
+    .option("--skip-automation", "opt out of scheduled auto-capture")
+    .option("--auto-capture-every <duration>", "scheduled auto-capture interval (default: 5h)")
     .option("--skip-guides", "opt out of the CLAUDE.md guides")
     .action(
       async (opts: {
         yes?: boolean;
         agent?: string;
         model?: string;
-        skipHook?: boolean;
+        skipAutomation?: boolean;
+        autoCaptureEvery?: string;
         skipGuides?: boolean;
       }) => {
         const result = await runSetup({
           yes: opts.yes,
           agent: opts.agent,
           model: opts.model,
-          skipHook: opts.skipHook,
+          skipAutomation: opts.skipAutomation,
+          automationEvery: opts.autoCaptureEvery,
           skipGuides: opts.skipGuides,
         });
         emit(result);
@@ -223,22 +226,22 @@ export function registerSetupCommands(program: Command): void {
 
   program
     .command("uninstall")
-    .description("remove the hook + guides + import line")
+    .description("remove automation + guides + import line")
     .option("-y, --yes", "skip confirmations; remove everything")
-    .option("--keep-hook", "don't remove the SessionEnd hook (guides still prompted unless --yes)")
+    .option("--keep-automation", "don't remove the scheduler (guides still prompted unless --yes)")
     .option(
       "--keep-guides",
-      "don't remove the guides or CLAUDE.md import (hook still prompted unless --yes)",
+      "don't remove the guides or CLAUDE.md import (scheduler still prompted unless --yes)",
     )
     .action(
       async (opts: {
         yes?: boolean;
-        keepHook?: boolean;
+        keepAutomation?: boolean;
         keepGuides?: boolean;
       }) => {
         const result = await runUninstall({
           yes: opts.yes,
-          keepHook: opts.keepHook,
+          keepAutomation: opts.keepAutomation,
           keepGuides: opts.keepGuides,
         });
         emit(result);

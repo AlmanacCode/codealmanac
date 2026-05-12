@@ -2,36 +2,19 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type {
   SpawnCliFn,
   SpawnedProcess,
 } from "../src/agent/providers/claude/index.js";
-import {
-  runSetup,
-  hasCodexInstructions,
-  hasImportLine,
-} from "../src/commands/setup.js";
-import { readConfig, writeConfig } from "../src/update/config.js";
+import { hasImportLine, runSetup } from "../src/commands/setup.js";
+import { readConfig } from "../src/update/config.js";
 import { withTempHome } from "./helpers.js";
-
-/**
- * Tests for the `codealmanac setup` TUI. Every test exercises the command
- * via dependency injection (`spawnCli`, `settingsPath`, `hookScriptPath`,
- * `claudeDir`, `guidesDir`, `isTTY`, `stdout`) so no real subprocess runs,
- * no real home directory is touched, and nothing depends on the bundled
- * `guides/` path resolution.
- *
- * We run in non-interactive mode throughout (`isTTY: false` OR `yes: true`)
- * so the readline prompt never activates — blocking on stdin in tests is
- * a reliable way to produce a stuck test.
- */
 
 function fakeSpawnCli(stdout: string): SpawnCliFn {
   return (): SpawnedProcess => {
     const stdoutCbs: ((d: string) => void)[] = [];
-    const stderrCbs: ((d: string) => void)[] = [];
     const closeCbs: ((c: number | null) => void)[] = [];
     queueMicrotask(() => {
       for (const cb of stdoutCbs) cb(stdout);
@@ -43,11 +26,7 @@ function fakeSpawnCli(stdout: string): SpawnCliFn {
           if (event === "data") stdoutCbs.push(cb as (d: string) => void);
         },
       },
-      stderr: {
-        on: (event, cb) => {
-          if (event === "data") stderrCbs.push(cb as (d: string) => void);
-        },
-      },
+      stderr: { on: () => {} },
       on: (event, cb) => {
         if (event === "close") closeCbs.push(cb as (c: number | null) => void);
       },
@@ -61,52 +40,32 @@ const LOGGED_IN_STDOUT = JSON.stringify({
   email: "user@example.com",
   subscriptionType: "Pro",
 });
-
 const LOGGED_OUT_STDOUT = JSON.stringify({ loggedIn: false });
 
-async function scaffoldGuides(
-  dir: string,
-): Promise<void> {
+async function scaffoldGuides(dir: string): Promise<void> {
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, "mini.md"), "# almanac (mini)\n", "utf8");
-  await writeFile(
-    join(dir, "reference.md"),
-    "# almanac (reference)\n",
-    "utf8",
-  );
+  await writeFile(join(dir, "mini.md"), "# codealmanac (mini)\n", "utf8");
+  await writeFile(join(dir, "reference.md"), "# codealmanac (reference)\n", "utf8");
 }
 
-interface Env {
-  settingsPath: string;
-  hookScriptPath: string;
+async function scaffold(home: string): Promise<{
   claudeDir: string;
-  codexDir: string;
   guidesDir: string;
+  plistPath: string;
   out: PassThrough;
   stdout: () => string;
-}
-
-async function scaffold(home: string): Promise<Env> {
-  const settingsPath = join(home, ".claude", "settings.json");
-  const hookScriptPath = join(home, "fake-hooks", "almanac-capture.sh");
-  await mkdir(join(home, "fake-hooks"), { recursive: true });
-  await writeFile(hookScriptPath, "#!/bin/bash\nexit 0\n", "utf8");
-
+}> {
   const claudeDir = join(home, ".claude");
-  const codexDir = join(home, ".codex");
   const guidesDir = join(home, "fake-guides");
+  const plistPath = join(home, "Library", "LaunchAgents", "com.codealmanac.capture-sweep.plist");
   await scaffoldGuides(guidesDir);
-
   const out = new PassThrough();
   const chunks: Buffer[] = [];
   out.on("data", (chunk: Buffer) => chunks.push(chunk));
-
   return {
-    settingsPath,
-    hookScriptPath,
     claudeDir,
-    codexDir,
     guidesDir,
+    plistPath,
     out,
     stdout: () => Buffer.concat(chunks).toString("utf8"),
   };
@@ -125,198 +84,104 @@ afterEach(() => {
 });
 
 describe("codealmanac setup", () => {
-  it("renders the Almanac banner with a complete final C", async () => {
+  it("installs automation + guides + CLAUDE.md import when --yes", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
-      const res = await runSetup({
-        yes: true,
-        skipHook: true,
-        isTTY: false,
-        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
-        claudeDir: env.claudeDir,
-        guidesDir: env.guidesDir,
-        stdout: env.out,
-      });
-
-      expect(res.exitCode).toBe(0);
-      const output = env.stdout();
-      expect(output).toContain("/ ___|");
-      expect(output).toContain("| |    ");
-      expect(output).toContain("| |___");
-      expect(output).toContain("\\____|");
-    });
-  });
-
-  it("uses the latest setup flow while preserving Almanac naming", async () => {
-    await withTempHome(async (home) => {
-      const env = await scaffold(home);
-      const res = await runSetup({
-        yes: true,
-        skipHook: true,
-        isTTY: false,
-        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
-        claudeDir: env.claudeDir,
-        codexDir: env.codexDir,
-        guidesDir: env.guidesDir,
-        stdout: env.out,
-      });
-
-      expect(res.exitCode).toBe(0);
-      const output = env.stdout();
-      expect(output).toContain("Set up your automatic codebase wiki");
-      expect(output).toContain("Agent:");
-      expect(output).toContain("Agent instructions added");
-      expect(output).not.toContain("Install the hook + agent guides");
-      expect(output).not.toContain("Claude auth:");
-      expect(output).not.toContain("Default agent:");
-
-      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(true);
-      expect(existsSync(join(env.claudeDir, "almanac-reference.md"))).toBe(
-        true,
-      );
-      expect(existsSync(join(env.claudeDir, "codealmanac.md"))).toBe(false);
-
-      const codexAgents = await readFile(
-        join(env.codexDir, "AGENTS.md"),
+      const calls: string[] = [];
+      const codexHooks = join(home, ".codex", "hooks.json");
+      await mkdir(join(home, ".codex"), { recursive: true });
+      await writeFile(
+        codexHooks,
+        JSON.stringify({
+          hooks: {
+            Stop: [{
+              hooks: [{ type: "command", command: "/tmp/almanac-capture.sh" }],
+            }],
+          },
+        }),
         "utf8",
       );
-      expect(hasCodexInstructions(codexAgents)).toBe(true);
-      expect(codexAgents).toContain("# almanac (mini)");
-    });
-  });
-
-  it("installs hook + guides + CLAUDE.md import when --yes", async () => {
-    await withTempHome(async (home) => {
-      const env = await scaffold(home);
       const res = await runSetup({
         yes: true,
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async (file: string, args: string[]) => {
+          calls.push([file, ...args].join(" "));
+          return {};
+        },
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
         stdout: env.out,
       });
 
       expect(res.exitCode).toBe(0);
-      // Hook installed. Schema: `SessionEnd[i]` is a
-      // `{matcher, hooks: [{type, command, timeout}]}` container per
-      // Claude Code's validator — the bare `{type, command, …}` shape
-      // that earlier codealmanac versions emitted is now rejected.
-      expect(existsSync(env.settingsPath)).toBe(true);
-      const settings = JSON.parse(
-        await readFile(env.settingsPath, "utf8"),
-      ) as {
-        hooks: {
-          SessionEnd: {
-            matcher: string;
-            hooks: { type: string; command: string; timeout?: number }[];
-          }[];
-        };
-      };
-      expect(settings.hooks.SessionEnd).toHaveLength(1);
-      const entry = settings.hooks.SessionEnd[0]!;
-      expect(entry.matcher).toBe("");
-      expect(entry.hooks).toHaveLength(1);
-      expect(entry.hooks[0]!.command).toBe(env.hookScriptPath);
-
-      // Guides copied.
-      expect(
-        await readFile(join(env.claudeDir, "almanac.md"), "utf8"),
-      ).toContain("almanac (mini)");
-      expect(
-        await readFile(
-          join(env.claudeDir, "almanac-reference.md"),
-          "utf8",
-        ),
-      ).toContain("almanac (reference)");
-
-      // Import line added to CLAUDE.md.
-      const claudeMd = await readFile(
-        join(env.claudeDir, "CLAUDE.md"),
-        "utf8",
-      );
+      expect(existsSync(env.plistPath)).toBe(true);
+      const plist = await readFile(env.plistPath, "utf8");
+      expect(plist).toContain("dist/codealmanac.js");
+      expect(plist).toContain("<string>capture</string>");
+      expect(plist).toContain("<string>sweep</string>");
+      await expect(readConfig()).resolves.toMatchObject({
+        automation: { capture_since: expect.any(String) },
+      });
+      expect(await readFile(codexHooks, "utf8")).not.toContain("almanac-capture.sh");
+      expect(calls.some((call) => call.includes("bootstrap"))).toBe(true);
+      expect(await readFile(join(env.claudeDir, "almanac.md"), "utf8"))
+        .toContain("codealmanac (mini)");
+      const claudeMd = await readFile(join(env.claudeDir, "CLAUDE.md"), "utf8");
       expect(hasImportLine(claudeMd)).toBe(true);
     });
   });
 
-  it("is idempotent — running twice makes no extra changes", async () => {
+  it("is idempotent for guides and rewrites the same automation plist", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const common = {
         yes: true,
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
         stdout: env.out,
       };
 
       await runSetup(common);
-      const firstClaudeMd = await readFile(
-        join(env.claudeDir, "CLAUDE.md"),
-        "utf8",
-      );
-
+      const firstClaudeMd = await readFile(join(env.claudeDir, "CLAUDE.md"), "utf8");
       await runSetup(common);
-      const secondClaudeMd = await readFile(
-        join(env.claudeDir, "CLAUDE.md"),
-        "utf8",
-      );
+      const secondClaudeMd = await readFile(join(env.claudeDir, "CLAUDE.md"), "utf8");
 
-      // The import line is written once and only once.
       expect(secondClaudeMd).toBe(firstClaudeMd);
-      const matches = secondClaudeMd.match(/@~\/\.claude\/almanac\.md/g);
-      expect(matches).toHaveLength(1);
-      const codexAgents = await readFile(
-        join(env.codexDir, "AGENTS.md"),
-        "utf8",
-      );
-      expect(codexAgents.match(/<!-- almanac:start -->/g)).toHaveLength(1);
-
-      // SessionEnd still has just one wrapped entry — idempotent under
-      // the new schema.
-      const settings = JSON.parse(
-        await readFile(env.settingsPath, "utf8"),
-      ) as {
-        hooks: {
-          SessionEnd: { matcher: string; hooks: unknown[] }[];
-        };
-      };
-      expect(settings.hooks.SessionEnd).toHaveLength(1);
-      expect(settings.hooks.SessionEnd[0]!.hooks).toHaveLength(1);
+      expect(secondClaudeMd.match(/@~\/\.claude\/almanac\.md/g)).toHaveLength(1);
+      expect(await readFile(env.plistPath, "utf8")).toContain("<integer>18000</integer>");
     });
   });
 
-  it("--skip-hook skips hook install but still copies guides", async () => {
+  it("--skip-automation skips the scheduler but still copies guides", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const res = await runSetup({
         yes: true,
-        skipHook: true,
+        skipAutomation: true,
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async () => {
+          throw new Error("should not run");
+        },
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
         stdout: env.out,
       });
 
       expect(res.exitCode).toBe(0);
-      expect(existsSync(env.settingsPath)).toBe(false);
+      expect(existsSync(env.plistPath)).toBe(false);
       expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(true);
     });
   });
 
-  it("--skip-guides skips guides but still installs the hook", async () => {
+  it("--skip-guides skips guides but still installs automation", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const res = await runSetup({
@@ -324,41 +189,21 @@ describe("codealmanac setup", () => {
         skipGuides: true,
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
         stdout: env.out,
       });
 
       expect(res.exitCode).toBe(0);
-      expect(existsSync(env.settingsPath)).toBe(true);
+      expect(existsSync(env.plistPath)).toBe(true);
       expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
       expect(existsSync(join(env.claudeDir, "CLAUDE.md"))).toBe(false);
     });
   });
 
-  it("non-TTY stdin skips prompts (acts like --yes)", async () => {
-    await withTempHome(async (home) => {
-      const env = await scaffold(home);
-      const res = await runSetup({
-        // No `yes: true`. With `isTTY: false` we still avoid the prompt.
-        isTTY: false,
-        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
-        claudeDir: env.claudeDir,
-        guidesDir: env.guidesDir,
-        stdout: env.out,
-      });
-
-      expect(res.exitCode).toBe(0);
-      expect(existsSync(env.settingsPath)).toBe(true);
-      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(true);
-    });
-  });
-
-  it("writes a scriptable setup model override", async () => {
+  it("writes setup model overrides", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const res = await runSetup({
@@ -367,8 +212,8 @@ describe("codealmanac setup", () => {
         agent: "claude",
         model: "claude-opus-4-6",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
         stdout: env.out,
@@ -376,163 +221,28 @@ describe("codealmanac setup", () => {
 
       expect(res.exitCode).toBe(0);
       await expect(readConfig()).resolves.toMatchObject({
-        agent: {
-          default: "claude",
-          models: {
-            claude: "claude-opus-4-6",
-          },
-        },
+        agent: { default: "claude", models: { claude: "claude-opus-4-6" } },
       });
-      expect(env.stdout()).toContain("Agent:");
-      expect(env.stdout()).toContain("claude-opus-4-6");
     });
   });
 
-  it("uses the recommended Codex model when setup selects Codex", async () => {
-    await withTempHome(async (home) => {
-      const env = await scaffold(home);
-      const res = await runSetup({
-        yes: true,
-        isTTY: false,
-        agent: "codex",
-        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
-        claudeDir: env.claudeDir,
-        guidesDir: env.guidesDir,
-        stdout: env.out,
-      });
-
-      expect(res.exitCode).toBe(0);
-      await expect(readConfig()).resolves.toMatchObject({
-        agent: {
-          default: "codex",
-          models: {
-            codex: "gpt-5.4",
-          },
-        },
-      });
-      expect(env.stdout()).toContain("gpt-5.4");
-    });
-  });
-
-  it("describes ephemeral npx bootstrap as installing the Almanac package for the almanac command", async () => {
-    await withTempHome(async (home) => {
-      const env = await scaffold(home);
-      const spawnGlobalInstall = vi.fn().mockResolvedValue(undefined);
-      const res = await runSetup({
-        yes: true,
-        skipHook: true,
-        isTTY: false,
-        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
-        claudeDir: env.claudeDir,
-        guidesDir: env.guidesDir,
-        stdout: env.out,
-        installPath: join(home, ".npm", "_npx", "abc", "node_modules", "codealmanac"),
-        spawnGlobalInstall,
-      });
-
-      expect(res.exitCode).toBe(0);
-      expect(spawnGlobalInstall).toHaveBeenCalledTimes(1);
-      expect(env.stdout()).toContain("Installing Almanac package globally");
-      expect(env.stdout()).toContain("Almanac installed globally (almanac now on PATH)");
-    });
-  });
-
-  it("defaults the interactive model picker to the current configured model", async () => {
-    await withTempHome(async (home) => {
-      const env = await scaffold(home);
-      await writeConfig({
-        agent: {
-          default: "claude",
-          models: {
-            claude: "claude-opus-4-6",
-          },
-        },
-      });
-      const originalStdin = process.stdin;
-      const input = new PassThrough();
-      Object.defineProperty(process, "stdin", {
-        value: input,
-        configurable: true,
-      });
-      queueMicrotask(() => {
-        input.write("1\n");
-        input.write("\n");
-        input.write("n\n");
-        input.write("n\n");
-      });
-
-      try {
-        const res = await runSetup({
-          isTTY: true,
-          spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-          settingsPath: env.settingsPath,
-          hookScriptPath: env.hookScriptPath,
-          claudeDir: env.claudeDir,
-          guidesDir: env.guidesDir,
-          stdout: env.out,
-          installPath: null,
-        });
-
-        expect(res.exitCode).toBe(0);
-        await expect(readConfig()).resolves.toMatchObject({
-          agent: {
-            default: "claude",
-            models: {
-              claude: "claude-opus-4-6",
-            },
-          },
-        });
-      } finally {
-        Object.defineProperty(process, "stdin", {
-          value: originalStdin,
-          configurable: true,
-        });
-      }
-    });
-  });
-
-  it("does not render the old standalone Claude auth step", async () => {
+  it("reports auth status without blocking setup", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const res = await runSetup({
         yes: true,
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_OUT_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
         stdout: env.out,
       });
 
-      // Install still succeeds — the user hits the auth wall on `capture`,
-      // not here.
       expect(res.exitCode).toBe(0);
-      expect(env.stdout()).not.toMatch(/Claude auth:/);
-      expect(existsSync(env.settingsPath)).toBe(true);
-    });
-  });
-
-  it("does not render ANTHROPIC_API_KEY as a standalone setup step", async () => {
-    process.env.ANTHROPIC_API_KEY = "sk-ant-test-key";
-    await withTempHome(async (home) => {
-      const env = await scaffold(home);
-      await runSetup({
-        yes: true,
-        isTTY: false,
-        spawnCli: fakeSpawnCli(LOGGED_OUT_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
-        claudeDir: env.claudeDir,
-        guidesDir: env.guidesDir,
-        stdout: env.out,
-      });
-
-      expect(env.stdout()).not.toMatch(/ANTHROPIC_API_KEY/);
+      expect(env.stdout()).toMatch(/not signed in/);
+      expect(existsSync(env.plistPath)).toBe(true);
     });
   });
 
@@ -550,122 +260,60 @@ describe("codealmanac setup", () => {
         yes: true,
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
         stdout: env.out,
       });
 
-      const body = await readFile(
-        join(env.claudeDir, "CLAUDE.md"),
-        "utf8",
-      );
+      const body = await readFile(join(env.claudeDir, "CLAUDE.md"), "utf8");
       expect(body).toMatch(/# My global instructions/);
       expect(body).toMatch(/Always respond in rhyme/);
       expect(body).toMatch(/@~\/\.claude\/almanac\.md/);
     });
   });
 
-  it("detects a pre-existing import line without duplicating it", async () => {
-    await withTempHome(async (home) => {
-      const env = await scaffold(home);
-      await mkdir(env.claudeDir, { recursive: true });
-      await writeFile(
-        join(env.claudeDir, "CLAUDE.md"),
-        "@~/.claude/almanac.md\n",
-        "utf8",
-      );
-
-      await runSetup({
-        yes: true,
-        isTTY: false,
-        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
-        claudeDir: env.claudeDir,
-        guidesDir: env.guidesDir,
-        stdout: env.out,
-      });
-
-      const body = await readFile(
-        join(env.claudeDir, "CLAUDE.md"),
-        "utf8",
-      );
-      const matches = body.match(/@~\/\.claude\/almanac\.md/g);
-      expect(matches).toHaveLength(1);
-    });
-  });
-
-  it("errors out with a useful message when guides/ is missing", async () => {
+  it("--skip-automation --skip-guides short-circuits with a terse message", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const res = await runSetup({
         yes: true,
-        isTTY: false,
-        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
-        claudeDir: env.claudeDir,
-        guidesDir: join(home, "does-not-exist"),
-        stdout: env.out,
-      });
-      expect(res.exitCode).toBe(1);
-      expect(res.stderr).toMatch(/guide install failed/);
-    });
-  });
-
-  it("--skip-hook --skip-guides short-circuits with a terse message", async () => {
-    await withTempHome(async (home) => {
-      const env = await scaffold(home);
-      const res = await runSetup({
-        yes: true,
-        skipHook: true,
+        skipAutomation: true,
         skipGuides: true,
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
-        settingsPath: env.settingsPath,
-        hookScriptPath: env.hookScriptPath,
+        automationPlistPath: env.plistPath,
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
         stdout: env.out,
       });
 
       expect(res.exitCode).toBe(0);
-      // Nothing should be installed.
-      expect(existsSync(env.settingsPath)).toBe(false);
+      expect(existsSync(env.plistPath)).toBe(false);
       expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
-      expect(existsSync(join(env.claudeDir, "CLAUDE.md"))).toBe(false);
-      // And the banner/step theater should not have rendered.
       expect(env.stdout()).not.toMatch(/CODE ALMANAC/);
     });
   });
 });
 
 describe("hasImportLine", () => {
-  // The import line is the token setup.ts appends to CLAUDE.md.
   const IMPORT = "@~/.claude/almanac.md";
 
   it("detects the bare import line", () => {
     expect(hasImportLine(`foo\n${IMPORT}\nbar\n`)).toBe(true);
   });
 
-  it("detects an annotated import line (trailing comment)", () => {
-    // Real-world case: user appends a comment to document why the
-    // line is there. We don't want setup to re-append a duplicate.
+  it("detects an annotated import line", () => {
     expect(hasImportLine(`${IMPORT} # codealmanac mini guide\n`)).toBe(true);
     expect(hasImportLine(`${IMPORT}\t# with a tab separator\n`)).toBe(true);
   });
 
   it("rejects a longer-prefix accidental match", () => {
-    // `@~/.claude/almanac.md-extra` starts with the import line
-    // but isn't one — the next char is `-`, not whitespace.
     expect(hasImportLine(`${IMPORT}-extra\n`)).toBe(false);
   });
 
-  it("returns false when the import line isn't present", () => {
-    expect(hasImportLine("# unrelated\n@~/.claude/something-else.md\n")).toBe(
-      false,
-    );
+  it("returns false when the import line is not present", () => {
+    expect(hasImportLine("# unrelated\n@~/.claude/something-else.md\n")).toBe(false);
   });
 });

@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import type { ClaudeAuthStatus } from "../../agent/providers/claude/index.js";
+import { defaultPlistPath } from "../automation.js";
 import { IMPORT_LINE } from "../setup.js";
 import {
   classifyInstallPath,
@@ -38,9 +39,8 @@ export async function gatherInstallChecks(
   const auth = await safeCheckAuth(options.spawnCli);
   checks.push(describeAuth(auth));
 
-  const settingsPath =
-    options.settingsPath ?? path.join(homedir(), ".claude", "settings.json");
-  checks.push(await describeHook(settingsPath));
+  const plistPath = options.automationPlistPath ?? defaultPlistPath(homedir());
+  checks.push(describeAutomation(plistPath));
 
   const claudeDir = options.claudeDir ?? path.join(homedir(), ".claude");
   checks.push(describeGuides(claudeDir));
@@ -111,64 +111,20 @@ function describeAuth(auth: ClaudeAuthStatus): Check {
   };
 }
 
-async function describeHook(settingsPath: string): Promise<Check> {
-  if (!existsSync(settingsPath)) {
-    return {
-      status: "problem",
-      key: "install.hook",
-      message: "SessionEnd hook not installed",
-      fix: "run: almanac setup --yes",
-    };
-  }
-  try {
-    const raw = await readFile(settingsPath, "utf8");
-    const parsed = JSON.parse(raw) as {
-      hooks?: {
-        SessionEnd?: {
-          command?: string;
-          hooks?: { command?: string }[];
-        }[];
-      };
-    };
-    const entries = parsed.hooks?.SessionEnd ?? [];
-    const found = entries.some((e) => {
-      if (
-        typeof e?.command === "string" &&
-        e.command.endsWith("almanac-capture.sh")
-      ) {
-        return true;
-      }
-      if (Array.isArray(e?.hooks)) {
-        return e.hooks.some(
-          (h) =>
-            typeof h?.command === "string" &&
-            h.command.endsWith("almanac-capture.sh"),
-        );
-      }
-      return false;
-    });
-    if (!found) {
-      return {
-        status: "problem",
-        key: "install.hook",
-        message: "SessionEnd hook not installed",
-        fix: "run: almanac setup --yes",
-      };
-    }
+function describeAutomation(plistPath: string): Check {
+  if (existsSync(plistPath)) {
     return {
       status: "ok",
-      key: "install.hook",
-      message: `SessionEnd hook installed at ${settingsPath}`,
-    };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return {
-      status: "problem",
-      key: "install.hook",
-      message: `could not read ${settingsPath}: ${msg}`,
-      fix: "check the file for malformed JSON",
+      key: "install.automation",
+      message: `auto-capture automation installed at ${plistPath}`,
     };
   }
+  return {
+    status: "problem",
+    key: "install.automation",
+    message: "auto-capture automation not installed",
+    fix: "run: almanac automation install",
+  };
 }
 
 function describeGuides(claudeDir: string): Check {

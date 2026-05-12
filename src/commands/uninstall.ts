@@ -3,12 +3,17 @@ import { readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
-import { runHookUninstall } from "./hook.js";
+import { cleanupLegacyHooks, runAutomationUninstall } from "./automation.js";
 import {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
   IMPORT_LINE,
 } from "./setup.js";
+
+type AutomationExecFn = (
+  file: string,
+  args: string[],
+) => Promise<{ stdout?: string; stderr?: string }>;
 
 /**
  * `almanac uninstall` — the reverse of `setup`.
@@ -25,12 +30,11 @@ import {
  *      `~/.claude/almanac-reference.md`. Legacy `codealmanac*.md` guide
  *      files are removed too.
  *   3. The managed Almanac block from Codex's global AGENTS file.
- *   4. The SessionEnd hook entry (delegated to `runHookUninstall`, which
- *      already knows how to leave foreign entries alone).
+ *   4. The scheduled auto-capture launchd job and legacy hook files.
  *
  * Flags:
  *   --yes           skip confirmations; remove everything
- *   --keep-hook     leave the hook alone
+ *   --keep-automation leave the scheduler alone
  *   --keep-guides   leave the guides + CLAUDE.md import alone
  *
  * Non-interactive (no TTY) → behaves as if `--yes` was passed. Same
@@ -39,12 +43,12 @@ import {
 
 export interface UninstallOptions {
   yes?: boolean;
-  keepHook?: boolean;
+  keepAutomation?: boolean;
   keepGuides?: boolean;
 
   // ─── Injection points ────────────────────────────────────────────
-  settingsPath?: string;
-  hookScriptPath?: string;
+  automationPlistPath?: string;
+  automationExec?: AutomationExecFn;
   claudeDir?: string;
   codexDir?: string;
   isTTY?: boolean;
@@ -76,29 +80,29 @@ export async function runUninstall(
 
   out.write("\n");
 
-  // Hook removal.
-  let removeHook = true;
-  if (options.keepHook === true) {
-    removeHook = false;
+  // Scheduler removal.
+  let removeAutomation = true;
+  if (options.keepAutomation === true) {
+    removeAutomation = false;
   } else if (interactive) {
-    removeHook = await confirm(
+    removeAutomation = await confirm(
       out,
-      "Remove the SessionEnd hook from ~/.claude/settings.json?",
+      "Remove the auto-capture automation?",
       true,
     );
   }
-  if (removeHook) {
-    const res = await runHookUninstall({
-      source: "all",
-      settingsPath: options.settingsPath,
-      hookScriptPath: options.hookScriptPath,
+  if (removeAutomation) {
+    await cleanupLegacyHooks();
+    const res = await runAutomationUninstall({
+      plistPath: options.automationPlistPath,
+      exec: options.automationExec,
     });
     if (res.exitCode !== 0) {
       return { stdout: "", stderr: res.stderr, exitCode: res.exitCode };
     }
     out.write(`  ${BLUE}\u25c7${RST}  ${res.stdout.trim()}\n`);
   } else {
-    out.write(`  ${DIM}\u25cb  Hook kept${RST}\n`);
+    out.write(`  ${DIM}\u25cb  Auto-capture automation kept${RST}\n`);
   }
 
   // Guide + import removal.

@@ -80,10 +80,10 @@ export async function runConfigSet(opts: {
 }): Promise<ConfigResult> {
   const key = parseConfigKey(opts.key);
   if (key === null) return unknownKey(opts.key);
-  if (opts.project === true && key === "update_notifier") {
+  if (opts.project === true && isUserLevelOnlyKey(key)) {
     return {
       stdout: "",
-      stderr: "almanac: update_notifier is user-level only.\n",
+      stderr: `almanac: ${key} is user-level only.\n`,
       exitCode: 1,
     };
   }
@@ -123,10 +123,10 @@ export async function runConfigUnset(opts: {
 }): Promise<ConfigResult> {
   const key = parseConfigKey(opts.key);
   if (key === null) return unknownKey(opts.key);
-  if (opts.project === true && key === "update_notifier") {
+  if (opts.project === true && isUserLevelOnlyKey(key)) {
     return {
       stdout: "",
-      stderr: "almanac: update_notifier is user-level only.\n",
+      stderr: `almanac: ${key} is user-level only.\n`,
       exitCode: 1,
     };
   }
@@ -162,6 +162,10 @@ function ok(stdout: string): ConfigResult {
 
 function targetConfigPath(project: boolean): string | null {
   return project ? getProjectConfigPath(process.cwd()) : getConfigPath();
+}
+
+function isUserLevelOnlyKey(key: ConfigKey): boolean {
+  return key === "update_notifier" || key === "automation.capture_since";
 }
 
 async function readRawConfig(file = getConfigPath()): Promise<unknown> {

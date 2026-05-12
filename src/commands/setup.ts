@@ -38,7 +38,7 @@ import {
   writeConfig,
   type AgentProviderId,
 } from "../update/config.js";
-import { runHookInstall } from "./hook.js";
+import { cleanupLegacyHooks, runAutomationInstall } from "./automation.js";
 import {
   detectCurrentInstallPath,
   detectEphemeral,
@@ -48,6 +48,11 @@ import {
   countExistingPages,
   printNextSteps,
 } from "./setup/next-steps.js";
+
+type AutomationExecFn = (
+  file: string,
+  args: string[],
+) => Promise<{ stdout?: string; stderr?: string }>;
 
 /**
  * `almanac setup` — the MCP-style branded TUI that runs when a user
@@ -60,8 +65,7 @@ import {
  *
  * Setup installs:
  *
- *   1. Agent hooks (delegated to
- *      `runHookInstall` from `./hook.ts`).
+ *   1. A macOS launchd job that periodically runs `almanac capture sweep`.
  *   2. The short "how to use Almanac" guide at
  *      `~/.claude/almanac.md`, sourced from `guides/mini.md` in the
  *      package.
@@ -74,16 +78,19 @@ import {
  *      Codex does not expand Claude-style `@file` imports in AGENTS files,
  *      so the instructions must live inline to be model-visible.
  *
- * Everything is idempotent — running setup again is safe. `--skip-hook`
- * and `--skip-guides` opt out of the individual installs. `--yes` or a
- * non-TTY stdin skips all prompts and installs everything.
+ * Everything is idempotent — running setup again is safe.
+ * `--skip-automation` and `--skip-guides` opt out of the individual
+ * installs. `--yes` or a non-TTY stdin skips all prompts and installs
+ * everything.
  */
 
 export interface SetupOptions {
   /** Install everything without prompting. */
   yes?: boolean;
-  /** Don't install the SessionEnd hook. */
-  skipHook?: boolean;
+  /** Don't install the scheduled auto-capture job. */
+  skipAutomation?: boolean;
+  /** Configure the scheduled auto-capture interval. Defaults to 5h. */
+  automationEvery?: string;
   /** Don't install the CLAUDE.md guides. */
   skipGuides?: boolean;
   /** Set the default agent provider during setup. */
@@ -94,12 +101,10 @@ export interface SetupOptions {
   // ─── Injection points (tests only) ────────────────────────────────
   /** Override the subprocess spawner for `claude auth status`. */
   spawnCli?: SpawnCliFn;
-  /** Override `~/.claude/settings.json` path. */
-  settingsPath?: string;
-  /** Override the bundled hook script path. */
-  hookScriptPath?: string;
-  /** Override the stable hooks directory for the hook script copy. */
-  stableHooksDir?: string;
+  /** Override the launchd plist path. */
+  automationPlistPath?: string;
+  /** Override launchctl execution. */
+  automationExec?: AutomationExecFn;
   /** Override `~/.claude/` dir for guide install. */
   claudeDir?: string;
   /** Override `~/.codex/` dir for Codex instruction install. */
@@ -203,7 +208,7 @@ export async function runSetup(
   // single terse line and exit so the user gets honest feedback and
   // piped callers (CI, scripts) don't parse through nine lines of ANSI
   // to conclude nothing happened.
-  if (options.skipHook === true && options.skipGuides === true) {
+  if (options.skipAutomation === true && options.skipGuides === true) {
     out.write(
       "almanac: nothing to install — use --help to see what setup does\n",
     );
@@ -290,40 +295,36 @@ export async function runSetup(
     out.write(BAR + "\n");
   }
 
-  // Step 2: install the hook (default yes).
-  let hookAction: InstallDecision = "install";
-  if (options.skipHook === true) {
-    hookAction = "skip";
+  // Step 2: install the scheduler (default yes).
+  let automationAction: InstallDecision = "install";
+  if (options.skipAutomation === true) {
+    automationAction = "skip";
   } else if (interactive) {
-    hookAction = await confirm(
+    automationAction = await confirm(
       out,
       "Keep your codebase wiki up to date automatically?",
       true,
     );
   }
 
-  let hookResultLine = "";
-  if (hookAction === "install") {
-    const res = await runHookInstall({
-      source: "all",
-      settingsPath: options.settingsPath,
-      hookScriptPath: options.hookScriptPath,
-      stableHooksDir: options.stableHooksDir,
+  if (automationAction === "install") {
+    await cleanupLegacyHooks();
+    const res = await runAutomationInstall({
+      every: options.automationEvery,
+      plistPath: options.automationPlistPath,
+      exec: options.automationExec,
     });
     if (res.exitCode !== 0) {
-      stepActive(out, `SessionEnd hook: ${res.stderr.trim()}`);
+      stepActive(out, `Auto-capture automation: ${res.stderr.trim()}`);
       return {
         stdout: "",
         stderr: res.stderr,
         exitCode: res.exitCode,
       };
     }
-    hookResultLine = res.stdout.includes("already installed")
-      ? `Auto-capture hooks ${DIM}already installed${RST}`
-      : `Auto-capture installed`;
-    stepDone(out, hookResultLine);
+    stepDone(out, `Auto-capture automation installed`);
   } else {
-    stepSkipped(out, `Auto-capture ${DIM}skipped${RST}`);
+    stepSkipped(out, `Auto-capture automation ${DIM}skipped${RST}`);
   }
   out.write(BAR + "\n");
 

@@ -1,10 +1,11 @@
 import { Command } from "commander";
 
 import {
-  runHookInstall,
-  runHookStatus,
-  runHookUninstall,
-} from "../commands/hook.js";
+  runAutomationInstall,
+  runAutomationStatus,
+  runAutomationUninstall,
+} from "../commands/automation.js";
+import { runCaptureSweepCommand } from "../commands/capture-sweep.js";
 import {
   runJobsCancel,
   runJobsList,
@@ -235,13 +236,47 @@ export function registerWikiLifecycleCommands(program: Command): void {
     });
 
   capture
+    .command("sweep")
+    .description("scan quiet Claude/Codex transcripts and start capture jobs")
+    .option("--apps <apps>", "comma-separated apps to scan (default: claude,codex)")
+    .option("--quiet <duration>", "minimum quiet time before capture (default: 45m)")
+    .option("--using <provider[/model]>", "provider and optional model")
+    .option("--dry-run", "show eligible sessions without starting captures")
+    .option("--json", "emit structured JSON")
+    .action(async (opts: {
+      apps?: string;
+      quiet?: string;
+      using?: string;
+      dryRun?: boolean;
+      json?: boolean;
+    }, command: Command) => {
+      const merged = command.optsWithGlobals() as {
+        apps?: string;
+        quiet?: string;
+        using?: string;
+        dryRun?: boolean;
+        json?: boolean;
+      };
+      const result = await runCaptureSweepCommand({
+        cwd: process.cwd(),
+        apps: merged.apps ?? opts.apps,
+        quiet: merged.quiet ?? opts.quiet,
+        using: merged.using ?? opts.using,
+        dryRun: merged.dryRun ?? opts.dryRun,
+        json: merged.json ?? opts.json,
+      });
+      emit(result);
+    });
+
+  capture
     .command("status")
     .description("deprecated alias for jobs")
     .option("--json", "emit structured JSON")
-    .action(async (opts: { json?: boolean }) => {
+    .action(async (opts: { json?: boolean }, command: Command) => {
+      const merged = command.optsWithGlobals() as { json?: boolean };
       const result = await runJobsList({
         cwd: process.cwd(),
-        json: opts.json,
+        json: merged.json ?? opts.json,
       });
       emit(withWarning(
         result,
@@ -264,37 +299,32 @@ export function registerWikiLifecycleCommands(program: Command): void {
       ));
     });
 
-  const hook = program
-    .command("hook")
-    .description("manage the SessionEnd auto-capture hook");
+  const automation = program
+    .command("automation")
+    .description("manage scheduled auto-capture");
 
-  hook
+  automation
     .command("install")
-    .description("add a SessionEnd entry that runs 'almanac capture' on session end")
-    .option("--source <source>", "claude, codex, cursor, or all")
-    .action(async (opts: { source?: string }) => {
-      const result = await runHookInstall({
-        source: normalizeHookSource(opts.source),
-      });
+    .description("install the macOS launchd auto-capture job")
+    .option("--every <duration>", "run interval (default: 5h)")
+    .action(async (opts: { every?: string }) => {
+      const result = await runAutomationInstall({ every: opts.every });
       emit(result);
     });
 
-  hook
+  automation
     .command("uninstall")
-    .description("remove Almanac's SessionEnd entry; leaves foreign entries alone")
-    .option("--source <source>", "claude, codex, cursor, or all")
-    .action(async (opts: { source?: string }) => {
-      const result = await runHookUninstall({
-        source: normalizeHookSource(opts.source),
-      });
+    .description("remove the macOS launchd auto-capture job")
+    .action(async () => {
+      const result = await runAutomationUninstall();
       emit(result);
     });
 
-  hook
+  automation
     .command("status")
-    .description("report whether the SessionEnd hook is installed")
+    .description("show auto-capture automation status")
     .action(async () => {
-      const result = await runHookStatus();
+      const result = await runAutomationStatus();
       emit(result);
     });
 
@@ -355,18 +385,4 @@ function formatToolDisplay(
           ? "declined"
           : undefined;
   return [title, target, status].filter(Boolean).join(" ");
-}
-
-function normalizeHookSource(
-  source: string | undefined,
-): "claude" | "codex" | "cursor" | "all" | undefined {
-  if (
-    source === "claude" ||
-    source === "codex" ||
-    source === "cursor" ||
-    source === "all"
-  ) {
-    return source;
-  }
-  return undefined;
 }

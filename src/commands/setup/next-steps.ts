@@ -42,7 +42,7 @@ export function printNextSteps(
     out.write(row(`  ${BLUE}1.${RST}  Start querying your wiki:`));
     out.write(row(`       ${BOLD}almanac search --mentions <file>${RST}`));
     out.write(
-      row(`  ${BLUE}2.${RST}  Work normally — capture runs on session end`),
+      row(`  ${BLUE}2.${RST}  Work normally — scheduled capture sweeps new chats`),
     );
   } else {
     out.write(
@@ -54,7 +54,7 @@ export function printNextSteps(
       ),
     );
     out.write(
-      row(`  ${BLUE}3.${RST}  Work normally — capture runs on session end`),
+      row(`  ${BLUE}3.${RST}  Work normally — scheduled capture sweeps new chats`),
     );
   }
 

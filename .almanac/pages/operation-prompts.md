@@ -1,5 +1,6 @@
 ---
 title: Operation Prompts
+summary: Operation prompts define how Build, Absorb, and Garden turn repo evidence into wiki memory, and transcript-heavy Absorb runs should be improved in prompt space first.
 topics: [agents, decisions]
 files:
   - src/agent/prompts.ts
@@ -11,6 +12,10 @@ files:
   - prompts/operations/absorb.md
   - prompts/operations/garden.md
   - prompts/agents/.gitkeep
+sources:
+  - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
+status: active
+verified: 2026-05-11
 ---
 
 # Operation Prompts
@@ -48,8 +53,12 @@ Build is a deep first construction pass. It should explore the corpus from multi
 
 Absorb starts from an input and distills reusable project understanding into the existing graph. It prefers evolving synthesis pages over date-stamped fragments, and creates temporal pages only when time or event context is part of the meaning.
 
+For session-transcript inputs, a later 2026-05-11 capture review identified one prompt gap worth preserving: `prompts/operations/absorb.md` currently says to treat the input as raw material, but it does not yet explicitly tell the agent to parse transcript JSONL structurally and ignore repeated raw envelopes, long tool schemas, and oversized stdout unless they matter to a durable conclusion. That is current prompt debt, not a missing concept in the product model.
+
 Garden cultivates the graph. It improves clusters, hubs, topics, links, page boundaries, staleness, archive/supersession chains, and synthesis quality. The editorial model behind those outcomes is captured in [[wiki-organization-primitives]].
 
 ## Design implication
 
-If Build, Absorb, or Garden need better judgment, edit the relevant base or operation prompt. Do not recreate the removed writer/reviewer/review-apply pipeline in TypeScript. Helper/subagents remain optional provider behavior described inside operation prompts, not fixed Almanac product roles.
+If Build, Absorb, or Garden need better judgment, edit the relevant base or operation prompt. Do not recreate the removed writer/reviewer/review-apply pipeline in TypeScript. Helper/subagents remain optional provider behavior described inside operation prompts, not fixed CodeAlmanac product roles.
+
+The transcript-capture review also produced a concrete example of that rule: if large session JSONL files become too expensive or noisy for Absorb, the first corrective move should be to strengthen `prompts/operations/absorb.md` with transcript-specific extraction guidance, and only then consider extra preflight tooling such as size warnings or caps.
