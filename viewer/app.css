@@ -8,16 +8,17 @@
   --ca-text: #342f25;
   --ca-muted: #695f50;
   --ca-faint: #978d7e;
-  --ca-accent: #1a3a5c;
-  --ca-accent-hover: #3b5875;
-  --ca-accent-soft: rgba(26, 58, 92, 0.08);
-  --ca-accent-glow: rgba(26, 58, 92, 0.15);
+  --ca-accent: #166534;
+  --ca-accent-hover: #15803d;
+  --ca-accent-bright: #16a34a;
+  --ca-accent-soft: rgba(22, 163, 74, 0.12);
+  --ca-accent-glow: rgba(22, 163, 74, 0.18);
   --ca-sage: #6a7358;
   --ca-ink: #26313a;
-  --ca-blue-soft: #e9eef0;
+  --ca-green-soft: #e8f5e9;
   --ca-serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  --ca-sans: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  --ca-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --ca-sans: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ca-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
 * {
@@ -99,20 +100,19 @@ input {
 .ca-brand-mark {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  background: var(--ca-paper);
-  border: 1px solid var(--ca-border);
-  border-radius: 6px;
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
   box-shadow: 0 10px 26px var(--ca-accent-glow);
   overflow: hidden;
 }
 
 .ca-brand-mark-image {
-  width: 34px;
-  height: 34px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
-  filter: hue-rotate(188deg) saturate(1.75) brightness(0.68) contrast(1.18);
 }
 
 .ca-brand-title {
@@ -123,7 +123,11 @@ input {
 .ca-brand-subtitle {
   margin-top: 3px;
   color: var(--ca-muted);
-  font-size: 13px;
+  font-family: var(--ca-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .ca-search {
@@ -492,7 +496,7 @@ input {
   padding: 2px 7px;
   border: 1px solid var(--ca-border);
   border-radius: 999px;
-  background: var(--ca-blue-soft);
+  background: var(--ca-green-soft);
   color: var(--ca-ink);
   font-size: 11px;
 }

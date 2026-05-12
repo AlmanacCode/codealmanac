@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 describe("viewer UI assets", () => {
   it("ships structured sidebar topic links with active styling", async () => {
     const indexHtml = await readFile(join(process.cwd(), "viewer", "index.html"), "utf8");
-    const mark = await readFile(join(process.cwd(), "viewer", "almanac-mark.png"));
+    const logo = await readFile(join(process.cwd(), "viewer", "almanac-logo.png"));
     const appJs = await readFile(join(process.cwd(), "viewer", "app.js"), "utf8");
     const routesJs = await readFile(join(process.cwd(), "viewer", "routes.js"), "utf8");
     const jobsJs = await readFile(join(process.cwd(), "viewer", "jobs-view.js"), "utf8");
@@ -15,10 +15,10 @@ describe("viewer UI assets", () => {
     const appCss = await readFile(join(process.cwd(), "viewer", "app.css"), "utf8");
     const jobsCss = await readFile(join(process.cwd(), "viewer", "jobs.css"), "utf8");
 
-    expect(mark.byteLength).toBeGreaterThan(0);
-    expect(indexHtml).toContain('src="/almanac-mark.png"');
+    expect(logo.byteLength).toBeGreaterThan(0);
+    expect(indexHtml).toContain('src="/almanac-logo.png"');
     expect(indexHtml).toContain('href="/jobs.css"');
-    expect(indexHtml).toContain("Your code wiki");
+    expect(indexHtml).toContain("Agent-maintained knowledge");
     expect(indexHtml).toContain('class="ca-brand ca-brand-route"');
     expect(indexHtml).toContain('data-route="/"');
     expect(indexHtml).not.toContain("Local wiki viewer");
@@ -110,12 +110,18 @@ describe("viewer UI assets", () => {
     expect(appCss).toContain(".ca-topic-link");
     expect(appCss).toContain(".ca-brand-mark-image");
     expect(appCss).toContain(".ca-brand-route");
+    expect(appCss).toContain("--ca-accent: #166534");
+    expect(appCss).toContain("--ca-accent-hover: #15803d");
+    expect(appCss).toContain("--ca-accent-bright: #16a34a");
+    expect(appCss).toContain("rgba(22, 163, 74, 0.12)");
+    expect(appCss).toContain("DM Sans");
+    expect(appCss).toContain("JetBrains Mono");
     expect(appCss).toContain(".ca-page-actions");
     expect(appCss).toContain(".ca-back-button");
     expect(appCss).toContain(".ca-article-summary");
     expect(appCss).toContain(".ca-page-ornament");
     expect(appCss).toContain(".ca-link-button");
-    expect(appCss).toContain("brightness(0.68)");
+    expect(appCss).not.toContain("brightness(0.68)");
     expect(appCss).toContain(".ca-left .ca-link-button.is-active");
     expect(appCss).not.toContain(".ca-left .ca-link-button {\n  color: var(--ca-text);");
     expect(appCss).toContain(".ca-shell.is-rail-hidden");

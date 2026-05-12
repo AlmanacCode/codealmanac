@@ -2,7 +2,7 @@
 title: almanac serve (Local Viewer)
 topics: [cli, decisions, systems]
 status: active
-verified: 2026-05-10
+verified: 2026-05-12
 files:
   - src/commands/serve.ts
   - src/viewer/api.ts
@@ -11,6 +11,7 @@ files:
   - src/viewer/static.ts
   - src/query/page-view.ts
   - viewer/index.html
+  - viewer/almanac-logo.png
   - viewer/app.js
   - viewer/app.css
   - viewer/jobs-view.js
@@ -31,6 +32,8 @@ sources:
   - ../openalmanac/frontend/src/components/wiki/wiki-chrome.css
   - ../openalmanac/frontend/src/components/wiki/vintage-prose.css
   - ../openalmanac/frontend/src/components/wiki/layout/WikiLayout.tsx
+  - ../usealmanac/index.html
+  - ../usealmanac/logo1.png
 ---
 
 # almanac serve (Local Viewer)
@@ -197,7 +200,7 @@ The poll timer is private state inside `createJobsView()` in `viewer/jobs-view.j
 
 ## UI direction
 
-The frontend uses an OpenAlmanac-inspired warm paper palette and serif article typography. Color tokens live in `viewer/app.css` under the `--ca-*` namespace:
+The frontend uses the `usealmanac.com` brand direction: warm paper surfaces, Palatino-style serif reading typography, supporting sans/mono stacks that match the landing page, and botanical green accents. Color tokens live in `viewer/app.css` under the `--ca-*` namespace:
 
 ```css
 --ca-bg: #faf6ed;
@@ -207,15 +210,17 @@ The frontend uses an OpenAlmanac-inspired warm paper palette and serif article t
 --ca-border: #d8d0c0;
 --ca-text: #342f25;
 --ca-muted: #695f50;
---ca-accent: #1a3a5c;        /* Navy blue */
---ca-accent-hover: #3b5875;
+--ca-accent: #166534;
+--ca-accent-hover: #15803d;
+--ca-accent-bright: #16a34a;
 --ca-serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
---ca-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+--ca-sans: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+--ca-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 ```
 
-The accent color was revised from maroon (`#6b1c23`) to OpenAlmanac's Navy blue (`#1a3a5c`) during the design polish pass on 2026-05-10. The companion modular `viewer/styles/tokens.css` still uses the old `--vw-*` namespace with maroon and is superseded by `viewer/app.css`.
+The accent color was revised from OpenAlmanac navy (`#1a3a5c`) to the usealmanac green (`#166534`) on 2026-05-12 so the local viewer matches the public landing page. The companion modular `viewer/styles/tokens.css` still uses the old `--vw-*` namespace with maroon and is superseded by `viewer/app.css`.
 
-The brand mark is `A` (Almanac), not `CA`, after the polish pass.
+The brand mark is the usealmanac open-book logo at `viewer/almanac-logo.png`. The left rail subtitle is `Agent-maintained knowledge`, matching the landing-page eyebrow.
 
 Three-panel layout (desktop):
 
