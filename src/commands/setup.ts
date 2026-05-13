@@ -267,6 +267,7 @@ export async function runSetup(
         ? detectEphemeral(options.installPath)
         : false)
     : detectEphemeral(detectCurrentInstallPath());
+  let durableGlobalInstall = false;
   if (ephem) {
     let globalAction: InstallDecision = "install";
     if (interactive) {
@@ -280,6 +281,7 @@ export async function runSetup(
       stepActive(out, "Installing Almanac package globally…");
       try {
         await (options.spawnGlobalInstall ?? spawnGlobalInstall)();
+        durableGlobalInstall = true;
         stepDone(out, "Almanac installed globally (almanac now on PATH)");
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -310,22 +312,32 @@ export async function runSetup(
   }
 
   if (automationAction === "install") {
-    await cleanupLegacyHooks();
-    const res = await runAutomationInstall({
-      every: options.automationEvery,
-      quiet: options.automationQuiet,
-      plistPath: options.automationPlistPath,
-      exec: options.automationExec,
-    });
-    if (res.exitCode !== 0) {
-      stepActive(out, `Auto-capture automation: ${res.stderr.trim()}`);
-      return {
-        stdout: "",
-        stderr: res.stderr,
-        exitCode: res.exitCode,
-      };
+    if (ephem && !durableGlobalInstall) {
+      stepSkipped(
+        out,
+        `Auto-capture automation ${DIM}skipped — requires a durable Almanac install${RST}`,
+      );
+    } else {
+      await cleanupLegacyHooks();
+      const res = await runAutomationInstall({
+        every: options.automationEvery,
+        quiet: options.automationQuiet,
+        programArguments: ephem
+          ? globalAlmanacProgramArguments(options.automationQuiet)
+          : undefined,
+        plistPath: options.automationPlistPath,
+        exec: options.automationExec,
+      });
+      if (res.exitCode !== 0) {
+        stepActive(out, `Auto-capture automation: ${res.stderr.trim()}`);
+        return {
+          stdout: "",
+          stderr: res.stderr,
+          exitCode: res.exitCode,
+        };
+      }
+      stepDone(out, `Auto-capture automation installed`);
     }
-    stepDone(out, `Auto-capture automation installed`);
   } else {
     stepSkipped(out, `Auto-capture automation ${DIM}skipped${RST}`);
   }
@@ -385,6 +397,10 @@ export async function runSetup(
 type AgentChoice =
   | { ok: true; provider: AgentProviderId; model: string | null }
   | { ok: false; error: string };
+
+function globalAlmanacProgramArguments(quiet = "45m"): string[] {
+  return ["/usr/bin/env", "almanac", "capture", "sweep", "--quiet", quiet];
+}
 
 async function chooseDefaultAgent(args: {
   out: NodeJS.WritableStream;

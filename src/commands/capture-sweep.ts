@@ -92,6 +92,7 @@ interface SweepSummary {
 
 const DEFAULT_QUIET = "45m";
 const EMPTY_SHA256 = `sha256:${createHash("sha256").update("").digest("hex")}`;
+const SWEEP_LOCK_STALE_MS = 60 * 60 * 1000;
 
 export async function runCaptureSweepCommand(
   options: CaptureSweepOptions,
@@ -135,7 +136,7 @@ export async function runCaptureSweepCommand(
       }
 
       if (options.dryRun !== true && !heldLocks.has(candidate.repoRoot)) {
-        const locked = await acquireRepoLock(candidate.repoRoot);
+        const locked = await acquireRepoLock(candidate.repoRoot, now);
         if (!locked) {
           summary.skipped.push(skip(candidate, "sweep-already-running"));
           continue;
@@ -146,12 +147,6 @@ export async function runCaptureSweepCommand(
       const ledger = await loadLedgerForRepo(candidate.repoRoot, ledgers);
       await reconcileLedger(candidate.repoRoot, ledger, now);
       const key = ledgerKey(candidate);
-      const entry = ledger.sessions[key] ?? freshLedgerEntry(candidate);
-
-      if (entry.status === "pending") {
-        summary.skipped.push(skip(candidate, "capture-already-pending"));
-        continue;
-      }
 
       let content: Buffer;
       try {
@@ -163,6 +158,13 @@ export async function runCaptureSweepCommand(
       }
       const currentSize = content.length;
       const currentLine = countLines(content.toString("utf8"));
+      const entry = ledger.sessions[key] ?? freshLedgerEntry(candidate, content, captureSince);
+
+      if (entry.status === "pending") {
+        summary.skipped.push(skip(candidate, "capture-already-pending"));
+        continue;
+      }
+
       if (currentSize <= entry.lastCapturedSize) {
         ledger.sessions[key] = entry;
         summary.skipped.push(skip(candidate, "unchanged"));
@@ -463,11 +465,51 @@ function lockPath(repoRoot: string): string {
   return join(getRepoAlmanacDir(repoRoot), "runs", "capture-sweep.lock");
 }
 
-async function acquireRepoLock(repoRoot: string): Promise<boolean> {
+function lockOwnerPath(repoRoot: string): string {
+  return join(lockPath(repoRoot), "owner.json");
+}
+
+async function acquireRepoLock(repoRoot: string, now: Date): Promise<boolean> {
+  if (await tryCreateRepoLock(repoRoot, now)) return true;
+  if (!await isStaleRepoLock(repoRoot, now)) return false;
+  await releaseRepoLock(repoRoot);
+  return await tryCreateRepoLock(repoRoot, now);
+}
+
+async function tryCreateRepoLock(repoRoot: string, now: Date): Promise<boolean> {
   try {
     const lock = lockPath(repoRoot);
     await mkdir(dirname(lock), { recursive: true });
     await mkdir(lock, { recursive: false });
+    await writeFile(
+      lockOwnerPath(repoRoot),
+      `${JSON.stringify({ pid: process.pid, startedAt: now.toISOString() }, null, 2)}\n`,
+      "utf8",
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isStaleRepoLock(repoRoot: string, now: Date): Promise<boolean> {
+  let raw: Record<string, unknown> = {};
+  try {
+    raw = parseJsonObject(await readFile(lockOwnerPath(repoRoot), "utf8")) ?? {};
+  } catch {
+    return true;
+  }
+  const startedAt = typeof raw.startedAt === "string" ? Date.parse(raw.startedAt) : NaN;
+  if (!Number.isFinite(startedAt)) return true;
+  if (now.getTime() - startedAt > SWEEP_LOCK_STALE_MS) return true;
+  const pid = typeof raw.pid === "number" ? raw.pid : null;
+  return pid !== null && !isPidAlive(pid);
+}
+
+function isPidAlive(pid: number): boolean {
+  if (pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
     return true;
   } catch {
     return false;
@@ -565,16 +607,54 @@ function clearPending(entry: LedgerEntry): void {
   delete entry.pendingStartedAt;
 }
 
-function freshLedgerEntry(candidate: SessionCandidate): LedgerEntry {
+function freshLedgerEntry(
+  candidate: SessionCandidate,
+  content: Buffer,
+  captureSince: Date | null,
+): LedgerEntry {
+  const cursor = initialLedgerCursor(content, captureSince);
   return {
     app: candidate.app,
     sessionId: candidate.sessionId,
     transcriptPath: candidate.transcriptPath,
     status: "done",
-    lastCapturedSize: 0,
-    lastCapturedLine: 0,
-    lastCapturedPrefixHash: EMPTY_SHA256,
+    lastCapturedSize: cursor.size,
+    lastCapturedLine: cursor.line,
+    lastCapturedPrefixHash: cursor.size === 0 ? EMPTY_SHA256 : sha256(content.subarray(0, cursor.size)),
   };
+}
+
+function initialLedgerCursor(
+  content: Buffer,
+  captureSince: Date | null,
+): { size: number; line: number } {
+  if (captureSince === null || content.length === 0) {
+    return { size: 0, line: 0 };
+  }
+  const text = content.toString("utf8");
+  let offset = 0;
+  let line = 0;
+  for (const rawLine of text.split(/(?<=\n)/)) {
+    if (rawLine.length === 0) continue;
+    const lineWithoutNewline = rawLine.replace(/\r?\n$/, "");
+    const timestamp = transcriptLineTimestamp(lineWithoutNewline);
+    if (timestamp !== null && timestamp >= captureSince.getTime()) {
+      return { size: offset, line };
+    }
+    offset += Buffer.byteLength(rawLine);
+    line += 1;
+  }
+  return { size: content.length, line };
+}
+
+function transcriptLineTimestamp(line: string): number | null {
+  const parsed = parseJsonObject(line);
+  if (parsed === null) return null;
+  const rawTimestamp = stringField(parsed, "timestamp") ??
+    stringField(objectField(parsed, "payload") ?? {}, "timestamp");
+  if (rawTimestamp === undefined) return null;
+  const ms = Date.parse(rawTimestamp);
+  return Number.isFinite(ms) ? ms : null;
 }
 
 function ledgerKey(candidate: Pick<SessionCandidate, "app" | "transcriptPath">): string {

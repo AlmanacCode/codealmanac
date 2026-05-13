@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, utimes, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -121,7 +121,11 @@ describe("almanac capture sweep", () => {
       const newTranscript = join(codexDir, "new.jsonl");
       await writeFile(
         newTranscript,
-        `${JSON.stringify({ type: "session_meta", payload: { id: "new", cwd: repo } })}\n`,
+        `${JSON.stringify({
+          timestamp: "2026-05-11T11:10:00.000Z",
+          type: "session_meta",
+          payload: { id: "new", cwd: repo },
+        })}\n`,
         "utf8",
       );
       const recent = new Date("2026-05-11T11:10:00.000Z");
@@ -147,6 +151,88 @@ describe("almanac capture sweep", () => {
     });
   });
 
+  it("starts fresh ledgers at the activation timestamp for continued old transcripts", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "repo");
+      await scaffoldWiki(repo);
+      await writeConfig({
+        automation: { capture_since: "2026-05-11T11:00:00.000Z" },
+      });
+      const codexDir = join(home, ".codex", "sessions");
+      await mkdir(codexDir, { recursive: true });
+      const transcript = join(codexDir, "continued.jsonl");
+      await writeFile(
+        transcript,
+        [
+          JSON.stringify({
+            timestamp: "2026-05-11T10:00:00.000Z",
+            type: "session_meta",
+            payload: { id: "continued", cwd: repo },
+          }),
+          JSON.stringify({
+            timestamp: "2026-05-11T11:05:00.000Z",
+            type: "response_item",
+            payload: { type: "message", role: "user", content: "new" },
+          }),
+          "",
+        ].join("\n"),
+        "utf8",
+      );
+      const recent = new Date("2026-05-11T11:10:00.000Z");
+      await utimes(transcript, recent, recent);
+
+      const result = await runCaptureSweepCommand({
+        cwd: repo,
+        homeDir: home,
+        dryRun: true,
+        json: true,
+        quiet: "1m",
+        now: new Date("2026-05-11T12:00:00.000Z"),
+      });
+
+      const parsed = JSON.parse(result.stdout);
+      expect(parsed.summary.started).toHaveLength(1);
+      expect(parsed.summary.started[0]).toMatchObject({
+        sessionId: "continued",
+        fromLine: 2,
+        toLine: 2,
+      });
+    });
+  });
+
+  it("does not backfill a continued old transcript when line timestamps are missing", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "repo");
+      await scaffoldWiki(repo);
+      await writeConfig({
+        automation: { capture_since: "2026-05-11T11:00:00.000Z" },
+      });
+      const codexDir = join(home, ".codex", "sessions");
+      await mkdir(codexDir, { recursive: true });
+      const transcript = join(codexDir, "continued-unknown-time.jsonl");
+      await writeFile(
+        transcript,
+        `${JSON.stringify({ type: "session_meta", payload: { id: "continued", cwd: repo } })}\n`,
+        "utf8",
+      );
+      const recent = new Date("2026-05-11T11:10:00.000Z");
+      await utimes(transcript, recent, recent);
+
+      const result = await runCaptureSweepCommand({
+        cwd: repo,
+        homeDir: home,
+        dryRun: true,
+        json: true,
+        quiet: "1m",
+        now: new Date("2026-05-11T12:00:00.000Z"),
+      });
+
+      const parsed = JSON.parse(result.stdout);
+      expect(parsed.summary.started).toHaveLength(0);
+      expect(parsed.summary.skipped[0]).toMatchObject({ reason: "unchanged" });
+    });
+  });
+
   it("skips a repo when another sweep holds its lock", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "repo");
@@ -154,6 +240,14 @@ describe("almanac capture sweep", () => {
       await mkdir(join(repo, ".almanac", "runs", "capture-sweep.lock"), {
         recursive: true,
       });
+      await writeFile(
+        join(repo, ".almanac", "runs", "capture-sweep.lock", "owner.json"),
+        JSON.stringify({
+          pid: process.pid,
+          startedAt: "2026-05-11T11:59:00.000Z",
+        }),
+        "utf8",
+      );
       const codexDir = join(home, ".codex", "sessions");
       await mkdir(codexDir, { recursive: true });
       const transcript = join(codexDir, "ready.jsonl");
@@ -181,6 +275,69 @@ describe("almanac capture sweep", () => {
       expect(parsed.summary.skipped[0]).toMatchObject({
         reason: "sweep-already-running",
       });
+    });
+  });
+
+  it("recovers an abandoned sweep lock", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "repo");
+      await scaffoldWiki(repo);
+      const lock = join(repo, ".almanac", "runs", "capture-sweep.lock");
+      await mkdir(lock, { recursive: true });
+      await writeFile(
+        join(lock, "owner.json"),
+        JSON.stringify({
+          pid: 999999,
+          startedAt: "2026-05-11T09:00:00.000Z",
+        }),
+        "utf8",
+      );
+      const codexDir = join(home, ".codex", "sessions");
+      await mkdir(codexDir, { recursive: true });
+      const transcript = join(codexDir, "ready.jsonl");
+      await writeFile(
+        transcript,
+        `${JSON.stringify({
+          timestamp: "2026-05-11T10:00:00.000Z",
+          type: "session_meta",
+          payload: { id: "codex-1", cwd: repo },
+        })}\n`,
+        "utf8",
+      );
+      const old = new Date("2026-05-11T10:00:00.000Z");
+      await utimes(transcript, old, old);
+
+      const result = await runCaptureSweepCommand({
+        cwd: repo,
+        homeDir: home,
+        json: true,
+        quiet: "45m",
+        now: new Date("2026-05-11T12:00:00.000Z"),
+        startBackground: async (options) => ({
+          runId: "run_recovered_lock",
+          childPid: 123,
+          record: {
+            version: 1,
+            id: "run_recovered_lock",
+            operation: "absorb",
+            status: "queued",
+            repoRoot: options.repoRoot,
+            pid: 0,
+            provider: options.spec.provider.id,
+            model: options.spec.provider.model,
+            startedAt: "2026-05-11T12:00:00.000Z",
+            logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+          },
+        }),
+      });
+
+      const parsed = JSON.parse(result.stdout);
+      expect(parsed.summary.started).toHaveLength(1);
+      expect(parsed.summary.started[0]).toMatchObject({
+        runId: "run_recovered_lock",
+      });
+      await expect(readFile(lock, "utf8")).rejects.toThrow();
+      await rm(lock, { recursive: true, force: true });
     });
   });
 });

@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -99,6 +99,44 @@ describe("almanac automation", () => {
       expect(plist).toContain("<string>--quiet</string>");
       expect(plist).toContain("<string>1s</string>");
       expect(plist.match(/\/opt\/homebrew\/bin/g)).toHaveLength(1);
+    });
+  });
+
+  it("migrates legacy config before writing the activation baseline", async () => {
+    await withTempHome(async (home) => {
+      const plistPath = join(
+        home,
+        "Library",
+        "LaunchAgents",
+        "com.codealmanac.capture-sweep.plist",
+      );
+      await mkdir(join(home, ".almanac"), { recursive: true });
+      await writeFile(
+        join(home, ".almanac", "config.json"),
+        JSON.stringify({
+          agent: {
+            default: "claude",
+            models: { claude: "claude-opus-4-6" },
+          },
+        }),
+        "utf8",
+      );
+
+      const result = await runAutomationInstall({
+        plistPath,
+        exec: async () => ({}),
+        now: new Date("2026-05-12T05:10:00.000Z"),
+      });
+
+      expect(result.exitCode).toBe(0);
+      await expect(readConfig()).resolves.toMatchObject({
+        agent: { default: "claude", models: { claude: "claude-opus-4-6" } },
+        automation: { capture_since: "2026-05-12T05:10:00.000Z" },
+      });
+      const toml = await readFile(join(home, ".almanac", "config.toml"), "utf8");
+      expect(toml).toContain('[agent]');
+      expect(toml).toContain('default = "claude"');
+      expect(toml).toContain('[automation]');
     });
   });
 });
