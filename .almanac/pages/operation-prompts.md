@@ -59,6 +59,6 @@ Garden cultivates the graph. It improves clusters, hubs, topics, links, page bou
 
 ## Design implication
 
-If Build, Absorb, or Garden need better judgment, edit the relevant base or operation prompt. Do not recreate the removed writer/reviewer/review-apply pipeline in TypeScript. Helper/subagents remain optional provider behavior described inside operation prompts, not fixed CodeAlmanac product roles.
+If Build, Absorb, or Garden need better judgment, edit the relevant base or operation prompt. Do not recreate the removed writer/reviewer/review-apply pipeline in TypeScript. Helper/subagents remain optional provider behavior described inside operation prompts, not fixed CodeAlmanac product roles. This prompt layer is separate from prescriptive agent rules such as [[agents-md]] or `CLAUDE.md`: operation prompts carry run-specific Almanac behavior, while instruction files carry durable session conventions for a given agent harness.
 
 The transcript-capture review also produced a concrete example of that rule: if large session JSONL files become too expensive or noisy for Absorb, the first corrective move should be to strengthen `prompts/operations/absorb.md` with transcript-specific extraction guidance, and only then consider extra preflight tooling such as size warnings or caps.

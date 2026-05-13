@@ -121,6 +121,8 @@ The same discussion also clarified how scheduled capture is expected to bridge i
 
 The review pass that followed the design discussion tightened this boundary in code. `runCaptureSweepCommand()` now writes the updated pending ledger entry immediately after a capture job is successfully enqueued, rather than waiting until the end of the sweep. That keeps the conceptual two-phase model aligned with the persisted state: once a run id exists, the repo ledger records that pending ownership right away.
 
+One later operator-facing clarification from the same Codex transcript is worth preserving because the launchd logs can look misleading at first glance. Repeated sweep runs against the same transcript path do not mean sweep discovered several distinct sessions. They usually mean one append-only transcript became quiet again after more lines were added past the last successful cursor. In that case the new job is a continuation capture for the same `app + transcriptPath` ledger key, and the new run should focus only on lines after `lastCapturedLine` unless earlier lines are needed for context.
+
 ## How sweep uses it
 
 The later "show me the ledger example, and how we will be using it" exchange made the operational order explicit:
@@ -134,6 +136,8 @@ The later "show me the ledger example, and how we will be using it" exchange mad
 7. Only enqueue capture for newly eligible uncaptured content.
 
 This means transcripts are the discovery surface, `.almanac/` determines whether CodeAlmanac should care, and the ledger determines whether there is any new material worth absorbing.
+
+The same Codex transcript later clarified one operator-facing point that is easy to misread from launchd logs: the sweep does not start Absorb merely because it rediscovered a transcript path. A candidate is only eligible after all earlier gates passed and the file has advanced beyond the ledger cursor. In current code that means the transcript mapped to a repo with `.almanac/`, survived the `automation.capture_since` cutoff, stayed quiet for the configured window, was not already owned by a pending run, and still had `currentSize > lastCapturedSize`. A quiet transcript with no new bytes is skipped as `unchanged`, not re-captured.
 
 ## Status model
 

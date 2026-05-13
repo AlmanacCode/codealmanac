@@ -83,6 +83,13 @@
   text-transform: uppercase;
 }
 
+.ca-log-source {
+  color: var(--ca-muted);
+  font-family: var(--ca-mono);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .ca-log-title {
   color: var(--ca-text);
   font-family: var(--ca-serif);

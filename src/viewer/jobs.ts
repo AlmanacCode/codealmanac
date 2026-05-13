@@ -4,6 +4,7 @@ import type { HarnessEvent, RunActor } from "../harness/events.js";
 import {
   listRunRecords,
   readRunRecord,
+  readRunSpec,
   runLogPath,
   runRecordPath,
   toRunView,
@@ -26,6 +27,7 @@ export type ViewerJobLogEvent =
 export interface ViewerJobRun extends RunView {
   displayTitle: string;
   displaySubtitle: string | null;
+  transcriptSource: "claude" | "codex" | "file" | null;
 }
 
 export interface ViewerJobDetail {
@@ -74,7 +76,8 @@ export async function listViewerJobs(repoRoot: string): Promise<{ runs: ViewerJo
           isPidAlive,
         });
         const events = await readJobLogEvents(runLogPath(repoRoot, record.id));
-        return enrichRunView(view, events);
+        const specPrompt = await readSpecPrompt(repoRoot, record.id);
+        return enrichRunView(view, events, specPrompt);
       }),
   );
   return { runs };
@@ -88,6 +91,7 @@ export async function getViewerJob(
   const record = await readRunRecord(runRecordPath(repoRoot, runId));
   if (record === null || record.id !== runId) return null;
   const events = await readJobLogEvents(runLogPath(repoRoot, record.id));
+  const specPrompt = await readSpecPrompt(repoRoot, record.id);
   const agents = deriveAgentTraces(events);
   return {
     run: enrichRunView(
@@ -97,6 +101,7 @@ export async function getViewerJob(
         isPidAlive,
       }),
       events,
+      specPrompt,
     ),
     events,
     agents,
@@ -213,11 +218,24 @@ function parseActor(value: unknown): RunActor | null {
   };
 }
 
-function enrichRunView(view: RunView, events: ViewerJobLogEvent[]): ViewerJobRun {
+async function readSpecPrompt(repoRoot: string, runId: string): Promise<string | null> {
+  try {
+    return (await readRunSpec(repoRoot, runId)).prompt;
+  } catch {
+    return null;
+  }
+}
+
+function enrichRunView(
+  view: RunView,
+  events: ViewerJobLogEvent[],
+  specPrompt: string | null,
+): ViewerJobRun {
   return {
     ...view,
     displayTitle: runDisplayTitle(view),
     displaySubtitle: runDisplaySubtitle(view, events),
+    transcriptSource: transcriptSource(view, specPrompt),
   };
 }
 
@@ -444,6 +462,21 @@ function operationTitle(operation: string): string {
   if (operation === "build") return "Build";
   if (operation === "garden") return "Garden";
   return operation.charAt(0).toUpperCase() + operation.slice(1);
+}
+
+function transcriptSource(
+  view: RunView,
+  specPrompt: string | null,
+): ViewerJobRun["transcriptSource"] {
+  if (view.targetKind !== "session") return null;
+  const fromPrompt = specPrompt?.match(/^- App: (claude|codex)\s*$/m)?.[1];
+  if (fromPrompt === "claude" || fromPrompt === "codex") return fromPrompt;
+  const target = view.targetPaths?.[0] ?? "";
+  if (target.includes("/.codex/") || basename(target).startsWith("rollout-")) {
+    return "codex";
+  }
+  if (target.includes("/.claude/")) return "claude";
+  return "file";
 }
 
 function basename(path: string): string {

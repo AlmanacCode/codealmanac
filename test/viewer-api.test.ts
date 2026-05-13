@@ -9,6 +9,7 @@ import {
   runLogPath,
   runRecordPath,
   writeRunRecord,
+  writeRunSpec,
 } from "../src/process/index.js";
 import { createViewerApi } from "../src/viewer/api.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
@@ -243,6 +244,7 @@ describe("viewer api", () => {
       expect(jobs.runs[0]?.displayStatus).toBe("done");
       expect(jobs.runs[0]?.summary?.updated).toBe(2);
       expect(jobs.runs[0]?.displayTitle).toBe("Garden wiki");
+      expect(jobs.runs[0]?.transcriptSource).toBeNull();
 
       const detail = await api.job(finished.id);
       expect(detail?.run.provider).toBe("codex");
@@ -266,6 +268,60 @@ describe("viewer api", () => {
         event: { type: "tool_use", tool: "shell" },
       });
       await expect(api.job("run_20260510120000_missing")).resolves.toBeNull();
+    });
+  });
+
+  it("exposes transcript source separately from the provider that processed it", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      const transcript = join(home, ".claude", "projects", "r", "session-1.jsonl");
+      const started = buildStartedRunRecord({
+        runId: "run_20260510121000_session",
+        repoRoot: repo,
+        startedAt: new Date("2026-05-10T12:10:00.000Z"),
+        pid: process.pid,
+        spec: {
+          provider: { id: "codex", model: "gpt-5.4" },
+          cwd: repo,
+          prompt: "absorb session",
+          metadata: {
+            operation: "absorb",
+            targetKind: "session",
+            targetPaths: [transcript],
+          },
+        },
+      });
+      await writeRunRecord(runRecordPath(repo, started.id), started);
+      await writeRunSpec(repo, started.id, {
+        provider: { id: "codex", model: "gpt-5.4" },
+        cwd: repo,
+        prompt: [
+          "Command context:",
+          "- Command: capture",
+          "- App: claude",
+          "- Session id: session-1",
+          `- Transcript: ${transcript}`,
+        ].join("\n"),
+        metadata: {
+          operation: "absorb",
+          targetKind: "session",
+          targetPaths: [transcript],
+        },
+      });
+
+      const api = createViewerApi({ repoRoot: repo });
+      const jobs = await api.jobs();
+      expect(jobs.runs[0]).toMatchObject({
+        provider: "codex",
+        model: "gpt-5.4",
+        targetKind: "session",
+        transcriptSource: "claude",
+        displayTitle: "Absorb session transcript",
+      });
+
+      const detail = await api.job(started.id);
+      expect(detail?.run.transcriptSource).toBe("claude");
     });
   });
 

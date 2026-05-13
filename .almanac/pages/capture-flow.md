@@ -114,6 +114,22 @@ The first scheduled discovery implementation scans Claude transcripts under `~/.
 
 Continuation capture keeps passing the original transcript path into capture, and adds cursor context telling Absorb what transcript prefix was already captured. That preserves the "agent inspects files lazily" contract while avoiding temp delta transcript files or byte-range semantics in `almanac capture`.
 
+The current sweep implementation makes that continuation context explicit in the saved run spec. `cursorContext()` in [[src/commands/capture-sweep.ts]] appends a second command-context block with the transcript identity and cursor boundary:
+
+```text
+Scheduled capture cursor:
+- App: codex|claude
+- Session id: <session-id>
+- Transcript: <absolute transcript path>
+- Previously captured through line: <N>
+- Previously captured through byte: <B>
+- Focus on line <N+1> onward.
+- You may inspect earlier lines only for context.
+- Do not re-document decisions already captured unless newer lines amend, invalidate, or add important nuance to them.
+```
+
+This matters operationally because the prompt does not inline the uncaptured chat tail. When an operator wants to verify why a run became eligible or what slice of an active conversation Absorb was asked to analyze, the authoritative artifact is `.almanac/runs/<run-id>.spec.json`, not the viewer transcript alone.
+
 One open operational consequence from the same session is that "pass the original transcript path" is still compatible with a smarter first step inside Absorb. Future prompt or tooling work can keep the current command surface while instructing the agent to parse JSONL structurally before reading deeply, and can optionally add a cheap preflight size estimator or cap for unusually large first-run backlogs. Neither behavior is part of the current implementation.
 
 ## Sweep dry-run semantics

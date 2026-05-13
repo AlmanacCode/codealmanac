@@ -26,10 +26,11 @@ Runs are per wiki under `.almanac/runs/`:
 ```text
 .almanac/runs/<run-id>.json
 .almanac/runs/<run-id>.jsonl
+.almanac/runs/<run-id>.spec.json
 .almanac/runs/<run-id>.cancel
 ```
 
-The JSON record stores status, operation, provider, model, PID, target metadata, log path, timestamps, final summary, and errors. The JSONL file stores normalized `HarnessEvent` records from [[harness-providers]], including structured tool display details when an adapter can provide them. The optional cancel marker is a race guard so a queued cancellation cannot be overwritten during child startup. New wiki scaffolding gitignores `.almanac/runs/` and `.almanac/index.db`.
+The JSON record stores status, operation, provider, model, PID, target metadata, log path, timestamps, final summary, and errors. The JSONL file stores normalized `HarnessEvent` records from [[harness-providers]], including structured tool display details when an adapter can provide them. The spec file stores the serialized `AgentRunSpec` that the child process rehydrates, including the exact prompt string, cwd, provider/model selection, targets, and operation metadata. For capture debugging this file is the inspectable answer to "what prompt and transcript context were actually sent for this run." The optional cancel marker is a race guard so a queued cancellation cannot be overwritten during child startup. New wiki scaffolding gitignores `.almanac/runs/` and `.almanac/index.db`.
 
 ## Status lifecycle
 
