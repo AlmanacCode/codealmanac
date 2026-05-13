@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/codealmanac"><img alt="npm version" src="https://img.shields.io/npm/v/codealmanac?label=npm&color=2ea043"></a>
-  <a href="https://www.npmjs.com/package/codealmanac"><img alt="npm downloads" src="https://img.shields.io/npm/dm/codealmanac?label=downloads%2Fmonth&color=1f6feb"></a>
+  <a href="https://www.npmjs.com/package/codealmanac"><img alt="npm downloads" src="https://img.shields.io/npm/dt/codealmanac?label=npm%20downloads&color=1f6feb"></a>
   <img alt="Node support" src="https://img.shields.io/badge/node-20%20%7C%2022%2B-1f6feb">
   <a href="./LICENSE"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-df7b40"></a>
   <a href="https://github.com/AlmanacCode/codealmanac"><img alt="GitHub repository" src="https://img.shields.io/badge/GitHub-AlmanacCode%2Fcodealmanac-24292f?logo=github"></a>
