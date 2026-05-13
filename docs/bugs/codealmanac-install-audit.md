@@ -1,5 +1,9 @@
 # codealmanac install audit
 
+> Historical hook-era audit. Current auto-capture is scheduler-backed:
+> `almanac automation install` registers the scheduled `almanac capture sweep`
+> job, and setup/uninstall clean old hook entries privately.
+
 **Version examined:** 0.1.5 (from https://github.com/AlmanacCode/codealmanac.git, cloned `2026-04-16`).
 **Context:** User ran `npx codealmanac` in `/Users/kushagrachitkara/Downloads/reverie/openalmanac`. Bootstrap and capture hook produced output; `almanac` is not on PATH; `which almanac` returns nothing.
 **Scope:** Install surface only. The wiki data model, capture/writer/reviewer agents, and query CLI design are out of scope — those work.
@@ -189,7 +193,7 @@ In rough priority order:
 
 5. **Fix `npm bin`-era tooling.** Replace `npm bin -g` with `npm prefix -g` + `/bin` construction, which works on npm 9+.
 
-6. **Add a smoke test for the install surface.** A CI job that runs `npx codealmanac --yes` in a clean container, then asserts `which almanac` succeeds, `settings.json` hook path exists, and `almanac doctor` reports no errors. The current failure mode survived to a shipping release because nothing tests the post-install invariant.
+6. **Add a smoke test for the install surface.** A CI job that runs `npx codealmanac --yes` in a clean container, then asserts `which almanac` succeeds, scheduled auto-capture uses a durable command path, and `almanac doctor` reports no errors. The current failure mode survived to a shipping release because nothing tests the post-install invariant.
 
 ### For a user stuck in this state (the reader of this audit)
 
@@ -198,11 +202,11 @@ Execute in order:
 ```bash
 npm install -g codealmanac
 which almanac                               # should resolve under your npm prefix
-almanac hook install                        # rewrites settings.json to the global-install path
-almanac doctor                              # reports binary location + hook + guides + import line + wiki stats
+almanac automation install                  # installs scheduled capture from the durable command path
+almanac doctor                              # reports binary location + automation + guides + import line + wiki stats
 ```
 
-After `almanac hook install`, inspect `~/.claude/settings.json` and verify the hook path is under your *global* `node_modules` (e.g. `~/.nvm/versions/node/v20.19.2/lib/node_modules/codealmanac/hooks/…`) and no longer under `~/.npm/_npx/<sha>/…`. Any query command (`almanac search --mentions <path>`, `almanac show <slug>`) should now work.
+After `almanac automation install`, inspect `almanac automation status` or `almanac doctor --install-only` and verify the scheduled command does not point under `~/.npm/_npx/<sha>/...`. Any query command (`almanac search --mentions <path>`, `almanac show <slug>`) should now work.
 
 ---
 

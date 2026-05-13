@@ -1,5 +1,8 @@
 # codealmanac
 
+> Historical design/bug note. Current automatic capture is scheduler-backed
+> quiet-session capture through `almanac capture sweep`, not a SessionEnd hook.
+
 A living wiki for codebases, maintained by AI agents. Documents what the code can't say: decisions, flows, invariants, incidents, gotchas. The primary consumer is the AI coding agent; the secondary consumer is humans.
 
 **CLI binary:** `codealmanac` (alias: `almanac`)
@@ -22,7 +25,7 @@ This knowledge lives in Slack threads, PR descriptions, meeting notes, and peopl
 
 ## The Product
 
-A wiki that captures this knowledge as atomic, interlinked pages organized by topics. An AI agent maintains it from coding sessions via a writer/reviewer pipeline triggered at session end. A CLI provides the query and organization interface.
+A wiki that captures this knowledge as atomic, interlinked pages organized by topics. An AI agent maintains it from coding sessions via scheduled quiet-transcript capture. A CLI provides the query and organization interface.
 
 ## Core Thesis
 
@@ -844,7 +847,7 @@ Follow [[wikilinks]] for context.
 
 ## During work
 If you hit a non-obvious constraint or gotcha, make a mental note —
-the capture pipeline runs at session end.
+scheduled capture will absorb the quiet transcript later.
 
 ## Writing conventions
 Read `.almanac/README.md` for this repo's conventions and notability bar.
@@ -852,9 +855,9 @@ Read `.almanac/README.md` for this repo's conventions and notability bar.
 
 The skill is generic (tool usage). README.md is repo-specific (what to capture, formatting). The skill reads README.md at session start.
 
-### SessionEnd hook
+### Scheduled capture
 
-(Covered in Writer/Reviewer Pipeline above.)
+Current automatic capture is scheduler-backed. `almanac capture sweep` scans quiet transcripts, maps them to initialized wikis, and starts background Absorb jobs for new material.
 
 ---
 
@@ -923,7 +926,7 @@ Agent:
 - **Slug canonicalization** (kebab-case of filename) prevents collisions.
 - **DAG cycle prevention** via CHECK constraint + pre-insert check + recursive CTE depth cap.
 - **Full rebuild indexing** (under 500ms at 500 pages). Incremental is the escape hatch.
-- **SessionEnd hook, not Stop.** One pass per session, not per turn.
+- **Quiet transcript sweep, not provider hooks.** One capture pass after the transcript is stable, not one pass per foreground-provider event.
 - **Background execution.** Non-blocking; results via git status.
 - **Intelligence in prompts, not pipelines.** No propose/review/apply state machines. No `--dry-run`, no `--apply`. Agents do the work directly; prompts are opinionated-but-open.
 - **Writer with reviewer subagent.** Writer owns writing; invokes reviewer as a tool when it wants feedback. SDK handles delegation via `agents: { reviewer }`.

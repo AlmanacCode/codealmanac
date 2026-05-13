@@ -1,5 +1,9 @@
 # Slice 5 — Capture (writer + reviewer via SessionEnd hook)
 
+> Historical slice plan. The hook-based auto-capture path has since been
+> superseded by scheduler-backed quiet-session capture:
+> `almanac automation install` periodically runs `almanac capture sweep`.
+
 Fifth implementation slice of codealmanac. Builds on slices 1-4. Reuses the `agent/sdk.ts` wrapper from slice 4, adds the subagent pattern (writer → reviewer).
 
 ## Read before coding

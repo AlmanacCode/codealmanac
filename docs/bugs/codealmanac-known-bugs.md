@@ -59,7 +59,7 @@ or to `node:sqlite` once FTS5 support is available in the relevant LTS target.
 The 0.1.6 code appears to fix the old `npx` install hazards:
 
 - setup detects ephemeral `npx`/`pnpm dlx` paths and offers global install
-- setup copies the hook script to `~/.claude/hooks/almanac-capture.sh`
+- setup installs scheduled auto-capture from a durable global command path
 - `.gitignore` includes `.almanac/.capture-*` and `.almanac/.bootstrap-*`
 - setup detects existing committed wikis before suggesting bootstrap
 
@@ -71,8 +71,8 @@ which almanac
 almanac doctor
 ```
 
-The test should also verify that the SessionEnd hook path exists and is under
-`~/.claude/hooks/`, not an npm cache path.
+The test should also verify that scheduled auto-capture is installed from a
+durable Node/program path rather than an ephemeral npm cache path.
 
 ### 3. Stale npx cache can serve old codealmanac versions
 
@@ -98,7 +98,7 @@ dist-tag.
 
 ```bash
 codealmanac --yes
-codealmanac --skip-hook
+codealmanac --skip-automation
 codealmanac --skip-guides
 ```
 
@@ -116,17 +116,19 @@ has been smoke-tested under global install, `npx`, and local dev execution.
 `src/cli/help.ts` still has an `Other:` fallback group. Verify whether the
 implicit Commander `help` command appears there in `almanac --help`.
 
-### 7. Capture has two log artifacts per hook run
+### 7. Capture run artifacts need current scheduler docs
 
-Current capture behavior intentionally separates:
+Current scheduled capture behavior intentionally separates:
 
 ```text
-.almanac/.capture-<session>.jsonl  # raw SDK message transcript
-.almanac/.capture-<session>.log    # hook stdout/stderr sidecar
+.almanac/runs/<run-id>.json        # run metadata and lifecycle status
+.almanac/runs/<run-id>.jsonl       # provider event log
+.almanac/runs/capture-ledger.json  # scheduled sweep cursor state
 ```
 
 This is probably acceptable, but docs and doctor output should make the split
-clear so users know which file to inspect.
+clear so users know whether to inspect job logs, sweep cursor state, or
+automation status.
 
 ---
 

@@ -1,5 +1,9 @@
 # `almanac ingest` — Design
 
+> Historical design note. Current automatic capture is scheduler-backed:
+> `almanac capture sweep` scans quiet transcripts and starts background
+> capture jobs; hook-triggered capture is no longer the product path.
+
 How the unified ingest command works, what each argument does, how the agent gets its instructions, and what happens at each step.
 
 ---
@@ -307,20 +311,20 @@ Continue? [Y/n]
 
 ---
 
-## What the hook fires
+## What scheduled capture runs
 
-The SessionEnd hook runs:
+The scheduled capture path runs:
 
 ```bash
-almanac ingest --yes --quiet
+almanac capture sweep
 ```
 
-Bare invocation. Auto-detects the latest session transcript for the tool that just ended. Processes it with default depth ($$). No confirmation prompt (--yes). No streaming output (--quiet). Results land in `.almanac/pages/` as git diffs.
+The sweep scans supported transcript stores, waits for transcript files to be quiet, maps transcripts back to repos with `.almanac/`, and starts background capture jobs for new material. Results land in `.almanac/pages/` as git diffs.
 
-The hook script passes the transcript path explicitly when available:
+Manual capture can still pass a transcript path explicitly:
 
 ```bash
-almanac ingest "$TRANSCRIPT_PATH" --yes --quiet
+almanac capture "$TRANSCRIPT_PATH"
 ```
 
 ---
@@ -364,16 +368,16 @@ almanac ingest sessions --tool codex --since 90d
 # Result: 12 pages created, 8 updated, cost: $2.18
 ```
 
-### Daily automatic capture (invisible)
+### Scheduled automatic capture (invisible)
 
 ```
-User ends Claude Code session
+User works in Claude or Codex
     ↓
-SessionEnd hook fires
+Transcript stops changing
     ↓
-almanac ingest --yes --quiet
+Scheduled `almanac capture sweep` wakes up
     ↓
-Auto-detects latest Claude session transcript
+Sweep maps the transcript to a repo and starts background capture
     ↓
 Writer processes, reviewer critiques
     ↓
@@ -448,4 +452,3 @@ The agent reads this guide BEFORE reading the session files. It's runtime instru
 - **Per-tool adapter code.** The only tool-specific code is the SESSION FINDER — the code that knows WHERE each tool stores sessions on disk. The processing itself is guide-driven.
 - **A separate `--repo` flag.** `.` is just a path. The agent figures out "this is a repo root" from content.
 - **Separate `bootstrap` / `capture` commands.** They become hidden aliases for `ingest .` and `ingest` respectively.
-

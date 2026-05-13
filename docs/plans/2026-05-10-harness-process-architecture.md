@@ -235,7 +235,7 @@ init:
   Use --background to start it as a detached job.
 
 capture:
-  background by default because it is usually hook/session-end work.
+  background by default because it is usually scheduled or session-transcript work.
   Use --foreground to watch it.
 
 ingest:

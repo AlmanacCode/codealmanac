@@ -26,7 +26,7 @@ almanac capture --session <id>
 almanac capture <transcript-path>
 ```
 
-Automatic or explicit session capture. This remains the hook target and continues to digest AI coding sessions into wiki updates. It should never ask interactive questions because it runs in the background.
+Automatic or explicit session capture. Scheduled auto-capture now reaches this path through `almanac capture sweep`, which starts background capture jobs for quiet transcript material. It should never ask interactive questions because it runs in the background.
 
 ```bash
 almanac ingest <file-or-folder>
@@ -666,4 +666,3 @@ git commit -m "feat(ingest): add manual context ingestion"
 - Should `ingest` support `--wiki <name>` immediately, or only current-repo lookup in v1?
 - Should confirmation thresholds be configurable in `~/.almanac/config.toml`, or fixed until real usage data says otherwise?
 - Should ingest state records mirror capture status in a future `almanac ingest status`, or are logs enough for v1?
-

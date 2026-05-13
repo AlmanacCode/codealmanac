@@ -58,7 +58,7 @@
 In `test/cli.test.ts`, update/add tests so:
 
 - `almanac` with no args routes to setup.
-- `almanac --yes`, `almanac --skip-hook`, `almanac --skip-guides`, `almanac --agent codex`, and `almanac --model <model>` route to setup.
+- `almanac --yes`, `almanac --skip-automation`, `almanac --skip-guides`, `almanac --agent codex`, and `almanac --model <model>` route to setup.
 - `almanac doctor`, `almanac search foo`, and `almanac --yes doctor` do not route to the setup shortcut.
 - `codealmanac` remains supported as an npx/bootstrap compatibility alias, but tests should describe it that way rather than as the primary command.
 
@@ -564,7 +564,7 @@ type -a alm
 type -a codealmanac || true
 almanac --version
 almanac --help
-almanac setup --yes --skip-hook --skip-guides
+almanac setup --yes --skip-automation --skip-guides
 ```
 
 Expected:
@@ -579,7 +579,7 @@ Expected:
 Do not run before publishing a package containing the rename. After publish:
 
 ```bash
-npx codealmanac --yes --skip-hook --skip-guides
+npx codealmanac --yes --skip-automation --skip-guides
 ```
 
 Expected:

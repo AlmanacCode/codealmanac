@@ -6,7 +6,7 @@ Groupings match `almanac --help`:
 
 1. **Query** — `search`, `show`, `health`, `list`
 2. **Edit** — `tag`, `untag`, `topics ...`
-3. **Wiki lifecycle** — `init`, `capture`, `ingest`, `garden`, `jobs`, `hook ...`, `reindex`
+3. **Wiki lifecycle** — `init`, `capture`, `ingest`, `garden`, `jobs`, `automation ...`, `reindex`
 4. **Setup** — `setup`, `uninstall`, `doctor`, `update`
 
 Every query/edit command auto-registers the current repo in `~/.almanac/registry.json` on first run. Exceptions: `list --drop` (skips auto-register so the removal intent isn't undone) and the setup group (installers, not wiki commands — they never touch the registry).
@@ -132,7 +132,7 @@ Build the first wiki for this repo. Requires the selected provider to be install
 
 #### `almanac capture [sessionFiles...]`
 
-Absorb coding-session knowledge into the wiki. Usually automatic: the installed hook invokes this at session end. Refuses if no `.almanac/` exists in cwd or any parent.
+Absorb coding-session knowledge into the wiki. Usually automatic: the installed scheduler runs `almanac capture sweep`, and the sweep invokes normal background capture jobs for quiet transcript material. Manual `capture` refuses if no `.almanac/` exists in cwd or any parent.
 
 | Flag | Semantics |
 |---|---|
@@ -149,6 +149,20 @@ Absorb coding-session knowledge into the wiki. Usually automatic: the installed 
 | `-y, --yes` | Confirm non-interactively. |
 
 `capture` maps to the internal Absorb operation with `targetKind: "session"`. It starts background by default. Run records and JSONL event logs live under `.almanac/runs/`.
+
+#### `almanac capture sweep`
+
+Scan supported app transcript stores, find quiet Claude/Codex sessions that map back to repos with `.almanac/`, reconcile each repo's capture ledger, and start ordinary background capture jobs for new material. This is the work command used by scheduled auto-capture and can also be run manually for debugging.
+
+| Flag | Semantics |
+|---|---|
+| `--apps <apps>` | Comma-separated app list. Supports `claude`, `codex`, or both. |
+| `--quiet <duration>` | Required transcript quiet window before capture. Default: `45m`. |
+| `--using <provider[/model]>` | Override the configured provider/model for started capture jobs. |
+| `--dry-run` | Discover and report eligible work without starting jobs or updating the ledger. |
+| `--json` | Emit structured sweep output. |
+
+Sweep passes the original transcript path to capture and adds cursor guidance from `.almanac/runs/capture-ledger.json`, so the Absorb agent focuses on lines/bytes after the last successful capture.
 
 #### `almanac ingest <paths...>`
 
@@ -192,9 +206,19 @@ almanac jobs cancel <run-id>
 
 Each jobs subcommand accepts `--json`. `attach` streams the JSONL event log until the run reaches `done`, `failed`, `cancelled`, or `stale`.
 
-#### `almanac hook install | uninstall | status`
+#### `almanac automation install | uninstall | status`
 
-See §7 — the hook is complex enough to warrant its own section.
+Manage the scheduler that periodically runs `almanac capture sweep`.
+
+| Command | Semantics |
+|---|---|
+| `almanac automation install` | Install the macOS launchd auto-capture job. Default interval: `5h`. |
+| `almanac automation install --every 2h` | Customize the scheduler wakeup interval. |
+| `almanac automation install --quiet 30m` | Customize the transcript quiet window passed to the sweep. |
+| `almanac automation status` | Show whether the scheduler is installed and which command it runs. |
+| `almanac automation uninstall` | Remove the scheduled auto-capture job. |
+
+See §7 for the scheduler and sweep contract.
 
 #### `almanac reindex`
 
@@ -206,27 +230,29 @@ Flag: `--wiki <name>`.
 
 #### `almanac setup`
 
-Install the SessionEnd hook + the two CLAUDE.md guides (`almanac.md`, `almanac-reference.md`) + the `@~/.claude/almanac.md` import line. Idempotent.
+Install scheduled auto-capture + the two CLAUDE.md guides (`almanac.md`, `almanac-reference.md`) + the `@~/.claude/almanac.md` import line. Idempotent.
 
 | Flag | Semantics |
 |---|---|
 | `-y, --yes` | Skip prompts; install everything. |
 | `--agent <agent>` | Set the default provider. Accepts `claude`, `codex`, `cursor`, or optional shorthand like `claude/opus`. |
 | `--model <model>` | Set the provider-local model during setup. Non-interactive equivalent of the model picker. |
-| `--skip-hook` | Opt out of the SessionEnd hook. |
+| `--skip-automation` | Opt out of scheduled auto-capture. |
+| `--auto-capture-every <duration>` | Set the scheduler wakeup interval. Default: `5h`. |
+| `--auto-capture-quiet <duration>` | Set the transcript quiet window. Default: `45m`. |
 | `--skip-guides` | Opt out of the CLAUDE.md guides. |
 
-Bare `almanac`, `almanac setup`, and the compatibility `npx codealmanac` bootstrap route here. Interactive setup chooses provider first, then provider-local model. `almanac --yes`, `almanac --agent codex --model gpt-5.3-codex`, `almanac --skip-hook`, and `almanac --skip-guides` are the typical first-run invocations after install. Passing `--skip-hook --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn.
+Bare `almanac`, `almanac setup`, and the compatibility `npx codealmanac` bootstrap route here. Interactive setup chooses provider first, then provider-local model. `almanac --yes`, `almanac --agent codex --model gpt-5.3-codex`, `almanac --skip-automation`, and `almanac --skip-guides` are the typical first-run invocations after install. Passing `--skip-automation --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn.
 
 #### `almanac uninstall`
 
-Remove the hook + guides + import line.
+Remove scheduled auto-capture + guides + import line.
 
 | Flag | Semantics |
 |---|---|
 | `-y, --yes` | Skip confirmations; remove everything. |
-| `--keep-hook` | Don't remove the SessionEnd hook (guides still prompted unless `--yes`). |
-| `--keep-guides` | Don't remove the guides or CLAUDE.md import (hook still prompted unless `--yes`). |
+| `--keep-automation` | Don't remove the scheduler (guides still prompted unless `--yes`). |
+| `--keep-guides` | Don't remove the guides or CLAUDE.md import (automation still prompted unless `--yes`). |
 
 #### `almanac doctor`
 
@@ -246,7 +272,7 @@ Read-only install + current-wiki health report. Every check reports a state; non
     { "key": "install.path",   "status": "ok", "message": "..." },
     { "key": "install.sqlite", "status": "ok", "message": "..." },
     { "key": "install.auth",   "status": "problem", "message": "...", "fix": "run: claude auth login --claudeai" },
-    { "key": "install.hook",   "status": "ok", "message": "..." },
+    { "key": "install.automation", "status": "ok", "message": "..." },
     { "key": "install.guides", "status": "ok", "message": "..." },
     { "key": "install.import", "status": "ok", "message": "..." }
   ],
@@ -555,51 +581,51 @@ almanac doctor --json | jq '.install[] | select(.status == "problem")'
 
 ---
 
-## 7. The capture hook
+## 7. Scheduled auto-capture
 
 ### Trigger
 
-Claude Code invokes `SessionEnd` hooks after each session. Payload on stdin:
-```json
-{ "session_id": "uuid", "transcript_path": "/abs/path.jsonl", "cwd": "/abs/repo/path" }
-```
+`almanac automation install` writes a macOS launchd job that periodically invokes `almanac capture sweep`. The default cadence is `5h`; setup and automation install can change it with `--auto-capture-every` / `--every`.
 
-### What `hooks/almanac-capture.sh` does
+### What `almanac capture sweep` does
 
-1. Parse payload with `jq`. Missing `jq` → exit 0 silently.
-2. Walk upward from `cwd` for a `.almanac/`. Bounded at filesystem root.
-3. Background `almanac capture "$TRANSCRIPT" --session "$SESSION_ID"`, redirect the hook sidecar to `.almanac/runs/.capture-$SESSION_ID.hook.log`, `disown`.
-4. Exit always `0`. Capture failures must never break the host agent's session-end path.
+1. Scan Claude and Codex transcript stores.
+2. Ignore transcripts older than `automation.capture_since`, which setup records the first time auto-capture is enabled.
+3. Ignore transcripts whose mtime is still inside the quiet window.
+4. Recover the transcript cwd/session metadata and map each transcript back to the nearest repo with `.almanac/`.
+5. Reconcile `.almanac/runs/capture-ledger.json` against background run records.
+6. Start an ordinary background `almanac capture <transcript>` job only for new eligible material, with cursor guidance telling Absorb where new lines begin.
 
-Falls back to `npx --no-install codealmanac` if `almanac` isn't on `PATH`.
+The scheduler is only a wakeup mechanism. Sweep owns transcript eligibility, dedupe, cursor state, and run enqueueing.
 
-### `hook install | uninstall | status`
+### `automation install | uninstall | status`
 
 **`install`:**
-- **Idempotent.** Twice → one entry, not two.
-- **Refuses foreign `SessionEnd` entries** whose command doesn't end with `almanac-capture.sh`. Prints them, exits `1`. Users wire their own hooks (notifications, autocommit); we don't clobber.
-- **Replaces stale almanac entries** — same filename, different absolute path (old install in a different `node_modules`).
-- **Atomic** tmp + rename. Claude Code never sees a partial `settings.json`.
+- **Idempotent.** Twice -> one launchd plist, not two.
+- **Records activation once.** The first install writes `automation.capture_since` in `~/.almanac/config.toml`; reinstalls preserve it.
+- **Uses durable program arguments.** The plist invokes the absolute Node executable plus the resolved `dist/codealmanac.js` entrypoint, then `capture sweep`.
+- **Cleans legacy hooks privately.** Setup/install remove old CodeAlmanac-owned `almanac-capture.sh` commands from Claude/Codex/Cursor hook configs.
 
 **`uninstall`:**
-- Removes only entries whose command ends in `almanac-capture.sh`. Foreign entries stay.
-- Drops `hooks.SessionEnd` if empty, then `hooks` if empty. File returns to pre-install shape.
+- Removes the scheduled auto-capture plist.
+- Also cleans legacy CodeAlmanac hook entries; unrelated user hooks stay.
 
 **`status`:**
-- Reports installed / not installed, the script path, the settings path. Non-interactive.
+- Reports installed / not installed, plist path, schedule, and command. Non-interactive.
 
-`almanac setup` wraps `hook install` alongside the guides. `almanac uninstall` wraps `hook uninstall` alongside guide removal. You rarely invoke `hook *` directly.
+`almanac setup` wraps `automation install` alongside the guides. `almanac uninstall` wraps `automation uninstall` alongside guide removal. You usually invoke `automation *` only for debugging or changing cadence.
 
 ### Diagnosing "capture didn't run"
 
 ```bash
-almanac doctor              # catch-all — reports hook state + last capture age
-almanac hook status         # just the hook entry
+almanac doctor              # catch-all — reports automation state + last capture age
+almanac automation status   # scheduler entry
+almanac capture sweep --dry-run
 almanac jobs
 ls -lah .almanac/runs/
 ```
 
-Installed but no job: the session-end event didn't fire, the script bailed before starting capture (add `set -x` to trace), or no `.almanac/` existed upward from `cwd` (silent correct no-op).
+Installed but no job: the scheduler has not reached its next wakeup, the transcript is still inside the quiet window, the transcript predates `automation.capture_since`, there is no new content past the ledger cursor, or no `.almanac/` exists upward from the transcript cwd (silent correct no-op).
 
 ### Diagnosing "capture ran but wrote nothing"
 
@@ -609,8 +635,8 @@ almanac jobs logs <run-id>
 ```
 
 Common causes:
-- Provider auth is missing in the hook environment. Claude Code's hook env is minimal; `~/.zshrc` is NOT sourced. Export needed env vars via host-agent settings, or rely on provider OAuth credentials where available.
-- Transcript path didn't resolve. Capture prints resolution status early.
+- Provider auth is missing in the scheduler environment. `launchd` has a reduced environment; the installed plist preserves PATH for user-managed CLIs, but provider login still has to work headlessly.
+- Transcript path didn't resolve or mapped to a repo without `.almanac/`. Sweep reports skip reasons; use `--dry-run --json` for structured output.
 - Absorb found no durable wiki change.
 - Session was pure-read with no decisions or discoveries. Correct no-op.
 
@@ -762,7 +788,7 @@ one, usually the webhook, leaving orders silently stuck in pending.
 
 ### Catch-all: `almanac doctor`
 
-When something feels off and you don't know where to start, run `almanac doctor`. It reports install state (binary, native binding, Claude auth, hook, guides, import line) and current-wiki state (registered, page/topic counts, index freshness, last capture age, health problems). Every ✗ comes with a one-line `run: …` fix. `--json` for scripting.
+When something feels off and you don't know where to start, run `almanac doctor`. It reports install state (binary, native binding, provider readiness, scheduled automation, guides, import line) and current-wiki state (registered, page/topic counts, index freshness, last capture age, health problems). Every problem comes with a one-line `run: ...` fix. `--json` for scripting.
 
 ### "better-sqlite3 bindings missing"
 Node version / arch mismatch with the prebuilt binary. `almanac doctor` reports it as `install.sqlite: problem` with the underlying error's first line. Fix:
@@ -787,17 +813,17 @@ Missing `files:` frontmatter, OR path referenced only in inline prose (not via `
 
 `topics rename` bumps `topics.yaml` mtime → next query's `ensureFreshIndex` catches up. Hand-edited `topics.yaml` without page rewrites leaves frontmatter out of sync — `almanac reindex` then audit with `almanac health --orphans --empty-topics`.
 
-### "capture didn't fire"
+### "capture didn't run"
 
 ```bash
-almanac doctor              # reports hook state + last capture age + auth
-claude auth status          # OAuth token present?
-echo "${ANTHROPIC_API_KEY:0:10}"   # API key fallback?
+almanac doctor              # reports automation state + last capture age + auth
+almanac automation status   # scheduler installed?
+almanac capture sweep --dry-run --json
 almanac jobs
 ls -lah .almanac/runs/
 ```
 
-No jobs at all → script bailed before starting capture. Add `set -x` to `hooks/almanac-capture.sh` to trace. If the hook itself isn't installed, `almanac doctor` reports `install.hook: problem` with `run: almanac setup --yes`.
+No jobs at all -> automation may be uninstalled, the scheduler has not reached its next interval, the transcript is still inside the quiet window, the transcript predates `automation.capture_since`, or the transcript maps to no repo with `.almanac/`. If automation is missing, `almanac doctor` reports `install.automation: problem` with `run: almanac automation install`.
 
 ### "slug collision warnings"
 
@@ -811,7 +837,8 @@ Case sensitivity on Linux. Schema v2 stores `original_path` for case-preserving 
 
 - `.almanac/runs/<run-id>.json` — Almanac run record with status, provider, model, timings, log path, and failure metadata.
 - `.almanac/runs/<run-id>.jsonl` — provider event log for the run. Read with `almanac jobs logs <run-id>`.
-- `.almanac/runs/.capture-<session-id>.hook.log` — hook sidecar containing stdout/stderr from the capture start command. Present only for hook-invoked captures.
+- `.almanac/runs/capture-ledger.json` — sweep cursor and pending-run state used to dedupe scheduled captures.
+- `.almanac/runs/capture-sweep.lock` — repo-local sweep lock used to avoid overlapping capture enqueue races.
 
 ---
 

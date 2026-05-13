@@ -118,10 +118,12 @@ The CLI is organized into four groups:
 |---|---|---|
 | **Query** | `search`, `show`, `health`, `list` | No |
 | **Edit** | `tag`, `untag`, `topics` | No |
-| **Wiki lifecycle** | `bootstrap`, `capture`, `hook`, `reindex` | `bootstrap` and `capture` only |
+| **Wiki lifecycle** | `init`, `capture`, `ingest`, `garden`, `jobs`, `automation`, `reindex` | `init`, `capture`, `ingest`, and `garden` only |
 | **Setup** | `setup`, `uninstall`, `doctor`, `update` | No |
 
-Only two commands use AI: `bootstrap` (seed a wiki) and `capture` (update after a session). Everything else is pure local.
+Only lifecycle write commands use AI: `init` builds the first wiki, `capture` absorbs session transcripts, `ingest` absorbs user-selected files or folders, and `garden` improves the existing graph. Everything else is pure local.
+
+Automatic capture is scheduler-driven. `almanac automation install` registers a local scheduler job that periodically runs `almanac capture sweep`; the sweep scans quiet Claude/Codex transcripts, maps them back to repos with `.almanac/`, and starts ordinary background capture jobs for new material.
 
 Everything is designed to pipe. Commands that feed another command should use
 slug-only output; `--json` gives structured output; `show --stdin` emits JSON

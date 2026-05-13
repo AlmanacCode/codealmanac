@@ -454,7 +454,7 @@ almanac ingest --diff <rev>
 Automatic:
 
 ```text
-session-end hook
+scheduled capture sweep
 post-commit hook, maybe later
 PR/issue connector, maybe later
 ```
@@ -808,7 +808,8 @@ Meaning:
 Absorb an AI coding session.
 ```
 
-This command remains the hook target unless a future CLI redesign proves that
+This command remains the session-capture target used by manual capture and by
+scheduled `capture sweep` jobs unless a future CLI redesign proves that
 `ingest --session` is clearer.
 
 ### `ingest`

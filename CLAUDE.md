@@ -97,7 +97,7 @@ Things we do not do. If a plan proposes one, push back.
 
 - **No propose/apply flows.** No proposal JSON files, no `--apply` or `--confirm` step. Agents write directly; users read the diff in `git status`.
 - **No `--dry-run` flags.** The agent is either doing the work or it isn't. Rehearsal is not a feature.
-- **No interactive prompts.** The CLI is pipeable and scriptable; hook-invoked capture is background. Nothing blocks on user input.
+- **No interactive prompts.** The CLI is pipeable and scriptable; scheduled capture runs in the background. Nothing blocks on user input.
 - **No pipeline scaffolding where a prompt would do.** If a task calls for judgment, extend the prompt — don't add a pre-processing step in TypeScript that hard-codes the judgment.
 - **No state machines between writer and reviewer.** Writer invokes reviewer via `agents: { reviewer }` in the SDK, reads the text critique, decides. No approve/revise/reject enum.
 - **No semantic search yet.** FTS5 first. Add vectors only when FTS5 proves insufficient against a real repo.
