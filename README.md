@@ -1,4 +1,14 @@
-# Almanac
+<p align="center">
+  <img src="viewer/readme-hero.png" alt="Almanac — A living wiki for your codebase">
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/codealmanac"><img alt="npm version" src="https://img.shields.io/npm/v/codealmanac?label=npm&color=2ea043"></a>
+  <a href="https://www.npmjs.com/package/codealmanac"><img alt="npm downloads" src="https://img.shields.io/npm/dm/codealmanac?label=downloads%2Fmonth&color=1f6feb"></a>
+  <img alt="Node support" src="https://img.shields.io/badge/node-20%20%7C%2022%2B-1f6feb">
+  <a href="./LICENSE"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-df7b40"></a>
+  <a href="https://github.com/AlmanacCode/codealmanac"><img alt="GitHub repository" src="https://img.shields.io/badge/GitHub-AlmanacCode%2Fcodealmanac-24292f?logo=github"></a>
+</p>
 
 A living wiki for your codebase, maintained by AI agents. Almanac documents the things code cannot say: decisions, flows, invariants, gotchas, and why the system is shaped the way it is.
 
@@ -202,9 +212,13 @@ npm test
 
 The codebase is TypeScript, built with [tsup](https://tsup.egoist.dev/), tested with [Vitest](https://vitest.dev/), and backed by [better-sqlite3](https://github.com/WiseLibs/better-sqlite3). Release steps live in [RELEASE.md](./RELEASE.md).
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/chart?repos=AlmanacCode/codealmanac&type=date&legend=top-left)](https://www.star-history.com/?repos=AlmanacCode%2Fcodealmanac&type=date&legend=top-left)
+
 ## Status
 
-`v0.2.20`, pre-1.0. Breaking changes are possible before 1.0 and will be called out in release notes.
+`v0.2.21`, pre-1.0. Breaking changes are possible before 1.0 and will be called out in release notes.
 
 ## License
 
