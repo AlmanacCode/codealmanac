@@ -1,5 +1,6 @@
 ---
 title: Global Registry
+summary: "`~/.almanac/registry.json` is the machine-local index of known wikis and the lookup table for cross-wiki queries and links."
 topics: [systems, storage]
 files:
   - src/registry/index.ts

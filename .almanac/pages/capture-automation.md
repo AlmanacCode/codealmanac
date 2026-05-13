@@ -238,6 +238,8 @@ The same session tightened that separation one step further: the scheduler entry
 
 The current macOS implementation now follows that stronger shape, but with one setup-time distinction. Direct installs still write launchd `ProgramArguments` as the absolute Node executable plus the resolved `dist/codealmanac.js` entrypoint, then append `capture sweep`. Setup switches to `/usr/bin/env almanac ...` only after it has first converted an ephemeral `npx` launch into a durable global install. If that durable install does not happen, setup leaves automation uninstalled instead of writing a launchd entry that points into the temporary `npx` cache.
 
+That direct-install shape created one concrete debugging trap during the 2026-05-13 Garden smoke tests. If the plist is pinned to an absolute Node path such as `~/.nvm/versions/node/v24.15.0/bin/node`, rebuilding `better-sqlite3` from a shell running a different Node version repairs the shell runtime, not the scheduled job. The reliable fix is to rebuild with the exact `node` or `npm` from the plist command path, or to prepend that Node version's bin directory to `PATH` before running `npm rebuild better-sqlite3`.
+
 ## Verification status
 
 The implementation was verified in-repo with `npm run lint`, `npm test`, and `npm run build`, and the test coverage called out in the session included launchd plist generation, setup/uninstall automation behavior, sweep discovery, quiet-window handling, repo locking, subagent skipping, and CLI parsing.
@@ -417,14 +419,21 @@ Claude repo mapping is expected to be easier because project folder names encode
 
 The 2026-05-11 session clarified one operational detail that is easy to hand-wave but important for future implementation: CodeAlmanac is not meant to keep its own sleeping background process alive.
 
-On macOS, scheduler install is expected to write a user `launchd` entry such as:
+On macOS, scheduler install writes user `launchd` entries for capture and Garden:
 
 - `~/Library/LaunchAgents/com.codealmanac.capture-sweep.plist`
+- `~/Library/LaunchAgents/com.codealmanac.garden.plist`
 
-That plist owns the wakeup interval, likely via `StartInterval = 18000` for the default five-hour cadence, and launches a fresh CLI process each time:
+The capture plist owns the sweep wakeup interval, likely via `StartInterval = 18000` for the default five-hour cadence, and launches a fresh CLI process each time:
 
 - command: `almanac capture sweep`
 - stdout/stderr: user-visible log files under a CodeAlmanac-owned log directory
+
+The Garden plist owns graph-maintenance cadence, using `StartInterval = 172800` for the default two-day cadence:
+
+- command: `almanac garden`
+- working directory: the nearest wiki root found from the install command's current directory
+- stdout/stderr: user-visible log files under the same CodeAlmanac-owned log directory
 
 `launchd` is the thing that stays resident. When the timer fires, macOS starts a new `almanac` process, waits for it to exit, and then returns to sleeping until the next interval. The same separation should hold on Linux with a `systemd --user` timer and later on any Windows scheduler support.
 
@@ -432,6 +441,7 @@ This separation is part of the product contract, not just an implementation conv
 
 - scheduler layer: owns wakeup timing and process launch
 - sweep layer: owns transcript discovery, quiet-window checks, repo mapping, dedupe, ledger reconciliation, and capture enqueueing
+- Garden operation: owns graph-wide wiki maintenance and runs on its own cadence rather than as a capture-sweep substep
 
 Because of that split, `almanac capture sweep` must remain runnable by hand for debugging. Automatic capture should be the scheduler invoking the same deterministic sweep command a user can run manually, not a hidden alternate code path.
 
@@ -494,7 +504,7 @@ This yields the key invariant for future scheduler work: CodeAlmanac may delay c
 
 ## Relationship to current V1 behavior
 
-V1 supports explicit `almanac capture` runs and scheduler-backed `almanac capture sweep`. The old hook path is historical context, not current product surface.
+V1 supports explicit `almanac capture` runs, scheduler-backed `almanac capture sweep`, and scheduler-backed `almanac garden`. The old hook path is historical context, not current product surface.
 
 Future work in this area should keep three layers separate:
 

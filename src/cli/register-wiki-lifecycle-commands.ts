@@ -319,24 +319,34 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   const automation = program
     .command("automation")
-    .description("manage scheduled auto-capture");
+    .description("manage scheduled Almanac automation");
 
   automation
     .command("install")
-    .description("install the macOS launchd auto-capture job")
-    .option("--every <duration>", "run interval (default: 5h)")
+    .description("install the macOS launchd automation jobs")
+    .option("--every <duration>", "capture run interval (default: 5h)")
     .option("--quiet <duration>", "minimum quiet time before capture (default: 45m)")
-    .action(async (opts: { every?: string; quiet?: string }) => {
+    .option("--garden-every <duration>", "Garden run interval (default: 2d)")
+    .option("--garden-off", "disable scheduled Garden automation")
+    .action(async (opts: {
+      every?: string;
+      quiet?: string;
+      gardenEvery?: string;
+      gardenOff?: boolean;
+    }) => {
       const result = await runAutomationInstall({
         every: opts.every,
         quiet: opts.quiet,
+        gardenEvery: opts.gardenEvery,
+        gardenOff: opts.gardenOff,
+        cwd: process.cwd(),
       });
       emit(result);
     });
 
   automation
     .command("uninstall")
-    .description("remove the macOS launchd auto-capture job")
+    .description("remove the macOS launchd automation jobs")
     .action(async () => {
       const result = await runAutomationUninstall();
       emit(result);

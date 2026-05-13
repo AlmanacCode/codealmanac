@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Command } from "commander";
 
-import { run, tryParseSetupShortcut } from "../src/cli.js";
+import { parseAutomationInstallFlags, run, tryParseSetupShortcut } from "../src/cli.js";
 import { configureGroupedHelp } from "../src/cli/help.js";
 import { resolveSearchOutputMode } from "../src/cli/register-query-commands.js";
 import { registerCommands } from "../src/cli/register-commands.js";
@@ -75,6 +75,19 @@ describe("tryParseSetupShortcut", () => {
       .toEqual({ automationEvery: "2h" });
     expect(tryParseSetupShortcut(["--auto-capture-quiet", "1s"]))
       .toEqual({ automationQuiet: "1s" });
+    expect(tryParseSetupShortcut(["--auto-capture-every=2h"]))
+      .toEqual({ automationEvery: "2h" });
+    expect(tryParseSetupShortcut(["--auto-capture-quiet=1s"]))
+      .toEqual({ automationQuiet: "1s" });
+  });
+
+  it("recognizes scheduled Garden setup options", () => {
+    expect(tryParseSetupShortcut(["--garden-every", "2d"]))
+      .toEqual({ gardenEvery: "2d" });
+    expect(tryParseSetupShortcut(["--garden-every=2d"]))
+      .toEqual({ gardenEvery: "2d" });
+    expect(tryParseSetupShortcut(["--garden-off"]))
+      .toEqual({ gardenOff: true });
   });
 
   it("accepts the full setup flag combo", () => {
@@ -87,6 +100,8 @@ describe("tryParseSetupShortcut", () => {
         "2h",
         "--auto-capture-quiet",
         "1s",
+        "--garden-every",
+        "2d",
       ]),
     ).toEqual({
       yes: true,
@@ -94,6 +109,7 @@ describe("tryParseSetupShortcut", () => {
       skipGuides: true,
       automationEvery: "2h",
       automationQuiet: "1s",
+      gardenEvery: "2d",
     });
   });
 
@@ -109,6 +125,8 @@ describe("tryParseSetupShortcut", () => {
     expect(tryParseSetupShortcut(["--agent", "--model"])).toBeNull();
     expect(tryParseSetupShortcut(["--model"])).toBeNull();
     expect(tryParseSetupShortcut(["--model", "--yes"])).toBeNull();
+    expect(tryParseSetupShortcut(["--garden-every"])).toBeNull();
+    expect(tryParseSetupShortcut(["--garden-every", "--yes"])).toBeNull();
   });
 
   it("returns null for subcommands", () => {
@@ -123,6 +141,36 @@ describe("tryParseSetupShortcut", () => {
     // to patch bare-invocation flag forwarding.
     expect(tryParseSetupShortcut(["setup", "--yes"])).toBeNull();
     expect(tryParseSetupShortcut(["doctor", "--yes"])).toBeNull();
+  });
+});
+
+describe("parseAutomationInstallFlags", () => {
+  it("recognizes split and equals-style automation duration flags", () => {
+    expect(parseAutomationInstallFlags([
+      "--every=5h",
+      "--quiet=45m",
+      "--garden-every=1w",
+      "--garden-off",
+    ])).toEqual({
+      ok: true,
+      options: {
+        every: "5h",
+        quiet: "45m",
+        gardenEvery: "1w",
+        gardenOff: true,
+      },
+    });
+    expect(parseAutomationInstallFlags(["--garden-every", "2d"])).toEqual({
+      ok: true,
+      options: { gardenEvery: "2d" },
+    });
+  });
+
+  it("rejects missing values for automation duration flags", () => {
+    expect(parseAutomationInstallFlags(["--garden-every"])).toEqual({
+      ok: false,
+      error: "missing value for --garden-every",
+    });
   });
 });
 

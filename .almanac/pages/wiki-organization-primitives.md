@@ -4,10 +4,15 @@ topics: [decisions, systems, agents]
 files:
   - AGENTS.md
   - .almanac/README.md
+  - .gitignore
   - docs/plans/2026-05-10-harness-process-architecture.md
   - prompts/operations/build.md
   - prompts/operations/absorb.md
   - prompts/operations/garden.md
+  - src/cli.ts
+  - src/indexer/index.ts
+  - src/commands/setup.ts
+  - src/commands/automation.ts
 ---
 
 # Wiki Organization Primitives
@@ -29,6 +34,14 @@ The committed design and implementation provide these primitives:
 - **Operation prompts**: Build, Absorb, and Garden prompts name page-worthiness and graph-maintenance outcomes
 
 These are real primitives, not just conventions. The SQLite index persists them, query commands read them, and the prompts rely on them. They are enough to answer "what pages exist?", "what links where?", and "what topic is this in?".
+
+## Committed state versus local derived state
+
+The portable wiki is the markdown layer committed in the repo: `[[.almanac/pages/]]`, `[[.almanac/README.md]]`, and `[[.almanac/topics.yaml]]`. That is the project memory collaborators receive through normal git sync even if their machine has never installed the `almanac` CLI.
+
+The disposable local layer is ignored by git. `[[.gitignore]]` excludes `.almanac/index.db`, its WAL/SHM companions, `.almanac/runs/`, and `.almanac/logs/`. Those files are machine-local query and run artifacts, not part of the shared wiki corpus.
+
+That split defines the no-install collaborator behavior. A contributor without `almanac` can still read the committed markdown files directly, but cannot run query commands such as `search`, `show`, or `health`, and will not have scheduled capture or Garden automation on that machine. If they later install the CLI, query commands recreate the local SQLite index from the committed markdown corpus and automation can then be enabled through setup.
 
 ## What is missing
 

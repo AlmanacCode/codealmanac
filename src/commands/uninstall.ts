@@ -30,7 +30,7 @@ type AutomationExecFn = (
  *      `~/.claude/almanac-reference.md`. Legacy `codealmanac*.md` guide
  *      files are removed too.
  *   3. The managed Almanac block from Codex's global AGENTS file.
- *   4. The scheduled auto-capture launchd job and legacy hook files.
+ *   4. The scheduled capture/Garden launchd jobs and legacy hook files.
  *
  * Flags:
  *   --yes           skip confirmations; remove everything
@@ -48,6 +48,7 @@ export interface UninstallOptions {
 
   // ─── Injection points ────────────────────────────────────────────
   automationPlistPath?: string;
+  gardenPlistPath?: string;
   automationExec?: AutomationExecFn;
   claudeDir?: string;
   codexDir?: string;
@@ -87,7 +88,7 @@ export async function runUninstall(
   } else if (interactive) {
     removeAutomation = await confirm(
       out,
-      "Remove the auto-capture automation?",
+      "Remove scheduled capture and Garden automation?",
       true,
     );
   }
@@ -95,6 +96,7 @@ export async function runUninstall(
     await cleanupLegacyHooks();
     const res = await runAutomationUninstall({
       plistPath: options.automationPlistPath,
+      gardenPlistPath: options.gardenPlistPath,
       exec: options.automationExec,
     });
     if (res.exitCode !== 0) {
@@ -102,7 +104,7 @@ export async function runUninstall(
     }
     out.write(`  ${BLUE}\u25c7${RST}  ${res.stdout.trim()}\n`);
   } else {
-    out.write(`  ${DIM}\u25cb  Auto-capture automation kept${RST}\n`);
+    out.write(`  ${DIM}\u25cb  Scheduled automation kept${RST}\n`);
   }
 
   // Guide + import removal.

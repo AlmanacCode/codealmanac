@@ -15,7 +15,7 @@ superseded_by: capture-automation
 
 # Legacy SessionEnd Hook
 
-Hook-based auto-capture is no longer the current product path. [[capture-automation]] supersedes it with scheduler-backed quiet-session capture: `almanac automation install` registers an OS scheduler job, and the job periodically runs `almanac capture sweep`.
+Hook-based auto-capture is no longer the current product path. [[capture-automation]] supersedes it with scheduler-backed quiet-session capture: `almanac automation install` registers an OS scheduler job, and the job periodically runs `almanac capture sweep`. The current scheduler-owned automation surface itself is described in [[lifecycle-cli]] and [[install-time-node-launcher]].
 
 This page remains only as historical context for cleanup and migration. Earlier versions installed a shared `almanac-capture.sh` command into provider hook configs: Claude used `SessionEnd`, Codex used `Stop`, and Cursor used `sessionEnd`. That shape was removed from onboarding and the public command surface because each provider exposes different lifecycle semantics, and Codex `Stop` is turn-scoped rather than a reliable session boundary.
 

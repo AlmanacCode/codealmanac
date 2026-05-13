@@ -1,5 +1,6 @@
 ---
 title: Harness Providers
+summary: Harness providers are the adapter boundary that turns provider-neutral Almanac run specs into Claude, Codex, and future runtime executions.
 topics: [agents, stack, systems]
 files:
   - src/harness/types.ts

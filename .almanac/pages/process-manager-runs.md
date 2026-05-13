@@ -1,5 +1,6 @@
 ---
 title: Process Manager Runs
+summary: The process manager is the durable run-recording layer for Build, Absorb, and Garden, including background spawn, event logs, page snapshots, and jobs inspection.
 topics: [systems, storage, cli, agents]
 files:
   - src/process/manager.ts

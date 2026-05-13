@@ -9,23 +9,27 @@ import { withTempHome } from "./helpers.js";
 
 async function scaffold(home: string): Promise<{
   plistPath: string;
+  gardenPlistPath: string;
   claudeDir: string;
   out: PassThrough;
 }> {
   const plistPath = join(home, "Library", "LaunchAgents", "com.codealmanac.capture-sweep.plist");
+  const gardenPlistPath = join(home, "Library", "LaunchAgents", "com.codealmanac.garden.plist");
   const claudeDir = join(home, ".claude");
   const out = new PassThrough();
   out.on("data", () => {});
-  return { plistPath, claudeDir, out };
+  return { plistPath, gardenPlistPath, claudeDir, out };
 }
 
 async function primeInstalled(env: {
   plistPath: string;
+  gardenPlistPath: string;
   claudeDir: string;
 }): Promise<void> {
   await mkdir(dirname(env.plistPath), { recursive: true });
   await mkdir(env.claudeDir, { recursive: true });
   await writeFile(env.plistPath, "<plist></plist>\n", "utf8");
+  await writeFile(env.gardenPlistPath, "<plist></plist>\n", "utf8");
   await writeFile(join(env.claudeDir, "almanac.md"), "# mini\n", "utf8");
   await writeFile(
     join(env.claudeDir, "almanac-reference.md"),
@@ -50,6 +54,7 @@ describe("almanac uninstall", () => {
         yes: true,
         isTTY: false,
         automationPlistPath: env.plistPath,
+        gardenPlistPath: env.gardenPlistPath,
         automationExec: async (file: string, args: string[]) => {
           calls.push([file, ...args].join(" "));
           return {};
@@ -60,6 +65,7 @@ describe("almanac uninstall", () => {
 
       expect(res.exitCode).toBe(0);
       expect(existsSync(env.plistPath)).toBe(false);
+      expect(existsSync(env.gardenPlistPath)).toBe(false);
       expect(calls.some((call) => call.includes("bootout"))).toBe(true);
       expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
       expect(existsSync(join(env.claudeDir, "almanac-reference.md"))).toBe(false);
@@ -79,6 +85,7 @@ describe("almanac uninstall", () => {
         yes: true,
         isTTY: false,
         automationPlistPath: env.plistPath,
+        gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         stdout: env.out,
@@ -95,6 +102,7 @@ describe("almanac uninstall", () => {
         yes: true,
         isTTY: false,
         automationPlistPath: env.plistPath,
+        gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         stdout: env.out,
@@ -116,6 +124,7 @@ describe("almanac uninstall", () => {
         keepAutomation: true,
         isTTY: false,
         automationPlistPath: env.plistPath,
+        gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => {
           throw new Error("should not run");
         },
@@ -124,6 +133,7 @@ describe("almanac uninstall", () => {
       });
 
       expect(existsSync(env.plistPath)).toBe(true);
+      expect(existsSync(env.gardenPlistPath)).toBe(true);
       expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
     });
   });
@@ -138,12 +148,14 @@ describe("almanac uninstall", () => {
         keepGuides: true,
         isTTY: false,
         automationPlistPath: env.plistPath,
+        gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         stdout: env.out,
       });
 
       expect(existsSync(env.plistPath)).toBe(false);
+      expect(existsSync(env.gardenPlistPath)).toBe(false);
       expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(true);
       const body = await readFile(join(env.claudeDir, "CLAUDE.md"), "utf8");
       expect(body).toMatch(/@~\/\.claude\/almanac\.md/);

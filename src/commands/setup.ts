@@ -65,7 +65,8 @@ type AutomationExecFn = (
  *
  * Setup installs:
  *
- *   1. A macOS launchd job that periodically runs `almanac capture sweep`.
+ *   1. macOS launchd jobs that periodically run `almanac capture sweep`
+ *      and `almanac garden`.
  *   2. The short "how to use Almanac" guide at
  *      `~/.claude/almanac.md`, sourced from `guides/mini.md` in the
  *      package.
@@ -93,6 +94,10 @@ export interface SetupOptions {
   automationEvery?: string;
   /** Configure the scheduled auto-capture quiet window. Defaults to 45m. */
   automationQuiet?: string;
+  /** Configure the scheduled Garden interval. Defaults to 2d. */
+  gardenEvery?: string;
+  /** Don't install the scheduled Garden job. */
+  gardenOff?: boolean;
   /** Don't install the CLAUDE.md guides. */
   skipGuides?: boolean;
   /** Allow lifecycle runs to commit wiki source changes automatically. */
@@ -107,6 +112,8 @@ export interface SetupOptions {
   spawnCli?: SpawnCliFn;
   /** Override the launchd plist path. */
   automationPlistPath?: string;
+  /** Override the Garden launchd plist path. */
+  gardenPlistPath?: string;
   /** Override launchctl execution. */
   automationExec?: AutomationExecFn;
   /** Override `~/.claude/` dir for guide install. */
@@ -328,10 +335,17 @@ export async function runSetup(
       const res = await runAutomationInstall({
         every: options.automationEvery,
         quiet: options.automationQuiet,
+        gardenEvery: options.gardenEvery,
+        gardenOff: options.gardenOff,
+        cwd: process.cwd(),
         programArguments: ephem
           ? globalAlmanacProgramArguments(options.automationQuiet)
           : undefined,
+        gardenProgramArguments: ephem
+          ? globalGardenProgramArguments()
+          : undefined,
         plistPath: options.automationPlistPath,
+        gardenPlistPath: options.gardenPlistPath,
         exec: options.automationExec,
       });
       if (res.exitCode !== 0) {
@@ -426,6 +440,10 @@ type AgentChoice =
 
 function globalAlmanacProgramArguments(quiet = "45m"): string[] {
   return ["/usr/bin/env", "almanac", "capture", "sweep", "--quiet", quiet];
+}
+
+function globalGardenProgramArguments(): string[] {
+  return ["/usr/bin/env", "almanac", "garden"];
 }
 
 async function chooseDefaultAgent(args: {

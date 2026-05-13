@@ -55,10 +55,14 @@ All stored paths are lowercase + forward-slashes + no `./` prefix (normalized at
 
 ## Native binding constraint
 
-The query stack inherits `better-sqlite3`'s old-ABI native binding behavior: a global or local install can work on one Node version and then fail after an `nvm`/Volta/FNM switch until the package is rebuilt for the new runtime. `src/abi-guard.ts` exists to fail fast with a repair hint instead of surfacing a later opaque `require()` crash.
+The query stack still inherits `better-sqlite3`'s old-ABI native binding behavior: a global or local install can work on one Node version and then fail after an `nvm`/Volta/FNM switch until the package is rebuilt for the new runtime.
+
+Installed package bins now mitigate that by routing through [[install-time-node-launcher]]. The launcher records the installing Node executable during `postinstall` and respawns `dist/codealmanac.js` with that same binary later, which keeps normal `almanac` invocations from drifting onto a different ABI through ambient `PATH`.
+
+`src/abi-guard.ts` still exists because the launcher is not a complete replacement for repair guidance. Direct entrypoint calls such as `node dist/codealmanac.js ...`, missing `install-runtime.json`, or a deleted pinned Node executable can still surface the old mismatch class. In those cases the guard fails fast with a rebuild hint instead of surfacing a later opaque `require()` crash.
 
 This constraint explains one CLI boundary elsewhere in the repo: [[lifecycle-cli]] routes `setup` and `automation install|status|uninstall` through a sqlite-free fast path in `src/cli.ts`, so basic onboarding and scheduler repair still work even when the query/index stack cannot load `better-sqlite3`.
 
-[[almanac-doctor]] surfaces the same failure mode as structured install state: `install.sqlite` reports whether the binding loads and prints the rebuild hint as a `run:` fix string.
+[[almanac-doctor]] surfaces the same failure mode as structured install state: `install.sqlite` reports whether the binding loads and prints the rebuild hint as a `run:` fix string. The launcher reduces how often users reach that state, but doctor still owns the diagnosis when they do.
 
 It also creates one absorb-time workflow fallback that is easy to forget: if a local or global `almanac search`/`show` command fails because the installed `better-sqlite3` binary targets the wrong Node ABI, the checked-in wiki pages under `[[.almanac/pages/]]` are still readable as plain files. Future agents should treat that as the immediate fallback for wiki context gathering instead of assuming the wiki itself is unavailable.

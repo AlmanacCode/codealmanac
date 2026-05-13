@@ -218,7 +218,7 @@ async function tryRunSqliteFreeCommand(
         emit({ stdout: "", stderr: `almanac: ${parsed.error}\n`, exitCode: 1 });
         return true;
       }
-      emit(await runAutomationInstall(parsed.options));
+      emit(await runAutomationInstall({ ...parsed.options, cwd: process.cwd() }));
       return true;
     }
     if (subcommand === "uninstall") {
@@ -346,29 +346,45 @@ async function tryRunSqliteFreeCommand(
   return false;
 }
 
-function parseAutomationInstallFlags(args: string[]): {
+export function parseAutomationInstallFlags(args: string[]): {
   ok: true;
-  options: { every?: string; quiet?: string };
+  options: { every?: string; quiet?: string; gardenEvery?: string; gardenOff?: boolean };
 } | {
   ok: false;
   error: string;
 } {
-  const options: { every?: string; quiet?: string } = {};
+  const options: { every?: string; quiet?: string; gardenEvery?: string; gardenOff?: boolean } = {};
   for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (arg !== "--every" && arg !== "--quiet") continue;
-    const value = args[i + 1];
+    const parsed = splitFlagValue(args[i]!);
+    const arg = parsed.flag;
+    if (arg === "--garden-off" && parsed.value === undefined) {
+      options.gardenOff = true;
+      continue;
+    }
+    if (arg !== "--every" && arg !== "--quiet" && arg !== "--garden-every") continue;
+    const value = parsed.value ?? args[i + 1];
     if (value === undefined || value.startsWith("-")) {
       return { ok: false, error: `missing value for ${arg}` };
     }
     if (arg === "--every") {
       options.every = value;
-    } else {
+    } else if (arg === "--quiet") {
       options.quiet = value;
+    } else {
+      options.gardenEvery = value;
     }
-    i++;
+    if (parsed.value === undefined) i++;
   }
   return { ok: true, options };
+}
+
+function splitFlagValue(arg: string): { flag: string; value?: string } {
+  const equals = arg.indexOf("=");
+  if (equals < 0) return { flag: arg };
+  return {
+    flag: arg.slice(0, equals),
+    value: arg.slice(equals + 1),
+  };
 }
 
 function readPackageVersion(): string {
@@ -391,6 +407,8 @@ export interface SetupShortcutOptions {
   skipAutomation?: boolean;
   automationEvery?: string;
   automationQuiet?: string;
+  gardenEvery?: string;
+  gardenOff?: boolean;
   skipGuides?: boolean;
   autoCommit?: boolean;
 }
@@ -410,44 +428,56 @@ export function tryParseSetupShortcut(args: string[]): SetupShortcutOptions | nu
 function parseSetupShortcutFlags(args: string[]): SetupShortcutOptions | null {
   const opts: SetupShortcutOptions = {};
   for (let i = 0; i < args.length; i++) {
-    const arg = args[i]!;
+    const parsed = splitFlagValue(args[i]!);
+    const arg = parsed.flag;
     if (arg === "--yes" || arg === "-y") {
       opts.yes = true;
       continue;
     }
     if (arg === "--agent") {
-      const value = args[i + 1];
+      const value = parsed.value ?? args[i + 1];
       if (value === undefined || value.startsWith("-")) return null;
       opts.agent = value;
-      i += 1;
+      if (parsed.value === undefined) i += 1;
       continue;
     }
     if (arg === "--model") {
-      const value = args[i + 1];
+      const value = parsed.value ?? args[i + 1];
       if (value === undefined || value.startsWith("-")) return null;
       opts.model = value;
-      i += 1;
+      if (parsed.value === undefined) i += 1;
       continue;
     }
-    if (arg === "--skip-automation") {
+    if (arg === "--skip-automation" && parsed.value === undefined) {
       opts.skipAutomation = true;
       continue;
     }
     if (arg === "--auto-capture-every") {
-      const value = args[i + 1];
+      const value = parsed.value ?? args[i + 1];
       if (value === undefined || value.startsWith("-")) return null;
       opts.automationEvery = value;
-      i += 1;
+      if (parsed.value === undefined) i += 1;
       continue;
     }
     if (arg === "--auto-capture-quiet") {
-      const value = args[i + 1];
+      const value = parsed.value ?? args[i + 1];
       if (value === undefined || value.startsWith("-")) return null;
       opts.automationQuiet = value;
-      i += 1;
+      if (parsed.value === undefined) i += 1;
       continue;
     }
-    if (arg === "--skip-guides") {
+    if (arg === "--garden-every") {
+      const value = parsed.value ?? args[i + 1];
+      if (value === undefined || value.startsWith("-")) return null;
+      opts.gardenEvery = value;
+      if (parsed.value === undefined) i += 1;
+      continue;
+    }
+    if (arg === "--garden-off" && parsed.value === undefined) {
+      opts.gardenOff = true;
+      continue;
+    }
+    if (arg === "--skip-guides" && parsed.value === undefined) {
       opts.skipGuides = true;
       continue;
     }
