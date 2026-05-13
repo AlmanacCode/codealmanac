@@ -51,9 +51,9 @@ The install section currently reports:
 
 [[install-time-node-launcher]] now reduces the most common mismatch path by pinning published bins to the installing Node executable. [[src/abi-guard.ts]] still fails early when `better-sqlite3` cannot load under the current Node ABI and prints an exact rebuild command. Doctor surfaces the same failure class as structured install state: `install.sqlite` reports whether the binding loads and points users at `npm rebuild better-sqlite3` when it does not.
 
-The 2026-05-13 launchd debugging session exposed one scheduler-specific wrinkle in that repair path. When scheduled automation is pinned to an absolute Node path in its plist, rebuilding `better-sqlite3` from a different shell Node version can leave launchd broken even though the shell rebuild succeeds. Future agents should compare the failing plist runtime against the active shell runtime and rebuild with the plist's `node` or `npm` path when they differ.
+One 2026-05-13 launchd debugging session added an important scheduler-specific constraint to that repair hint. When scheduled automation is pinned to an absolute Node path in its plist `ProgramArguments`, rebuilding `better-sqlite3` from a different shell Node version can leave launchd broken even though the shell rebuild succeeds. Future agents should compare the failing plist runtime against the active shell runtime and rebuild with the plist's `node` or `npm` path when they differ.
 
-This matters because the SQLite binding is the main query-stack fragility called out in [[sqlite-indexer]] and `docs/bugs/codealmanac-known-bugs.md`. The launcher narrows the failure surface for normal installs, but doctor still explains the remaining cases and the repair is still manual.
+This matters because the SQLite binding is the main query-stack fragility called out in [[sqlite-indexer]] and `docs/bugs/codealmanac-known-bugs.md`. [[install-time-node-launcher]] narrows the failure surface for normal installs, but doctor still explains the remaining cases and the repair is still manual.
 
 ## Wiki-scope checks
 
