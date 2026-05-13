@@ -38,6 +38,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .option("--json", "emit structured JSON for background job start")
     .option("--force", "allow rebuilding an existing wiki")
     .option("-y, --yes", "confirm non-interactively")
+    .option("--verbose", "stream agent activity while the run is attached")
     .action(
       async (opts: {
         using?: string;
@@ -45,7 +46,10 @@ export function registerWikiLifecycleCommands(program: Command): void {
         json?: boolean;
         force?: boolean;
         yes?: boolean;
+        verbose?: boolean;
       }) => {
+        const start = initStartMessage(opts);
+        if (start !== null) process.stdout.write(start);
         const result = await runInitCommand({
           cwd: process.cwd(),
           using: opts.using,
@@ -53,7 +57,9 @@ export function registerWikiLifecycleCommands(program: Command): void {
           json: opts.json,
           force: opts.force,
           yes: opts.yes,
-          onEvent: opts.background === true ? undefined : writeForegroundEvent,
+          onEvent: opts.background === true
+            ? undefined
+            : lifecycleForegroundEventHandler(opts),
         });
         emit(result);
       },
@@ -73,6 +79,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .option("--foreground", "run now instead of starting a background job")
     .option("--json", "emit structured JSON for background job start")
     .option("-y, --yes", "confirm non-interactively")
+    .option("--verbose", "stream agent activity while the run is attached")
     .action(
       async (
         sessionFiles: string[],
@@ -87,6 +94,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
           foreground?: boolean;
           json?: boolean;
           yes?: boolean;
+          verbose?: boolean;
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
@@ -103,7 +111,9 @@ export function registerWikiLifecycleCommands(program: Command): void {
           foreground: opts.foreground,
           json: opts.json,
           yes: opts.yes,
-          onEvent: opts.foreground === true ? writeForegroundEvent : undefined,
+          onEvent: opts.foreground === true
+            ? lifecycleForegroundEventHandler(opts)
+            : undefined,
         });
         emit(result);
       },
@@ -116,6 +126,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .option("--foreground", "run now instead of starting a background job")
     .option("--json", "emit structured JSON for background job start")
     .option("-y, --yes", "confirm non-interactively")
+    .option("--verbose", "stream agent activity while the run is attached")
     .action(
       async (
         paths: string[],
@@ -124,6 +135,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
           foreground?: boolean;
           json?: boolean;
           yes?: boolean;
+          verbose?: boolean;
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
@@ -134,7 +146,9 @@ export function registerWikiLifecycleCommands(program: Command): void {
           foreground: opts.foreground,
           json: opts.json,
           yes: opts.yes,
-          onEvent: opts.foreground === true ? writeForegroundEvent : undefined,
+          onEvent: opts.foreground === true
+            ? lifecycleForegroundEventHandler(opts)
+            : undefined,
         });
         emit(result);
       },
@@ -147,12 +161,14 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .option("--foreground", "run now instead of starting a background job")
     .option("--json", "emit structured JSON for background job start")
     .option("-y, --yes", "confirm non-interactively")
+    .option("--verbose", "stream agent activity while the run is attached")
     .action(
       async (opts: {
         using?: string;
         foreground?: boolean;
         json?: boolean;
         yes?: boolean;
+        verbose?: boolean;
       }) => {
         await autoRegisterIfNeeded(process.cwd());
         const result = await runGardenCommand({
@@ -161,7 +177,9 @@ export function registerWikiLifecycleCommands(program: Command): void {
           foreground: opts.foreground,
           json: opts.json,
           yes: opts.yes,
-          onEvent: opts.foreground === true ? writeForegroundEvent : undefined,
+          onEvent: opts.foreground === true
+            ? lifecycleForegroundEventHandler(opts)
+            : undefined,
         });
         emit(result);
       },
@@ -350,6 +368,19 @@ export function registerWikiLifecycleCommands(program: Command): void {
 function writeForegroundEvent(event: HarnessEvent): void {
   const line = formatForegroundEvent(event);
   if (line !== null) process.stdout.write(`${line}\n`);
+}
+
+export function lifecycleForegroundEventHandler(
+  opts: { verbose?: boolean },
+): ((event: HarnessEvent) => void) | undefined {
+  return opts.verbose === true ? writeForegroundEvent : undefined;
+}
+
+export function initStartMessage(
+  opts: { background?: boolean; json?: boolean; verbose?: boolean },
+): string | null {
+  if (opts.background === true || opts.json === true) return null;
+  return "Analyzing codebase... This usually takes 5-10 minutes.\n";
 }
 
 export function formatForegroundEvent(event: HarnessEvent): string | null {

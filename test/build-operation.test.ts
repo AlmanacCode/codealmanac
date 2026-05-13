@@ -6,6 +6,7 @@ import {
   createBuildRunSpec,
   runBuildOperation,
 } from "../src/operations/build.js";
+import { runConfigSet } from "../src/commands/config.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
 describe("build operation", () => {
@@ -40,6 +41,8 @@ describe("build operation", () => {
       expect(spec.prompt).toContain("Page Syntax And Writing Conventions");
       expect(spec.prompt).toContain("Source Control Hygiene");
       expect(spec.prompt).toContain("almanac: <short summary>");
+      expect(spec.prompt).toContain("Auto-commit wiki source changes: disabled");
+      expect(spec.prompt).toContain("Do not create a git commit for wiki changes");
       expect(spec.prompt).toContain(
         "You are building the first substantial Almanac wiki",
       );
@@ -51,6 +54,23 @@ describe("build operation", () => {
       );
       expect(spec.prompt).toContain(`Repository root: ${repo}`);
       expect(spec.prompt).toContain("Extra context.");
+    });
+  });
+
+  it("tells the operation prompt when auto-commit is enabled", async () => {
+    await withTempHome(async (home) => {
+      await expect(runConfigSet({
+        key: "auto_commit",
+        value: "true",
+      })).resolves.toMatchObject({ exitCode: 0 });
+      const repo = await makeRepo(home, "build-auto-commit");
+
+      const spec = await createBuildRunSpec({ repoRoot: repo });
+
+      expect(spec.prompt).toContain("Auto-commit wiki source changes: enabled");
+      expect(spec.prompt).toContain(
+        "If durable wiki source files changed, commit only `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml`",
+      );
     });
   });
 

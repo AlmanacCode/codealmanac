@@ -95,6 +95,8 @@ export interface SetupOptions {
   automationQuiet?: string;
   /** Don't install the CLAUDE.md guides. */
   skipGuides?: boolean;
+  /** Allow lifecycle runs to commit wiki source changes automatically. */
+  autoCommit?: boolean;
   /** Set the default agent provider during setup. */
   agent?: string;
   /** Set the default model for the selected provider during setup. */
@@ -210,7 +212,11 @@ export async function runSetup(
   // single terse line and exit so the user gets honest feedback and
   // piped callers (CI, scripts) don't parse through nine lines of ANSI
   // to conclude nothing happened.
-  if (options.skipAutomation === true && options.skipGuides === true) {
+  if (
+    options.skipAutomation === true &&
+    options.skipGuides === true &&
+    options.autoCommit !== true
+  ) {
     out.write(
       "almanac: nothing to install — use --help to see what setup does\n",
     );
@@ -377,6 +383,26 @@ export async function runSetup(
     }
   } else {
     stepSkipped(out, `Agent instructions ${DIM}skipped${RST}`);
+  }
+  out.write(BAR + "\n");
+
+  let autoCommitAction: InstallDecision = "skip";
+  if (options.autoCommit === true) {
+    autoCommitAction = "install";
+  } else if (interactive) {
+    autoCommitAction = await confirm(
+      out,
+      "Commit Almanac wiki updates automatically?",
+      false,
+    );
+  }
+
+  if (autoCommitAction === "install") {
+    await writeConfig({ auto_commit: true });
+    stepDone(out, "Auto-commit enabled");
+  } else {
+    if (interactive) await writeConfig({ auto_commit: false });
+    stepSkipped(out, `Auto-commit ${DIM}disabled${RST}`);
   }
   out.write(BAR + "\n");
 

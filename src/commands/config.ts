@@ -165,7 +165,11 @@ function targetConfigPath(project: boolean): string | null {
 }
 
 function isUserLevelOnlyKey(key: ConfigKey): boolean {
-  return key === "update_notifier" || key === "automation.capture_since";
+  return (
+    key === "update_notifier" ||
+    key === "auto_commit" ||
+    key === "automation.capture_since"
+  );
 }
 
 async function readRawConfig(file = getConfigPath()): Promise<unknown> {

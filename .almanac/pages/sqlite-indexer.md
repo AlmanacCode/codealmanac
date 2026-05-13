@@ -3,6 +3,9 @@ title: SQLite Indexer
 summary: The SQLite indexer powers query commands but inherits `better-sqlite3`'s Node-version-sensitive native binding behavior.
 topics: [systems, storage]
 files:
+  - src/cli/register-query-commands.ts
+  - src/commands/search.ts
+  - src/commands/show.ts
   - src/indexer/schema.ts
   - src/indexer/index.ts
   - src/indexer/frontmatter.ts
@@ -14,12 +17,16 @@ files:
   - src/cli.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
-verified: 2026-05-12
+verified: 2026-05-13
 ---
 
 # SQLite Indexer
 
 The indexer (`src/indexer/`) builds and maintains `.almanac/index.db` — a SQLite database that powers all query commands (`search`, `show`, `health`, `topics show`). It runs silently before every query command. Freshness checks compare page and topic-file mtimes against the database mtime; once a reindex starts, unchanged page rows are skipped by `content_hash` and `file_path`.
+
+## Query output contract
+
+Query commands should stay quiet by default and reserve richer context for explicit flags. `almanac search` defaults to one slug per line even in a TTY; `--verbose` and the older `--summaries` flag print one-line summaries. `almanac show <slug>` defaults to the page body only; `--verbose` restores the metadata header, separator, and body view. Field flags such as `--title`, `--topics`, `--files`, and JSON output keep their existing explicit shapes.
 
 ## Schema
 

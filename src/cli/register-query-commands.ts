@@ -52,6 +52,7 @@ export function registerQueryCommands(program: Command): void {
     .option("--json", "emit structured JSON")
     .option("--slugs", "emit only result slugs, one per line")
     .option("--summaries", "emit result slugs with one-line summaries")
+    .option("--verbose", "emit result slugs with one-line summaries")
     .option("--limit <n>", "cap results", parsePositiveInt)
     .action(
       async (
@@ -68,6 +69,7 @@ export function registerQueryCommands(program: Command): void {
           json?: boolean;
           slugs?: boolean;
           summaries?: boolean;
+          verbose?: boolean;
           limit?: number;
         },
       ) => {
@@ -98,6 +100,7 @@ export function registerQueryCommands(program: Command): void {
     .option("--json", "structured JSON (overrides other view/field flags)")
     .option("--body", "body only")
     .option("--raw", "deprecated alias for --body")
+    .option("--verbose", "metadata header + body")
     .option("--meta", "metadata only, no body")
     .option("--lead", "first paragraph of the body only")
     .option("--title", "print title")
@@ -118,6 +121,7 @@ export function registerQueryCommands(program: Command): void {
           json?: boolean;
           raw?: boolean;
           body?: boolean;
+          verbose?: boolean;
           meta?: boolean;
           lead?: boolean;
           title?: boolean;
@@ -140,6 +144,7 @@ export function registerQueryCommands(program: Command): void {
           wiki: opts.wiki,
           json: opts.json,
           raw: opts.raw === true || opts.body === true,
+          verbose: opts.verbose,
           meta: opts.meta,
           lead: opts.lead,
           title: opts.title,
@@ -199,26 +204,30 @@ export function registerQueryCommands(program: Command): void {
       "--drop <name>",
       "remove a wiki from the registry (the only way entries are ever removed)",
     )
-    .action(async (opts: { json?: boolean; drop?: string }) => {
-      if (opts.drop === undefined) {
-        await autoRegisterIfNeeded(process.cwd());
-      }
-      const result = await listWikis(opts);
-      process.stdout.write(result.stdout);
-      if (result.exitCode !== 0) {
-        process.exitCode = result.exitCode;
-      }
-    });
+    .option("--verbose", "show descriptions and paths")
+    .action(
+      async (opts: { json?: boolean; drop?: string; verbose?: boolean }) => {
+        if (opts.drop === undefined) {
+          await autoRegisterIfNeeded(process.cwd());
+        }
+        const result = await listWikis(opts);
+        process.stdout.write(result.stdout);
+        if (result.exitCode !== 0) {
+          process.exitCode = result.exitCode;
+        }
+      },
+    );
 }
 
-function resolveSearchOutputMode(opts: {
+export function resolveSearchOutputMode(opts: {
   json?: boolean;
   slugs?: boolean;
   summaries?: boolean;
+  verbose?: boolean;
 }): SearchOutputMode {
   if (opts.json === true) return "json";
   if (opts.slugs === true) return "slugs";
-  if (opts.summaries === true || (process.stdout.isTTY ?? false)) {
+  if (opts.summaries === true || opts.verbose === true) {
     return "summaries";
   }
   return "slugs";

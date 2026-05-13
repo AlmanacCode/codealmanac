@@ -149,6 +149,7 @@ export function registerSetupCommands(program: Command): void {
     .option("--auto-capture-every <duration>", "scheduled auto-capture interval (default: 5h)")
     .option("--auto-capture-quiet <duration>", "scheduled auto-capture quiet window (default: 45m)")
     .option("--skip-guides", "opt out of the CLAUDE.md guides")
+    .option("--auto-commit", "allow Almanac lifecycle runs to commit wiki source changes")
     .action(
       async (opts: {
         yes?: boolean;
@@ -158,6 +159,7 @@ export function registerSetupCommands(program: Command): void {
         autoCaptureEvery?: string;
         autoCaptureQuiet?: string;
         skipGuides?: boolean;
+        autoCommit?: boolean;
       }) => {
         const result = await runSetup({
           yes: opts.yes,
@@ -167,6 +169,7 @@ export function registerSetupCommands(program: Command): void {
           automationEvery: opts.autoCaptureEvery,
           automationQuiet: opts.autoCaptureQuiet,
           skipGuides: opts.skipGuides,
+          autoCommit: opts.autoCommit,
         });
         emit(result);
       },

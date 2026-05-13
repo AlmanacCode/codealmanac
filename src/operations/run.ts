@@ -6,6 +6,7 @@ import {
   startBackgroundProcess,
   startForegroundProcess,
 } from "../process/index.js";
+import { readConfig } from "../update/config.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,
@@ -42,10 +43,12 @@ export async function createOperationRunSpec(args: {
     BASE_PROMPTS.map((name) => loadPrompt(name)),
   );
   const operationPrompt = await loadPrompt(args.promptName);
+  const sourceControl = await sourceControlRuntimeContext(args.repoRoot);
   const prompt = joinPrompts([
     ...basePrompts,
     operationPrompt,
     operationRuntimeContext(args.repoRoot),
+    sourceControl,
     args.context,
   ]);
 
@@ -98,5 +101,23 @@ function operationRuntimeContext(repoRoot: string): string {
     `- Repository root: ${repoRoot}`,
     `- Almanac directory: ${repoRoot}/.almanac`,
     `- Wiki pages directory: ${repoRoot}/.almanac/pages`,
+  ].join("\n");
+}
+
+async function sourceControlRuntimeContext(repoRoot: string): Promise<string> {
+  const config = await readConfig({ cwd: repoRoot });
+  if (config.auto_commit) {
+    return [
+      "Source control runtime context:",
+      "- Auto-commit wiki source changes: enabled",
+      "- If durable wiki source files changed, commit only `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml`.",
+      "- Use the commit message shape `almanac: <short summary>`.",
+    ].join("\n");
+  }
+  return [
+    "Source control runtime context:",
+    "- Auto-commit wiki source changes: disabled",
+    "- Do not create a git commit for wiki changes.",
+    "- Leave wiki source changes in the working tree for the user to review.",
   ].join("\n");
 }

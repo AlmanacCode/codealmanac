@@ -35,9 +35,10 @@ V1 prompt layout is base doctrine plus operation algorithms. The bundled base pr
 3. `base/syntax`
 4. the selected operation prompt
 5. runtime context
-6. command-specific context
+6. source-control runtime context
+7. command-specific context
 
-`joinPrompts()` concatenates these modules with `---` separators. There is no manifest, proposal file, evidence pipeline, or prompt-state object between the CLI and the provider adapter.
+`joinPrompts()` concatenates these modules with `---` separators. There is no manifest, proposal file, evidence pipeline, or prompt-state object between the CLI and the provider adapter. The source-control runtime context resolves `auto_commit` from user config and explicitly tells the agent whether it may create an `almanac: <summary>` git commit. Disabled is the default, so Build, Absorb, and Garden leave wiki changes in the working tree unless setup or `almanac config set auto_commit true` opted in.
 
 ## Base modules
 
@@ -45,7 +46,7 @@ V1 prompt layout is base doctrine plus operation algorithms. The bundled base pr
 
 `notability.md` defines what deserves a page, topic, cluster, or hub. It treats page genres as vocabulary, not schema, and explicitly includes internal entities, external dependencies, influences, research synthesis, market/product synthesis, and hubs.
 
-`syntax.md` defines frontmatter, source grounding, natural slugs, wikilink syntax, page shape, and writing conventions. It keeps current indexed fields (`title`, `topics`, `files`, archive/supersession fields) while allowing prompt-level fields such as `sources`, `status`, `verified`, and `external_version`. The anti-cramming / anti-thinning failure modes documented in [[farzapedia]] and the prohibited-phrase list there are sharper enforcement vocabulary than what `syntax.md` currently names; they are a candidate for a future `syntax.md` revision.
+`syntax.md` defines frontmatter, source grounding, natural slugs, wikilink syntax, page shape, writing conventions, and source-control hygiene. It keeps current indexed fields (`title`, `topics`, `files`, archive/supersession fields) while allowing prompt-level fields such as `sources`, `status`, `verified`, and `external_version`. Its source-control rule treats `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml` as wiki source files, but commits them only when the runtime context says auto-commit is enabled. The anti-cramming / anti-thinning failure modes documented in [[farzapedia]] and the prohibited-phrase list there are sharper enforcement vocabulary than what `syntax.md` currently names; they are a candidate for a future `syntax.md` revision.
 
 ## Operation algorithms
 

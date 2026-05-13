@@ -10,6 +10,7 @@ import {
 export interface ListOptions {
   json?: boolean;
   drop?: string;
+  verbose?: boolean;
 }
 
 export interface ListCommandOutput {
@@ -20,7 +21,8 @@ export interface ListCommandOutput {
 /**
  * `almanac list` — the global discovery surface. Three modes:
  *
- *  - default: pretty table of reachable wikis
+ *  - default: reachable wiki names, one per line
+ *  - `--verbose`: pretty table with descriptions and paths
  *  - `--json`: structured output (reachable wikis only, by default)
  *  - `--drop <name>`: explicit removal, then exits
  *
@@ -43,7 +45,12 @@ export async function listWikis(
     return { stdout: `${JSON.stringify(reachable, null, 2)}\n`, exitCode: 0 };
   }
 
-  return { stdout: formatPretty(reachable), exitCode: 0 };
+  return {
+    stdout: options.verbose === true
+      ? formatPretty(reachable)
+      : formatNames(reachable),
+    exitCode: 0,
+  };
 }
 
 async function handleDrop(name: string): Promise<ListCommandOutput> {
@@ -97,4 +104,9 @@ function formatPretty(entries: RegistryEntry[]): string {
     lines.push(`${" ".repeat(nameWidth)}  ${DIM}${entry.path}${RST}`);
   }
   return `${lines.join("\n")}\n`;
+}
+
+function formatNames(entries: RegistryEntry[]): string {
+  if (entries.length === 0) return "";
+  return `${entries.map((entry) => entry.name).join("\n")}\n`;
 }

@@ -241,8 +241,9 @@ Install scheduled auto-capture + the two CLAUDE.md guides (`almanac.md`, `almana
 | `--auto-capture-every <duration>` | Set the scheduler wakeup interval. Default: `5h`. |
 | `--auto-capture-quiet <duration>` | Set the transcript quiet window. Default: `45m`. |
 | `--skip-guides` | Opt out of the CLAUDE.md guides. |
+| `--auto-commit` | Opt into automatic git commits for wiki source changes. Default: off. |
 
-Bare `almanac`, `almanac setup`, and the compatibility `npx codealmanac` bootstrap route here. Interactive setup chooses provider first, then provider-local model. `almanac --yes`, `almanac --agent codex --model gpt-5.3-codex`, `almanac --skip-automation`, and `almanac --skip-guides` are the typical first-run invocations after install. Passing `--skip-automation --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn.
+Bare `almanac`, `almanac setup`, and the compatibility `npx codealmanac` bootstrap route here. Interactive setup chooses provider first, then provider-local model. `almanac --yes`, `almanac --agent codex --model gpt-5.3-codex`, `almanac --skip-automation`, and `almanac --skip-guides` are the typical first-run invocations after install. Passing `--skip-automation --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn. `--yes` and non-interactive setup do not enable auto-commit unless `--auto-commit` is passed explicitly; they preserve an existing opt-in.
 
 #### `almanac uninstall`
 
@@ -337,13 +338,14 @@ Low-level scriptable settings surface.
 almanac config list
 almanac config list --show-origin
 almanac config get agent.default
+almanac config set auto_commit true
 almanac config set agent.models.claude claude-opus-4-6
 almanac config set --project agent.default codex
 almanac config unset agent.models.claude
 ```
 
-Supported keys: `update_notifier`, `agent.default`, `agent.models.claude`, `agent.models.codex`, and `agent.models.cursor`.
-User config is stored at `~/.almanac/config.toml`. Project config lives at `.almanac/config.toml` and can override agent provider/model settings for a repo; `update_notifier` remains user-level only because it controls a global pre-command banner. Effective precedence is flag, environment, project config, user config, provider default.
+Supported keys: `update_notifier`, `auto_commit`, `agent.default`, `agent.models.claude`, `agent.models.codex`, `agent.models.cursor`, and `automation.capture_since`.
+User config is stored at `~/.almanac/config.toml`. Project config lives at `.almanac/config.toml` and can override agent provider/model settings for a repo; `update_notifier`, `auto_commit`, and `automation.capture_since` remain user-level only because they control global side effects. Effective precedence is flag, environment, project config, user config, provider default.
 
 #### `almanac update`
 

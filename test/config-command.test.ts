@@ -57,6 +57,10 @@ describe("config command", () => {
 
   it("sets update_notifier through the canonical config surface", async () => {
     await withTempHome(async () => {
+      await expect(readConfig()).resolves.toMatchObject({
+        auto_commit: false,
+      });
+
       await expect(runConfigSet({
         key: "update_notifier",
         value: "false",
@@ -71,6 +75,32 @@ describe("config command", () => {
       })).resolves.toMatchObject({ exitCode: 0 });
       await expect(readConfig()).resolves.toMatchObject({
         update_notifier: true,
+      });
+    });
+  });
+
+  it("sets and unsets auto_commit through the canonical config surface", async () => {
+    await withTempHome(async (home) => {
+      const listed = await runConfigList({ showOrigin: true });
+      expect(listed.stdout).toContain("auto_commit");
+      expect(listed.stdout).toContain("false");
+
+      await expect(runConfigSet({
+        key: "auto_commit",
+        value: "true",
+      })).resolves.toMatchObject({ exitCode: 0 });
+      await expect(readConfig()).resolves.toMatchObject({
+        auto_commit: true,
+      });
+
+      const path = join(home, ".almanac", "config.toml");
+      expect(await readFile(path, "utf8")).toContain("auto_commit = true");
+
+      await expect(runConfigUnset({
+        key: "auto_commit",
+      })).resolves.toMatchObject({ exitCode: 0 });
+      await expect(readConfig()).resolves.toMatchObject({
+        auto_commit: false,
       });
     });
   });
@@ -141,6 +171,7 @@ describe("config command", () => {
         join(home, ".almanac", "config.json"),
         JSON.stringify({
           update_notifier: false,
+          auto_commit: true,
           agent: {
             default: "codex",
             models: { codex: "gpt-5.3-codex" },
@@ -154,6 +185,7 @@ describe("config command", () => {
 
       await expect(readConfig()).resolves.toMatchObject({
         update_notifier: false,
+        auto_commit: true,
         agent: {
           default: "codex",
           models: { codex: "gpt-5.3-codex" },
@@ -165,6 +197,7 @@ describe("config command", () => {
 
       const toml = await readFile(join(home, ".almanac", "config.toml"), "utf8");
       expect(toml).toContain("update_notifier = false");
+      expect(toml).toContain("auto_commit = true");
       expect(toml).toContain("[agent.models]");
       expect(toml).toContain('codex = "gpt-5.3-codex"');
       expect(toml).toContain("[automation]");
@@ -228,6 +261,13 @@ describe("config command", () => {
         exitCode: 1,
       });
       await expect(runConfigSet({
+        key: "auto_commit",
+        value: "true",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
+      await expect(runConfigSet({
         key: "automation.capture_since",
         value: "2026-05-12T05:10:00.000Z",
         project: true,
@@ -236,6 +276,12 @@ describe("config command", () => {
       });
       await expect(runConfigUnset({
         key: "update_notifier",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
+      await expect(runConfigUnset({
+        key: "auto_commit",
         project: true,
       })).resolves.toMatchObject({
         exitCode: 1,

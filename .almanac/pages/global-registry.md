@@ -7,6 +7,8 @@ files:
   - src/paths.ts
   - src/commands/init.ts
   - src/commands/list.ts
+  - src/cli/register-query-commands.ts
+verified: 2026-05-13
 ---
 
 # Global Registry
@@ -24,6 +26,8 @@ files:
 ## Entry lifecycle
 
 Entries are never auto-dropped. `almanac list --drop <name>` is the only removal path. Unreachable paths (repo moved or deleted) are silently skipped during `--all` queries — they don't cause errors, just absent results.
+
+`almanac list` is quiet by default: it prints reachable wiki names only, one per line, and prints nothing when there are no reachable entries. `almanac list --verbose` keeps the human-readable view with descriptions and absolute paths. `--json` remains the structured registry output, and `--drop` still reports the removal result because that is the command's effect.
 
 ## Multi-wiki queries
 

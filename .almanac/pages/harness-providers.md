@@ -21,7 +21,7 @@ The V1 harness layer is Almanac's provider-neutral execution boundary. Operation
 
 `AgentRunSpec` contains provider selection, `cwd`, optional system prompt, assembled prompt, base tool requests, optional helper agent specs, optional skills/MCP config, limits, output schema, and operation metadata. Provider-neutral files must not import Claude, Codex, or Cursor SDK types.
 
-`HarnessEvent` normalizes stream output into text, tool use, tool result, tool summary, context usage, error, and done events. Tool events can carry structured display details such as kind, title, path, command, status, exit code, and duration; foreground output and `jobs attach` use those fields to show activity like "Reading file" or "Running command" instead of only provider-specific tool names. Run summaries preserve provider session id, cost, turns, and usage only when the adapter can actually supply them.
+`HarnessEvent` normalizes stream output into text, tool use, tool result, tool summary, context usage, error, and done events. Tool events can carry structured display details such as kind, title, path, command, status, exit code, and duration; `jobs attach` and lifecycle commands run with `--verbose` use those fields to show activity like "Reading file" or "Running command" instead of only provider-specific tool names. Quiet foreground lifecycle runs still log those events to JSONL, but they do not print the live tool stream to stdout. Run summaries preserve provider session id, cost, turns, and usage only when the adapter can actually supply them.
 
 ## Adapters
 

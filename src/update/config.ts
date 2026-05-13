@@ -71,6 +71,8 @@ export interface AutomationConfig {
 export interface GlobalConfig {
   /** When `false`, suppress the pre-command update-nag banner. Default: true. */
   update_notifier: boolean;
+  /** Whether AI lifecycle runs may create git commits for wiki source files. */
+  auto_commit: boolean;
   /** Agent-provider settings for agent-backed lifecycle commands. */
   agent: AgentConfig;
   /** Scheduled auto-capture settings. */
@@ -80,6 +82,7 @@ export interface GlobalConfig {
 export function defaultConfig(): GlobalConfig {
   return {
     update_notifier: true,
+    auto_commit: false,
     agent: {
       default: "codex",
       models: {
@@ -221,6 +224,10 @@ function normalizeRawConfig(raw: Record<string, unknown>): GlobalConfig {
       typeof raw.update_notifier === "boolean"
         ? raw.update_notifier
         : defaults.update_notifier,
+    auto_commit:
+      typeof raw.auto_commit === "boolean"
+        ? raw.auto_commit
+        : defaults.auto_commit,
     agent: {
       default: rawDefault,
       models,
@@ -281,6 +288,9 @@ function originsFromRaw(
   const origins: Record<string, ConfigOrigin> = {};
   if (!agentOnly && Object.prototype.hasOwnProperty.call(raw, "update_notifier")) {
     origins.update_notifier = origin;
+  }
+  if (!agentOnly && Object.prototype.hasOwnProperty.call(raw, "auto_commit")) {
+    origins.auto_commit = origin;
   }
   const automation =
     raw.automation !== null &&
@@ -355,6 +365,10 @@ function normalizeConfig(config: GlobalConfig | Partial<GlobalConfig>): GlobalCo
       typeof config.update_notifier === "boolean"
         ? config.update_notifier
         : defaults.update_notifier,
+    auto_commit:
+      typeof config.auto_commit === "boolean"
+        ? config.auto_commit
+        : defaults.auto_commit,
     agent: {
       default:
         config.agent !== undefined && isAgentProviderId(config.agent.default)
@@ -433,6 +447,9 @@ function serializeTomlConfig(raw: Record<string, unknown>): string {
   const lines: string[] = [];
   if (typeof raw.update_notifier === "boolean") {
     lines.push(`update_notifier = ${raw.update_notifier ? "true" : "false"}`);
+  }
+  if (typeof raw.auto_commit === "boolean") {
+    lines.push(`auto_commit = ${raw.auto_commit ? "true" : "false"}`);
   }
   const agent =
     raw.agent !== null &&
@@ -544,6 +561,17 @@ function toStoredConfigPatch(
       ["update_notifier"],
       normalized.update_notifier,
       defaults.update_notifier,
+    );
+  }
+  if (
+    config.auto_commit !== undefined &&
+    normalized.auto_commit !== current.auto_commit
+  ) {
+    setStoredValue(
+      stored,
+      ["auto_commit"],
+      normalized.auto_commit,
+      defaults.auto_commit,
     );
   }
 

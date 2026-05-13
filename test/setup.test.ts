@@ -9,7 +9,7 @@ import type {
   SpawnedProcess,
 } from "../src/agent/providers/claude/index.js";
 import { hasImportLine, runSetup } from "../src/commands/setup.js";
-import { readConfig } from "../src/update/config.js";
+import { readConfig, writeConfig } from "../src/update/config.js";
 import { withTempHome } from "./helpers.js";
 
 function fakeSpawnCli(stdout: string): SpawnCliFn {
@@ -122,6 +122,7 @@ describe("codealmanac setup", () => {
       expect(plist).toContain("<string>capture</string>");
       expect(plist).toContain("<string>sweep</string>");
       await expect(readConfig()).resolves.toMatchObject({
+        auto_commit: false,
         automation: { capture_since: expect.any(String) },
       });
       expect(await readFile(codexHooks, "utf8")).not.toContain("almanac-capture.sh");
@@ -233,6 +234,50 @@ describe("codealmanac setup", () => {
     });
   });
 
+  it("enables auto-commit only when explicitly requested in unattended setup", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+
+      await runSetup({
+        yes: true,
+        isTTY: false,
+        autoCommit: true,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      await expect(readConfig()).resolves.toMatchObject({
+        auto_commit: true,
+      });
+    });
+  });
+
+  it("unattended setup preserves an existing auto-commit opt-in", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      await writeConfig({ auto_commit: true });
+
+      await runSetup({
+        yes: true,
+        isTTY: false,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      await expect(readConfig()).resolves.toMatchObject({
+        auto_commit: true,
+      });
+    });
+  });
+
   it("does not block setup when the selected agent is ready", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
@@ -300,6 +345,31 @@ describe("codealmanac setup", () => {
       expect(existsSync(env.plistPath)).toBe(false);
       expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
       expect(env.stdout()).not.toMatch(/CODE ALMANAC/);
+    });
+  });
+
+  it("--auto-commit still applies when automation and guides are skipped", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const res = await runSetup({
+        yes: true,
+        autoCommit: true,
+        skipAutomation: true,
+        skipGuides: true,
+        isTTY: false,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        automationPlistPath: env.plistPath,
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      expect(existsSync(env.plistPath)).toBe(false);
+      expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
+      await expect(readConfig()).resolves.toMatchObject({
+        auto_commit: true,
+      });
     });
   });
 

@@ -7,6 +7,7 @@ import {
 
 export type ConfigKey =
   | "update_notifier"
+  | "auto_commit"
   | "agent.default"
   | `agent.models.${AgentProviderId}`
   | "automation.capture_since";
@@ -18,6 +19,7 @@ export interface ConfigEntry {
 
 export const CONFIG_KEYS: ConfigKey[] = [
   "update_notifier",
+  "auto_commit",
   "agent.default",
   ...AGENT_PROVIDER_IDS.map((id) => `agent.models.${id}` as const),
   "automation.capture_since",
@@ -26,6 +28,7 @@ export const CONFIG_KEYS: ConfigKey[] = [
 export function parseConfigKey(raw: string): ConfigKey | null {
   if (
     raw === "update_notifier" ||
+    raw === "auto_commit" ||
     raw === "agent.default" ||
     raw === "automation.capture_since"
   ) return raw;
@@ -41,6 +44,7 @@ export function getConfigValue(
   key: ConfigKey,
 ): string | boolean | null {
   if (key === "update_notifier") return config.update_notifier;
+  if (key === "auto_commit") return config.auto_commit;
   if (key === "agent.default") return config.agent.default;
   if (key === "automation.capture_since") return config.automation.capture_since;
   const provider = providerFromModelKey(key);
@@ -56,6 +60,12 @@ export function setConfigValue(
     return {
       ...config,
       update_notifier: parseBoolean(rawValue),
+    };
+  }
+  if (key === "auto_commit") {
+    return {
+      ...config,
+      auto_commit: parseBoolean(rawValue, "auto_commit"),
     };
   }
   if (key === "agent.default") {
@@ -113,10 +123,10 @@ function providerFromModelKey(key: ConfigKey): AgentProviderId {
   return provider;
 }
 
-function parseBoolean(value: string | null): boolean {
+function parseBoolean(value: string | null, key = "update_notifier"): boolean {
   if (value === "true") return true;
   if (value === "false") return false;
-  throw new Error("update_notifier must be true or false");
+  throw new Error(`${key} must be true or false`);
 }
 
 function normalizeModel(value: string | null): string | null {

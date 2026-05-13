@@ -290,13 +290,17 @@ function renderOperationResult(
       { json },
     );
   }
+  const message = result.mode === "background"
+    ? `${operation} started: ${result.runId}`
+    : `${operation} finished: ${result.runId}`;
+  const stdout = operation === "init" && result.mode === "foreground"
+    ? `${message}\nBrowse the wiki: almanac serve\n`
+    : undefined;
+
   return renderOutcome(
     {
       type: "success",
-      message:
-        result.mode === "background"
-          ? `${operation} started: ${result.runId}`
-          : `${operation} finished: ${result.runId}`,
+      message,
       data: {
         operation,
         runId: result.runId,
@@ -306,7 +310,7 @@ function renderOperationResult(
         logPath: record?.logPath,
       },
     },
-    { json },
+    { json, stdout },
   );
 }
 

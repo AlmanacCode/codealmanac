@@ -98,9 +98,13 @@ Useful unattended setup flags:
 almanac setup --yes
 almanac setup --skip-automation
 almanac setup --skip-guides
+almanac setup --auto-commit
 almanac setup --auto-capture-every 2h
 almanac setup --auto-capture-quiet 30m
 ```
+
+Auto-commit is opt-in. Without `--auto-commit`, lifecycle runs leave wiki
+changes in your working tree for review.
 
 Pick the provider Almanac should use for write-capable commands:
 
@@ -144,7 +148,18 @@ Almanac never stores provider credentials. Auth stays in each provider's normal 
 | `almanac automation install --every 2h` | Install or adjust scheduled capture. |
 | `almanac doctor` | Check install, providers, automation, and wiki health. |
 
-Run `almanac <command> --help` for the full flag surface.
+Query commands and attached lifecycle runs are quiet by default. Use `--verbose` when you want human-readable
+context such as search summaries, page metadata, registry paths, or live agent tool activity. Run
+`almanac <command> --help` for the full flag surface.
+
+The default first build stays compact:
+
+```bash
+almanac init
+# Analyzing codebase... This usually takes 5-10 minutes.
+# init finished: run_...
+# Browse the wiki: almanac serve
+```
 
 ## Common Workflows
 

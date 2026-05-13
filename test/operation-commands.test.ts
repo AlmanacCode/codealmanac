@@ -91,7 +91,9 @@ describe("operation command wrappers", () => {
 
       expect(foreground).toMatchObject({
         exitCode: 0,
-        stdout: "init finished: run_init\n",
+        stdout:
+          "init finished: run_init\n" +
+          "Browse the wiki: almanac serve\n",
       });
 
       const jsonForeground = await runInitCommand({

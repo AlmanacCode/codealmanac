@@ -15,8 +15,8 @@ import { getPageView, type PageView } from "../query/page-view.js";
  *
  * Three output "shapes":
  *
- *   1. **Default** — metadata header + `\n---\n` separator + body. Useful
- *      to skim a page and still see its topics/files/links at a glance.
+ *   1. **Default** — body only. This keeps the core read path terse and
+ *      pipe-friendly; `--verbose` restores the metadata header.
  *   2. **View flags** (mutually exclusive-ish):
  *        --json   structured JSON, overrides everything else
  *        --body   body only (`--raw` is a deprecated CLI alias)
@@ -45,6 +45,7 @@ export interface ShowOptions {
   raw?: boolean; // alias: body
   meta?: boolean;
   lead?: boolean;
+  verbose?: boolean;
 
   // Composable field flags.
   title?: boolean;
@@ -153,7 +154,7 @@ function formatSingle(
  *   2. `--meta` — metadata only, no body. Ignores `--lead`.
  *   3. `--lead` — first paragraph only.
  *   4. Any field flag (`--title`, `--topics`, …) set → those fields only.
- *   5. Nothing set → full view (metadata header + body).
+ *   5. Nothing set → body only, unless --verbose asks for full view.
  */
 type FieldName =
   | "title"
@@ -194,8 +195,7 @@ function formatRecord(rec: ShowRecord, options: ShowOptions): string {
     // newline, which confuses concatenation and diff tools. We don't
     // collapse multiple trailing newlines — a page that ends with a
     // blank line is intentional.
-    if (rec.body.length === 0) return "";
-    return rec.body.endsWith("\n") ? rec.body : `${rec.body}\n`;
+    return bodyOnly(rec);
   }
 
   // 4. Field flags (check before meta/lead so --meta + --title is unambiguous).
@@ -217,11 +217,20 @@ function formatRecord(rec: ShowRecord, options: ShowOptions): string {
     return firstParagraph(rec.body) + "\n";
   }
 
-  // 5. Default — metadata header + separator + body.
+  if (options.verbose !== true) {
+    return bodyOnly(rec);
+  }
+
+  // 5. Verbose — metadata header + separator + body.
   const header = metadataHeader(rec);
   const body = rec.body;
   const sep = body.length > 0 ? `\n\n${DIM}---${RST}\n\n` : "\n";
   return header + sep + body;
+}
+
+function bodyOnly(rec: ShowRecord): string {
+  if (rec.body.length === 0) return "";
+  return rec.body.endsWith("\n") ? rec.body : `${rec.body}\n`;
 }
 
 /**

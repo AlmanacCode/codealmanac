@@ -19,7 +19,7 @@ Build is the V1 operation behind `almanac init`. It replaced the old public `alm
 
 ## Command contract
 
-`almanac init` is foreground by default because first-time wiki creation is an onboarding action. `--background` starts an Almanac job and returns the run id. `--json` is only valid for background start responses.
+`almanac init` is foreground by default because first-time wiki creation is an onboarding action. The foreground default is still quiet: it prints `Analyzing codebase... This usually takes 5-10 minutes.` before the build run, waits, then prints `init finished: <run-id>` and `Browse the wiki: almanac serve` without echoing every agent tool call. `--verbose` restores the live text/tool stream for debugging. `--background` starts an Almanac job and returns the run id. `--json` is only valid for background start responses.
 
 Provider selection comes from `--using <provider[/model]>` when present. Otherwise lifecycle commands read the configured default provider/model through `readConfig({ cwd })`; they do not hardcode Claude as the command default.
 

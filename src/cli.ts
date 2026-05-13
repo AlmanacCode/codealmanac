@@ -391,6 +391,7 @@ export interface SetupShortcutOptions {
   automationEvery?: string;
   automationQuiet?: string;
   skipGuides?: boolean;
+  autoCommit?: boolean;
 }
 
 /**
@@ -447,6 +448,10 @@ function parseSetupShortcutFlags(args: string[]): SetupShortcutOptions | null {
     }
     if (arg === "--skip-guides") {
       opts.skipGuides = true;
+      continue;
+    }
+    if (arg === "--auto-commit") {
+      opts.autoCommit = true;
       continue;
     }
     return null;

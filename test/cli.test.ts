@@ -3,8 +3,13 @@ import { Command } from "commander";
 
 import { run, tryParseSetupShortcut } from "../src/cli.js";
 import { configureGroupedHelp } from "../src/cli/help.js";
+import { resolveSearchOutputMode } from "../src/cli/register-query-commands.js";
 import { registerCommands } from "../src/cli/register-commands.js";
-import { formatForegroundEvent } from "../src/cli/register-wiki-lifecycle-commands.js";
+import {
+  formatForegroundEvent,
+  initStartMessage,
+  lifecycleForegroundEventHandler,
+} from "../src/cli/register-wiki-lifecycle-commands.js";
 import type { SetupResult } from "../src/commands/setup.js";
 
 /**
@@ -201,13 +206,17 @@ describe("registerCommands", () => {
     expect(optionFlags(findCommand(program, ["init"]))).toContain(
       "--using <provider[/model]>",
     );
+    expect(optionFlags(findCommand(program, ["init"]))).toContain("--verbose");
     expect(optionFlags(findCommand(program, ["capture"]))).toContain(
       "--foreground",
     );
+    expect(optionFlags(findCommand(program, ["capture"]))).toContain("--verbose");
     expect(optionFlags(findCommand(program, ["ingest"]))).toContain(
       "--using <provider[/model]>",
     );
+    expect(optionFlags(findCommand(program, ["ingest"]))).toContain("--verbose");
     expect(optionFlags(findCommand(program, ["garden"]))).toContain("--json");
+    expect(optionFlags(findCommand(program, ["garden"]))).toContain("--verbose");
     expect(optionFlags(findCommand(program, ["topics", "show"]))).toContain(
       "--descendants",
     );
@@ -216,6 +225,15 @@ describe("registerCommands", () => {
     );
     expect(optionFlags(findCommand(program, ["search"]))).toContain(
       "--summaries",
+    );
+    expect(optionFlags(findCommand(program, ["search"]))).toContain(
+      "--verbose",
+    );
+    expect(optionFlags(findCommand(program, ["show"]))).toContain(
+      "--verbose",
+    );
+    expect(optionFlags(findCommand(program, ["list"]))).toContain(
+      "--verbose",
     );
     expect(optionFlags(findCommand(program, ["serve"]))).toContain(
       "--port <n>",
@@ -238,6 +256,29 @@ describe("registerCommands", () => {
     expect(help).toContain("Deprecated:");
     expect(help).toMatch(/set <key> \[value\.\.\.\]\s+configure Almanac defaults/);
     expect(help).toMatch(/ps \[options\]\s+deprecated alias for jobs/);
+  });
+});
+
+describe("resolveSearchOutputMode", () => {
+  it("keeps search slug-only by default even for TTY output", () => {
+    const original = process.stdout.isTTY;
+    Object.defineProperty(process.stdout, "isTTY", {
+      value: true,
+      configurable: true,
+    });
+
+    try {
+      expect(resolveSearchOutputMode({})).toBe("slugs");
+    } finally {
+      Object.defineProperty(process.stdout, "isTTY", {
+        value: original,
+        configurable: true,
+      });
+    }
+  });
+
+  it("maps --verbose to summary output", () => {
+    expect(resolveSearchOutputMode({ verbose: true })).toBe("summaries");
   });
 });
 
@@ -288,6 +329,29 @@ describe("formatForegroundEvent", () => {
       }),
     ).toBe("[tool] Ran command almanac health exit 0");
     expect(formatForegroundEvent({ type: "done" })).toBe("[done]");
+  });
+});
+
+describe("lifecycleForegroundEventHandler", () => {
+  it("suppresses foreground event streaming unless --verbose is set", () => {
+    expect(lifecycleForegroundEventHandler({ verbose: false })).toBeUndefined();
+    expect(lifecycleForegroundEventHandler({})).toBeUndefined();
+    expect(typeof lifecycleForegroundEventHandler({ verbose: true })).toBe(
+      "function",
+    );
+  });
+});
+
+describe("initStartMessage", () => {
+  it("prints a start line only for attached non-json init runs", () => {
+    expect(initStartMessage({})).toBe(
+      "Analyzing codebase... This usually takes 5-10 minutes.\n",
+    );
+    expect(initStartMessage({ verbose: true })).toBe(
+      "Analyzing codebase... This usually takes 5-10 minutes.\n",
+    );
+    expect(initStartMessage({ background: true })).toBeNull();
+    expect(initStartMessage({ json: true })).toBeNull();
   });
 });
 

@@ -13,16 +13,27 @@ describe("almanac list", () => {
     await withTempHome(async () => {
       const result = await listWikis({});
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toMatch(/no wikis registered/);
+      expect(result.stdout).toBe("");
     });
   });
 
-  it("formats registered wikis with name, description, and path", async () => {
+  it("prints only wiki names by default", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "alpha");
       await initWiki({ cwd: repo, name: "alpha", description: "first wiki" });
 
       const result = await listWikis({});
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe("alpha\n");
+    });
+  });
+
+  it("--verbose formats registered wikis with name, description, and path", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "alpha");
+      await initWiki({ cwd: repo, name: "alpha", description: "first wiki" });
+
+      const result = await listWikis({ verbose: true });
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toMatch(/alpha/);
       expect(result.stdout).toMatch(/first wiki/);

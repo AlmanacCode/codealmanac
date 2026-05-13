@@ -121,11 +121,15 @@ Every edit should make the graph easier to understand, navigate, or trust.
 ## Source Control Hygiene
 
 Before finishing a successful Build, Absorb, or Garden run, check whether you
-created, changed, archived, deleted, or retopiced wiki markdown under
-`.almanac/pages/` or `.almanac/topics.yaml`. If so, commit only those wiki
-content changes.
+created, changed, archived, deleted, or retopiced wiki source files. Wiki source
+files are `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml`.
 
-Use the commit message shape `almanac: <short summary>`.
+Only create a git commit when the runtime context says auto-commit is enabled.
+When it is enabled, commit only those wiki source changes and use the commit
+message shape `almanac: <short summary>`.
+
+When auto-commit is disabled, do not create a git commit. Leave wiki source
+changes in the working tree for the user to review.
 
 Do not commit `.almanac/runs/`, `.almanac/index.db`, provider logs, unrelated
 repo edits, or pre-existing user changes. If there are no durable wiki content

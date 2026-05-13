@@ -7,7 +7,8 @@ import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
  * Tests for the unified `almanac show`, which absorbs the old `info` and
  * `path` commands. Coverage:
  *
- *   - Default view: metadata header + body
+ *   - Default view: body only
+ *   - Verbose view: metadata header + body
  *   - Body-only mode (`--body`, with `--raw` retained as a CLI alias)
  *   - `--meta`: metadata only
  *   - `--lead`: first paragraph only
@@ -70,21 +71,35 @@ superseded_by: stripe-async
 }
 
 describe("almanac show — default view", () => {
-  it("emits metadata header + separator + body", async () => {
+  it("emits only the body by default", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");
       await seed(repo);
       const r = await runShow({ cwd: repo, slug: "checkout-flow" });
       expect(r.exitCode).toBe(0);
-      // Metadata is above the `---` separator.
+      expect(r.stdout).not.toMatch(/^slug:/m);
+      expect(r.stdout).not.toMatch(/^summary:/m);
+      expect(r.stdout).not.toMatch(/\n---\n/);
+      expect(r.stdout).toMatch(/# Checkout Flow/);
+      expect(r.stdout).toMatch(/\[\[stripe-async\]\]/);
+    });
+  });
+
+  it("--verbose emits metadata header + separator + body", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await seed(repo);
+      const r = await runShow({
+        cwd: repo,
+        slug: "checkout-flow",
+        verbose: true,
+      });
+      expect(r.exitCode).toBe(0);
       expect(r.stdout).toMatch(/slug:\s+checkout-flow/);
       expect(r.stdout).toMatch(/summary:\s+Checkout flow explains/);
       expect(r.stdout).toMatch(/topics:\s+checkout, flows/);
-      // Body follows, with the separator.
       expect(r.stdout).toMatch(/\n---\n/);
       expect(r.stdout).toMatch(/# Checkout Flow/);
-      // Wikilinks preserved verbatim.
-      expect(r.stdout).toMatch(/\[\[stripe-async\]\]/);
     });
   });
 
