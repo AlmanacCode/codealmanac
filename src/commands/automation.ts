@@ -81,6 +81,10 @@ export async function runAutomationInstall(
     "utf8",
   );
 
+  const captureSince = await ensureAutomationCaptureSince(
+    (options.now ?? new Date()).toISOString(),
+    options.configPath,
+  );
   const exec = options.exec ?? defaultExec;
   const target = launchctlTarget();
   try {
@@ -98,10 +102,6 @@ export async function runAutomationInstall(
       exitCode: 1,
     };
   }
-  const captureSince = await ensureAutomationCaptureSince(
-    (options.now ?? new Date()).toISOString(),
-    options.configPath,
-  );
 
   return {
     stdout:

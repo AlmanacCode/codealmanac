@@ -15,7 +15,14 @@ describe("almanac automation", () => {
         "LaunchAgents",
         "com.codealmanac.capture-sweep.plist",
       );
-      const exec = async () => ({});
+      const launchEvents: string[] = [];
+      const exec = async (_file: string, args: string[]) => {
+        if (args[0] === "bootstrap") {
+          const config = await readConfig();
+          launchEvents.push(config.automation.capture_since ?? "missing");
+        }
+        return {};
+      };
 
       const first = await runAutomationInstall({
         plistPath,
@@ -27,6 +34,7 @@ describe("almanac automation", () => {
       expect(first.stdout).toContain(
         "capturing transcripts after: 2026-05-12T05:10:00.000Z",
       );
+      expect(launchEvents).toEqual(["2026-05-12T05:10:00.000Z"]);
       await expect(readConfig()).resolves.toMatchObject({
         automation: { capture_since: "2026-05-12T05:10:00.000Z" },
       });
@@ -41,6 +49,10 @@ describe("almanac automation", () => {
       expect(second.stdout).toContain(
         "capturing transcripts after: 2026-05-12T05:10:00.000Z",
       );
+      expect(launchEvents).toEqual([
+        "2026-05-12T05:10:00.000Z",
+        "2026-05-12T05:10:00.000Z",
+      ]);
       await expect(readConfig()).resolves.toMatchObject({
         automation: { capture_since: "2026-05-12T05:10:00.000Z" },
       });
