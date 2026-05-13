@@ -127,7 +127,8 @@ async function tryRunInternalJob(args: string[]): Promise<boolean> {
 }
 
 function getProgramName(argv: string[]): "almanac" | "codealmanac" {
-  const invoked = argv[1] !== undefined ? basename(argv[1]) : "almanac";
+  const invoked = process.env.CODEALMANAC_INVOKED_AS ??
+    (argv[1] !== undefined ? basename(argv[1]) : "almanac");
   return invoked === "codealmanac" ? "codealmanac" : "almanac";
 }
 

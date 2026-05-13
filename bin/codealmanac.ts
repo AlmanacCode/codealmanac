@@ -21,7 +21,9 @@ run(process.argv).catch((err: unknown) => {
 });
 
 function shouldCheckSqliteAbi(argv: string[]): boolean {
-  const invoked = argv[1]?.split(/[\\/]/).pop() ?? "almanac";
+  const invoked = process.env.CODEALMANAC_INVOKED_AS ??
+    argv[1]?.split(/[\\/]/).pop() ??
+    "almanac";
   const args = argv.slice(2);
 
   if (args.includes("--internal-check-updates")) return false;

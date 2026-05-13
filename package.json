@@ -22,12 +22,13 @@
   },
   "type": "module",
   "bin": {
-    "codealmanac": "dist/codealmanac.js",
-    "almanac": "dist/codealmanac.js",
-    "alm": "dist/codealmanac.js"
+    "codealmanac": "dist/launcher.js",
+    "almanac": "dist/launcher.js",
+    "alm": "dist/launcher.js"
   },
   "files": [
     "dist",
+    "scripts",
     "viewer",
     "prompts",
     "guides",
@@ -44,6 +45,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
+    "postinstall": "node scripts/postinstall.cjs",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

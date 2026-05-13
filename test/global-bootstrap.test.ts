@@ -65,7 +65,7 @@ describe("runCodealmanacBootstrap", () => {
       expect(calls[1]).toMatchObject({
         cmd: process.execPath,
         args: [
-          join(globalRoot, "dist", "codealmanac.js"),
+          join(globalRoot, "dist", "launcher.js"),
           "setup",
           "--yes",
         ],
@@ -123,7 +123,7 @@ describe("runCodealmanacBootstrap", () => {
       expect(calls).toHaveLength(1);
       expect(calls[0]!.cmd).toBe(process.execPath);
       expect(calls[0]!.args).toEqual([
-        join(globalRoot, "dist", "codealmanac.js"),
+        join(globalRoot, "dist", "launcher.js"),
         "setup",
       ]);
     });

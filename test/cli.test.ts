@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Command } from "commander";
 
 import { run, tryParseSetupShortcut } from "../src/cli.js";
@@ -356,6 +356,16 @@ describe("initStartMessage", () => {
 });
 
 describe("run() — codealmanac-setup shortcut routing", () => {
+  const ORIGINAL_INVOKED_AS = process.env.CODEALMANAC_INVOKED_AS;
+
+  afterEach(() => {
+    if (ORIGINAL_INVOKED_AS === undefined) {
+      delete process.env.CODEALMANAC_INVOKED_AS;
+    } else {
+      process.env.CODEALMANAC_INVOKED_AS = ORIGINAL_INVOKED_AS;
+    }
+  });
+
   it("routes bare `codealmanac --yes` to runSetup with { yes: true }", async () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
@@ -406,6 +416,33 @@ describe("run() — codealmanac-setup shortcut routing", () => {
 
     await run(
       ["/abs/node", "/abs/path/codealmanac", "--yes"],
+      {
+        runSetup: setupMock as never,
+        runCodealmanacBootstrap: bootstrapMock as never,
+        announceUpdate: () => {},
+        scheduleUpdateCheck: () => {},
+        runInternalUpdateCheck: async () => {},
+      },
+    );
+
+    expect(bootstrapMock).toHaveBeenCalledWith({
+      setupOptions: { yes: true },
+      setupArgs: ["--yes"],
+    });
+    expect(setupMock).not.toHaveBeenCalled();
+  });
+
+  it("honors the launcher-preserved codealmanac invocation name", async () => {
+    process.env.CODEALMANAC_INVOKED_AS = "codealmanac";
+    const setupMock = vi
+      .fn<(opts?: unknown) => Promise<SetupResult>>()
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+    const bootstrapMock = vi
+      .fn<(opts: unknown) => Promise<SetupResult>>()
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await run(
+      ["/abs/node", "/pkg/dist/codealmanac.js", "--yes"],
       {
         runSetup: setupMock as never,
         runCodealmanacBootstrap: bootstrapMock as never,

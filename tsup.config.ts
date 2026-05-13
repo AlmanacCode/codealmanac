@@ -3,6 +3,8 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   entry: {
     codealmanac: "bin/codealmanac.ts",
+    "install-launchers": "bin/install-launchers.ts",
+    launcher: "bin/launcher.ts",
   },
   format: ["esm"],
   target: "node20",

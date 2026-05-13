@@ -80,7 +80,7 @@ export async function runCodealmanacBootstrap(
     }
   }
 
-  const entry = path.join(globalRoot, "dist", "codealmanac.js");
+  const entry = path.join(globalRoot, "dist", "launcher.js");
   const rerun = await spawnInherited(
     opts.spawnFn ?? spawn,
     process.execPath,

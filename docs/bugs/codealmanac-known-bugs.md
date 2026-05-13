@@ -29,9 +29,23 @@ or:
 better-sqlite3 native binding failed: Cannot find module 'better-sqlite3'
 ```
 
-Current mitigation: the CLI has a startup ABI guard that tries to open an
-in-memory SQLite database before command routing. When the native binding is
-broken, users get a direct rebuild hint instead of a deep stack trace:
+Current mitigation: installed package bins now point at `dist/launcher.js`.
+During `postinstall`, `dist/install-launchers.js` records the Node executable
+that installed the package in `install-runtime.json`. The launcher runs before
+the real CLI imports SQLite; it spawns `dist/codealmanac.js` with the recorded
+Node path so interactive terminals, agents, launchd, and other callers do not
+choose different Node runtimes through ambient `PATH`.
+
+If the recorded Node executable is later removed, the launcher prints a
+reinstall repair path before loading the real CLI:
+
+```bash
+npm install -g codealmanac@latest
+```
+
+There is still a startup ABI guard in `src/abi-guard.ts` for users who bypass
+the launcher and execute `dist/codealmanac.js` directly. When the native binding
+is broken, users get a direct rebuild hint instead of a deep stack trace:
 
 ```bash
 cd "<codealmanac install dir>" && npm rebuild better-sqlite3
@@ -44,8 +58,9 @@ Node/V8 ABI of the runtime that installed it. codealmanac is a CLI users may
 run from many shells and Node versions, so the package can be installed under
 one ABI and executed under another.
 
-**Short-term fix:** keep the startup guard, improve the doctor report, and add
-install smoke tests that cover Node manager/version-switch scenarios.
+**Short-term fix:** keep the pinned launcher and startup guard, improve the
+doctor report, and add install smoke tests that cover Node manager/version-switch
+scenarios.
 
 **Long-term fix:** migrate the index layer to an N-API-stable SQLite binding
 or to `node:sqlite` once FTS5 support is available in the relevant LTS target.

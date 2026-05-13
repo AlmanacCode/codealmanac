@@ -3,6 +3,11 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  readInstallRuntimeSync,
+  sameExecutablePath,
+} from "./install/launcher-runtime.js";
+
 /**
  * Check whether the `better-sqlite3` native binding is compatible with
  * the currently-running Node version. Called once at startup — before any
@@ -49,10 +54,28 @@ export function checkSqliteAbi(): string | null {
     // points at the right place. Walk up from this module's location.
     const installDir = detectInstallDir();
 
+    const runtime = readInstallRuntimeSync(
+      path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."),
+    );
+    const launcherHint =
+      runtime !== null && !sameExecutablePath(runtime.nodePath, process.execPath)
+        ? (
+            `\n\nRunning Node:\n` +
+            `  ${process.execPath} ${process.version}\n\n` +
+            `Install-time Node:\n` +
+            `  ${runtime.nodePath} ${runtime.nodeVersion}` +
+            `${runtime.nodeAbi !== null ? ` (ABI ${runtime.nodeAbi})` : ""}\n\n` +
+            `Repair:\n` +
+            `  run the installed almanac launcher, or reinstall:\n` +
+            `  npm install -g codealmanac@latest`
+          )
+        : "";
+
     return (
       `better-sqlite3 native binding failed${detail}.\n` +
       `  Fix: cd "${installDir}" && npm rebuild better-sqlite3\n` +
-      `  Or switch back to the Node version it was compiled for: nvm use <version>`
+      `  Or switch back to the Node version it was compiled for: nvm use <version>` +
+      launcherHint
     );
   }
 }
