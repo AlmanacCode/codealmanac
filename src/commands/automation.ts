@@ -14,9 +14,11 @@ const execFileAsync = promisify(execFile);
 
 export interface AutomationOptions {
   every?: string;
+  quiet?: string;
   homeDir?: string;
   plistPath?: string;
   programArguments?: string[];
+  env?: NodeJS.ProcessEnv;
   exec?: ExecFn;
   now?: Date;
   configPath?: string;
@@ -34,6 +36,15 @@ type ExecFn = (
 
 const LABEL = "com.codealmanac.capture-sweep";
 const DEFAULT_EVERY = "5h";
+const DEFAULT_QUIET = "45m";
+const LAUNCHD_FALLBACK_PATHS = [
+  "/usr/local/bin",
+  "/opt/homebrew/bin",
+  "/usr/bin",
+  "/bin",
+  "/usr/sbin",
+  "/sbin",
+];
 
 export async function runAutomationInstall(
   options: AutomationOptions = {},
@@ -42,6 +53,11 @@ export async function runAutomationInstall(
   if (!interval.ok) {
     return { stdout: "", stderr: `almanac: ${interval.error}\n`, exitCode: 1 };
   }
+  const quietValue = options.quiet ?? DEFAULT_QUIET;
+  const quiet = parseQuiet(quietValue);
+  if (!quiet.ok) {
+    return { stdout: "", stderr: `almanac: ${quiet.error}\n`, exitCode: 1 };
+  }
 
   const home = options.homeDir ?? homedir();
   const plist = options.plistPath ?? defaultPlistPath(home);
@@ -49,18 +65,26 @@ export async function runAutomationInstall(
   await mkdir(path.dirname(plist), { recursive: true });
   await mkdir(logsDir, { recursive: true });
 
-  const programArguments = options.programArguments ?? defaultProgramArguments();
+  const programArguments = options.programArguments ?? defaultProgramArguments(quietValue);
+  const environmentVariables = {
+    PATH: buildLaunchPath(home, options.env?.PATH ?? process.env.PATH),
+  };
   await writeFile(
     plist,
     renderPlist({
       programArguments,
       intervalSeconds: interval.seconds,
+      environmentVariables,
       stdoutPath: path.join(logsDir, "capture-sweep.out.log"),
       stderrPath: path.join(logsDir, "capture-sweep.err.log"),
     }),
     "utf8",
   );
 
+  const captureSince = await ensureAutomationCaptureSince(
+    (options.now ?? new Date()).toISOString(),
+    options.configPath,
+  );
   const exec = options.exec ?? defaultExec;
   const target = launchctlTarget();
   try {
@@ -78,15 +102,12 @@ export async function runAutomationInstall(
       exitCode: 1,
     };
   }
-  const captureSince = await ensureAutomationCaptureSince(
-    (options.now ?? new Date()).toISOString(),
-    options.configPath,
-  );
 
   return {
     stdout:
       `almanac: auto-capture automation installed\n` +
       `  interval: ${options.every ?? DEFAULT_EVERY}\n` +
+      `  quiet: ${quietValue}\n` +
       `  capturing transcripts after: ${captureSince}\n` +
       `  command: ${programArguments.join(" ")}\n` +
       `  plist: ${plist}\n`,
@@ -149,11 +170,13 @@ export async function runAutomationStatus(
   }
   const contents = await readFile(plist, "utf8");
   const interval = contents.match(/<key>StartInterval<\/key>\s*<integer>(\d+)<\/integer>/)?.[1];
+  const quiet = readProgramArgumentAfter(contents, "--quiet");
   return {
     stdout:
       `auto-capture automation: installed\n` +
       `  plist: ${plist}\n` +
-      (interval !== undefined ? `  interval: ${interval}s\n` : ""),
+      (interval !== undefined ? `  interval: ${interval}s\n` : "") +
+      (quiet !== null ? `  quiet: ${quiet}\n` : ""),
     stderr: "",
     exitCode: 0,
   };
@@ -175,14 +198,30 @@ function parseInterval(value: string): { ok: true; seconds: number } | { ok: fal
   }
 }
 
+function parseQuiet(value: string): { ok: true } | { ok: false; error: string } {
+  try {
+    const seconds = parseDuration(value);
+    if (seconds < 0) {
+      return { ok: false, error: "quiet window must be zero or greater" };
+    }
+    return { ok: true };
+  } catch (err: unknown) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 function renderPlist(args: {
   programArguments: string[];
   intervalSeconds: number;
+  environmentVariables: Record<string, string>;
   stdoutPath: string;
   stderrPath: string;
 }): string {
   const programArguments = args.programArguments
     .map((arg) => `    <string>${escapeXml(arg)}</string>`)
+    .join("\n");
+  const environmentVariables = Object.entries(args.environmentVariables)
+    .map(([key, value]) => `    <key>${escapeXml(key)}</key>\n    <string>${escapeXml(value)}</string>`)
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
@@ -197,6 +236,10 @@ ${programArguments}
   </array>
   <key>StartInterval</key>
   <integer>${args.intervalSeconds}</integer>
+  <key>EnvironmentVariables</key>
+  <dict>
+${environmentVariables}
+  </dict>
   <key>RunAtLoad</key>
   <true/>
   <key>StandardOutPath</key>
@@ -208,12 +251,35 @@ ${programArguments}
 `;
 }
 
-function defaultProgramArguments(): string[] {
+function readProgramArgumentAfter(contents: string, flag: string): string | null {
+  const values = [...contents.matchAll(/<string>([^<]*)<\/string>/g)]
+    .map((match) => unescapeXml(match[1] ?? ""));
+  const index = values.indexOf(flag);
+  return index >= 0 ? values[index + 1] ?? null : null;
+}
+
+function defaultProgramArguments(quiet: string = DEFAULT_QUIET): string[] {
   const cliEntry = findPackageCliEntry() ??
     (process.argv[1] !== undefined
       ? path.resolve(process.argv[1])
       : path.resolve(process.cwd(), "dist", "codealmanac.js"));
-  return [process.execPath, cliEntry, "capture", "sweep"];
+  return [process.execPath, cliEntry, "capture", "sweep", "--quiet", quiet];
+}
+
+function buildLaunchPath(home: string, envPath: string | undefined): string {
+  const installPaths = (envPath ?? "")
+    .split(":")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  const userPaths = [
+    path.join(home, ".local", "bin"),
+    path.join(home, ".bun", "bin"),
+  ];
+  return unique([...installPaths, ...userPaths, ...LAUNCHD_FALLBACK_PATHS]).join(":");
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 function findPackageCliEntry(): string | null {
@@ -236,6 +302,15 @@ function escapeXml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&apos;");
+}
+
+function unescapeXml(value: string): string {
+  return value
+    .replaceAll("&apos;", "'")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&gt;", ">")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&amp;", "&");
 }
 
 function launchctlTarget(): string {

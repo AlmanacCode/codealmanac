@@ -12,7 +12,7 @@ files:
   - src/commands/automation.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
-verified: 2026-05-11
+verified: 2026-05-12
 ---
 
 # Lifecycle CLI
@@ -47,15 +47,17 @@ There is one CLI-shape wrinkle inside that surface: `capture` itself has `--json
 
 ## Automation commands
 
-`almanac automation install|status|uninstall` manages the macOS launchd job that periodically runs `almanac capture sweep`. The default interval is 5h, and `automation install --every <duration>` customizes it using the same compact duration grammar as other CLI windows. The installed launchd plist writes absolute `ProgramArguments` for the current Node executable plus the resolved `dist/codealmanac.js` entrypoint, so background automation does not depend on `almanac` being on launchd's `PATH`.
+`almanac automation install|status|uninstall` manages the macOS launchd job that periodically runs `almanac capture sweep`. The default interval is 5h, and `automation install --every <duration> --quiet <duration>` customizes both the wakeup cadence and the transcript quiet window. The installed launchd plist writes absolute `ProgramArguments` for the current Node executable plus the resolved `dist/codealmanac.js` entrypoint, so background automation does not depend on `almanac` being on launchd's `PATH`.
 
 The install command also establishes the auto-capture activation cursor. On first install it writes `automation.capture_since` to `~/.almanac/config.toml`; future sweeps skip transcripts whose mtime is before that timestamp. Reinstalling automation preserves the existing timestamp so rerunning setup repairs the scheduler without redefining what historical transcript material is in scope.
 
-Setup now installs this scheduler by default, with `--skip-automation` and `--auto-capture-every <duration>` replacing the old hook-oriented setup controls.
+Setup now installs this scheduler by default, with `--skip-automation`, `--auto-capture-every <duration>`, and `--auto-capture-quiet <duration>` replacing the old hook-oriented setup controls. The shared duration parser now accepts seconds as well as minutes/hours/days/weeks, which mainly matters for focused scheduler smoke tests such as `--quiet 1s` rather than for normal defaults. The same setup path also installs the global Claude and Codex instruction surfaces described in [[global-agent-instructions]]. When both `--skip-automation` and `--skip-guides` are passed, `runSetup()` short-circuits before rendering the setup banner and prints only `almanac: nothing to install — use --help to see what setup does`.
 
 Setup and uninstall still run private legacy-hook cleanup before touching scheduler state. That cleanup is intentionally shape-aware: it removes CodeAlmanac-owned `almanac-capture.sh` commands across provider-era event names such as `SessionEnd`, `Stop`, and `sessionEnd`, then drops empty wrapper objects and empty hook containers so historical hook files are actually healed rather than left with dead scaffolding.
 
-There is one implementation wrinkle worth remembering: `automation ...` is also wired through the sqlite-free fast path in `src/cli.ts`, before the full Commander CLI and SQLite-backed query stack are initialized. That is why automation management still works when a local or global install cannot load `better-sqlite3`, but it also means flag parsing for `automation install` is custom code in that fast path. The 2026-05-11 review originally found that a bare `almanac automation install --every` could silently fall back to the default 5h interval; the implementation now validates that case explicitly and returns an error instead.
+One debugging lesson from the 2026-05-12 launchd smoke tests is worth preserving alongside that cleanup contract: if "scheduled automation" appears to be spawning more jobs than the configured sweep cadence should allow, check for multiple capture mechanisms before blaming launchd. The observed duplicate-job burst came from two active sources at once: scheduled sweeps plus still-installed legacy hooks.
+
+There is one implementation wrinkle worth remembering: `automation ...` is also wired through the sqlite-free fast path in `src/cli.ts`, before the full Commander CLI and SQLite-backed query stack are initialized. That is why automation management still works when a local or global install cannot load `better-sqlite3`, but it also means flag parsing for `automation install` is custom code in that fast path. The 2026-05-11 review originally found that a bare `almanac automation install --every` could silently fall back to the default 5h interval; the implementation now validates that case explicitly and applies the same care to the quiet-window flag path.
 
 ## Removed public paths
 

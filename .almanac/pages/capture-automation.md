@@ -13,10 +13,12 @@ files:
   - src/commands/uninstall.ts
   - src/cli/register-setup-commands.ts
   - src/cli.ts
+  - test/setup.test.ts
+  - test/automation.test.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
 status: implemented
-verified: 2026-05-11
+verified: 2026-05-12
 ---
 
 # Capture Automation
@@ -51,6 +53,25 @@ The old hook investigation documented the mismatch clearly:
 That means hook-driven automation couples CodeAlmanac to each provider's lifecycle model. A provider-neutral scanner gives CodeAlmanac its own timing and dedupe rules instead of inheriting whatever "done" means in the foreground app.
 
 Because there were no external users whose existing hook workflows had to be preserved, v1 does not present hook install and scheduled sweep as two coequal auto-capture products. The documented automatic path is scheduler-backed quiet-session capture.
+
+## Codex hook-name provenance
+
+One durable lesson from the 2026-05-11 investigation is that Codex hook naming should be treated as an observed compatibility surface, not a stable contract inferred from one doc page.
+
+The session verified this from several angles:
+
+- the live machine had Codex hooks enabled via `codex features list`
+- the installed `codex` binary resolved to the global `@openai/codex` npm package
+- searching that installed package did not reveal a local `SessionEnd` hook contract to depend on
+- public and local evidence still pointed to `Stop` for Codex, while historical Claude/Cursor-era configs and older examples also used `SessionEnd` or `sessionEnd`
+
+That is why [[src/commands/automation.ts]] removes CodeAlmanac-owned legacy hook commands by content and by multiple event names instead of assuming one canonical key. The current cleanup and tests should preserve compatibility with at least these observed shapes:
+
+- `~/.claude/settings.json` with `SessionEnd`
+- `~/.codex/hooks.json` with `Stop`
+- `~/.cursor/hooks.json` with `sessionEnd`
+
+Future agents should read this as a cleanup invariant, not just historical trivia: if scheduler migration ever regresses, the likely cause is overfitting to one provider's current hook spelling or wrapper shape.
 
 ## Product contract
 
@@ -223,7 +244,13 @@ The same review also did a more realistic manual smoke pass on `almanac capture 
 
 One specific observation from that smoke pass is worth keeping as a sanity anchor for future regressions: on the developer's machine, the fixed dry-run reported 478 eligible sessions across both apps, split between 255 Claude sessions and 223 Codex sessions, with one additional Codex session skipped. The exact counts are temporal, but the durable lesson is that Codex discovery was verified against a live transcript corpus after the scheduler refactor and should not be treated as merely test-only behavior.
 
-One boundary remained unverified at the end of the session: there was no live machine-level macOS smoke test yet for `automation install` plus `launchctl kickstart` and log inspection. Future debugging around scheduled capture should treat "repo tests passed" and "launchd actually invoked the sweep on this machine" as separate claims.
+That machine-level macOS smoke test was completed on 2026-05-12. The important proof points were:
+
+- `node dist/codealmanac.js automation install` wrote a launchd plist whose `ProgramArguments` used the absolute Node executable plus the resolved `dist/codealmanac.js` entrypoint.
+- The same plist also wrote `EnvironmentVariables.PATH`, preserving the install-time shell PATH so launchd could find user-managed CLIs such as a Codex binary installed under `nvm`.
+- A temporary stress configuration of `--every 1m --quiet 1s` produced real scheduled sweeps, started Codex absorb jobs successfully after the PATH fix, and those jobs completed with wiki page updates rather than failing at process startup.
+
+Future debugging around scheduled capture should still treat "repo tests passed" and "launchd actually invoked the sweep on this machine" as separate claims, but that separation is now a verification workflow lesson rather than an untested gap.
 
 ## Global scope and first-run backlog
 
@@ -248,7 +275,7 @@ Future work around rollout or defaults should preserve three consequences from t
 
 The final turn of the same session tightened that rollout stance further: automatic capture should not backfill historic transcripts by default at all. The implemented product behavior is to record an automation activation timestamp when the user enables scheduled capture, then have future sweeps consider only transcripts modified after that baseline. Historical transcripts can still be counted and reported as ignored, but they should not silently become the initial backlog for a new automation install.
 
-That recommendation is not yet reflected in the current implementation. `runAutomationInstall()` installs the scheduler, and `runCaptureSweepCommand()` still scans purely by quiet-window and ledger state. Future work in this area should preserve the distinction between:
+Future work in this area should preserve the distinction between:
 
 - historical transcript inventory that predates automation enablement
 - new transcript activity that happened after automation became active
@@ -268,6 +295,13 @@ The same session also converged on a practical verification ladder that future d
 
 This ladder matters because the session found a real regression at step 2 before any OS-level scheduling was involved: help output looked correct, but `capture sweep --json` initially failed at runtime until the command started reading merged parent/leaf options.
 
+One later operational lesson from the same ladder is easy to miss: changing the scheduler interval does not stop absorb jobs that were already spawned by an earlier sweep. In the 2026-05-12 `1m / 1s` stress test, reinstalling automation back to `5h / 45m` changed future wakeups but did not cancel already-running absorb jobs. Debugging "is automation still spawning new work?" therefore has to distinguish between:
+
+- future launchd wakeups, controlled by the current plist
+- already-running absorb jobs, controlled by the jobs/run store
+
+Resetting or uninstalling automation stops new scheduled sweeps; cleaning up already-started absorb jobs is a separate action.
+
 ## Suggested defaults
 
 The 2026-05-11 discussion ended with two different "default" ideas that should not be conflated:
@@ -282,6 +316,15 @@ The shared capture defaults under either posture were:
 - concurrency: at most one active capture sweep per wiki
 
 `max sessions per sweep` remained a possible throttling control, but the more important invariant was preserved more strongly than the number: a cap may delay work, but it must not silently drop eligible sessions.
+
+The 2026-05-12 launchd stress test added one more practical calibration to those defaults. Extremely aggressive settings such as `--every 1m --quiet 1s` are useful for proving the scheduler and PATH wiring, but they are intentionally unrealistic for normal use: an active transcript can become re-eligible almost immediately after each new burst of conversation, which leads to many continuation captures against the same session over a short period. The product-level conclusion is not that the scheduler is broken; it is that the calm default posture (`5h` interval, `45m` quiet window) is part of the operational contract, not just a convenience.
+
+That stress test also made a subtler ownership rule visible. The repo-local `capture-sweep.lock` only prevents overlapping sweeps from mutating the same wiki at the same time; it does not protect against a later sweep that starts after the earlier one released its lock but before the absorb job it spawned has finished. Preventing repeated continuation captures for the same transcript therefore depends on both layers together:
+
+- the repo lock serializes sweep-side ledger mutation and enqueue decisions
+- the [[capture-ledger]] `pending` state reserves a transcript's new cursor range until the corresponding background run resolves
+
+Future debugging should keep that distinction in mind. A burst of many jobs from one transcript usually means the ledger failed to record or honor pending ownership, not that the per-repo lock stopped working.
 
 ## Installation model
 

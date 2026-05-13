@@ -12,7 +12,7 @@ files:
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
 status: implemented
-verified: 2026-05-11
+verified: 2026-05-12
 ---
 
 # Capture Ledger
@@ -27,7 +27,7 @@ The ledger answers four questions for each transcript:
 
 - have we seen this transcript before
 - through which byte or line cursor was it last captured successfully
-- is newer uncaptured content already queued or running
+- is newer uncaptured content already reserved by a pending background capture
 - did the last background run succeed, fail, or go stale
 
 The per-transcript record tracks:
@@ -36,7 +36,8 @@ The per-transcript record tracks:
 - last successful cursor: `lastCapturedSize`, `lastCapturedLine`, `lastCapturedPrefixHash`, `lastCapturedAt`
 - run linkage: `lastRunId`
 - lifecycle state: `status`
-- pending cursor state while a background run is in flight: `pendingToSize`, `pendingToLine`, `pendingRunId`
+- pending cursor state while a background run is in flight: `pendingToSize`, `pendingToLine`, `pendingPrefixHash`, `pendingRunId`, `pendingStartedAt`
+- recovery context when a continuation cannot advance cleanly: `lastError`
 
 This is stronger than whole-file hash dedupe. It lets append-only JSONL transcripts capture only new continuation while still guarding against rewrites or failed background jobs.
 
@@ -120,6 +121,8 @@ The same discussion also clarified how scheduled capture is expected to bridge i
 
 The review pass that followed the design discussion tightened this boundary in code. `runCaptureSweepCommand()` now writes the updated pending ledger entry immediately after a capture job is successfully enqueued, rather than waiting until the end of the sweep. That keeps the conceptual two-phase model aligned with the persisted state: once a run id exists, the repo ledger records that pending ownership right away.
 
+One later operator-facing clarification from the same Codex transcript is worth preserving because the launchd logs can look misleading at first glance. Repeated sweep runs against the same transcript path do not mean sweep discovered several distinct sessions. They usually mean one append-only transcript became quiet again after more lines were added past the last successful cursor. In that case the new job is a continuation capture for the same `app + transcriptPath` ledger key, and the new run should focus only on lines after `lastCapturedLine` unless earlier lines are needed for context.
+
 ## How sweep uses it
 
 The later "show me the ledger example, and how we will be using it" exchange made the operational order explicit:
@@ -129,30 +132,34 @@ The later "show me the ledger example, and how we will be using it" exchange mad
 3. Walk upward from that cwd to find the nearest `.almanac/`.
 4. Ignore transcripts that do not map to a repo with an initialized wiki.
 5. For each remaining candidate, read the repo-local ledger entry.
-6. Use the ledger to decide whether the transcript is new, already captured through a cursor, or already owned by a queued/running capture.
+6. Use the ledger to decide whether the transcript is new, already captured through a cursor, already owned by a pending capture, or in a `needs_attention` state that should not advance automatically.
 7. Only enqueue capture for newly eligible uncaptured content.
 
 This means transcripts are the discovery surface, `.almanac/` determines whether CodeAlmanac should care, and the ledger determines whether there is any new material worth absorbing.
 
+The same Codex transcript later clarified one operator-facing point that is easy to misread from launchd logs: the sweep does not start Absorb merely because it rediscovered a transcript path. A candidate is only eligible after all earlier gates passed and the file has advanced beyond the ledger cursor. In current code that means the transcript mapped to a repo with `.almanac/`, survived the `automation.capture_since` cutoff, stayed quiet for the configured window, was not already owned by a pending run, and still had `currentSize > lastCapturedSize`. A quiet transcript with no new bytes is skipped as `unchanged`, not re-captured.
+
 ## Status model
 
-The discussion converged on these meaningful states:
+The implemented ledger states are:
 
-- `queued`: the sweep reserved a pending cursor target before the job is fully active
-- `running`: the background capture job exists and owns `lastRunId`
-- `done`: the pending cursor was promoted to the last successful cursor
-- `failed`: the attempted continuation capture did not finish successfully and remains retryable
+- `done`: the last successful cursor is authoritative; fresh entries also start here at the zero cursor
+- `pending`: the sweep already enqueued a background capture and reserved `pendingTo*` cursor bounds for it
+- `failed`: the last attempted continuation did not finish successfully and is retryable from the last successful cursor
+- `needs_attention`: the transcript no longer matches the stored prefix cursor, so automatic continuation is unsafe until a human or future repair path decides what to do
+
+This distinction matters because `queued` and `running` are run-record states under [[process-manager-runs]], not ledger states. The ledger collapses all in-flight ownership into `pending`, then learns whether that pending run finished by reconciling against the background run record on a later sweep.
 
 The preferred v1 posture was to keep pending bounds separate until success is confirmed. The simpler alternative, advancing the cursor as soon as a job is queued, was rejected as too likely to lose retryability after failures.
 
 ## Reconciliation
 
-At the start of every sweep, any `queued` or `running` ledger entry should be reconciled against its run record under [[process-manager-runs]]:
+At the start of every sweep, any ledger entry whose status is `pending` should be reconciled against its run record under [[process-manager-runs]]:
 
 1. Read `.almanac/runs/<run-id>.json`.
-2. If the run is `done`, promote `pendingToSize`, `pendingToLine`, and related pending metadata into the durable `lastCaptured*` fields.
-3. If the run is `failed`, `cancelled`, or `stale`, preserve the last successful cursor and mark the transcript retryable.
-4. If the run is still active, skip enqueuing another capture for that transcript.
+2. If the run record is still `queued` or `running`, keep the ledger entry `pending` and skip enqueuing another capture for that transcript.
+3. If the run is `done`, promote `pendingToSize`, `pendingToLine`, and related pending metadata into the durable `lastCaptured*` fields.
+4. If the run is `failed`, `cancelled`, or `stale`, preserve the last successful cursor and mark the transcript retryable.
 
 This is the most important invariant on the page: CodeAlmanac should not claim "captured through byte X / line Y" until the run that absorbed that transcript prefix finished successfully.
 

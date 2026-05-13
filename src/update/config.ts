@@ -588,6 +588,9 @@ export async function ensureAutomationCaptureSince(
   path?: string,
 ): Promise<string> {
   const file = path ?? getConfigPath();
+  if (path === undefined) {
+    await migrateLegacyConfigIfNeeded(file);
+  }
   const raw = cloneJsonObject(await readRawConfigObject(file));
   const automation =
     raw.automation !== null &&

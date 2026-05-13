@@ -44,6 +44,7 @@ export function createJobsView(deps) {
         <p class="ca-subtitle">${deps.escapeHtml(run.displaySubtitle ?? runFallbackSubtitle(run))}</p>
         <div class="ca-run-marks">
           ${statusMark(run.displayStatus)}
+          ${run.transcriptSource ? `<span class="ca-run-mark">${deps.escapeHtml(transcriptSourceLabel(run))}</span>` : ""}
           <span class="ca-run-mark">${deps.escapeHtml(providerLabel(run))}</span>
           <span class="ca-run-mark">${deps.escapeHtml(deps.formatElapsed(run.elapsedMs))}</span>
           ${run.targetKind ? `<span class="ca-run-mark">${deps.escapeHtml(run.targetKind)}</span>` : ""}
@@ -134,6 +135,7 @@ export function createJobsView(deps) {
         <time class="ca-log-time">${deps.escapeHtml(formatClock(run.startedAt))}</time>
         <div class="ca-log-entry-body">
           <div class="ca-log-kicker">${deps.escapeHtml(`${run.operation} · ${providerLabel(run)}`)}</div>
+          ${run.transcriptSource ? `<div class="ca-log-source">${deps.escapeHtml(transcriptSourceLabel(run))}</div>` : ""}
           <div class="ca-log-title">${deps.escapeHtml(run.displayTitle)}</div>
           <div class="ca-log-summary">${deps.escapeHtml(cleanSummary(run.displaySubtitle ?? runFallbackSubtitle(run)))}</div>
           <div class="ca-log-tally">
@@ -171,6 +173,7 @@ export function createJobsView(deps) {
       ["Finished", run.finishedAt ? deps.formatTimestamp(run.finishedAt) : "—"],
       ["Operation", run.operation],
       ["Provider", providerLabel(run)],
+      ...(run.transcriptSource ? [["Transcript source", transcriptSourceLabel(run)]] : []),
       ["Status", statusWord(run.displayStatus)],
       ["Created", String(run.summary?.created ?? 0)],
       ["Updated", String(run.summary?.updated ?? 0)],
@@ -490,6 +493,12 @@ export function createJobsView(deps) {
 
   function providerLabel(run) {
     return run.provider + (run.model ? ` / ${run.model}` : "");
+  }
+
+  function transcriptSourceLabel(run) {
+    if (run.transcriptSource === "claude") return "Claude transcript";
+    if (run.transcriptSource === "codex") return "Codex transcript";
+    return "Transcript file";
   }
 
   function actorLabel(actor) {

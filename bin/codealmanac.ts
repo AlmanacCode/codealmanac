@@ -35,7 +35,7 @@ function shouldCheckSqliteAbi(argv: string[]): boolean {
       args.every((arg) =>
         arg === "--yes" ||
         arg === "-y" ||
-        arg === "--skip-hook" ||
+        arg === "--skip-automation" ||
         arg === "--skip-guides"
       )
     ) {
@@ -45,7 +45,7 @@ function shouldCheckSqliteAbi(argv: string[]): boolean {
 
   const sqliteFreeCommands = new Set([
     "setup",
-    "hook",
+    "automation",
     "uninstall",
     "update",
     "doctor",

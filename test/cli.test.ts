@@ -65,9 +65,11 @@ describe("tryParseSetupShortcut", () => {
       });
   });
 
-  it("recognizes --auto-capture-every", () => {
+  it("recognizes --auto-capture-every and --auto-capture-quiet", () => {
     expect(tryParseSetupShortcut(["--auto-capture-every", "2h"]))
       .toEqual({ automationEvery: "2h" });
+    expect(tryParseSetupShortcut(["--auto-capture-quiet", "1s"]))
+      .toEqual({ automationQuiet: "1s" });
   });
 
   it("accepts the full setup flag combo", () => {
@@ -78,12 +80,15 @@ describe("tryParseSetupShortcut", () => {
         "--skip-guides",
         "--auto-capture-every",
         "2h",
+        "--auto-capture-quiet",
+        "1s",
       ]),
     ).toEqual({
       yes: true,
       skipAutomation: true,
       skipGuides: true,
       automationEvery: "2h",
+      automationQuiet: "1s",
     });
   });
 

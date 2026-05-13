@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 import { parseDuration } from "../src/indexer/duration.js";
 
 describe("parseDuration", () => {
+  it("parses seconds", () => {
+    expect(parseDuration("5s")).toBe(5);
+  });
+
   it("parses minutes", () => {
     expect(parseDuration("5m")).toBe(5 * 60);
   });

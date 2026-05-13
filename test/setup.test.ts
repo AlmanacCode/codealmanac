@@ -302,6 +302,56 @@ describe("codealmanac setup", () => {
       expect(env.stdout()).not.toMatch(/CODE ALMANAC/);
     });
   });
+
+  it("uses a durable global command for automation after npx setup installs globally", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const res = await runSetup({
+        yes: true,
+        isTTY: false,
+        installPath: join(home, ".npm", "_npx", "abc", "node_modules", "codealmanac"),
+        spawnGlobalInstall: async () => {},
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        automationPlistPath: env.plistPath,
+        automationExec: async () => ({}),
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      const plist = await readFile(env.plistPath, "utf8");
+      expect(plist).toContain("<string>/usr/bin/env</string>");
+      expect(plist).toContain("<string>almanac</string>");
+      expect(plist).not.toContain("_npx");
+    });
+  });
+
+  it("skips automation from npx setup when the durable global install fails", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const res = await runSetup({
+        yes: true,
+        isTTY: false,
+        installPath: join(home, ".npm", "_npx", "abc", "node_modules", "codealmanac"),
+        spawnGlobalInstall: async () => {
+          throw new Error("npm unavailable");
+        },
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        automationPlistPath: env.plistPath,
+        automationExec: async () => {
+          throw new Error("should not install automation from ephemeral path");
+        },
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      expect(existsSync(env.plistPath)).toBe(false);
+      expect(env.stdout()).toContain("requires a durable Almanac install");
+    });
+  });
 });
 
 describe("hasImportLine", () => {
