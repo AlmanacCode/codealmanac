@@ -76,6 +76,8 @@
 - 2026-05-13: Began Task 3 by extracting Codex request construction to `src/harness/providers/codex/request.ts` and Codex readiness probes to `src/harness/providers/codex/status.ts`.
 - 2026-05-13: Replaced the hard-coded Codex app-server client version with package-version lookup from the request module.
 - 2026-05-13: Verified the Codex extraction with `npm test -- test/codex-harness-provider.test.ts` and `npm run lint`.
+- 2026-05-13: Follow-up Codex cleanup split `src/harness/providers/codex.ts` into a 106-line facade plus `codex/exec.ts`, `codex/app-server.ts`, and `codex/events.ts`.
+- 2026-05-13: Verified the Codex event/protocol split with `npm run lint` and `npm test -- test/codex-harness-provider.test.ts`.
 
 ## Decision Log
 
@@ -84,4 +86,5 @@
 - Do not implement Cursor install behavior in this pass. Cursor remains gated/placeholder; the target abstraction should make it easier later without pretending support exists now.
 - Keep `install.import` as the stable doctor key rather than adding a new Codex-specific install key. The message now describes "Agent instruction entries" so JSON consumers do not see a breaking key list.
 - Keep `tryParseSetupShortcut` re-exported from `src/cli.ts` even though its implementation moved, because tests and external code may already import it from the process entrypoint.
-- Keep deeper Codex event/app-server extraction incremental. The request and status seams are now isolated; the remaining event/protocol split should be a follow-up with no behavior changes and the fake app-server suite as the guardrail.
+- Keep `src/harness/providers/codex.ts` as the compatibility facade. Tests and downstream imports continue using the old module path while the implementation lives in smaller files.
+- Split Codex by responsibility rather than protocol names alone: `exec.ts` owns the legacy `codex exec --json` path, `app-server.ts` owns JSON-RPC process handling, and `events.ts` owns normalized harness-event mapping plus failure/usage parsing.
