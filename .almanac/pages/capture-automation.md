@@ -18,7 +18,7 @@ files:
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
 status: implemented
-verified: 2026-05-12
+verified: 2026-05-13
 ---
 
 # Capture Automation
@@ -36,9 +36,11 @@ The same 2026-05-11 session ended with a code review of the shipped scheduler pa
 - Setup and uninstall treat scheduler automation as the only public auto-capture path and also clean up legacy Claude/Codex/Cursor hook installs privately.
 - Legacy hook cleanup has to recognize multiple provider-era names for the same idea, including `SessionEnd`, `Stop`, and `sessionEnd`, so scheduler migration does not assume one canonical hook label.
 - That cleanup is content-based and recursive, not just key-based: it removes old `almanac-capture.sh` command objects from wrapped and unwrapped hook shapes, then prunes now-empty event arrays or wrapper containers so setup/uninstall can heal provider hook files in place.
-- `runAutomationInstall()` writes a launchd plist with absolute `node` and `dist/codealmanac.js` program arguments instead of relying on `almanac` being on launchd's reduced `PATH`.
+- `runAutomationInstall()` still defaults to absolute `node` and `dist/codealmanac.js` program arguments, but setup overrides that when it was launched from an ephemeral `npx` install. After setup successfully installs a durable global package, the plist switches to `/usr/bin/env almanac capture sweep --quiet ...`; if that durable install fails or is skipped, setup skips scheduler installation rather than pinning launchd to the ephemeral cache path.
 - `runAutomationInstall()` records `automation.capture_since` in `~/.almanac/config.toml` the first time scheduled capture is enabled, and later reinstall runs preserve the original activation baseline.
-- `almanac capture sweep` skips transcript files whose mtime predates `automation.capture_since` with the `before-automation-activation` reason, so first-run automation does not backfill a user's entire historical chat corpus.
+- `runAutomationInstall()` migrates legacy JSON config into TOML before writing `automation.capture_since`, so enabling automation does not discard older agent settings during the same write.
+- `almanac capture sweep` skips transcript files whose mtime predates `automation.capture_since` with the `before-automation-activation` reason, and for transcripts that span that boundary it starts at the first line whose own timestamp is at or after the activation time.
+- A continued transcript whose file mtime is new enough but whose lines do not carry timestamps is treated as `unchanged` on a fresh ledger rather than being backfilled speculatively.
 - The sqlite-free fast path in [[lifecycle-cli]] handles `automation install|status|uninstall` before Commander loads, and validates `automation install --every` explicitly.
 - Transcript metadata discovery reads only an initial header chunk for the first lines rather than loading whole transcript files during metadata scanning.
 
@@ -234,7 +236,7 @@ That keeps the system debuggable:
 
 The same session tightened that separation one step further: the scheduler entry should only need wakeup-level state such as interval, command path, and log paths. Sweep behavior such as enabled apps, quiet window, and other capture defaults should live in CodeAlmanac-owned config that `almanac capture sweep` reads when it starts. For the first version, even that split can stay minimal: the wakeup cadence may still be the only scheduler-owned knob, and changing it would rewrite or reload the platform scheduler entry.
 
-The current macOS implementation now follows that stronger shape. `runAutomationInstall()` writes launchd `ProgramArguments` as the absolute Node executable plus the resolved `dist/codealmanac.js` entrypoint, then appends `capture sweep`. The scheduler still stays intentionally thin, but it no longer depends on `almanac` being present on launchd's reduced `PATH`.
+The current macOS implementation now follows that stronger shape, but with one setup-time distinction. Direct installs still write launchd `ProgramArguments` as the absolute Node executable plus the resolved `dist/codealmanac.js` entrypoint, then append `capture sweep`. Setup switches to `/usr/bin/env almanac ...` only after it has first converted an ephemeral `npx` launch into a durable global install. If that durable install does not happen, setup leaves automation uninstalled instead of writing a launchd entry that points into the temporary `npx` cache.
 
 ## Verification status
 
@@ -247,6 +249,7 @@ One specific observation from that smoke pass is worth keeping as a sanity ancho
 That machine-level macOS smoke test was completed on 2026-05-12. The important proof points were:
 
 - `node dist/codealmanac.js automation install` wrote a launchd plist whose `ProgramArguments` used the absolute Node executable plus the resolved `dist/codealmanac.js` entrypoint.
+- `almanac setup` invoked from an ephemeral `npx` location no longer writes that cache path into launchd. After a successful global install it writes `/usr/bin/env almanac ...`; otherwise it skips automation and tells the user a durable install is required.
 - The same plist also wrote `EnvironmentVariables.PATH`, preserving the install-time shell PATH so launchd could find user-managed CLIs such as a Codex binary installed under `nvm`.
 - A temporary stress configuration of `--every 1m --quiet 1s` produced real scheduled sweeps, started Codex absorb jobs successfully after the PATH fix, and those jobs completed with wiki page updates rather than failing at process startup.
 
@@ -282,6 +285,8 @@ Future work in this area should preserve the distinction between:
 - repo-local ledger progress for transcripts that were actually eligible to capture
 
 The implementation stores that baseline as `automation.capture_since` in the global config schema. `runAutomationInstall()` writes it only when no valid value already exists, which keeps setup and reinstall idempotent: re-running setup refreshes the launchd plist but does not accidentally move the capture boundary forward and skip active post-install sessions.
+
+The review follow-up on 2026-05-13 made that boundary more precise for fresh ledgers. If a transcript started before automation was enabled but later gained new lines, sweep does not have to drop the entire file. When transcript lines carry their own timestamps, the fresh ledger starts at the first line at or after `automation.capture_since` and captures only the post-activation continuation. When the transcript lacks line timestamps, sweep refuses to infer the boundary and treats the file as already covered until newer appended content makes the continuation explicit.
 
 ## Manual smoke ladder
 

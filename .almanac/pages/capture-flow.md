@@ -13,9 +13,10 @@ files:
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T21-33-50-019e1a76-701d-7583-a76c-b3739632ee9b.jsonl
+  - /Users/kushagrachitkara/.codex/sessions/2026/05/12/rollout-2026-05-12T20-25-14-019e1f5d-ff59-7ee1-a73b-836277d8092b.jsonl
   - https://openai.com/api/pricing/
   - https://developers.openai.com/api/docs/models/gpt-5.5
-verified: 2026-05-12
+verified: 2026-05-13
 ---
 
 # Capture Flow
@@ -43,6 +44,8 @@ Later turns in the same 2026-05-11 session pushed this one step further for actu
 Repeated JSON envelopes, long tool schemas, verbose stdout, and other raw payloads may dominate transcript size without adding wiki value. The rough estimate from the session was that a very large first-run corpus can shrink dramatically once reduced to capture-relevant signal. That is a cost-model conclusion, not a claim that current code already performs this reduction.
 
 The same transcript also exposed a concrete Codex-specific version of that noise pattern: naive text search can get swamped by the opening `session_meta` payload, repeated `turn_context` blocks, and serialized tool catalogs before it reaches the user/problem signal. Future transcript tooling should therefore prefer event-type-aware extraction over generic line-oriented grep whenever it is trying to recover capture-relevant meaning rather than debug the transcript format itself.
+
+A short 2026-05-12 Codex transcript made that asymmetry concrete. The user asked one short question and the assistant answered `hello`, but the saved JSONL still reached `192` lines and `650,091` bytes because the opening `session_meta` record embedded the full global and project instruction text, and later records repeated desktop app context and tool metadata. That means transcript volume can be dominated by harness scaffolding even when the human-visible conversation is trivial.
 
 A later Codex subagent experiment sharpened that cost-model warning with real usage data. A helper agent was asked to read and summarize a `716,942`-byte / `414`-line session transcript whose naive `chars / 4` estimate was about `179k` tokens. The helper's own Codex transcript finished at `315,173` cumulative `total_tokens`, with `260,992` of those counted as cached input. The durable lesson is that transcript size is not a reliable proxy for actual capture cost once the agent takes multiple turns, carries tool output forward, and benefits from cache reuse. Future optimization work should benchmark candidate capture strategies against real transcript `token_count` logs rather than assuming file-size heuristics are good enough.
 

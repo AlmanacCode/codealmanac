@@ -15,7 +15,7 @@ sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/12/rollout-2026-05-12T14-29-09-019e1e17-fe55-7362-b42e-bb000f81f93e.jsonl
   - /Users/kushagrachitkara/.codex/sessions/2026/05/12/rollout-2026-05-12T20-25-14-019e1f5d-ff59-7ee1-a73b-836277d8092b.jsonl
 status: active
-verified: 2026-05-12
+verified: 2026-05-13
 ---
 
 # Global Agent Instructions
@@ -53,6 +53,14 @@ Uninstall also cleans up the pre-rename Claude and Codex artifacts from the olde
 
 If cleanup removes the only remaining content from `CLAUDE.md`, `AGENTS.md`, or `AGENTS.override.md`, uninstall deletes that file instead of leaving an empty fingerprint behind.
 
+## Markdown-only reset for reinstall tests
+
+A 2026-05-12 manual reinstall test verified a narrower reset path than full uninstall. For testing only the agent-instruction markdown wiring, it was enough to delete `~/.claude/almanac.md`, `~/.claude/almanac-reference.md`, and the legacy `codealmanac*.md` guide files, then clear `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` to zero bytes.
+
+That state is "as good as new" only for the markdown artifacts. It does not remove other Almanac install state such as the launchd automation plist, hook cleanup state, the global npm package, or `~/.almanac` data. The distinction matters because users may ask whether a fresh `npx codealmanac` run will recreate the guides; the answer is yes for the markdown layer, but no session should describe that partial reset as a full machine-level clean slate.
+
+The same test also confirmed one setup edge condition from code against a real install. When `~/.codex/AGENTS.override.md` is absent and `~/.codex/AGENTS.md` is empty, rerunning setup recreates the managed `<!-- almanac:start --> ... <!-- almanac:end -->` block in `AGENTS.md` rather than requiring the file to be deleted first.
+
 ## No single clean-slate command
 
 The repo does not currently implement a one-shot "clean slate" command for Almanac artifacts. The 2026-05-11 naming-migration plan records a future slash-command recipe for that job, but the current tree still has no `.claude/commands/clean-slate.md`, no dedicated CLI command under [[src/commands/]], and no CLI registration for such a command.
@@ -67,5 +75,7 @@ The 2026-05-12 install-verification session confirmed the current fresh-install 
 - `~/.claude/almanac-reference.md`
 - `~/.claude/CLAUDE.md` containing `@~/.claude/almanac.md`
 - `~/.codex/AGENTS.md` containing the managed `<!-- almanac:start -->` block when no non-empty `AGENTS.override.md` exists
+
+The same session also confirmed the reinstall path from a markdown-only reset: after clearing the markdown artifacts manually, a fresh `npx codealmanac` install recreated the two Claude guide files, restored the `@~/.claude/almanac.md` import, and repopulated `~/.codex/AGENTS.md` with the inline managed block.
 
 [[src/commands/doctor-checks/install.ts]] currently verifies only the Claude-side artifacts through `install.guides` and `install.import`. There is no Codex-specific doctor check yet, so debugging "Codex is not seeing Almanac guidance" still requires reading `~/.codex/AGENTS.override.md` and `~/.codex/AGENTS.md` directly and checking which file is active.

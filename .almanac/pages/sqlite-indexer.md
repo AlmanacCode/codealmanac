@@ -52,4 +52,6 @@ The query stack inherits `better-sqlite3`'s old-ABI native binding behavior: a g
 
 This constraint explains one CLI boundary elsewhere in the repo: [[lifecycle-cli]] routes `setup` and `automation install|status|uninstall` through a sqlite-free fast path in `src/cli.ts`, so basic onboarding and scheduler repair still work even when the query/index stack cannot load `better-sqlite3`.
 
+[[almanac-doctor]] surfaces the same failure mode as structured install state: `install.sqlite` reports whether the binding loads and prints the rebuild hint as a `run:` fix string.
+
 It also creates one absorb-time workflow fallback that is easy to forget: if a local or global `almanac search`/`show` command fails because the installed `better-sqlite3` binary targets the wrong Node ABI, the checked-in wiki pages under `[[.almanac/pages/]]` are still readable as plain files. Future agents should treat that as the immediate fallback for wiki context gathering instead of assuming the wiki itself is unavailable.

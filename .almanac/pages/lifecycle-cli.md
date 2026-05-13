@@ -12,7 +12,7 @@ files:
   - src/commands/automation.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
-verified: 2026-05-12
+verified: 2026-05-13
 ---
 
 # Lifecycle CLI
@@ -47,9 +47,9 @@ There is one CLI-shape wrinkle inside that surface: `capture` itself has `--json
 
 ## Automation commands
 
-`almanac automation install|status|uninstall` manages the macOS launchd job that periodically runs `almanac capture sweep`. The default interval is 5h, and `automation install --every <duration> --quiet <duration>` customizes both the wakeup cadence and the transcript quiet window. The installed launchd plist writes absolute `ProgramArguments` for the current Node executable plus the resolved `dist/codealmanac.js` entrypoint, so background automation does not depend on `almanac` being on launchd's `PATH`.
+`almanac automation install|status|uninstall` manages the macOS launchd job that periodically runs `almanac capture sweep`. The default interval is 5h, and `automation install --every <duration> --quiet <duration>` customizes both the wakeup cadence and the transcript quiet window. Direct automation installs write absolute `ProgramArguments` for the current Node executable plus the resolved `dist/codealmanac.js` entrypoint. Setup adds one extra rule for ephemeral `npx` launches: it installs automation only after a durable global install succeeds, and in that case writes `/usr/bin/env almanac capture sweep --quiet ...` instead of pinning launchd to the transient cache path.
 
-The install command also establishes the auto-capture activation cursor. On first install it writes `automation.capture_since` to `~/.almanac/config.toml`; future sweeps skip transcripts whose mtime is before that timestamp. Reinstalling automation preserves the existing timestamp so rerunning setup repairs the scheduler without redefining what historical transcript material is in scope.
+The install command also establishes the auto-capture activation cursor. On first install it writes `automation.capture_since` to `~/.almanac/config.toml`; future sweeps skip transcripts whose mtime is before that timestamp. Reinstalling automation preserves the existing timestamp so rerunning setup repairs the scheduler without redefining what historical transcript material is in scope. The config write now runs legacy config migration first, so introducing `automation.capture_since` does not clobber older JSON-based agent settings.
 
 Setup now installs this scheduler by default, with `--skip-automation`, `--auto-capture-every <duration>`, and `--auto-capture-quiet <duration>` replacing the old hook-oriented setup controls. The shared duration parser now accepts seconds as well as minutes/hours/days/weeks, which mainly matters for focused scheduler smoke tests such as `--quiet 1s` rather than for normal defaults. The same setup path also installs the global Claude and Codex instruction surfaces described in [[global-agent-instructions]]. When both `--skip-automation` and `--skip-guides` are passed, `runSetup()` short-circuits before rendering the setup banner and prints only `almanac: nothing to install — use --help to see what setup does`.
 

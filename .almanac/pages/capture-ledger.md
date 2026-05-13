@@ -12,7 +12,7 @@ files:
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
 status: implemented
-verified: 2026-05-12
+verified: 2026-05-13
 ---
 
 # Capture Ledger
@@ -102,6 +102,8 @@ The follow-up implementation made that boundary concrete by adding `automation.c
 
 That review also tightened the config contract one step further: `automation.capture_since` is user-level only, not project-configurable. `almanac config set --project automation.capture_since ...` and the matching unset path should fail, because a repo-local override would let one wiki silently redefine the user's global historical capture boundary.
 
+The 2026-05-13 review tightened the first-entry behavior around that boundary. A fresh ledger entry is not always a zero cursor. If the transcript file itself is newer than `automation.capture_since` but some early lines predate that timestamp, the initial cursor starts at the first line whose own timestamp is at or after the activation boundary. If the transcript lacks line timestamps, sweep refuses to guess and treats the file as already covered until later appended content makes a safe continuation boundary visible.
+
 `capture sweep --dry-run` is intentionally read-only with respect to ledger state. The sweep still computes eligibility against any existing ledger entries, but it should not create `.almanac/runs/capture-ledger.json` or advance cursors when the user is only previewing work. The first sweep tests lock this behavior in.
 
 ## Update timing
@@ -176,3 +178,5 @@ The durable recommendation from the later session state is:
 - keep automatic capture scheduler-only so no hook path bypasses the ledger
 
 Future edits should preserve one subtle distinction here: "scheduler-only" removed hook bypasses at the product level, but duplicate prevention still depends on both the ledger and repo-local sweep locking. The current implementation uses `.almanac/runs/capture-sweep.lock` plus early pending-entry writes so overlapping sweeps skip busy repos instead of racing to enqueue the same continuation twice.
+
+That lock layer also has its own recovery contract now. The lock is a directory containing `owner.json` with the sweep pid and start time. A later sweep treats the lock as stale when the owner metadata is missing, the timestamp is too old, or the recorded pid is no longer alive; in those cases it removes the abandoned lock and proceeds. A healthy in-process sweep still causes `sweep-already-running` for that repo.
