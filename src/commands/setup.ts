@@ -1,11 +1,5 @@
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import {
-  copyFile,
-  mkdir,
-  readFile,
-  writeFile,
-} from "node:fs/promises";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import path from "node:path";
@@ -15,10 +9,14 @@ import {
   type SpawnCliFn,
 } from "../agent/providers/claude/index.js";
 import {
-  ensureCodexInstructions,
-  hasCodexInstructions,
+  CLAUDE_IMPORT_LINE,
+  hasClaudeImportLine,
+  installAgentInstructions,
+} from "../agent/install-targets.js";
+export {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
+  hasCodexInstructions,
 } from "../agent/providers/codex-instructions.js";
 import {
   buildProviderModelChoices,
@@ -358,7 +356,7 @@ export async function runSetup(
   let guidesSummary: string;
   if (guidesAction === "install") {
     try {
-      const summary = await installGuides({
+      const summary = await installAgentInstructions({
         claudeDir: options.claudeDir ?? path.join(homedir(), ".claude"),
         codexDir: options.codexDir ?? path.join(homedir(), ".codex"),
         guidesDir: options.guidesDir ?? resolveGuidesDir(),
@@ -834,137 +832,13 @@ async function runLoginCommand(command: string): Promise<
   });
 }
 
-// ─── Guide installation ──────────────────────────────────────────────
-
-interface InstallGuidesOptions {
-  claudeDir: string;
-  codexDir: string;
-  guidesDir: string;
-}
-
-interface InstallGuidesResult {
-  anyChanges: boolean;
-  filesWritten: string[];
-}
-
-/**
- * Copy the two Claude guide files into `~/.claude/`, append an `@import`
- * line to `~/.claude/CLAUDE.md`, and add inline Codex guidance to the
- * active global Codex AGENTS file. Codex AGENTS files treat `@file`
- * references as plain text, unlike Claude's import behavior, so setup
- * writes the managed Codex block directly. Every step is idempotent:
- *
- *   - Guide files are compared by bytes before we write. If the content
- *     matches the bundled version, we skip (so `setup` doesn't cause a
- *     spurious mtime bump on every invocation).
- *   - The import line is appended only if `CLAUDE.md` doesn't already
- *     contain the exact `@~/.claude/almanac.md` token on a line by
- *     itself. We don't try to parse the file — any mention of the token
- *     on a non-comment line is treated as "already present".
- *
- * Returns a summary the caller uses to decide whether to say "installed"
- * or "already installed" in the TUI.
- */
-async function installGuides(
-  options: InstallGuidesOptions,
-): Promise<InstallGuidesResult> {
-  await mkdir(options.claudeDir, { recursive: true });
-
-  const srcMini = path.join(options.guidesDir, "mini.md");
-  const srcRef = path.join(options.guidesDir, "reference.md");
-  if (!existsSync(srcMini)) {
-    throw new Error(`missing bundled guide: ${srcMini}`);
-  }
-  if (!existsSync(srcRef)) {
-    throw new Error(`missing bundled guide: ${srcRef}`);
-  }
-
-  const destMini = path.join(options.claudeDir, "almanac.md");
-  const destRef = path.join(options.claudeDir, "almanac-reference.md");
-
-  const miniContents = await readFile(srcMini, "utf8");
-  const miniChanged = await copyIfChanged(srcMini, destMini);
-  const refChanged = await copyIfChanged(srcRef, destRef);
-
-  const claudeMd = path.join(options.claudeDir, "CLAUDE.md");
-  const importChanged = await ensureImport(claudeMd);
-  const codexChanged = await ensureCodexInstructions(
-    options.codexDir,
-    miniContents,
-  );
-
-  const filesWritten: string[] = [];
-  if (miniChanged) filesWritten.push("almanac.md");
-  if (refChanged) filesWritten.push("almanac-reference.md");
-  if (importChanged) filesWritten.push("CLAUDE.md");
-  if (codexChanged) filesWritten.push("AGENTS.md");
-
-  return { anyChanges: filesWritten.length > 0, filesWritten };
-}
-
-async function copyIfChanged(src: string, dest: string): Promise<boolean> {
-  const srcBytes = await readFile(src);
-  if (existsSync(dest)) {
-    try {
-      const destBytes = await readFile(dest);
-      if (srcBytes.equals(destBytes)) return false;
-    } catch {
-      // Fall through to write.
-    }
-  }
-  await copyFile(src, dest);
-  return true;
-}
-
 /** The exact import line we manage. Changing this requires updating
  * uninstall too. */
-export const IMPORT_LINE = "@~/.claude/almanac.md";
-
-/**
- * Append the import line to `~/.claude/CLAUDE.md` if it isn't already
- * present. Creates the file if absent. Returns true when we wrote, false
- * when the line was already there.
- *
- * We match on `@~/.claude/almanac.md` appearing on any non-empty
- * line (trimmed). This catches both the bare line we write and any
- * user-edited variant (comments, trailing whitespace). We deliberately
- * do NOT try to repair a user who deleted the newline — that's their
- * file to shape.
- */
-async function ensureImport(claudeMdPath: string): Promise<boolean> {
-  let existing = "";
-  if (existsSync(claudeMdPath)) {
-    existing = await readFile(claudeMdPath, "utf8");
-  }
-  if (hasImportLine(existing)) return false;
-
-  const sep =
-    existing.length === 0 ? "" : existing.endsWith("\n") ? "\n" : "\n\n";
-  const body = `${existing}${sep}${IMPORT_LINE}\n`;
-  await writeFile(claudeMdPath, body, "utf8");
-  return true;
-}
+export const IMPORT_LINE = CLAUDE_IMPORT_LINE;
 
 export function hasImportLine(contents: string): boolean {
-  // Match line-starts-with-token rather than exact-line equality so a
-  // user who annotated the import line (`@~/.claude/almanac.md #
-  // almanac`) doesn't cause us to re-append a duplicate below.
-  // The trailing-character check rules out accidental matches on a
-  // longer line like `@~/.claude/almanac.md-extra`.
-  const lines = contents.split(/\r?\n/).map((l) => l.trim());
-  return lines.some((line) => {
-    if (line === IMPORT_LINE) return true;
-    if (!line.startsWith(IMPORT_LINE)) return false;
-    const next = line[IMPORT_LINE.length];
-    return next === " " || next === "\t";
-  });
+  return hasClaudeImportLine(contents);
 }
-
-export {
-  CODEX_INSTRUCTIONS_END,
-  CODEX_INSTRUCTIONS_START,
-  hasCodexInstructions,
-};
 
 // ─── Interactive prompt ──────────────────────────────────────────────
 
