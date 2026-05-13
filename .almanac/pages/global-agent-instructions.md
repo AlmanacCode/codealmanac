@@ -14,6 +14,7 @@ sources:
   - docs/plans/2026-05-11-almanac-naming-migration.md
   - /Users/kushagrachitkara/.codex/sessions/2026/05/12/rollout-2026-05-12T14-29-09-019e1e17-fe55-7362-b42e-bb000f81f93e.jsonl
   - /Users/kushagrachitkara/.codex/sessions/2026/05/12/rollout-2026-05-12T20-25-14-019e1f5d-ff59-7ee1-a73b-836277d8092b.jsonl
+  - /Users/kushagrachitkara/.codex/sessions/2026/05/13/rollout-2026-05-13T13-34-26-019e230c-4437-7422-9e8d-b7caa9b592fc.jsonl
 status: active
 verified: 2026-05-13
 ---
@@ -79,3 +80,5 @@ The 2026-05-12 install-verification session confirmed the current fresh-install 
 The same session also confirmed the reinstall path from a markdown-only reset: after clearing the markdown artifacts manually, a fresh `npx codealmanac` install recreated the two Claude guide files, restored the `@~/.claude/almanac.md` import, and repopulated `~/.codex/AGENTS.md` with the inline managed block.
 
 [[src/commands/doctor-checks/install.ts]] currently verifies only the Claude-side artifacts through `install.guides` and `install.import`. There is no Codex-specific doctor check yet, so debugging "Codex is not seeing Almanac guidance" still requires reading `~/.codex/AGENTS.override.md` and `~/.codex/AGENTS.md` directly and checking which file is active.
+
+The provider-status path adds one more practical split for Codex debugging. [[src/harness/providers/codex.ts]] treats Codex as installed only when the `codex` executable is visible on `PATH`; otherwise it reports `codex not found on PATH` before any AGENTS-file logic matters. A support triage for "Codex works in one place but Almanac cannot see it" should therefore start with `which codex` and `codex --version`, then move on to which of `~/.codex/AGENTS.override.md` or `~/.codex/AGENTS.md` is active.

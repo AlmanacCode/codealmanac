@@ -238,7 +238,7 @@ The same session tightened that separation one step further: the scheduler entry
 
 The current macOS implementation now follows that stronger shape, but with one setup-time distinction. Direct installs still write launchd `ProgramArguments` as the absolute Node executable plus the resolved `dist/codealmanac.js` entrypoint, then append `capture sweep`. Setup switches to `/usr/bin/env almanac ...` only after it has first converted an ephemeral `npx` launch into a durable global install. If that durable install does not happen, setup leaves automation uninstalled instead of writing a launchd entry that points into the temporary `npx` cache.
 
-That direct-install shape created one concrete debugging trap during the 2026-05-13 Garden smoke tests. If the plist is pinned to an absolute Node path such as `~/.nvm/versions/node/v24.15.0/bin/node`, rebuilding `better-sqlite3` from a shell running a different Node version repairs the shell runtime, not the scheduled job. The reliable fix is to rebuild with the exact `node` or `npm` from the plist command path, or to prepend that Node version's bin directory to `PATH` before running `npm rebuild better-sqlite3`.
+That direct-install shape has one operational consequence that surfaced during the 2026-05-13 Garden smoke test. If launchd is pinned to an absolute Node path such as `~/.nvm/versions/node/v24.15.0/bin/node`, rebuilding `better-sqlite3` from a shell running a different Node version repairs the shell runtime, not the scheduled job. The reliable fix is to rebuild with the exact `node` or `npm` from the plist command path, or to prepend that Node version's bin directory to `PATH` before running `npm rebuild better-sqlite3`.
 
 ## Verification status
 

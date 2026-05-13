@@ -1,5 +1,6 @@
 ---
 title: Farzapedia
+summary: Farzapedia is an external wiki-system reference whose anti-cramming, anti-thinning, and prose rules inform Almanac prompt design.
 topics: [agents, decisions]
 sources:
   - docs/research/farzapedia.md

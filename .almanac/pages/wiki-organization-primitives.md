@@ -1,5 +1,6 @@
 ---
 title: Wiki Organization Primitives
+summary: Almanac's current storage primitives are pages, links, topics, and lineage metadata, while anchors, hubs, redirects, and gardening remain editorial conventions layered on top.
 topics: [decisions, systems, agents]
 files:
   - AGENTS.md
@@ -39,7 +40,7 @@ These are real primitives, not just conventions. The SQLite index persists them,
 
 The portable wiki is the markdown layer committed in the repo: `[[.almanac/pages/]]`, `[[.almanac/README.md]]`, and `[[.almanac/topics.yaml]]`. That is the project memory collaborators receive through normal git sync even if their machine has never installed the `almanac` CLI.
 
-The disposable local layer is ignored by git. `[[.gitignore]]` excludes `.almanac/index.db`, its WAL/SHM companions, `.almanac/runs/`, and `.almanac/logs/`. Those files are machine-local query and run artifacts, not part of the shared wiki corpus.
+The disposable local layer is ignored by git. `[[./.gitignore]]` excludes `.almanac/index.db`, its WAL/SHM companions, `.almanac/runs/`, and `.almanac/logs/`. Those files are machine-local query and run artifacts, not part of the shared wiki corpus.
 
 That split defines the no-install collaborator behavior. A contributor without `almanac` can still read the committed markdown files directly, but cannot run query commands such as `search`, `show`, or `health`, and will not have scheduled capture or Garden automation on that machine. If they later install the CLI, query commands recreate the local SQLite index from the committed markdown corpus and automation can then be enabled through setup.
 
