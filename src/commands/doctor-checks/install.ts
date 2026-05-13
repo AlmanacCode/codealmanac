@@ -1,11 +1,13 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
+import {
+  codexInstructionBlockPresent,
+  hasClaudeImportLine,
+} from "../../agent/install-targets.js";
 import type { ClaudeAuthStatus } from "../../agent/providers/claude/index.js";
 import { defaultPlistPath } from "../automation.js";
-import { IMPORT_LINE } from "../setup.js";
 import {
   classifyInstallPath,
   detectInstallPath,
@@ -43,8 +45,9 @@ export async function gatherInstallChecks(
   checks.push(describeAutomation(plistPath));
 
   const claudeDir = options.claudeDir ?? path.join(homedir(), ".claude");
+  const codexDir = options.codexDir ?? path.join(homedir(), ".codex");
   checks.push(describeGuides(claudeDir));
-  checks.push(await describeImportLine(claudeDir));
+  checks.push(await describeInstructionEntries({ claudeDir, codexDir }));
 
   return checks;
 }
@@ -151,44 +154,34 @@ function describeGuides(claudeDir: string): Check {
   };
 }
 
-async function describeImportLine(claudeDir: string): Promise<Check> {
-  const claudeMd = path.join(claudeDir, "CLAUDE.md");
+async function describeInstructionEntries(dirs: {
+  claudeDir: string;
+  codexDir: string;
+}): Promise<Check> {
+  const missing: string[] = [];
+  const claudeMd = path.join(dirs.claudeDir, "CLAUDE.md");
   if (!existsSync(claudeMd)) {
-    return {
-      status: "problem",
-      key: "install.import",
-      message: "CLAUDE.md import not present (no ~/.claude/CLAUDE.md)",
-      fix: "run: almanac setup --yes",
-    };
-  }
-  try {
-    const contents = await readFile(claudeMd, "utf8");
-    const lines = contents.split(/\r?\n/).map((l) => l.trim());
-    const present = lines.some((line) => {
-      if (line === IMPORT_LINE) return true;
-      if (!line.startsWith(IMPORT_LINE)) return false;
-      const next = line[IMPORT_LINE.length];
-      return next === " " || next === "\t";
-    });
-    if (present) {
-      return {
-        status: "ok",
-        key: "install.import",
-        message: "CLAUDE.md import present",
-      };
+    missing.push("CLAUDE.md import");
+  } else {
+    try {
+      const { readFile } = await import("node:fs/promises");
+      if (!hasClaudeImportLine(await readFile(claudeMd, "utf8"))) {
+        missing.push("CLAUDE.md import");
+      }
+    } catch {
+      missing.push("CLAUDE.md import");
     }
-    return {
-      status: "problem",
-      key: "install.import",
-      message: "CLAUDE.md import line missing",
-      fix: "run: almanac setup --yes",
-    };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return {
-      status: "problem",
-      key: "install.import",
-      message: `could not read ${claudeMd}: ${msg}`,
-    };
   }
+  if (!await codexInstructionBlockPresent(dirs.codexDir)) {
+    missing.push("Codex AGENTS.md instructions");
+  }
+  const ok = missing.length === 0;
+  return {
+    status: ok ? "ok" : "problem",
+    key: "install.import",
+    message: ok
+      ? "Agent instruction entries present"
+      : `Agent instruction entries missing (${missing.join(", ")})`,
+    fix: ok ? undefined : "run: almanac setup --yes",
+  };
 }

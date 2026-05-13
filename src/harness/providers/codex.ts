@@ -1,4 +1,4 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 
 import type {
@@ -15,14 +15,19 @@ import type {
   HarnessRunHooks,
   ProviderStatus,
 } from "../types.js";
+import {
+  buildCodexAppServerRequest,
+  buildCodexExecRequest,
+  codexClientVersion,
+  combineCodexPrompt,
+  unsupportedCodexSpecFields,
+  type CodexAppServerRequest,
+  type CodexExecRequest,
+} from "./codex/request.js";
+import { defaultCommandExists, defaultRunStatus } from "./codex/status.js";
 import { HARNESS_PROVIDER_METADATA } from "./metadata.js";
 
-export interface CodexExecRequest {
-  command: "codex";
-  args: string[];
-  cwd: string;
-  env: NodeJS.ProcessEnv;
-}
+export type { CodexAppServerRequest, CodexExecRequest };
 
 export type CodexCliRunFn = (
   request: CodexExecRequest,
@@ -118,57 +123,7 @@ export function createCodexHarnessProvider(
 }
 
 export const codexHarnessProvider = createCodexHarnessProvider();
-
-export function buildCodexExecRequest(spec: AgentRunSpec): CodexExecRequest {
-  const unsupported = unsupportedCodexSpecFields(spec);
-  if (unsupported.length > 0) {
-    throw new Error(
-      `Codex exec adapter does not support: ${unsupported.join(", ")}`,
-    );
-  }
-  const args = [
-    "exec",
-    "--json",
-    "--sandbox",
-    "workspace-write",
-    "--skip-git-repo-check",
-    "-C",
-    spec.cwd,
-  ];
-  if (spec.provider.model !== undefined && spec.provider.model.length > 0) {
-    args.push("--model", spec.provider.model);
-  }
-  if (spec.output?.schemaPath !== undefined) {
-    args.push("--output-schema", spec.output.schemaPath);
-  }
-  args.push(combineCodexPrompt(spec));
-  return {
-    command: "codex",
-    args,
-    cwd: spec.cwd,
-    env: {
-      ...process.env,
-      CODEALMANAC_INTERNAL_SESSION: "1",
-    },
-  };
-}
-
-function unsupportedCodexSpecFields(spec: AgentRunSpec): string[] {
-  const unsupported: string[] = [];
-  if (spec.skills !== undefined && spec.skills.length > 0) unsupported.push("skills");
-  if (spec.mcpServers !== undefined && Object.keys(spec.mcpServers).length > 0) {
-    unsupported.push("mcpServers");
-  }
-  if (spec.limits?.maxCostUsd !== undefined) unsupported.push("limits.maxCostUsd");
-  return unsupported;
-}
-
-export function combineCodexPrompt(spec: AgentRunSpec): string {
-  const blocks = [spec.systemPrompt, spec.prompt].filter(
-    (block): block is string => block !== undefined && block.trim().length > 0,
-  );
-  return blocks.join("\n\n---\n\n");
-}
+export { buildCodexAppServerRequest, buildCodexExecRequest, combineCodexPrompt };
 
 export function runCodexCli(
   request: CodexExecRequest,
@@ -357,31 +312,6 @@ const CODEX_APP_SERVER_RPC_TIMEOUT_ENV =
 const CODEX_APP_SERVER_TURN_TIMEOUT_MS = 30 * 60_000;
 const CODEX_APP_SERVER_TURN_TIMEOUT_ENV =
   "CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS";
-
-export interface CodexAppServerRequest {
-  command: "codex";
-  args: string[];
-  cwd: string;
-  env: NodeJS.ProcessEnv;
-}
-
-export function buildCodexAppServerRequest(spec: AgentRunSpec): CodexAppServerRequest {
-  const unsupported = unsupportedCodexSpecFields(spec);
-  if (unsupported.length > 0) {
-    throw new Error(
-      `Codex app-server adapter does not support: ${unsupported.join(", ")}`,
-    );
-  }
-  return {
-    command: "codex",
-    args: ["app-server", "--config", "mcp_servers={}", "--listen", "stdio://"],
-    cwd: spec.cwd,
-    env: {
-      ...process.env,
-      CODEALMANAC_INTERNAL_SESSION: "1",
-    },
-  };
-}
 
 export async function runCodexAppServer(
   spec: AgentRunSpec,
@@ -621,7 +551,7 @@ export async function runCodexAppServer(
           clientInfo: {
             name: "codealmanac",
             title: "Almanac",
-            version: "0.2.9",
+            version: codexClientVersion(),
           },
           capabilities: {
             experimentalApi: true,
@@ -1479,52 +1409,4 @@ function pruneUndefined<T extends Record<string, unknown>>(value: T): T {
     }
   }
   return value;
-}
-
-function defaultCommandExists(command: string): boolean {
-  const result = spawnSync("sh", ["-lc", `command -v ${command}`], {
-    encoding: "utf8",
-  });
-  return result.status === 0 && result.stdout.trim().length > 0;
-}
-
-function defaultRunStatus(
-  command: string,
-  args: string[],
-): Promise<{ ok: boolean; detail: string }> {
-  return new Promise((resolve) => {
-    let child: ChildProcess;
-    let stdout = "";
-    let stderr = "";
-    try {
-      child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
-    } catch (err: unknown) {
-      resolve({
-        ok: false,
-        detail: err instanceof Error ? err.message : String(err),
-      });
-      return;
-    }
-
-    child.stdout?.on("data", (chunk) => {
-      stdout += chunk.toString("utf8");
-    });
-    child.stderr?.on("data", (chunk) => {
-      stderr += chunk.toString("utf8");
-    });
-    child.on("error", (err) => {
-      resolve({ ok: false, detail: err.message });
-    });
-    child.on("close", (code) => {
-      const text = `${stdout}\n${stderr}`.trim();
-      resolve({
-        ok: code === 0,
-        detail:
-          text
-            .split("\n")
-            .find((line) => line.trim().length > 0)
-            ?.trim() ?? (code === 0 ? "ready" : `${command} exited ${code ?? 1}`),
-      });
-    });
-  });
 }

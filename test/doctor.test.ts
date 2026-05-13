@@ -7,6 +7,10 @@ import type {
   SpawnedProcess,
 } from "../src/agent/providers/claude/index.js";
 import { runDoctor } from "../src/commands/doctor.js";
+import {
+  CODEX_INSTRUCTIONS_END,
+  CODEX_INSTRUCTIONS_START,
+} from "../src/commands/setup.js";
 import { IMPORT_LINE } from "../src/commands/setup.js";
 import {
   makeRepo,
@@ -62,6 +66,12 @@ async function scaffoldHealthyInstall(home: string): Promise<{
     "utf8",
   );
   await writeFile(join(claudeDir, "CLAUDE.md"), `# CLAUDE.md\n\n${IMPORT_LINE}\n`, "utf8");
+  await mkdir(join(home, ".codex"), { recursive: true });
+  await writeFile(
+    join(home, ".codex", "AGENTS.md"),
+    `${CODEX_INSTRUCTIONS_START}\n# mini guide\n${CODEX_INSTRUCTIONS_END}\n`,
+    "utf8",
+  );
   return { claudeDir, plistPath };
 }
 
