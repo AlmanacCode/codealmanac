@@ -42,7 +42,7 @@ The capture plist path is `~/Library/LaunchAgents/com.codealmanac.capture-sweep.
 
 The capture job runs `almanac capture sweep` with a quiet-window argument. The default schedule is every `5h`, and the default quiet window is `45m`. The Garden job runs `almanac garden` every `2d` by default.
 
-The automation code is split by responsibility. `[[src/automation/tasks.ts]]` owns labels, default durations, plist paths, and default command arguments. `[[src/automation/launchd.ts]]` owns plist rendering, PATH construction, bootstrap/removal, and loaded-state checks. `[[src/automation/legacy-hooks.ts]]` owns private migration cleanup for older hook-based installs. `[[src/commands/automation.ts]]` remains the command transaction that validates options, writes the activation baseline, calls launchd helpers, and formats user output.
+The automation code is split by responsibility. `[[src/automation/tasks.ts]]` owns `ScheduledTaskDefinition` records for `capture-sweep` and `garden`: labels, default intervals, plist paths, log filenames, working-directory policy, and default command arguments. `[[src/automation/launchd.ts]]` owns plist rendering, PATH construction, bootstrap/removal, and loaded-state checks. `[[src/automation/legacy-hooks.ts]]` owns private migration cleanup for older hook-based installs. `[[src/commands/automation.ts]]` remains the command transaction that validates options, writes the activation baseline, turns task definitions into launchd jobs, calls launchd helpers, and formats user output.
 
 Both jobs get an explicit `PATH` assembled for launchd from the current environment plus fallback locations such as `/usr/local/bin`, `/opt/homebrew/bin`, and `/usr/bin`. The Garden plist also records a `WorkingDirectory`: `runAutomationInstall()` resolves it to the nearest repo containing `.almanac/`, falling back to the current directory when no wiki root is found.
 
@@ -67,7 +67,7 @@ The task/run/operation relationship is asymmetric:
 
 That terminology keeps `capture sweep` honest. `capture sweep` is not a lifecycle operation; it is a capture coordinator that discovers quiet external transcripts, maps them to repos, reconciles ledger state, and may enqueue zero or more Absorb runs. Scheduled Garden is simpler: the scheduler invokes `almanac garden`, and that command starts one Garden operation run.
 
-The 2026-05-14 refactor plan chose a `ScheduledTaskDefinition` model for known Almanac tasks such as `capture-sweep` and `garden`. That model shares launchd plist rendering, PATH construction, log naming, bootstrap/bootout, and status mechanics while preserving the distinction between scheduler tasks, coordinator commands, process-manager runs, and semantic wiki operations.
+The 2026-05-14 refactor chose a `ScheduledTaskDefinition` model for known Almanac tasks such as `capture-sweep` and `garden`. That model shares launchd plist rendering, PATH construction, log naming, bootstrap/bootout, and status mechanics while preserving the distinction between scheduler tasks, coordinator commands, process-manager runs, and semantic wiki operations. Adding another scheduled Almanac maintenance command should start by adding a task definition, not by copying plist labels, log paths, and working-directory rules into `[[src/commands/automation.ts]]`.
 
 ## Fast-path and failure posture
 

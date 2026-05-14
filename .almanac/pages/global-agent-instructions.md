@@ -6,6 +6,7 @@ files:
   - src/agent/install-targets.ts
   - src/commands/setup.ts
   - src/commands/setup/guides.ts
+  - src/commands/setup/guides-step.ts
   - src/commands/uninstall.ts
   - src/commands/doctor-checks/install.ts
   - src/agent/instructions/codex.ts
@@ -25,7 +26,7 @@ verified: 2026-05-13
 
 `almanac setup` has one "install agent instructions" step, but it writes different artifacts for Claude and Codex because the two harnesses read global guidance differently. Claude gets copied markdown files under `~/.claude/` plus an import line in `~/.claude/CLAUDE.md`. Codex gets the same mini-guide content written inline into the active global AGENTS file under `~/.codex/`.
 
-The shared install layer lives in [[src/agent/install-targets.ts]]. Setup, uninstall, and doctor call that module instead of each command encoding Claude and Codex instruction behavior independently.
+The shared install layer lives in [[src/agent/install-targets.ts]]. Setup, uninstall, and doctor call that module instead of each command encoding Claude and Codex instruction behavior independently. `[[src/commands/setup/guides-step.ts]]` owns the setup workflow step that prompts for guide installation and calls the shared install layer.
 
 ## Claude install contract
 
