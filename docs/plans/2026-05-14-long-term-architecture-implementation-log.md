@@ -24,3 +24,12 @@ Plan: `docs/plans/2026-05-14-long-term-architecture-cleanup.md`
 - Fixed update notifier modules to import config from `src/config/index.ts`.
 - Verified with `npm run build`: succeeded.
 - Verified with `npm test -- --run test/provider-view.test.ts test/agents-command.test.ts test/setup.test.ts test/doctor.test.ts test/auth.test.ts test/config-command.test.ts test/update.test.ts test/update-announce.test.ts`: `72` tests passed.
+
+### Setup Command Split
+
+- Extracted setup terminal rendering, prompts, and select-list input handling into `src/commands/setup/output.ts`.
+- Extracted bundled guide path resolution and legacy `IMPORT_LINE` exports into `src/commands/setup/guides.ts`.
+- Extracted setup provider/model selection into `src/commands/setup/agent-choice.ts`, keeping provider readiness as a projection over config plus readiness providers.
+- Left `src/commands/setup.ts` as the top-level setup workflow so install path, automation, guides, and auto-commit steps remain readable in execution order.
+- Verified with `npm run build`: succeeded.
+- Verified with `npm test -- --run test/setup.test.ts test/doctor.test.ts test/agents-command.test.ts test/provider-view.test.ts`: `26` tests passed.
