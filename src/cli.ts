@@ -12,6 +12,7 @@ import {
   tryRunSqliteFreeCommand,
 } from "./cli/sqlite-free.js";
 import { runCodealmanacBootstrap } from "./install/global.js";
+import type { runDoctor } from "./commands/doctor.js";
 import { announceUpdateIfAvailable } from "./update/announce.js";
 import {
   runInternalUpdateCheck,
@@ -28,6 +29,8 @@ export interface RunDeps {
   runSetup?: typeof runSetup;
   /** Replace the bare compatibility `codealmanac` global install bootstrapper. */
   runCodealmanacBootstrap?: typeof runCodealmanacBootstrap;
+  /** Replace doctor probes for CLI routing tests. */
+  runDoctor?: typeof runDoctor;
   /** Replace the pre-command update-nag banner. */
   announceUpdate?: (stderr: NodeJS.WritableStream) => void;
   /** Replace the post-command background update check scheduler. */
