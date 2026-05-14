@@ -117,6 +117,7 @@ describe("almanac automation", () => {
       };
 
       const first = await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenPlistPath,
         exec,
@@ -133,6 +134,7 @@ describe("almanac automation", () => {
       });
 
       const second = await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenPlistPath,
         exec,
@@ -191,6 +193,7 @@ describe("almanac automation", () => {
       );
 
       const result = await runAutomationInstall({
+        platform: "darwin",
         cwd: nested,
         plistPath,
         gardenPlistPath,
@@ -221,6 +224,7 @@ describe("almanac automation", () => {
       );
 
       const result = await runAutomationInstall({
+        platform: "darwin",
         every: "1m",
         quiet: "1s",
         gardenEvery: "1w",
@@ -264,6 +268,7 @@ describe("almanac automation", () => {
       );
 
       await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenPlistPath,
         exec: async () => ({}),
@@ -272,6 +277,7 @@ describe("almanac automation", () => {
       expect(await readFile(gardenPlistPath, "utf8")).toContain("<string>garden</string>");
 
       const result = await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenPlistPath,
         gardenOff: true,
@@ -307,6 +313,7 @@ describe("almanac automation", () => {
       );
 
       const result = await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenOff: true,
         exec: async () => ({}),
