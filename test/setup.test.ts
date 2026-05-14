@@ -9,6 +9,10 @@ import type {
   SpawnedProcess,
 } from "../src/agent/providers/claude/index.js";
 import { hasImportLine, runSetup } from "../src/commands/setup.js";
+import {
+  detectEphemeral,
+  globalInstallCommand,
+} from "../src/commands/setup/install-path.js";
 import { readConfig, writeConfig } from "../src/update/config.js";
 import { withTempHome } from "./helpers.js";
 
@@ -84,6 +88,36 @@ afterEach(() => {
 });
 
 describe("codealmanac setup", () => {
+  it("detects Windows npx and temp install paths as ephemeral", () => {
+    const previousTemp = process.env.TEMP;
+    process.env.TEMP = "C:\\Users\\Ada\\AppData\\Local\\Temp";
+    try {
+      expect(
+        detectEphemeral("C:\\Users\\Ada\\AppData\\Local\\Temp\\_npx\\abc\\node_modules\\codealmanac"),
+      ).toBe(true);
+      expect(
+        detectEphemeral("C:\\Users\\Ada\\AppData\\Roaming\\npm\\node_modules\\codealmanac"),
+      ).toBe(false);
+    } finally {
+      if (previousTemp === undefined) {
+        delete process.env.TEMP;
+      } else {
+        process.env.TEMP = previousTemp;
+      }
+    }
+  });
+
+  it("runs global npm install through cmd.exe on Windows", () => {
+    expect(globalInstallCommand("win32")).toEqual({
+      file: "cmd.exe",
+      args: ["/d", "/s", "/c", "npm.cmd install -g codealmanac@latest"],
+    });
+    expect(globalInstallCommand("darwin")).toEqual({
+      file: "npm",
+      args: ["install", "-g", "codealmanac@latest"],
+    });
+  });
+
   it("installs automation + guides + CLAUDE.md import when --yes", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
@@ -104,6 +138,7 @@ describe("codealmanac setup", () => {
       const res = await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin" as const,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async (file: string, args: string[]) => {
@@ -118,7 +153,7 @@ describe("codealmanac setup", () => {
       expect(res.exitCode).toBe(0);
       expect(existsSync(env.plistPath)).toBe(true);
       const plist = await readFile(env.plistPath, "utf8");
-      expect(plist).toContain("dist/codealmanac.js");
+      expect(plist.replaceAll("\\", "/")).toContain("dist/codealmanac.js");
       expect(plist).toContain("<string>capture</string>");
       expect(plist).toContain("<string>sweep</string>");
       await expect(readConfig()).resolves.toMatchObject({
@@ -140,6 +175,7 @@ describe("codealmanac setup", () => {
       const common = {
         yes: true,
         isTTY: false,
+        platform: "darwin" as const,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -166,6 +202,7 @@ describe("codealmanac setup", () => {
         yes: true,
         skipAutomation: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => {
@@ -189,6 +226,7 @@ describe("codealmanac setup", () => {
         yes: true,
         skipGuides: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -214,6 +252,7 @@ describe("codealmanac setup", () => {
         res = await runSetup({
           yes: true,
           isTTY: false,
+          platform: "darwin",
           agent: "claude",
           model: "claude-opus-4-6",
           spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
@@ -242,6 +281,7 @@ describe("codealmanac setup", () => {
         yes: true,
         isTTY: false,
         autoCommit: true,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -264,6 +304,7 @@ describe("codealmanac setup", () => {
       await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -284,6 +325,7 @@ describe("codealmanac setup", () => {
       const res = await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_OUT_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -311,6 +353,7 @@ describe("codealmanac setup", () => {
       await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -334,6 +377,7 @@ describe("codealmanac setup", () => {
         skipAutomation: true,
         skipGuides: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         claudeDir: env.claudeDir,
@@ -357,6 +401,7 @@ describe("codealmanac setup", () => {
         skipAutomation: true,
         skipGuides: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         claudeDir: env.claudeDir,
@@ -379,6 +424,7 @@ describe("codealmanac setup", () => {
       const res = await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         installPath: join(home, ".npm", "_npx", "abc", "node_modules", "codealmanac"),
         spawnGlobalInstall: async () => {},
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
@@ -397,12 +443,41 @@ describe("codealmanac setup", () => {
     });
   });
 
+  it("uses the npm Windows command shim for automation after npx setup installs globally on Windows", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const calls: string[] = [];
+      const res = await runSetup({
+        yes: true,
+        isTTY: false,
+        platform: "win32",
+        installPath: join(home, ".npm", "_npx", "abc", "node_modules", "codealmanac"),
+        spawnGlobalInstall: async () => {},
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        automationPlistPath: env.plistPath,
+        automationExec: async (file: string, args: string[]) => {
+          calls.push([file, ...args].join(" "));
+          return {};
+        },
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      expect(calls.some((call) => call.includes("schtasks /Create"))).toBe(true);
+      expect(calls.some((call) => call.includes("almanac.cmd capture sweep --quiet 45m"))).toBe(true);
+      expect(calls.some((call) => call.includes("/usr/bin/env"))).toBe(false);
+    });
+  });
+
   it("skips automation from npx setup when the durable global install fails", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const res = await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         installPath: join(home, ".npm", "_npx", "abc", "node_modules", "codealmanac"),
         spawnGlobalInstall: async () => {
           throw new Error("npm unavailable");

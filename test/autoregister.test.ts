@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { initWiki } from "../src/commands/init.js";
@@ -101,9 +101,7 @@ describe("autoRegisterIfNeeded", () => {
 
       // Corrupt the registry on disk.
       const registryPath = getRegistryPath();
-      await mkdir(registryPath.replace(/\/registry\.json$/, ""), {
-        recursive: true,
-      });
+      await mkdir(dirname(registryPath), { recursive: true });
       await writeFile(registryPath, "garbage{", "utf8");
 
       await expect(autoRegisterIfNeeded(repo)).rejects.toThrow(

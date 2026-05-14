@@ -55,4 +55,4 @@ npm install -g codealmanac@latest
 
 ## Relationship to setup bootstrap
 
-`src/install/global.ts` still treats bare `codealmanac` as the npm bootstrap surface. When the current package root is not the durable global install, it runs `npm i -g codealmanac@latest` if needed and reruns setup from the global package's `dist/launcher.js`, not from `dist/codealmanac.js`. That keeps the post-bootstrap setup flow on the same pinned-runtime path as later interactive CLI invocations.
+`src/install/global.ts` still treats bare `codealmanac` as the npm bootstrap surface. When the current package root is not the durable global install, it runs `npm i -g codealmanac@latest` if needed and reruns setup from the global package's `dist/launcher.js`, not from `dist/codealmanac.js`. On Windows, both `npm root -g` and `npm i -g codealmanac@latest` go through `cmd.exe /d /s /c npm.cmd ...`; bare `spawn("npm", ...)` does not reliably launch npm's `.cmd` shim there. That keeps the post-bootstrap setup flow on the same pinned-runtime path as later interactive CLI invocations.

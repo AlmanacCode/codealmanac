@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +8,7 @@ import {
   type ClaudeAuthStatus,
   type SpawnCliFn,
 } from "../../agent/providers/claude/index.js";
+import { looksEphemeralInstallPath } from "../../install/ephemeral.js";
 import type { SqliteProbeResult } from "./types.js";
 
 // Single `createRequire` instance — used by package/binding probes.
@@ -45,23 +45,15 @@ export function detectInstallPath(): string | null {
 
 /**
  * Classify the detected install path as permanent or ephemeral.
- * Ephemeral locations (npm npx cache, pnpm dlx cache, /tmp/) are valid
- * installs but will disappear when the cache is evicted or the machine
- * reboots. Doctor reports them as `info` rather than `ok`.
+ * Ephemeral locations (npm npx cache, pnpm dlx cache, OS temp dirs) are
+ * valid installs but will disappear when the cache is evicted or the
+ * machine reboots. Doctor reports them as `info` rather than `ok`.
  */
 export function classifyInstallPath(
   raw: string | null,
 ): { installPath: string | null; isEphemeral: boolean } {
   if (raw === null) return { installPath: null, isEphemeral: false };
-  const home = homedir();
-  const ephemeralPrefixes = [
-    path.join(home, ".npm", "_npx"),
-    path.join(home, ".local", "share", "pnpm", "dlx"),
-    "/tmp/",
-    "/var/folders/",
-  ];
-  const isEphemeral = ephemeralPrefixes.some((p) => raw.startsWith(p));
-  return { installPath: raw, isEphemeral };
+  return { installPath: raw, isEphemeral: looksEphemeralInstallPath(raw) };
 }
 
 /**

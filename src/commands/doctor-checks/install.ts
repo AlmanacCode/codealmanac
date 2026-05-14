@@ -1,10 +1,14 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
 import type { ClaudeAuthStatus } from "../../agent/providers/claude/index.js";
-import { defaultPlistPath } from "../automation.js";
+import {
+  defaultPlistPath,
+  defaultWindowsCaptureManifestPath,
+} from "../automation.js";
 import { IMPORT_LINE } from "../setup.js";
 import {
   classifyInstallPath,
@@ -39,8 +43,12 @@ export async function gatherInstallChecks(
   const auth = await safeCheckAuth(options.spawnCli);
   checks.push(describeAuth(auth));
 
-  const plistPath = options.automationPlistPath ?? defaultPlistPath(homedir());
-  checks.push(describeAutomation(plistPath));
+  checks.push(describeAutomation({
+    home: homedir(),
+    platform: options.platform ?? process.platform,
+    plistPath: options.automationPlistPath,
+    windowsTaskExists: options.windowsTaskExists ?? defaultWindowsTaskExists,
+  }));
 
   const claudeDir = options.claudeDir ?? path.join(homedir(), ".claude");
   checks.push(describeGuides(claudeDir));
@@ -111,7 +119,40 @@ function describeAuth(auth: ClaudeAuthStatus): Check {
   };
 }
 
-function describeAutomation(plistPath: string): Check {
+function describeAutomation(args: {
+  home: string;
+  platform: NodeJS.Platform;
+  plistPath?: string;
+  windowsTaskExists: (taskName: string) => boolean;
+}): Check {
+  if (args.platform === "win32") {
+    const manifestPath = defaultWindowsCaptureManifestPath(args.home);
+    const manifest = readWindowsManifest(manifestPath);
+    if (manifest !== null) {
+      if (!args.windowsTaskExists(manifest.taskName)) {
+        return {
+          status: "problem",
+          key: "install.automation",
+          message: `auto-capture automation manifest exists, but Windows Task Scheduler task is missing (${manifest.taskName})`,
+          fix: "run: almanac automation install",
+        };
+      }
+      return {
+        status: "ok",
+        key: "install.automation",
+        message: `auto-capture automation installed with Windows Task Scheduler (${manifest.taskName})`,
+      };
+    }
+    return {
+      status: "problem",
+      key: "install.automation",
+      message: existsSync(manifestPath)
+        ? `auto-capture automation manifest is invalid (${manifestPath})`
+        : "auto-capture automation not installed",
+      fix: "run: almanac automation install",
+    };
+  }
+  const plistPath = args.plistPath ?? defaultPlistPath(args.home);
   if (existsSync(plistPath)) {
     return {
       status: "ok",
@@ -125,6 +166,44 @@ function describeAutomation(plistPath: string): Check {
     message: "auto-capture automation not installed",
     fix: "run: almanac automation install",
   };
+}
+
+interface WindowsAutomationManifest {
+  scheduler: "windows-task-scheduler";
+  taskName: string;
+  command: string[];
+  intervalSeconds: number;
+}
+
+function readWindowsManifest(manifestPath: string): WindowsAutomationManifest | null {
+  try {
+    const parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as Partial<WindowsAutomationManifest>;
+    if (
+      parsed.scheduler === "windows-task-scheduler" &&
+      typeof parsed.taskName === "string" &&
+      Array.isArray(parsed.command) &&
+      parsed.command.every((arg) => typeof arg === "string") &&
+      typeof parsed.intervalSeconds === "number"
+    ) {
+      return {
+        scheduler: "windows-task-scheduler",
+        taskName: parsed.taskName,
+        command: parsed.command,
+        intervalSeconds: parsed.intervalSeconds,
+      };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function defaultWindowsTaskExists(taskName: string): boolean {
+  if (process.platform !== "win32") return true;
+  const result = spawnSync("schtasks", ["/Query", "/TN", taskName], {
+    encoding: "utf8",
+  });
+  return result.status === 0;
 }
 
 function describeGuides(claudeDir: string): Check {

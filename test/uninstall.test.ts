@@ -53,6 +53,7 @@ describe("almanac uninstall", () => {
       const res = await runUninstall({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         automationPlistPath: env.plistPath,
         gardenPlistPath: env.gardenPlistPath,
         automationExec: async (file: string, args: string[]) => {
@@ -84,6 +85,7 @@ describe("almanac uninstall", () => {
       await runUninstall({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         automationPlistPath: env.plistPath,
         gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => ({}),
@@ -101,6 +103,7 @@ describe("almanac uninstall", () => {
       const res = await runUninstall({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         automationPlistPath: env.plistPath,
         gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => ({}),
@@ -123,6 +126,7 @@ describe("almanac uninstall", () => {
         yes: true,
         keepAutomation: true,
         isTTY: false,
+        platform: "darwin",
         automationPlistPath: env.plistPath,
         gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => {
@@ -147,6 +151,7 @@ describe("almanac uninstall", () => {
         yes: true,
         keepGuides: true,
         isTTY: false,
+        platform: "darwin",
         automationPlistPath: env.plistPath,
         gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => ({}),

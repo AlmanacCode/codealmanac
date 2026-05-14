@@ -8,14 +8,16 @@ files:
   - src/commands/doctor-checks/wiki.ts
   - src/commands/doctor-checks/updates.ts
   - src/commands/doctor-checks/probes.ts
+  - src/install/ephemeral.ts
   - src/commands/setup.ts
   - src/abi-guard.ts
   - test/doctor.test.ts
 sources:
   - docs/plans/2026-04-30-doctor-refactor.md
   - docs/bugs/codealmanac-known-bugs.md
+  - docs/plans/2026-05-14-windows-support.md
   - /Users/kushagrachitkara/.codex/sessions/2026/05/12/rollout-2026-05-12T00-52-10-019e1b2c-0679-7bb0-a926-b8643aa710c1.jsonl
-verified: 2026-05-13
+verified: 2026-05-14
 status: active
 ---
 
@@ -41,11 +43,15 @@ The install section currently reports:
 - install-path detection, including whether the current binary is running from an ephemeral `npx`-style location
 - `better-sqlite3` native-binding readiness
 - Claude authentication state
-- whether scheduled capture automation is installed
+- whether scheduled capture automation is installed for the active platform
 - whether Claude guide files exist under `~/.claude/`
 - whether `~/.claude/CLAUDE.md` contains the Almanac import line
 
 [[src/commands/doctor-checks/install.ts]] expresses repairs as `fix: "run: ..."` strings. The command prints those hints, but it does not execute them.
+
+The automation check is platform-aware as of the Windows support work. macOS checks the launchd capture plist at `~/Library/LaunchAgents/com.codealmanac.capture-sweep.plist`; Windows validates the Task Scheduler manifest at `~/.almanac/automation/windows-capture-sweep.json` and then confirms the recorded task name exists with `schtasks /Query`. A stale or malformed manifest is reported as a repairable problem, because otherwise doctor can say automation is healthy after a partial install or manual Task Scheduler deletion.
+
+Install-path classification is shared with setup through [[src/install/ephemeral.ts]]. That helper normalizes slashes and case before checking npm npx, pnpm dlx, `/tmp`, `/var/folders`, and Windows temp directories such as `%TEMP%`. Without that shared helper, setup and doctor could disagree about whether a Windows `npx` install is durable enough for scheduler installation.
 
 ## Relationship to the SQLite ABI guard
 

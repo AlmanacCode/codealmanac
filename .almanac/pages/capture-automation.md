@@ -4,8 +4,10 @@ summary: CodeAlmanac's auto-capture contract is scheduler-backed quiet-session c
 topics: [flows, agents, cli, automation]
 files:
   - docs/plans/2026-05-11-scheduled-quiet-session-capture.md
+  - docs/plans/2026-05-14-windows-support.md
   - src/commands/capture-sweep.ts
   - src/commands/automation.ts
+  - src/commands/automation/windows.ts
   - src/update/config.ts
   - src/commands/session-transcripts.ts
   - src/commands/operations.ts
@@ -17,8 +19,9 @@ files:
   - test/automation.test.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
+  - docs/plans/2026-05-14-windows-support.md
 status: implemented
-verified: 2026-05-13
+verified: 2026-05-14
 ---
 
 # Capture Automation
@@ -224,7 +227,7 @@ The session explicitly rejected the idea that CodeAlmanac itself should keep a s
 
 - macOS: `launchd`, likely via `~/Library/LaunchAgents/com.codealmanac.capture-sweep.plist`
 - Linux: `systemd --user` timer, with cron as fallback
-- Windows: Task Scheduler later if Windows support is added
+- Windows: Task Scheduler tasks created with `schtasks`
 
 The key implementation invariant is that the scheduler only invokes the CLI. It should not embed transcript-discovery or capture logic itself.
 
@@ -236,7 +239,7 @@ That keeps the system debuggable:
 
 The same session tightened that separation one step further: the scheduler entry should only need wakeup-level state such as interval, command path, and log paths. Sweep behavior such as enabled apps, quiet window, and other capture defaults should live in CodeAlmanac-owned config that `almanac capture sweep` reads when it starts. For the first version, even that split can stay minimal: the wakeup cadence may still be the only scheduler-owned knob, and changing it would rewrite or reload the platform scheduler entry.
 
-The current macOS implementation now follows that stronger shape, but with one setup-time distinction. Direct installs still write launchd `ProgramArguments` as the absolute Node executable plus the resolved `dist/codealmanac.js` entrypoint, then append `capture sweep`. Setup switches to `/usr/bin/env almanac ...` only after it has first converted an ephemeral `npx` launch into a durable global install. If that durable install does not happen, setup leaves automation uninstalled instead of writing a launchd entry that points into the temporary `npx` cache.
+The current platform implementations now follow that stronger shape, with one setup-time distinction. Direct macOS installs still write launchd `ProgramArguments` as the absolute Node executable plus the resolved `dist/codealmanac.js` entrypoint, then append `capture sweep`. Direct Windows installs create Task Scheduler tasks and record manifests under `~/.almanac/automation/`. Setup switches to the platform's durable global command only after it has first converted an ephemeral `npx` launch into a durable global install: `/usr/bin/env almanac ...` on Unix-like shells, and `almanac.cmd ...` on Windows. If that durable install does not happen, setup leaves automation uninstalled instead of writing a scheduler entry that points into the temporary `npx` cache.
 
 That direct-install shape has one operational consequence that surfaced during the 2026-05-13 Garden smoke test. If launchd is pinned to an absolute Node path such as `~/.nvm/versions/node/v24.15.0/bin/node`, rebuilding `better-sqlite3` from a shell running a different Node version repairs the shell runtime, not the scheduled job. The reliable fix is to rebuild with the exact `node` or `npm` from the plist command path, or to prepend that Node version's bin directory to `PATH` before running `npm rebuild better-sqlite3`.
 
@@ -343,7 +346,7 @@ The scheduler mechanism is platform-owned:
 
 - macOS: `launchd` agent under `~/Library/LaunchAgents/`
 - Linux: `systemd --user` timer, with cron as a weaker fallback
-- Windows: Task Scheduler if Windows support is added later
+- Windows: Task Scheduler tasks via `schtasks`
 
 The agent-facing command discussed in the session was conceptually a sweep such as `almanac capture sweep --quiet 45m`, run by the platform scheduler on a configurable cadence. Early in the discussion that cadence was imagined as every few minutes; later turns settled on "default around five hours, user-configurable" for the first implementation.
 
@@ -435,7 +438,9 @@ The Garden plist owns graph-maintenance cadence, using `StartInterval = 172800` 
 - working directory: the nearest wiki root found from the install command's current directory
 - stdout/stderr: user-visible log files under the same CodeAlmanac-owned log directory
 
-`launchd` is the thing that stays resident. When the timer fires, macOS starts a new `almanac` process, waits for it to exit, and then returns to sleeping until the next interval. The same separation should hold on Linux with a `systemd --user` timer and later on any Windows scheduler support.
+On Windows, scheduler install creates Task Scheduler tasks named `\CodeAlmanac\CaptureSweep` and `\CodeAlmanac\Garden`. The capture default maps to `/SC MINUTE /MO 300`, while the Garden default maps to `/SC DAILY /MO 2`. CodeAlmanac stores task manifests under `~/.almanac/automation/` for local status and doctor output; those manifests are not capture ledger state.
+
+`launchd` or Task Scheduler is the thing that stays resident. When the timer fires, the OS starts a new `almanac` process, waits for it to exit, and then returns to sleeping until the next interval. The same separation should hold on Linux with a `systemd --user` timer.
 
 This separation is part of the product contract, not just an implementation convenience:
 

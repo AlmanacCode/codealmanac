@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { chmod, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 
 import {
   applyCodexJsonlEvent,
@@ -15,6 +15,52 @@ import {
   runCodexAppServer,
 } from "../src/harness/providers/codex.js";
 import type { AgentRunSpec } from "../src/harness/types.js";
+
+async function writeFakeCodex(binDir: string, script: string): Promise<void> {
+  if (process.platform === "win32") {
+    const scriptPath = join(binDir, "codex-fake.cjs");
+    await writeFile(scriptPath, script.replace(/^#![^\n]*\n/u, ""), "utf8");
+    await writeFile(
+      join(binDir, "codex.cmd"),
+      "@echo off\r\nnode \"%~dp0codex-fake.cjs\" %*\r\n",
+      "utf8",
+    );
+    return;
+  }
+
+  const codexPath = join(binDir, "codex");
+  await writeFile(codexPath, script, "utf8");
+  await chmod(codexPath, 0o755);
+}
+
+interface PathSnapshot {
+  PATH?: string;
+  Path?: string;
+}
+
+function prependProcessPath(binDir: string): PathSnapshot {
+  const snapshot = { PATH: process.env.PATH, Path: process.env.Path };
+  const currentPath = process.platform === "win32"
+    ? process.env.Path ?? process.env.PATH
+    : process.env.PATH;
+  const nextPath = `${binDir}${delimiter}${currentPath ?? ""}`;
+  process.env.PATH = nextPath;
+  if (process.platform === "win32") process.env.Path = nextPath;
+  return snapshot;
+}
+
+function restoreProcessPath(snapshot: PathSnapshot): void {
+  if (snapshot.PATH === undefined) {
+    delete process.env.PATH;
+  } else {
+    process.env.PATH = snapshot.PATH;
+  }
+  if (snapshot.Path === undefined) {
+    delete process.env.Path;
+  } else {
+    process.env.Path = snapshot.Path;
+  }
+}
 
 describe("Codex harness provider", () => {
   it("builds a simple codex exec JSONL request", () => {
@@ -295,9 +341,8 @@ describe("Codex harness provider", () => {
 
   it("runs against a fake app-server process and emits structured events", async () => {
     const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-bin-"));
-    const codexPath = join(binDir, "codex");
-    await writeFile(
-      codexPath,
+    await writeFakeCodex(
+      binDir,
       `#!/usr/bin/env node
 const readline = require("node:readline");
 const rl = readline.createInterface({ input: process.stdin });
@@ -397,9 +442,7 @@ rl.on("line", (line) => {
 });
 `,
     );
-    await chmod(codexPath, 0o755);
-    const oldPath = process.env.PATH;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    const pathSnapshot = prependProcessPath(binDir);
     try {
       const events: unknown[] = [];
       await expect(
@@ -455,15 +498,14 @@ rl.on("line", (line) => {
         ]),
       );
     } finally {
-      process.env.PATH = oldPath;
+      restoreProcessPath(pathSnapshot);
     }
   });
 
   it("does not let helper turn failures poison the root app-server result", async () => {
     const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-helper-fail-bin-"));
-    const codexPath = join(binDir, "codex");
-    await writeFile(
-      codexPath,
+    await writeFakeCodex(
+      binDir,
       `#!/usr/bin/env node
 const readline = require("node:readline");
 const rl = readline.createInterface({ input: process.stdin });
@@ -512,9 +554,7 @@ rl.on("line", (line) => {
 });
 `,
     );
-    await chmod(codexPath, 0o755);
-    const oldPath = process.env.PATH;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    const pathSnapshot = prependProcessPath(binDir);
     try {
       const events: unknown[] = [];
       await expect(
@@ -558,23 +598,20 @@ rl.on("line", (line) => {
         ]),
       );
     } finally {
-      process.env.PATH = oldPath;
+      restoreProcessPath(pathSnapshot);
     }
   });
 
   it("fails instead of hanging when app-server does not answer an RPC", async () => {
     const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-silent-bin-"));
-    const codexPath = join(binDir, "codex");
-    await writeFile(
-      codexPath,
+    await writeFakeCodex(
+      binDir,
       `#!/usr/bin/env node
 setInterval(() => {}, 1000);
 `,
     );
-    await chmod(codexPath, 0o755);
-    const oldPath = process.env.PATH;
+    const pathSnapshot = prependProcessPath(binDir);
     const oldTimeout = process.env.CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
     process.env.CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS = "25";
     try {
       await expect(
@@ -589,7 +626,7 @@ setInterval(() => {}, 1000);
         error: expect.stringContaining("initialize timed out after 25ms"),
       });
     } finally {
-      process.env.PATH = oldPath;
+      restoreProcessPath(pathSnapshot);
       if (oldTimeout === undefined) {
         delete process.env.CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS;
       } else {
@@ -600,9 +637,8 @@ setInterval(() => {}, 1000);
 
   it("fails instead of hanging when app-server accepts a turn but never completes", async () => {
     const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-stall-bin-"));
-    const codexPath = join(binDir, "codex");
-    await writeFile(
-      codexPath,
+    await writeFakeCodex(
+      binDir,
       `#!/usr/bin/env node
 const readline = require("node:readline");
 const rl = readline.createInterface({ input: process.stdin });
@@ -624,10 +660,8 @@ rl.on("line", (line) => {
 setInterval(() => {}, 1000);
 `,
     );
-    await chmod(codexPath, 0o755);
-    const oldPath = process.env.PATH;
+    const pathSnapshot = prependProcessPath(binDir);
     const oldTurnTimeout = process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
     process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS = "25";
     try {
       await expect(
@@ -642,7 +676,7 @@ setInterval(() => {}, 1000);
         error: expect.stringContaining("turn timed out after 25ms"),
       });
     } finally {
-      process.env.PATH = oldPath;
+      restoreProcessPath(pathSnapshot);
       if (oldTurnTimeout === undefined) {
         delete process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
       } else {
@@ -654,9 +688,8 @@ setInterval(() => {}, 1000);
 
   it("does not start the turn watchdog after same-flush completion", async () => {
     const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-fast-bin-"));
-    const codexPath = join(binDir, "codex");
-    await writeFile(
-      codexPath,
+    await writeFakeCodex(
+      binDir,
       `#!/usr/bin/env node
 const readline = require("node:readline");
 const rl = readline.createInterface({ input: process.stdin });
@@ -677,10 +710,8 @@ rl.on("line", (line) => {
 });
 `,
     );
-    await chmod(codexPath, 0o755);
-    const oldPath = process.env.PATH;
+    const pathSnapshot = prependProcessPath(binDir);
     const oldTurnTimeout = process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
     process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS = "25";
     try {
       await expect(
@@ -695,7 +726,7 @@ rl.on("line", (line) => {
         providerSessionId: "thread-1",
       });
     } finally {
-      process.env.PATH = oldPath;
+      restoreProcessPath(pathSnapshot);
       if (oldTurnTimeout === undefined) {
         delete process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
       } else {

@@ -52,6 +52,7 @@ describe("runCodealmanacBootstrap", () => {
         globalPackageRoot: globalRoot,
         runSetup,
         spawnFn: fakeSpawn(calls, [0, 0]),
+        platform: "darwin",
       });
 
       expect(result.exitCode).toBe(0);
@@ -72,6 +73,32 @@ describe("runCodealmanacBootstrap", () => {
         stdio: "inherit",
       });
       expect(calls[1]!.env?.CODEALMANAC_SKIP_GLOBAL_BOOTSTRAP).toBe("1");
+    });
+  });
+
+  it("uses npm.cmd through cmd.exe for Windows global bootstrap", async () => {
+    await withTempHome(async (home) => {
+      const currentRoot = join(home, "_npx", "codealmanac");
+      const globalRoot = join(home, "global", "node_modules", "codealmanac");
+      await writePackage(currentRoot, "0.1.5");
+
+      const calls: { cmd: string; args: string[]; stdio: unknown; env?: NodeJS.ProcessEnv }[] = [];
+      const result = await runCodealmanacBootstrap({
+        setupOptions: { yes: true },
+        setupArgs: ["--yes"],
+        currentPackageRoot: currentRoot,
+        globalPackageRoot: globalRoot,
+        runSetup: vi.fn(),
+        spawnFn: fakeSpawn(calls, [0, 0]),
+        platform: "win32",
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(calls[0]).toMatchObject({
+        cmd: "cmd.exe",
+        args: ["/d", "/s", "/c", "npm.cmd i -g codealmanac@latest"],
+        stdio: "inherit",
+      });
     });
   });
 
