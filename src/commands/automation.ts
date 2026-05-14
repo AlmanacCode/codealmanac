@@ -18,9 +18,7 @@ import {
   CAPTURE_SWEEP_LABEL,
   CAPTURE_SWEEP_TASK,
   defaultCapturePlistPath,
-  DEFAULT_CAPTURE_INTERVAL,
   DEFAULT_CAPTURE_QUIET,
-  DEFAULT_GARDEN_INTERVAL,
   defaultGardenPlistPath,
   GARDEN_LABEL,
   GARDEN_TASK,
@@ -158,7 +156,7 @@ interface AutomationInstallPlan {
 function buildAutomationInstallPlan(
   options: AutomationOptions,
 ): { ok: true; value: AutomationInstallPlan } | { ok: false; error: string } {
-  const captureIntervalInput = options.every ?? DEFAULT_CAPTURE_INTERVAL;
+  const captureIntervalInput = options.every ?? CAPTURE_SWEEP_TASK.defaultInterval;
   const interval = parseInterval(captureIntervalInput);
   if (!interval.ok) return interval;
 
@@ -166,7 +164,7 @@ function buildAutomationInstallPlan(
   const quiet = parseQuiet(quietInput);
   if (!quiet.ok) return quiet;
 
-  const gardenIntervalInput = options.gardenEvery ?? DEFAULT_GARDEN_INTERVAL;
+  const gardenIntervalInput = options.gardenEvery ?? GARDEN_TASK.defaultInterval;
   const gardenInterval = options.gardenOff === true
     ? null
     : parseInterval(gardenIntervalInput);
