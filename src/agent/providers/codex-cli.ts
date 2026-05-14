@@ -1,10 +1,8 @@
 import type {
   AgentProvider,
   AgentProviderMetadata,
-  AgentResult,
   ProviderModelChoice,
   ProviderStatus,
-  RunAgentOptions,
   SpawnCliFn,
 } from "../types.js";
 import {
@@ -12,8 +10,6 @@ import {
   runInjectedStatusCommand,
   runStatusCommand,
 } from "./cli-status.js";
-import { parseUsage, runJsonlCli } from "./jsonl-cli.js";
-import { combinedPrompt } from "./prompt.js";
 
 const metadata: AgentProviderMetadata = {
   id: "codex",
@@ -55,7 +51,6 @@ export const codexProvider: AgentProvider = {
   checkStatus,
   assertReady,
   modelChoices,
-  run,
 };
 
 async function modelChoices(opts: {
@@ -152,31 +147,6 @@ async function listCodexModels(spawnCli: SpawnCliFn): Promise<string[]> {
   });
 }
 
-async function run(opts: RunAgentOptions): Promise<AgentResult> {
-  const args = [
-    "exec",
-    "--json",
-    "--sandbox",
-    "workspace-write",
-    "--skip-git-repo-check",
-    "-C",
-    opts.cwd,
-  ];
-  if (opts.model !== undefined && opts.model.length > 0) {
-    args.push("--model", opts.model);
-  }
-  args.push(combinedPrompt({ ...opts, provider: "codex" }, metadata));
-
-  return await runJsonlCli({
-    command: metadata.executable,
-    args,
-    cwd: opts.cwd,
-    env: { ...process.env, CODEALMANAC_INTERNAL_SESSION: "1" },
-    onMessage: opts.onMessage,
-    parseFinal: parseCodexFinal,
-  });
-}
-
 async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
   if (spawnCli === undefined && !commandExists(metadata.executable)) {
     return {
@@ -209,34 +179,4 @@ async function assertReady(spawnCli?: SpawnCliFn): Promise<void> {
     (err as { code?: string }).code = "AGENT_AUTH_MISSING";
     throw err;
   }
-}
-
-function parseCodexFinal(
-  msg: Record<string, unknown>,
-): Partial<AgentResult> | null {
-  if (msg.type === "item.completed") {
-    const item = msg.item;
-    if (item !== null && typeof item === "object") {
-      const obj = item as Record<string, unknown>;
-      if (obj.type === "agent_message" && typeof obj.text === "string") {
-        return { result: obj.text };
-      }
-    }
-    return null;
-  }
-  if (msg.type === "turn.completed") {
-    return { success: true, turns: 1, usage: parseUsage(msg.usage) };
-  }
-  if (msg.type === "turn.failed" || msg.type === "error") {
-    return {
-      success: false,
-      error:
-        typeof msg.message === "string"
-          ? msg.message
-          : typeof msg.error === "string"
-            ? msg.error
-            : "codex turn failed",
-    };
-  }
-  return null;
 }

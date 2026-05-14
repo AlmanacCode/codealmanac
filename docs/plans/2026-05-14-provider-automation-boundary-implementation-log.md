@@ -35,3 +35,14 @@ Plan: `docs/plans/2026-05-14-provider-automation-boundary-refactor.md`
 - Reduced `src/commands/capture-sweep.ts` to command parsing, eligibility orchestration, capture enqueueing, summary construction, and command output rendering.
 - Verified focused behavior with `npm test -- --run test/capture-sweep.test.ts`: `7` tests passed.
 - Verified TypeScript/package build with `npm run build`: succeeded.
+
+### Provider Readiness and Config Boundary Cleanup
+
+- Moved the global config implementation from `src/update/config.ts` to `src/config/index.ts`.
+- Left `src/update/config.ts` as a compatibility re-export so existing tests and external import paths keep working while production code uses `src/config/`.
+- Moved the provider setup/status projection from `src/agent/provider-view.ts` to `src/agent/readiness/view.ts` and left the old path as a compatibility re-export.
+- Updated production imports for `agents`, `setup`, `doctor`, operation commands, automation, capture sweep, and update commands to use `src/config/` and `src/agent/readiness/`.
+- Removed unused legacy agent execution methods from the setup/status provider layer. Runtime execution remains in `src/harness/providers/`.
+- Deleted the unused old JSONL execution helpers under `src/agent/providers/`.
+- Verified affected behavior with `npm test -- --run test/provider-view.test.ts test/config-command.test.ts test/setup.test.ts test/doctor.test.ts`: `33` tests passed.
+- Verified TypeScript/package build with `npm run build`: succeeded.

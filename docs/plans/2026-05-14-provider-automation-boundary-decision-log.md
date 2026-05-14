@@ -25,3 +25,11 @@ Automation install still has to combine command option validation, activation-ba
 ### Treat transcript discovery as capture domain code
 
 Claude and Codex transcript discovery scans historical transcript stores. It maps transcript metadata to wiki repos, but it does not execute agents. That makes it capture-domain code rather than harness provider code. The harness provider layer should stay responsible for executing `AgentRunSpec` values, while `src/capture/discovery/` owns the scanner adapters.
+
+### Keep compatibility re-exports for renamed config and readiness modules
+
+The architectural home for global config is now `src/config/`, and the architectural home for setup/doctor provider projection is now `src/agent/readiness/`. The old `src/update/config.ts` and `src/agent/provider-view.ts` paths remain as one-line re-exports because tests and any external deep imports can migrate separately. Production code now imports the new homes.
+
+### Remove the old execution half of `src/agent/providers`
+
+Current AI operation execution already goes through `src/harness/providers/` via the process manager. The `run()` methods in `src/agent/providers/*` were a second execution-provider layer and were no longer called. Removing those methods leaves the remaining layer responsible for setup/status/model readiness only, which makes the distinction from harness providers concrete rather than purely nominal.

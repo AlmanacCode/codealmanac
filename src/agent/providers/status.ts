@@ -1,7 +1,7 @@
 import {
   getEnabledAgentProviderIds,
   type AgentProviderId,
-} from "../../update/config.js";
+} from "../../config/index.js";
 import type { ProviderStatus, SpawnCliFn } from "../types.js";
 import { getAgentProvider } from "./index.js";
 

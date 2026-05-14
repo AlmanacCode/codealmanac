@@ -1,4 +1,4 @@
-import { readConfig } from "../../update/config.js";
+import { readConfig } from "../../config/index.js";
 import { readStateForDoctor } from "../../update/schedule.js";
 import { isNewer } from "../../update/semver.js";
 import { formatDuration } from "./duration.js";

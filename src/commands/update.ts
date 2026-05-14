@@ -6,7 +6,7 @@ import {
   readConfig,
   writeConfig,
   type GlobalConfig,
-} from "../update/config.js";
+} from "../config/index.js";
 import { isNewer } from "../update/semver.js";
 import { readState, writeState } from "../update/state.js";
 

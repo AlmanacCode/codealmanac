@@ -28,7 +28,7 @@ import {
 import type { CommandResult } from "../cli/helpers.js";
 import { parseDuration } from "../indexer/duration.js";
 import { findNearestAlmanacDir } from "../paths.js";
-import { ensureAutomationCaptureSince } from "../update/config.js";
+import { ensureAutomationCaptureSince } from "../config/index.js";
 
 export { cleanupLegacyHooks } from "../automation/legacy-hooks.js";
 

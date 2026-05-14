@@ -17,7 +17,7 @@ import {
   readConfig,
   readConfigWithOrigins,
   serializeConfig,
-} from "../update/config.js";
+} from "../config/index.js";
 import { formatTextTable } from "./table.js";
 
 export interface ConfigResult {

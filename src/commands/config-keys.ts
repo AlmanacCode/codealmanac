@@ -3,7 +3,7 @@ import {
   isAgentProviderId,
   type AgentProviderId,
   type GlobalConfig,
-} from "../update/config.js";
+} from "../config/index.js";
 
 export type ConfigKey =
   | "update_notifier"

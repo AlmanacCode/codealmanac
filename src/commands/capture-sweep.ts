@@ -20,7 +20,7 @@ import {
 import { acquireRepoSweepLock, releaseRepoSweepLock } from "../capture/lock.js";
 import type { CommandResult } from "../cli/helpers.js";
 import { parseDuration } from "../indexer/duration.js";
-import { readConfig } from "../update/config.js";
+import { readConfig } from "../config/index.js";
 import { runCaptureCommand, type CaptureCommandOptions } from "./operations.js";
 
 export interface CaptureSweepOptions {

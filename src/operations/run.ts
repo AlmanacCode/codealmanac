@@ -6,7 +6,7 @@ import {
   startBackgroundProcess,
   startForegroundProcess,
 } from "../process/index.js";
-import { readConfig } from "../update/config.js";
+import { readConfig } from "../config/index.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,

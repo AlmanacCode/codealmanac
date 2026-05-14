@@ -1,6 +1,6 @@
 import type { SpawnCliFn } from "../../agent/providers/claude/index.js";
 import type { ProviderStatus } from "../../agent/types.js";
-import type { AgentProviderId } from "../../update/config.js";
+import type { AgentProviderId } from "../../config/index.js";
 import type { runHealth } from "../health.js";
 
 export interface DoctorOptions {
