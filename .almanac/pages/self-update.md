@@ -51,13 +51,13 @@ The 2026-05-14 auto-update implementation rejected private scheduler-only update
 
 The scheduled job runs the same visible command, `almanac update`. There is no documented private flag like `--auto-if-needed`, `--scheduled`, or `--from-automation`.
 
-The scheduler-management surface stays under [[automation]] as task selection: `almanac automation install update`, `almanac automation status update`, and `almanac automation uninstall update`. That shape keeps the product concepts separate: `update` owns package mutation and version checks, while `automation` owns launchd installation, status, and removal for recurring Almanac tasks.
+The scheduler-management surface stays under [[automation]] as task selection: `almanac automation install update`, `almanac automation status update`, and `almanac automation uninstall update`. Installing the update task without `--every` uses the default `1d` cadence from `[[src/automation/tasks.ts]]`, which renders to a launchd `StartInterval` of `86400` seconds. That shape keeps the product concepts separate: `update` owns package mutation and version checks, while `automation` owns launchd installation, status, and removal for recurring Almanac tasks.
 
 Bare `almanac update` is idempotent enough for launchd. It checks the registry first, exits successfully when the installed version is current, installs only when a newer version exists, skips dismissed versions, and holds a global lock so manual and scheduled invocations cannot overlap.
 
 ## Boundaries for automatic self-update
 
-Automatic self-update changes executable code outside the current repo, so it is a different trust boundary from scheduled capture or Garden. `npm i -g codealmanac@latest` replaces the global CLI binary that later runs setup, capture, indexing, automation, uninstall, and scheduler tasks. Setup exposes that behavior only through the explicit `--auto-update` flag.
+Automatic self-update changes executable code outside the current repo, so it is a different trust boundary from scheduled capture or Garden. `npm i -g codealmanac@latest` replaces the global CLI binary that later runs setup, capture, indexing, automation, uninstall, and scheduler tasks. Interactive setup asks whether to enable scheduled self-update and defaults to yes; unattended setup exposes the same opt-in through the explicit `--auto-update` flag.
 
 Global npm is also a rougher substrate than a GUI app updater. It may write into an `nvm`, Homebrew, system Node, Volta, or other npm prefix; it may fail with permissions; and it may rebuild native modules such as `better-sqlite3`. The updater never runs `sudo`, does not prompt, and leaves npm failure details in the scheduler logs.
 
@@ -71,7 +71,7 @@ The user-facing syntax does not leak launchd implementation details. The public 
 
 The 2026-05-14 discussion also exposed a product naming tension. Setup currently asks whether to "keep your codebase wiki up to date automatically," but the implementation installs capture and Garden automation, not CLI self-update. Adding self-update as another special case under that wording would make the boundary less clear unless setup and automation language distinguish wiki maintenance from updating Almanac itself.
 
-Unattended setup does not enable automatic CLI self-update by default. Unlike capture and Garden, self-update mutates the user's global install, so `almanac setup --yes` leaves it disabled unless `--auto-update` is passed.
+Unattended setup does not enable automatic CLI self-update by default. Unlike capture and Garden, self-update mutates the user's global install, so `almanac setup --yes` leaves it disabled unless `--auto-update` is passed. Interactive setup still makes the choice part of onboarding by asking the user directly.
 
 Automation status reports automatic self-update through the same task status API that reports capture and Garden scheduler state. That avoids duplicating manifest or launchd interpretation in update-specific diagnostics.
 

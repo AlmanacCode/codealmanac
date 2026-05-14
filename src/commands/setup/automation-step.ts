@@ -85,7 +85,17 @@ export async function runAutomationSetupStep(args: {
         };
       }
       stepDone(args.out, "Auto-capture automation installed");
-      if (args.options.autoUpdate === true) {
+      let autoUpdateAction: InstallDecision = args.options.autoUpdate === true
+        ? "install"
+        : "skip";
+      if (args.options.autoUpdate !== true && args.interactive) {
+        autoUpdateAction = await confirm(
+          args.out,
+          "Keep Almanac automatically updated?",
+          true,
+        );
+      }
+      if (autoUpdateAction === "install") {
         const update = await runAutomationInstall({
           tasks: ["update"],
           every: args.options.autoUpdateEvery,
@@ -104,6 +114,8 @@ export async function runAutomationSetupStep(args: {
           };
         }
         stepDone(args.out, "Auto-update automation installed");
+      } else if (args.interactive) {
+        stepSkipped(args.out, `Auto-update automation ${DIM}skipped${RST}`);
       }
     }
   } else {

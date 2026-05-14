@@ -9,6 +9,7 @@ import type {
   SpawnedProcess,
 } from "../src/agent/readiness/providers/claude/index.js";
 import { hasImportLine, runSetup } from "../src/commands/setup.js";
+import { runAutomationSetupStep } from "../src/commands/setup/automation-step.js";
 import { readConfig, writeConfig } from "../src/config/index.js";
 import { withTempHome } from "./helpers.js";
 
@@ -230,6 +231,48 @@ describe("codealmanac setup", () => {
       expect(res.exitCode).toBe(0);
       expect(await readFile(updatePlistPath, "utf8")).toContain("<string>update</string>");
       expect(env.stdout()).toContain("Auto-update automation installed");
+    });
+  });
+
+  it("interactive onboarding prompts for self-update and installs it on default yes", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const updatePlistPath = join(
+        home,
+        "Library",
+        "LaunchAgents",
+        "com.codealmanac.update.plist",
+      );
+      let answeredCapture = false;
+      let answeredUpdate = false;
+      env.out.on("data", () => {
+        const text = env.stdout();
+        if (!answeredCapture && text.includes("Keep your codebase wiki up to date automatically?")) {
+          answeredCapture = true;
+          queueMicrotask(() => process.stdin.emit("data", Buffer.from("\n")));
+        }
+        if (!answeredUpdate && text.includes("Keep Almanac automatically updated?")) {
+          answeredUpdate = true;
+          queueMicrotask(() => process.stdin.emit("data", Buffer.from("\n")));
+        }
+      });
+
+      const result = await runAutomationSetupStep({
+        out: env.out,
+        interactive: true,
+        options: {
+          automationPlistPath: env.plistPath,
+          updatePlistPath,
+          automationExec: async () => ({}),
+        },
+        ephemeral: false,
+        durableGlobalInstall: false,
+      });
+
+      expect(result.ok).toBe(true);
+      expect(answeredCapture).toBe(true);
+      expect(answeredUpdate).toBe(true);
+      expect(await readFile(updatePlistPath, "utf8")).toContain("<string>update</string>");
     });
   });
 

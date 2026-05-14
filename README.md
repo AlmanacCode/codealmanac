@@ -90,7 +90,7 @@ Capture writes nothing if nothing in the session meets the notability bar. Silen
 
 ## Setup And Auth
 
-Bare `almanac` opens the setup wizard. It chooses your default agent/model, checks readiness, installs scheduled capture and Garden automation, and adds optional agent guides. Scheduled self-update is opt-in.
+Bare `almanac` opens the setup wizard. It chooses your default agent/model, checks readiness, installs scheduled capture and Garden automation, asks whether to keep Almanac automatically updated, and adds optional agent guides.
 
 Useful unattended setup flags:
 
@@ -106,6 +106,8 @@ almanac setup --garden-off
 almanac setup --auto-update
 almanac setup --auto-update-every 1d
 ```
+
+Interactive setup asks about scheduled self-update and defaults to yes. Unattended setup uses `--auto-update` when you want the same opt-in without prompts.
 
 Auto-commit is opt-in. Without `--auto-commit`, lifecycle runs leave wiki
 changes in your working tree for review.
