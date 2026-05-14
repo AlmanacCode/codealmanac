@@ -9,6 +9,9 @@ files:
   - src/operations/absorb.ts
   - prompts/operations/absorb.md
   - src/commands/capture-sweep.ts
+  - src/capture/discovery/
+  - src/capture/ledger.ts
+  - src/capture/lock.ts
   - src/commands/automation.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
@@ -113,9 +116,11 @@ That boundary also matters at prompt-construction time. `captureContext()` in [[
 
 The scheduler path extends this resolver boundary rather than replacing it. `capture sweep` discovers candidate transcript files itself, but it still starts normal capture jobs with ordinary transcript paths and additional cursor context.
 
-The first scheduled discovery implementation scans Claude transcripts under `~/.claude/projects/**/*.jsonl` and Codex transcripts under `~/.codex/sessions/**/*.jsonl`. Claude subagent paths are ignored, and Codex transcripts marked with `payload.thread_source === "subagent"` are ignored.
+The first scheduled discovery implementation scans Claude transcripts under `~/.claude/projects/**/*.jsonl` and Codex transcripts under `~/.codex/sessions/**/*.jsonl`. Claude subagent paths are ignored, and Codex transcripts marked with `payload.thread_source === "subagent"` are ignored. Provider-specific transcript scanning lives under `[[src/capture/discovery/]]` because it scans historical transcript stores; it is not part of the runtime adapter boundary in `[[harness-providers]]`.
 
 Continuation capture keeps passing the original transcript path into capture, and adds cursor context telling Absorb what transcript prefix was already captured. That preserves the "agent inspects files lazily" contract while avoiding temp delta transcript files or byte-range semantics in `almanac capture`.
+
+The sweep's state helpers now live beside capture. `[[src/capture/ledger.ts]]` owns repo-local ledger loading, atomic writes, pending-run reconciliation, prefix hashes, and initial cursor calculation. `[[src/capture/lock.ts]]` owns repo-level sweep locking and stale-lock recovery. `[[src/commands/capture-sweep.ts]]` remains the coordinator that parses command options, applies quiet-window and activation checks, starts capture runs, and renders the summary.
 
 The current sweep implementation makes that continuation context explicit in the saved run spec. `cursorContext()` in [[src/commands/capture-sweep.ts]] appends a second command-context block with the transcript identity and cursor boundary:
 

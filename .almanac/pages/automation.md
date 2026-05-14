@@ -4,12 +4,16 @@ summary: Automation is the macOS launchd layer that schedules `almanac capture s
 topics: [automation, cli, flows]
 files:
   - src/commands/automation.ts
+  - src/automation/tasks.ts
+  - src/automation/launchd.ts
+  - src/automation/legacy-hooks.ts
   - src/commands/setup.ts
   - src/commands/uninstall.ts
   - src/cli.ts
   - src/cli/register-setup-commands.ts
   - src/cli/register-wiki-lifecycle-commands.ts
   - src/commands/capture-sweep.ts
+  - src/config/index.ts
   - src/update/config.ts
   - test/automation.test.ts
   - test/cli.test.ts
@@ -26,7 +30,7 @@ Automation is the scheduler layer around Almanac's recurring maintenance work. I
 
 ## Public command surface
 
-`almanac automation install|status|uninstall` is the explicit scheduler-management surface. `install` writes launchd plists, bootstraps them with `launchctl`, and prints the effective capture interval, quiet window, activation timestamp, commands, and plist paths. `status` reads the plist files back and reports whether capture and Garden automation are installed. `uninstall` unloads and removes whichever CodeAlmanac plists exist.
+`almanac automation install|status|uninstall` is the explicit scheduler-management surface. `install` writes launchd plists, bootstraps them with `launchctl`, and prints the effective capture interval, quiet window, activation timestamp, commands, and plist paths. `status` reads the plist files back and checks whether launchd has each job loaded, so a stale plist and a loaded scheduler job are separate reported facts. `uninstall` unloads and removes whichever CodeAlmanac plists exist.
 
 `almanac setup` is the onboarding entry point for the same automation surface. Setup installs scheduled capture and scheduled Garden by default unless the user passes `--skip-automation` or `--garden-off`. That makes automation a first-run product behavior rather than a hidden expert-only command.
 
@@ -35,6 +39,8 @@ Automation is the scheduler layer around Almanac's recurring maintenance work. I
 The capture plist path is `~/Library/LaunchAgents/com.codealmanac.capture-sweep.plist`. The Garden plist path is `~/Library/LaunchAgents/com.codealmanac.garden.plist`. Both plists write stdout and stderr logs under `~/.almanac/logs/`.
 
 The capture job runs `almanac capture sweep` with a quiet-window argument. The default schedule is every `5h`, and the default quiet window is `45m`. The Garden job runs `almanac garden` every `2d` by default.
+
+The automation code is split by responsibility. `[[src/automation/tasks.ts]]` owns labels, default durations, plist paths, and default command arguments. `[[src/automation/launchd.ts]]` owns plist rendering, PATH construction, bootstrap/removal, and loaded-state checks. `[[src/automation/legacy-hooks.ts]]` owns private migration cleanup for older hook-based installs. `[[src/commands/automation.ts]]` remains the command transaction that validates options, writes the activation baseline, calls launchd helpers, and formats user output.
 
 Both jobs get an explicit `PATH` assembled for launchd from the current environment plus fallback locations such as `/usr/local/bin`, `/opt/homebrew/bin`, and `/usr/bin`. The Garden plist also records a `WorkingDirectory`: `runAutomationInstall()` resolves it to the nearest repo containing `.almanac/`, falling back to the current directory when no wiki root is found.
 

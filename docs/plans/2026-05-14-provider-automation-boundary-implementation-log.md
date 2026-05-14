@@ -54,3 +54,9 @@ Plan: `docs/plans/2026-05-14-provider-automation-boundary-refactor.md`
 - Added a focused automation test that injects loaded capture automation and unloaded Garden automation.
 - Verified focused behavior with `npm test -- --run test/automation.test.ts`: `6` tests passed.
 - Verified TypeScript/package build with `npm run build`: succeeded.
+
+### Wiki Updates
+
+- Updated `.almanac/pages/automation.md` to document the new `src/automation/` split and the separate launchd loaded-state status check.
+- Updated `.almanac/pages/capture-flow.md` to document `src/capture/discovery/`, `src/capture/ledger.ts`, and `src/capture/lock.ts`.
+- Updated `.almanac/pages/harness-providers.md` to state that runtime execution belongs in `src/harness/providers/`, while `src/agent/readiness/view.ts` and the remaining `src/agent/providers/` code are setup/status/model readiness only.
