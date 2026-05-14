@@ -1,29 +1,17 @@
-import { homedir } from "node:os";
-import path from "node:path";
-
 import {
   type SpawnCliFn,
 } from "../agent/readiness/providers/claude/index.js";
-import {
-  installAgentInstructions,
-} from "../agent/install-targets.js";
 export {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
   hasCodexInstructions,
 } from "../agent/instructions/codex.js";
-import {
-  writeConfig,
-} from "../config/index.js";
-import { cleanupLegacyHooks, runAutomationInstall } from "./automation.js";
 import { chooseDefaultAgent, type AgentChoice } from "./setup/agent-choice.js";
-import {
-  detectCurrentInstallPath,
-  detectEphemeral,
-  spawnGlobalInstall,
-} from "./setup/install-path.js";
+import { runAutoCommitSetupStep } from "./setup/auto-commit-step.js";
+import { runAutomationSetupStep } from "./setup/automation-step.js";
 export { IMPORT_LINE, hasImportLine } from "./setup/guides.js";
-import { resolveGuidesDir } from "./setup/guides.js";
+import { runGlobalInstallStep } from "./setup/global-install-step.js";
+import { runGuidesSetupStep } from "./setup/guides-step.js";
 import {
   countExistingPages,
   printNextSteps,
@@ -31,20 +19,15 @@ import {
 import {
   BAR,
   BLUE,
-  DIM,
-  type InstallDecision,
   RST,
   WHITE_BOLD,
-  confirm,
   isSetupInterrupted,
   printBadge,
   printBanner,
-  stepActive,
   stepDone,
-  stepSkipped,
 } from "./setup/output.js";
 
-type AutomationExecFn = (
+export type AutomationExecFn = (
   file: string,
   args: string[],
 ) => Promise<{ stdout?: string; stderr?: string }>;
@@ -203,159 +186,22 @@ export async function runSetup(
   );
   out.write(BAR + "\n");
 
-  // Step 1b: ephemeral install detection. When codealmanac was invoked via
-  // `npx codealmanac` (no prior `npm i -g`), the binary lives inside an
-  // npx cache directory or pnpm store that can be evicted at any time.
-  // `almanac` is also not on PATH, so the user can't use it after setup.
-  //
-  // When we detect an ephemeral location, we offer (or, on --yes, perform)
-  // a `npm install -g codealmanac` to make the install permanent.
-  //
-  // This is Bug #2 from codealmanac-known-bugs.md.
-  const ephem = options.installPath !== undefined
-    ? (options.installPath !== null
-        ? detectEphemeral(options.installPath)
-        : false)
-    : detectEphemeral(detectCurrentInstallPath());
-  let durableGlobalInstall = false;
-  if (ephem) {
-    let globalAction: InstallDecision = "install";
-    if (interactive) {
-      globalAction = await confirm(
-        out,
-        `Running from an ephemeral npx location. Install globally so 'almanac' stays on PATH?`,
-        true,
-      );
-    }
-    if (globalAction === "install") {
-      stepActive(out, "Installing Almanac package globally…");
-      try {
-        await (options.spawnGlobalInstall ?? spawnGlobalInstall)();
-        durableGlobalInstall = true;
-        stepDone(out, "Almanac installed globally (almanac now on PATH)");
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        stepActive(out, `Global install failed: ${msg}`);
-        out.write(
-          `  ${DIM}You can retry manually: npm install -g codealmanac${RST}\n`,
-        );
-      }
-    } else {
-      stepSkipped(
-        out,
-        `Global install ${DIM}skipped — almanac will not be on PATH after this session${RST}`,
-      );
-    }
-    out.write(BAR + "\n");
+  const globalInstall = await runGlobalInstallStep({ out, interactive, options });
+  const automation = await runAutomationSetupStep({
+    out,
+    interactive,
+    options,
+    ephemeral: globalInstall.ephemeral,
+    durableGlobalInstall: globalInstall.durableGlobalInstall,
+  });
+  if (!automation.ok) {
+    return { stdout: "", stderr: automation.stderr, exitCode: automation.exitCode };
   }
-
-  // Step 2: install the scheduler (default yes).
-  let automationAction: InstallDecision = "install";
-  if (options.skipAutomation === true) {
-    automationAction = "skip";
-  } else if (interactive) {
-    automationAction = await confirm(
-      out,
-      "Keep your codebase wiki up to date automatically?",
-      true,
-    );
+  const guides = await runGuidesSetupStep({ out, interactive, options });
+  if (!guides.ok) {
+    return { stdout: "", stderr: guides.stderr, exitCode: guides.exitCode };
   }
-
-  if (automationAction === "install") {
-    if (ephem && !durableGlobalInstall) {
-      stepSkipped(
-        out,
-        `Auto-capture automation ${DIM}skipped — requires a durable Almanac install${RST}`,
-      );
-    } else {
-      await cleanupLegacyHooks();
-      const res = await runAutomationInstall({
-        every: options.automationEvery,
-        quiet: options.automationQuiet,
-        gardenEvery: options.gardenEvery,
-        gardenOff: options.gardenOff,
-        cwd: process.cwd(),
-        programArguments: ephem
-          ? globalAlmanacProgramArguments(options.automationQuiet)
-          : undefined,
-        gardenProgramArguments: ephem
-          ? globalGardenProgramArguments()
-          : undefined,
-        plistPath: options.automationPlistPath,
-        gardenPlistPath: options.gardenPlistPath,
-        exec: options.automationExec,
-      });
-      if (res.exitCode !== 0) {
-        stepActive(out, `Auto-capture automation: ${res.stderr.trim()}`);
-        return {
-          stdout: "",
-          stderr: res.stderr,
-          exitCode: res.exitCode,
-        };
-      }
-      stepDone(out, `Auto-capture automation installed`);
-    }
-  } else {
-    stepSkipped(out, `Auto-capture automation ${DIM}skipped${RST}`);
-  }
-  out.write(BAR + "\n");
-
-  // Step 3: install the guides.
-  let guidesAction: InstallDecision = "install";
-  if (options.skipGuides === true) {
-    guidesAction = "skip";
-  } else if (interactive) {
-    guidesAction = await confirm(
-      out,
-      "Add Almanac instructions for your AI agents?",
-      true,
-    );
-  }
-
-  let guidesSummary: string;
-  if (guidesAction === "install") {
-    try {
-      const summary = await installAgentInstructions({
-        claudeDir: options.claudeDir ?? path.join(homedir(), ".claude"),
-        codexDir: options.codexDir ?? path.join(homedir(), ".codex"),
-        guidesDir: options.guidesDir ?? resolveGuidesDir(),
-      });
-      guidesSummary = summary.anyChanges
-        ? `Agent instructions added`
-        : `Agent instructions ${DIM}already added${RST}`;
-      stepDone(out, guidesSummary);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return {
-        stdout: "",
-        stderr: `almanac: guide install failed: ${msg}\n`,
-        exitCode: 1,
-      };
-    }
-  } else {
-    stepSkipped(out, `Agent instructions ${DIM}skipped${RST}`);
-  }
-  out.write(BAR + "\n");
-
-  let autoCommitAction: InstallDecision = "skip";
-  if (options.autoCommit === true) {
-    autoCommitAction = "install";
-  } else if (interactive) {
-    autoCommitAction = await confirm(
-      out,
-      "Commit Almanac wiki updates automatically?",
-      false,
-    );
-  }
-
-  if (autoCommitAction === "install") {
-    await writeConfig({ auto_commit: true });
-    stepDone(out, "Auto-commit enabled");
-  } else {
-    if (interactive) await writeConfig({ auto_commit: false });
-    stepSkipped(out, `Auto-commit ${DIM}disabled${RST}`);
-  }
-  out.write(BAR + "\n");
+  await runAutoCommitSetupStep({ out, interactive, options });
 
   stepDone(out, `${BLUE}Setup complete${RST}`);
   out.write("\n");
@@ -369,12 +215,4 @@ export async function runSetup(
   printNextSteps(out, existingPageCount);
 
   return { stdout: "", stderr: "", exitCode: 0 };
-}
-
-function globalAlmanacProgramArguments(quiet = "45m"): string[] {
-  return ["/usr/bin/env", "almanac", "capture", "sweep", "--quiet", quiet];
-}
-
-function globalGardenProgramArguments(): string[] {
-  return ["/usr/bin/env", "almanac", "garden"];
 }
