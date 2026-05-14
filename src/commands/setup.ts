@@ -76,6 +76,10 @@ export interface SetupOptions {
   gardenEvery?: string;
   /** Don't install the scheduled Garden job. */
   gardenOff?: boolean;
+  /** Install scheduled Almanac self-update. */
+  autoUpdate?: boolean;
+  /** Configure the scheduled self-update interval. Defaults to 1d. */
+  autoUpdateEvery?: string;
   /** Don't install the CLAUDE.md guides. */
   skipGuides?: boolean;
   /** Allow lifecycle runs to commit wiki source changes automatically. */
@@ -92,6 +96,8 @@ export interface SetupOptions {
   automationPlistPath?: string;
   /** Override the Garden launchd plist path. */
   gardenPlistPath?: string;
+  /** Override the update launchd plist path. */
+  updatePlistPath?: string;
   /** Override launchctl execution. */
   automationExec?: AutomationExecFn;
   /** Override `~/.claude/` dir for guide install. */

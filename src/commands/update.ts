@@ -1,5 +1,4 @@
-import { spawn, type SpawnOptions } from "node:child_process";
-import { createRequire } from "node:module";
+import { spawn } from "node:child_process";
 
 import { checkForUpdate } from "../update/check.js";
 import {
@@ -7,8 +6,11 @@ import {
   writeConfig,
   type GlobalConfig,
 } from "../config/index.js";
+import { installLatestPackage } from "../update/install.js";
+import { acquireUpdateLock } from "../update/lock.js";
 import { isNewer } from "../update/semver.js";
 import { readState, writeState } from "../update/state.js";
+import { readInstalledVersion } from "../update/version.js";
 
 /**
  * `almanac update` — manual upgrade command, the counterpart to the
@@ -51,6 +53,10 @@ export interface UpdateOptions {
   spawnFn?: typeof spawn;
   /** Clock for deterministic `last_check_at` assertions. */
   now?: () => number;
+  /** Override the update-install lock path (tests point at a tmpdir). */
+  lockPath?: string;
+  /** Override lock staleness (tests use short windows). */
+  lockStaleSeconds?: number;
 }
 
 export interface UpdateResult {
@@ -79,7 +85,7 @@ export async function runUpdate(
   if (opts.check === true) {
     return await forceCheck(opts);
   }
-  return await installLatest(opts);
+  return await installIfNeeded(opts);
 }
 
 // ─── --dismiss ────────────────────────────────────────────────────
@@ -200,114 +206,81 @@ async function toggleNotifier(
 
 // ─── default: install ─────────────────────────────────────────────
 
-async function installLatest(opts: UpdateOptions): Promise<UpdateResult> {
-  const spawnFn = opts.spawnFn ?? spawn;
+async function installIfNeeded(opts: UpdateOptions): Promise<UpdateResult> {
   const installed = opts.installedVersion ?? readInstalledVersion();
-
-  // Inherit stdio so npm's progress bar, permission prompts, and
-  // peer-dep warnings land in the user's terminal verbatim. No
-  // wrapping, no capture — npm output is its own contract.
-  const spawnOpts: SpawnOptions = { stdio: "inherit" };
-
-  return await new Promise<UpdateResult>((resolve) => {
-    const child = spawnFn(
-      "npm",
-      ["i", "-g", "codealmanac@latest"],
-      spawnOpts,
-    );
-
-    // Two failure modes need distinct messaging:
-    //   - ENOENT: npm isn't on PATH. Rare on dev laptops, common in
-    //     stripped-down CI containers. Tell the user what we tried to
-    //     run so they can diagnose.
-    //   - EACCES / exit code 243 / etc.: npm ran but couldn't write
-    //     to the global prefix. Suggest sudo; don't try it ourselves
-    //     (silently escalating privileges would be a trust violation,
-    //     and the pair review explicitly rejected it).
-    child.on("error", (err: NodeJS.ErrnoException) => {
-      if (err.code === "ENOENT") {
-        resolve({
-          stdout: "",
-          stderr:
-            "almanac: `npm` not found on PATH. " +
-            "Install Node.js + npm, or install the codealmanac package via your package manager.\n",
-          exitCode: 1,
-        });
-        return;
-      }
-      resolve({
-        stdout: "",
-        stderr: `almanac: failed to run npm: ${err.message}\n`,
-        exitCode: 1,
-      });
-    });
-
-    child.on("exit", async (code, _signal) => {
-      const exitCode = code ?? 1;
-      if (exitCode !== 0) {
-        // Check for the common EACCES cause. npm prints "EACCES" to
-        // stderr, which we don't have (inherited stdio), so we rely
-        // on exit code heuristics + a generic hint.
-        const hint =
-          `almanac: npm install failed (exit ${exitCode}).\n` +
-          `If you see "EACCES" above, try: sudo npm i -g codealmanac@latest\n` +
-          `Or install with a version manager (nvm, volta, fnm) to avoid sudo.\n`;
-        resolve({ stdout: "", stderr: hint, exitCode });
-        return;
-      }
-      // On success, refresh the state file so the next command's
-      // banner reflects that we're current. We can't read the new
-      // version out of our own process (we're still running the old
-      // build); we record what the state file's latest_version was,
-      // on the assumption that npm installed that version.
-      try {
-        const state = await readState(opts.statePath);
-        const now =
-          opts.now ?? (() => Math.floor(Date.now() / 1000));
-        await writeState(
-          {
-            last_check_at: now(),
-            installed_version: state.latest_version || installed,
-            latest_version: state.latest_version || installed,
-            dismissed_versions: state.dismissed_versions,
-          },
-          opts.statePath,
-        );
-      } catch {
-        // Non-fatal: the next `almanac` invocation will re-run the
-        // background check and refresh state properly.
-      }
-      resolve({
-        stdout: "almanac: updated.\n",
-        stderr: "",
-        exitCode: 0,
-      });
-    });
+  const checkFn = opts.checkFn ?? checkForUpdate;
+  const result = await checkFn({
+    installedVersion: installed,
+    force: true,
+    statePath: opts.statePath,
+    now: opts.now,
   });
-}
+  if (result.fetchFailed) {
+    return {
+      stdout: "",
+      stderr:
+        `almanac: could not reach registry.npmjs.org (timeout or network error).\n` +
+        `Installed: ${installed}. No install attempted.\n`,
+      exitCode: 1,
+    };
+  }
+  const latest = result.state.latest_version;
+  if (latest.length === 0) {
+    return {
+      stdout: `almanac: installed ${installed}; registry did not report a latest tag.\n`,
+      stderr: "",
+      exitCode: 0,
+    };
+  }
+  if (!isNewer(latest, installed)) {
+    return {
+      stdout: `almanac: up to date (${installed}).\n`,
+      stderr: "",
+      exitCode: 0,
+    };
+  }
+  if (result.state.dismissed_versions.includes(latest)) {
+    return {
+      stdout:
+        `almanac: ${latest} is available but dismissed; no install attempted.\n` +
+        `Run \`almanac update --check\` to inspect update state.\n`,
+      stderr: "",
+      exitCode: 0,
+    };
+  }
 
-function readInstalledVersion(): string {
-  // Dev layout: `src/commands/update.ts` → `../../package.json`.
-  // Bundled layout: `dist/codealmanac.js` → `../package.json`. We try
-  // both so the version lookup works from both. (Same approach as
-  // `cli.ts` and `doctor.ts`, which hit the same ambiguity.)
-  try {
-    const require = createRequire(import.meta.url);
-    const pkg = require("../../package.json") as { version?: unknown };
-    if (typeof pkg.version === "string" && pkg.version.length > 0) {
-      return pkg.version;
-    }
-  } catch {
-    // Fall through.
+  const lock = await acquireUpdateLock({
+    path: opts.lockPath,
+    now: opts.now,
+    staleSeconds: opts.lockStaleSeconds,
+  });
+  if (lock === null) {
+    return {
+      stdout: "almanac: update already in progress; no install attempted.\n",
+      stderr: "",
+      exitCode: 0,
+    };
   }
   try {
-    const require = createRequire(import.meta.url);
-    const pkg = require("../package.json") as { version?: unknown };
-    if (typeof pkg.version === "string" && pkg.version.length > 0) {
-      return pkg.version;
+    const install = await installLatestPackage({ spawnFn: opts.spawnFn });
+    if (install.exitCode !== 0) return install;
+    try {
+      const state = await readState(opts.statePath);
+      const now = opts.now ?? (() => Math.floor(Date.now() / 1000));
+      await writeState(
+        {
+          last_check_at: now(),
+          installed_version: latest,
+          latest_version: latest,
+          dismissed_versions: state.dismissed_versions,
+        },
+        opts.statePath,
+      );
+    } catch {
+      // Non-fatal: the next invocation will refresh state.
     }
-  } catch {
-    // Fall through.
+    return install;
+  } finally {
+    await lock.release();
   }
-  return "unknown";
 }

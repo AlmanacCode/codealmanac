@@ -12,6 +12,8 @@ export interface SetupShortcutOptions {
   automationQuiet?: string;
   gardenEvery?: string;
   gardenOff?: boolean;
+  autoUpdate?: boolean;
+  autoUpdateEvery?: string;
   skipGuides?: boolean;
   autoCommit?: boolean;
 }
@@ -107,6 +109,7 @@ async function runSetupFastPath(
 async function runAutomationFastPath(args: string[]): Promise<boolean> {
   const subcommand = args[1];
   const {
+    parseAutomationTaskIds,
     runAutomationInstall,
     runAutomationStatus,
     runAutomationUninstall,
@@ -117,15 +120,34 @@ async function runAutomationFastPath(args: string[]): Promise<boolean> {
       emit({ stdout: "", stderr: `almanac: ${parsed.error}\n`, exitCode: 1 });
       return true;
     }
-    emit(await runAutomationInstall({ ...parsed.options, cwd: process.cwd() }));
+    const tasks = parseAutomationTaskIds(parsed.tasks);
+    if (!tasks.ok) {
+      emit({ stdout: "", stderr: `almanac: ${tasks.error}\n`, exitCode: 1 });
+      return true;
+    }
+    emit(await runAutomationInstall({
+      ...parsed.options,
+      tasks: tasks.tasks,
+      cwd: process.cwd(),
+    }));
     return true;
   }
   if (subcommand === "uninstall") {
-    emit(await runAutomationUninstall());
+    const tasks = parseAutomationTaskIds(args.slice(2));
+    if (!tasks.ok) {
+      emit({ stdout: "", stderr: `almanac: ${tasks.error}\n`, exitCode: 1 });
+      return true;
+    }
+    emit(await runAutomationUninstall({ tasks: tasks.tasks }));
     return true;
   }
   if (subcommand === "status") {
-    emit(await runAutomationStatus());
+    const tasks = parseAutomationTaskIds(args.slice(2));
+    if (!tasks.ok) {
+      emit({ stdout: "", stderr: `almanac: ${tasks.error}\n`, exitCode: 1 });
+      return true;
+    }
+    emit(await runAutomationStatus({ tasks: tasks.tasks }));
     return true;
   }
   return false;
@@ -302,11 +324,13 @@ function parseDoctorFlags(args: string[]): {
 export function parseAutomationInstallFlags(args: string[]): {
   ok: true;
   options: { every?: string; quiet?: string; gardenEvery?: string; gardenOff?: boolean };
+  tasks: string[];
 } | {
   ok: false;
   error: string;
 } {
   const options: { every?: string; quiet?: string; gardenEvery?: string; gardenOff?: boolean } = {};
+  const tasks: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const parsed = splitFlagValue(args[i]!);
     const arg = parsed.flag;
@@ -315,6 +339,7 @@ export function parseAutomationInstallFlags(args: string[]): {
       continue;
     }
     if (arg !== "--every" && arg !== "--quiet" && arg !== "--garden-every") {
+      tasks.push(args[i]!);
       continue;
     }
     const value = parsed.value ?? args[i + 1];
@@ -330,7 +355,7 @@ export function parseAutomationInstallFlags(args: string[]): {
     }
     if (parsed.value === undefined) i++;
   }
-  return { ok: true, options };
+  return { ok: true, options, tasks };
 }
 
 /**
@@ -393,6 +418,17 @@ function parseSetupShortcutFlags(args: string[]): SetupShortcutOptions | null {
     }
     if (arg === "--garden-off" && parsed.value === undefined) {
       opts.gardenOff = true;
+      continue;
+    }
+    if (arg === "--auto-update" && parsed.value === undefined) {
+      opts.autoUpdate = true;
+      continue;
+    }
+    if (arg === "--auto-update-every") {
+      const value = parsed.value ?? args[i + 1];
+      if (value === undefined || value.startsWith("-")) return null;
+      opts.autoUpdateEvery = value;
+      if (parsed.value === undefined) i += 1;
       continue;
     }
     if (arg === "--skip-guides" && parsed.value === undefined) {

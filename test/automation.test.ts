@@ -2,7 +2,11 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { runAutomationInstall, runAutomationStatus } from "../src/commands/automation.js";
+import {
+  runAutomationInstall,
+  runAutomationStatus,
+  runAutomationUninstall,
+} from "../src/commands/automation.js";
 import { readConfig } from "../src/config/index.js";
 import { withTempHome } from "./helpers.js";
 
@@ -277,6 +281,88 @@ describe("almanac automation", () => {
       expect(result.stdout).toContain("garden automation: installed");
       expect(result.stdout).toContain("launchd loaded: yes");
       expect(result.stdout).toContain("launchd loaded: no");
+    });
+  });
+
+  it("installs update automation as a selected task", async () => {
+    await withTempHome(async (home) => {
+      const updatePlistPath = join(
+        home,
+        "Library",
+        "LaunchAgents",
+        "com.codealmanac.update.plist",
+      );
+
+      const result = await runAutomationInstall({
+        tasks: ["update"],
+        every: "1d",
+        updatePlistPath,
+        exec: async () => ({}),
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("update interval: 1d");
+      expect(result.stdout).toContain("update command:");
+      expect(result.stdout).toContain(" update");
+      expect(result.stdout).toContain(`update plist: ${updatePlistPath}`);
+
+      const plist = await readFile(updatePlistPath, "utf8");
+      expect(plist).toContain("<string>com.codealmanac.update</string>");
+      expect(plist).toContain("<integer>86400</integer>");
+      expect(plist).toContain("<string>update</string>");
+    });
+  });
+
+  it("reports status for only the selected update task", async () => {
+    await withTempHome(async (home) => {
+      const updatePlistPath = join(
+        home,
+        "Library",
+        "LaunchAgents",
+        "com.codealmanac.update.plist",
+      );
+      await runAutomationInstall({
+        tasks: ["update"],
+        updatePlistPath,
+        exec: async () => ({}),
+      });
+
+      const result = await runAutomationStatus({
+        tasks: ["update"],
+        updatePlistPath,
+        exec: async () => ({}),
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("auto-update automation: installed");
+      expect(result.stdout).not.toContain("auto-capture automation");
+      expect(result.stdout).not.toContain("garden automation");
+    });
+  });
+
+  it("uninstalls only the selected update task", async () => {
+    await withTempHome(async (home) => {
+      const updatePlistPath = join(
+        home,
+        "Library",
+        "LaunchAgents",
+        "com.codealmanac.update.plist",
+      );
+      await runAutomationInstall({
+        tasks: ["update"],
+        updatePlistPath,
+        exec: async () => ({}),
+      });
+
+      const result = await runAutomationUninstall({
+        tasks: ["update"],
+        updatePlistPath,
+        exec: async () => ({}),
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("automation removed");
+      await expect(readFile(updatePlistPath, "utf8")).rejects.toThrow();
     });
   });
 });

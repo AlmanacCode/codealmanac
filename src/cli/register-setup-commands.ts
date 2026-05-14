@@ -150,6 +150,8 @@ export function registerSetupCommands(program: Command): void {
     .option("--auto-capture-quiet <duration>", "scheduled auto-capture quiet window (default: 45m)")
     .option("--garden-every <duration>", "scheduled Garden interval (default: 2d)")
     .option("--garden-off", "disable scheduled Garden automation")
+    .option("--auto-update", "install scheduled Almanac self-update")
+    .option("--auto-update-every <duration>", "scheduled self-update interval (default: 1d)")
     .option("--skip-guides", "opt out of the CLAUDE.md guides")
     .option("--auto-commit", "allow Almanac lifecycle runs to commit wiki source changes")
     .action(
@@ -162,6 +164,8 @@ export function registerSetupCommands(program: Command): void {
         autoCaptureQuiet?: string;
         gardenEvery?: string;
         gardenOff?: boolean;
+        autoUpdate?: boolean;
+        autoUpdateEvery?: string;
         skipGuides?: boolean;
         autoCommit?: boolean;
       }) => {
@@ -174,6 +178,8 @@ export function registerSetupCommands(program: Command): void {
           automationQuiet: opts.autoCaptureQuiet,
           gardenEvery: opts.gardenEvery,
           gardenOff: opts.gardenOff,
+          autoUpdate: opts.autoUpdate,
+          autoUpdateEvery: opts.autoUpdateEvery,
           skipGuides: opts.skipGuides,
           autoCommit: opts.autoCommit,
         });

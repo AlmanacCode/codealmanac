@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
@@ -316,18 +316,83 @@ describe("almanac update --enable-notifier / --disable-notifier", () => {
 });
 
 describe("almanac update (default install path)", () => {
-  it("invokes npm with the expected args on default invocation", async () => {
+  it("does not invoke npm when already current", async () => {
     await withTempHome(async (home) => {
       const statePath = statePathIn(home);
-      await writeState(
-        {
+      const calls: { cmd: string; args: string[] }[] = [];
+      const wrapped = ((cmd: string, args: readonly string[]) => {
+        calls.push({ cmd, args: [...args] });
+        return fakeSpawn(0).spawnFn(cmd, args);
+      }) as unknown as typeof import("node:child_process").spawn;
+      const checkFn = vi.fn().mockResolvedValue({
+        state: {
+          last_check_at: 1_700_000_000,
+          installed_version: "0.1.6",
+          latest_version: "0.1.6",
+          dismissed_versions: [],
+        },
+        fetched: true,
+        fetchFailed: false,
+      });
+
+      const result = await runUpdate({
+        statePath,
+        installedVersion: "0.1.6",
+        spawnFn: wrapped,
+        checkFn: checkFn as never,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/up to date/);
+      expect(calls).toHaveLength(0);
+    });
+  });
+
+  it("does not invoke npm when the latest version was dismissed", async () => {
+    await withTempHome(async (home) => {
+      const statePath = statePathIn(home);
+      const calls: { cmd: string; args: string[] }[] = [];
+      const wrapped = ((cmd: string, args: readonly string[]) => {
+        calls.push({ cmd, args: [...args] });
+        return fakeSpawn(0).spawnFn(cmd, args);
+      }) as unknown as typeof import("node:child_process").spawn;
+      const checkFn = vi.fn().mockResolvedValue({
+        state: {
+          last_check_at: 1_700_000_000,
+          installed_version: "0.1.5",
+          latest_version: "0.1.6",
+          dismissed_versions: ["0.1.6"],
+        },
+        fetched: true,
+        fetchFailed: false,
+      });
+
+      const result = await runUpdate({
+        statePath,
+        installedVersion: "0.1.5",
+        spawnFn: wrapped,
+        checkFn: checkFn as never,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/dismissed/);
+      expect(calls).toHaveLength(0);
+    });
+  });
+
+  it("invokes npm with the expected args when a newer version exists", async () => {
+    await withTempHome(async (home) => {
+      const statePath = statePathIn(home);
+      const checkFn = vi.fn().mockResolvedValue({
+        state: {
           last_check_at: 1_700_000_000,
           installed_version: "0.1.5",
           latest_version: "0.1.6",
           dismissed_versions: [],
         },
-        statePath,
-      );
+        fetched: true,
+        fetchFailed: false,
+      });
       const calls: { cmd: string; args: string[] }[] = [];
       const { spawnFn } = fakeSpawn(0);
       const wrapped = ((cmd: string, args: readonly string[]) => {
@@ -342,6 +407,8 @@ describe("almanac update (default install path)", () => {
         statePath,
         installedVersion: "0.1.5",
         spawnFn: wrapped,
+        checkFn: checkFn as never,
+        lockPath: join(home, ".almanac", ".update-install.lock"),
       });
       expect(result.exitCode).toBe(0);
       expect(calls).toHaveLength(1);
@@ -353,11 +420,23 @@ describe("almanac update (default install path)", () => {
   it("emits an EACCES hint and propagates exit code when npm fails", async () => {
     await withTempHome(async (home) => {
       const statePath = statePathIn(home);
+      const checkFn = vi.fn().mockResolvedValue({
+        state: {
+          last_check_at: 1_700_000_000,
+          installed_version: "0.1.5",
+          latest_version: "0.1.6",
+          dismissed_versions: [],
+        },
+        fetched: true,
+        fetchFailed: false,
+      });
       const { spawnFn } = fakeSpawn(243);
       const result = await runUpdate({
         statePath,
         installedVersion: "0.1.5",
         spawnFn,
+        checkFn: checkFn as never,
+        lockPath: join(home, ".almanac", ".update-install.lock"),
       });
       expect(result.exitCode).toBe(243);
       expect(result.stderr).toMatch(/EACCES/);
@@ -368,11 +447,23 @@ describe("almanac update (default install path)", () => {
   it("emits a clear error when npm isn't on PATH", async () => {
     await withTempHome(async (home) => {
       const statePath = statePathIn(home);
+      const checkFn = vi.fn().mockResolvedValue({
+        state: {
+          last_check_at: 1_700_000_000,
+          installed_version: "0.1.5",
+          latest_version: "0.1.6",
+          dismissed_versions: [],
+        },
+        fetched: true,
+        fetchFailed: false,
+      });
       const spawnFn = fakeSpawnError("ENOENT");
       const result = await runUpdate({
         statePath,
         installedVersion: "0.1.5",
         spawnFn,
+        checkFn: checkFn as never,
+        lockPath: join(home, ".almanac", ".update-install.lock"),
       });
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toMatch(/`npm` not found/);
@@ -382,15 +473,16 @@ describe("almanac update (default install path)", () => {
   it("refreshes state on successful install", async () => {
     await withTempHome(async (home) => {
       const statePath = statePathIn(home);
-      await writeState(
-        {
+      const checkFn = vi.fn().mockResolvedValue({
+        state: {
           last_check_at: 1_700_000_000,
           installed_version: "0.1.5",
           latest_version: "0.1.6",
           dismissed_versions: [],
         },
-        statePath,
-      );
+        fetched: true,
+        fetchFailed: false,
+      });
       const { spawnFn } = fakeSpawn(0);
       const now = 1_700_100_000;
       await runUpdate({
@@ -398,11 +490,54 @@ describe("almanac update (default install path)", () => {
         installedVersion: "0.1.5",
         spawnFn,
         now: () => now,
+        checkFn: checkFn as never,
+        lockPath: join(home, ".almanac", ".update-install.lock"),
       });
       const after = await readState(statePath);
       expect(after.installed_version).toBe("0.1.6");
       expect(after.latest_version).toBe("0.1.6");
       expect(after.last_check_at).toBe(now);
+    });
+  });
+
+  it("does not invoke npm when another update holds the lock", async () => {
+    await withTempHome(async (home) => {
+      const statePath = statePathIn(home);
+      const lockPath = join(home, ".almanac", ".update-install.lock");
+      await mkdir(join(home, ".almanac"), { recursive: true });
+      await writeFile(lockPath, JSON.stringify({
+        pid: 123,
+        created_at: 1_700_000_000,
+      }), "utf8");
+      const calls: { cmd: string; args: string[] }[] = [];
+      const wrapped = ((cmd: string, args: readonly string[]) => {
+        calls.push({ cmd, args: [...args] });
+        return fakeSpawn(0).spawnFn(cmd, args);
+      }) as unknown as typeof import("node:child_process").spawn;
+      const checkFn = vi.fn().mockResolvedValue({
+        state: {
+          last_check_at: 1_700_000_000,
+          installed_version: "0.1.5",
+          latest_version: "0.1.6",
+          dismissed_versions: [],
+        },
+        fetched: true,
+        fetchFailed: false,
+      });
+
+      const result = await runUpdate({
+        statePath,
+        installedVersion: "0.1.5",
+        spawnFn: wrapped,
+        checkFn: checkFn as never,
+        lockPath,
+        lockStaleSeconds: 1_000,
+        now: () => 1_700_000_100,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/already in progress/);
+      expect(calls).toHaveLength(0);
     });
   });
 });

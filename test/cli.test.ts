@@ -90,6 +90,15 @@ describe("tryParseSetupShortcut", () => {
       .toEqual({ gardenOff: true });
   });
 
+  it("recognizes scheduled self-update setup options", () => {
+    expect(tryParseSetupShortcut(["--auto-update"]))
+      .toEqual({ autoUpdate: true });
+    expect(tryParseSetupShortcut(["--auto-update-every", "1d"]))
+      .toEqual({ autoUpdateEvery: "1d" });
+    expect(tryParseSetupShortcut(["--auto-update-every=1d"]))
+      .toEqual({ autoUpdateEvery: "1d" });
+  });
+
   it("accepts the full setup flag combo", () => {
     expect(
       tryParseSetupShortcut([
@@ -102,6 +111,9 @@ describe("tryParseSetupShortcut", () => {
         "1s",
         "--garden-every",
         "2d",
+        "--auto-update",
+        "--auto-update-every",
+        "1d",
       ]),
     ).toEqual({
       yes: true,
@@ -110,6 +122,8 @@ describe("tryParseSetupShortcut", () => {
       automationEvery: "2h",
       automationQuiet: "1s",
       gardenEvery: "2d",
+      autoUpdate: true,
+      autoUpdateEvery: "1d",
     });
   });
 
@@ -159,10 +173,17 @@ describe("parseAutomationInstallFlags", () => {
         gardenEvery: "1w",
         gardenOff: true,
       },
+      tasks: [],
     });
     expect(parseAutomationInstallFlags(["--garden-every", "2d"])).toEqual({
       ok: true,
       options: { gardenEvery: "2d" },
+      tasks: [],
+    });
+    expect(parseAutomationInstallFlags(["update", "--every", "1d"])).toEqual({
+      ok: true,
+      options: { every: "1d" },
+      tasks: ["update"],
     });
   });
 

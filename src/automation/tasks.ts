@@ -5,12 +5,14 @@ import { fileURLToPath } from "node:url";
 
 export const CAPTURE_SWEEP_LABEL = "com.codealmanac.capture-sweep";
 export const GARDEN_LABEL = "com.codealmanac.garden";
+export const UPDATE_LABEL = "com.codealmanac.update";
 
 export const DEFAULT_CAPTURE_INTERVAL = "5h";
 export const DEFAULT_CAPTURE_QUIET = "45m";
 export const DEFAULT_GARDEN_INTERVAL = "2d";
+export const DEFAULT_UPDATE_INTERVAL = "1d";
 
-export type ScheduledTaskId = "capture-sweep" | "garden";
+export type ScheduledTaskId = "capture" | "garden" | "update";
 export type ScheduledTaskWorkingDirectory = "none" | "nearest-almanac-repo";
 
 export interface ScheduledTaskDefinition {
@@ -25,7 +27,7 @@ export interface ScheduledTaskDefinition {
 }
 
 export const CAPTURE_SWEEP_TASK: ScheduledTaskDefinition = {
-  id: "capture-sweep",
+  id: "capture",
   label: CAPTURE_SWEEP_LABEL,
   defaultInterval: DEFAULT_CAPTURE_INTERVAL,
   plistPath: (home) =>
@@ -54,10 +56,35 @@ export const GARDEN_TASK: ScheduledTaskDefinition = {
   programArguments: () => [...defaultCliProgramArguments(), "garden"],
 };
 
+export const UPDATE_TASK: ScheduledTaskDefinition = {
+  id: "update",
+  label: UPDATE_LABEL,
+  defaultInterval: DEFAULT_UPDATE_INTERVAL,
+  plistPath: (home) =>
+    path.join(home, "Library", "LaunchAgents", `${UPDATE_LABEL}.plist`),
+  stdoutLogName: "update.out.log",
+  stderrLogName: "update.err.log",
+  workingDirectory: "none",
+  programArguments: () => [...defaultCliProgramArguments(), "update"],
+};
+
 export const SCHEDULED_TASKS = {
-  captureSweep: CAPTURE_SWEEP_TASK,
+  capture: CAPTURE_SWEEP_TASK,
   garden: GARDEN_TASK,
+  update: UPDATE_TASK,
 } as const;
+
+export const DEFAULT_AUTOMATION_TASK_IDS: ScheduledTaskId[] = ["capture", "garden"];
+
+export function scheduledTaskDefinition(
+  id: ScheduledTaskId,
+): ScheduledTaskDefinition {
+  return SCHEDULED_TASKS[id];
+}
+
+export function isScheduledTaskId(value: string): value is ScheduledTaskId {
+  return value === "capture" || value === "garden" || value === "update";
+}
 
 export function scheduledTaskLogPaths(
   task: ScheduledTaskDefinition,
@@ -94,6 +121,10 @@ export function defaultCapturePlistPath(home: string = homedir()): string {
 
 export function defaultGardenPlistPath(home: string = homedir()): string {
   return GARDEN_TASK.plistPath(home);
+}
+
+export function defaultUpdatePlistPath(home: string = homedir()): string {
+  return UPDATE_TASK.plistPath(home);
 }
 
 function findPackageCliEntry(): string | null {

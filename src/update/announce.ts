@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
 
 import {
   getConfigPath,
@@ -8,6 +7,7 @@ import {
 } from "../config/index.js";
 import { isNewer } from "./semver.js";
 import { getStatePath, type UpdateState } from "./state.js";
+import { readInstalledVersion } from "./version.js";
 
 /**
  * Pre-command update-nag banner. Runs synchronously at the very top of
@@ -137,28 +137,4 @@ function readConfigSync(configPath: string): { update_notifier?: unknown } | nul
   } catch {
     return null;
   }
-}
-
-function readInstalledVersion(): string {
-  // Dev: `src/update/announce.ts` → `../../package.json`. Bundled:
-  // `dist/codealmanac.js` → `../package.json`. Try both.
-  try {
-    const require = createRequire(import.meta.url);
-    const pkg = require("../../package.json") as { version?: unknown };
-    if (typeof pkg.version === "string" && pkg.version.length > 0) {
-      return pkg.version;
-    }
-  } catch {
-    // Fall through.
-  }
-  try {
-    const require = createRequire(import.meta.url);
-    const pkg = require("../package.json") as { version?: unknown };
-    if (typeof pkg.version === "string" && pkg.version.length > 0) {
-      return pkg.version;
-    }
-  } catch {
-    // Fall through.
-  }
-  return "unknown";
 }

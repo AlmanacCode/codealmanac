@@ -1,6 +1,5 @@
-import { createRequire } from "node:module";
-
 import { readState, writeState, type UpdateState } from "./state.js";
+import { readInstalledVersion } from "./version.js";
 
 /**
  * Background update check. Called by the detached worker (`--internal-
@@ -142,32 +141,4 @@ export async function checkForUpdate(
     // Silent — same rationale as above.
   }
   return { state: next, fetched: true, fetchFailed: false };
-}
-
-/**
- * Read the `version` field from `package.json`. Matches the same
- * lookup strategy as `readPackageVersion` in `cli.ts` and `doctor.ts`;
- * duplicated here to keep the update module self-contained and to
- * avoid a circular import at CLI startup.
- */
-function readInstalledVersion(): string {
-  try {
-    const require = createRequire(import.meta.url);
-    const pkg = require("../../package.json") as { version?: unknown };
-    if (typeof pkg.version === "string" && pkg.version.length > 0) {
-      return pkg.version;
-    }
-  } catch {
-    // Fall through.
-  }
-  try {
-    const require = createRequire(import.meta.url);
-    const pkg = require("../package.json") as { version?: unknown };
-    if (typeof pkg.version === "string" && pkg.version.length > 0) {
-      return pkg.version;
-    }
-  } catch {
-    // Fall through.
-  }
-  return "unknown";
 }

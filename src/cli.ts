@@ -17,7 +17,7 @@ import { announceUpdateIfAvailable } from "./update/announce.js";
 import {
   runInternalUpdateCheck,
   scheduleBackgroundUpdateCheck,
-} from "./update/schedule.js";
+} from "./update/notifier-worker.js";
 
 /**
  * Optional dependency overrides for `run`. Tests use these to avoid

@@ -21,8 +21,11 @@ export interface AutomationSetupStepOptions {
   automationQuiet?: string;
   gardenEvery?: string;
   gardenOff?: boolean;
+  autoUpdate?: boolean;
+  autoUpdateEvery?: string;
   automationPlistPath?: string;
   gardenPlistPath?: string;
+  updatePlistPath?: string;
   automationExec?: AutomationExecFn;
 }
 
@@ -57,6 +60,7 @@ export async function runAutomationSetupStep(args: {
     } else {
       await cleanupLegacyHooks();
       const res = await runAutomationInstall({
+        tasks: ["capture", "garden"],
         every: args.options.automationEvery,
         quiet: args.options.automationQuiet,
         gardenEvery: args.options.gardenEvery,
@@ -81,6 +85,26 @@ export async function runAutomationSetupStep(args: {
         };
       }
       stepDone(args.out, "Auto-capture automation installed");
+      if (args.options.autoUpdate === true) {
+        const update = await runAutomationInstall({
+          tasks: ["update"],
+          every: args.options.autoUpdateEvery,
+          updateProgramArguments: args.ephemeral
+            ? globalUpdateProgramArguments()
+            : undefined,
+          updatePlistPath: args.options.updatePlistPath,
+          exec: args.options.automationExec,
+        });
+        if (update.exitCode !== 0) {
+          stepActive(args.out, `Auto-update automation: ${update.stderr.trim()}`);
+          return {
+            ok: false,
+            stderr: update.stderr,
+            exitCode: update.exitCode,
+          };
+        }
+        stepDone(args.out, "Auto-update automation installed");
+      }
     }
   } else {
     stepSkipped(args.out, `Auto-capture automation ${DIM}skipped${RST}`);
@@ -95,4 +119,8 @@ function globalAlmanacProgramArguments(quiet = "45m"): string[] {
 
 function globalGardenProgramArguments(): string[] {
   return ["/usr/bin/env", "almanac", "garden"];
+}
+
+function globalUpdateProgramArguments(): string[] {
+  return ["/usr/bin/env", "almanac", "update"];
 }

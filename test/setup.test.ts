@@ -204,6 +204,35 @@ describe("codealmanac setup", () => {
     });
   });
 
+  it("--auto-update installs the self-update scheduler task explicitly", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const updatePlistPath = join(
+        home,
+        "Library",
+        "LaunchAgents",
+        "com.codealmanac.update.plist",
+      );
+      const res = await runSetup({
+        yes: true,
+        autoUpdate: true,
+        autoUpdateEvery: "1d",
+        isTTY: false,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        automationPlistPath: env.plistPath,
+        updatePlistPath,
+        automationExec: async () => ({}),
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      expect(await readFile(updatePlistPath, "utf8")).toContain("<string>update</string>");
+      expect(env.stdout()).toContain("Auto-update automation installed");
+    });
+  });
+
   it("writes setup model overrides", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);

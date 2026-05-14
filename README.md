@@ -90,7 +90,7 @@ Capture writes nothing if nothing in the session meets the notability bar. Silen
 
 ## Setup And Auth
 
-Bare `almanac` opens the setup wizard. It chooses your default agent/model, checks readiness, installs scheduled capture and Garden automation, and adds optional agent guides.
+Bare `almanac` opens the setup wizard. It chooses your default agent/model, checks readiness, installs scheduled capture and Garden automation, and adds optional agent guides. Scheduled self-update is opt-in.
 
 Useful unattended setup flags:
 
@@ -103,6 +103,8 @@ almanac setup --auto-capture-every 2h
 almanac setup --auto-capture-quiet 30m
 almanac setup --garden-every 2d
 almanac setup --garden-off
+almanac setup --auto-update
+almanac setup --auto-update-every 1d
 ```
 
 Auto-commit is opt-in. Without `--auto-commit`, lifecycle runs leave wiki
@@ -147,7 +149,9 @@ Almanac never stores provider credentials. Auth stays in each provider's normal 
 | `almanac ingest docs/adr.md` | Absorb files or folders into the wiki. |
 | `almanac garden` | Audit and improve the wiki graph. |
 | `almanac jobs` | List local background runs. |
+| `almanac update` | Check npm and install the latest Almanac if one is available. |
 | `almanac automation install --every 2h` | Install or adjust scheduled capture and Garden. |
+| `almanac automation install update --every 1d` | Install scheduled Almanac self-update. |
 | `almanac doctor` | Check install, providers, automation, and wiki health. |
 
 Query commands and attached lifecycle runs are quiet by default. Use `--verbose` when you want human-readable
