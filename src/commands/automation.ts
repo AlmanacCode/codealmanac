@@ -108,6 +108,7 @@ export async function runAutomationInstall(
       gardenIntervalLabel: gardenValue,
       programArguments,
       gardenProgramArguments,
+      gardenWorkingDirectory,
       exec,
       captureSince,
     });

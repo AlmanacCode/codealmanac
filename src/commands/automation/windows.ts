@@ -19,6 +19,7 @@ interface WindowsAutomationManifest {
   command: string[];
   intervalSeconds: number;
   quiet?: string;
+  workingDirectory?: string;
 }
 
 export function defaultWindowsCaptureManifestPath(home: string = homedir()): string {
@@ -38,6 +39,7 @@ export async function installWindowsAutomation(args: {
   gardenIntervalLabel: string;
   programArguments: string[];
   gardenProgramArguments: string[];
+  gardenWorkingDirectory: string;
   exec: ExecFn;
   captureSince: string;
 }): Promise<CommandResult> {
@@ -86,13 +88,15 @@ export async function installWindowsAutomation(args: {
     try {
       await args.exec("schtasks", [
         "/Create",
-        "/TN",
-        WINDOWS_GARDEN_TASK,
-        ...gardenSchedule.args,
-        "/TR",
-        windowsTaskCommand(args.gardenProgramArguments),
-        "/F",
-      ]);
+	      "/TN",
+	      WINDOWS_GARDEN_TASK,
+	      ...gardenSchedule.args,
+	      "/TR",
+	      windowsTaskCommand(args.gardenProgramArguments, {
+	        workingDirectory: args.gardenWorkingDirectory,
+	      }),
+	      "/F",
+	    ]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       return {
@@ -101,12 +105,13 @@ export async function installWindowsAutomation(args: {
         exitCode: 1,
       };
     }
-    await writeWindowsManifest(gardenManifest, {
-      scheduler: "windows-task-scheduler",
-      taskName: WINDOWS_GARDEN_TASK,
-      command: args.gardenProgramArguments,
-      intervalSeconds: args.gardenIntervalSeconds,
-    });
+	    await writeWindowsManifest(gardenManifest, {
+	      scheduler: "windows-task-scheduler",
+	      taskName: WINDOWS_GARDEN_TASK,
+	      command: args.gardenProgramArguments,
+	      intervalSeconds: args.gardenIntervalSeconds,
+	      workingDirectory: args.gardenWorkingDirectory,
+	    });
   } else if (existsSync(gardenManifest)) {
     try {
       await args.exec("schtasks", ["/Delete", "/TN", WINDOWS_GARDEN_TASK, "/F"]);
@@ -126,12 +131,13 @@ export async function installWindowsAutomation(args: {
       `  capture command: ${args.programArguments.join(" ")}\n` +
       `  capture task: ${WINDOWS_CAPTURE_TASK}\n` +
       `  capture manifest: ${captureManifest}\n` +
-      (args.gardenIntervalSeconds !== null
-        ? `  garden interval: ${args.gardenIntervalLabel}\n` +
-          `  garden command: ${args.gardenProgramArguments.join(" ")}\n` +
-          `  garden task: ${WINDOWS_GARDEN_TASK}\n` +
-          `  garden manifest: ${gardenManifest}\n`
-        : `  garden: disabled\n`),
+	      (args.gardenIntervalSeconds !== null
+	        ? `  garden interval: ${args.gardenIntervalLabel}\n` +
+	          `  garden command: ${args.gardenProgramArguments.join(" ")}\n` +
+	          `  garden cwd: ${args.gardenWorkingDirectory}\n` +
+	          `  garden task: ${WINDOWS_GARDEN_TASK}\n` +
+	          `  garden manifest: ${gardenManifest}\n`
+	        : `  garden: disabled\n`),
     stderr: "",
     exitCode: 0,
   };
@@ -220,11 +226,14 @@ async function readWindowsManifest(
     ) {
       return {
         scheduler: "windows-task-scheduler",
-        taskName: parsed.taskName,
-        command: parsed.command,
-        intervalSeconds: parsed.intervalSeconds,
-        quiet: typeof parsed.quiet === "string" ? parsed.quiet : undefined,
-      };
+	        taskName: parsed.taskName,
+	        command: parsed.command,
+	        intervalSeconds: parsed.intervalSeconds,
+	        quiet: typeof parsed.quiet === "string" ? parsed.quiet : undefined,
+	        workingDirectory: typeof parsed.workingDirectory === "string"
+	          ? parsed.workingDirectory
+	          : undefined,
+	      };
     }
   } catch {
     return null;
@@ -248,8 +257,14 @@ function windowsSchedule(
   };
 }
 
-function windowsTaskCommand(args: string[]): string {
-  return args.map(quoteWindowsTaskArg).join(" ");
+function windowsTaskCommand(
+  args: string[],
+  options: { workingDirectory?: string } = {},
+): string {
+  const command = args.map(quoteWindowsTaskArg).join(" ");
+  if (options.workingDirectory === undefined) return command;
+  const cdCommand = `cd /d ${quoteWindowsTaskArg(options.workingDirectory)}`;
+  return `cmd.exe /d /s /c "${cdCommand} && ${command}"`;
 }
 
 function quoteWindowsTaskArg(arg: string): string {

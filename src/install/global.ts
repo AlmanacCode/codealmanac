@@ -28,6 +28,7 @@ export interface CodealmanacBootstrapOptions {
   currentPackageRoot?: string;
   globalPackageRoot?: string;
   env?: NodeJS.ProcessEnv;
+  platform?: NodeJS.Platform;
 }
 
 const SKIP_BOOTSTRAP_ENV = "CODEALMANAC_SKIP_GLOBAL_BOOTSTRAP";
@@ -36,6 +37,7 @@ export async function runCodealmanacBootstrap(
   opts: CodealmanacBootstrapOptions,
 ): Promise<SetupResult> {
   const env = opts.env ?? process.env;
+  const platform = opts.platform ?? process.platform;
   const runSetupFn = opts.runSetup ?? runSetup;
   const currentRoot = opts.currentPackageRoot ?? findCurrentPackageRoot();
 
@@ -46,7 +48,7 @@ export async function runCodealmanacBootstrap(
   const globalRootResult =
     opts.globalPackageRoot !== undefined
       ? { ok: true as const, path: opts.globalPackageRoot }
-      : await resolveGlobalPackageRoot(opts.spawnFn ?? spawn);
+      : await resolveGlobalPackageRoot(opts.spawnFn ?? spawn, platform);
 
   if (!globalRootResult.ok) {
     return {
@@ -62,10 +64,11 @@ export async function runCodealmanacBootstrap(
   }
 
   if (await shouldInstallGlobal(currentRoot, globalRoot)) {
+    const npmInstall = npmCommand(["i", "-g", "codealmanac@latest"], platform);
     const install = await spawnInherited(
       opts.spawnFn ?? spawn,
-      "npm",
-      ["i", "-g", "codealmanac@latest"],
+      npmInstall.cmd,
+      npmInstall.args,
       env,
     );
     if (install.exitCode !== 0) {
@@ -153,8 +156,10 @@ function findCurrentPackageRoot(): string {
 
 async function resolveGlobalPackageRoot(
   spawnFn: typeof spawn,
+  platform: NodeJS.Platform,
 ): Promise<{ ok: true; path: string } | { ok: false; stderr: string }> {
-  const result = await spawnCaptured(spawnFn, "npm", ["root", "-g"]);
+  const npmRoot = npmCommand(["root", "-g"], platform);
+  const result = await spawnCaptured(spawnFn, npmRoot.cmd, npmRoot.args);
   if (result.exitCode !== 0) {
     return {
       ok: false,
@@ -175,6 +180,19 @@ async function resolveGlobalPackageRoot(
   }
 
   return { ok: true, path: path.join(root, "codealmanac") };
+}
+
+function npmCommand(
+  args: string[],
+  platform: NodeJS.Platform,
+): { cmd: string; args: string[] } {
+  if (platform === "win32") {
+    return {
+      cmd: "cmd.exe",
+      args: ["/d", "/s", "/c", ["npm.cmd", ...args].join(" ")],
+    };
+  }
+  return { cmd: "npm", args };
 }
 
 async function spawnInherited(

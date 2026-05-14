@@ -13,11 +13,14 @@ import { withTempHome } from "./helpers.js";
 describe("almanac automation", () => {
   it("installs Windows Task Scheduler tasks through the platform adapter", async () => {
     await withTempHome(async (home) => {
+      const repo = join(home, "repo");
+      await mkdir(join(repo, ".almanac"), { recursive: true });
       const calls: string[] = [];
 
       const result = await runAutomationInstall({
         platform: "win32",
         homeDir: home,
+        cwd: repo,
         every: "20m",
         quiet: "5m",
         gardenEvery: "2d",
@@ -38,7 +41,7 @@ describe("almanac automation", () => {
         "schtasks /Create /TN \\CodeAlmanac\\CaptureSweep /SC MINUTE /MO 20 /TR \"C:\\Program Files\\nodejs\\node.exe\" \"C:\\codealmanac\\dist\\codealmanac.js\" capture sweep --quiet 5m /F",
       );
       expect(calls).toContain(
-        "schtasks /Create /TN \\CodeAlmanac\\Garden /SC DAILY /MO 2 /TR \"C:\\Program Files\\nodejs\\node.exe\" \"C:\\codealmanac\\dist\\codealmanac.js\" garden /F",
+        `schtasks /Create /TN \\CodeAlmanac\\Garden /SC DAILY /MO 2 /TR cmd.exe /d /s /c "cd /d ${repo} && "C:\\Program Files\\nodejs\\node.exe" "C:\\codealmanac\\dist\\codealmanac.js" garden" /F`,
       );
       const captureManifest = await readFile(
         join(home, ".almanac", "automation", "windows-capture-sweep.json"),
@@ -49,6 +52,16 @@ describe("almanac automation", () => {
         taskName: "\\CodeAlmanac\\CaptureSweep",
         intervalSeconds: 1200,
         quiet: "5m",
+      });
+      const gardenManifest = await readFile(
+        join(home, ".almanac", "automation", "windows-garden.json"),
+        "utf8",
+      );
+      expect(JSON.parse(gardenManifest)).toMatchObject({
+        scheduler: "windows-task-scheduler",
+        taskName: "\\CodeAlmanac\\Garden",
+        intervalSeconds: 172800,
+        workingDirectory: repo,
       });
     });
   });

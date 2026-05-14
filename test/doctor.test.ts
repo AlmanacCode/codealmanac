@@ -158,6 +158,8 @@ describe("almanac doctor", () => {
         JSON.stringify({
           scheduler: "windows-task-scheduler",
           taskName: "\\CodeAlmanac\\CaptureSweep",
+          command: ["almanac.cmd", "capture", "sweep", "--quiet", "45m"],
+          intervalSeconds: 18000,
         }),
         "utf8",
       );
@@ -171,6 +173,7 @@ describe("almanac doctor", () => {
         sqliteProbe: SQLITE_OK,
         installPath: "/fake",
         versionOverride: "0.1.3",
+        windowsTaskExists: () => true,
       });
 
       const parsed = JSON.parse(r.stdout);
@@ -180,6 +183,70 @@ describe("almanac doctor", () => {
       expect(automation.status).toBe("ok");
       expect(automation.message).toContain("Windows Task Scheduler");
       expect(automation.message).toContain("\\CodeAlmanac\\CaptureSweep");
+    });
+  });
+
+  it("flags stale or malformed Windows automation manifests", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyInstall(home);
+      const manifestPath = join(home, ".almanac", "automation", "windows-capture-sweep.json");
+      await mkdir(dirname(manifestPath), { recursive: true });
+      await writeFile(
+        manifestPath,
+        JSON.stringify({
+          scheduler: "windows-task-scheduler",
+          taskName: "\\CodeAlmanac\\CaptureSweep",
+          command: ["almanac.cmd", "capture", "sweep", "--quiet", "45m"],
+          intervalSeconds: 18000,
+        }),
+        "utf8",
+      );
+
+      const stale = await runDoctor({
+        cwd: home,
+        json: true,
+        platform: "win32",
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.3",
+        windowsTaskExists: () => false,
+      });
+
+      let parsed = JSON.parse(stale.stdout);
+      let automation = parsed.install.find(
+        (c: { key: string }) => c.key === "install.automation",
+      );
+      expect(automation.status).toBe("problem");
+      expect(automation.message).toContain("Task Scheduler task is missing");
+
+      await writeFile(
+        manifestPath,
+        JSON.stringify({
+          scheduler: "windows-task-scheduler",
+          taskName: "\\CodeAlmanac\\CaptureSweep",
+        }),
+        "utf8",
+      );
+      const malformed = await runDoctor({
+        cwd: home,
+        json: true,
+        platform: "win32",
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.3",
+        windowsTaskExists: () => true,
+      });
+
+      parsed = JSON.parse(malformed.stdout);
+      automation = parsed.install.find(
+        (c: { key: string }) => c.key === "install.automation",
+      );
+      expect(automation.status).toBe("problem");
+      expect(automation.message).toContain("manifest is invalid");
     });
   });
 

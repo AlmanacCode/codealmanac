@@ -49,7 +49,7 @@ The install section currently reports:
 
 [[src/commands/doctor-checks/install.ts]] expresses repairs as `fix: "run: ..."` strings. The command prints those hints, but it does not execute them.
 
-The automation check is platform-aware as of the Windows support work. macOS checks the launchd capture plist at `~/Library/LaunchAgents/com.codealmanac.capture-sweep.plist`; Windows checks the Task Scheduler manifest at `~/.almanac/automation/windows-capture-sweep.json` and reports the task name recorded there.
+The automation check is platform-aware as of the Windows support work. macOS checks the launchd capture plist at `~/Library/LaunchAgents/com.codealmanac.capture-sweep.plist`; Windows validates the Task Scheduler manifest at `~/.almanac/automation/windows-capture-sweep.json` and then confirms the recorded task name exists with `schtasks /Query`. A stale or malformed manifest is reported as a repairable problem, because otherwise doctor can say automation is healthy after a partial install or manual Task Scheduler deletion.
 
 Install-path classification is shared with setup through [[src/install/ephemeral.ts]]. That helper normalizes slashes and case before checking npm npx, pnpm dlx, `/tmp`, `/var/folders`, and Windows temp directories such as `%TEMP%`. Without that shared helper, setup and doctor could disagree about whether a Windows `npx` install is durable enough for scheduler installation.
 

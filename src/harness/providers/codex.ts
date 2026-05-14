@@ -179,7 +179,6 @@ export function runCodexCli(
       cwd: request.cwd,
       env: request.env,
       stdio: ["ignore", "pipe", "pipe"],
-      shell: process.platform === "win32",
     });
 
     let stdoutBuf = "";
