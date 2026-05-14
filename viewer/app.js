@@ -10,27 +10,25 @@ import {
 } from "./routes.js";
 import { createSearchSuggestions } from "./search-suggestions.js";
 
-const SIDEBAR_TAG_LIMIT = 8;
-
 const state = {
   wikis: [],
   currentWiki: null,
   overview: null,
   currentPage: null,
   pageTitles: new Map(),
-  showAllTopics: false,
+  topicFilter: null,
   historyIndex: 0,
 };
 
 const els = {
   shell: document.querySelector("#app"),
   reader: document.querySelector("#reader"),
-  topicList: document.querySelector("#topic-list"),
   pageMeta: document.querySelector("#page-meta"),
   backlinks: document.querySelector("#backlinks"),
   fileRefs: document.querySelector("#file-refs"),
   searchForm: document.querySelector("#search-form"),
   searchInput: document.querySelector("#search-input"),
+  topbarLinks: document.querySelectorAll(".ca-topbar-nav [data-route]"),
 };
 
 const jobsView = createJobsView({
@@ -76,19 +74,23 @@ function wireEvents() {
   searchSuggestions.wire();
 
   document.addEventListener("click", (event) => {
-    const topicToggle = event.target.closest("[data-topic-toggle]");
-    if (topicToggle !== null) {
-      event.preventDefault();
-      state.showAllTopics = !state.showAllTopics;
-      renderChrome();
-      setActiveNav(location.pathname);
-      return;
-    }
-
     const back = event.target.closest("[data-back]");
     if (back !== null) {
       event.preventDefault();
       goBack();
+      return;
+    }
+
+    const filterBtn = event.target.closest("[data-topic-filter]");
+    if (filterBtn !== null) {
+      event.preventDefault();
+      const value = filterBtn.dataset.topicFilter || "";
+      const next = value === "" ? null : value;
+      state.topicFilter = state.topicFilter === next ? null : next;
+      if (state.currentWiki !== null && state.overview !== null
+          && (location.pathname === wikiRoute("/") || location.pathname === wikiRoute(""))) {
+        renderOverview().catch((error) => renderError(error));
+      }
       return;
     }
 
@@ -125,6 +127,7 @@ async function route(pathname, search = "", push = true) {
     state.currentWiki = null;
     state.overview = null;
     state.currentPage = null;
+    state.topicFilter = null;
     renderChrome();
     setActiveNav(pathname);
     setRailVisible(false);
@@ -219,7 +222,7 @@ async function selectWiki(name) {
     state.overview = null;
     state.currentPage = null;
     state.pageTitles = new Map();
-    state.showAllTopics = false;
+    state.topicFilter = null;
   }
   if (state.overview === null) {
     state.overview = await api(wikiApi("/overview"));
@@ -238,148 +241,205 @@ function wikiApi(path = "") {
 function renderChrome() {
   const inWiki = state.currentWiki !== null && state.overview !== null;
   els.searchInput.disabled = !inWiki;
-  els.searchInput.placeholder = inWiki ? "Search pages" : "Open a wiki to search";
+  els.searchInput.placeholder = inWiki ? `Search ${state.currentWiki} pages` : "Open a wiki to search";
 
-  document.querySelectorAll(".ca-nav [data-route]").forEach((button) => {
-    button.disabled = !inWiki && button.dataset.route !== "/";
+  els.topbarLinks.forEach((button) => {
+    const route = button.dataset.route;
+    button.disabled = !inWiki && route !== "/";
   });
-
-  if (!inWiki) {
-    els.topicList.innerHTML = `<div class="ca-meta-empty">Open a wiki to browse topics.</div>`;
-    return;
-  }
-
-  const topics = state.overview.topics;
-  const topicNavigation = state.overview.topicNavigation;
-  const isCurated = topicNavigation?.source === "curated";
-  const limit = topicNavigation?.sidebarLimit ?? SIDEBAR_TAG_LIMIT;
-  const visibleTopics = isCurated || state.showAllTopics ? topics : topics.slice(0, limit);
-  const toggle = !isCurated && topics.length > limit
-    ? topicToggleButton(state.showAllTopics, topics.length - limit)
-    : "";
-  els.topicList.innerHTML = `${renderTopicTree(visibleTopics)}${toggle}`;
 }
 
-function renderTopicTree(topics) {
-  const bySlug = new Map(topics.map((topic) => [topic.slug, topic]));
-  const childrenByParent = new Map();
-  const roots = [];
-
-  for (const topic of topics) {
-    const parents = Array.isArray(topic.parents)
-      ? topic.parents.filter((parent) => bySlug.has(parent))
-      : [];
-    if (parents.length === 0) {
-      roots.push(topic.slug);
-      continue;
-    }
-    for (const parent of parents) {
-      const children = childrenByParent.get(parent) ?? [];
-      children.push(topic.slug);
-      childrenByParent.set(parent, children);
-    }
-  }
-
-  return renderTopicBranch(roots, bySlug, childrenByParent, 0, new Set());
+function setActiveNav(pathname) {
+  els.topbarLinks.forEach((button) => {
+    const route = button.dataset.route;
+    const active = route === "/"
+      ? pathname === "/" || pathname.startsWith("/w/")
+        && !pathname.includes("/jobs")
+      : state.currentWiki !== null && (
+        route === "/jobs"
+          ? pathname === wikiRoute("/jobs") || pathname.startsWith(wikiRoute("/jobs/"))
+          : pathname === wikiRoute(route)
+      );
+    button.classList.toggle("is-active", active);
+  });
 }
 
-function renderTopicBranch(slugs, bySlug, childrenByParent, depth, path) {
-  return slugs
-    .map((slug) => {
-      if (path.has(slug)) return "";
-      const topic = bySlug.get(slug);
-      if (topic === undefined) return "";
-      const nextPath = new Set(path);
-      nextPath.add(slug);
-      const displayDepth = Math.min(depth, 4);
-      return [
-        linkButton(
-          topic.title ?? topic.slug,
-          wikiRoute(`/topic/${topic.slug}`),
-          `${topic.page_count} pages`,
-          `ca-topic-link ca-topic-depth-${displayDepth}`,
-        ),
-        renderTopicBranch(childrenByParent.get(slug) ?? [], bySlug, childrenByParent, depth + 1, nextPath),
-      ].join("");
-    })
-    .join("");
-}
-
-function topicToggleButton(showAll, hiddenCount) {
-  const label = showAll ? "Show fewer topics" : "Show all topics";
-  const detail = showAll ? "" : `${hiddenCount} more`;
-  return `
-    <button class="ca-link-button ca-topic-toggle" type="button" data-topic-toggle>
-      <span class="ca-link-label">${escapeHtml(label)}</span>
-      ${detail ? `<span class="ca-link-detail">${escapeHtml(detail)}</span>` : ""}
-    </button>
-  `;
+function setRailVisible(visible) {
+  els.shell.classList.toggle("has-rail", visible);
+  const rail = document.querySelector(".ca-right");
+  if (rail !== null) rail.hidden = !visible;
 }
 
 function renderWikiDirectory() {
-  document.title = "All wikis - Almanac";
-  const rows = state.wikis.length > 0
-    ? state.wikis.map(wikiRow).join("")
-    : `<div class="ca-meta-empty">No wikis registered yet. Run <span class="ca-file-code">almanac init</span> in a repo.</div>`;
+  document.title = "Library — Almanac";
+  const total = state.wikis.length;
+  const totalPages = state.wikis.reduce((sum, wiki) => sum + (wiki.pageCount ?? 0), 0);
+  const totalTopics = state.wikis.reduce((sum, wiki) => sum + (wiki.topicCount ?? 0), 0);
   els.reader.innerHTML = `
     <section class="ca-hero">
-      <div class="ca-kicker">Local library</div>
-      <h1 class="ca-title">All wikis</h1>
-      <p class="ca-subtitle">
-        Browse every reachable Almanac wiki registered on this computer.
+      <div class="ca-section-label">Library</div>
+      <h1 class="ca-display-h1">
+        <span class="ca-display-soft">Field guide,</span>
+        codebase by codebase.
+      </h1>
+      <p class="ca-lede">
+        Every reachable Almanac wiki on this machine. Open one to read its margins —
+        the decisions, the gotchas, the routes through it.
       </p>
+      ${total > 0 ? `
+        <div class="ca-hero-strip" aria-label="Library totals">
+          <span class="ca-hero-strip-cell">
+            <span class="ca-hero-strip-label">wikis</span>
+            <span class="ca-hero-strip-value">${escapeHtml(total)}</span>
+          </span>
+          <span class="ca-hero-strip-cell">
+            <span class="ca-hero-strip-label">pages</span>
+            <span class="ca-hero-strip-value">${escapeHtml(totalPages)}</span>
+          </span>
+          <span class="ca-hero-strip-cell">
+            <span class="ca-hero-strip-label">topics</span>
+            <span class="ca-hero-strip-value">${escapeHtml(totalTopics)}</span>
+          </span>
+        </div>
+      ` : ""}
     </section>
-    <section class="ca-wiki-directory">
-      <div class="ca-page-list">${rows}</div>
+    <section class="ca-library">
+      ${total > 0 ? `
+        <div class="ca-library-grid">${state.wikis.map(wikiCard).join("")}</div>
+      ` : `
+        <div class="ca-bento-empty">
+          No wikis registered yet. Run <span class="ca-file-code">almanac init</span> in a repo to scribe the first entry.
+        </div>
+      `}
     </section>
   `;
 }
 
-function wikiRow(wiki) {
+function wikiCard(wiki) {
   return `
-    <div class="ca-page-row ca-wiki-row" data-route="/w/${escapeAttr(encodeURIComponent(wiki.name))}">
-      <div class="ca-page-row-title">${escapeHtml(wiki.name)}</div>
-      <div class="ca-page-row-summary">${escapeHtml(wiki.description || "No description.")}</div>
-      <div class="ca-wiki-stats">
-        <span>${escapeHtml(wiki.pageCount)} active pages</span>
-        <span>${escapeHtml(wiki.topicCount)} topics</span>
+    <div class="ca-wiki-card" data-route="/w/${escapeAttr(encodeURIComponent(wiki.name))}">
+      <div class="ca-wiki-card-seal" aria-hidden="true">
+        <span class="ca-wiki-card-seal-mark">${escapeHtml(wikiInitial(wiki.name))}</span>
       </div>
-      <div class="ca-file-code">${escapeHtml(wiki.path)}</div>
+      <div class="ca-wiki-card-body">
+        <div class="ca-wiki-card-kicker">${escapeHtml(wiki.name)}</div>
+        <div class="ca-wiki-card-title">${escapeHtml(projectName(wiki.path) || wiki.name)}</div>
+        <div class="ca-wiki-card-path">${escapeHtml(wiki.path)}</div>
+        <div class="ca-wiki-card-stats">
+          <span><strong>${escapeHtml(wiki.pageCount)}</strong> ${wiki.pageCount === 1 ? "page" : "pages"}</span>
+          <span><strong>${escapeHtml(wiki.topicCount)}</strong> ${wiki.topicCount === 1 ? "topic" : "topics"}</span>
+        </div>
+      </div>
     </div>
   `;
 }
 
+function wikiInitial(name) {
+  const cleaned = String(name).replace(/[^a-zA-Z0-9]/g, "");
+  return cleaned.charAt(0).toUpperCase() || "✥";
+}
+
 async function renderOverview() {
   const overview = state.overview;
-  document.title = `${state.currentWiki} - Almanac`;
+  document.title = `${state.currentWiki} — Almanac`;
+  const lastUpdate = mostRecentTimestamp(overview.recentPages);
+  const pages = filteredPages(overview.recentPages, state.topicFilter);
+  const filterStrip = renderTopicStrip(overview.rootTopics, overview.recentPages, state.topicFilter);
   els.reader.innerHTML = `
-    ${renderPageActions("/")}
     <section class="ca-hero">
-      <div class="ca-kicker">Project overview</div>
-      <h1 class="ca-title">${escapeHtml(projectName(overview.repoRoot))}</h1>
-      <p class="ca-subtitle">
-        ${escapeHtml(overview.pageCount)} active pages and ${escapeHtml(overview.topicCount)} topics indexed from
+      <div class="ca-section-label">${escapeHtml(state.currentWiki)}</div>
+      <h1 class="ca-display-h1">${escapeHtml(projectName(overview.repoRoot))}</h1>
+      <p class="ca-lede">
+        Living wiki, written in the margins by your agents. Indexed from
         <span class="ca-file-code">${escapeHtml(overview.repoRoot)}</span>.
       </p>
+      <div class="ca-hero-strip" aria-label="Wiki state">
+        <span class="ca-hero-strip-cell">
+          <span class="ca-hero-strip-label">pages</span>
+          <span class="ca-hero-strip-value">${escapeHtml(overview.pageCount)}</span>
+        </span>
+        <span class="ca-hero-strip-cell">
+          <span class="ca-hero-strip-label">topics</span>
+          <span class="ca-hero-strip-value">${escapeHtml(overview.topicCount)}</span>
+        </span>
+        ${lastUpdate !== null ? `
+          <span class="ca-hero-strip-cell">
+            <span class="ca-hero-strip-label">last entry</span>
+            <span class="ca-hero-strip-value">${escapeHtml(formatRelativeTime(lastUpdate))}</span>
+          </span>
+        ` : ""}
+      </div>
     </section>
-    <section class="ca-grid">
-      <div class="ca-panel">
-        <h2>Recent pages</h2>
-        <div class="ca-page-list">${overview.recentPages.map(pageRow).join("")}</div>
-      </div>
-      <div class="ca-panel">
-        <h2>Root topics</h2>
-        <div class="ca-page-list">
-          ${overview.rootTopics.map((topic) => `
-            <div class="ca-page-row" data-route="${escapeAttr(wikiRoute(`/topic/${topic.slug}`))}">
-              <div class="ca-page-row-title">${escapeHtml(topic.title ?? topic.slug)}</div>
-              <div class="ca-page-row-summary">${escapeHtml(topic.description ?? `${topic.page_count} active pages`)}</div>
-            </div>
-          `).join("")}
-        </div>
-      </div>
+    ${filterStrip}
+    <section class="ca-bento" aria-label="Pages">
+      ${
+        pages.length > 0
+          ? pages.map(pageCard).join("")
+          : `<div class="ca-bento-empty">No pages match this filter.</div>`
+      }
     </section>
   `;
+}
+
+function renderTopicStrip(rootTopics, pages, active) {
+  if (!Array.isArray(rootTopics) || rootTopics.length === 0) return "";
+  const buttons = [
+    {
+      slug: "",
+      title: "All",
+      count: pages.length,
+    },
+    ...rootTopics.map((topic) => ({
+      slug: topic.slug,
+      title: topic.title ?? topic.slug,
+      count: pages.filter((page) => Array.isArray(page.topics) && page.topics.includes(topic.slug)).length,
+    })),
+  ];
+  return `
+    <div class="ca-topic-strip" role="toolbar" aria-label="Filter by topic">
+      <span class="ca-topic-strip-label">topics</span>
+      ${buttons.map((btn) => {
+        const isActive = (active === null && btn.slug === "") || active === btn.slug;
+        return `
+          <button
+            type="button"
+            class="ca-topic-strip-button${isActive ? " is-active" : ""}"
+            data-topic-filter="${escapeAttr(btn.slug)}"
+          >
+            <span>${escapeHtml(btn.title)}</span>
+            <span class="ca-topic-strip-count">${escapeHtml(btn.count)}</span>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function filteredPages(pages, topicSlug) {
+  if (topicSlug === null) return pages;
+  return pages.filter((page) => Array.isArray(page.topics) && page.topics.includes(topicSlug));
+}
+
+function mostRecentTimestamp(pages) {
+  if (!Array.isArray(pages) || pages.length === 0) return null;
+  let latest = null;
+  for (const page of pages) {
+    if (typeof page?.updated_at === "number" && (latest === null || page.updated_at > latest)) {
+      latest = page.updated_at;
+    }
+  }
+  return latest;
+}
+
+function formatRelativeTime(epochSeconds) {
+  const now = Date.now() / 1000;
+  const diff = Math.max(0, now - epochSeconds);
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 2592000) return `${Math.floor(diff / 604800)}w ago`;
+  return formatDate(epochSeconds);
 }
 
 async function optionalPage(summary) {
@@ -401,13 +461,13 @@ async function renderGettingStarted() {
     return;
   }
 
-  document.title = `Getting started - ${state.currentWiki}`;
+  document.title = `Getting started — ${state.currentWiki}`;
   els.reader.innerHTML = `
     ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
-      <div class="ca-kicker">Getting started</div>
-      <h1 class="ca-title">No getting started page</h1>
-      <p class="ca-subtitle">
+      <div class="ca-section-label">Getting started</div>
+      <h1 class="ca-display-h1">No getting started page</h1>
+      <p class="ca-lede">
         Add <span class="ca-file-code">.almanac/pages/getting-started.md</span> or
         <span class="ca-file-code">.almanac/pages/project-overview.md</span> to show page content here.
       </p>
@@ -424,7 +484,7 @@ async function renderPage(slug) {
 }
 
 function renderPageArticle(page) {
-  document.title = `${page.title ?? page.slug} - Almanac`;
+  document.title = `${page.title ?? page.slug} — Almanac`;
   els.reader.innerHTML = `
     ${renderPageActions(wikiRoute("/"))}
     <article class="ca-article">
@@ -441,33 +501,32 @@ function renderArticleSummary(summary) {
 async function renderTopic(slug) {
   const topic = await api(wikiApi(`/topic/${encodeURIComponent(slug)}`));
   rememberPages(topic.pages);
-  document.title = `${topic.title ?? topic.slug} - Almanac`;
+  document.title = `${topic.title ?? topic.slug} — Almanac`;
   els.reader.innerHTML = `
     ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
-      <div class="ca-kicker">Topic</div>
-      <h1 class="ca-title">${escapeHtml(topic.title ?? topic.slug)}</h1>
-      <p class="ca-subtitle">${escapeHtml(topic.description ?? "Pages grouped under this topic.")}</p>
-      <div class="ca-chip-row">
-        ${topic.parents.map((parent) => `<button class="ca-chip" data-route="${escapeAttr(wikiRoute(`/topic/${parent.slug}`))}">${escapeHtml(parent.title ?? parent.slug)}</button>`).join("")}
+      <div class="ca-section-label">Topic</div>
+      <h1 class="ca-display-h1">${escapeHtml(topic.title ?? topic.slug)}</h1>
+      ${topic.description ? `<p class="ca-lede">${escapeHtml(topic.description)}</p>` : ""}
+      <div class="ca-hero-strip" aria-label="Topic state">
+        <span class="ca-hero-strip-cell">
+          <span class="ca-hero-strip-label">pages</span>
+          <span class="ca-hero-strip-value">${escapeHtml(topic.pages.length)}</span>
+        </span>
+        ${topic.parents.length > 0 ? `
+          <span class="ca-hero-strip-cell">
+            <span class="ca-hero-strip-label">in</span>
+            <span class="ca-hero-strip-value">${topic.parents.map((parent) => `<a class="ca-meta-link" href="${escapeAttr(wikiRoute(`/topic/${parent.slug}`))}" data-route="${escapeAttr(wikiRoute(`/topic/${parent.slug}`))}">${escapeHtml(parent.title ?? parent.slug)}</a>`).join(", ")}</span>
+          </span>
+        ` : ""}
       </div>
     </section>
-    <section class="ca-grid">
-      <div class="ca-panel">
-        <h2>Pages</h2>
-        <div class="ca-page-list">${topic.pages.map(pageRow).join("")}</div>
-      </div>
-      <div class="ca-panel">
-        <h2>Child topics</h2>
-        <div class="ca-page-list">
-          ${topic.children.map((child) => `
-            <div class="ca-page-row" data-route="${escapeAttr(wikiRoute(`/topic/${child.slug}`))}">
-              <div class="ca-page-row-title">${escapeHtml(child.title ?? child.slug)}</div>
-              <div class="ca-page-row-summary">${escapeHtml(child.page_count)} active pages</div>
-            </div>
-          `).join("") || `<div class="ca-meta-empty">No child topics.</div>`}
-        </div>
-      </div>
+    <section class="ca-bento" aria-label="Pages">
+      ${
+        topic.pages.length > 0
+          ? topic.pages.map(pageCard).join("")
+          : `<div class="ca-bento-empty">No pages in this topic yet.</div>`
+      }
     </section>
   `;
 }
@@ -476,15 +535,21 @@ async function renderSearch(query) {
   els.searchInput.value = query;
   const result = await api(wikiApi(`/search?q=${encodeURIComponent(query)}`));
   rememberPages(result.pages);
-  document.title = `${query ? `Search: ${query}` : "Recent pages"} - Almanac`;
+  document.title = `${query ? `Search: ${query}` : "Recent pages"} — Almanac`;
   els.reader.innerHTML = `
     ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
-      <div class="ca-kicker">${query ? "Search" : "Recent"}</div>
-      <h1 class="ca-title">${query ? escapeHtml(query) : "Recent pages"}</h1>
-      <p class="ca-subtitle">${result.pages.length} page${result.pages.length === 1 ? "" : "s"} found.</p>
+      <div class="ca-section-label">${query ? "Search" : "Recent"}</div>
+      <h1 class="ca-display-h1">${query ? escapeHtml(query) : "Recent pages"}</h1>
+      <p class="ca-lede">${result.pages.length} page${result.pages.length === 1 ? "" : "s"} found.</p>
     </section>
-    <div class="ca-page-list">${result.pages.map(pageRow).join("")}</div>
+    <section class="ca-bento" aria-label="Pages">
+      ${
+        result.pages.length > 0
+          ? result.pages.map(pageCard).join("")
+          : `<div class="ca-bento-empty">Nothing matched.</div>`
+      }
+    </section>
   `;
 }
 
@@ -494,11 +559,17 @@ async function renderFile(path) {
   els.reader.innerHTML = `
     ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
-      <div class="ca-kicker">File reference</div>
-      <h1 class="ca-title">${escapeHtml(path || "File references")}</h1>
-      <p class="ca-subtitle">${result.pages.length} page${result.pages.length === 1 ? "" : "s"} mention this path or one of its containing folders.</p>
+      <div class="ca-section-label">File reference</div>
+      <h1 class="ca-display-h1">${escapeHtml(path || "File references")}</h1>
+      <p class="ca-lede">${result.pages.length} page${result.pages.length === 1 ? "" : "s"} mention this path or one of its containing folders.</p>
     </section>
-    <div class="ca-page-list">${result.pages.map(pageRow).join("")}</div>
+    <section class="ca-bento" aria-label="Pages">
+      ${
+        result.pages.length > 0
+          ? result.pages.map(pageCard).join("")
+          : `<div class="ca-bento-empty">No page mentions this path.</div>`
+      }
+    </section>
   `;
 }
 
@@ -530,14 +601,30 @@ function clearPageRail() {
   els.fileRefs.innerHTML = "";
 }
 
-function pageRow(page) {
+function pageCard(page) {
+  const relative = typeof page.updated_at === "number" ? formatRelativeTime(page.updated_at) : null;
+  const topics = Array.isArray(page.topics) ? page.topics.slice(0, 2) : [];
+  const summaryRaw = (page.summary ?? "").trim();
+  const hasSummary = summaryRaw.length > 0;
+  const summaryHtml = hasSummary
+    ? renderCardSummary(summaryRaw)
+    : `<span class="ca-page-card-summary-empty">No summary recorded yet. The agents will fill this in on the next capture.</span>`;
   return `
-    <div class="ca-page-row" data-route="${escapeAttr(wikiRoute(`/page/${page.slug}`))}">
-      <div class="ca-page-row-title">${escapeHtml(pageTitle(page))}</div>
-      <div class="ca-page-row-summary">${escapeHtml(page.summary ?? formatDate(page.updated_at))}</div>
-      <div class="ca-chip-row">${page.topics.slice(0, 4).map((topic) => `<span class="ca-chip">${escapeHtml(topic)}</span>`).join("")}</div>
-    </div>
+    <article class="ca-page-card" data-route="${escapeAttr(wikiRoute(`/page/${page.slug}`))}">
+      <h3 class="ca-page-card-title">${escapeHtml(pageTitle(page))}</h3>
+      <p class="ca-page-card-summary">${summaryHtml}</p>
+      <footer class="ca-page-card-meta">
+        ${topics.length > 0 ? `<span class="ca-page-card-meta-topics">${topics.map(escapeHtml).join(" · ")}</span>` : ""}
+        ${topics.length > 0 && relative !== null ? `<span class="ca-page-card-meta-sep" aria-hidden="true">·</span>` : ""}
+        ${relative !== null ? `<span class="ca-page-card-meta-time">${escapeHtml(relative)}</span>` : ""}
+        <span class="ca-page-card-arrow" aria-hidden="true">→</span>
+      </footer>
+    </article>
   `;
+}
+
+function renderCardSummary(text) {
+  return escapeHtml(text).replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
 function linkButton(label, route, detail = "", extraClass = "") {
@@ -651,24 +738,6 @@ function formatElapsed(ms) {
 
 function formatNumber(value) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
-}
-
-function setActiveNav(pathname) {
-  document.querySelectorAll(".ca-left [data-route]").forEach((button) => {
-    const route = button.dataset.route;
-    const active = route === "/"
-      ? pathname === "/"
-      : state.currentWiki !== null && (
-        route === "/jobs"
-          ? pathname === wikiRoute("/jobs") || pathname.startsWith(wikiRoute("/jobs/"))
-          : pathname === wikiRoute(route)
-      );
-    button.classList.toggle("is-active", active);
-  });
-}
-
-function setRailVisible(visible) {
-  els.shell.classList.toggle("is-rail-hidden", !visible);
 }
 
 function goBack() {

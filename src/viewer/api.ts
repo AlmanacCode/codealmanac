@@ -99,7 +99,7 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
           wikiTitle: "Almanac",
           pageCount: counts.page_count,
           topicCount: counts.topic_count,
-          recentPages: pageSummaries(db, recentPagesSql(), []),
+          recentPages: pageSummaries(db, recentPagesSql(60), []),
           topics: topicSummaries(db, { rootsOnly: false }),
           rootTopics: topicSummaries(db, {
             rootsOnly: true,
