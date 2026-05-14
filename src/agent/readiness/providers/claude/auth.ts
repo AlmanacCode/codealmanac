@@ -2,7 +2,7 @@ import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
-import type { SpawnCliFn, SpawnedProcess } from "../../types.js";
+import type { SpawnCliFn, SpawnedProcess } from "../../../types.js";
 
 /**
  * Claude auth gate — accepts either an active Claude subscription login

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { runAutomationInstall, runAutomationStatus } from "../src/commands/automation.js";
-import { readConfig } from "../src/update/config.js";
+import { readConfig } from "../src/config/index.js";
 import { withTempHome } from "./helpers.js";
 
 describe("almanac automation", () => {

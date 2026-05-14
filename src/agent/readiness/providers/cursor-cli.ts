@@ -3,7 +3,7 @@ import type {
   AgentProviderMetadata,
   ProviderStatus,
   SpawnCliFn,
-} from "../types.js";
+} from "../../types.js";
 import {
   commandExists,
   runInjectedStatusCommand,

@@ -7,9 +7,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type {
   SpawnCliFn,
   SpawnedProcess,
-} from "../src/agent/providers/claude/index.js";
+} from "../src/agent/readiness/providers/claude/index.js";
 import { hasImportLine, runSetup } from "../src/commands/setup.js";
-import { readConfig, writeConfig } from "../src/update/config.js";
+import { readConfig, writeConfig } from "../src/config/index.js";
 import { withTempHome } from "./helpers.js";
 
 function fakeSpawnCli(stdout: string): SpawnCliFn {

@@ -4,9 +4,9 @@ import {
   buildProviderSetupView,
   chooseRecommendedProvider,
   parseAgentSelection,
-} from "../src/agent/provider-view.js";
+} from "../src/agent/readiness/view.js";
 import type { ProviderStatus } from "../src/agent/types.js";
-import { defaultConfig } from "../src/update/config.js";
+import { defaultConfig } from "../src/config/index.js";
 
 const statuses: ProviderStatus[] = [
   {

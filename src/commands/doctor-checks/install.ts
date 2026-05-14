@@ -6,7 +6,7 @@ import {
   codexInstructionBlockPresent,
   hasClaudeImportLine,
 } from "../../agent/install-targets.js";
-import type { ClaudeAuthStatus } from "../../agent/providers/claude/index.js";
+import type { ClaudeAuthStatus } from "../../agent/readiness/providers/claude/index.js";
 import { defaultPlistPath } from "../automation.js";
 import {
   classifyInstallPath,

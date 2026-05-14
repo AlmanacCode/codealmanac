@@ -18,3 +18,6 @@ The old `src/update/config.ts` and `src/agent/provider-view.ts` paths are not pu
 
 The long-term automation goal is broader, but the current product has two scheduled tasks: capture sweep and Garden. This cleanup can make task definitions more explicit, but it should not introduce a generic automation abstraction without a third real task or command-level product surface.
 
+### Move readiness providers under readiness, not setup
+
+Provider status/model code is used by setup, `almanac agents`, and doctor. It is broader than setup alone, but narrower than harness runtime providers. `src/agent/readiness/providers/` names that scope without implying execution ownership.

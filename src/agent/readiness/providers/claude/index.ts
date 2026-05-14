@@ -4,7 +4,7 @@ import type {
   ProviderModelChoice,
   ProviderStatus,
   SpawnCliFn,
-} from "../../types.js";
+} from "../../../types.js";
 import {
   assertClaudeAuth,
   checkClaudeAuth,
@@ -94,4 +94,4 @@ async function assertReady(spawnCli?: SpawnCliFn): Promise<void> {
 
 export { assertClaudeAuth, checkClaudeAuth, UNAUTHENTICATED_MESSAGE };
 export type { ClaudeAuthStatus } from "./auth.js";
-export type { SpawnCliFn, SpawnedProcess } from "../../types.js";
+export type { SpawnCliFn, SpawnedProcess } from "../../../types.js";

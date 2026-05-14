@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   type SpawnCliFn,
-} from "../agent/providers/claude/index.js";
+} from "../agent/readiness/providers/claude/index.js";
 import {
   CLAUDE_IMPORT_LINE,
   hasClaudeImportLine,
@@ -17,7 +17,7 @@ export {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
   hasCodexInstructions,
-} from "../agent/providers/codex-instructions.js";
+} from "../agent/readiness/providers/codex-instructions.js";
 import {
   buildProviderModelChoices,
   buildProviderSetupView,

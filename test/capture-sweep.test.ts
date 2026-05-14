@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { runCaptureSweepCommand } from "../src/commands/capture-sweep.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
-import { writeConfig } from "../src/update/config.js";
+import { writeConfig } from "../src/config/index.js";
 
 describe("almanac capture sweep", () => {
   it("dry-runs quiet Claude and Codex transcripts mapped to .almanac repos", async () => {

@@ -1,6 +1,6 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 
-import type { SpawnCliFn } from "../types.js";
+import type { SpawnCliFn } from "../../types.js";
 
 const STATUS_TIMEOUT_MS = 3_000;
 

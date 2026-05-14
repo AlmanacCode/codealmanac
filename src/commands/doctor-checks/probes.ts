@@ -8,7 +8,7 @@ import {
   checkClaudeAuth,
   type ClaudeAuthStatus,
   type SpawnCliFn,
-} from "../../agent/providers/claude/index.js";
+} from "../../agent/readiness/providers/claude/index.js";
 import type { SqliteProbeResult } from "./types.js";
 
 // Single `createRequire` instance — used by package/binding probes.
