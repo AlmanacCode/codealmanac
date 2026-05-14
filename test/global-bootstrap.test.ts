@@ -52,6 +52,7 @@ describe("runCodealmanacBootstrap", () => {
         globalPackageRoot: globalRoot,
         runSetup,
         spawnFn: fakeSpawn(calls, [0, 0]),
+        platform: "darwin",
       });
 
       expect(result.exitCode).toBe(0);

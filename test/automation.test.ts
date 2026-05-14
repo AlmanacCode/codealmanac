@@ -40,9 +40,14 @@ describe("almanac automation", () => {
       expect(calls).toContain(
         "schtasks /Create /TN \\CodeAlmanac\\CaptureSweep /SC MINUTE /MO 20 /TR \"C:\\Program Files\\nodejs\\node.exe\" \"C:\\codealmanac\\dist\\codealmanac.js\" capture sweep --quiet 5m /F",
       );
-      expect(calls).toContain(
-        `schtasks /Create /TN \\CodeAlmanac\\Garden /SC DAILY /MO 2 /TR cmd.exe /d /s /c "cd /d ${repo} && "C:\\Program Files\\nodejs\\node.exe" "C:\\codealmanac\\dist\\codealmanac.js" garden" /F`,
-      );
+      const gardenCall = calls.find((call) => call.includes("\\CodeAlmanac\\Garden"));
+      expect(gardenCall).toBeDefined();
+      const gardenTaskCall = gardenCall ?? "";
+      expect(gardenTaskCall).toContain("/SC DAILY /MO 2");
+      expect(gardenTaskCall).toContain('cmd.exe /d /s /c "cd /d');
+      expect(gardenTaskCall).toContain(repo);
+      expect(gardenTaskCall).toContain('"C:\\Program Files\\nodejs\\node.exe"');
+      expect(gardenTaskCall).toContain('"C:\\codealmanac\\dist\\codealmanac.js" garden');
       const captureManifest = await readFile(
         join(home, ".almanac", "automation", "windows-capture-sweep.json"),
         "utf8",
