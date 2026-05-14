@@ -1,4 +1,5 @@
 import { runSetup } from "../commands/setup.js";
+import type { runDoctor } from "../commands/doctor.js";
 import { runCodealmanacBootstrap } from "../install/global.js";
 import { emit } from "./helpers.js";
 
@@ -18,11 +19,12 @@ export interface SetupShortcutOptions {
 export interface SqliteFreeDeps {
   runSetup?: typeof runSetup;
   runCodealmanacBootstrap?: typeof runCodealmanacBootstrap;
+  runDoctor?: typeof runDoctor;
 }
 
 type SqliteFreeHandler = (
   args: string[],
-  deps: Required<Pick<SqliteFreeDeps, "runSetup">>,
+  deps: Required<Pick<SqliteFreeDeps, "runSetup">> & Pick<SqliteFreeDeps, "runDoctor">,
 ) => Promise<boolean>;
 
 const SQLITE_FREE_COMMANDS: Record<string, SqliteFreeHandler> = {
@@ -83,7 +85,10 @@ export async function tryRunSqliteFreeCommand(
   if (command === undefined) return false;
   const handler = SQLITE_FREE_COMMANDS[command];
   if (handler === undefined) return false;
-  return await handler(args, { runSetup: deps.runSetup ?? runSetup });
+  return await handler(args, {
+    runSetup: deps.runSetup ?? runSetup,
+    runDoctor: deps.runDoctor,
+  });
 }
 
 async function runSetupFastPath(
@@ -225,9 +230,12 @@ async function runUpdateFastPath(args: string[]): Promise<boolean> {
   return true;
 }
 
-async function runDoctorFastPath(args: string[]): Promise<boolean> {
-  const { runDoctor } = await import("../commands/doctor.js");
-  emit(await runDoctor({
+async function runDoctorFastPath(
+  args: string[],
+  deps: Required<Pick<SqliteFreeDeps, "runSetup">> & Pick<SqliteFreeDeps, "runDoctor">,
+): Promise<boolean> {
+  const runDoctorFn = deps.runDoctor ?? (await import("../commands/doctor.js")).runDoctor;
+  emit(await runDoctorFn({
     cwd: process.cwd(),
     ...parseDoctorFlags(args.slice(1)),
   }));

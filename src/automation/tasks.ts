@@ -10,14 +10,74 @@ export const DEFAULT_CAPTURE_INTERVAL = "5h";
 export const DEFAULT_CAPTURE_QUIET = "45m";
 export const DEFAULT_GARDEN_INTERVAL = "2d";
 
+export type ScheduledTaskId = "capture-sweep" | "garden";
+export type ScheduledTaskWorkingDirectory = "none" | "nearest-almanac-repo";
+
+export interface ScheduledTaskDefinition {
+  id: ScheduledTaskId;
+  label: string;
+  defaultInterval: string;
+  plistPath: (home: string) => string;
+  stdoutLogName: string;
+  stderrLogName: string;
+  workingDirectory: ScheduledTaskWorkingDirectory;
+  programArguments: (options?: { quiet?: string }) => string[];
+}
+
+export const CAPTURE_SWEEP_TASK: ScheduledTaskDefinition = {
+  id: "capture-sweep",
+  label: CAPTURE_SWEEP_LABEL,
+  defaultInterval: DEFAULT_CAPTURE_INTERVAL,
+  plistPath: (home) =>
+    path.join(home, "Library", "LaunchAgents", `${CAPTURE_SWEEP_LABEL}.plist`),
+  stdoutLogName: "capture-sweep.out.log",
+  stderrLogName: "capture-sweep.err.log",
+  workingDirectory: "none",
+  programArguments: (options) => [
+    ...defaultCliProgramArguments(),
+    "capture",
+    "sweep",
+    "--quiet",
+    options?.quiet ?? DEFAULT_CAPTURE_QUIET,
+  ],
+};
+
+export const GARDEN_TASK: ScheduledTaskDefinition = {
+  id: "garden",
+  label: GARDEN_LABEL,
+  defaultInterval: DEFAULT_GARDEN_INTERVAL,
+  plistPath: (home) =>
+    path.join(home, "Library", "LaunchAgents", `${GARDEN_LABEL}.plist`),
+  stdoutLogName: "garden.out.log",
+  stderrLogName: "garden.err.log",
+  workingDirectory: "nearest-almanac-repo",
+  programArguments: () => [...defaultCliProgramArguments(), "garden"],
+};
+
+export const SCHEDULED_TASKS = {
+  captureSweep: CAPTURE_SWEEP_TASK,
+  garden: GARDEN_TASK,
+} as const;
+
+export function scheduledTaskLogPaths(
+  task: ScheduledTaskDefinition,
+  home: string,
+): { stdoutPath: string; stderrPath: string } {
+  const logsDir = path.join(home, ".almanac", "logs");
+  return {
+    stdoutPath: path.join(logsDir, task.stdoutLogName),
+    stderrPath: path.join(logsDir, task.stderrLogName),
+  };
+}
+
 export function captureSweepProgramArguments(
   quiet: string = DEFAULT_CAPTURE_QUIET,
 ): string[] {
-  return [...defaultCliProgramArguments(), "capture", "sweep", "--quiet", quiet];
+  return CAPTURE_SWEEP_TASK.programArguments({ quiet });
 }
 
 export function gardenProgramArguments(): string[] {
-  return [...defaultCliProgramArguments(), "garden"];
+  return GARDEN_TASK.programArguments();
 }
 
 export function defaultCliProgramArguments(): string[] {
@@ -29,11 +89,11 @@ export function defaultCliProgramArguments(): string[] {
 }
 
 export function defaultCapturePlistPath(home: string = homedir()): string {
-  return path.join(home, "Library", "LaunchAgents", `${CAPTURE_SWEEP_LABEL}.plist`);
+  return CAPTURE_SWEEP_TASK.plistPath(home);
 }
 
 export function defaultGardenPlistPath(home: string = homedir()): string {
-  return path.join(home, "Library", "LaunchAgents", `${GARDEN_LABEL}.plist`);
+  return GARDEN_TASK.plistPath(home);
 }
 
 function findPackageCliEntry(): string | null {

@@ -550,6 +550,9 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     const setupMock = vi
       .fn<(opts?: unknown) => Promise<SetupResult>>()
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+    const doctorMock = vi
+      .fn()
+      .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 
     // doctor needs args parsing; we let commander run it normally. The
     // point of THIS test is only that setupMock isn't invoked.
@@ -560,6 +563,7 @@ describe("run() — codealmanac-setup shortcut routing", () => {
         ["/abs/node", "/abs/path/codealmanac", "doctor", "--install-only"],
         {
           runSetup: setupMock as never,
+          runDoctor: doctorMock as never,
           announceUpdate: () => {},
           scheduleUpdateCheck: () => {},
           runInternalUpdateCheck: async () => {},
@@ -570,6 +574,12 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     }
 
     expect(setupMock).not.toHaveBeenCalled();
+    expect(doctorMock).toHaveBeenCalledWith({
+      cwd: process.cwd(),
+      installOnly: true,
+      json: false,
+      wikiOnly: false,
+    });
   });
 
   it("does NOT shortcut for `codealmanac --yes doctor` (subcommand present)", async () => {
@@ -578,7 +588,9 @@ describe("run() — codealmanac-setup shortcut routing", () => {
       .mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
 
     const origStdout = process.stdout.write.bind(process.stdout);
+    const origStderr = process.stderr.write.bind(process.stderr);
     process.stdout.write = (() => true) as typeof process.stdout.write;
+    process.stderr.write = (() => true) as typeof process.stderr.write;
     try {
       // `--yes` before `doctor` isn't valid for doctor, but commander
       // handles that — we only care that the shortcut didn't eat it.
@@ -595,6 +607,7 @@ describe("run() — codealmanac-setup shortcut routing", () => {
       });
     } finally {
       process.stdout.write = origStdout;
+      process.stderr.write = origStderr;
     }
 
     expect(setupMock).not.toHaveBeenCalled();

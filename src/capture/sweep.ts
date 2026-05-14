@@ -55,6 +55,21 @@ export type StartSweepCaptureFn = (
   args: StartSweepCaptureArgs,
 ) => Promise<StartSweepCaptureResult>;
 
+interface TranscriptSnapshot {
+  content: Buffer;
+  currentSize: number;
+  currentLine: number;
+}
+
+type TranscriptReadResult =
+  | { ok: true; snapshot: TranscriptSnapshot }
+  | { ok: false; reason: string };
+
+type CaptureCursorDecision =
+  | { kind: "skip"; reason: string }
+  | { kind: "needs_attention"; reason: string; entry: ReturnType<typeof markPrefixMismatch> }
+  | { kind: "ready"; fromLine: number; toLine: number };
+
 export async function executeCaptureSweep(args: {
   candidates: SessionCandidate[];
   captureSince: Date | null;
@@ -77,14 +92,9 @@ export async function executeCaptureSweep(args: {
   const heldLocks = new Set<string>();
   try {
     for (const candidate of args.candidates) {
-      if (args.captureSince !== null && candidate.mtimeMs < args.captureSince.getTime()) {
-        summary.skipped.push(skip(candidate, "before-automation-activation"));
-        continue;
-      }
-
-      const quietForMs = args.now.getTime() - candidate.mtimeMs;
-      if (quietForMs < args.quietMs) {
-        summary.skipped.push(skip(candidate, "quiet-window"));
+      const eligibilitySkip = candidateEligibility(candidate, args);
+      if (eligibilitySkip !== null) {
+        summary.skipped.push(eligibilitySkip);
         continue;
       }
 
@@ -101,97 +111,51 @@ export async function executeCaptureSweep(args: {
       await reconcileLedger(candidate.repoRoot, ledger, args.now);
       const key = ledgerKey(candidate);
 
-      let content: Buffer;
-      try {
-        content = await readFile(candidate.transcriptPath);
-      } catch (err: unknown) {
-        const reason = `read-failed: ${err instanceof Error ? err.message : String(err)}`;
-        summary.needsAttention.push(skip(candidate, reason));
+      const transcript = await readTranscriptSnapshot(candidate);
+      if (!transcript.ok) {
+        summary.needsAttention.push(skip(candidate, transcript.reason));
         continue;
       }
-      const currentSize = content.length;
-      const currentLine = countLines(content.toString("utf8"));
       const entry = ledger.sessions[key] ??
-        freshLedgerEntry(candidate, content, args.captureSince);
+        freshLedgerEntry(candidate, transcript.snapshot.content, args.captureSince);
 
-      if (entry.status === "pending") {
-        summary.skipped.push(skip(candidate, "capture-already-pending"));
+      const decision = evaluateCaptureCursor(entry, transcript.snapshot);
+      ledger.sessions[key] = decision.kind === "needs_attention"
+        ? decision.entry
+        : entry;
+
+      if (decision.kind === "skip") {
+        summary.skipped.push(skip(candidate, decision.reason));
         continue;
       }
-
-      if (currentSize <= entry.lastCapturedSize) {
-        ledger.sessions[key] = entry;
-        summary.skipped.push(skip(candidate, "unchanged"));
-        continue;
-      }
-
-      const prefixHash = sha256(content.subarray(0, entry.lastCapturedSize));
-      if (prefixHash !== entry.lastCapturedPrefixHash) {
-        ledger.sessions[key] = {
-          ...entry,
-          status: "needs_attention",
-          lastError: "transcript prefix no longer matches ledger cursor",
-        };
-        summary.needsAttention.push(skip(candidate, "prefix-mismatch"));
+      if (decision.kind === "needs_attention") {
+        summary.needsAttention.push(skip(candidate, decision.reason));
         continue;
       }
 
       summary.eligible += 1;
       if (args.dryRun) {
-        ledger.sessions[key] = entry;
-        summary.started.push({
-          app: candidate.app,
-          sessionId: candidate.sessionId,
-          transcriptPath: candidate.transcriptPath,
-          repoRoot: candidate.repoRoot,
-          runId: "dry-run",
-          fromLine: entry.lastCapturedLine + 1,
-          toLine: currentLine,
-        });
+        summary.started.push(startedSummary(candidate, "dry-run", decision));
         continue;
       }
 
-      const result = await args.startCapture({
+      const enqueue = await enqueueCapture({
         candidate,
-        contextNote: cursorContext({
-          candidate,
-          fromLine: entry.lastCapturedLine + 1,
-          lastCapturedLine: entry.lastCapturedLine,
-          lastCapturedSize: entry.lastCapturedSize,
-        }),
+        entry,
+        decision,
+        snapshot: transcript.snapshot,
+        now: args.now,
+        startCapture: args.startCapture,
       });
-      if (!result.ok) {
-        ledger.sessions[key] = {
-          ...entry,
-          status: "failed",
-          lastError: result.error,
-        };
-        summary.needsAttention.push(skip(candidate, "capture-start-failed"));
+      if (!enqueue.ok) {
+        ledger.sessions[key] = enqueue.entry;
+        summary.needsAttention.push(skip(candidate, enqueue.reason));
         await writeLedger(candidate.repoRoot, ledger, args.now);
         continue;
       }
-      const pendingCursor = captureCursor(content, currentLine);
-      ledger.sessions[key] = {
-        ...entry,
-        status: "pending",
-        pendingToSize: pendingCursor.size,
-        pendingToLine: pendingCursor.line,
-        pendingPrefixHash: pendingCursor.prefixHash,
-        pendingRunId: result.runId,
-        pendingStartedAt: args.now.toISOString(),
-        lastRunId: result.runId,
-        lastError: undefined,
-      };
+      ledger.sessions[key] = enqueue.entry;
       await writeLedger(candidate.repoRoot, ledger, args.now);
-      summary.started.push({
-        app: candidate.app,
-        sessionId: candidate.sessionId,
-        transcriptPath: candidate.transcriptPath,
-        repoRoot: candidate.repoRoot,
-        runId: result.runId,
-        fromLine: entry.lastCapturedLine + 1,
-        toLine: currentLine,
-      });
+      summary.started.push(startedSummary(candidate, enqueue.runId, decision));
     }
 
     if (!args.dryRun) {
@@ -204,6 +168,147 @@ export async function executeCaptureSweep(args: {
   }
 
   return summary;
+}
+
+function candidateEligibility(
+  candidate: SessionCandidate,
+  args: {
+    captureSince: Date | null;
+    quietMs: number;
+    now: Date;
+  },
+): SweepSkipped | null {
+  if (args.captureSince !== null && candidate.mtimeMs < args.captureSince.getTime()) {
+    return skip(candidate, "before-automation-activation");
+  }
+
+  const quietForMs = args.now.getTime() - candidate.mtimeMs;
+  if (quietForMs < args.quietMs) {
+    return skip(candidate, "quiet-window");
+  }
+  return null;
+}
+
+async function readTranscriptSnapshot(
+  candidate: SessionCandidate,
+): Promise<TranscriptReadResult> {
+  try {
+    const content = await readFile(candidate.transcriptPath);
+    return {
+      ok: true,
+      snapshot: {
+        content,
+        currentSize: content.length,
+        currentLine: countLines(content.toString("utf8")),
+      },
+    };
+  } catch (err: unknown) {
+    const reason = `read-failed: ${err instanceof Error ? err.message : String(err)}`;
+    return { ok: false, reason };
+  }
+}
+
+function evaluateCaptureCursor(
+  entry: CaptureLedger["sessions"][string],
+  snapshot: TranscriptSnapshot,
+): CaptureCursorDecision {
+  if (entry.status === "pending") {
+    return { kind: "skip", reason: "capture-already-pending" };
+  }
+
+  if (snapshot.currentSize <= entry.lastCapturedSize) {
+    return { kind: "skip", reason: "unchanged" };
+  }
+
+  const prefixHash = sha256(snapshot.content.subarray(0, entry.lastCapturedSize));
+  if (prefixHash !== entry.lastCapturedPrefixHash) {
+    return {
+      kind: "needs_attention",
+      reason: "prefix-mismatch",
+      entry: markPrefixMismatch(entry),
+    };
+  }
+
+  return {
+    kind: "ready",
+    fromLine: entry.lastCapturedLine + 1,
+    toLine: snapshot.currentLine,
+  };
+}
+
+function markPrefixMismatch(
+  entry: CaptureLedger["sessions"][string],
+): CaptureLedger["sessions"][string] {
+  return {
+    ...entry,
+    status: "needs_attention",
+    lastError: "transcript prefix no longer matches ledger cursor",
+  };
+}
+
+async function enqueueCapture(args: {
+  candidate: SessionCandidate;
+  entry: CaptureLedger["sessions"][string];
+  decision: Extract<CaptureCursorDecision, { kind: "ready" }>;
+  snapshot: TranscriptSnapshot;
+  now: Date;
+  startCapture: StartSweepCaptureFn;
+}): Promise<
+  | { ok: true; runId: string; entry: CaptureLedger["sessions"][string] }
+  | { ok: false; reason: string; entry: CaptureLedger["sessions"][string] }
+> {
+  const result = await args.startCapture({
+    candidate: args.candidate,
+    contextNote: cursorContext({
+      candidate: args.candidate,
+      fromLine: args.decision.fromLine,
+      lastCapturedLine: args.entry.lastCapturedLine,
+      lastCapturedSize: args.entry.lastCapturedSize,
+    }),
+  });
+  if (!result.ok) {
+    return {
+      ok: false,
+      reason: "capture-start-failed",
+      entry: {
+        ...args.entry,
+        status: "failed",
+        lastError: result.error,
+      },
+    };
+  }
+  const pendingCursor = captureCursor(args.snapshot.content, args.snapshot.currentLine);
+  return {
+    ok: true,
+    runId: result.runId,
+    entry: {
+      ...args.entry,
+      status: "pending",
+      pendingToSize: pendingCursor.size,
+      pendingToLine: pendingCursor.line,
+      pendingPrefixHash: pendingCursor.prefixHash,
+      pendingRunId: result.runId,
+      pendingStartedAt: args.now.toISOString(),
+      lastRunId: result.runId,
+      lastError: undefined,
+    },
+  };
+}
+
+function startedSummary(
+  candidate: SessionCandidate,
+  runId: string,
+  decision: Extract<CaptureCursorDecision, { kind: "ready" }>,
+): SweepStarted {
+  return {
+    app: candidate.app,
+    sessionId: candidate.sessionId,
+    transcriptPath: candidate.transcriptPath,
+    repoRoot: candidate.repoRoot,
+    runId,
+    fromLine: decision.fromLine,
+    toLine: decision.toLine,
+  };
 }
 
 function cursorContext(args: {

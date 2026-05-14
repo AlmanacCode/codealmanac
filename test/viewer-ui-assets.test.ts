@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("viewer UI assets", () => {
-  it("ships structured sidebar topic links with active styling", async () => {
+  it("ships top navigation, topic rendering, and job UI assets", async () => {
     const indexHtml = await readFile(join(process.cwd(), "viewer", "index.html"), "utf8");
     const logo = await readFile(join(process.cwd(), "viewer", "almanac-logo.png"));
     const appJs = await readFile(join(process.cwd(), "viewer", "app.js"), "utf8");
@@ -18,15 +18,13 @@ describe("viewer UI assets", () => {
     expect(logo.byteLength).toBeGreaterThan(0);
     expect(indexHtml).toContain('src="/almanac-logo.png"');
     expect(indexHtml).toContain('href="/jobs.css"');
-    expect(indexHtml).toContain("Agent-maintained knowledge");
     expect(indexHtml).toContain('class="ca-brand ca-brand-route"');
     expect(indexHtml).toContain('data-route="/"');
+    expect(indexHtml).toContain('class="ca-topbar-link is-active">Library</button>');
+    expect(indexHtml).toContain('data-route="/jobs"');
     expect(indexHtml).not.toContain("Local wiki viewer");
     expect(indexHtml).toContain("Linked from");
     expect(indexHtml).not.toContain("Backlinks");
-    expect(indexHtml).toContain('data-route="/"');
-    expect(indexHtml).toContain('data-route="/getting-started"');
-    expect(indexHtml).toContain('data-route="/jobs"');
     expect(indexHtml).not.toContain("recent-list");
     expect(appJs).not.toContain("recentList");
     expect(appJs).toContain("featuredPages?.projectOverview");
@@ -39,15 +37,11 @@ describe("viewer UI assets", () => {
     expect(appJs).toContain('from "./routes.js"');
     expect(appJs).toContain("/api/wikis");
     expect(appJs).toContain('pathname.startsWith("/w/")');
-    expect(appJs).toContain("state.overview.topics");
-    expect(appJs).toContain("topicNavigation?.source === \"curated\"");
-    expect(appJs).toContain("const SIDEBAR_TAG_LIMIT = 8");
-    expect(appJs).toContain("data-topic-toggle");
-    expect(appJs).toContain("Show all topics");
-    expect(appJs).toContain("Show fewer topics");
-    expect(appJs).toContain("renderTopicTree");
+    expect(appJs).toContain("renderTopicStrip");
+    expect(appJs).toContain("[data-topic-filter]");
+    expect(appJs).toContain("state.topicFilter");
     expect(appJs).toContain("topic.parents");
-    expect(appJs).toContain("ca-topic-depth-");
+    expect(appJs).toContain("ca-topic-strip");
     expect(appJs).toContain("state.overview.featuredPages");
     expect(appJs).toContain('wikiPath === "/getting-started"');
     expect(appJs).toContain("renderGettingStarted");
@@ -99,21 +93,21 @@ describe("viewer UI assets", () => {
     expect(jobsJs).toContain("schedulePoll");
     expect(appJs).not.toContain("Start with the map");
     expect(appJs).toContain("setRailVisible(isWikiPageRoute(pathname))");
-    expect(appJs).toContain("ca-topic-link");
+    expect(appJs).toContain("ca-topic-strip-button");
     expect(appJs).toContain("ca-link-label");
     expect(appJs).toContain("ca-link-detail");
-    expect(appJs).toContain('querySelectorAll(".ca-left [data-route]")');
+    expect(appJs).toContain('document.querySelectorAll(".ca-topbar-nav [data-route]")');
     expect(routesJs).toContain("isCrossWikiTarget");
     expect(routesJs).toContain('return `/w/${encodeURIComponent(wiki)}/page/${encodeURIComponent(slug)}`');
     expect(appJs).not.toContain("<br><small>");
 
-    expect(appCss).toContain(".ca-topic-link");
+    expect(appCss).toContain(".ca-topic-strip");
+    expect(appCss).toContain(".ca-topic-strip-button.is-active");
     expect(appCss).toContain(".ca-brand-mark-image");
-    expect(appCss).toContain(".ca-brand-route");
     expect(appCss).toContain("--ca-accent: #166534");
     expect(appCss).toContain("--ca-accent-hover: #15803d");
     expect(appCss).toContain("--ca-accent-bright: #16a34a");
-    expect(appCss).toContain("rgba(22, 163, 74, 0.12)");
+    expect(appCss).toContain("rgba(22, 163, 74, 0.10)");
     expect(appCss).toContain("DM Sans");
     expect(appCss).toContain("JetBrains Mono");
     expect(appCss).toContain(".ca-page-actions");
@@ -122,9 +116,7 @@ describe("viewer UI assets", () => {
     expect(appCss).toContain(".ca-page-ornament");
     expect(appCss).toContain(".ca-link-button");
     expect(appCss).not.toContain("brightness(0.68)");
-    expect(appCss).toContain(".ca-left .ca-link-button.is-active");
-    expect(appCss).not.toContain(".ca-left .ca-link-button {\n  color: var(--ca-text);");
-    expect(appCss).toContain(".ca-shell.is-rail-hidden");
+    expect(appCss).toContain(".ca-shell.has-rail");
     expect(appCss).not.toContain(".ca-log-entry");
     expect(jobsCss).toContain(".ca-log-entry");
     expect(jobsCss).toContain(".ca-logbook");
@@ -140,13 +132,13 @@ describe("viewer UI assets", () => {
     expect(jobsCss).not.toContain(".ca-event-row");
     expect(jobsCss).not.toContain(".ca-job-impact");
     expect(jobsCss).not.toContain(".ca-run-ledger");
-    expect(jobsCss).toContain(".ca-status-tone-active");
-    expect(jobsCss).toContain(".ca-status-tone-done");
-    expect(jobsCss).toContain(".ca-status-tone-alert");
+    expect(jobsCss).toContain('.ca-status-chip[data-tone="active"]');
+    expect(jobsCss).toContain('.ca-status-chip[data-tone="done"]');
+    expect(jobsCss).toContain('.ca-status-chip[data-tone="alert"]');
     expect(appCss).toContain(".ca-suggest");
     expect(appCss).toContain(".ca-suggest-item");
-    expect(appCss).toContain(".ca-wiki-directory");
-    expect(appCss).toContain(".ca-wiki-stats");
+    expect(appCss).toContain(".ca-library-grid");
+    expect(appCss).toContain(".ca-wiki-card-stats");
     expect(appCss).toContain("overflow-wrap: anywhere");
   });
 });
