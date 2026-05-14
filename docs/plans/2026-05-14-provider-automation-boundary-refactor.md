@@ -63,8 +63,8 @@ src/harness/providers/
   codex.ts
   cursor.ts                # runtime execution adapters only
 
-src/agent/
-  readiness.ts             # setup/agents/doctor provider view
+src/agent/readiness/
+  view.ts                  # setup/agents/doctor provider view
   fixes.ts                 # login/install fix text
   catalog.ts               # only if shared provider facts are not fully covered by harness metadata
 
@@ -675,7 +675,7 @@ git commit -m "refactor: project agent readiness from harness providers"
 ## Task 9: Rename Agent Provider View to Readiness
 
 **Files:**
-- Move: `src/agent/provider-view.ts` -> `src/agent/readiness.ts`
+- Move: `src/agent/provider-view.ts` -> `src/agent/readiness/view.ts`
 - Modify imports in `src/commands/setup.ts`
 - Modify imports in `src/commands/agents.ts`
 - Modify imports in `src/commands/doctor-checks/agents.ts`
@@ -683,7 +683,7 @@ git commit -m "refactor: project agent readiness from harness providers"
 
 **Step 1: Rename module**
 
-Move `provider-view.ts` to `readiness.ts`.
+Move `provider-view.ts` to `readiness/view.ts`.
 
 Keep exported names stable if that reduces churn, or rename deliberately:
 
@@ -741,7 +741,7 @@ Update imports in actively maintained areas:
 - `src/commands/capture-sweep.ts` or new `src/capture/sweep.ts`
 - `src/commands/operations.ts`
 - `src/commands/setup.ts`
-- `src/agent/readiness.ts`
+- `src/agent/readiness/view.ts`
 
 Do not chase every import in one commit unless mechanical and safe.
 
@@ -915,6 +915,5 @@ A fresh maintainer should be able to answer:
 - To change transcript discovery, edit `src/capture/discovery/`.
 - To change capture dedupe/cursors, edit `src/capture/ledger.ts`.
 - To change provider runtime behavior, edit `src/harness/providers/`.
-- To change setup/doctor readiness presentation, edit `src/agent/readiness.ts`.
+- To change setup/doctor readiness presentation, edit `src/agent/readiness/view.ts`.
 - To change persisted global config, edit `src/config/`.
-

@@ -16,18 +16,6 @@ const metadata: AgentProviderMetadata = {
   displayName: "Codex",
   defaultModel: null,
   executable: "codex",
-  capabilities: {
-    transport: "cli-jsonl",
-    writesFiles: true,
-    supportsModelOverride: true,
-    supportsStreaming: true,
-    supportsSessionId: false,
-    supportsUsage: true,
-    supportsCost: false,
-    supportsProviderReportedTurns: false,
-    supportsProgrammaticSubagents: false,
-    supportsStrictToolAllowlist: false,
-  },
 };
 
 const CODEX_MODEL_ORDER = [

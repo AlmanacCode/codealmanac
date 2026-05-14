@@ -9,25 +9,11 @@ export interface SpawnedProcess {
 
 export type SpawnCliFn = (args: string[]) => SpawnedProcess;
 
-export interface AgentProviderCapabilities {
-  transport: "sdk" | "cli-jsonl";
-  writesFiles: boolean;
-  supportsModelOverride: boolean;
-  supportsStreaming: boolean;
-  supportsSessionId: boolean;
-  supportsUsage: boolean;
-  supportsCost: boolean;
-  supportsProviderReportedTurns: boolean;
-  supportsProgrammaticSubagents: boolean;
-  supportsStrictToolAllowlist: boolean;
-}
-
 export interface AgentProviderMetadata {
   id: AgentProviderId;
   displayName: string;
   defaultModel: string | null;
   executable: string;
-  capabilities: AgentProviderCapabilities;
 }
 
 export interface ProviderStatus {

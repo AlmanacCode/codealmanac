@@ -12,6 +12,7 @@ files:
   - src/capture/discovery/
   - src/capture/ledger.ts
   - src/capture/lock.ts
+  - src/capture/sweep.ts
   - src/commands/automation.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
@@ -120,7 +121,7 @@ The first scheduled discovery implementation scans Claude transcripts under `~/.
 
 Continuation capture keeps passing the original transcript path into capture, and adds cursor context telling Absorb what transcript prefix was already captured. That preserves the "agent inspects files lazily" contract while avoiding temp delta transcript files or byte-range semantics in `almanac capture`.
 
-The sweep's state helpers now live beside capture. `[[src/capture/ledger.ts]]` owns repo-local ledger loading, atomic writes, pending-run reconciliation, prefix hashes, and initial cursor calculation. `[[src/capture/lock.ts]]` owns repo-level sweep locking and stale-lock recovery. `[[src/commands/capture-sweep.ts]]` remains the coordinator that parses command options, applies quiet-window and activation checks, starts capture runs, and renders the summary.
+The sweep's state helpers now live beside capture. `[[src/capture/ledger.ts]]` owns repo-local ledger loading, atomic writes, pending-run reconciliation, prefix hashes, and initial cursor calculation. `[[src/capture/lock.ts]]` owns repo-level sweep locking and stale-lock recovery. `[[src/capture/sweep.ts]]` owns the sweep coordinator: eligibility checks, lock acquisition, ledger reconciliation, cursor context, capture-start result handling, and summary construction. `[[src/commands/capture-sweep.ts]]` parses CLI options, loads config/discovery inputs, adapts to `runCaptureCommand()`, and renders command output.
 
 The current sweep implementation makes that continuation context explicit in the saved run spec. `cursorContext()` in [[src/commands/capture-sweep.ts]] appends a second command-context block with the transcript identity and cursor boundary:
 

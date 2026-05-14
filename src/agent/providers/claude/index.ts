@@ -20,18 +20,6 @@ const metadata: AgentProviderMetadata = {
   displayName: "Claude",
   defaultModel: DEFAULT_AGENT_MODEL,
   executable: "claude",
-  capabilities: {
-    transport: "sdk",
-    writesFiles: true,
-    supportsModelOverride: true,
-    supportsStreaming: true,
-    supportsSessionId: true,
-    supportsUsage: false,
-    supportsCost: true,
-    supportsProviderReportedTurns: true,
-    supportsProgrammaticSubagents: true,
-    supportsStrictToolAllowlist: false,
-  },
 };
 
 export const claudeProvider: AgentProvider = {

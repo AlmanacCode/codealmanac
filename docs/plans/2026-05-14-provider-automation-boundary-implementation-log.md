@@ -60,3 +60,11 @@ Plan: `docs/plans/2026-05-14-provider-automation-boundary-refactor.md`
 - Updated `.almanac/pages/automation.md` to document the new `src/automation/` split and the separate launchd loaded-state status check.
 - Updated `.almanac/pages/capture-flow.md` to document `src/capture/discovery/`, `src/capture/ledger.ts`, and `src/capture/lock.ts`.
 - Updated `.almanac/pages/harness-providers.md` to state that runtime execution belongs in `src/harness/providers/`, while `src/agent/readiness/view.ts` and the remaining `src/agent/providers/` code are setup/status/model readiness only.
+
+### Review Fixes
+
+- Addressed review finding `[P2] Runtime capability metadata still lives in readiness providers` by removing runtime capability fields from `AgentProviderMetadata` and the remaining setup/status providers.
+- Addressed review finding `[P2] Sweep business logic remains in the command wrapper` by moving the sweep coordinator loop into `src/capture/sweep.ts`.
+- Kept `src/commands/capture-sweep.ts` responsible for parsing command flags, loading config/discovery inputs, adapting to `runCaptureCommand()`, and rendering command output.
+- Verified focused behavior with `npm test -- --run test/capture-sweep.test.ts test/provider-view.test.ts test/setup.test.ts test/doctor.test.ts`: `30` tests passed.
+- Verified TypeScript/package build with `npm run build`: succeeded.

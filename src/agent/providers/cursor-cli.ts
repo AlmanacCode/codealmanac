@@ -15,18 +15,6 @@ const metadata: AgentProviderMetadata = {
   displayName: "Cursor",
   defaultModel: null,
   executable: "cursor-agent",
-  capabilities: {
-    transport: "cli-jsonl",
-    writesFiles: true,
-    supportsModelOverride: true,
-    supportsStreaming: true,
-    supportsSessionId: true,
-    supportsUsage: true,
-    supportsCost: false,
-    supportsProviderReportedTurns: false,
-    supportsProgrammaticSubagents: false,
-    supportsStrictToolAllowlist: false,
-  },
 };
 
 export const cursorProvider: AgentProvider = {

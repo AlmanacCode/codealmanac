@@ -37,3 +37,7 @@ Current AI operation execution already goes through `src/harness/providers/` via
 ### Status should distinguish file installation from scheduler load state
 
 `almanac automation status` now treats plist existence and launchd load state as separate facts. The command remains non-fatal when launchd says a job is not loaded; it reports `launchd loaded: no` so scheduler registration problems are distinguishable from missing plist files.
+
+### Sweep orchestration belongs in capture, not commands
+
+The CLI wrapper still chooses apps, quiet duration, config path, and output format, but the sweep pipeline is capture-domain behavior. `src/capture/sweep.ts` now owns eligibility decisions, lock acquisition, ledger reconciliation, cursor context, capture-start result handling, and summary construction. The command passes a `startCapture` callback so capture-domain orchestration does not import the command implementation directly.
