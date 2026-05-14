@@ -76,3 +76,5 @@ npm run lint
 npm test
 npm run build
 ```
+
+CI now runs the same install, build, typecheck, and test loop on both `ubuntu-latest` and `windows-latest` for Node 20 and Node 22. The first Windows sandbox run surfaced test portability issues rather than build failures: macOS scheduler tests needed explicit `platform: "darwin"` injection, path assertions needed to avoid slash-only regexes, registry tests needed `dirname(...)` instead of slash replacement, and fake `codex` binaries needed a `.cmd` shim plus `path.delimiter` on Windows.

@@ -49,6 +49,7 @@ export interface UninstallOptions {
   // ─── Injection points ────────────────────────────────────────────
   automationPlistPath?: string;
   gardenPlistPath?: string;
+  platform?: NodeJS.Platform;
   automationExec?: AutomationExecFn;
   claudeDir?: string;
   codexDir?: string;
@@ -97,6 +98,7 @@ export async function runUninstall(
     const res = await runAutomationUninstall({
       plistPath: options.automationPlistPath,
       gardenPlistPath: options.gardenPlistPath,
+      platform: options.platform,
       exec: options.automationExec,
     });
     if (res.exitCode !== 0) {

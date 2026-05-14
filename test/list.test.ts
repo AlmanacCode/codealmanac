@@ -37,7 +37,7 @@ describe("almanac list", () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toMatch(/alpha/);
       expect(result.stdout).toMatch(/first wiki/);
-      expect(result.stdout).toMatch(new RegExp(repo.replace(/\//g, "\\/")));
+      expect(result.stdout).toContain(repo);
     });
   });
 

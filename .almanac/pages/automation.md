@@ -11,9 +11,11 @@ files:
   - src/cli.ts
   - src/cli/register-setup-commands.ts
   - src/cli/register-wiki-lifecycle-commands.ts
+  - .github/workflows/ci.yml
   - src/commands/capture-sweep.ts
   - src/update/config.ts
   - test/automation.test.ts
+  - test/codex-harness-provider.test.ts
   - test/cli.test.ts
   - test/uninstall.test.ts
 sources:
@@ -50,6 +52,8 @@ On Windows, capture uses the task name `\CodeAlmanac\CaptureSweep`, and Garden u
 The Windows adapter stores manifests at `~/.almanac/automation/windows-capture-sweep.json` and `~/.almanac/automation/windows-garden.json`. Those files are local scheduler metadata, not capture state. They record the task name, command, interval seconds, and quiet window where applicable. Doctor uses the capture manifest to decide whether automation is installed on Windows; it no longer checks a launchd plist on that platform.
 
 Setup also changes the durable-global command shape on Windows. After an ephemeral `npx` setup successfully installs the package globally, scheduled commands use npm's Windows command shim (`almanac.cmd ...`) instead of `/usr/bin/env almanac ...`. The global install helper uses `cmd.exe /d /s /c npm.cmd install -g codealmanac@latest` on Windows because Node's `execFile` cannot directly launch `.cmd` files.
+
+The repository verifies this path in GitHub Actions with a matrix over `ubuntu-latest` and `windows-latest` on Node 20 and Node 22. Keep platform-specific scheduler tests explicit about `platform: "darwin"` or `platform: "win32"` rather than inheriting `process.platform`; otherwise a Windows runner will correctly take the Task Scheduler branch while a macOS-oriented test is still asserting launchd plist behavior. Fake command-line binaries in tests need the same split: extensionless executable scripts work on Unix-like runners, while Windows needs a `.cmd` shim on `PATH`.
 
 ## What the scheduler owns and what it does not
 

@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { getRegistryPath } from "../src/paths.js";
@@ -131,7 +132,7 @@ describe("registry", () => {
   it("tolerates an empty registry file", async () => {
     await withTempHome(async () => {
       const path = getRegistryPath();
-      await mkdir(path.replace(/\/registry\.json$/, ""), { recursive: true });
+      await mkdir(dirname(path), { recursive: true });
       await writeFile(path, "", "utf8");
       expect(await readRegistry()).toEqual([]);
     });
@@ -140,7 +141,7 @@ describe("registry", () => {
   it("refuses to silently accept malformed JSON", async () => {
     await withTempHome(async () => {
       const path = getRegistryPath();
-      await mkdir(path.replace(/\/registry\.json$/, ""), { recursive: true });
+      await mkdir(dirname(path), { recursive: true });
       await writeFile(path, "not json", "utf8");
       await expect(readRegistry()).rejects.toThrow(/not valid JSON/);
     });
@@ -163,7 +164,7 @@ describe("registry", () => {
   it("rejects entries missing a non-empty name", async () => {
     await withTempHome(async () => {
       const path = getRegistryPath();
-      await mkdir(path.replace(/\/registry\.json$/, ""), { recursive: true });
+      await mkdir(dirname(path), { recursive: true });
       await writeFile(
         path,
         JSON.stringify([{ path: "/x", description: "", registered_at: "" }]),
@@ -176,7 +177,7 @@ describe("registry", () => {
   it("rejects entries missing a non-empty path", async () => {
     await withTempHome(async () => {
       const path = getRegistryPath();
-      await mkdir(path.replace(/\/registry\.json$/, ""), { recursive: true });
+      await mkdir(dirname(path), { recursive: true });
       await writeFile(
         path,
         JSON.stringify([{ name: "x", description: "", registered_at: "" }]),

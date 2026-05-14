@@ -138,6 +138,7 @@ describe("codealmanac setup", () => {
       const res = await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin" as const,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async (file: string, args: string[]) => {
@@ -174,6 +175,7 @@ describe("codealmanac setup", () => {
       const common = {
         yes: true,
         isTTY: false,
+        platform: "darwin" as const,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -200,6 +202,7 @@ describe("codealmanac setup", () => {
         yes: true,
         skipAutomation: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => {
@@ -223,6 +226,7 @@ describe("codealmanac setup", () => {
         yes: true,
         skipGuides: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -248,6 +252,7 @@ describe("codealmanac setup", () => {
         res = await runSetup({
           yes: true,
           isTTY: false,
+          platform: "darwin",
           agent: "claude",
           model: "claude-opus-4-6",
           spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
@@ -276,6 +281,7 @@ describe("codealmanac setup", () => {
         yes: true,
         isTTY: false,
         autoCommit: true,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -298,6 +304,7 @@ describe("codealmanac setup", () => {
       await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -318,6 +325,7 @@ describe("codealmanac setup", () => {
       const res = await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_OUT_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -345,6 +353,7 @@ describe("codealmanac setup", () => {
       await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -368,6 +377,7 @@ describe("codealmanac setup", () => {
         skipAutomation: true,
         skipGuides: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         claudeDir: env.claudeDir,
@@ -391,6 +401,7 @@ describe("codealmanac setup", () => {
         skipAutomation: true,
         skipGuides: true,
         isTTY: false,
+        platform: "darwin",
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         claudeDir: env.claudeDir,
@@ -413,6 +424,7 @@ describe("codealmanac setup", () => {
       const res = await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         installPath: join(home, ".npm", "_npx", "abc", "node_modules", "codealmanac"),
         spawnGlobalInstall: async () => {},
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
@@ -465,6 +477,7 @@ describe("codealmanac setup", () => {
       const res = await runSetup({
         yes: true,
         isTTY: false,
+        platform: "darwin",
         installPath: join(home, ".npm", "_npx", "abc", "node_modules", "codealmanac"),
         spawnGlobalInstall: async () => {
           throw new Error("npm unavailable");

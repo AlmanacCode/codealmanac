@@ -350,7 +350,7 @@ describe("almanac show — single field flags (bare output)", () => {
         slug: "checkout-flow",
         path: true,
       });
-      expect(r.stdout.trim()).toMatch(
+      expect(r.stdout.trim().replaceAll("\\", "/")).toMatch(
         /\/\.almanac\/pages\/checkout-flow\.md$/,
       );
     });

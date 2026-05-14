@@ -96,6 +96,7 @@ describe("almanac doctor", () => {
       const r = await runDoctor({
         cwd: repo,
         json: true,
+        platform: "darwin",
         automationPlistPath: env.plistPath,
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
@@ -129,6 +130,7 @@ describe("almanac doctor", () => {
       const r = await runDoctor({
         cwd: home,
         json: true,
+        platform: "darwin",
         automationPlistPath: missingPlist,
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
@@ -187,6 +189,7 @@ describe("almanac doctor", () => {
       const r = await runDoctor({
         cwd: home,
         json: true,
+        platform: "darwin",
         automationPlistPath: env.plistPath,
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_OUT_STDOUT),
