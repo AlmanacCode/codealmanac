@@ -24,7 +24,7 @@ almanac search "auth"
 almanac show checkout-flow
 ```
 
-That is the whole first path: install Almanac, build the first wiki for a repo, then search and read it. From then on, scheduled capture periodically runs `almanac capture sweep` and updates `.almanac/pages/` from quiet Claude/Codex transcripts.
+That is the whole first path: install Almanac, build the first wiki for a repo, then search and read it. From then on, scheduled capture periodically runs `almanac capture sweep` for quiet Claude/Codex transcripts, and scheduled Garden keeps the wiki graph tidy.
 
 Prefer the explicit install?
 
@@ -55,7 +55,7 @@ Almanac gives agents durable project memory:
 - **Atomic pages**: one markdown page per stable concept, flow, decision, or gotcha.
 - **Code-aware search**: find pages that mention a file or folder before editing it.
 - **Topic graph**: organize pages into a DAG instead of one huge root instruction file.
-- **Scheduled capture**: absorb quiet AI coding transcripts into the wiki after work settles.
+- **Scheduled maintenance**: absorb quiet AI coding transcripts and periodically garden the wiki graph.
 - **Local-only storage**: pages live in `.almanac/` inside the repo; the global registry stays under `~/.almanac/`.
 - **Git-reviewed output**: wiki edits show up in `git status` like any other change.
 
@@ -84,13 +84,13 @@ Almanac has two kinds of commands:
 - **Write-capable lifecycle commands**: `init`, `capture`, `ingest`, and `garden` can invoke your configured AI provider.
 - **Local query and organization commands**: `search`, `show`, `topics`, `tag`, `health`, `list`, `jobs`, and `automation` operate on local files, SQLite, or run records.
 
-Scheduled auto-capture runs `almanac capture sweep`. The sweep scans Claude and Codex transcript stores, ignores transcripts from before automation was enabled, waits for active transcripts to become quiet, maps each transcript back to the nearest repo with `.almanac/`, and starts ordinary background capture jobs for new material.
+Scheduled automation runs `almanac capture sweep` and `almanac garden`. The sweep scans Claude and Codex transcript stores, ignores transcripts from before automation was enabled, waits for active transcripts to become quiet, maps each transcript back to the nearest repo with `.almanac/`, and starts ordinary background capture jobs for new material. Garden periodically audits and improves the wiki graph.
 
 Capture writes nothing if nothing in the session meets the notability bar. Silence is a valid outcome.
 
 ## Setup And Auth
 
-Bare `almanac` opens the setup wizard. It chooses your default agent/model, checks readiness, installs scheduled auto-capture, and adds optional agent guides.
+Bare `almanac` opens the setup wizard. It chooses your default agent/model, checks readiness, installs scheduled capture and Garden automation, and adds optional agent guides.
 
 Useful unattended setup flags:
 
@@ -101,6 +101,8 @@ almanac setup --skip-guides
 almanac setup --auto-commit
 almanac setup --auto-capture-every 2h
 almanac setup --auto-capture-quiet 30m
+almanac setup --garden-every 2d
+almanac setup --garden-off
 ```
 
 Auto-commit is opt-in. Without `--auto-commit`, lifecycle runs leave wiki
@@ -145,7 +147,7 @@ Almanac never stores provider credentials. Auth stays in each provider's normal 
 | `almanac ingest docs/adr.md` | Absorb files or folders into the wiki. |
 | `almanac garden` | Audit and improve the wiki graph. |
 | `almanac jobs` | List local background runs. |
-| `almanac automation install --every 2h` | Install or adjust scheduled capture. |
+| `almanac automation install --every 2h` | Install or adjust scheduled capture and Garden. |
 | `almanac doctor` | Check install, providers, automation, and wiki health. |
 
 Query commands and attached lifecycle runs are quiet by default. Use `--verbose` when you want human-readable
@@ -178,7 +180,7 @@ almanac search --topic flows --slugs | almanac show --stdin
 almanac search --stale 90d | almanac tag --stdin needs-review
 ```
 
-**Inspect scheduled capture**
+**Inspect scheduled automation**
 
 ```bash
 almanac automation status
@@ -233,7 +235,7 @@ The codebase is TypeScript, built with [tsup](https://tsup.egoist.dev/), tested 
 
 ## Status
 
-`v0.2.21`, pre-1.0. Breaking changes are possible before 1.0 and will be called out in release notes.
+Almanac is pre-1.0. Breaking changes are possible before 1.0 and will be called out in release notes.
 
 ## License
 
