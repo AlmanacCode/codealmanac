@@ -3,7 +3,7 @@ title: AGENTS.md
 summary: Codex loads durable instructions from global and project `AGENTS.md` files, and CodeAlmanac setup writes its managed Codex guide inline into the active global file because Codex does not expand `@file` references there.
 topics: [agents, stack]
 files:
-  - src/agent/providers/codex-instructions.ts
+  - src/agent/readiness/providers/codex-instructions.ts
   - src/commands/setup.ts
   - src/commands/uninstall.ts
 sources:
@@ -26,7 +26,7 @@ The same guide says empty files are skipped. It also documents a default combine
 
 ## CodeAlmanac's managed block
 
-[[src/agent/providers/codex-instructions.ts]] encodes the repo's assumption about the active global file. `resolveCodexAgentsPath()` prefers `AGENTS.override.md` only when it exists and `trim()` is non-empty; otherwise it falls back to `AGENTS.md`. That matches the official Codex discovery rule instead of blindly preferring the override filename.
+[[src/agent/readiness/providers/codex-instructions.ts]] encodes the repo's assumption about the active global file. `resolveCodexAgentsPath()` prefers `AGENTS.override.md` only when it exists and `trim()` is non-empty; otherwise it falls back to `AGENTS.md`. That matches the official Codex discovery rule instead of blindly preferring the override filename.
 
 The same file preserves one Codex-specific constraint in code comments and behavior: Codex treats `@file` references inside `AGENTS.md` as plain text rather than expanding them like Claude does in `CLAUDE.md`. `ensureCodexInstructions()` therefore writes the Almanac mini guide inline between `<!-- almanac:start -->` and `<!-- almanac:end -->` instead of trying to import `~/.claude/almanac.md` or another shared file.
 

@@ -5,7 +5,7 @@ topics: [flows, automation, storage, cli]
 files:
   - docs/plans/2026-05-11-scheduled-quiet-session-capture.md
   - src/commands/capture-sweep.ts
-  - src/update/config.ts
+  - src/config/index.ts
   - src/process/records.ts
   - src/process/types.ts
   - test/capture-sweep.test.ts

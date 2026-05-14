@@ -6,8 +6,8 @@ files:
   - src/harness/providers/claude.ts
   - src/harness/types.ts
   - src/harness/events.ts
-  - src/agent/providers/claude/index.ts
-  - src/agent/providers/claude/auth.ts
+  - src/agent/readiness/providers/claude/index.ts
+  - src/agent/readiness/providers/claude/auth.ts
   - src/agent/prompts.ts
   - test/setup.test.ts
 ---
@@ -19,7 +19,7 @@ files:
 ## Where we use it
 
 - `src/harness/providers/claude.ts` — imports `query()` and maps `AgentRunSpec` to Claude SDK options.
-- `src/agent/providers/claude/auth.ts` — checks installed/authenticated Claude CLI state for provider status.
+- `src/agent/readiness/providers/claude/auth.ts` — checks installed/authenticated Claude CLI state for provider status.
 - `src/agent/prompts.ts` — loads V1 operation prompts from the bundled `prompts/` directory.
 
 ## Adapter mapping
@@ -44,7 +44,7 @@ Two paths: Claude subscription OAuth via the Claude CLI, or `ANTHROPIC_API_KEY`.
 
 `resolveClaudeExecutable()` uses `command -v claude` to find the installed binary. The resolved path is passed as `pathToClaudeCodeExecutable` so the SDK and the auth probe agree on which binary to use. Headless auto-capture now runs through scheduler-backed [[capture-automation]] rather than app lifecycle hooks.
 
-Provider setup tests can inject a fake `spawnCli` status probe instead of depending on a real `claude` binary on PATH. When `src/agent/providers/claude/index.ts` builds setup status with an injected probe, it treats Claude as installed and derives authentication from the injected status output or `ANTHROPIC_API_KEY`; production runtime discovery still uses `resolveClaudeExecutable()`. Keep this aligned with the Codex and Cursor setup-provider behavior so CI can exercise model override setup paths without installing every provider CLI.
+Provider setup tests can inject a fake `spawnCli` status probe instead of depending on a real `claude` binary on PATH. When `src/agent/readiness/providers/claude/index.ts` builds setup status with an injected probe, it treats Claude as installed and derives authentication from the injected status output or `ANTHROPIC_API_KEY`; production runtime discovery still uses `resolveClaudeExecutable()`. Keep this aligned with the Codex and Cursor readiness-provider behavior so CI can exercise model override setup paths without installing every provider CLI.
 
 ## Capabilities
 

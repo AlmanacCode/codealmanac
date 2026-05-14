@@ -6,7 +6,7 @@ files:
   - docs/plans/2026-05-11-scheduled-quiet-session-capture.md
   - src/commands/capture-sweep.ts
   - src/commands/automation.ts
-  - src/update/config.ts
+  - src/config/index.ts
   - src/commands/session-transcripts.ts
   - src/commands/operations.ts
   - src/commands/setup.ts

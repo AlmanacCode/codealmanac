@@ -33,3 +33,12 @@ Plan: `docs/plans/2026-05-14-long-term-architecture-cleanup.md`
 - Left `src/commands/setup.ts` as the top-level setup workflow so install path, automation, guides, and auto-commit steps remain readable in execution order.
 - Verified with `npm run build`: succeeded.
 - Verified with `npm test -- --run test/setup.test.ts test/doctor.test.ts test/agents-command.test.ts test/provider-view.test.ts`: `26` tests passed.
+
+### Wiki Reference Cleanup
+
+- Updated active wiki pages that still taught stale internal paths after the provider readiness move.
+- Replaced `src/agent/providers/` references in active pages with `src/agent/readiness/providers/`.
+- Replaced `src/update/config.ts` file references in active automation pages with `src/config/index.ts`.
+- Left historical plans and research notes untouched when their old paths are part of dated implementation history.
+- Verified with `almanac health --topic agents`: all categories ok.
+- Verified with `almanac health --topic automation`: all categories ok.
