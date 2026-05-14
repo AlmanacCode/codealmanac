@@ -68,3 +68,8 @@ Plan: `docs/plans/2026-05-14-provider-automation-boundary-refactor.md`
 - Kept `src/commands/capture-sweep.ts` responsible for parsing command flags, loading config/discovery inputs, adapting to `runCaptureCommand()`, and rendering command output.
 - Verified focused behavior with `npm test -- --run test/capture-sweep.test.ts test/provider-view.test.ts test/setup.test.ts test/doctor.test.ts`: `30` tests passed.
 - Verified TypeScript/package build with `npm run build`: succeeded.
+
+### Re-review Fix
+
+- Addressed re-review finding `[P2] Keep CLI result parsing out of sweep coordinator` by changing `StartSweepCaptureFn` to return a domain result.
+- Moved `runCaptureCommand()` stdout parsing back into `src/commands/capture-sweep.ts`; `src/capture/sweep.ts` now receives only `{ ok: true, runId }` or `{ ok: false, error }`.

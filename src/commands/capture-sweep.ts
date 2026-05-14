@@ -51,7 +51,7 @@ export async function runCaptureSweepCommand(
     dryRun: options.dryRun === true,
     now,
     startCapture: async ({ candidate, contextNote }) => {
-      return await runCaptureCommand({
+      const result = await runCaptureCommand({
         cwd: candidate.repoRoot,
         sessionFiles: [candidate.transcriptPath],
         app: candidate.app,
@@ -62,6 +62,13 @@ export async function runCaptureSweepCommand(
         startBackground: options.startBackground,
         contextNote,
       });
+      if (result.exitCode !== 0) {
+        return { ok: false, error: result.stderr.trim() || result.stdout.trim() };
+      }
+      const runId = extractRunId(result.stdout);
+      return runId === null
+        ? { ok: false, error: "capture command did not report a run id" }
+        : { ok: true, runId };
     },
   });
 
@@ -98,6 +105,17 @@ async function readCaptureSince(configPath: string | undefined): Promise<Date | 
   if (raw === null) return null;
   const ms = Date.parse(raw);
   return Number.isFinite(ms) ? new Date(ms) : null;
+}
+
+function extractRunId(stdout: string): string | null {
+  try {
+    const parsed = JSON.parse(stdout) as { data?: { runId?: unknown } };
+    const runId = parsed.data?.runId;
+    return typeof runId === "string" ? runId : null;
+  } catch {
+    const match = stdout.match(/capture started:\s+(run_[^\s]+)/);
+    return match?.[1] ?? null;
+  }
 }
 
 function renderSweepError(message: string, json: boolean | undefined): CommandResult {

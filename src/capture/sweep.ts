@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 
-import type { CommandResult } from "../cli/helpers.js";
 import type { SessionCandidate, SweepApp } from "./discovery/index.js";
 import {
   type CaptureLedger,
@@ -48,9 +47,13 @@ export interface StartSweepCaptureArgs {
   contextNote: string;
 }
 
+export type StartSweepCaptureResult =
+  | { ok: true; runId: string }
+  | { ok: false; error: string };
+
 export type StartSweepCaptureFn = (
   args: StartSweepCaptureArgs,
-) => Promise<CommandResult>;
+) => Promise<StartSweepCaptureResult>;
 
 export async function executeCaptureSweep(args: {
   candidates: SessionCandidate[];
@@ -157,24 +160,13 @@ export async function executeCaptureSweep(args: {
           lastCapturedSize: entry.lastCapturedSize,
         }),
       });
-      if (result.exitCode !== 0) {
+      if (!result.ok) {
         ledger.sessions[key] = {
           ...entry,
           status: "failed",
-          lastError: result.stderr.trim() || result.stdout.trim(),
+          lastError: result.error,
         };
         summary.needsAttention.push(skip(candidate, "capture-start-failed"));
-        await writeLedger(candidate.repoRoot, ledger, args.now);
-        continue;
-      }
-      const runId = extractRunId(result.stdout);
-      if (runId === null) {
-        ledger.sessions[key] = {
-          ...entry,
-          status: "failed",
-          lastError: "capture command did not report a run id",
-        };
-        summary.needsAttention.push(skip(candidate, "missing-run-id"));
         await writeLedger(candidate.repoRoot, ledger, args.now);
         continue;
       }
@@ -185,9 +177,9 @@ export async function executeCaptureSweep(args: {
         pendingToSize: pendingCursor.size,
         pendingToLine: pendingCursor.line,
         pendingPrefixHash: pendingCursor.prefixHash,
-        pendingRunId: runId,
+        pendingRunId: result.runId,
         pendingStartedAt: args.now.toISOString(),
-        lastRunId: runId,
+        lastRunId: result.runId,
         lastError: undefined,
       };
       await writeLedger(candidate.repoRoot, ledger, args.now);
@@ -196,7 +188,7 @@ export async function executeCaptureSweep(args: {
         sessionId: candidate.sessionId,
         transcriptPath: candidate.transcriptPath,
         repoRoot: candidate.repoRoot,
-        runId,
+        runId: result.runId,
         fromLine: entry.lastCapturedLine + 1,
         toLine: currentLine,
       });
@@ -231,17 +223,6 @@ function cursorContext(args: {
     "- You may inspect earlier lines only for context.",
     "- Do not re-document decisions already captured unless newer lines amend, invalidate, or add important nuance to them.",
   ].join("\n");
-}
-
-function extractRunId(stdout: string): string | null {
-  try {
-    const parsed = JSON.parse(stdout) as { data?: { runId?: unknown } };
-    const runId = parsed.data?.runId;
-    return typeof runId === "string" ? runId : null;
-  } catch {
-    const match = stdout.match(/capture started:\s+(run_[^\s]+)/);
-    return match?.[1] ?? null;
-  }
 }
 
 function skip(candidate: Partial<SessionCandidate> & { transcriptPath: string }, reason: string): SweepSkipped {

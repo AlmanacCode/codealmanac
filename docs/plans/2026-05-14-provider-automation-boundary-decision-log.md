@@ -41,3 +41,7 @@ Current AI operation execution already goes through `src/harness/providers/` via
 ### Sweep orchestration belongs in capture, not commands
 
 The CLI wrapper still chooses apps, quiet duration, config path, and output format, but the sweep pipeline is capture-domain behavior. `src/capture/sweep.ts` now owns eligibility decisions, lock acquisition, ledger reconciliation, cursor context, capture-start result handling, and summary construction. The command passes a `startCapture` callback so capture-domain orchestration does not import the command implementation directly.
+
+### Capture sweep receives domain start results
+
+`src/capture/sweep.ts` should not know how `runCaptureCommand()` formats stdout. The command wrapper now adapts CLI command results into a small domain result before calling the sweep coordinator. This keeps stdout parsing and human fallback compatibility in `src/commands/capture-sweep.ts`.
