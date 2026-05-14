@@ -18,9 +18,13 @@ sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T21-33-50-019e1a76-701d-7583-a76c-b3739632ee9b.jsonl
   - /Users/kushagrachitkara/.codex/sessions/2026/05/12/rollout-2026-05-12T20-25-14-019e1f5d-ff59-7ee1-a73b-836277d8092b.jsonl
+  - docs/plans/2026-05-14-provider-automation-boundary-refactor.md
+  - /Users/rohan/.codex/sessions/2026/05/13/rollout-2026-05-13T23-00-06-019e246d-595d-76d3-bd45-6433245065ac.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T12-03-51-019e273a-e4b1-7510-981d-d1deb31bc8e2.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T12-11-57-019e2742-4c9c-7241-8ccd-a6d36a889d7d.jsonl
   - https://openai.com/api/pricing/
   - https://developers.openai.com/api/docs/models/gpt-5.5
-verified: 2026-05-13
+verified: 2026-05-14
 ---
 
 # Capture Flow
@@ -34,6 +38,8 @@ The old hardcoded writer/reviewer capture pipeline was removed. There is no `pro
 Capture should treat session transcripts as raw evidence, not as trustworthy summaries or wiki-ready prose. A 2026-05-11 Codex capture discussion included a long accidental tool-output dump from another repo's config and test run, including sensitive-looking values mixed with otherwise irrelevant debugging output. The durable lesson is broader than that one incident: transcript files can contain large raw command output, noisy detours, and accidental data exposure.
 
 For Absorb, that means the unit of value is the conclusion the agent can verify from the transcript, not the transcript text itself. Durable implementation or product understanding may still belong in the wiki, but raw blobs, copied secrets, and incidental debug output do not. This matches the prompt doctrine that inputs are raw material rather than outputs.
+
+Transcript tails can also be incomplete. A 2026-05-14 Codex transcript ended after the user asked for an architecture design plan and after the assistant promised to write it, but before any plan file was created or final answer was recorded. Absorb should treat trailing intentions and in-progress commentary as weaker evidence than completed commands, diffs, or final answers.
 
 The same lesson shapes transcript discovery tooling, not just wiki prose. The scheduled sweep's metadata pass only reads an initial header chunk and first lines to recover fields such as session id and cwd, instead of eagerly loading whole transcript files during candidate discovery. That keeps the cheap path cheap, but it also limits how much noisy or sensitive transcript content routine automation touches before a session is even eligible for capture.
 
@@ -119,9 +125,11 @@ The scheduler path extends this resolver boundary rather than replacing it. `cap
 
 The first scheduled discovery implementation scans Claude transcripts under `~/.claude/projects/**/*.jsonl` and Codex transcripts under `~/.codex/sessions/**/*.jsonl`. Claude subagent paths are ignored, and Codex transcripts marked with `payload.thread_source === "subagent"` are ignored. Provider-specific transcript scanning lives under `[[src/capture/discovery/]]` because it scans historical transcript stores; it is not part of the runtime adapter boundary in `[[harness-providers]]`.
 
+The 2026-05-13 review discussion clarified the ownership boundary for this discovery code. Claude and Codex transcript scanning is provider-specific source discovery, not [[harness-providers]] execution behavior. The transcripts being scanned are external agent-app session histories that may come from ordinary user work outside CodeAlmanac's own Build, Absorb, or Garden runs. They therefore should not be treated as harness run history, even though the scanners are app-specific.
+
 Continuation capture keeps passing the original transcript path into capture, and adds cursor context telling Absorb what transcript prefix was already captured. That preserves the "agent inspects files lazily" contract while avoiding temp delta transcript files or byte-range semantics in `almanac capture`.
 
-The sweep's state helpers now live beside capture. `[[src/capture/ledger.ts]]` owns repo-local ledger loading, atomic writes, pending-run reconciliation, prefix hashes, and initial cursor calculation. `[[src/capture/lock.ts]]` owns repo-level sweep locking and stale-lock recovery. `[[src/capture/sweep.ts]]` owns the sweep coordinator: eligibility checks, lock acquisition, ledger reconciliation, cursor context, capture-start result handling, and summary construction. `[[src/commands/capture-sweep.ts]]` parses CLI options, loads config/discovery inputs, adapts to `runCaptureCommand()`, and renders command output.
+The sweep's state helpers now live beside capture. `[[src/capture/ledger.ts]]` owns repo-local ledger loading, atomic writes, pending-run reconciliation, prefix hashes, and initial cursor calculation. `[[src/capture/lock.ts]]` owns repo-level sweep locking and stale-lock recovery. `[[src/capture/sweep.ts]]` owns the sweep coordinator: eligibility checks, lock acquisition, ledger reconciliation, cursor context, capture-start result handling, and summary construction. `[[src/commands/capture-sweep.ts]]` parses CLI options, loads config and discovery inputs, adapts `runCaptureCommand()` to a typed capture-start result, and renders command output.
 
 The current sweep implementation makes that continuation context explicit in the saved run spec. `cursorContext()` in [[src/commands/capture-sweep.ts]] appends a second command-context block with the transcript identity and cursor boundary:
 

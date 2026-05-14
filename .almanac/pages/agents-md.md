@@ -3,6 +3,9 @@ title: AGENTS.md
 summary: Codex loads durable instructions from global and project `AGENTS.md` files, and CodeAlmanac setup writes its managed Codex guide inline into the active global file because Codex does not expand `@file` references there.
 topics: [agents, stack]
 files:
+  - AGENTS.md
+  - CLAUDE.md
+  - .gitignore
   - src/agent/instructions/codex.ts
   - src/commands/setup.ts
   - src/commands/uninstall.ts
@@ -10,8 +13,9 @@ sources:
   - https://developers.openai.com/codex/guides/agents-md
   - docs/research/2026-05-09-codex-harness-capabilities.md
   - /Users/kushagrachitkara/.codex/sessions/2026/05/12/rollout-2026-05-12T14-39-37-019e1e21-939f-79f1-9722-c890eb4d1f38.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/13/rollout-2026-05-13T10-09-42-019e21ac-062a-7830-af2e-f8e719f85d89.jsonl
 status: active
-verified: 2026-05-12
+verified: 2026-05-14
 ---
 
 # AGENTS.md
@@ -23,6 +27,12 @@ verified: 2026-05-12
 The official Codex guide says Codex reads instruction files before doing work. Global scope is `~/.codex/AGENTS.override.md` when that file exists and is non-empty; otherwise Codex uses `~/.codex/AGENTS.md`. Project scope then walks from the project root down to the current working directory and concatenates matching `AGENTS.md` files from broad to specific. Later, more specific files therefore override earlier guidance by position in the combined prompt.
 
 The same guide says empty files are skipped. It also documents a default combined size limit controlled by `project_doc_max_bytes`, with a default of `32 KiB`.
+
+## Repo-local status
+
+The CodeAlmanac repo still has an `AGENTS.md` pattern in `.gitignore`, but the root `AGENTS.md` is now force-tracked as a symlink to `CLAUDE.md`. `git ls-files -s AGENTS.md` records mode `120000`, so Codex and Claude read the same repo-local instruction text without maintaining two tracked copies.
+
+The symlink was introduced after an initial session check incorrectly treated the ignored `AGENTS.md` as an untracked regular file. The durable rule is to verify both the filesystem state and git index mode before making claims about repo-local agent instruction files.
 
 ## CodeAlmanac's managed block
 
@@ -39,3 +49,5 @@ The same file preserves one Codex-specific constraint in code comments and behav
 ## Role relative to the wiki
 
 [[operation-prompts]] and the wiki are descriptive project memory. `AGENTS.md` is prescriptive agent guidance. The research notes in `docs/research/2026-05-09-codex-harness-capabilities.md` already framed that split: stable repo conventions belong in Codex instruction files, while Build/Absorb/Garden assemble their own operation prompts and should not use `AGENTS.md` as the carrier for transcript-specific or per-run goals.
+
+The project-level review rule against [[accidental-special-case-architecture]] belongs in prescriptive agent guidance and `.claude/agents/review.md`, not in Build/Absorb/Garden prompts. It constrains how agents judge implementation shape, while operation prompts constrain how agents write wiki memory.

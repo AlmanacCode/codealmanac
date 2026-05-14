@@ -10,10 +10,19 @@ files:
   - src/harness/providers/metadata.ts
   - src/harness/providers/claude.ts
   - src/harness/providers/codex.ts
+  - src/harness/providers/codex/app-server.ts
+  - src/harness/providers/codex/events.ts
+  - src/harness/providers/codex/exec.ts
+  - src/harness/providers/codex/request.ts
+  - src/harness/providers/codex/status.ts
   - src/harness/providers/cursor.ts
   - src/agent/readiness/view.ts
   - src/agent/readiness/providers/
   - test/codex-harness-provider.test.ts
+sources:
+  - docs/plans/2026-05-14-provider-automation-boundary-refactor.md
+  - /Users/rohan/.codex/sessions/2026/05/13/rollout-2026-05-13T23-00-06-019e246d-595d-76d3-bd45-6433245065ac.jsonl
+verified: 2026-05-14
 ---
 
 # Harness Providers
@@ -28,11 +37,15 @@ The V1 harness layer is Almanac's provider-neutral execution boundary. Operation
 
 `HarnessEvent` normalizes stream output into text, tool use, tool result, tool summary, context usage, error, and done events. Tool events can carry structured display details such as kind, title, path, command, status, exit code, and duration; `jobs attach` and lifecycle commands run with `--verbose` use those fields to show activity like "Reading file" or "Running command" instead of only provider-specific tool names. Quiet foreground lifecycle runs still log those events to JSONL, but they do not print the live tool stream to stdout. Run summaries preserve provider session id, cost, turns, and usage only when the adapter can actually supply them.
 
+Harness history means CodeAlmanac's own run history: the `AgentRunSpec`, normalized `HarnessEvent` stream, `.almanac/runs/` records, provider session id, usage, cost, status, and failure metadata produced when CodeAlmanac runs an operation. External Claude or Codex JSONL transcript stores are not harness history in this architecture. [[capture-flow]] reads those transcript stores as source material for scheduled Absorb work, but that source discovery should stay outside the harness provider contract unless the provider abstraction is deliberately expanded.
+
+The harness layer is also distinct from the agent readiness code under `src/agent/readiness/`. See [[provider-lifecycle-boundary]] for the current boundary: harness providers are the execution adapter layer; readiness, auth, instruction installation, and persisted config are separate agent-support lifecycles.
+
 ## Adapters
 
 The Claude adapter maps base tools to Claude Agent SDK tools, passes `tools` and `allowedTools`, sets `permissionMode: "dontAsk"`, supports programmatic per-run subagents, and reports cost/usage when available. Claude-specific auth and capability flags are documented in [[claude-agent-sdk]].
 
-The Codex adapter uses `codex app-server --config mcp_servers={} --listen stdio://` with a three-phase JSON-RPC handshake: `initialize` (sends `clientInfo` and `capabilities: { experimentalApi: true }`), then `thread/start` (sets `approvalPolicy: "never"`, `sandbox: "workspace-write"`, `ephemeral: true`, `developerInstructions` from the system prompt), then `turn/start` (sends the combined prompt as a single text input item with `sandboxPolicy: { type: "workspaceWrite", networkAccess: false }`). The `mcp_servers={}` override prevents user-level Codex MCP config from leaking tools into Almanac runs while preserving normal Codex auth. Two separate timeouts bound each run. Each of the three JSON-RPC handshake requests has a 30-second per-call timeout (default `CODEX_APP_SERVER_RPC_TIMEOUT_MS = 30_000`; overridable via env var `CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS` for testing), guarding against a stalled or incompatible app-server at startup. After `turn/start` resolves successfully, a separate 30-minute watchdog begins (default `CODEX_APP_SERVER_TURN_TIMEOUT_MS = 30 * 60_000`; overridable via `CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS` for testing), guarding against a model or agent that accepts the turn but never emits `turn/completed`. The two timeouts address distinct failure modes: startup unresponsiveness versus mid-execution stall. The adapter streams notifications until `turn/completed` and then kills the child process. The environment always sets `CODEALMANAC_INTERNAL_SESSION=1` to let the subprocess identify itself as a background agent.
+The Codex adapter uses `codex app-server --config mcp_servers={} --listen stdio://` with a three-phase JSON-RPC handshake: `initialize` (sends `clientInfo` and `capabilities: { experimentalApi: true }`), then `thread/start` (sets `approvalPolicy: "never"`, `sandbox: "workspace-write"`, `ephemeral: true`, `developerInstructions` from the system prompt), then `turn/start` (sends the combined prompt as a single text input item with `sandboxPolicy: { type: "workspaceWrite", networkAccess: false }`). [[src/harness/providers/codex.ts]] is now a facade; request construction lives in [[src/harness/providers/codex/request.ts]], JSON-RPC process handling lives in [[src/harness/providers/codex/app-server.ts]], event and usage mapping lives in [[src/harness/providers/codex/events.ts]], legacy `codex exec --json` handling lives in [[src/harness/providers/codex/exec.ts]], and readiness probing lives in [[src/harness/providers/codex/status.ts]]. The `mcp_servers={}` override prevents user-level Codex MCP config from leaking tools into Almanac runs while preserving normal Codex auth. Two separate timeouts bound each run. Each of the three JSON-RPC handshake requests has a 30-second per-call timeout (default `CODEX_APP_SERVER_RPC_TIMEOUT_MS = 30_000`; overridable via env var `CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS` for testing), guarding against a stalled or incompatible app-server at startup. After `turn/start` resolves successfully, a separate 30-minute watchdog begins (default `CODEX_APP_SERVER_TURN_TIMEOUT_MS = 30 * 60_000`; overridable via `CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS` for testing), guarding against a model or agent that accepts the turn but never emits `turn/completed`. The two timeouts address distinct failure modes: startup unresponsiveness versus mid-execution stall. The adapter streams notifications until `turn/completed` and then kills the child process. The environment always sets `CODEALMANAC_INTERNAL_SESSION=1` to let the subprocess identify itself as a background agent.
 
 App-server notifications map to `HarnessEvent` as follows: `item/agentMessage/delta` → `text_delta`; `item/plan/delta` and `turn/plan/updated` → `tool_summary`; `item/started` and `item/completed` → `tool_use` / `tool_result` with structured display kind (shell, edit, mcp, web, agent, read, write); `item/commandExecution/outputDelta` and `item/fileChange/outputDelta` → `tool_summary`; `thread/tokenUsage/updated` → `context_usage` with usage parsed from `tokenUsage.last` (per-turn counts); `turn/completed` → terminal state; `error` notification → `error` event. The exec-path `parseCodexUsage` reads a flat token shape; the app-server path uses `parseCodexAppServerUsage`, which reads `tokenUsage.last.totalTokens` as the authoritative per-turn total, `tokenUsage.total.totalTokens` for cumulative processed tokens, and `tokenUsage.modelContextWindow` for `maxTokens` (the model's context window size).
 
@@ -40,7 +53,7 @@ Server-initiated requests are handled noninteractively so lifecycle commands nev
 
 `warning` notifications are non-terminal: the adapter maps them to `tool_summary` events (`Warning: <message>`) so a config or model warning during a turn does not fail the run. `error` notifications read the message from `params.error.message`, `params.error.detail`, or `params.message` and classify the failure via `classifyCodexFailure`.
 
-The adapter supports model override, reasoning effort, structured output schema (passed as `outputSchema` on the turn), and usage reporting. Per-run programmatic subagents, MCP, skills, and max-cost are unsupported and rejected at spec validation time. The older `codex exec --json` helpers remain in [[src/harness/providers/codex.ts]] as compatibility and failure-parsing utilities, but the default V1 run path is app-server.
+The adapter supports model override, reasoning effort, structured output schema (passed as `outputSchema` on the turn), and usage reporting. Per-run programmatic subagents, MCP, skills, and max-cost are unsupported and rejected at spec validation time. The older `codex exec --json` helpers remain in [[src/harness/providers/codex/exec.ts]] as compatibility utilities, but the default V1 run path is app-server.
 
 Cursor remains an explicit placeholder provider in V1. It is present in metadata as the future extension point, but runs fail clearly until a real adapter lands.
 

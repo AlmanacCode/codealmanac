@@ -3,6 +3,7 @@ title: Almanac Doctor
 summary: "`almanac doctor` reports install, agent, update, and wiki status, but it currently stops at diagnosis and prints `run:` hints instead of applying repairs."
 topics: [cli, systems]
 files:
+  - src/agent/install-targets.ts
   - src/commands/doctor.ts
   - src/commands/doctor-checks/install.ts
   - src/commands/doctor-checks/wiki.ts
@@ -43,9 +44,11 @@ The install section currently reports:
 - Claude authentication state
 - whether scheduled capture automation is installed
 - whether Claude guide files exist under `~/.claude/`
-- whether `~/.claude/CLAUDE.md` contains the Almanac import line
+- whether the global agent instruction entries are installed for Claude and Codex
 
 [[src/commands/doctor-checks/install.ts]] expresses repairs as `fix: "run: ..."` strings. The command prints those hints, but it does not execute them.
+
+The `install.import` JSON key is intentionally stable even though the meaning expanded in the 2026-05-13 provider refactor. It now checks the Claude `CLAUDE.md` import and the Codex managed AGENTS block via [[src/agent/install-targets.ts]], and the human message says "Agent instruction entries" rather than naming only Claude imports.
 
 ## Relationship to the SQLite ABI guard
 
@@ -66,11 +69,13 @@ The wiki section first resolves the nearest repo with `.almanac/`. When one exis
 - most recent capture artifact age
 - an `almanac health` summary
 
+The "most recent capture artifact" line currently has a narrow scanner. [[src/commands/doctor-checks/wiki.ts]] checks `.almanac/logs` and `.almanac/` for `.capture-*` log/jsonl files, but it does not scan `.almanac/runs/` for the process-manager run records described in [[process-manager-runs]]. A 2026-05-13 support check found `almanac doctor` reporting an old `last capture` even though `.almanac/runs/<run-id>.json`, the matching JSONL log, and the hook log proved a capture had completed minutes earlier. When doctor and jobs disagree, trust the run record and hook log for recent background captures.
+
 If wiki checks throw, [[src/commands/doctor.ts]] degrades to a single `wiki.checks` problem entry instead of crashing the whole command.
 
 ## Verification boundaries
 
-Doctor does not currently verify every setup artifact it installs. [[global-agent-instructions]] documents one current gap: install checks verify Claude-side guides and import lines, but there is no Codex-specific doctor check for `~/.codex/AGENTS.md` or `AGENTS.override.md`.
+Doctor still does not repair setup artifacts directly, but its instruction check now covers both Claude and Codex global instruction entries. [[global-agent-instructions]] documents the exact artifacts and the managed-block rules.
 
 The command also remains diagnostic-only. Even when a fix is straightforward, such as reinstalling automation or rerunning setup to restore guide files, doctor only prints the suggested command.
 

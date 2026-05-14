@@ -6,8 +6,8 @@ files:
   - src/harness/providers/claude.ts
   - src/harness/types.ts
   - src/harness/events.ts
-  - src/agent/readiness/providers/claude/index.ts
   - src/agent/auth/claude.ts
+  - src/agent/readiness/providers/claude/index.ts
   - src/agent/prompts.ts
   - test/setup.test.ts
 ---

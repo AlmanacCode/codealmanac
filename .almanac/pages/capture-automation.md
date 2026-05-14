@@ -5,7 +5,15 @@ topics: [flows, agents, cli, automation]
 files:
   - docs/plans/2026-05-11-scheduled-quiet-session-capture.md
   - src/commands/capture-sweep.ts
+  - src/capture/discovery/
+  - src/capture/ledger.ts
+  - src/capture/lock.ts
+  - src/capture/sweep.ts
+  - src/paths.ts
   - src/commands/automation.ts
+  - src/automation/tasks.ts
+  - src/automation/launchd.ts
+  - src/automation/legacy-hooks.ts
   - src/config/index.ts
   - src/commands/session-transcripts.ts
   - src/commands/operations.ts
@@ -15,10 +23,13 @@ files:
   - src/cli.ts
   - test/setup.test.ts
   - test/automation.test.ts
+  - test/paths.test.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
+  - docs/plans/2026-05-14-provider-automation-boundary-refactor.md
+  - /Users/rohan/.codex/sessions/2026/05/13/rollout-2026-05-13T23-00-06-019e246d-595d-76d3-bd45-6433245065ac.jsonl
 status: implemented
-verified: 2026-05-13
+verified: 2026-05-14
 ---
 
 # Capture Automation
@@ -376,6 +387,8 @@ The "map each transcript to a repo" step means the scheduler is expected to run 
 - nearest `.almanac/` -> repo-local ledger and `almanac capture` run
 
 That is why one installed `launchd` or `systemd --user` job can service every repo on the machine that has adopted CodeAlmanac. The scheduler itself is global plumbing; capture ownership stays repo-local after the transcript is mapped.
+
+The walk-up rule is intentionally the only inference. It is acceptable because it matches the existing `findNearestAlmanacDir()` contract in [[src/paths.ts]] and handles agents launched from repo subdirectories, but it should not grow fuzzy fallback behavior. If a transcript has no `cwd`, if the `cwd` has no enclosing `.almanac/`, or if the nearest `.almanac/` is not the intended repo, sweep should skip or surface that reason rather than searching the registry by path similarity. Nested repos remain a closest-wiki-wins case, the same as ordinary CLI commands that resolve the current wiki from `cwd`.
 
 For the proposed first version, the unit of work is intentionally small: one eligible transcript continuation becomes one capture job. The sweep may discover many eligible transcripts in one pass, but it should enqueue them as separate `almanac capture` runs rather than batch several sessions into one Absorb prompt. That keeps retry, dedupe, and repo attribution simple while the ledger and scheduler contracts are still new.
 

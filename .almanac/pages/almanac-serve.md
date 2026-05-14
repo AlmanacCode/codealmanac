@@ -15,12 +15,11 @@ files:
   - viewer/almanac-logo.png
   - viewer/app.js
   - viewer/app.css
+  - viewer/routes.js
   - viewer/jobs-view.js
   - viewer/jobs-transcript.js
   - viewer/jobs.css
   - viewer/search-suggestions.js
-  - viewer/js/
-  - viewer/styles/
   - test/serve-command.test.ts
   - test/viewer-api.test.ts
   - test/viewer-jobs-transcript.test.ts
@@ -109,19 +108,11 @@ codealmanac package:
     index.html           # links app.css and app.js
     app.css              # served CSS: --ca-* tokens, wiki layout
     app.js               # router and chrome glue; wiki views inline
+    routes.js            # wiki route helpers and wikilink route classification
     jobs-view.js         # jobs dashboard and detail view rendering
     jobs-transcript.js   # pure projection of JSONL events into chat/tool transcript rows
     jobs.css             # jobs-specific CSS
     search-suggestions.js # debounced left-rail search suggestions
-
-    # companion modular structure (exists, not linked by index.html):
-    js/                  # modular vanilla JS — api.js, dom.js, markdown.js, router.js
-      main.js            # modular entry (not loaded by index.html)
-      views/             # home.js, page.js, topic.js, search.js, file.js
-      components/        # header.js, page-row.js
-    styles/              # modular CSS (not loaded by index.html)
-      tokens.css         # --vw-* namespace (superseded by --ca-* in app.css)
-      base.css, prose.css, shell.css, header.css, components/
 
 almanac serve:
   Node http.createServer (no Express)
@@ -130,8 +121,6 @@ almanac serve:
 ```
 
 Next.js was explicitly rejected as too heavy. Express was not added; Node's `http` module is sufficient for a local read-only viewer. React and Preact were not used; the frontend is vanilla JS with a thin `h()` helper (inline in `viewer/app.js`) for building DOM nodes without a framework.
-
-The `viewer/js/` and `viewer/styles/` directories exist as a modular companion structure but are not linked by `index.html`. The served files are the monolithic `viewer/app.js` and `viewer/app.css`.
 
 ## Source module structure
 
@@ -157,13 +146,12 @@ src/
 viewer/               # bundled static frontend (no build step required at runtime)
   index.html
   app.js              # router and chrome glue; wiki views (home, page, topic, search, file) inline
+  routes.js           # shared route helpers for wiki-scoped URLs and wikilinks
   app.css             # all wiki tokens and layout CSS
   jobs-view.js        # jobs list and job detail UI rendering (loaded by index.html alongside app.js)
   jobs-transcript.js  # pure transcript projection and tool-card display model
   jobs.css            # jobs-specific CSS (loaded by index.html)
   search-suggestions.js # left-rail search suggestion controller
-  js/                 # modular companion (not loaded by index.html)
-  styles/             # modular companion CSS (not loaded by index.html)
 ```
 
 `serve.ts` owns only the CLI interface. `server.ts` owns HTTP. `api.ts` owns wiki-API payload assembly and delegates jobs concerns to `src/viewer/jobs.ts`. `jobs.ts` owns all run-record concerns: storage access, display title/subtitle derivation, JSONL log parsing, run-id validation, and PID liveness. `page-view.ts` is extracted shared logic: the `show` command and viewer API both call it. The frontend in `viewer/` is plain HTML + vanilla JS with no compile step. `app.js` handles routing and wiki views; `jobs-view.js` handles jobs rendering; `jobs-transcript.js` handles stream projection and tool/result pairing; `search-suggestions.js` owns the debounced search suggestion interaction.
@@ -219,7 +207,7 @@ The frontend uses the `usealmanac.com` brand direction: warm paper surfaces, Pal
 --ca-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 ```
 
-The accent color was revised from OpenAlmanac navy (`#1a3a5c`) to the usealmanac green (`#166534`) on 2026-05-12 so the local viewer matches the public landing page. The companion modular `viewer/styles/tokens.css` still uses the old `--vw-*` namespace with maroon and is superseded by `viewer/app.css`.
+The accent color was revised from OpenAlmanac navy (`#1a3a5c`) to the usealmanac green (`#166534`) on 2026-05-12 so the local viewer matches the public landing page. The active token namespace is `--ca-*` in `viewer/app.css`.
 
 The brand mark is the usealmanac open-book logo at `viewer/almanac-logo.png`. The left rail subtitle is `Agent-maintained knowledge`, matching the landing-page eyebrow.
 

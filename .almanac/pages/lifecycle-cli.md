@@ -5,6 +5,7 @@ topics: [cli, flows, agents]
 files:
   - src/cli/register-wiki-lifecycle-commands.ts
   - src/cli.ts
+  - src/cli/sqlite-free.ts
   - src/commands/operations.ts
   - src/commands/jobs.ts
   - src/commands/session-transcripts.ts
@@ -59,7 +60,9 @@ Setup and uninstall still run private legacy-hook cleanup before touching schedu
 
 One debugging lesson from the 2026-05-12 launchd smoke tests is worth preserving alongside that cleanup contract: if "scheduled automation" appears to be spawning more jobs than the configured sweep cadence should allow, check for multiple capture mechanisms before blaming launchd. The observed duplicate-job burst came from two active sources at once: scheduled sweeps plus still-installed legacy hooks.
 
-There is one implementation wrinkle worth remembering: `automation ...` is also wired through the sqlite-free fast path in `src/cli.ts`, before the full Commander CLI and SQLite-backed query stack are initialized. That is why automation management still works when a local or global install cannot load `better-sqlite3`, but it also means flag parsing for `automation install` is custom code in that fast path. The 2026-05-11 review originally found that a bare `almanac automation install --every` could silently fall back to the default 5h interval; the implementation now validates that case explicitly and applies the same care to the quiet-window flag path.
+There is one implementation wrinkle worth remembering: setup, automation, agents, config, update, doctor, and uninstall are also wired through the sqlite-free fast path in [[src/cli/sqlite-free.ts]], before the full Commander CLI and SQLite-backed query stack are initialized. That is why recovery and install-management commands still work when a local or global install cannot load `better-sqlite3`, but it also means some flag parsing is custom code in that fast path. The 2026-05-11 review originally found that a bare `almanac automation install --every` could silently fall back to the default 5h interval; the implementation now validates that case explicitly and applies the same care to the quiet-window flag path.
+
+The 2026-05-13 merge of `v1` into `dev` preserved one extra invariant: new setup and automation flags added on `dev` must be carried into the extracted sqlite-free module, not only into Commander registration. That includes `--auto-commit`, `--garden-every`, `--garden-off`, equals-style values such as `--auto-capture-quiet=1m`, and launcher-preserved invocation behavior for `codealmanac` setup.
 
 ## Removed public paths
 

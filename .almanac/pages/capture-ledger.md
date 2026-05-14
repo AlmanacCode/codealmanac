@@ -5,21 +5,24 @@ topics: [flows, automation, storage, cli]
 files:
   - docs/plans/2026-05-11-scheduled-quiet-session-capture.md
   - src/commands/capture-sweep.ts
+  - src/capture/ledger.ts
+  - src/capture/sweep.ts
   - src/config/index.ts
   - src/process/records.ts
   - src/process/types.ts
   - test/capture-sweep.test.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/13/rollout-2026-05-13T23-00-06-019e246d-595d-76d3-bd45-6433245065ac.jsonl
 status: implemented
-verified: 2026-05-13
+verified: 2026-05-14
 ---
 
 # Capture Ledger
 
 The capture ledger is the repo-local state file that remembers what transcript material CodeAlmanac has already absorbed. In the quiet-session design described by [[capture-automation]], it is the main dedupe and recovery contract for `almanac capture sweep`, not a side detail of the scheduler.
 
-The 2026-05-11 capture discussion made one ownership boundary explicit: platform schedulers such as `launchd` should only wake the CLI. The sweep itself should read, write, and reconcile the ledger.
+The 2026-05-11 capture discussion made one ownership boundary explicit: platform schedulers such as `launchd` should only wake the CLI. The sweep itself should read, write, and reconcile the ledger. The 2026-05-14 provider/automation refactor moved that state ownership into [[src/capture/ledger.ts]] and [[src/capture/sweep.ts]], leaving [[src/commands/capture-sweep.ts]] as the CLI adapter.
 
 ## What it tracks
 
