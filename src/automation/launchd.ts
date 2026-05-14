@@ -39,6 +39,10 @@ export interface LaunchdPlistStatus {
   intervalSeconds: number | null;
 }
 
+export interface LaunchdJobStatus extends LaunchdPlistStatus {
+  loaded: boolean;
+}
+
 export function launchdTarget(): string {
   return `gui/${userInfo().uid}`;
 }
@@ -113,11 +117,35 @@ export async function readLaunchdPlistStatus(
   };
 }
 
+export async function readLaunchdJobStatus(args: {
+  label: string;
+  plistPath: string;
+  exec?: ExecFn;
+}): Promise<LaunchdJobStatus> {
+  const plist = await readLaunchdPlistStatus(args.plistPath);
+  return {
+    ...plist,
+    loaded: await isLaunchdJobLoaded(args.label, args.exec),
+  };
+}
+
 export function readProgramArgumentAfter(contents: string, flag: string): string | null {
   const values = [...contents.matchAll(/<string>([^<]*)<\/string>/g)]
     .map((match) => unescapeXml(match[1] ?? ""));
   const index = values.indexOf(flag);
   return index >= 0 ? values[index + 1] ?? null : null;
+}
+
+async function isLaunchdJobLoaded(
+  label: string,
+  exec: ExecFn = defaultExec,
+): Promise<boolean> {
+  try {
+    await exec("launchctl", ["print", `${launchdTarget()}/${label}`]);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function renderLaunchdPlist(args: LaunchdJobDefinition): string {

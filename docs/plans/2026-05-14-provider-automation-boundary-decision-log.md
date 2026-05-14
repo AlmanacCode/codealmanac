@@ -33,3 +33,7 @@ The architectural home for global config is now `src/config/`, and the architect
 ### Remove the old execution half of `src/agent/providers`
 
 Current AI operation execution already goes through `src/harness/providers/` via the process manager. The `run()` methods in `src/agent/providers/*` were a second execution-provider layer and were no longer called. Removing those methods leaves the remaining layer responsible for setup/status/model readiness only, which makes the distinction from harness providers concrete rather than purely nominal.
+
+### Status should distinguish file installation from scheduler load state
+
+`almanac automation status` now treats plist existence and launchd load state as separate facts. The command remains non-fatal when launchd says a job is not loaded; it reports `launchd loaded: no` so scheduler registration problems are distinguishable from missing plist files.

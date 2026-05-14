@@ -8,8 +8,8 @@ import {
   buildLaunchPath,
   ensureLaunchdDirs,
   type ExecFn,
-  type LaunchdPlistStatus,
-  readLaunchdPlistStatus,
+  type LaunchdJobStatus,
+  readLaunchdJobStatus,
   readProgramArgumentAfter,
   removeLaunchdJob,
   writeLaunchdPlist,
@@ -53,6 +53,7 @@ export interface AutomationStatusOptions {
   homeDir?: string;
   plistPath?: string;
   gardenPlistPath?: string;
+  exec?: ExecFn;
 }
 
 export async function runAutomationInstall(
@@ -198,8 +199,16 @@ export async function runAutomationStatus(
   const home = options.homeDir ?? homedir();
   const plist = options.plistPath ?? defaultPlistPath(home);
   const gardenPlist = options.gardenPlistPath ?? defaultGardenPlistPath(home);
-  const capture = await readLaunchdPlistStatus(plist);
-  const garden = await readLaunchdPlistStatus(gardenPlist);
+  const capture = await readLaunchdJobStatus({
+    label: CAPTURE_SWEEP_LABEL,
+    plistPath: plist,
+    exec: options.exec,
+  });
+  const garden = await readLaunchdJobStatus({
+    label: GARDEN_LABEL,
+    plistPath: gardenPlist,
+    exec: options.exec,
+  });
   return {
     stdout:
       formatAutomationStatus("auto-capture automation", capture, (contents) => {
@@ -242,13 +251,14 @@ function parseQuiet(value: string): { ok: true } | { ok: false; error: string } 
 
 function formatAutomationStatus(
   label: string,
-  status: LaunchdPlistStatus,
+  status: LaunchdJobStatus,
   extra: (contents: string) => string,
 ): string {
   if (status.contents === null) return `${label}: not installed\n`;
   return (
     `${label}: installed\n` +
     `  plist: ${status.plistPath}\n` +
+    `  launchd loaded: ${status.loaded ? "yes" : "no"}\n` +
     (status.intervalSeconds !== null ? `  interval: ${status.intervalSeconds}s\n` : "") +
     extra(status.contents)
   );

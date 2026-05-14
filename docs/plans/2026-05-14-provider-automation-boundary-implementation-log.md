@@ -46,3 +46,11 @@ Plan: `docs/plans/2026-05-14-provider-automation-boundary-refactor.md`
 - Deleted the unused old JSONL execution helpers under `src/agent/providers/`.
 - Verified affected behavior with `npm test -- --run test/provider-view.test.ts test/config-command.test.ts test/setup.test.ts test/doctor.test.ts`: `33` tests passed.
 - Verified TypeScript/package build with `npm run build`: succeeded.
+
+### Automation Status Load-State Check
+
+- Extended launchd status helpers to check `launchctl print gui/<uid>/<label>`.
+- Updated `almanac automation status` output to report `launchd loaded: yes|no` separately from plist existence.
+- Added a focused automation test that injects loaded capture automation and unloaded Garden automation.
+- Verified focused behavior with `npm test -- --run test/automation.test.ts`: `6` tests passed.
+- Verified TypeScript/package build with `npm run build`: succeeded.
