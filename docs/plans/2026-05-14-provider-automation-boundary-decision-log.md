@@ -21,3 +21,7 @@ The refactor will keep public command names, launchd plist paths, default interv
 ### Keep `runAutomationInstall()` as orchestration, not launchd plumbing
 
 Automation install still has to combine command option validation, activation-baseline mutation, two scheduler jobs, and user output. The cleanup moves task definitions, launchd mechanics, and legacy hook cleanup out of the command file, but keeps the single user-facing install transaction in `src/commands/automation.ts` so partial failure messages and setup integration remain easy to follow.
+
+### Treat transcript discovery as capture domain code
+
+Claude and Codex transcript discovery scans historical transcript stores. It maps transcript metadata to wiki repos, but it does not execute agents. That makes it capture-domain code rather than harness provider code. The harness provider layer should stay responsible for executing `AgentRunSpec` values, while `src/capture/discovery/` owns the scanner adapters.

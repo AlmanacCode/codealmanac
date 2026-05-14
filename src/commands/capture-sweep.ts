@@ -1,19 +1,27 @@
-import { createHash } from "node:crypto";
-import { existsSync, type Dirent } from "node:fs";
-import { mkdir, open, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join, sep } from "node:path";
 
+import {
+  discoverCandidates,
+  type SessionCandidate,
+  type SweepApp,
+} from "../capture/discovery/index.js";
+import {
+  type CaptureLedger,
+  countLines,
+  captureCursor,
+  freshLedgerEntry,
+  ledgerKey,
+  loadLedgerForRepo,
+  reconcileLedger,
+  sha256,
+  writeLedger,
+} from "../capture/ledger.js";
+import { acquireRepoSweepLock, releaseRepoSweepLock } from "../capture/lock.js";
 import type { CommandResult } from "../cli/helpers.js";
 import { parseDuration } from "../indexer/duration.js";
-import { findNearestAlmanacDir, getRepoAlmanacDir } from "../paths.js";
-import { readRunRecord, runRecordPath } from "../process/records.js";
-import type { RunRecord } from "../process/types.js";
 import { readConfig } from "../update/config.js";
 import { runCaptureCommand, type CaptureCommandOptions } from "./operations.js";
-
-type SweepApp = "claude" | "codex";
-type LedgerStatus = "done" | "pending" | "failed" | "needs_attention";
 
 export interface CaptureSweepOptions {
   cwd: string;
@@ -26,40 +34,6 @@ export interface CaptureSweepOptions {
   homeDir?: string;
   configPath?: string;
   startBackground?: CaptureCommandOptions["startBackground"];
-}
-
-interface SessionCandidate {
-  app: SweepApp;
-  sessionId: string;
-  transcriptPath: string;
-  cwd: string;
-  repoRoot: string;
-  mtimeMs: number;
-  sizeBytes: number;
-}
-
-interface LedgerEntry {
-  app: SweepApp;
-  sessionId: string;
-  transcriptPath: string;
-  status: LedgerStatus;
-  lastCapturedSize: number;
-  lastCapturedLine: number;
-  lastCapturedPrefixHash: string;
-  lastCapturedAt?: string;
-  lastRunId?: string;
-  pendingToSize?: number;
-  pendingToLine?: number;
-  pendingPrefixHash?: string;
-  pendingRunId?: string;
-  pendingStartedAt?: string;
-  lastError?: string;
-}
-
-interface CaptureLedger {
-  version: 1;
-  updatedAt: string;
-  sessions: Record<string, LedgerEntry>;
 }
 
 interface SweepStarted {
@@ -91,9 +65,6 @@ interface SweepSummary {
 }
 
 const DEFAULT_QUIET = "45m";
-const EMPTY_SHA256 = `sha256:${createHash("sha256").update("").digest("hex")}`;
-const SWEEP_LOCK_STALE_MS = 60 * 60 * 1000;
-
 export async function runCaptureSweepCommand(
   options: CaptureSweepOptions,
 ): Promise<CommandResult> {
@@ -136,7 +107,7 @@ export async function runCaptureSweepCommand(
       }
 
       if (options.dryRun !== true && !heldLocks.has(candidate.repoRoot)) {
-        const locked = await acquireRepoLock(candidate.repoRoot, now);
+        const locked = await acquireRepoSweepLock(candidate.repoRoot, now);
         if (!locked) {
           summary.skipped.push(skip(candidate, "sweep-already-running"));
           continue;
@@ -234,12 +205,13 @@ export async function runCaptureSweepCommand(
         await writeLedger(candidate.repoRoot, ledger, now);
         continue;
       }
+      const pendingCursor = captureCursor(content, currentLine);
       ledger.sessions[key] = {
         ...entry,
         status: "pending",
-        pendingToSize: currentSize,
-        pendingToLine: currentLine,
-        pendingPrefixHash: sha256(content),
+        pendingToSize: pendingCursor.size,
+        pendingToLine: pendingCursor.line,
+        pendingPrefixHash: pendingCursor.prefixHash,
         pendingRunId: runId,
         pendingStartedAt: now.toISOString(),
         lastRunId: runId,
@@ -263,7 +235,7 @@ export async function runCaptureSweepCommand(
       }
     }
   } finally {
-    await Promise.all([...heldLocks].map(releaseRepoLock));
+    await Promise.all([...heldLocks].map(releaseRepoSweepLock));
   }
 
   return renderSweepSummary(summary, options.json);
@@ -299,376 +271,6 @@ async function readCaptureSince(configPath: string | undefined): Promise<Date | 
   if (raw === null) return null;
   const ms = Date.parse(raw);
   return Number.isFinite(ms) ? new Date(ms) : null;
-}
-
-async function discoverCandidates(args: {
-  apps: SweepApp[];
-  home: string;
-}): Promise<SessionCandidate[]> {
-  const out: SessionCandidate[] = [];
-  if (args.apps.includes("claude")) {
-    out.push(...await discoverClaude(args.home));
-  }
-  if (args.apps.includes("codex")) {
-    out.push(...await discoverCodex(args.home));
-  }
-  return out;
-}
-
-async function discoverClaude(home: string): Promise<SessionCandidate[]> {
-  const root = join(home, ".claude", "projects");
-  const files = await collectJsonl(root);
-  const out: SessionCandidate[] = [];
-  for (const file of files) {
-    if (file.split(sep).includes("subagents")) continue;
-    const meta = await readClaudeMeta(file);
-    if (meta === null) continue;
-    const candidate = await candidateFromMeta("claude", file, meta.sessionId, meta.cwd);
-    if (candidate !== null) out.push(candidate);
-  }
-  return out;
-}
-
-async function discoverCodex(home: string): Promise<SessionCandidate[]> {
-  const root = join(home, ".codex", "sessions");
-  const files = await collectJsonl(root);
-  const out: SessionCandidate[] = [];
-  for (const file of files) {
-    const meta = await readCodexMeta(file);
-    if (meta === null || meta.threadSource === "subagent") continue;
-    const candidate = await candidateFromMeta("codex", file, meta.sessionId, meta.cwd);
-    if (candidate !== null) out.push(candidate);
-  }
-  return out;
-}
-
-async function collectJsonl(root: string): Promise<string[]> {
-  if (!existsSync(root)) return [];
-  const out: string[] = [];
-  await collectJsonlInto(root, out);
-  return out;
-}
-
-async function collectJsonlInto(dir: string, out: string[]): Promise<void> {
-  let entries: Dirent[];
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return;
-  }
-  for (const entry of entries) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      await collectJsonlInto(full, out);
-    } else if (entry.isFile() && entry.name.endsWith(".jsonl")) {
-      out.push(full);
-    }
-  }
-}
-
-async function readClaudeMeta(file: string): Promise<{ sessionId: string; cwd: string } | null> {
-  for (const line of await readFirstLines(file, 20)) {
-    const parsed = parseJsonObject(line);
-    if (parsed === null) continue;
-    const sessionId = stringField(parsed, "sessionId");
-    const cwd = stringField(parsed, "cwd");
-    if (sessionId !== undefined && cwd !== undefined) return { sessionId, cwd };
-  }
-  return null;
-}
-
-async function readCodexMeta(file: string): Promise<{ sessionId: string; cwd: string; threadSource?: string } | null> {
-  for (const line of await readFirstLines(file, 20)) {
-    const parsed = parseJsonObject(line);
-    if (parsed === null) continue;
-    const payload = objectField(parsed, "payload");
-    if (payload === undefined) continue;
-    const sessionId = stringField(payload, "id");
-    const cwd = stringField(payload, "cwd");
-    const threadSource = stringField(payload, "thread_source");
-    if (sessionId !== undefined && cwd !== undefined) {
-      return { sessionId, cwd, threadSource };
-    }
-  }
-  return null;
-}
-
-async function readFirstLines(file: string, maxLines: number): Promise<string[]> {
-  const handle = await open(file, "r").catch(() => null);
-  if (handle === null) return [];
-  try {
-    const buffer = Buffer.alloc(64 * 1024);
-    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
-    return buffer.subarray(0, bytesRead).toString("utf8").split(/\r?\n/).slice(0, maxLines);
-  } finally {
-    await handle.close();
-  }
-}
-
-async function candidateFromMeta(
-  app: SweepApp,
-  transcriptPath: string,
-  sessionId: string,
-  cwd: string,
-): Promise<SessionCandidate | null> {
-  const repoRoot = findNearestAlmanacDir(cwd);
-  if (repoRoot === null) return null;
-  try {
-    const st = await stat(transcriptPath);
-    if (!st.isFile()) return null;
-    return {
-      app,
-      sessionId,
-      transcriptPath,
-      cwd,
-      repoRoot,
-      mtimeMs: st.mtimeMs,
-      sizeBytes: st.size,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function parseJsonObject(line: string): Record<string, unknown> | null {
-  if (line.trim().length === 0) return null;
-  try {
-    const parsed = JSON.parse(line) as unknown;
-    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
-      ? parsed as Record<string, unknown>
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function objectField(
-  obj: Record<string, unknown>,
-  key: string,
-): Record<string, unknown> | undefined {
-  const value = obj[key];
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined;
-}
-
-function stringField(obj: Record<string, unknown>, key: string): string | undefined {
-  const value = obj[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
-function ledgerPath(repoRoot: string): string {
-  return join(getRepoAlmanacDir(repoRoot), "runs", "capture-ledger.json");
-}
-
-function lockPath(repoRoot: string): string {
-  return join(getRepoAlmanacDir(repoRoot), "runs", "capture-sweep.lock");
-}
-
-function lockOwnerPath(repoRoot: string): string {
-  return join(lockPath(repoRoot), "owner.json");
-}
-
-async function acquireRepoLock(repoRoot: string, now: Date): Promise<boolean> {
-  if (await tryCreateRepoLock(repoRoot, now)) return true;
-  if (!await isStaleRepoLock(repoRoot, now)) return false;
-  await releaseRepoLock(repoRoot);
-  return await tryCreateRepoLock(repoRoot, now);
-}
-
-async function tryCreateRepoLock(repoRoot: string, now: Date): Promise<boolean> {
-  try {
-    const lock = lockPath(repoRoot);
-    await mkdir(dirname(lock), { recursive: true });
-    await mkdir(lock, { recursive: false });
-    await writeFile(
-      lockOwnerPath(repoRoot),
-      `${JSON.stringify({ pid: process.pid, startedAt: now.toISOString() }, null, 2)}\n`,
-      "utf8",
-    );
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function isStaleRepoLock(repoRoot: string, now: Date): Promise<boolean> {
-  let raw: Record<string, unknown> = {};
-  try {
-    raw = parseJsonObject(await readFile(lockOwnerPath(repoRoot), "utf8")) ?? {};
-  } catch {
-    return true;
-  }
-  const startedAt = typeof raw.startedAt === "string" ? Date.parse(raw.startedAt) : NaN;
-  if (!Number.isFinite(startedAt)) return true;
-  if (now.getTime() - startedAt > SWEEP_LOCK_STALE_MS) return true;
-  const pid = typeof raw.pid === "number" ? raw.pid : null;
-  return pid !== null && !isPidAlive(pid);
-}
-
-function isPidAlive(pid: number): boolean {
-  if (pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function releaseRepoLock(repoRoot: string): Promise<void> {
-  await rm(lockPath(repoRoot), { recursive: true, force: true });
-}
-
-async function loadLedgerForRepo(
-  repoRoot: string,
-  cache: Map<string, CaptureLedger>,
-): Promise<CaptureLedger> {
-  const cached = cache.get(repoRoot);
-  if (cached !== undefined) return cached;
-  const file = ledgerPath(repoRoot);
-  let ledger: CaptureLedger;
-  try {
-    const parsed = JSON.parse(await readFile(file, "utf8")) as unknown;
-    ledger = isLedger(parsed) ? parsed : emptyLedger();
-  } catch {
-    ledger = emptyLedger();
-  }
-  cache.set(repoRoot, ledger);
-  return ledger;
-}
-
-function emptyLedger(): CaptureLedger {
-  return { version: 1, updatedAt: new Date(0).toISOString(), sessions: {} };
-}
-
-function isLedger(value: unknown): value is CaptureLedger {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    (value as Partial<CaptureLedger>).version === 1 &&
-    typeof (value as Partial<CaptureLedger>).updatedAt === "string" &&
-    (value as Partial<CaptureLedger>).sessions !== null &&
-    typeof (value as Partial<CaptureLedger>).sessions === "object" &&
-    !Array.isArray((value as Partial<CaptureLedger>).sessions)
-  );
-}
-
-async function writeLedger(
-  repoRoot: string,
-  ledger: CaptureLedger,
-  now: Date,
-): Promise<void> {
-  ledger.updatedAt = now.toISOString();
-  const file = ledgerPath(repoRoot);
-  await mkdir(dirname(file), { recursive: true });
-  const tmp = `${file}.tmp-${process.pid}`;
-  await writeFile(tmp, `${JSON.stringify(ledger, null, 2)}\n`, "utf8");
-  await rename(tmp, file);
-}
-
-async function reconcileLedger(
-  repoRoot: string,
-  ledger: CaptureLedger,
-  now: Date,
-): Promise<void> {
-  for (const entry of Object.values(ledger.sessions)) {
-    if (entry.status !== "pending" || entry.pendingRunId === undefined) continue;
-    const record = await readRunRecord(runRecordPath(repoRoot, entry.pendingRunId));
-    if (record === null || record.status === "queued" || record.status === "running") {
-      continue;
-    }
-    if (record.status === "done") {
-      entry.status = "done";
-      entry.lastCapturedSize = entry.pendingToSize ?? entry.lastCapturedSize;
-      entry.lastCapturedLine = entry.pendingToLine ?? entry.lastCapturedLine;
-      entry.lastCapturedPrefixHash = entry.pendingPrefixHash ?? entry.lastCapturedPrefixHash;
-      entry.lastCapturedAt = now.toISOString();
-      entry.lastRunId = entry.pendingRunId;
-      clearPending(entry);
-    } else {
-      entry.status = "failed";
-      entry.lastRunId = entry.pendingRunId;
-      entry.lastError = terminalRunError(record);
-      clearPending(entry);
-    }
-  }
-}
-
-function terminalRunError(record: RunRecord): string {
-  return record.error ?? record.failure?.message ?? `capture ${record.status}`;
-}
-
-function clearPending(entry: LedgerEntry): void {
-  delete entry.pendingToSize;
-  delete entry.pendingToLine;
-  delete entry.pendingPrefixHash;
-  delete entry.pendingRunId;
-  delete entry.pendingStartedAt;
-}
-
-function freshLedgerEntry(
-  candidate: SessionCandidate,
-  content: Buffer,
-  captureSince: Date | null,
-): LedgerEntry {
-  const cursor = initialLedgerCursor(content, captureSince);
-  return {
-    app: candidate.app,
-    sessionId: candidate.sessionId,
-    transcriptPath: candidate.transcriptPath,
-    status: "done",
-    lastCapturedSize: cursor.size,
-    lastCapturedLine: cursor.line,
-    lastCapturedPrefixHash: cursor.size === 0 ? EMPTY_SHA256 : sha256(content.subarray(0, cursor.size)),
-  };
-}
-
-function initialLedgerCursor(
-  content: Buffer,
-  captureSince: Date | null,
-): { size: number; line: number } {
-  if (captureSince === null || content.length === 0) {
-    return { size: 0, line: 0 };
-  }
-  const text = content.toString("utf8");
-  let offset = 0;
-  let line = 0;
-  for (const rawLine of text.split(/(?<=\n)/)) {
-    if (rawLine.length === 0) continue;
-    const lineWithoutNewline = rawLine.replace(/\r?\n$/, "");
-    const timestamp = transcriptLineTimestamp(lineWithoutNewline);
-    if (timestamp !== null && timestamp >= captureSince.getTime()) {
-      return { size: offset, line };
-    }
-    offset += Buffer.byteLength(rawLine);
-    line += 1;
-  }
-  return { size: content.length, line };
-}
-
-function transcriptLineTimestamp(line: string): number | null {
-  const parsed = parseJsonObject(line);
-  if (parsed === null) return null;
-  const rawTimestamp = stringField(parsed, "timestamp") ??
-    stringField(objectField(parsed, "payload") ?? {}, "timestamp");
-  if (rawTimestamp === undefined) return null;
-  const ms = Date.parse(rawTimestamp);
-  return Number.isFinite(ms) ? ms : null;
-}
-
-function ledgerKey(candidate: Pick<SessionCandidate, "app" | "transcriptPath">): string {
-  return `${candidate.app}:${candidate.transcriptPath}`;
-}
-
-function sha256(content: string | Buffer): string {
-  return `sha256:${createHash("sha256").update(content).digest("hex")}`;
-}
-
-function countLines(content: string): number {
-  if (content.length === 0) return 0;
-  const matches = content.match(/\n/g);
-  return (matches?.length ?? 0) + (content.endsWith("\n") ? 0 : 1);
 }
 
 function cursorContext(args: {

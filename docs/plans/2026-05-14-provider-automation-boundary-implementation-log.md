@@ -25,3 +25,13 @@ Plan: `docs/plans/2026-05-14-provider-automation-boundary-refactor.md`
 - Rewrote `src/commands/automation.ts` as the command-facing orchestrator. It still validates options, records the automation activation baseline, formats command output, and preserves the existing public exports used by setup/uninstall.
 - Verified focused behavior with `npm test -- --run test/automation.test.ts`: `5` tests passed.
 - Verified TypeScript/package build with `npm run build`: succeeded.
+
+### Capture Sweep Boundary Extraction
+
+- Added `src/capture/discovery/` with provider-specific Claude and Codex transcript discovery plus shared JSONL metadata helpers.
+- Kept transcript discovery outside `src/harness/providers/`; harness providers remain execution adapters, while discovery scans historical transcript stores.
+- Added `src/capture/ledger.ts` for repo-local capture ledger loading, atomic writes, pending-run reconciliation, cursor math, line counting, and prefix hashes.
+- Added `src/capture/lock.ts` for repo-level sweep lock creation, stale-lock recovery, and release.
+- Reduced `src/commands/capture-sweep.ts` to command parsing, eligibility orchestration, capture enqueueing, summary construction, and command output rendering.
+- Verified focused behavior with `npm test -- --run test/capture-sweep.test.ts`: `7` tests passed.
+- Verified TypeScript/package build with `npm run build`: succeeded.
