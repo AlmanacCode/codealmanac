@@ -3,7 +3,6 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import {
-  automationLogsDir,
   bootstrapLaunchdJob,
   buildLaunchPath,
   ensureLaunchdDirs,
@@ -16,15 +15,17 @@ import {
 } from "../automation/launchd.js";
 import type { LaunchdJobDefinition } from "../automation/launchd.js";
 import {
-  captureSweepProgramArguments,
   CAPTURE_SWEEP_LABEL,
+  CAPTURE_SWEEP_TASK,
   defaultCapturePlistPath,
   DEFAULT_CAPTURE_INTERVAL,
   DEFAULT_CAPTURE_QUIET,
   DEFAULT_GARDEN_INTERVAL,
   defaultGardenPlistPath,
   GARDEN_LABEL,
-  gardenProgramArguments as defaultGardenProgramArguments,
+  GARDEN_TASK,
+  scheduledTaskLogPaths,
+  type ScheduledTaskDefinition,
 } from "../automation/tasks.js";
 import type { CommandResult } from "../cli/helpers.js";
 import { parseDuration } from "../indexer/duration.js";
@@ -174,33 +175,34 @@ function buildAutomationInstallPlan(
   const home = options.homeDir ?? homedir();
   const capturePlistPath = options.plistPath ?? defaultPlistPath(home);
   const gardenPlistPath = options.gardenPlistPath ?? defaultGardenPlistPath(home);
-  const logsDir = automationLogsDir(home);
   const environmentVariables = {
     PATH: buildLaunchPath(home, options.env?.PATH ?? process.env.PATH),
   };
+  const captureLogs = scheduledTaskLogPaths(CAPTURE_SWEEP_TASK, home);
   const captureJob: LaunchdJobDefinition = {
     plistPath: capturePlistPath,
-    label: CAPTURE_SWEEP_LABEL,
+    label: CAPTURE_SWEEP_TASK.label,
     programArguments: options.programArguments ??
-      captureSweepProgramArguments(quietInput),
+      CAPTURE_SWEEP_TASK.programArguments({ quiet: quietInput }),
     intervalSeconds: interval.seconds,
     environmentVariables,
-    stdoutPath: path.join(logsDir, "capture-sweep.out.log"),
-    stderrPath: path.join(logsDir, "capture-sweep.err.log"),
+    stdoutPath: captureLogs.stdoutPath,
+    stderrPath: captureLogs.stderrPath,
   };
   const cwd = options.cwd ?? process.cwd();
+  const gardenLogs = scheduledTaskLogPaths(GARDEN_TASK, home);
   const gardenJob: LaunchdJobDefinition | null = gardenInterval === null
     ? null
     : {
       plistPath: gardenPlistPath,
-      label: GARDEN_LABEL,
+      label: GARDEN_TASK.label,
       programArguments: options.gardenProgramArguments ??
-        defaultGardenProgramArguments(),
+        GARDEN_TASK.programArguments(),
       intervalSeconds: gardenInterval.seconds,
       environmentVariables,
-      workingDirectory: findNearestAlmanacDir(cwd) ?? path.resolve(cwd),
-      stdoutPath: path.join(logsDir, "garden.out.log"),
-      stderrPath: path.join(logsDir, "garden.err.log"),
+      workingDirectory: resolveTaskWorkingDirectory(GARDEN_TASK, cwd),
+      stdoutPath: gardenLogs.stdoutPath,
+      stderrPath: gardenLogs.stderrPath,
     };
 
   return {
@@ -214,6 +216,14 @@ function buildAutomationInstallPlan(
       gardenPlistPath,
     },
   };
+}
+
+function resolveTaskWorkingDirectory(
+  task: ScheduledTaskDefinition,
+  cwd: string,
+): string | undefined {
+  if (task.workingDirectory === "none") return undefined;
+  return findNearestAlmanacDir(cwd) ?? path.resolve(cwd);
 }
 
 async function writeAutomationPlists(plan: AutomationInstallPlan): Promise<void> {
