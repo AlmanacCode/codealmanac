@@ -8,6 +8,7 @@ files:
   - src/automation/launchd.ts
   - src/automation/legacy-hooks.ts
   - src/commands/setup.ts
+  - src/commands/setup/automation-step.ts
   - src/commands/uninstall.ts
   - src/cli.ts
   - src/cli/register-setup-commands.ts
@@ -40,7 +41,7 @@ Automation is the scheduler layer around Almanac's recurring maintenance work. I
 
 `almanac automation install|status|uninstall` is the explicit scheduler-management surface. `install` writes launchd plists, bootstraps them with `launchctl`, and prints the effective capture interval, quiet window, activation timestamp, commands, and plist paths. `status` reads the plist files back and checks whether launchd has each job loaded, so a stale plist and a loaded scheduler job are separate reported facts. `uninstall` unloads and removes whichever CodeAlmanac plists exist.
 
-`almanac setup` is the onboarding entry point for the same automation surface. Setup installs scheduled capture and scheduled Garden by default unless the user passes `--skip-automation` or `--garden-off`. That makes automation a first-run product behavior rather than a hidden expert-only command.
+`almanac setup` is the onboarding entry point for the same automation surface. Setup installs scheduled capture and scheduled Garden by default unless the user passes `--skip-automation` or `--garden-off`. Interactive setup asks a separate "Keep Almanac automatically updated?" prompt after scheduled wiki maintenance is accepted and installed; that prompt defaults to yes and installs the update task. Unattended setup leaves the update task disabled unless `--auto-update` is passed. That makes automation a first-run product behavior while keeping global CLI self-update as its own onboarding choice.
 
 ## Launchd contract
 

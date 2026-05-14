@@ -16,6 +16,7 @@ files:
   - src/automation/tasks.ts
   - src/commands/automation.ts
   - src/commands/setup.ts
+  - src/commands/setup/automation-step.ts
 sources:
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T15-56-34-019e280f-f145-7432-a87a-55b96c429856.jsonl
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T16-08-39-019e281b-0256-7b60-86f9-ca8990e73c39.jsonl
@@ -57,7 +58,7 @@ Bare `almanac update` is idempotent enough for launchd. It checks the registry f
 
 ## Boundaries for automatic self-update
 
-Automatic self-update changes executable code outside the current repo, so it is a different trust boundary from scheduled capture or Garden. `npm i -g codealmanac@latest` replaces the global CLI binary that later runs setup, capture, indexing, automation, uninstall, and scheduler tasks. Interactive setup asks whether to enable scheduled self-update and defaults to yes; unattended setup exposes the same opt-in through the explicit `--auto-update` flag.
+Automatic self-update changes executable code outside the current repo, so it is a different trust boundary from scheduled capture or Garden. `npm i -g codealmanac@latest` replaces the global CLI binary that later runs setup, capture, indexing, automation, uninstall, and scheduler tasks. Interactive setup asks whether to enable scheduled self-update after scheduled wiki maintenance is accepted and installed; that self-update prompt defaults to yes. Unattended setup exposes the same opt-in through the explicit `--auto-update` flag.
 
 Global npm is also a rougher substrate than a GUI app updater. It may write into an `nvm`, Homebrew, system Node, Volta, or other npm prefix; it may fail with permissions; and it may rebuild native modules such as `better-sqlite3`. The updater never runs `sudo`, does not prompt, and leaves npm failure details in the scheduler logs.
 
@@ -71,7 +72,7 @@ The user-facing syntax does not leak launchd implementation details. The public 
 
 The 2026-05-14 discussion also exposed a product naming tension. Setup currently asks whether to "keep your codebase wiki up to date automatically," but the implementation installs capture and Garden automation, not CLI self-update. Adding self-update as another special case under that wording would make the boundary less clear unless setup and automation language distinguish wiki maintenance from updating Almanac itself.
 
-Unattended setup does not enable automatic CLI self-update by default. Unlike capture and Garden, self-update mutates the user's global install, so `almanac setup --yes` leaves it disabled unless `--auto-update` is passed. Interactive setup still makes the choice part of onboarding by asking the user directly.
+Unattended setup does not enable automatic CLI self-update by default. Unlike capture and Garden, self-update mutates the user's global install, so `almanac setup --yes` leaves it disabled unless `--auto-update` is passed. Interactive setup still makes the choice part of onboarding by asking the user directly when the automation step is installing recurring maintenance.
 
 Automation status reports automatic self-update through the same task status API that reports capture and Garden scheduler state. That avoids duplicating manifest or launchd interpretation in update-specific diagnostics.
 
