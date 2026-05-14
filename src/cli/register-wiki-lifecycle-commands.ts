@@ -323,7 +323,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   automation
     .command("install")
-    .description("install the macOS launchd automation jobs")
+    .description("install the platform scheduler automation jobs")
     .option("--every <duration>", "capture run interval (default: 5h)")
     .option("--quiet <duration>", "minimum quiet time before capture (default: 45m)")
     .option("--garden-every <duration>", "Garden run interval (default: 2d)")
@@ -346,7 +346,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   automation
     .command("uninstall")
-    .description("remove the macOS launchd automation jobs")
+    .description("remove the platform scheduler automation jobs")
     .action(async () => {
       const result = await runAutomationUninstall();
       emit(result);

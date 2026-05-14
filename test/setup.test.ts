@@ -9,6 +9,10 @@ import type {
   SpawnedProcess,
 } from "../src/agent/providers/claude/index.js";
 import { hasImportLine, runSetup } from "../src/commands/setup.js";
+import {
+  detectEphemeral,
+  globalInstallCommand,
+} from "../src/commands/setup/install-path.js";
 import { readConfig, writeConfig } from "../src/update/config.js";
 import { withTempHome } from "./helpers.js";
 
@@ -84,6 +88,36 @@ afterEach(() => {
 });
 
 describe("codealmanac setup", () => {
+  it("detects Windows npx and temp install paths as ephemeral", () => {
+    const previousTemp = process.env.TEMP;
+    process.env.TEMP = "C:\\Users\\Ada\\AppData\\Local\\Temp";
+    try {
+      expect(
+        detectEphemeral("C:\\Users\\Ada\\AppData\\Local\\Temp\\_npx\\abc\\node_modules\\codealmanac"),
+      ).toBe(true);
+      expect(
+        detectEphemeral("C:\\Users\\Ada\\AppData\\Roaming\\npm\\node_modules\\codealmanac"),
+      ).toBe(false);
+    } finally {
+      if (previousTemp === undefined) {
+        delete process.env.TEMP;
+      } else {
+        process.env.TEMP = previousTemp;
+      }
+    }
+  });
+
+  it("runs global npm install through cmd.exe on Windows", () => {
+    expect(globalInstallCommand("win32")).toEqual({
+      file: "cmd.exe",
+      args: ["/d", "/s", "/c", "npm.cmd install -g codealmanac@latest"],
+    });
+    expect(globalInstallCommand("darwin")).toEqual({
+      file: "npm",
+      args: ["install", "-g", "codealmanac@latest"],
+    });
+  });
+
   it("installs automation + guides + CLAUDE.md import when --yes", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
@@ -394,6 +428,34 @@ describe("codealmanac setup", () => {
       expect(plist).toContain("<string>/usr/bin/env</string>");
       expect(plist).toContain("<string>almanac</string>");
       expect(plist).not.toContain("_npx");
+    });
+  });
+
+  it("uses the npm Windows command shim for automation after npx setup installs globally on Windows", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffold(home);
+      const calls: string[] = [];
+      const res = await runSetup({
+        yes: true,
+        isTTY: false,
+        platform: "win32",
+        installPath: join(home, ".npm", "_npx", "abc", "node_modules", "codealmanac"),
+        spawnGlobalInstall: async () => {},
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        automationPlistPath: env.plistPath,
+        automationExec: async (file: string, args: string[]) => {
+          calls.push([file, ...args].join(" "));
+          return {};
+        },
+        claudeDir: env.claudeDir,
+        guidesDir: env.guidesDir,
+        stdout: env.out,
+      });
+
+      expect(res.exitCode).toBe(0);
+      expect(calls.some((call) => call.includes("schtasks /Create"))).toBe(true);
+      expect(calls.some((call) => call.includes("almanac.cmd capture sweep --quiet 45m"))).toBe(true);
+      expect(calls.some((call) => call.includes("/usr/bin/env"))).toBe(false);
     });
   });
 

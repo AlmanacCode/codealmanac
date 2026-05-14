@@ -30,7 +30,7 @@ type AutomationExecFn = (
  *      `~/.claude/almanac-reference.md`. Legacy `codealmanac*.md` guide
  *      files are removed too.
  *   3. The managed Almanac block from Codex's global AGENTS file.
- *   4. The scheduled capture/Garden launchd jobs and legacy hook files.
+ *   4. The scheduled capture/Garden platform scheduler jobs and legacy hook files.
  *
  * Flags:
  *   --yes           skip confirmations; remove everything

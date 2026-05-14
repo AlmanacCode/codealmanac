@@ -2,11 +2,97 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { runAutomationInstall } from "../src/commands/automation.js";
+import {
+  runAutomationInstall,
+  runAutomationStatus,
+  runAutomationUninstall,
+} from "../src/commands/automation.js";
 import { readConfig } from "../src/update/config.js";
 import { withTempHome } from "./helpers.js";
 
 describe("almanac automation", () => {
+  it("installs Windows Task Scheduler tasks through the platform adapter", async () => {
+    await withTempHome(async (home) => {
+      const calls: string[] = [];
+
+      const result = await runAutomationInstall({
+        platform: "win32",
+        homeDir: home,
+        every: "20m",
+        quiet: "5m",
+        gardenEvery: "2d",
+        programArguments: ["C:\\Program Files\\nodejs\\node.exe", "C:\\codealmanac\\dist\\codealmanac.js", "capture", "sweep", "--quiet", "5m"],
+        gardenProgramArguments: ["C:\\Program Files\\nodejs\\node.exe", "C:\\codealmanac\\dist\\codealmanac.js", "garden"],
+        exec: async (file, args) => {
+          calls.push([file, ...args].join(" "));
+          return {};
+        },
+        now: new Date("2026-05-12T05:10:00.000Z"),
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("scheduler: Windows Task Scheduler");
+      expect(result.stdout).toContain("capture task: \\CodeAlmanac\\CaptureSweep");
+      expect(result.stdout).toContain("garden task: \\CodeAlmanac\\Garden");
+      expect(calls).toContain(
+        "schtasks /Create /TN \\CodeAlmanac\\CaptureSweep /SC MINUTE /MO 20 /TR \"C:\\Program Files\\nodejs\\node.exe\" \"C:\\codealmanac\\dist\\codealmanac.js\" capture sweep --quiet 5m /F",
+      );
+      expect(calls).toContain(
+        "schtasks /Create /TN \\CodeAlmanac\\Garden /SC DAILY /MO 2 /TR \"C:\\Program Files\\nodejs\\node.exe\" \"C:\\codealmanac\\dist\\codealmanac.js\" garden /F",
+      );
+      const captureManifest = await readFile(
+        join(home, ".almanac", "automation", "windows-capture-sweep.json"),
+        "utf8",
+      );
+      expect(JSON.parse(captureManifest)).toMatchObject({
+        scheduler: "windows-task-scheduler",
+        taskName: "\\CodeAlmanac\\CaptureSweep",
+        intervalSeconds: 1200,
+        quiet: "5m",
+      });
+    });
+  });
+
+  it("reports and uninstalls Windows scheduler tasks from manifests", async () => {
+    await withTempHome(async (home) => {
+      const calls: string[] = [];
+      await runAutomationInstall({
+        platform: "win32",
+        homeDir: home,
+        gardenOff: true,
+        programArguments: ["almanac.cmd", "capture", "sweep", "--quiet", "45m"],
+        exec: async (file, args) => {
+          calls.push([file, ...args].join(" "));
+          return {};
+        },
+        now: new Date("2026-05-12T05:10:00.000Z"),
+      });
+
+      const status = await runAutomationStatus({ platform: "win32", homeDir: home });
+      expect(status.stdout).toContain("auto-capture automation: installed");
+      expect(status.stdout).toContain("scheduler: Windows Task Scheduler");
+      expect(status.stdout).toContain("task: \\CodeAlmanac\\CaptureSweep");
+      expect(status.stdout).toContain("quiet: 45m");
+      expect(status.stdout).toContain("garden automation: not installed");
+
+      const uninstall = await runAutomationUninstall({
+        platform: "win32",
+        homeDir: home,
+        exec: async (file, args) => {
+          calls.push([file, ...args].join(" "));
+          return {};
+        },
+      });
+
+      expect(uninstall.exitCode).toBe(0);
+      expect(uninstall.stdout).toContain("automation removed");
+      expect(calls).toContain("schtasks /Delete /TN \\CodeAlmanac\\CaptureSweep /F");
+      await expect(
+        readFile(join(home, ".almanac", "automation", "windows-capture-sweep.json"), "utf8"),
+      ).rejects.toThrow();
+    });
+  });
+
   it("records auto-capture activation once and preserves it on reinstall", async () => {
     await withTempHome(async (home) => {
       const plistPath = join(

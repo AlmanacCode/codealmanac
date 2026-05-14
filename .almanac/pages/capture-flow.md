@@ -164,4 +164,4 @@ Raw provider events are normalized and written to `.almanac/runs/<run-id>.jsonl`
 
 ## Scheduled automation
 
-Automatic capture is scheduler-driven. `almanac automation install` writes a macOS launchd plist that runs `almanac capture sweep` every 5h by default, alongside the separate scheduled Garden plist described in [[capture-automation]]. Sweep applies quiet-window and ledger rules in-process, so launchd is only the wakeup mechanism; it does not own capture state.
+Automatic capture is scheduler-driven. `almanac automation install` writes a platform scheduler entry that runs `almanac capture sweep` every 5h by default, alongside separate scheduled Garden automation described in [[capture-automation]]. macOS uses launchd plists; Windows uses Task Scheduler tasks plus manifests under `~/.almanac/automation/`. Sweep applies quiet-window and ledger rules in-process, so the OS scheduler is only the wakeup mechanism; it does not own capture state.

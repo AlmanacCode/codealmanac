@@ -10,6 +10,15 @@ import type { CommandResult } from "../cli/helpers.js";
 import { parseDuration } from "../indexer/duration.js";
 import { findNearestAlmanacDir } from "../paths.js";
 import { ensureAutomationCaptureSince } from "../update/config.js";
+import {
+  installWindowsAutomation,
+  statusWindowsAutomation,
+  uninstallWindowsAutomation,
+} from "./automation/windows.js";
+export {
+  defaultWindowsCaptureManifestPath,
+  defaultWindowsGardenManifestPath,
+} from "./automation/windows.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -28,12 +37,14 @@ export interface AutomationOptions {
   exec?: ExecFn;
   now?: Date;
   configPath?: string;
+  platform?: NodeJS.Platform;
 }
 
 export interface AutomationStatusOptions {
   homeDir?: string;
   plistPath?: string;
   gardenPlistPath?: string;
+  platform?: NodeJS.Platform;
 }
 
 type ExecFn = (
@@ -58,6 +69,7 @@ const LAUNCHD_FALLBACK_PATHS = [
 export async function runAutomationInstall(
   options: AutomationOptions = {},
 ): Promise<CommandResult> {
+  const platform = options.platform ?? process.platform;
   const interval = parseInterval(options.every ?? DEFAULT_EVERY);
   if (!interval.ok) {
     return { stdout: "", stderr: `almanac: ${interval.error}\n`, exitCode: 1 };
@@ -76,6 +88,31 @@ export async function runAutomationInstall(
   }
 
   const home = options.homeDir ?? homedir();
+  const programArguments = options.programArguments ?? defaultProgramArguments(quietValue);
+  const gardenProgramArguments = options.gardenProgramArguments ?? defaultGardenProgramArguments();
+  const gardenWorkingDirectory = findNearestAlmanacDir(options.cwd ?? process.cwd()) ??
+    path.resolve(options.cwd ?? process.cwd());
+  const captureSince = await ensureAutomationCaptureSince(
+    (options.now ?? new Date()).toISOString(),
+    options.configPath,
+  );
+  const exec = options.exec ?? defaultExec;
+
+  if (platform === "win32") {
+    return await installWindowsAutomation({
+      home,
+      intervalSeconds: interval.seconds,
+      intervalLabel: options.every ?? DEFAULT_EVERY,
+      quietValue,
+      gardenIntervalSeconds: gardenInterval?.seconds ?? null,
+      gardenIntervalLabel: gardenValue,
+      programArguments,
+      gardenProgramArguments,
+      exec,
+      captureSince,
+    });
+  }
+
   const plist = options.plistPath ?? defaultPlistPath(home);
   const gardenPlist = options.gardenPlistPath ?? defaultGardenPlistPath(home);
   const logsDir = path.join(home, ".almanac", "logs");
@@ -83,10 +120,6 @@ export async function runAutomationInstall(
   await mkdir(path.dirname(gardenPlist), { recursive: true });
   await mkdir(logsDir, { recursive: true });
 
-  const programArguments = options.programArguments ?? defaultProgramArguments(quietValue);
-  const gardenProgramArguments = options.gardenProgramArguments ?? defaultGardenProgramArguments();
-  const gardenWorkingDirectory = findNearestAlmanacDir(options.cwd ?? process.cwd()) ??
-    path.resolve(options.cwd ?? process.cwd());
   const environmentVariables = {
     PATH: buildLaunchPath(home, options.env?.PATH ?? process.env.PATH),
   };
@@ -112,11 +145,6 @@ export async function runAutomationInstall(
     });
   }
 
-  const captureSince = await ensureAutomationCaptureSince(
-    (options.now ?? new Date()).toISOString(),
-    options.configPath,
-  );
-  const exec = options.exec ?? defaultExec;
   const target = launchctlTarget();
   try {
     await exec("launchctl", ["bootout", target, plist]);
@@ -194,6 +222,14 @@ export async function runAutomationUninstall(
   options: AutomationOptions = {},
 ): Promise<CommandResult> {
   const home = options.homeDir ?? homedir();
+  const platform = options.platform ?? process.platform;
+  if (platform === "win32") {
+    return await uninstallWindowsAutomation({
+      home,
+      exec: options.exec ?? defaultExec,
+    });
+  }
+
   const plist = options.plistPath ?? defaultPlistPath(home);
   const gardenPlist = options.gardenPlistPath ?? defaultGardenPlistPath(home);
   const exec = options.exec ?? defaultExec;
@@ -236,6 +272,11 @@ export async function runAutomationStatus(
   options: AutomationStatusOptions = {},
 ): Promise<CommandResult> {
   const home = options.homeDir ?? homedir();
+  const platform = options.platform ?? process.platform;
+  if (platform === "win32") {
+    return await statusWindowsAutomation(home);
+  }
+
   const plist = options.plistPath ?? defaultPlistPath(home);
   const gardenPlist = options.gardenPlistPath ?? defaultGardenPlistPath(home);
   const capture = await readAutomationPlist(plist);

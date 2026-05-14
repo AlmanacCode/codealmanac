@@ -65,8 +65,8 @@ type AutomationExecFn = (
  *
  * Setup installs:
  *
- *   1. macOS launchd jobs that periodically run `almanac capture sweep`
- *      and `almanac garden`.
+ *   1. Platform scheduler jobs that periodically run `almanac capture sweep`
+ *      and `almanac garden` (launchd on macOS, Task Scheduler on Windows).
  *   2. The short "how to use Almanac" guide at
  *      `~/.claude/almanac.md`, sourced from `guides/mini.md` in the
  *      package.
@@ -124,6 +124,8 @@ export interface SetupOptions {
   guidesDir?: string;
   /** Override interactivity; defaults to `process.stdin.isTTY`. */
   isTTY?: boolean;
+  /** Override platform for scheduler tests; production uses process.platform. */
+  platform?: NodeJS.Platform;
   /** Stdout sink; defaults to `process.stdout`. */
   stdout?: NodeJS.WritableStream;
   /**
@@ -332,6 +334,7 @@ export async function runSetup(
       );
     } else {
       await cleanupLegacyHooks();
+      const platform = options.platform ?? process.platform;
       const res = await runAutomationInstall({
         every: options.automationEvery,
         quiet: options.automationQuiet,
@@ -339,14 +342,15 @@ export async function runSetup(
         gardenOff: options.gardenOff,
         cwd: process.cwd(),
         programArguments: ephem
-          ? globalAlmanacProgramArguments(options.automationQuiet)
+          ? globalAlmanacProgramArguments(platform, options.automationQuiet)
           : undefined,
         gardenProgramArguments: ephem
-          ? globalGardenProgramArguments()
+          ? globalGardenProgramArguments(platform)
           : undefined,
         plistPath: options.automationPlistPath,
         gardenPlistPath: options.gardenPlistPath,
         exec: options.automationExec,
+        platform,
       });
       if (res.exitCode !== 0) {
         stepActive(out, `Auto-capture automation: ${res.stderr.trim()}`);
@@ -438,11 +442,18 @@ type AgentChoice =
   | { ok: true; provider: AgentProviderId; model: string | null }
   | { ok: false; error: string };
 
-function globalAlmanacProgramArguments(quiet = "45m"): string[] {
+function globalAlmanacProgramArguments(
+  platform: NodeJS.Platform,
+  quiet = "45m",
+): string[] {
+  if (platform === "win32") {
+    return ["almanac.cmd", "capture", "sweep", "--quiet", quiet];
+  }
   return ["/usr/bin/env", "almanac", "capture", "sweep", "--quiet", quiet];
 }
 
-function globalGardenProgramArguments(): string[] {
+function globalGardenProgramArguments(platform: NodeJS.Platform): string[] {
+  if (platform === "win32") return ["almanac.cmd", "garden"];
   return ["/usr/bin/env", "almanac", "garden"];
 }
 

@@ -1,9 +1,11 @@
 ---
 title: Automation
-summary: Automation is the macOS launchd layer that schedules `almanac capture sweep` and `almanac garden`, while capture eligibility and dedupe stay inside Almanac-owned state.
+summary: Automation is the platform scheduler layer that wakes `almanac capture sweep` and `almanac garden`, while capture eligibility and dedupe stay inside Almanac-owned state.
 topics: [automation, cli, flows]
 files:
   - src/commands/automation.ts
+  - src/commands/automation/windows.ts
+  - src/install/ephemeral.ts
   - src/commands/setup.ts
   - src/commands/uninstall.ts
   - src/cli.ts
@@ -16,17 +18,18 @@ files:
   - test/uninstall.test.ts
 sources:
   - docs/plans/2026-05-11-scheduled-quiet-session-capture.md
+  - docs/plans/2026-05-14-windows-support.md
 status: active
-verified: 2026-05-13
+verified: 2026-05-14
 ---
 
 # Automation
 
-Automation is the scheduler layer around Almanac's recurring maintenance work. In the current product shape, that means two launchd jobs on macOS: one wakes `almanac capture sweep`, and the other wakes `almanac garden`. The scheduler decides when Almanac starts. Almanac still decides what to capture, whether a wiki needs gardening, and how job state is recorded.
+Automation is the scheduler layer around Almanac's recurring maintenance work. The current implementation has two platform adapters: macOS writes launchd jobs, and Windows writes Task Scheduler tasks through `schtasks`. In both cases one scheduler entry wakes `almanac capture sweep`, and the other wakes `almanac garden`. The scheduler decides when Almanac starts. Almanac still decides what to capture, whether a wiki needs gardening, and how job state is recorded.
 
 ## Public command surface
 
-`almanac automation install|status|uninstall` is the explicit scheduler-management surface. `install` writes launchd plists, bootstraps them with `launchctl`, and prints the effective capture interval, quiet window, activation timestamp, commands, and plist paths. `status` reads the plist files back and reports whether capture and Garden automation are installed. `uninstall` unloads and removes whichever CodeAlmanac plists exist.
+`almanac automation install|status|uninstall` is the explicit scheduler-management surface. On macOS, `install` writes launchd plists, bootstraps them with `launchctl`, and prints the effective capture interval, quiet window, activation timestamp, commands, and plist paths. On Windows, `install` calls `schtasks /Create` and writes local manifests under `~/.almanac/automation/` so status and doctor can report the installed task names without shelling out. `status` reads the platform-owned record, and `uninstall` removes the scheduled capture and Garden entries for the active platform.
 
 `almanac setup` is the onboarding entry point for the same automation surface. Setup installs scheduled capture and scheduled Garden by default unless the user passes `--skip-automation` or `--garden-off`. That makes automation a first-run product behavior rather than a hidden expert-only command.
 
@@ -39,6 +42,14 @@ The capture job runs `almanac capture sweep` with a quiet-window argument. The d
 Both jobs get an explicit `PATH` assembled for launchd from the current environment plus fallback locations such as `/usr/local/bin`, `/opt/homebrew/bin`, and `/usr/bin`. The Garden plist also records a `WorkingDirectory`: `runAutomationInstall()` resolves it to the nearest repo containing `.almanac/`, falling back to the current directory when no wiki root is found.
 
 There are two command-path modes. Direct `almanac automation install` writes absolute `ProgramArguments` for the current Node executable and resolved `dist/codealmanac.js` entrypoint. Setup uses a stricter rule when it was launched from ephemeral `npx`: it installs automation only after a durable global install succeeds, then writes `/usr/bin/env almanac ...` commands instead of pinning launchd to the transient cache path.
+
+## Windows Task Scheduler contract
+
+On Windows, capture uses the task name `\CodeAlmanac\CaptureSweep`, and Garden uses `\CodeAlmanac\Garden`. `runAutomationInstall({ platform: "win32" })` maps minute-sized intervals to `schtasks /Create /SC MINUTE /MO <minutes>` and whole-day intervals to `/SC DAILY /MO <days>`. The default capture cadence (`5h`) is therefore a 300-minute task, and the default Garden cadence (`2d`) is a two-day task.
+
+The Windows adapter stores manifests at `~/.almanac/automation/windows-capture-sweep.json` and `~/.almanac/automation/windows-garden.json`. Those files are local scheduler metadata, not capture state. They record the task name, command, interval seconds, and quiet window where applicable. Doctor uses the capture manifest to decide whether automation is installed on Windows; it no longer checks a launchd plist on that platform.
+
+Setup also changes the durable-global command shape on Windows. After an ephemeral `npx` setup successfully installs the package globally, scheduled commands use npm's Windows command shim (`almanac.cmd ...`) instead of `/usr/bin/env almanac ...`. The global install helper uses `cmd.exe /d /s /c npm.cmd install -g codealmanac@latest` on Windows because Node's `execFile` cannot directly launch `.cmd` files.
 
 ## What the scheduler owns and what it does not
 
@@ -56,4 +67,4 @@ The install path validates its duration flags instead of silently falling back t
 
 Current automation is scheduler-first, but setup and uninstall still run private cleanup for older provider hook installs. `cleanupLegacyHooks()` removes CodeAlmanac-owned `almanac-capture.sh` commands from observed Claude, Codex, and Cursor hook files and deletes the old Claude shell script path when present. [[sessionend-hook]] keeps the historical shapes and rationale for that migration boundary.
 
-`almanac uninstall` removes both launchd jobs unless the user passes `--keep-automation`. That keeps automation cleanup aligned with the broader global-install cleanup described in [[global-agent-instructions]].
+`almanac uninstall` removes both platform scheduler jobs unless the user passes `--keep-automation`. That keeps automation cleanup aligned with the broader global-install cleanup described in [[global-agent-instructions]].

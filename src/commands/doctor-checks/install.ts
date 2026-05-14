@@ -1,10 +1,13 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
 import type { ClaudeAuthStatus } from "../../agent/providers/claude/index.js";
-import { defaultPlistPath } from "../automation.js";
+import {
+  defaultPlistPath,
+  defaultWindowsCaptureManifestPath,
+} from "../automation.js";
 import { IMPORT_LINE } from "../setup.js";
 import {
   classifyInstallPath,
@@ -39,8 +42,11 @@ export async function gatherInstallChecks(
   const auth = await safeCheckAuth(options.spawnCli);
   checks.push(describeAuth(auth));
 
-  const plistPath = options.automationPlistPath ?? defaultPlistPath(homedir());
-  checks.push(describeAutomation(plistPath));
+  checks.push(describeAutomation({
+    home: homedir(),
+    platform: options.platform ?? process.platform,
+    plistPath: options.automationPlistPath,
+  }));
 
   const claudeDir = options.claudeDir ?? path.join(homedir(), ".claude");
   checks.push(describeGuides(claudeDir));
@@ -111,7 +117,29 @@ function describeAuth(auth: ClaudeAuthStatus): Check {
   };
 }
 
-function describeAutomation(plistPath: string): Check {
+function describeAutomation(args: {
+  home: string;
+  platform: NodeJS.Platform;
+  plistPath?: string;
+}): Check {
+  if (args.platform === "win32") {
+    const manifestPath = defaultWindowsCaptureManifestPath(args.home);
+    if (existsSync(manifestPath)) {
+      const taskName = readWindowsTaskName(manifestPath);
+      return {
+        status: "ok",
+        key: "install.automation",
+        message: `auto-capture automation installed with Windows Task Scheduler (${taskName ?? manifestPath})`,
+      };
+    }
+    return {
+      status: "problem",
+      key: "install.automation",
+      message: "auto-capture automation not installed",
+      fix: "run: almanac automation install",
+    };
+  }
+  const plistPath = args.plistPath ?? defaultPlistPath(args.home);
   if (existsSync(plistPath)) {
     return {
       status: "ok",
@@ -125,6 +153,15 @@ function describeAutomation(plistPath: string): Check {
     message: "auto-capture automation not installed",
     fix: "run: almanac automation install",
   };
+}
+
+function readWindowsTaskName(manifestPath: string): string | null {
+  try {
+    const parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as { taskName?: unknown };
+    return typeof parsed.taskName === "string" ? parsed.taskName : null;
+  } catch {
+    return null;
+  }
 }
 
 function describeGuides(claudeDir: string): Check {
