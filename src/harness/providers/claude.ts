@@ -20,7 +20,7 @@ import {
   checkClaudeAuth,
   resolveClaudeExecutable,
   type ClaudeAuthStatus,
-} from "../../agent/readiness/providers/claude/auth.js";
+} from "../../agent/auth/claude.js";
 
 type ClaudeQuery = AsyncIterable<SDKMessage>;
 type ClaudeQueryFn = (params: {

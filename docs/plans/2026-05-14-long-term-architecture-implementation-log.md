@@ -50,3 +50,10 @@ Plan: `docs/plans/2026-05-14-long-term-architecture-cleanup.md`
 - Preserved the activation-baseline ordering: plist files are written, `automation.capture_since` is ensured, then launchd bootstrap runs.
 - Verified with `npm run build`: succeeded.
 - Verified with `npm test -- --run test/automation.test.ts test/setup.test.ts`: `23` tests passed.
+
+### Review Boundary Fixes
+
+- Review found that moving Claude auth under readiness made the runtime harness depend on readiness taxonomy.
+- Moved shared Claude CLI auth/executable probing to `src/agent/auth/claude.ts`; readiness and harness now both depend on that neutral module.
+- Review found that Codex AGENTS.md writing is instruction-install behavior, not readiness behavior.
+- Moved Codex managed-instruction writing to `src/agent/instructions/codex.ts` and updated active wiki references.

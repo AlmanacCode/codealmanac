@@ -11,7 +11,7 @@ export {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
   hasCodexInstructions,
-} from "../agent/readiness/providers/codex-instructions.js";
+} from "../agent/instructions/codex.js";
 import {
   writeConfig,
 } from "../config/index.js";

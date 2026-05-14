@@ -7,7 +7,7 @@ import {
   CODEX_INSTRUCTIONS_START,
   ensureCodexInstructions,
   hasCodexInstructions,
-} from "./readiness/providers/codex-instructions.js";
+} from "./instructions/codex.js";
 
 export const CLAUDE_IMPORT_LINE = "@~/.claude/almanac.md";
 export const LEGACY_CLAUDE_IMPORT_LINE = "@~/.claude/codealmanac.md";

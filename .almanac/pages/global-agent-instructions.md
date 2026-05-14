@@ -7,7 +7,7 @@ files:
   - src/commands/setup/guides.ts
   - src/commands/uninstall.ts
   - src/commands/doctor-checks/install.ts
-  - src/agent/readiness/providers/codex-instructions.ts
+  - src/agent/instructions/codex.ts
   - test/setup.test.ts
   - test/uninstall.test.ts
   - test/doctor.test.ts
@@ -37,7 +37,7 @@ The guide-file copy path is byte-sensitive. If the bundled file contents already
 
 ## Codex install contract
 
-[[src/agent/readiness/providers/codex-instructions.ts]] implements the setup-specific rule for which file Almanac should edit: `resolveCodexAgentsPath()` uses `~/.codex/AGENTS.override.md` only when that file exists and `trim()` is non-empty; otherwise it falls back to `~/.codex/AGENTS.md`.
+[[src/agent/instructions/codex.ts]] implements the setup-specific rule for which file Almanac should edit: `resolveCodexAgentsPath()` uses `~/.codex/AGENTS.override.md` only when that file exists and `trim()` is non-empty; otherwise it falls back to `~/.codex/AGENTS.md`.
 
 The managed Almanac block is delimited by `<!-- almanac:start -->` and `<!-- almanac:end -->`. Setup writes the Claude mini-guide content inline between those markers because Codex treats `@file` references inside AGENTS files as plain text instead of expanding them.
 
