@@ -42,3 +42,11 @@ Plan: `docs/plans/2026-05-14-long-term-architecture-cleanup.md`
 - Left historical plans and research notes untouched when their old paths are part of dated implementation history.
 - Verified with `almanac health --topic agents`: all categories ok.
 - Verified with `almanac health --topic automation`: all categories ok.
+
+### Automation Install Cohesion
+
+- Split `runAutomationInstall()` into smaller helpers that build the launchd install plan, write plist files, activate jobs, and format user output.
+- Kept the concrete public automation surface unchanged: capture sweep and Garden remain the two scheduled tasks, while launchd remains the scheduler backend.
+- Preserved the activation-baseline ordering: plist files are written, `automation.capture_since` is ensured, then launchd bootstrap runs.
+- Verified with `npm run build`: succeeded.
+- Verified with `npm test -- --run test/automation.test.ts test/setup.test.ts`: `23` tests passed.
