@@ -87,4 +87,3 @@ Commit after each stable slice:
 3. setup extraction
 4. automation task registry polish and docs/wiki updates
 5. review fixes
-
