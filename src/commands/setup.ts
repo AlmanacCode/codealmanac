@@ -22,10 +22,10 @@ import {
   buildProviderModelChoices,
   buildProviderSetupView,
   parseAgentSelection,
-} from "../agent/provider-view.js";
+} from "../agent/readiness/view.js";
 import type {
   ProviderSetupView,
-} from "../agent/provider-view.js";
+} from "../agent/readiness/view.js";
 import type { ProviderModelChoice } from "../agent/types.js";
 import {
   disabledAgentProviderMessage,
@@ -35,7 +35,7 @@ import {
   readConfig,
   writeConfig,
   type AgentProviderId,
-} from "../update/config.js";
+} from "../config/index.js";
 import { cleanupLegacyHooks, runAutomationInstall } from "./automation.js";
 import {
   detectCurrentInstallPath,

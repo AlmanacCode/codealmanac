@@ -1,4 +1,4 @@
-import { buildProviderSetupView } from "../../agent/provider-view.js";
+import { buildProviderSetupView } from "../../agent/readiness/view.js";
 import { checkClaudeAuth } from "../../agent/providers/claude/index.js";
 import type { ProviderStatus } from "../../agent/types.js";
 import type { AgentDoctorCheck, DoctorOptions } from "./types.js";

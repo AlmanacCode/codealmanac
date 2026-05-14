@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { runAutomationInstall } from "../src/commands/automation.js";
+import { runAutomationInstall, runAutomationStatus } from "../src/commands/automation.js";
 import { readConfig } from "../src/update/config.js";
 import { withTempHome } from "./helpers.js";
 
@@ -236,6 +236,47 @@ describe("almanac automation", () => {
       expect(toml).toContain('[agent]');
       expect(toml).toContain('default = "claude"');
       expect(toml).toContain('[automation]');
+    });
+  });
+
+  it("reports launchd load state separately from plist existence", async () => {
+    await withTempHome(async (home) => {
+      const plistPath = join(
+        home,
+        "Library",
+        "LaunchAgents",
+        "com.codealmanac.capture-sweep.plist",
+      );
+      const gardenPlistPath = join(
+        home,
+        "Library",
+        "LaunchAgents",
+        "com.codealmanac.garden.plist",
+      );
+
+      await runAutomationInstall({
+        plistPath,
+        gardenPlistPath,
+        exec: async () => ({}),
+        now: new Date("2026-05-12T05:10:00.000Z"),
+      });
+
+      const result = await runAutomationStatus({
+        plistPath,
+        gardenPlistPath,
+        exec: async (_file, args) => {
+          if (args[0] === "print" && String(args[1]).endsWith("capture-sweep")) {
+            return {};
+          }
+          throw new Error("not loaded");
+        },
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("auto-capture automation: installed");
+      expect(result.stdout).toContain("garden automation: installed");
+      expect(result.stdout).toContain("launchd loaded: yes");
+      expect(result.stdout).toContain("launchd loaded: no");
     });
   });
 });

@@ -7,7 +7,7 @@ import type { HarnessProviderId } from "../harness/types.js";
 import { runAbsorbOperation } from "../operations/absorb.js";
 import { runBuildOperation } from "../operations/build.js";
 import { runGardenOperation } from "../operations/garden.js";
-import { readConfig } from "../update/config.js";
+import { readConfig } from "../config/index.js";
 import { resolveCaptureTranscripts } from "./session-transcripts.js";
 import type {
   OperationProviderSelection,

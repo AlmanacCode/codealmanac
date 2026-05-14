@@ -11,12 +11,16 @@ files:
   - src/harness/providers/claude.ts
   - src/harness/providers/codex.ts
   - src/harness/providers/cursor.ts
+  - src/agent/readiness/view.ts
+  - src/agent/providers/
   - test/codex-harness-provider.test.ts
 ---
 
 # Harness Providers
 
 The V1 harness layer is Almanac's provider-neutral execution boundary. Operations build one `AgentRunSpec`; provider adapters translate that spec to Claude, Codex, Cursor, or future runtimes and emit normalized `HarnessEvent` records for [[process-manager-runs]].
+
+`[[src/agent/readiness/view.ts]]` is not an execution-provider layer. It builds the setup, `almanac agents`, and doctor projection from config plus provider status/model metadata. The remaining `[[src/agent/providers/]]` code checks CLI install/auth state and model choices; it no longer owns `run()` methods or runtime capability metadata. Runtime execution and runtime capability metadata belong in `[[src/harness/providers/]]`.
 
 ## Provider-neutral contract
 

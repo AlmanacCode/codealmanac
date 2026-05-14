@@ -3,13 +3,13 @@ import {
   parseAgentSelection,
   type ProviderReadiness,
   type ProviderSetupView,
-} from "../agent/provider-view.js";
+} from "../agent/readiness/view.js";
 import {
   isAgentProviderId,
   readConfig,
   writeConfig,
   type AgentProviderId,
-} from "../update/config.js";
+} from "../config/index.js";
 import { formatTextTable } from "./table.js";
 
 export interface AgentsResult {
