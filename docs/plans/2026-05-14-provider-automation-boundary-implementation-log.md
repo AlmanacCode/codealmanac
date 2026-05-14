@@ -17,3 +17,11 @@ Plan: `docs/plans/2026-05-14-provider-automation-boundary-refactor.md`
 - Ran `npm run build`, then reran `npm test`.
 - Baseline after build: `54` test files passed, `465` tests passed.
 
+### Automation Boundary Extraction
+
+- Added `src/automation/tasks.ts` for scheduler task labels, defaults, plist paths, and default CLI program arguments.
+- Added `src/automation/launchd.ts` for launchd plist rendering, directory setup, PATH construction, bootstrap, removal, and plist status parsing.
+- Added `src/automation/legacy-hooks.ts` for private cleanup of historical Claude/Codex/Cursor hook installs.
+- Rewrote `src/commands/automation.ts` as the command-facing orchestrator. It still validates options, records the automation activation baseline, formats command output, and preserves the existing public exports used by setup/uninstall.
+- Verified focused behavior with `npm test -- --run test/automation.test.ts`: `5` tests passed.
+- Verified TypeScript/package build with `npm run build`: succeeded.

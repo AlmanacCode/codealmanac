@@ -18,3 +18,6 @@ The repository's tests can depend on `dist/codealmanac.js` being present because
 
 The refactor will keep public command names, launchd plist paths, default intervals, ledger path/shape, skip reasons, and operation semantics unchanged. Changes should be structural until a task explicitly calls for status output improvement.
 
+### Keep `runAutomationInstall()` as orchestration, not launchd plumbing
+
+Automation install still has to combine command option validation, activation-baseline mutation, two scheduler jobs, and user output. The cleanup moves task definitions, launchd mechanics, and legacy hook cleanup out of the command file, but keeps the single user-facing install transaction in `src/commands/automation.ts` so partial failure messages and setup integration remain easy to follow.
