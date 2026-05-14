@@ -7,6 +7,7 @@ files:
   - src/commands/uninstall.ts
   - src/commands/doctor-checks/install.ts
   - src/agent/providers/codex-instructions.ts
+  - src/harness/providers/codex.ts
   - test/setup.test.ts
   - test/uninstall.test.ts
   - test/doctor.test.ts
@@ -16,7 +17,7 @@ sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/12/rollout-2026-05-12T20-25-14-019e1f5d-ff59-7ee1-a73b-836277d8092b.jsonl
   - /Users/kushagrachitkara/.codex/sessions/2026/05/13/rollout-2026-05-13T13-34-26-019e230c-4437-7422-9e8d-b7caa9b592fc.jsonl
 status: active
-verified: 2026-05-13
+verified: 2026-05-14
 ---
 
 # Global Agent Instructions
@@ -81,4 +82,4 @@ The same session also confirmed the reinstall path from a markdown-only reset: a
 
 [[src/commands/doctor-checks/install.ts]] currently verifies only the Claude-side artifacts through `install.guides` and `install.import`. There is no Codex-specific doctor check yet, so debugging "Codex is not seeing Almanac guidance" still requires reading `~/.codex/AGENTS.override.md` and `~/.codex/AGENTS.md` directly and checking which file is active.
 
-The provider-status path adds one more practical split for Codex debugging. [[src/harness/providers/codex.ts]] treats Codex as installed only when the `codex` executable is visible on `PATH`; otherwise it reports `codex not found on PATH` before any AGENTS-file logic matters. A support triage for "Codex works in one place but Almanac cannot see it" should therefore start with `which codex` and `codex --version`, then move on to which of `~/.codex/AGENTS.override.md` or `~/.codex/AGENTS.md` is active.
+The provider-status path adds one more practical split for Codex debugging. [[src/harness/providers/codex.ts]] treats Codex as installed only when the `codex` executable is visible on `PATH`; otherwise it reports `codex not found on PATH` before any AGENTS-file logic matters. On Unix-like systems, status checks use `command -v codex`; on Windows they use `where codex`, and actual Codex process launches run through the Windows shell so npm command shims such as `codex.cmd` are executable. A support triage for "Codex works in one place but Almanac cannot see it" should therefore start with `which codex`/`where codex` and `codex --version`, then move on to which of `~/.codex/AGENTS.override.md` or `~/.codex/AGENTS.md` is active.

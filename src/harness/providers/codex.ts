@@ -179,6 +179,7 @@ export function runCodexCli(
       cwd: request.cwd,
       env: request.env,
       stdio: ["ignore", "pipe", "pipe"],
+      shell: process.platform === "win32",
     });
 
     let stdoutBuf = "";
@@ -395,6 +396,7 @@ export async function runCodexAppServer(
       cwd: request.cwd,
       env: request.env,
       stdio: ["pipe", "pipe", "pipe"],
+      shell: process.platform === "win32",
     });
     const pending = new Map<string, PendingRequest>();
     const state: CodexRunState = { success: false, result: "" };
@@ -1482,6 +1484,11 @@ function pruneUndefined<T extends Record<string, unknown>>(value: T): T {
 }
 
 function defaultCommandExists(command: string): boolean {
+  if (process.platform === "win32") {
+    const result = spawnSync("where", [command], { encoding: "utf8" });
+    return result.status === 0 && result.stdout.trim().length > 0;
+  }
+
   const result = spawnSync("sh", ["-lc", `command -v ${command}`], {
     encoding: "utf8",
   });
@@ -1497,7 +1504,10 @@ function defaultRunStatus(
     let stdout = "";
     let stderr = "";
     try {
-      child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+      child = spawn(command, args, {
+        stdio: ["ignore", "pipe", "pipe"],
+        shell: process.platform === "win32",
+      });
     } catch (err: unknown) {
       resolve({
         ok: false,
