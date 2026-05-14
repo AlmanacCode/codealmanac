@@ -1,4 +1,4 @@
-import type { AgentProvider } from "../types.js";
+import type { AgentProvider } from "../../types.js";
 import { claudeProvider, DEFAULT_AGENT_MODEL } from "./claude/index.js";
 import { codexProvider } from "./codex-cli.js";
 import { cursorProvider } from "./cursor-cli.js";

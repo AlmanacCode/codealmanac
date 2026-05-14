@@ -2,7 +2,7 @@ import {
   AGENT_PROVIDER_METADATA,
   getAgentProvider,
   listProviderStatuses,
-} from "../providers.js";
+} from "./providers/index.js";
 import type {
   ProviderModelChoice,
   ProviderStatus,

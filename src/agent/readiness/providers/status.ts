@@ -1,8 +1,8 @@
 import {
   getEnabledAgentProviderIds,
   type AgentProviderId,
-} from "../../config/index.js";
-import type { ProviderStatus, SpawnCliFn } from "../types.js";
+} from "../../../config/index.js";
+import type { ProviderStatus, SpawnCliFn } from "../../types.js";
 import { getAgentProvider } from "./index.js";
 
 export async function assertAgentAuth(args: {

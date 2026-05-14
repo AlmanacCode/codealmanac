@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type {
   SpawnCliFn,
   SpawnedProcess,
-} from "../src/agent/providers/claude/index.js";
+} from "../src/agent/readiness/providers/claude/index.js";
 import { runDoctor } from "../src/commands/doctor.js";
 import {
   CODEX_INSTRUCTIONS_END,

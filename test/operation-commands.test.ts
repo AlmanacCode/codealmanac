@@ -10,7 +10,7 @@ import {
   runIngestCommand,
   runInitCommand,
 } from "../src/commands/operations.js";
-import { writeConfig } from "../src/update/config.js";
+import { writeConfig } from "../src/config/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
 describe("operation command wrappers", () => {

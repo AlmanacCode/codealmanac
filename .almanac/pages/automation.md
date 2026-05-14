@@ -14,7 +14,6 @@ files:
   - src/cli/register-wiki-lifecycle-commands.ts
   - src/commands/capture-sweep.ts
   - src/config/index.ts
-  - src/update/config.ts
   - test/automation.test.ts
   - test/cli.test.ts
   - test/uninstall.test.ts

@@ -14,6 +14,7 @@ import {
   removeLaunchdJob,
   writeLaunchdPlist,
 } from "../automation/launchd.js";
+import type { LaunchdJobDefinition } from "../automation/launchd.js";
 import {
   captureSweepProgramArguments,
   CAPTURE_SWEEP_LABEL,
@@ -59,105 +60,24 @@ export interface AutomationStatusOptions {
 export async function runAutomationInstall(
   options: AutomationOptions = {},
 ): Promise<CommandResult> {
-  const interval = parseInterval(options.every ?? DEFAULT_CAPTURE_INTERVAL);
-  if (!interval.ok) {
-    return { stdout: "", stderr: `almanac: ${interval.error}\n`, exitCode: 1 };
-  }
-  const quietValue = options.quiet ?? DEFAULT_CAPTURE_QUIET;
-  const quiet = parseQuiet(quietValue);
-  if (!quiet.ok) {
-    return { stdout: "", stderr: `almanac: ${quiet.error}\n`, exitCode: 1 };
-  }
-  const gardenValue = options.gardenEvery ?? DEFAULT_GARDEN_INTERVAL;
-  const gardenInterval = options.gardenOff === true
-    ? null
-    : parseInterval(gardenValue);
-  if (gardenInterval !== null && !gardenInterval.ok) {
-    return { stdout: "", stderr: `almanac: ${gardenInterval.error}\n`, exitCode: 1 };
+  const plan = buildAutomationInstallPlan(options);
+  if (!plan.ok) {
+    return { stdout: "", stderr: `almanac: ${plan.error}\n`, exitCode: 1 };
   }
 
-  const home = options.homeDir ?? homedir();
-  const plist = options.plistPath ?? defaultPlistPath(home);
-  const gardenPlist = options.gardenPlistPath ?? defaultGardenPlistPath(home);
-  const logsDir = automationLogsDir(home);
-  const programArguments = options.programArguments ?? captureSweepProgramArguments(quietValue);
-  const gardenProgramArguments = options.gardenProgramArguments ?? defaultGardenProgramArguments();
-  const gardenWorkingDirectory = findNearestAlmanacDir(options.cwd ?? process.cwd()) ??
-    path.resolve(options.cwd ?? process.cwd());
-  const environmentVariables = {
-    PATH: buildLaunchPath(home, options.env?.PATH ?? process.env.PATH),
-  };
-  const captureJob = {
-    plistPath: plist,
-    label: CAPTURE_SWEEP_LABEL,
-    programArguments,
-    intervalSeconds: interval.seconds,
-    environmentVariables,
-    stdoutPath: path.join(logsDir, "capture-sweep.out.log"),
-    stderrPath: path.join(logsDir, "capture-sweep.err.log"),
-  };
-  const gardenJob = gardenInterval === null
-    ? null
-    : {
-      plistPath: gardenPlist,
-      label: GARDEN_LABEL,
-      programArguments: gardenProgramArguments,
-      intervalSeconds: gardenInterval.seconds,
-      environmentVariables,
-      workingDirectory: gardenWorkingDirectory,
-      stdoutPath: path.join(logsDir, "garden.out.log"),
-      stderrPath: path.join(logsDir, "garden.err.log"),
-    };
-
-  await ensureLaunchdDirs(gardenJob === null ? [captureJob] : [captureJob, gardenJob]);
-  await writeLaunchdPlist(captureJob);
-  if (gardenJob !== null) {
-    await writeLaunchdPlist(gardenJob);
-  }
+  await writeAutomationPlists(plan.value);
 
   const captureSince = await ensureAutomationCaptureSince(
     (options.now ?? new Date()).toISOString(),
     options.configPath,
   );
-  const exec = options.exec;
-  try {
-    await bootstrapLaunchdJob(plist, exec);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return {
-      stdout: "",
-      stderr: `almanac: automation plist written to ${plist}, but launchctl bootstrap failed: ${msg}\n`,
-      exitCode: 1,
-    };
-  }
-  if (gardenJob !== null) {
-    try {
-      await bootstrapLaunchdJob(gardenPlist, exec);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return {
-        stdout: "",
-        stderr: `almanac: garden automation plist written to ${gardenPlist}, but launchctl bootstrap failed: ${msg}\n`,
-        exitCode: 1,
-      };
-    }
-  } else if (existsSync(gardenPlist)) {
-    await removeLaunchdJob(gardenPlist, exec);
+  const activated = await activateAutomationJobs(plan.value, options.exec);
+  if (!activated.ok) {
+    return activated.result;
   }
 
   return {
-    stdout:
-      `almanac: automation installed\n` +
-      `  capture interval: ${options.every ?? DEFAULT_CAPTURE_INTERVAL}\n` +
-      `  capture quiet: ${quietValue}\n` +
-      `  capturing transcripts after: ${captureSince}\n` +
-      `  capture command: ${programArguments.join(" ")}\n` +
-      `  capture plist: ${plist}\n` +
-      (gardenInterval !== null
-        ? `  garden interval: ${gardenValue}\n` +
-          `  garden command: ${gardenProgramArguments.join(" ")}\n` +
-          `  garden plist: ${gardenPlist}\n`
-        : `  garden: disabled\n`),
+    stdout: formatAutomationInstall(plan.value, captureSince),
     stderr: "",
     exitCode: 0,
   };
@@ -223,6 +143,143 @@ export async function runAutomationStatus(
 
 export function defaultPlistPath(home: string = homedir()): string {
   return defaultCapturePlistPath(home);
+}
+
+interface AutomationInstallPlan {
+  captureIntervalInput: string;
+  quietInput: string;
+  gardenIntervalInput: string;
+  captureJob: LaunchdJobDefinition;
+  gardenJob: LaunchdJobDefinition | null;
+  gardenPlistPath: string;
+}
+
+function buildAutomationInstallPlan(
+  options: AutomationOptions,
+): { ok: true; value: AutomationInstallPlan } | { ok: false; error: string } {
+  const captureIntervalInput = options.every ?? DEFAULT_CAPTURE_INTERVAL;
+  const interval = parseInterval(captureIntervalInput);
+  if (!interval.ok) return interval;
+
+  const quietInput = options.quiet ?? DEFAULT_CAPTURE_QUIET;
+  const quiet = parseQuiet(quietInput);
+  if (!quiet.ok) return quiet;
+
+  const gardenIntervalInput = options.gardenEvery ?? DEFAULT_GARDEN_INTERVAL;
+  const gardenInterval = options.gardenOff === true
+    ? null
+    : parseInterval(gardenIntervalInput);
+  if (gardenInterval !== null && !gardenInterval.ok) return gardenInterval;
+
+  const home = options.homeDir ?? homedir();
+  const capturePlistPath = options.plistPath ?? defaultPlistPath(home);
+  const gardenPlistPath = options.gardenPlistPath ?? defaultGardenPlistPath(home);
+  const logsDir = automationLogsDir(home);
+  const environmentVariables = {
+    PATH: buildLaunchPath(home, options.env?.PATH ?? process.env.PATH),
+  };
+  const captureJob: LaunchdJobDefinition = {
+    plistPath: capturePlistPath,
+    label: CAPTURE_SWEEP_LABEL,
+    programArguments: options.programArguments ??
+      captureSweepProgramArguments(quietInput),
+    intervalSeconds: interval.seconds,
+    environmentVariables,
+    stdoutPath: path.join(logsDir, "capture-sweep.out.log"),
+    stderrPath: path.join(logsDir, "capture-sweep.err.log"),
+  };
+  const cwd = options.cwd ?? process.cwd();
+  const gardenJob: LaunchdJobDefinition | null = gardenInterval === null
+    ? null
+    : {
+      plistPath: gardenPlistPath,
+      label: GARDEN_LABEL,
+      programArguments: options.gardenProgramArguments ??
+        defaultGardenProgramArguments(),
+      intervalSeconds: gardenInterval.seconds,
+      environmentVariables,
+      workingDirectory: findNearestAlmanacDir(cwd) ?? path.resolve(cwd),
+      stdoutPath: path.join(logsDir, "garden.out.log"),
+      stderrPath: path.join(logsDir, "garden.err.log"),
+    };
+
+  return {
+    ok: true,
+    value: {
+      captureIntervalInput,
+      quietInput,
+      gardenIntervalInput,
+      captureJob,
+      gardenJob,
+      gardenPlistPath,
+    },
+  };
+}
+
+async function writeAutomationPlists(plan: AutomationInstallPlan): Promise<void> {
+  const jobs = plan.gardenJob === null
+    ? [plan.captureJob]
+    : [plan.captureJob, plan.gardenJob];
+  await ensureLaunchdDirs(jobs);
+  await Promise.all(jobs.map((job) => writeLaunchdPlist(job)));
+}
+
+async function activateAutomationJobs(
+  plan: AutomationInstallPlan,
+  exec: ExecFn | undefined,
+): Promise<{ ok: true } | { ok: false; result: CommandResult }> {
+  try {
+    await bootstrapLaunchdJob(plan.captureJob.plistPath, exec);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      result: {
+        stdout: "",
+        stderr:
+          `almanac: automation plist written to ${plan.captureJob.plistPath}, but launchctl bootstrap failed: ${msg}\n`,
+        exitCode: 1,
+      },
+    };
+  }
+  if (plan.gardenJob !== null) {
+    try {
+      await bootstrapLaunchdJob(plan.gardenJob.plistPath, exec);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        ok: false,
+        result: {
+          stdout: "",
+          stderr:
+            `almanac: garden automation plist written to ${plan.gardenJob.plistPath}, but launchctl bootstrap failed: ${msg}\n`,
+          exitCode: 1,
+        },
+      };
+    }
+  } else if (existsSync(plan.gardenPlistPath)) {
+    await removeLaunchdJob(plan.gardenPlistPath, exec);
+  }
+  return { ok: true };
+}
+
+function formatAutomationInstall(
+  plan: AutomationInstallPlan,
+  captureSince: string,
+): string {
+  return (
+    `almanac: automation installed\n` +
+    `  capture interval: ${plan.captureIntervalInput}\n` +
+    `  capture quiet: ${plan.quietInput}\n` +
+    `  capturing transcripts after: ${captureSince}\n` +
+    `  capture command: ${plan.captureJob.programArguments.join(" ")}\n` +
+    `  capture plist: ${plan.captureJob.plistPath}\n` +
+    (plan.gardenJob !== null
+      ? `  garden interval: ${plan.gardenIntervalInput}\n` +
+        `  garden command: ${plan.gardenJob.programArguments.join(" ")}\n` +
+        `  garden plist: ${plan.gardenJob.plistPath}\n`
+      : `  garden: disabled\n`)
+  );
 }
 
 function parseInterval(value: string): { ok: true; seconds: number } | { ok: false; error: string } {

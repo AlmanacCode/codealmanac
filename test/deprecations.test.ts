@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { run } from "../src/cli.js";
-import { readConfig } from "../src/update/config.js";
+import { readConfig } from "../src/config/index.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
 async function captureCli(
