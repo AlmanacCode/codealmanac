@@ -9,7 +9,7 @@
   <a href="https://github.com/AlmanacCode/codealmanac/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/AlmanacCode/codealmanac?style=flat&logo=github"></a>
   <a href="https://github.com/AlmanacCode/codealmanac/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/AlmanacCode/codealmanac"></a>
   <img alt="Node support" src="https://img.shields.io/badge/node-20%20%7C%2022%2B-1f6feb">
-  <a href="./LICENSE"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-df7b40"></a>
+  <a href="./LICENSE.md"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-df7b40"></a>
   <a href="https://usealmanac.com/code"><img alt="Website" src="https://img.shields.io/badge/website-usealmanac.com%2Fcode-24292f"></a>
 </p>
 
@@ -265,4 +265,4 @@ Almanac is pre-1.0. Breaking changes are possible before 1.0 and will be called 
 
 ## License
 
-PolyForm Noncommercial License 1.0.0. Commercial use requires a separate paid commercial license; see [COMMERCIAL.md](./COMMERCIAL.md). See [LICENSE](./LICENSE).
+PolyForm Noncommercial License 1.0.0. Commercial use requires a separate paid commercial license; see [COMMERCIAL.md](./COMMERCIAL.md). See [LICENSE.md](./LICENSE.md).

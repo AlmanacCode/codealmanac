@@ -58,7 +58,7 @@ Before running `npm version`:
 - [ ] All tests pass on `main` (`npm test`)
 - [ ] `npm run build` succeeds cleanly
 - [ ] `npm pack --dry-run` shows only: `dist/`, `prompts/`, `README.md`,
-      `LICENSE`, `package.json`. No source, no tests, no `.git`, no
+      `LICENSE.md`, `package.json`. No source, no tests, no `.git`, no
       `node_modules`.
 - [ ] `README.md` describes the current feature set accurately — not
       aspirational. Users read this on npmjs.com.
