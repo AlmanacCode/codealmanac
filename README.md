@@ -270,8 +270,6 @@ The codebase is TypeScript, built with [tsup](https://tsup.egoist.dev/), tested 
 
 If Almanac helps your agents understand a codebase faster, please consider giving the repo a star.
 
-Sharing Almanac somewhere? The [launch kit](./docs/launch/README.md) has short copy for Show HN, X/Twitter, Reddit, and Dev.to.
-
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/chart?repos=AlmanacCode/codealmanac&type=date&legend=top-left)](https://www.star-history.com/?repos=AlmanacCode%2Fcodealmanac&type=date&legend=top-left)
