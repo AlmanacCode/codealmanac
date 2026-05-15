@@ -3,7 +3,7 @@ title: almanac serve (Local Viewer)
 summary: "`almanac serve` is a local read-only viewer over wiki pages, the SQLite index, and run records, including a jobs dashboard."
 topics: [cli, decisions, systems]
 status: active
-verified: 2026-05-12
+verified: 2026-05-15
 files:
   - src/commands/serve.ts
   - src/viewer/api.ts
@@ -39,6 +39,8 @@ sources:
 # almanac serve (Local Viewer)
 
 `almanac serve` is a lightweight local read-only web viewer for browsing a repo's Almanac wiki. It is the preferred "read the wiki" experience for humans — filesystem browsing and `browse/` pages are the fallback and editor interface, not the primary UX. Designed and implemented 2026-05-10.
+
+The viewer is mostly a read-only client over existing wiki/index/run-record primitives, but a 2026-05-15 codebase-smell review found one current drift point: `[[src/viewer/api.ts]]` has its own FTS query builders, file-reference SQL, parent-folder prefix calculation, and GLOB escaping. Those rules overlap with CLI search semantics and are historically subtle. Future work should extract shared query helpers for submitted FTS queries, suggestion-prefix FTS queries, and file-reference matching instead of letting the viewer and CLI evolve separate path/search behavior.
 
 ## Rationale
 
@@ -88,6 +90,7 @@ The page rail (left and right panels) is hidden for `/jobs` and `/jobs/:runId` r
 - Archive / superseded indicators
 - Jobs dashboard with run list and detail/stream view
 - Graph sidebar (deferred)
+- Future [[wiki-clarifications]] view for human answers to unresolved questions raised by lifecycle agents
 
 ## What the viewer does not do
 
@@ -124,7 +127,7 @@ Next.js was explicitly rejected as too heavy. Express was not added; Node's `htt
 
 ## Source module structure
 
-The viewer is a read-only client over the same query primitives the CLI already uses. No separate database model, no forked parser, no new query paths.
+The viewer is a read-only client over the same persisted index and page/run-record source files that the CLI uses. It should not introduce a separate database model or forked parser. Its current query-helper duplication in `[[src/viewer/api.ts]]` is cleanup debt, not the desired architecture.
 
 Actual source layout:
 
@@ -207,7 +210,7 @@ The frontend uses the `usealmanac.com` brand direction: warm paper surfaces, Pal
 --ca-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 ```
 
-The accent color was revised from OpenAlmanac navy (`#1a3a5c`) to the usealmanac green (`#166534`) on 2026-05-12 so the local viewer matches the public landing page. The active token namespace is `--ca-*` in `viewer/app.css`.
+The accent color was revised from OpenAlmanac navy (`#1a3a5c`) to the usealmanac green (`#166534`) on 2026-05-12 so the local viewer matches the public landing page. A 2026-05-15 attempt to switch the viewer to a brighter OpenAlmanac-inspired blue (`#255f8f`) was reverted at user request, so green remains the active viewer direction. The active token namespace is `--ca-*` in `viewer/app.css`.
 
 The brand mark is the usealmanac open-book logo at `viewer/almanac-logo.png`. The left rail subtitle is `Agent-maintained knowledge`, matching the landing-page eyebrow.
 

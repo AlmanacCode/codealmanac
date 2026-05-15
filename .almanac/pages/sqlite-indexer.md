@@ -17,7 +17,8 @@ files:
   - src/cli.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
-verified: 2026-05-13
+  - /Users/rohan/.codex/sessions/2026/05/15/rollout-2026-05-15T01-43-21-019e2a29-293a-7263-b6ce-0a9dc0af792a.jsonl
+verified: 2026-05-15
 ---
 
 # SQLite Indexer
@@ -27,6 +28,8 @@ The indexer (`src/indexer/`) builds and maintains `.almanac/index.db` — a SQLi
 ## Query output contract
 
 Query commands should stay quiet by default and reserve richer context for explicit flags. `almanac search` defaults to one slug per line even in a TTY; `--verbose` and the older `--summaries` flag print one-line summaries. `almanac show <slug>` defaults to the page body only; `--verbose` restores the metadata header, separator, and body view. Field flags such as `--title`, `--topics`, `--files`, and JSON output keep their existing explicit shapes.
+
+`almanac search` should remain a wiki-page search by default. A 2026-05-15 product/API discussion rejected mixing real source files into the default result stream because it would blur Almanac's contract with ordinary code search tools such as `rg` and make slug piping less predictable. A future explicit mode such as `almanac search --files "query"` is consistent with the model if it returns file refs attached to matching wiki pages; that mode should mean "show the source files the wiki says matter for this concept," not "grep the repository too." `almanac show <slug> --files` and `almanac search --mentions <path>` remain the direct file-aware surfaces for one page or one source path.
 
 ## Schema
 

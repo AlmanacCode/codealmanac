@@ -11,8 +11,9 @@ sources:
   - docs/plans/2026-05-14-provider-automation-boundary-refactor.md
   - /Users/rohan/.codex/sessions/2026/05/13/rollout-2026-05-13T23-00-06-019e246d-595d-76d3-bd45-6433245065ac.jsonl
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T11-33-08-019e271e-c639-72f2-bf85-e598ad83ce62.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/15/rollout-2026-05-15T01-43-21-019e2a29-293a-7263-b6ce-0a9dc0af792a.jsonl
 status: active
-verified: 2026-05-14
+verified: 2026-05-15
 ---
 
 # Accidental Special-Case Architecture
@@ -46,6 +47,8 @@ The reviewer should not reject every exception. It weighs each special case by t
 A later 2026-05-14 review applied this rule to scheduler automation. The review preserved quiet-window gating, ledger cursors, prefix hashes, pending reconciliation, and repo locks because they protect capture correctness rather than simplifying a local implementation detail. It flagged the pre-refactor placement instead: `src/commands/capture-sweep.ts` owned discovery, metadata parsing, repo mapping, ledger logic, locking, capture enqueueing, and rendering; `src/commands/automation.ts` owned both capture and Garden launchd jobs; setup added an ephemeral-`npx` durable-install branch before calling automation. The follow-up refactor moved sweep ownership under [[src/capture/]], launchd/task ownership under [[src/automation/]], and setup substeps under [[src/commands/setup/]] without deleting the correctness checks.
 
 The durable distinction is that special cases are judged by ownership and invariant, not by whether they are unusual. A prefix hash in [[capture-ledger]] is unusual but load-bearing because it detects transcript rewrites before advancing a cursor. A Garden flag under auto-capture automation may work today but creates a product-boundary question because Garden is a separate lifecycle operation with its own cadence and status needs.
+
+`capture sweep --dry-run` is an explicit design exception to the repo's general "no dry-run flags" rule. The exception is bounded to scheduler verification: it computes the same eligibility and cursor ranges as a real sweep, but does not enqueue capture jobs or write ledger state. A 2026-05-15 codebase-smell review kept the exception only if it remains framed as capture-domain verification, or is renamed to a domain word such as preview, rather than becoming a precedent for generic dry-run command design.
 
 ## Platform Boundary Example
 

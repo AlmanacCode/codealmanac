@@ -1,6 +1,6 @@
 # Almanac Wiki
 
-This is the Almanac wiki for the codealmanac repo itself — the CLI and agent harness that produces and queries `.almanac/` wikis. It documents what the code can't say: design decisions, subsystem contracts, agent prompt behavior, and gotchas found in real runs.
+This is the Almanac wiki for the codealmanac repo itself — the CLI and agent harness that produces and queries `.almanac/` wikis. It preserves the project understanding that code alone cannot carry: design decisions, subsystem contracts, agent prompt behavior, external runtime assumptions, product semantics, and gotchas found in real runs.
 
 The primary reader is an AI coding agent picking up a new session. Write accordingly: dense, factual, linked.
 
@@ -13,8 +13,10 @@ Write a page when there is **non-obvious knowledge that will help a future agent
 - A cross-cutting flow that spans multiple files (e.g. capture resolving a transcript, starting Absorb, and recording a run)
 - A constraint or invariant not visible from the code (e.g. registry entries are never auto-dropped)
 - A subsystem or third-party integration referenced by multiple pages
+- A product or market conclusion that changes how Almanac should be built, positioned, priced, or trusted
+- A distilled external reference whose APIs, limits, or conventions shape this repo's current design
 
-Do not write pages that restate what the code does. Do not write pages of inference. Silence is acceptable. Build, Absorb, and Garden enforce this bar through prompts, not through a TypeScript review pipeline.
+Do not write pages that restate what the code does. Do not write pages of inference. Silence is acceptable. Build, Absorb, and Garden enforce this bar through prompts, not through a TypeScript review pipeline. The wiki can cover material outside this repo when that material has become durable CodeAlmanac project memory; it should not become a generic reference library.
 
 ## Topic taxonomy
 
@@ -28,7 +30,10 @@ Topics form a DAG serialized in `.almanac/topics.yaml`. A page can belong to mul
 | `decisions` | Architectural choices — "why X over Y" |
 | `agents` | AI agent integration: harness providers, operation prompts, Build/Absorb/Garden (child of `flows` + `stack`) |
 | `cli` | CLI command surface and wiring (child of `systems`) |
+| `automation` | Scheduled background behavior and its command surface (child of `flows` + `cli`) |
 | `storage` | SQLite index and registry persistence (child of `systems`) |
+| `product-positioning` | Product, market, user, pricing, and positioning synthesis that shapes how CodeAlmanac is explained and sold |
+| `fundraising` | Investor-facing narrative, pitch deck, and financing assumptions (child of `product-positioning`) |
 
 Add domain topics as the wiki grows. New topics go in `topics.yaml`; `almanac topics create` handles this.
 

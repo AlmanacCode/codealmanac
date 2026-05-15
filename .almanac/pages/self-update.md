@@ -70,7 +70,7 @@ The user-facing syntax does not leak launchd implementation details. The public 
 
 `[[src/commands/automation.ts]]` selects task IDs and iterates task definitions. The default install still targets capture plus Garden for compatibility, while positional task selection handles explicit operations such as `almanac automation install update --every 1d`.
 
-The 2026-05-14 discussion also exposed a product naming tension. Setup currently asks whether to "keep your codebase wiki up to date automatically," but the implementation installs capture and Garden automation, not CLI self-update. Adding self-update as another special case under that wording would make the boundary less clear unless setup and automation language distinguish wiki maintenance from updating Almanac itself.
+The 2026-05-14 discussion also exposed a product naming tension. Setup asks whether to "keep your codebase wiki up to date automatically" for capture and Garden automation, while CLI self-update changes the tool that performs that wiki maintenance. The implemented onboarding keeps those choices separate by asking "Keep Almanac automatically updated?" only after scheduled wiki maintenance is accepted and installed.
 
 Unattended setup does not enable automatic CLI self-update by default. Unlike capture and Garden, self-update mutates the user's global install, so `almanac setup --yes` leaves it disabled unless `--auto-update` is passed. Interactive setup still makes the choice part of onboarding by asking the user directly when the automation step is installing recurring maintenance.
 

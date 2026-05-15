@@ -67,6 +67,8 @@ pageChanges?: {
 
 `summary` is the first meaningful line of the harness result, capped at 500 characters. Counts for `jobs show`, JSON output, capture automation, and the viewer are derived from the same snapshot delta that produces `pageChanges`, rather than from a second comparison path. Computing old changed slug sets on demand from current page files is not reliable because later runs can rewrite, archive, or delete the same pages after the before/after snapshots for the older run are gone.
 
+Two review constraints protect that contract. If post-harness finalization fails after the page delta has been computed, the failed terminal record should still preserve `summary` and `pageChanges`; failed runs are one of the cases where operators most need to know what changed before the failure. Readers also need to validate `pageChanges` when present, including `version === 1`, `runId`, and all four slug arrays, because old records omit the field and malformed persisted metadata should not crash `jobs show` or the viewer.
+
 ## Jobs CLI
 
 `almanac jobs` lists runs for the current wiki only. `jobs show <run-id>` reads one record. `jobs logs <run-id>` prints the JSONL log. `jobs attach <run-id>` tails until the run is terminal and renders structured tool events into concise status lines such as reading, searching, editing, and command execution. `jobs cancel <run-id>` sends `SIGTERM` when a PID is known and marks the record cancelled.

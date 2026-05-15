@@ -38,3 +38,13 @@ topics:
     title: Storage
     description: SQLite index, registry persistence, and file layout
     parents: [systems]
+
+  - slug: product-positioning
+    title: Product Positioning
+    description: Product, market, user, pricing, and positioning synthesis that shapes how CodeAlmanac is explained and sold
+    parents: []
+
+  - slug: fundraising
+    title: Fundraising
+    description: Investor-facing narrative, pitch deck, and financing assumptions for CodeAlmanac
+    parents: [product-positioning]

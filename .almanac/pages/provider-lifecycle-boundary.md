@@ -23,12 +23,13 @@ sources:
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T12-03-51-019e273a-e4b1-7510-981d-d1deb31bc8e2.jsonl
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T12-11-57-019e2742-4c9c-7241-8ccd-a6d36a889d7d.jsonl
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T13-38-45-019e2791-c776-7f62-a6fc-25a8f07c6a6e.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/15/rollout-2026-05-15T01-43-21-019e2a29-293a-7263-b6ce-0a9dc0af792a.jsonl
   - /Users/rohan/Desktop/Projects/t3code/packages/contracts/src/providerInstance.ts
   - /Users/rohan/Desktop/Projects/t3code/apps/server/src/provider/ProviderDriver.ts
   - /Users/rohan/Desktop/Projects/t3code/apps/server/src/provider/Services/ProviderRegistry.ts
   - /Users/rohan/Desktop/Projects/t3code/apps/server/src/provider/Services/ProviderAdapterRegistry.ts
 status: active
-verified: 2026-05-14
+verified: 2026-05-15
 ---
 
 # Provider Lifecycle Boundary
@@ -54,6 +55,8 @@ No production code path found in the 2026-05-14 review called `getAgentProvider(
 That setup/status responsibility is distinct from execution. It answers questions such as whether a provider CLI is installed and authenticated, which model choices should be shown, which fix command should be printed, and which provider-specific instruction files setup should write. Those are agent readiness concerns, not per-run execution concerns.
 
 The setup/status path is also distinct from persisted config. `src/config/index.ts` owns global config including `agent.default`, `agent.models`, update notifier state, and automation state. `src/commands/config.ts` and `src/commands/config-keys.ts` expose config keys, `src/commands/setup.ts` orchestrates first-run choices, and `src/commands/agents.ts` manages agent choice and model choice after setup. Setup is a workflow over config, readiness, automation, and guide installation; it should not become the home for reusable provider readiness logic.
+
+`[[src/config/index.ts]]` still carries more provider identity than this boundary wants. It defines `ALL_AGENT_PROVIDER_IDS`, Cursor enablement, enabled-provider lists, provider-id type guards, provider-list formatting, and disabled-provider messages. A 2026-05-15 codebase-smell review classified that as config owning provider catalog behavior: config should persist and normalize selected values, while a small agent/provider catalog should own which providers exist, which are enabled by feature flags, and how disabled-provider messages are phrased.
 
 ## Cleanup target
 
