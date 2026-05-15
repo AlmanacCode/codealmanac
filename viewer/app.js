@@ -699,7 +699,27 @@ function inline(text) {
       const label = labelForWikilink(target, pageLabel);
       return `<a href="${escapeAttr(route)}" data-route="${escapeAttr(route)}">${escapeHtml(label)}</a>`;
     })
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, target) => renderMarkdownLink(label, target));
+}
+
+function renderMarkdownLink(label, target) {
+  if (/^https?:\/\//.test(target)) {
+    return `<a href="${escapeAttr(target)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
+  }
+  const pageSlug = pageSlugFromMarkdownTarget(target);
+  if (pageSlug !== null) {
+    const route = wikiRoute(`/page/${encodeURIComponent(pageSlug)}`);
+    const text = pageLabel(pageSlug) === pageSlug ? label.replace(/\.md$/, "") : pageLabel(pageSlug);
+    return `<a href="${escapeAttr(route)}" data-route="${escapeAttr(route)}">${escapeHtml(text)}</a>`;
+  }
+  return `<span>${escapeHtml(label)}</span>`;
+}
+
+function pageSlugFromMarkdownTarget(target) {
+  const normalized = String(target).replace(/\\/g, "/");
+  const match = normalized.match(/(?:^|\/)(?:\.almanac\/)?pages\/([^/]+)\.md$/)
+    ?? normalized.match(/^([^/]+)\.md$/);
+  return match ? match[1] : null;
 }
 
 function rememberPages(pages) {

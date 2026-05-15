@@ -767,14 +767,303 @@ export function createJobsView(deps) {
           <summary class="ca-activity-summary">
             <span class="ca-activity-icon" aria-hidden="true">⌘</span>
             <span class="ca-activity-title">${deps.escapeHtml(entry.title)}</span>
-            <span class="ca-activity-count">${deps.escapeHtml(`${entry.tools.length} ${entry.tools.length === 1 ? "step" : "steps"}`)}</span>
           </summary>
-          <div class="ca-activity-body">
-            ${entry.tools.map((tool) => toolStep(tool, startMs, mode)).join("")}
+          <div class="ca-activity-body ca-activity-list">
+            ${entry.tools.map((tool) => activityLine(tool)).join("")}
           </div>
         </details>
       </div>
     `;
+  }
+
+  function activityLine(step) {
+    const model = getToolCardModel(step);
+    const item = activityLineModel(step, model);
+    const status = activityStatus(step, model);
+    const body = `
+      <span class="ca-activity-line-icon" data-kind="${deps.escapeAttr(model.kind)}" aria-hidden="true">${deps.escapeHtml(item.icon)}</span>
+      <span class="ca-activity-line-text">${item.html}</span>
+      ${item.metricHtml}
+      ${status}
+    `;
+    if (item.detail.length === 0) {
+      return `<div class="ca-activity-line ca-activity-line-${deps.escapeAttr(model.kind)}">${body}</div>`;
+    }
+    return `
+      <details class="ca-activity-line ca-activity-line-${deps.escapeAttr(model.kind)} ca-activity-line-details">
+        <summary>${body}</summary>
+        <div class="ca-activity-detail">
+          ${item.detail.map((section) => activityDetailSection(section)).join("")}
+        </div>
+      </details>
+    `;
+  }
+
+  function activityLineModel(step, model) {
+    const parsed = parseJsonObject(step.input);
+    const changes = activityChanges(step, parsed);
+    const rawPath = step.display?.path ?? parsed?.file_path ?? parsed?.path ?? changes[0]?.path;
+    const file = activityFileLabel(rawPath, changes);
+    const shellCommand = cleanShellCommand(step.display?.command ?? parsed?.command ?? model.target ?? model.preview);
+    const output = activityResultText(step);
+    const details = [];
+    const metricHtml = diffMetricHtml(step);
+
+    if (model.kind === "shell") {
+      if (output) details.push({ type: "shell", title: "Shell", value: shellPreview(shellCommand, output) });
+      return {
+        icon: "$",
+        html: activityPhrase("Ran", shellCommand || "command"),
+        metricHtml: "",
+        detail: details,
+      };
+    }
+
+    if (model.kind === "read") {
+      if (output) details.push({ type: "file", title: file ?? "Read result", value: output, path: rawPath });
+      return {
+        icon: "R",
+        html: activityPhrase("Read", file ?? model.target ?? "file"),
+        metricHtml: "",
+        detail: details,
+      };
+    }
+
+    if (model.kind === "write" || model.kind === "edit") {
+      details.push(...activityChangeSections(step, parsed, changes, model));
+      return {
+        icon: "E",
+        html: activityPhrase(model.kind === "write" ? "Wrote" : "Edited", file ?? model.target ?? "file"),
+        metricHtml,
+        detail: details,
+      };
+    }
+
+    if (model.kind === "search") {
+      const query = parsed?.query ?? parsed?.pattern ?? cleanShellCommand(parsed?.command ?? model.target ?? model.preview);
+      return {
+        icon: "S",
+        html: activityPhrase("Searched for", query || model.target || "matches"),
+        metricHtml: "",
+        detail: [],
+      };
+    }
+
+    if (model.kind === "agent") {
+      const description = parsed?.description ?? parsed?.subagent_type ?? model.target ?? "helper task";
+      if (typeof parsed?.prompt === "string") details.push({ title: "Task", value: parsed.prompt });
+      if (output) details.push({ title: "Result", value: output });
+      return {
+        icon: "A",
+        html: activityPhrase("Delegated", description),
+        metricHtml: "",
+        detail: details,
+      };
+    }
+
+    if (output && output.length < 1200) details.push({ title: "Result", value: output });
+    return {
+      icon: model.icon,
+      html: activityPhrase(model.title, model.target ?? model.preview ?? "tool"),
+      metricHtml: "",
+      detail: details,
+    };
+  }
+
+  function activityPhrase(verb, value) {
+    return `<span>${deps.escapeHtml(verb)}</span> <strong>${deps.escapeHtml(truncateMiddle(String(value), 110))}</strong>`;
+  }
+
+  function activityStatus(step, model) {
+    if (!step.hasResult) return `<span class="ca-activity-status ca-activity-status-running">Running</span>`;
+    if (model.isError) return `<span class="ca-activity-status ca-activity-status-failed">Failed</span>`;
+    return "";
+  }
+
+  function activityDetailSection(section) {
+    if (section.type === "diff") return activityDiffSection(section);
+    if (section.type === "shell") return activityShellSection(section);
+    return activityFileSection(section);
+  }
+
+  function activityFileSection(section) {
+    const markdown = shouldRenderMarkdownPreview(section);
+    return `
+      <section class="ca-activity-detail-section ca-activity-file-preview">
+        ${activityDetailHeader(section)}
+        ${
+          markdown
+            ? `<div class="ca-activity-markdown-preview ca-chat-text">${deps.renderMarkdown(section.value)}</div>`
+            : `<pre>${deps.escapeHtml(section.value)}</pre>`
+        }
+      </section>
+    `;
+  }
+
+  function activityShellSection(section) {
+    return `
+      <section class="ca-activity-detail-section ca-activity-shell-preview">
+        ${activityDetailHeader(section)}
+        <pre>${deps.escapeHtml(section.value)}</pre>
+      </section>
+    `;
+  }
+
+  function activityDiffSection(section) {
+    return `
+      <section class="ca-activity-detail-section ca-activity-diff-view">
+        ${activityDetailHeader(section)}
+        <div class="ca-activity-diff-lines">
+          ${section.value.split("\n").map(diffLine).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function activityDetailHeader(section) {
+    return `
+      <div class="ca-activity-detail-head">
+        <div class="ca-activity-detail-title">${deps.escapeHtml(section.title)}</div>
+        ${activityPageLink(section.path)}
+      </div>
+    `;
+  }
+
+  function activityPageLink(path) {
+    const slug = pageSlugFromPath(path);
+    if (!slug) return "";
+    const href = deps.pageRoute(slug);
+    return `<a class="ca-activity-detail-link" href="${deps.escapeAttr(href)}" data-route="${deps.escapeAttr(href)}">Open page</a>`;
+  }
+
+  function shouldRenderMarkdownPreview(section) {
+    if (typeof section.value !== "string") return false;
+    const title = String(section.title ?? "").toLowerCase();
+    const path = String(section.path ?? "").toLowerCase();
+    return title.endsWith(".md") || path.endsWith(".md") || /(^|\n)#{1,3}\s+\S/.test(section.value);
+  }
+
+  function diffLine(line) {
+    const tone =
+      line.startsWith("+") && !line.startsWith("+++") ? "add" :
+      line.startsWith("-") && !line.startsWith("---") ? "del" :
+      line.startsWith("@@") ? "hunk" :
+      line.startsWith("+++") || line.startsWith("---") ? "file" :
+      "context";
+    return `<div class="ca-activity-diff-line ca-activity-diff-line-${tone}"><code>${deps.escapeHtml(line || " ")}</code></div>`;
+  }
+
+  function activityResultText(step) {
+    if (!step.hasResult) return "";
+    const text = stringifyEventValue(step.result).trim();
+    return text.length > 0 ? text : "";
+  }
+
+  function activityFileLabel(rawPath, changes) {
+    if (changes.length > 1) return `${changes.length} files`;
+    return rawPath ? basename(rawPath) : null;
+  }
+
+  function diffMetricHtml(step) {
+    const stats = diffStats(step);
+    if (!stats) return "";
+    return `
+      <span class="ca-activity-diff">
+        <span class="ca-activity-add">+${deps.escapeHtml(stats.added)}</span>
+        <span class="ca-activity-del">-${deps.escapeHtml(stats.removed)}</span>
+      </span>
+    `;
+  }
+
+  function activityChanges(step, parsed) {
+    const raw = step.display?.raw;
+    const changes = Array.isArray(raw?.changes) ? raw.changes : Array.isArray(parsed?.changes) ? parsed.changes : [];
+    return changes.filter((change) => change && typeof change === "object");
+  }
+
+  function activityChangeSections(step, parsed, changes, model) {
+    const sections = [];
+    for (const change of changes) {
+      if (typeof change.diff !== "string" || change.diff.trim().length === 0) continue;
+      sections.push({
+        type: isUnifiedDiff(change.diff) ? "diff" : "file",
+        title: change.path ? basename(change.path) : model.kind === "write" ? "Written content" : "Change",
+        path: change.path,
+        value: change.diff,
+      });
+    }
+    if (sections.length > 0) return sections;
+    const change = activityChangeText(step, parsed);
+    if (!change) return [];
+    return [{
+      type: isUnifiedDiff(change) ? "diff" : "file",
+      title: model.kind === "write" ? "Written content" : "Change",
+      path: null,
+      value: change,
+    }];
+  }
+
+  function diffStats(step) {
+    const parsed = parseJsonObject(step.input);
+    const raw = step.display?.raw;
+    const changes = Array.isArray(raw?.changes) ? raw.changes : Array.isArray(parsed?.changes) ? parsed.changes : [];
+    const diffs = changes.map((change) => change?.diff).filter((value) => typeof value === "string");
+    const direct = typeof parsed?.diff === "string" ? [parsed.diff] : [];
+    const allDiffs = [...diffs, ...direct];
+    if (allDiffs.length === 0) return null;
+    let added = 0;
+    let removed = 0;
+    for (const diff of allDiffs) {
+      for (const line of diff.split("\n")) {
+        if (line.startsWith("+++") || line.startsWith("---")) continue;
+        if (line.startsWith("+")) added += 1;
+        if (line.startsWith("-")) removed += 1;
+      }
+    }
+    return added > 0 || removed > 0 ? { added, removed } : null;
+  }
+
+  function shellPreview(command, output) {
+    const parts = [];
+    if (command) parts.push(`$ ${command}`);
+    if (output) parts.push(output);
+    return parts.join("\n\n");
+  }
+
+  function activityChangeText(step, parsed) {
+    const raw = step.display?.raw;
+    const changes = Array.isArray(raw?.changes) ? raw.changes : Array.isArray(parsed?.changes) ? parsed.changes : [];
+    const diff = changes.map((change) => change?.diff).find((value) => typeof value === "string");
+    if (typeof diff === "string" && diff.trim().length > 0) return diff;
+    const value = parsed?.diff ?? parsed?.content ?? parsed?.old_string ?? parsed?.new_string;
+    return typeof value === "string" ? value : activityResultText(step);
+  }
+
+  function isUnifiedDiff(value) {
+    return typeof value === "string" && /(^|\n)(@@ |--- |\+\+\+ )/.test(value);
+  }
+
+  function cleanShellCommand(command) {
+    if (typeof command !== "string") return "";
+    const trimmed = command.trim();
+    const match = trimmed.match(/^\/(?:usr\/)?bin\/(?:zsh|bash|sh)\s+-lc\s+(['"])([\s\S]*)\1$/);
+    if (match) return unescapeShellCommand(match[2]);
+    const simple = trimmed.match(/^(?:zsh|bash|sh)\s+-lc\s+(['"])([\s\S]*)\1$/);
+    if (simple) return unescapeShellCommand(simple[2]);
+    return trimmed;
+  }
+
+  function unescapeShellCommand(command) {
+    return command
+      .replace(/\\(["`$\\])/g, "$1")
+      .replace(/'\\''/g, "'");
+  }
+
+  function truncateMiddle(text, limit) {
+    if (text.length <= limit) return text;
+    const head = Math.ceil((limit - 1) * 0.62);
+    const tail = Math.max(8, limit - head - 1);
+    return `${text.slice(0, head)}…${text.slice(-tail)}`;
   }
 
   function timeOffsetCell(timestamp, startMs) {
@@ -1084,6 +1373,13 @@ export function createJobsView(deps) {
       .filter(Boolean)
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(" ");
+  }
+
+  function pageSlugFromPath(path) {
+    if (typeof path !== "string") return null;
+    const normalized = path.replace(/\\/g, "/");
+    const match = normalized.match(/(?:^|\/)(?:\.almanac\/)?pages\/([^/]+)\.md$/);
+    return match ? match[1] : null;
   }
 
   function formatClock(iso) {
