@@ -1,0 +1,15 @@
+topics:
+  - slug: flows
+    title: Flows
+    description: Multi-step behavior that spans files
+    parents: []
+
+  - slug: gotchas
+    title: Gotchas
+    description: Surprises and constraints that affect future edits
+    parents: []
+
+  - slug: payments
+    title: Payments
+    description: Checkout and payment-provider behavior
+    parents: [flows, gotchas]

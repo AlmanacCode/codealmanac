@@ -53,6 +53,21 @@ almanac
 
 Requires Node 20, or Node 22 and newer. The npm package is `codealmanac`; the commands are `almanac` and `alm`.
 
+## Try The Sample Wiki
+
+Want to see the shape before running an agent over your own repo?
+
+```bash
+git clone https://github.com/AlmanacCode/codealmanac.git
+cd codealmanac/examples/sample-repo
+
+npx codealmanac search "checkout"
+npx codealmanac search --mentions src/checkout.ts
+npx codealmanac show checkout-flow
+```
+
+The sample wiki shows the checked-in `.almanac/` files directly: a notability guide, topics, and two short pages that capture a flow and a gotcha.
+
 ## Choose Your Path
 
 | You want to... | Run |
@@ -254,6 +269,8 @@ npm test
 The codebase is TypeScript, built with [tsup](https://tsup.egoist.dev/), tested with [Vitest](https://vitest.dev/), and backed by [better-sqlite3](https://github.com/WiseLibs/better-sqlite3). Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. Release steps live in [RELEASE.md](./RELEASE.md).
 
 If Almanac helps your agents understand a codebase faster, please consider giving the repo a star.
+
+Sharing Almanac somewhere? The [launch kit](./docs/launch/README.md) has short copy for Show HN, X/Twitter, Reddit, and Dev.to.
 
 ## Star History
 
