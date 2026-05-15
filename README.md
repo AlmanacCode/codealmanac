@@ -5,12 +5,30 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/codealmanac"><img alt="npm version" src="https://img.shields.io/npm/v/codealmanac?label=npm&color=2ea043"></a>
   <a href="https://www.npmjs.com/package/codealmanac"><img alt="npm downloads" src="https://img.shields.io/npm/dt/codealmanac?label=npm%20downloads&color=1f6feb"></a>
+  <a href="https://github.com/AlmanacCode/codealmanac/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/AlmanacCode/codealmanac/ci.yml?branch=main&label=ci"></a>
+  <a href="https://github.com/AlmanacCode/codealmanac/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/AlmanacCode/codealmanac?style=flat&logo=github"></a>
+  <a href="https://github.com/AlmanacCode/codealmanac/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/AlmanacCode/codealmanac"></a>
   <img alt="Node support" src="https://img.shields.io/badge/node-20%20%7C%2022%2B-1f6feb">
   <a href="./LICENSE"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-df7b40"></a>
-  <a href="https://github.com/AlmanacCode/codealmanac"><img alt="GitHub repository" src="https://img.shields.io/badge/GitHub-AlmanacCode%2Fcodealmanac-24292f?logo=github"></a>
+  <a href="https://usealmanac.com/code"><img alt="Website" src="https://img.shields.io/badge/website-usealmanac.com%2Fcode-24292f"></a>
 </p>
 
-A living wiki for your codebase, maintained by AI agents. Almanac documents the things code cannot say: decisions, flows, invariants, gotchas, and why the system is shaped the way it is.
+Almanac gives AI coding agents durable project memory. It turns the decisions, flows, invariants, and gotchas from real engineering sessions into a local wiki that lives with your repo.
+
+Use it when code answers "what exists" but not "why it exists," when a new agent needs subsystem context before editing, or when important implementation knowledge keeps disappearing into old chat transcripts.
+
+## Who This Is For
+
+- Teams using AI coding agents across long-lived repositories.
+- Maintainers who want decisions and gotchas captured next to the code.
+- Agents that need searchable project memory before changing a subsystem.
+- Developers who prefer local files, git review, and scriptable CLI workflows over hosted documentation silos.
+
+## Why Almanac Exists
+
+AI agents are good at reading code in the moment. They are worse at carrying forward the hidden context from previous sessions: why a fallback exists, what broke last time, which files move together, and which constraints matter.
+
+Almanac makes that context durable. It stores atomic markdown pages in `.almanac/`, indexes them locally, and lets agents search the wiki before they edit.
 
 ## Quickstart
 
@@ -46,7 +64,7 @@ Requires Node 20, or Node 22 and newer. The npm package is `codealmanac`; the co
 | Check setup and provider auth | `almanac doctor` |
 | See scheduled capture status | `almanac automation status` |
 
-## Why Almanac
+## What Almanac Gives You
 
 AI coding agents can read code and explain what it does. They usually cannot recover why an implementation exists, what broke before, which invariants matter, or how one workflow crosses several files and services.
 
@@ -233,7 +251,9 @@ npm link
 npm test
 ```
 
-The codebase is TypeScript, built with [tsup](https://tsup.egoist.dev/), tested with [Vitest](https://vitest.dev/), and backed by [better-sqlite3](https://github.com/WiseLibs/better-sqlite3). Release steps live in [RELEASE.md](./RELEASE.md).
+The codebase is TypeScript, built with [tsup](https://tsup.egoist.dev/), tested with [Vitest](https://vitest.dev/), and backed by [better-sqlite3](https://github.com/WiseLibs/better-sqlite3). Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. Release steps live in [RELEASE.md](./RELEASE.md).
+
+If Almanac helps your agents understand a codebase faster, please consider giving the repo a star.
 
 ## Star History
 
