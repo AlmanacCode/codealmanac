@@ -368,29 +368,8 @@ a { color: var(--ca-accent); text-decoration: none; }
 }
 
 /* ────────────────────────────────────────────────────────────
-   Section labels + display headings (usealmanac DNA)
+   Display headings (usealmanac DNA)
    ──────────────────────────────────────────────────────────── */
-
-.ca-section-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 14px;
-  color: var(--ca-accent);
-  font-family: var(--ca-mono);
-  font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.ca-section-label::before {
-  content: "//";
-  color: var(--ca-faint);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  opacity: 0.85;
-}
 
 .ca-display-h1 {
   margin: 0 0 12px;
@@ -533,6 +512,13 @@ a { color: var(--ca-accent); text-decoration: none; }
 }
 
 .ca-topic-strip-button.is-active .ca-topic-strip-count { color: var(--ca-accent); }
+
+.ca-topic-strip-note {
+  color: var(--ca-muted);
+  font-family: var(--ca-mono);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
 
 /* ────────────────────────────────────────────────────────────
    Bento grid of page cards — editorial index cards
@@ -698,6 +684,52 @@ a { color: var(--ca-accent); text-decoration: none; }
 
 .ca-library {
   margin-top: 8px;
+}
+
+.ca-library-hero .ca-display-h1 {
+  margin-bottom: 10px;
+}
+
+.ca-library-hero .ca-lede {
+  margin-bottom: 22px;
+  font-size: 1.12rem;
+}
+
+.ca-library-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 820px;
+  margin-top: 10px;
+}
+
+.ca-library-stat {
+  min-width: 0;
+  border: 1px solid var(--ca-paper-edge);
+  border-radius: var(--ca-radius);
+  background: var(--ca-paper);
+  padding: 18px 20px;
+}
+
+.ca-library-stat strong {
+  display: block;
+  color: var(--ca-ink);
+  font-family: var(--ca-sans);
+  font-size: clamp(2.3rem, 5vw, 4.4rem);
+  font-weight: 520;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+.ca-library-stat span {
+  display: block;
+  margin-top: 10px;
+  color: var(--ca-muted);
+  font-family: var(--ca-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
 }
 
 .ca-library-grid {
@@ -1104,5 +1136,6 @@ a { color: var(--ca-accent); text-decoration: none; }
   .ca-brand-subtitle { display: none; }
   .ca-main { padding: 24px 16px 60px; }
   .ca-bento { grid-template-columns: 1fr; }
+  .ca-library-stats { grid-template-columns: 1fr; }
   .ca-library-grid { grid-template-columns: 1fr; }
 }

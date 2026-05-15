@@ -277,30 +277,14 @@ function renderWikiDirectory() {
   const totalPages = state.wikis.reduce((sum, wiki) => sum + (wiki.pageCount ?? 0), 0);
   const totalTopics = state.wikis.reduce((sum, wiki) => sum + (wiki.topicCount ?? 0), 0);
   els.reader.innerHTML = `
-    <section class="ca-hero">
-      <div class="ca-section-label">Library</div>
-      <h1 class="ca-display-h1">
-        <span class="ca-display-soft">Field guide,</span>
-        codebase by codebase.
-      </h1>
-      <p class="ca-lede">
-        Every reachable Almanac wiki on this machine. Open one to read its margins —
-        the decisions, the gotchas, the routes through it.
-      </p>
+    <section class="ca-hero ca-library-hero">
+      <h1 class="ca-display-h1">Almanac library</h1>
+      <p class="ca-lede">Registered wikis on this machine.</p>
       ${total > 0 ? `
-        <div class="ca-hero-strip" aria-label="Library totals">
-          <span class="ca-hero-strip-cell">
-            <span class="ca-hero-strip-label">wikis</span>
-            <span class="ca-hero-strip-value">${escapeHtml(total)}</span>
-          </span>
-          <span class="ca-hero-strip-cell">
-            <span class="ca-hero-strip-label">pages</span>
-            <span class="ca-hero-strip-value">${escapeHtml(totalPages)}</span>
-          </span>
-          <span class="ca-hero-strip-cell">
-            <span class="ca-hero-strip-label">topics</span>
-            <span class="ca-hero-strip-value">${escapeHtml(totalTopics)}</span>
-          </span>
+        <div class="ca-library-stats" aria-label="Library totals">
+          ${libraryStat("Wikis", total)}
+          ${libraryStat("Pages", totalPages)}
+          ${libraryStat("Topics", totalTopics)}
         </div>
       ` : ""}
     </section>
@@ -313,6 +297,15 @@ function renderWikiDirectory() {
         </div>
       `}
     </section>
+  `;
+}
+
+function libraryStat(label, value) {
+  return `
+    <article class="ca-library-stat">
+      <strong>${escapeHtml(value)}</strong>
+      <span>${escapeHtml(label)}</span>
+    </article>
   `;
 }
 
@@ -348,7 +341,6 @@ async function renderOverview() {
   const filterStrip = renderTopicStrip(overview.rootTopics, overview.recentPages, state.topicFilter);
   els.reader.innerHTML = `
     <section class="ca-hero">
-      <div class="ca-section-label">${escapeHtml(state.currentWiki)}</div>
       <h1 class="ca-display-h1">${escapeHtml(projectName(overview.repoRoot))}</h1>
       <p class="ca-lede">
         Living wiki, written in the margins by your agents. Indexed from
@@ -384,6 +376,7 @@ async function renderOverview() {
 
 function renderTopicStrip(rootTopics, pages, active) {
   if (!Array.isArray(rootTopics) || rootTopics.length === 0) return "";
+  const hiddenCount = Math.max(0, (state.overview?.topicCount ?? rootTopics.length) - rootTopics.length);
   const buttons = [
     {
       slug: "",
@@ -398,7 +391,7 @@ function renderTopicStrip(rootTopics, pages, active) {
   ];
   return `
     <div class="ca-topic-strip" role="toolbar" aria-label="Filter by topic">
-      <span class="ca-topic-strip-label">topics</span>
+      <span class="ca-topic-strip-label">top-level topics</span>
       ${buttons.map((btn) => {
         const isActive = (active === null && btn.slug === "") || active === btn.slug;
         return `
@@ -412,6 +405,7 @@ function renderTopicStrip(rootTopics, pages, active) {
           </button>
         `;
       }).join("")}
+      ${hiddenCount > 0 ? `<span class="ca-topic-strip-note">${escapeHtml(hiddenCount)} nested ${hiddenCount === 1 ? "topic" : "topics"}</span>` : ""}
     </div>
   `;
 }
@@ -466,7 +460,6 @@ async function renderGettingStarted() {
   els.reader.innerHTML = `
     ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
-      <div class="ca-section-label">Getting started</div>
       <h1 class="ca-display-h1">No getting started page</h1>
       <p class="ca-lede">
         Add <span class="ca-file-code">.almanac/pages/getting-started.md</span> or
@@ -506,7 +499,6 @@ async function renderTopic(slug) {
   els.reader.innerHTML = `
     ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
-      <div class="ca-section-label">Topic</div>
       <h1 class="ca-display-h1">${escapeHtml(topic.title ?? topic.slug)}</h1>
       ${topic.description ? `<p class="ca-lede">${escapeHtml(topic.description)}</p>` : ""}
       <div class="ca-hero-strip" aria-label="Topic state">
@@ -540,7 +532,6 @@ async function renderSearch(query) {
   els.reader.innerHTML = `
     ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
-      <div class="ca-section-label">${query ? "Search" : "Recent"}</div>
       <h1 class="ca-display-h1">${query ? escapeHtml(query) : "Recent pages"}</h1>
       <p class="ca-lede">${result.pages.length} page${result.pages.length === 1 ? "" : "s"} found.</p>
     </section>
@@ -560,7 +551,6 @@ async function renderFile(path) {
   els.reader.innerHTML = `
     ${renderPageActions(wikiRoute("/"))}
     <section class="ca-hero">
-      <div class="ca-section-label">File reference</div>
       <h1 class="ca-display-h1">${escapeHtml(path || "File references")}</h1>
       <p class="ca-lede">${result.pages.length} page${result.pages.length === 1 ? "" : "s"} mention this path or one of its containing folders.</p>
     </section>

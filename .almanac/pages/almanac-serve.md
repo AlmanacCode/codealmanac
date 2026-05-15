@@ -188,6 +188,8 @@ The job detail view (`/jobs/:runId`) renders two fact panels followed by a strea
 
 The desired Normal-mode hierarchy for a job detail page is outcome-first, not colophon-first. The first screen should answer: which model ran, whether it succeeded, elapsed time, what pages were created or modified, what input transcript/file/folder the run ingested, and whether that input can be opened for inspection. Page-change rows are the primary result object and should link to the affected pages when possible. Started and finished timestamps are useful but secondary. Provider session IDs, raw log paths, and other audit fields belong below the primary summary or in Debug-oriented detail because they do not answer the normal "what happened in this run?" question. The separate barometer/colophon treatment should not remain always-visible in Normal mode when it repeats status, provider, token, and path facts already present in the summary. Usage should show token count when available and a cost estimate when the run record has enough pricing data; if the estimate is not available, the UI may show an explicit "coming soon" placeholder rather than pretending token count alone is spend.
 
+The run overview uses a compact dashboard hierarchy rather than a hero plus scattered facts. The title and subtitle stand alone, then a metric grid answers status, time taken, model, and usage as separate cards. Status cards use a colored state treatment so completion, active work, and failures are visually distinct. Outcome cards below handle page changes and source/ingested transcript details. Run details stays collapsed for audit fields such as exact timestamps, session ids, and log paths.
+
 `viewer/jobs-transcript.js` is a projection layer over raw JSONL events, not a one-row-per-log-line renderer. The transcript has two modes. **Normal** is the default and suppresses `tool_summary` and `context_usage` bookkeeping events because those records duplicate information already visible in tool cards or outcome metrics and made real capture runs unreadable. **Debug** is opt-in and keeps those bookkeeping rows for provider inspection. The transcript count in `viewer/jobs-view.js` uses the projected entry count for the active mode rather than the raw `ViewerJobDetail.events.length` so the UI label matches what the user can inspect.
 
 Expanded tool cards use mode-specific rendering. Normal mode shows tool-shaped details first: shell commands show command/output, read/write/edit calls show path and content/change/result, search calls show query/result, and agent calls show task/result. Debug mode keeps the generic fact grid plus raw JSON input/result sections so adapter behavior can still be audited.
@@ -237,6 +239,12 @@ Recent pages
 ```
 
 The left rail handles navigation and search. The main reader renders markdown (headings, paragraphs, lists, code blocks, inline code, wikilinks). The right rail shows backlinks and file references. Wikilinks in the reader navigate within the viewer via client-side routing.
+
+The overview topic statistic counts every indexed topic. The topic filter strip shows top-level/root topics only and labels itself as such; when nested topics exist outside the strip, the strip shows the nested-topic count so the totals do not appear contradictory.
+
+Hero-style mono eyebrow labels are not part of the current viewer direction. The page title and supporting summary should carry the section identity without a `// LABEL` line above the heading.
+
+The library route should use direct product copy. Avoid poetic phrases such as "field guide" or "written in the margins"; the page should state that it lists registered wikis on the machine and should show global wikis/pages/topics counts as large dashboard stats rather than as a small mono strip.
 
 ## Relationship to filesystem layout
 

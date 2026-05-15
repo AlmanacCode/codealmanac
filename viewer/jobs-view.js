@@ -19,7 +19,6 @@ export function createJobsView(deps) {
 
     deps.reader.innerHTML = `
       <section class="ca-hero">
-        <div class="ca-section-label">Jobs</div>
         <h1 class="ca-display-h1">Every capture run, in order.</h1>
         <p class="ca-lede">${listDeck(runs.length, counts)}</p>
         ${totals !== "" ? `<div class="ca-hero-strip" aria-label="Run totals">${totals}</div>` : ""}
@@ -53,7 +52,6 @@ export function createJobsView(deps) {
       ${agentsSection(agents, run)}
 
       <section class="ca-transcript-section">
-        <h2 class="ca-section-label">Logs</h2>
         <div class="ca-transcript-heading">
           <span class="ca-display-h2">Transcript</span>
           <small>${visibleTranscript.length} ${visibleTranscript.length === 1 ? "event" : "events"} · ${deps.escapeHtml(transcriptMode)}</small>
@@ -69,16 +67,16 @@ export function createJobsView(deps) {
   function runOverview(run) {
     return `
       <section class="ca-job-overview">
-        <div class="ca-section-label">${deps.escapeHtml(run.operation)}</div>
         <div class="ca-job-overview-head">
           <div>
             <h1 class="ca-display-h1">${deps.escapeHtml(run.displayTitle)}</h1>
-            <div class="ca-run-marks ca-job-primary-marks">
-              ${statusMark(run.displayStatus)}
-              <span class="ca-run-mark">${deps.escapeHtml(providerLabel(run))}</span>
-              <span class="ca-run-mark">${deps.escapeHtml(deps.formatElapsed(run.elapsedMs))}</span>
-            </div>
+            ${run.displaySubtitle ? `<p class="ca-job-overview-subtitle">${linkedChangeSummary(run) || deps.escapeHtml(cleanSummary(run.displaySubtitle))}</p>` : ""}
           </div>
+        </div>
+        <div class="ca-run-metric-grid">
+          ${metricCard("Status", statusWord(run.displayStatus), statusDetail(run.displayStatus), statusTone(run.displayStatus))}
+          ${metricCard("Time taken", deps.formatElapsed(run.elapsedMs), run.finishedAt ? `Finished ${deps.formatTimestamp(run.finishedAt)}` : "Still running")}
+          ${metricCard("Model", providerLabel(run), run.transcriptSource ? transcriptSourceLabel(run) : run.targetKind ?? "")}
           ${usageCard(run)}
         </div>
         <div class="ca-job-brief-grid">
@@ -311,6 +309,26 @@ export function createJobsView(deps) {
     return parts;
   }
 
+  function metricCard(label, value, detail = "", tone = "neutral") {
+    return `
+      <article class="ca-run-metric ca-run-metric-${deps.escapeAttr(tone)}">
+        <div class="ca-run-metric-label">${deps.escapeHtml(label)}</div>
+        <strong>${deps.escapeHtml(value)}</strong>
+        ${detail ? `<span>${deps.escapeHtml(detail)}</span>` : ""}
+      </article>
+    `;
+  }
+
+  function statusDetail(status) {
+    if (status === "done") return "Completed successfully";
+    if (status === "running") return "Running now";
+    if (status === "queued") return "Waiting to start";
+    if (status === "failed") return "Needs attention";
+    if (status === "cancelled") return "Cancelled";
+    if (status === "stale") return "Process no longer alive";
+    return status;
+  }
+
   function changesCard(run) {
     const details = run.pageChangeDetails ?? pageChangeDetailsFromSlugs(run.pageChanges);
     const hasChanges = details && ["created", "updated", "archived", "deleted"]
@@ -393,8 +411,8 @@ export function createJobsView(deps) {
     const processed = usage?.totalProcessedTokens;
     const cached = usage?.cachedInputTokens;
     return `
-      <article class="ca-job-usage">
-        <div class="ca-job-card-kicker">Usage</div>
+      <article class="ca-run-metric ca-run-metric-usage">
+        <div class="ca-run-metric-label">Usage</div>
         <strong>${total !== undefined ? deps.escapeHtml(deps.formatNumber(total)) : "—"}</strong>
         <span>${total !== undefined ? "tokens" : "tokens unavailable"}</span>
         <small>${usageSubline(run, processed, cached)}</small>
@@ -512,7 +530,7 @@ export function createJobsView(deps) {
     if (!warnings.length) return "";
     return `
       <section class="ca-warnings-section">
-        <h2 class="ca-section-label">Warnings</h2>
+        <h2 class="ca-display-h2">Warnings</h2>
         <div class="ca-warning-list">
           ${warnings.map((warning) => `
             <aside class="ca-run-warning ca-run-warning-${deps.escapeAttr(warning.severity)}">
@@ -537,7 +555,7 @@ export function createJobsView(deps) {
       <section class="ca-agents-section">
         <div class="ca-agents-head">
           <div>
-            <h2 class="ca-section-label">Agents</h2>
+            <h2 class="ca-display-h2">Agents</h2>
             <p>${deps.escapeHtml(agentDeck(root, agents, endedBy))}</p>
           </div>
           ${endedBy ? `<span class="ca-agent-ended">Ended by ${deps.escapeHtml(endedBy)}</span>` : ""}
@@ -709,7 +727,7 @@ export function createJobsView(deps) {
     if (!run.targetPaths?.length) return "";
     return `
       <section class="ca-targets-section">
-        <h2 class="ca-section-label">Targets</h2>
+        <h2 class="ca-display-h2">Targets</h2>
         <div class="ca-chip-row">
           ${run.targetPaths.map((path) => `<span class="ca-chip">${deps.escapeHtml(path)}</span>`).join("")}
         </div>

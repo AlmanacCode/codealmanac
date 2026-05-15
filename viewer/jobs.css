@@ -409,13 +409,40 @@
 
 .ca-job-overview-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
-  gap: 26px;
-  align-items: end;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
 }
 
-.ca-job-primary-marks {
-  margin-top: 14px;
+.ca-job-overview .ca-display-h1 {
+  max-width: 760px;
+  font-size: clamp(42px, 5vw, 72px);
+  line-height: 0.98;
+}
+
+.ca-job-overview-subtitle {
+  max-width: 760px;
+  margin: 18px 0 0;
+  color: var(--ca-muted);
+  font-family: var(--ca-serif);
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.ca-job-overview-subtitle a {
+  color: var(--ca-accent);
+  text-decoration: none;
+}
+
+.ca-job-overview-subtitle a:hover {
+  text-decoration: underline;
+}
+
+.ca-run-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 26px;
 }
 
 .ca-job-brief-grid {
@@ -426,7 +453,7 @@
 }
 
 .ca-job-card,
-.ca-job-usage,
+.ca-run-metric,
 .ca-run-details {
   border: 1px solid var(--ca-border-light);
   border-radius: var(--ca-radius);
@@ -439,7 +466,8 @@
   padding: 18px;
 }
 
-.ca-job-card-kicker {
+.ca-job-card-kicker,
+.ca-run-metric-label {
   color: var(--ca-faint);
   font-family: var(--ca-sans);
   font-size: 10px;
@@ -449,28 +477,79 @@
   text-transform: uppercase;
 }
 
-.ca-job-usage {
-  padding: 16px 18px;
+.ca-run-metric {
+  min-width: 0;
+  min-height: 130px;
+  padding: 18px;
 }
 
-.ca-job-usage strong {
-  display: block;
-  margin-top: 12px;
+.ca-run-metric-done {
+  border-color: rgba(22, 101, 52, 0.34);
+  background: linear-gradient(180deg, rgba(22, 101, 52, 0.09), var(--ca-paper) 72%);
+}
+
+.ca-run-metric-active {
+  border-color: rgba(22, 101, 52, 0.32);
+  background: var(--ca-accent-soft);
+}
+
+.ca-run-metric-alert {
+  border-color: rgba(168, 90, 58, 0.36);
+  background: var(--ca-rust-soft);
+}
+
+.ca-run-metric strong {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 13px;
   color: var(--ca-text);
+  font-family: var(--ca-sans);
+  font-size: 24px;
+  font-weight: 650;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.ca-run-metric-done strong {
+  color: var(--ca-accent);
+}
+
+.ca-run-metric-active strong {
+  color: var(--ca-accent);
+}
+
+.ca-run-metric-alert strong {
+  color: var(--ca-rust);
+}
+
+.ca-run-metric-done strong::before,
+.ca-run-metric-active strong::before,
+.ca-run-metric-alert strong::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ca-run-metric span,
+.ca-run-metric small {
+  display: block;
+  margin-top: 10px;
+  color: var(--ca-muted);
+  font-family: var(--ca-mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.ca-run-metric-usage strong {
   font-family: var(--ca-serif);
   font-size: 30px;
   font-weight: 500;
   line-height: 1;
-}
-
-.ca-job-usage span,
-.ca-job-usage small {
-  display: block;
-  margin-top: 7px;
-  color: var(--ca-muted);
-  font-family: var(--ca-mono);
-  font-size: 11px;
-  line-height: 1.55;
 }
 
 .ca-page-change-list {
@@ -655,8 +734,6 @@
 .ca-agents-section {
   margin-top: 40px;
 }
-
-/* .ca-section-label is defined in app.css (// MONO LABEL pattern) */
 
 .ca-colophon {
   display: grid;
@@ -1877,6 +1954,7 @@
   }
   .ca-log-status { display: none; }
   .ca-job-overview-head,
+  .ca-run-metric-grid,
   .ca-job-brief-grid {
     grid-template-columns: minmax(0, 1fr);
   }
