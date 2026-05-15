@@ -31,7 +31,7 @@ Runs are per wiki under `.almanac/runs/`:
 .almanac/runs/<run-id>.cancel
 ```
 
-The JSON record stores status, operation, provider, model, PID, target metadata, log path, timestamps, final summary, and errors. The JSONL file stores normalized `HarnessEvent` records from [[harness-providers]], including structured tool display details when an adapter can provide them. The spec file stores the serialized `AgentRunSpec` that the child process rehydrates, including the exact prompt string, cwd, provider/model selection, targets, and operation metadata. For capture debugging this file is the inspectable answer to "what prompt and transcript context were actually sent for this run." The optional cancel marker is a race guard so a queued cancellation cannot be overwritten during child startup. New wiki scaffolding gitignores `.almanac/runs/` and `.almanac/index.db`.
+The JSON record stores status, operation, provider, model, PID, target metadata, log path, timestamps, final summary counts, page changes, and errors. The JSONL file stores normalized `HarnessEvent` records from [[harness-providers]], including structured tool display details when an adapter can provide them. The spec file stores the serialized `AgentRunSpec` that the child process rehydrates, including the exact prompt string, cwd, provider/model selection, targets, and operation metadata. For capture debugging this file is the inspectable answer to "what prompt and transcript context were actually sent for this run." The optional cancel marker is a race guard so a queued cancellation cannot be overwritten during child startup. New wiki scaffolding gitignores `.almanac/runs/` and `.almanac/index.db`.
 
 ## Status lifecycle
 
@@ -41,7 +41,31 @@ Terminal statuses are `done`, `failed`, and `cancelled`. `jobs` can display `sta
 
 ## Snapshot accounting
 
-The manager snapshots `.almanac/pages/*.md` before and after the harness run. It computes created, updated, and archived counts from page hashes and archive metadata. On success it runs the SQLite indexer; on failure it still records the event log and final error but does not claim a successful reindex.
+The manager snapshots `.almanac/pages/*.md` before and after the harness run. `src/process/snapshots.ts` computes created, updated, archived, and deleted slug lists from page hashes and archive metadata. `src/process/manager.ts` writes those lists into `RunRecord.pageChanges` and derives the numeric `RunSummary` counts from the same delta. On success the manager runs the SQLite indexer; on failure it still records the event log, final error, summary counts, and page changes observed before finalization.
+
+## Wiki-effect artifact design
+
+A 2026-05-14 design discussion treated per-run page changes as a process-manager concern, not as special `jobs show` behavior. The current snapshot layer already has the right boundary because every write-capable Build, Absorb, and Garden run passes through it before terminal record finalization.
+
+The implemented shape is a first-class run metadata contract that records the wiki effect of a run: created, updated, archived, and deleted page slugs, with optional richer summary or diff data later. The stable product question is "what did this run do to my wiki?", and page-level slugs answer that without forcing the CLI or viewer to recompute changes from live page files after the run.
+
+The 2026-05-14 review tightened the storage boundary: store slug-level page changes in the JSON run record first, not in a sibling `.almanac/runs/<run-id>.changes.json` file. The JSON record is already the lifecycle source of truth, and a sibling changes file would need atomic coordination with terminal status, cancellation, cleanup, JSON output, and viewer detail loading. A later `changesPath` artifact is still plausible for full diffs or larger payloads, but the run record should carry the summary and artifact pointer if that layer appears.
+
+The recommended contract is versioned run metadata:
+
+```ts
+pageChanges?: {
+  version: 1;
+  runId: string;
+  created: string[];
+  updated: string[];
+  archived: string[];
+  deleted: string[];
+  summary?: string;
+}
+```
+
+`summary` is the first meaningful line of the harness result, capped at 500 characters. Counts for `jobs show`, JSON output, capture automation, and the viewer are derived from the same snapshot delta that produces `pageChanges`, rather than from a second comparison path. Computing old changed slug sets on demand from current page files is not reliable because later runs can rewrite, archive, or delete the same pages after the before/after snapshots for the older run are gone.
 
 ## Jobs CLI
 

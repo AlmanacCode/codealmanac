@@ -41,6 +41,7 @@ export type {
 } from "./manager.js";
 export type {
   DisplayRunStatus,
+  RunPageChanges,
   RunRecord,
   RunStatus,
   RunSummary,

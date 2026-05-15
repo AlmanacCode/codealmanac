@@ -73,18 +73,29 @@ describe("jobs command", () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "jobs-show");
       await initWiki({ cwd: repo, name: "jobs-show", description: "" });
-      const record = buildStartedRunRecord({
-        runId: "run_20260509202200_show",
-        repoRoot: repo,
-        startedAt: new Date("2026-05-09T20:22:00.000Z"),
-        pid: 123,
-        spec: {
-          provider: { id: "claude", model: "claude-sonnet-4-6" },
-          cwd: repo,
-          prompt: "absorb",
-          metadata: { operation: "absorb" },
+      const record = {
+        ...buildStartedRunRecord({
+          runId: "run_20260509202200_show",
+          repoRoot: repo,
+          startedAt: new Date("2026-05-09T20:22:00.000Z"),
+          pid: 123,
+          spec: {
+            provider: { id: "claude", model: "claude-sonnet-4-6" },
+            cwd: repo,
+            prompt: "absorb",
+            metadata: { operation: "absorb" },
+          },
+        }),
+        pageChanges: {
+          version: 1 as const,
+          runId: "run_20260509202200_show",
+          created: ["new-page"],
+          updated: ["capture-flow", "process-manager-runs"],
+          archived: [],
+          deleted: [],
+          summary: "Updated capture/run lifecycle docs after scheduled absorb.",
         },
-      });
+      };
       await writeRunRecord(runRecordPath(repo, record.id), record);
       await writeFile(runLogPath(repo, record.id), "{\"type\":\"text\"}\n");
 
@@ -97,6 +108,16 @@ describe("jobs command", () => {
       expect(show.stdout).toContain("Run: run_20260509202200_show");
       expect(show.stdout).toContain("Status: running");
       expect(show.stdout).toContain("Provider: claude/claude-sonnet-4-6");
+      expect(show.stdout).toContain(
+        "Summary: Updated capture/run lifecycle docs after scheduled absorb.",
+      );
+      expect(show.stdout).toContain(
+        "Changes: 1 created, 2 updated, 0 archived, 0 deleted",
+      );
+      expect(show.stdout).toContain("Created: new-page");
+      expect(show.stdout).toContain(
+        "Updated: capture-flow, process-manager-runs",
+      );
 
       const logs = await runJobsLogs({ cwd: repo, runId: record.id });
       expect(logs.stdout).toBe("{\"type\":\"text\"}\n");

@@ -14,10 +14,10 @@ export interface PageSnapshotEntry {
 export type PageSnapshot = Map<string, PageSnapshotEntry>;
 
 export interface PageSnapshotDelta {
-  created: number;
-  updated: number;
-  archived: number;
-  deleted: number;
+  created: string[];
+  updated: string[];
+  archived: string[];
+  deleted: string[];
 }
 
 export async function snapshotPages(pagesDir: string): Promise<PageSnapshot> {
@@ -56,37 +56,42 @@ export function diffPageSnapshots(
   before: PageSnapshot,
   after: PageSnapshot,
 ): PageSnapshotDelta {
-  let created = 0;
-  let updated = 0;
-  let archived = 0;
-  let deleted = 0;
+  const created: string[] = [];
+  const updated: string[] = [];
+  const archived: string[] = [];
+  const deleted: string[] = [];
 
   for (const [slug, entry] of after) {
     const prev = before.get(slug);
     if (prev === undefined) {
-      created += 1;
+      created.push(slug);
       continue;
     }
     if (prev.hash === entry.hash) continue;
     if (!prev.archived && entry.archived) {
-      archived += 1;
+      archived.push(slug);
     } else {
-      updated += 1;
+      updated.push(slug);
     }
   }
 
   for (const slug of before.keys()) {
-    if (!after.has(slug)) deleted += 1;
+    if (!after.has(slug)) deleted.push(slug);
   }
 
-  return { created, updated, archived, deleted };
+  return {
+    created: created.sort(),
+    updated: updated.sort(),
+    archived: archived.sort(),
+    deleted: deleted.sort(),
+  };
 }
 
 export function isNoopPageDelta(delta: PageSnapshotDelta): boolean {
   return (
-    delta.created === 0 &&
-    delta.updated === 0 &&
-    delta.archived === 0 &&
-    delta.deleted === 0
+    delta.created.length === 0 &&
+    delta.updated.length === 0 &&
+    delta.archived.length === 0 &&
+    delta.deleted.length === 0
   );
 }

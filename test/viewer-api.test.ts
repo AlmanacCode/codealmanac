@@ -213,7 +213,17 @@ describe("viewer api", () => {
           created: 1,
           updated: 2,
           archived: 0,
+          deleted: 0,
           usage: { totalTokens: 1234 },
+        },
+        pageChanges: {
+          version: 1,
+          runId: started.id,
+          created: ["new-page"],
+          updated: ["viewer-jobs", "viewer-api"],
+          archived: [],
+          deleted: [],
+          summary: "Updated viewer jobs.",
         },
       });
       await writeRunRecord(runRecordPath(repo, finished.id), finished);
@@ -243,6 +253,10 @@ describe("viewer api", () => {
       expect(jobs.runs.map((run) => run.id)).toEqual([finished.id]);
       expect(jobs.runs[0]?.displayStatus).toBe("done");
       expect(jobs.runs[0]?.summary?.updated).toBe(2);
+      expect(jobs.runs[0]?.pageChanges?.updated).toEqual([
+        "viewer-jobs",
+        "viewer-api",
+      ]);
       expect(jobs.runs[0]?.displayTitle).toBe("Garden wiki");
       expect(jobs.runs[0]?.transcriptSource).toBeNull();
 

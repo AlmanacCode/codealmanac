@@ -8,9 +8,20 @@ export interface RunSummary {
   created: number;
   updated: number;
   archived: number;
+  deleted: number;
   costUsd?: number;
   turns?: number;
   usage?: AgentUsage;
+}
+
+export interface RunPageChanges {
+  version: 1;
+  runId: string;
+  created: string[];
+  updated: string[];
+  archived: string[];
+  deleted: string[];
+  summary?: string;
 }
 
 export interface RunRecord {
@@ -30,6 +41,7 @@ export interface RunRecord {
   targetKind?: string;
   targetPaths?: string[];
   summary?: RunSummary;
+  pageChanges?: RunPageChanges;
   error?: string;
   failure?: HarnessFailure;
 }

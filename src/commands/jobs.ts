@@ -78,6 +78,10 @@ export async function runJobsShow(
         `Provider: ${view.provider}${view.model !== undefined ? `/${view.model}` : ""}`,
         `Elapsed: ${formatMs(view.elapsedMs)}`,
         `Log: ${view.logPath}`,
+        view.pageChanges?.summary !== undefined
+          ? `Summary: ${view.pageChanges.summary}`
+          : undefined,
+        ...formatPageChanges(view),
         view.failure !== undefined
           ? `Reason: ${view.failure.message}`
           : view.error !== undefined
@@ -88,6 +92,29 @@ export async function runJobsShow(
     stderr: "",
     exitCode: 0,
   };
+}
+
+function formatPageChanges(view: RunView): string[] {
+  const changes = view.pageChanges;
+  if (changes === undefined) return [];
+  const total =
+    changes.created.length +
+    changes.updated.length +
+    changes.archived.length +
+    changes.deleted.length;
+  if (total === 0) return ["Changes: none"];
+  const lines = [
+    `Changes: ${changes.created.length} created, ${changes.updated.length} updated, ${changes.archived.length} archived, ${changes.deleted.length} deleted`,
+  ];
+  for (const [label, slugs] of [
+    ["Created", changes.created],
+    ["Updated", changes.updated],
+    ["Archived", changes.archived],
+    ["Deleted", changes.deleted],
+  ] as const) {
+    if (slugs.length > 0) lines.push(`${label}: ${slugs.join(", ")}`);
+  }
+  return lines;
 }
 
 export async function runJobsLogs(

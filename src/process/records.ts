@@ -5,7 +5,13 @@ import { dirname, join } from "node:path";
 import type { AgentRunSpec } from "../harness/types.js";
 import type { HarnessFailure } from "../harness/events.js";
 import { getRepoAlmanacDir } from "../paths.js";
-import type { RunRecord, RunStatus, RunSummary, RunView } from "./types.js";
+import type {
+  RunPageChanges,
+  RunRecord,
+  RunStatus,
+  RunSummary,
+  RunView,
+} from "./types.js";
 
 export function runsDir(repoRoot: string): string {
   return join(getRepoAlmanacDir(repoRoot), "runs");
@@ -96,6 +102,7 @@ export function finishRunRecord(args: {
   finishedAt: Date;
   providerSessionId?: string;
   summary?: RunSummary;
+  pageChanges?: RunPageChanges;
   error?: string;
   failure?: HarnessFailure;
 }): RunRecord {
@@ -110,6 +117,7 @@ export function finishRunRecord(args: {
       ? Math.max(0, finished - started)
       : undefined,
     summary: args.summary,
+    pageChanges: args.pageChanges,
     error: args.error,
     failure: args.failure,
   };
@@ -189,6 +197,25 @@ export function isRunRecord(value: unknown): value is RunRecord {
     typeof v.pid === "number" &&
     (v.provider === "claude" || v.provider === "codex" || v.provider === "cursor") &&
     typeof v.startedAt === "string" &&
-    typeof v.logPath === "string"
+    typeof v.logPath === "string" &&
+    (v.pageChanges === undefined || isRunPageChanges(v.pageChanges))
   );
+}
+
+function isRunPageChanges(value: unknown): value is RunPageChanges {
+  if (value === null || typeof value !== "object") return false;
+  const v = value as Partial<RunPageChanges>;
+  return (
+    v.version === 1 &&
+    typeof v.runId === "string" &&
+    isStringArray(v.created) &&
+    isStringArray(v.updated) &&
+    isStringArray(v.archived) &&
+    isStringArray(v.deleted) &&
+    (v.summary === undefined || typeof v.summary === "string")
+  );
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
 }

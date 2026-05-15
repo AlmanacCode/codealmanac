@@ -64,8 +64,18 @@ describe("process manager foreground execution", () => {
           created: 1,
           updated: 0,
           archived: 0,
+          deleted: 0,
           costUsd: 0.2,
           turns: 4,
+        },
+        pageChanges: {
+          version: 1,
+          runId: "run_20260509195500_success",
+          created: ["new-page"],
+          updated: [],
+          archived: [],
+          deleted: [],
+          summary: "ok",
         },
       });
 
@@ -112,6 +122,15 @@ describe("process manager foreground execution", () => {
           created: 0,
           updated: 0,
           archived: 0,
+          deleted: 0,
+        },
+        pageChanges: {
+          version: 1,
+          runId: "run_20260509195500_failure",
+          created: [],
+          updated: [],
+          archived: [],
+          deleted: [],
         },
       });
 
@@ -284,8 +303,26 @@ describe("process manager foreground execution", () => {
       expect(result.record.status).toBe("failed");
       expect(result.result.success).toBe(false);
       expect(result.record.error).toBeDefined();
+      expect(result.record.summary).toMatchObject({
+        created: 1,
+        updated: 0,
+        archived: 0,
+        deleted: 0,
+      });
+      expect(result.record.pageChanges).toMatchObject({
+        version: 1,
+        runId: "run_20260509204100_finalization",
+        created: ["new-page"],
+        updated: [],
+        archived: [],
+        deleted: [],
+        summary: "done",
+      });
       await expect(readRunRecord(runRecordPath(repo, result.runId))).resolves.toMatchObject({
         status: "failed",
+        pageChanges: {
+          created: ["new-page"],
+        },
       });
     });
   });

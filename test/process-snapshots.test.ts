@@ -62,20 +62,20 @@ describe("process page snapshots", () => {
       const after = await snapshotPages(pagesDir);
 
       expect(diffPageSnapshots(before, after)).toEqual({
-        created: 1,
-        updated: 1,
-        archived: 1,
-        deleted: 1,
+        created: ["created"],
+        updated: ["updated"],
+        archived: ["archived"],
+        deleted: ["deleted"],
       });
     });
   });
 
   it("detects no-op page deltas", () => {
     expect(
-      isNoopPageDelta({ created: 0, updated: 0, archived: 0, deleted: 0 }),
+      isNoopPageDelta({ created: [], updated: [], archived: [], deleted: [] }),
     ).toBe(true);
     expect(
-      isNoopPageDelta({ created: 0, updated: 1, archived: 0, deleted: 0 }),
+      isNoopPageDelta({ created: [], updated: ["x"], archived: [], deleted: [] }),
     ).toBe(false);
   });
 

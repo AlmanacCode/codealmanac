@@ -15,7 +15,7 @@ import {
   writeRunRecord,
 } from "./records.js";
 import { diffPageSnapshots, snapshotPages } from "./snapshots.js";
-import type { RunRecord, RunSummary } from "./types.js";
+import type { RunPageChanges, RunRecord, RunSummary } from "./types.js";
 
 export interface StartProcessOptions {
   repoRoot: string;
@@ -98,6 +98,8 @@ export async function startForegroundProcess(
 
   let result: HarnessResult;
   let finalRecord: RunRecord;
+  let summary: RunSummary | undefined;
+  let pageChanges: RunPageChanges | undefined;
   try {
     const pagesDir = join(options.repoRoot, ".almanac", "pages");
     const before = await snapshotPages(pagesDir);
@@ -120,18 +122,28 @@ export async function startForegroundProcess(
 
     const after = await snapshotPages(pagesDir);
     const delta = diffPageSnapshots(before, after);
-    if (result.success) {
-      await runIndexer({ repoRoot: options.repoRoot });
-    }
-
-    const summary: RunSummary = {
-      created: delta.created,
-      updated: delta.updated,
-      archived: delta.archived,
+    summary = {
+      created: delta.created.length,
+      updated: delta.updated.length,
+      archived: delta.archived.length,
+      deleted: delta.deleted.length,
       costUsd: result.costUsd,
       turns: result.turns,
       usage: result.usage,
     };
+    const resultSummary = harnessResultSummary(result.result);
+    pageChanges = {
+      version: 1,
+      runId,
+      created: delta.created,
+      updated: delta.updated,
+      archived: delta.archived,
+      deleted: delta.deleted,
+      ...(resultSummary !== undefined ? { summary: resultSummary } : {}),
+    };
+    if (result.success) {
+      await runIndexer({ repoRoot: options.repoRoot });
+    }
     finalRecord = await finishUnlessCancelled({
       recordPath,
       fallback: started,
@@ -139,6 +151,7 @@ export async function startForegroundProcess(
       finishedAt: now(),
       providerSessionId: result.providerSessionId,
       summary,
+      pageChanges,
       error: result.error,
       failure: result.failure,
     });
@@ -163,6 +176,8 @@ export async function startForegroundProcess(
       fallback: started,
       status: "failed",
       finishedAt: now(),
+      summary,
+      pageChanges,
       error: result.error,
       failure: result.failure,
     });
@@ -185,6 +200,7 @@ async function finishUnlessCancelled(args: {
   finishedAt: Date;
   providerSessionId?: string;
   summary?: RunSummary;
+  pageChanges?: RunPageChanges;
   error?: string;
   failure?: import("../harness/events.js").HarnessFailure;
 }): Promise<RunRecord> {
@@ -206,6 +222,7 @@ async function finishUnlessCancelled(args: {
     finishedAt: args.finishedAt,
     providerSessionId: args.providerSessionId,
     summary: args.summary,
+    pageChanges: args.pageChanges,
     error: args.error,
     failure: args.failure,
   });
@@ -266,4 +283,13 @@ function eventLogger(
       writes.push(Promise.resolve(observer(event)));
     }
   };
+}
+
+function harnessResultSummary(result: string): string | undefined {
+  for (const rawLine of result.split(/\r?\n/)) {
+    const line = rawLine.replace(/^#+\s*/, "").trim();
+    if (line.length === 0 || line === "---") continue;
+    return line.length > 500 ? `${line.slice(0, 497)}...` : line;
+  }
+  return undefined;
 }

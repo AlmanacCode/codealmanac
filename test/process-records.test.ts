@@ -6,6 +6,7 @@ import {
   buildStartedRunRecord,
   createRunId,
   finishRunRecord,
+  isRunRecord,
   listRunRecords,
   readRunRecord,
   runLogPath,
@@ -124,7 +125,16 @@ describe("process run records", () => {
         status: "done",
         finishedAt: new Date("2026-05-09T19:51:03.000Z"),
         providerSessionId: "provider-session",
-        summary: { created: 1, updated: 2, archived: 0, costUsd: 0.12 },
+        summary: { created: 1, updated: 2, archived: 0, deleted: 0, costUsd: 0.12 },
+        pageChanges: {
+          version: 1,
+          runId: started.id,
+          created: ["new-page"],
+          updated: ["capture-flow", "process-manager-runs"],
+          archived: [],
+          deleted: [],
+          summary: "Updated capture/run lifecycle docs after scheduled absorb.",
+        },
       });
 
       expect(finished).toMatchObject({
@@ -132,8 +142,54 @@ describe("process run records", () => {
         providerSessionId: "provider-session",
         finishedAt: "2026-05-09T19:51:03.000Z",
         durationMs: 62000,
-        summary: { created: 1, updated: 2, archived: 0, costUsd: 0.12 },
+        summary: { created: 1, updated: 2, archived: 0, deleted: 0, costUsd: 0.12 },
+        pageChanges: {
+          created: ["new-page"],
+          updated: ["capture-flow", "process-manager-runs"],
+          summary: "Updated capture/run lifecycle docs after scheduled absorb.",
+        },
       });
+    });
+  });
+
+  it("rejects malformed pageChanges in persisted records", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "malformed-page-changes");
+      await scaffoldWiki(repo);
+      const record = buildStartedRunRecord({
+        runId: "run_20260509195001_deadbeef",
+        repoRoot: repo,
+        startedAt: new Date("2026-05-09T19:50:01.000Z"),
+        spec: {
+          provider: { id: "claude" },
+          cwd: repo,
+          prompt: "garden",
+          metadata: { operation: "garden" },
+        },
+      });
+
+      expect(isRunRecord({
+        ...record,
+        pageChanges: {
+          version: 1,
+          runId: record.id,
+          created: "new-page",
+          updated: [],
+          archived: [],
+          deleted: [],
+        },
+      })).toBe(false);
+      expect(isRunRecord({
+        ...record,
+        pageChanges: {
+          version: 2,
+          runId: record.id,
+          created: [],
+          updated: [],
+          archived: [],
+          deleted: [],
+        },
+      })).toBe(false);
     });
   });
 

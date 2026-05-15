@@ -135,6 +135,16 @@ describe("process manager background execution", () => {
           created: 1,
           updated: 0,
           archived: 0,
+          deleted: 0,
+        },
+        pageChanges: {
+          version: 1,
+          runId: "run_20260509195700_child",
+          created: ["gardened"],
+          updated: [],
+          archived: [],
+          deleted: [],
+          summary: "done",
         },
       });
       const stored = await readRunRecord(
