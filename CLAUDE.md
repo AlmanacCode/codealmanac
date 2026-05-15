@@ -4,7 +4,7 @@ codealmanac is a living wiki for codebases, maintained by AI coding agents. It d
 
 ## Design philosophy
 
-Intelligence lives in prompts, not pipelines. When judgment is needed — deciding what a session produced, scoring notability, evaluating a proposed page against the graph — we hand a concrete-but-open prompt to an agent. We do not wrap agents in propose/review/apply state machines, intermediate proposal files, or `--dry-run` rehearsals. The writer owns outcomes and calls the reviewer as a subagent when it wants feedback; there is no orchestration JSON schema between them. Everything is **local-only** (`.almanac/` per repo, `~/.almanac/registry.json` globally, no hosted service), the `.almanac/` namespace is **flat** (no `.almanac/wiki/` subdir — future features get peer files), and **the CLI never touches AI except `capture` and `bootstrap`.** Everything else is pure query and organization over a SQLite index.
+Intelligence lives in prompts, not pipelines. When judgment is needed — deciding what a session produced, scoring notability, evaluating a proposed page against the graph — we hand a concrete-but-open prompt to an agent. We do not wrap agents in propose/review/apply state machines, intermediate proposal files, or `--dry-run` rehearsals. The writer owns outcomes and calls the reviewer as a subagent when it wants feedback; there is no orchestration JSON schema between them. Everything is **local-only** (`.almanac/` per repo, `~/.almanac/registry.json` globally, no hosted service), the `.almanac/` namespace is **flat** (no `.almanac/wiki/` subdir — future features get peer files), and **only lifecycle commands touch AI or write wiki pages.** Query, organization, status, auth, and maintenance commands stay deterministic over local state, the filesystem, and network services they explicitly configure.
 
 ## Engineering taste
 
@@ -80,7 +80,7 @@ _Cross-cutting architectural choices. Keep current, concise, and explanatory. Up
 
 Design rules every change must respect. The spec has the full rationale; these are the ones that trip people up.
 
-- **The CLI never reads or writes page content.** Only `capture` and `bootstrap` touch AI or write pages. Every other command operates on `index.db` and the filesystem only.
+- **Query and organization commands never read or write page content.** Lifecycle commands (`init`, `capture`, `ingest`, and `garden`) may hand bounded source context to an agent and write wiki pages. Every other command operates on `index.db`, frontmatter, connector state, and the filesystem only.
 - **Reindex is silent and implicit.** Every query command compares `pages/*.md` mtimes against `index.db` and rebuilds if stale. No progress bars, no "indexing..." chatter, no opt-in flag. `almanac reindex` is the escape hatch for "I want to force it."
 - **Unified `[[...]]` syntax.** One link form, disambiguated by content: contains `:` before `/` → cross-wiki; contains `/` → file ref (trailing `/` = folder); otherwise → page slug. Do not introduce a second link syntax.
 - **Use `GLOB` not `LIKE` for path queries**, and **escape `*?[` before concatenating stored paths into a GLOB pattern.** SQLite's `LIKE` treats `_` as a wildcard (spurious matches on `src/my_module/`); `GLOB` treats it literally. A Next.js-style stored path like `src/[id]/page.tsx` contains GLOB metacharacters — unescaped, it matches things it shouldn't. See `fixes-slice-2-review.md` for the bug and fix.

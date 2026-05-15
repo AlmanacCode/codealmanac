@@ -21,6 +21,7 @@ import {
   resolveClaudeExecutable,
   type ClaudeAuthStatus,
 } from "../../agent/providers/claude/auth.js";
+import { stripLoadedProjectEnv } from "../../env.js";
 
 type ClaudeQuery = AsyncIterable<SDKMessage>;
 type ClaudeQueryFn = (params: {
@@ -223,7 +224,7 @@ function buildClaudeOptions(
     includePartialMessages: true,
     forwardSubagentText: true,
     env: {
-      ...process.env,
+      ...stripLoadedProjectEnv(process.env),
       CODEALMANAC_INTERNAL_SESSION: "1",
     },
     ...(claudeExecutable !== undefined

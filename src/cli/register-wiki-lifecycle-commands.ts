@@ -7,6 +7,11 @@ import {
 } from "../commands/automation.js";
 import { runCaptureSweepCommand } from "../commands/capture-sweep.js";
 import {
+  runConnectNotionCommand,
+  runConnectorsStatusCommand,
+  runDisconnectNotionCommand,
+} from "../commands/connectors.js";
+import {
   runJobsCancel,
   runJobsList,
   runJobsLogs,
@@ -121,7 +126,10 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   program
     .command("ingest <paths...>")
-    .description("absorb knowledge from one or more files or folders")
+    .description("absorb knowledge from files, folders, or connected sources")
+    .option("--page <notion-url-or-id>", "Notion page to ingest")
+    .option("--query <text>", "Notion search query to ingest")
+    .option("--data-source <notion-url-or-id>", "Notion data source to ingest")
     .option("--using <provider[/model]>", "provider and optional model")
     .option("--foreground", "run now instead of starting a background job")
     .option("--json", "emit structured JSON for background job start")
@@ -136,12 +144,18 @@ export function registerWikiLifecycleCommands(program: Command): void {
           json?: boolean;
           yes?: boolean;
           verbose?: boolean;
+          page?: string;
+          query?: string;
+          dataSource?: string;
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
         const result = await runIngestCommand({
           cwd: process.cwd(),
           paths,
+          notionPage: opts.page,
+          notionQuery: opts.query,
+          notionDataSource: opts.dataSource,
           using: opts.using,
           foreground: opts.foreground,
           json: opts.json,
@@ -153,6 +167,68 @@ export function registerWikiLifecycleCommands(program: Command): void {
         emit(result);
       },
     );
+
+  const connect = program
+    .command("connect")
+    .description("connect external knowledge sources");
+
+  connect
+    .command("notion")
+    .description("connect Notion through Composio")
+    .option("--auth-config-id <id>", "Composio Notion auth config id")
+    .option("--user-id <id>", "Composio user id for this local connection")
+    .option("--from-composio-cli", "use an already-linked local Composio CLI connection")
+    .option("--no-open", "print the authorization URL without opening a browser")
+    .option("--no-wait", "do not wait for authorization to finish")
+    .option("--json", "emit structured JSON")
+    .action(async (opts: {
+      authConfigId?: string;
+      userId?: string;
+      fromComposioCli?: boolean;
+      open?: boolean;
+      wait?: boolean;
+      json?: boolean;
+    }) => {
+      const result = await runConnectNotionCommand({
+        authConfigId: opts.authConfigId,
+        userId: opts.userId,
+        fromComposioCli: opts.fromComposioCli,
+        noOpen: opts.open === false,
+        wait: opts.wait,
+        json: opts.json,
+      });
+      emit(result);
+    });
+
+  const connectors = program
+    .command("connectors")
+    .description("show connected knowledge sources");
+
+  connectors
+    .command("status", { isDefault: true })
+    .description("show connected source status")
+    .option("--json", "emit structured JSON")
+    .action(async (opts: { json?: boolean }) => {
+      const result = await runConnectorsStatusCommand({ json: opts.json });
+      emit(result);
+    });
+
+  const disconnect = program
+    .command("disconnect")
+    .description("disconnect external knowledge sources");
+
+  disconnect
+    .command("notion")
+    .description("disconnect Notion")
+    .option("--revoke", "also delete the Composio connected account")
+    .option("--json", "emit structured JSON")
+    .action(async (opts: { revoke?: boolean; json?: boolean }) => {
+      const result = await runDisconnectNotionCommand({
+        revoke: opts.revoke,
+        json: opts.json,
+      });
+      emit(result);
+    });
 
   program
     .command("garden")

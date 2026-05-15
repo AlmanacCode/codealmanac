@@ -1,4 +1,5 @@
 import { checkSqliteAbi } from "../src/abi-guard.js";
+import { loadProjectEnvSync } from "../src/env.js";
 
 // ABI guard: detect better-sqlite3 binding mismatch before commands that may
 // touch the indexer. Skip setup/version/update-only paths so a fresh
@@ -10,6 +11,10 @@ if (shouldCheckSqliteAbi(process.argv)) {
     process.stderr.write(`almanac: ${abiError}\n`);
     process.exit(1);
   }
+}
+
+if (shouldLoadProjectEnv(process.argv)) {
+  loadProjectEnvSync();
 }
 
 const { run } = await import("../src/cli.js");
@@ -51,7 +56,24 @@ function shouldCheckSqliteAbi(argv: string[]): boolean {
     "uninstall",
     "update",
     "doctor",
+    "connect",
+    "connectors",
+    "disconnect",
   ]);
   const firstCommand = args.find((arg) => !arg.startsWith("-"));
   return firstCommand === undefined || !sqliteFreeCommands.has(firstCommand);
+}
+
+function shouldLoadProjectEnv(argv: string[]): boolean {
+  const args = argv.slice(2);
+  const firstCommand = args.find((arg) => !arg.startsWith("-"));
+  if (
+    firstCommand === "connect" ||
+    firstCommand === "connectors" ||
+    firstCommand === "disconnect"
+  ) {
+    return true;
+  }
+  if (firstCommand !== "ingest") return false;
+  return args.includes("notion");
 }

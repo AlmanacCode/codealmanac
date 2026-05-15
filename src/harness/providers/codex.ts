@@ -15,6 +15,7 @@ import type {
   HarnessRunHooks,
   ProviderStatus,
 } from "../types.js";
+import { stripLoadedProjectEnv } from "../../env.js";
 import { HARNESS_PROVIDER_METADATA } from "./metadata.js";
 
 export interface CodexExecRequest {
@@ -147,7 +148,7 @@ export function buildCodexExecRequest(spec: AgentRunSpec): CodexExecRequest {
     args,
     cwd: spec.cwd,
     env: {
-      ...process.env,
+      ...stripLoadedProjectEnv(process.env),
       CODEALMANAC_INTERNAL_SESSION: "1",
     },
   };
@@ -246,7 +247,7 @@ export function runCodexCli(
         return;
       }
 
-      const firstStderr = stderr.trim().split("\n")[0];
+      const firstStderr = firstActionableStderrLine(stderr);
       const fallbackError =
         firstStderr !== undefined && firstStderr.length > 0
           ? firstStderr
@@ -377,7 +378,7 @@ export function buildCodexAppServerRequest(spec: AgentRunSpec): CodexAppServerRe
     args: ["app-server", "--config", "mcp_servers={}", "--listen", "stdio://"],
     cwd: spec.cwd,
     env: {
-      ...process.env,
+      ...stripLoadedProjectEnv(process.env),
       CODEALMANAC_INTERNAL_SESSION: "1",
     },
   };
@@ -607,7 +608,7 @@ export async function runCodexAppServer(
     child.on("close", (code) => {
       if (settled) return;
       flushLines();
-      const firstStderr = stderr.trim().split("\n")[0];
+      const firstStderr = firstActionableStderrLine(stderr);
       fail(
         firstStderr !== undefined && firstStderr.length > 0
           ? firstStderr
@@ -1353,6 +1354,17 @@ function classifyCodexFailure(raw: string): HarnessFailure {
     raw,
     details: codexFailureDetails({ statusCode }),
   };
+}
+
+export function firstActionableStderrLine(stderr: string): string | undefined {
+  return stderr
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0 && !isNonTerminalCodexStderrLine(line));
+}
+
+function isNonTerminalCodexStderrLine(line: string): boolean {
+  return line.startsWith("WARNING: proceeding, even though we could not update PATH:");
 }
 
 function codexFailureDetails(

@@ -14,7 +14,7 @@ verified: 2026-05-13
 
 # Ingest Operation
 
-`almanac ingest <file-or-folder>` is the manual entry point for running [[wiki-lifecycle-operations]] Absorb over bounded user-provided context. It is not a separate operation kind in the runtime layer; `src/commands/operations.ts` resolves the supplied paths to absolute paths, builds ingest-specific context text, and then calls `runAbsorbOperation(...)` with `targetKind: "path"`.
+`almanac ingest <file-or-folder>` is the manual entry point for running [[wiki-lifecycle-operations]] Absorb over bounded user-provided context. It is not a separate operation kind in the runtime layer; `src/commands/operations.ts` either resolves supplied filesystem paths to absolute paths and calls `runAbsorbOperation(...)` with `targetKind: "path"`, or routes connected Notion ingest with `targetKind: "connector:notion"`.
 
 ## What it is for
 
@@ -28,7 +28,7 @@ This keeps the user-intent surface distinct:
 
 - `almanac init` creates the first wiki from the repo as a whole.
 - `almanac capture` absorbs coding-session transcripts.
-- `almanac ingest` absorbs explicitly pointed-at files or folders.
+- `almanac ingest` absorbs explicitly pointed-at files, folders, or connected-source material.
 
 ## Current contract
 
@@ -37,6 +37,8 @@ Unlike Build, ingest requires an existing `.almanac/`. `runAbsorbOperation` call
 The command also requires at least one path. `runIngestCommand` returns `ingest requires at least one file or folder` before contacting any provider when `options.paths.length === 0`.
 
 `runIngestCommand` resolves every supplied path against `options.cwd` before handing control to Absorb. The prompt context therefore names concrete absolute files or folders rather than preserving the user's original relative spellings.
+
+The Notion path keeps the same Absorb boundary while changing the source shape. `runNotionIngestCommand()` builds a connector-specific source bundle, adds Notion guidance to the prompt context, and starts Absorb against the bundle's document URLs or ids instead of local filesystem paths. The public CLI still spells this as `almanac ingest notion ...`, not as a separate operation name.
 
 By default ingest backgrounds the run, matching capture rather than init. `--foreground` keeps the agent attached, and `--json` is only valid for background start responses.
 

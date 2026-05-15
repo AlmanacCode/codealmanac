@@ -29,7 +29,9 @@ The V1 lifecycle CLI routes write-capable wiki work into [[wiki-lifecycle-operat
 
 There is one CLI-shape wrinkle inside that surface: `capture` itself has `--json`, and `capture sweep` also has `--json`. Commander can attach `almanac capture sweep --json` to the parent command object, so the sweep action now reads merged options with `optsWithGlobals()` instead of trusting only the leaf `opts` object. Future `capture` subcommands that reuse parent flag names should preserve that pattern.
 
-[[ingest-operation]] (`almanac ingest <file-or-folder>`) maps to Absorb with user-provided file/folder context and defaults background.
+[[ingest-operation]] (`almanac ingest <file-or-folder>`) maps to Absorb with user-provided file/folder context and defaults background. The same command now also owns connected-source ingest for Notion through `almanac ingest notion`, `--page`, `--query`, and `--data-source`.
+
+The connector command surface is separate from lifecycle-run startup. `almanac connect notion` creates or resumes a browser authorization flow through Composio, `almanac connectors status` refreshes the stored local connection when possible, and `almanac disconnect notion` removes the local record and can optionally revoke the upstream connected account. The durable UX boundary is that live Notion auth still requires a human to complete the browser approval step even though the Almanac-side command flow is automatable.
 
 `almanac garden` maps to Garden and defaults background because it can make broad graph edits.
 

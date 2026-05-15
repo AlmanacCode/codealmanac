@@ -1,4 +1,5 @@
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
 
 import type { CommandResult } from "../cli/helpers.js";
 import { renderOutcome } from "../cli/outcome.js";
@@ -8,6 +9,17 @@ import { runAbsorbOperation } from "../operations/absorb.js";
 import { runBuildOperation } from "../operations/build.js";
 import { runGardenOperation } from "../operations/garden.js";
 import { readConfig } from "../update/config.js";
+import { findNearestAlmanacDir } from "../paths.js";
+import { ComposioClient } from "../connectors/composio.js";
+import { NotionConnector } from "../connectors/notion.js";
+import { NotionCliConnector } from "../connectors/notion-cli.js";
+import type { NotionSelector } from "../connectors/types.js";
+import { setConnectorConnection } from "../connectors/store.js";
+import { createRunId, runsDir } from "../process/index.js";
+import {
+  ConnectorNeedsActionError,
+  requireConnectorConnection,
+} from "./connectors.js";
 import { resolveCaptureTranscripts } from "./session-transcripts.js";
 import type {
   OperationProviderSelection,
@@ -51,10 +63,15 @@ export interface CaptureCommandOptions extends OperationCommandDeps {
 export interface IngestCommandOptions extends OperationCommandDeps {
   cwd: string;
   paths: string[];
+  notionPage?: string;
+  notionQuery?: string;
+  notionDataSource?: string;
   using?: string;
   foreground?: boolean;
   json?: boolean;
   yes?: boolean;
+  notionConnector?: NotionConnector | NotionCliConnector;
+  notionComposio?: ComposioClient;
 }
 
 export interface GardenCommandOptions extends OperationCommandDeps {
@@ -166,6 +183,19 @@ export async function runIngestCommand(
   }
 
   try {
+    if (isNotionIngest(options)) {
+      return await runNotionIngestCommand(options, provider.value);
+    }
+    if (hasNotionSelectorOption(options)) {
+      return renderOutcome(
+        {
+          type: "error",
+          message:
+            'Notion selector options require path "notion"; run: almanac ingest notion --query "..."',
+        },
+        { json: options.json },
+      );
+    }
     const paths = options.paths.map((path) => resolve(options.cwd, path));
     const result = await runAbsorbOperation({
       cwd: options.cwd,
@@ -182,6 +212,60 @@ export async function runIngestCommand(
   } catch (err: unknown) {
     return renderOperationError(err, options.json);
   }
+}
+
+async function runNotionIngestCommand(
+  options: IngestCommandOptions,
+  provider: OperationProviderSelection,
+): Promise<CommandResult> {
+  const repoRoot = findNearestAlmanacDir(options.cwd);
+  if (repoRoot === null) {
+    return renderOutcome(
+      {
+        type: "needs-action",
+        message: "no .almanac/ found in this directory or any parent",
+        fix: "run: almanac init",
+      },
+      { json: options.json },
+    );
+  }
+  const selector = notionSelectorFromOptions(options);
+  const connector = options.notionConnector ?? await createNotionConnector({
+    composio: options.notionComposio,
+  });
+  const bundle = await connector.fetchBundle(selector);
+  if (bundle.documents.length === 0) {
+    return renderOutcome(
+      {
+        type: "noop",
+        message: `No Notion documents matched the ${bundle.selector.kind} selector; nothing to ingest.`,
+        data: {
+          connector: "notion",
+          selector: bundle.selector,
+          fetchedAt: bundle.fetchedAt,
+          candidateCount: bundle.candidates?.length ?? 0,
+        },
+      },
+      { json: options.json },
+    );
+  }
+  const background = options.foreground !== true;
+  const artifact = background
+    ? await writeNotionSourceArtifact(repoRoot, bundle)
+    : undefined;
+  const result = await runAbsorbOperation({
+    cwd: repoRoot,
+    provider,
+    background,
+    context: notionIngestContext(bundle, { artifactPath: artifact?.path }),
+    targetKind: "connector:notion",
+    targetPaths: bundle.documents.map((document) => document.url ?? document.id),
+    runId: artifact?.runId,
+    onEvent: options.onEvent,
+    startForeground: options.startForeground,
+    startBackground: options.startBackground,
+  });
+  return renderOperationResult("ingest", result, options.json);
 }
 
 export async function runGardenCommand(
@@ -334,6 +418,12 @@ function renderOperationError(
   err: unknown,
   json: boolean | undefined,
 ): CommandResult {
+  if (err instanceof ConnectorNeedsActionError) {
+    return renderOutcome(
+      { type: "needs-action", message: err.message, fix: err.fix },
+      { json },
+    );
+  }
   const message = err instanceof Error ? err.message : String(err);
   if (message.includes("no .almanac/")) {
     return renderOutcome(
@@ -410,4 +500,169 @@ function ingestContext(paths: string[]): string {
     "- Paths:",
     ...paths.map((path) => `  - ${path}`),
   ].join("\n");
+}
+
+function isNotionIngest(options: IngestCommandOptions): boolean {
+  return options.paths.length === 1 && options.paths[0] === "notion";
+}
+
+function notionSelectorFromOptions(options: IngestCommandOptions): NotionSelector {
+  const selectorCount = [
+    options.notionPage,
+    options.notionQuery,
+    options.notionDataSource,
+  ].filter((value) => value !== undefined).length;
+  if (selectorCount > 1) {
+    throw new Error("Use only one Notion selector: --page, --query, or --data-source.");
+  }
+  if (options.notionPage !== undefined) {
+    return { kind: "page", value: options.notionPage };
+  }
+  if (options.notionQuery !== undefined) {
+    return { kind: "query", value: options.notionQuery };
+  }
+  if (options.notionDataSource !== undefined) {
+    return { kind: "data-source", value: options.notionDataSource };
+  }
+  return { kind: "workspace", value: "notion" };
+}
+
+function hasNotionSelectorOption(options: IngestCommandOptions): boolean {
+  return options.notionPage !== undefined ||
+    options.notionQuery !== undefined ||
+    options.notionDataSource !== undefined;
+}
+
+async function createNotionConnector(options: {
+  composio?: ComposioClient;
+} = {}): Promise<NotionConnector | NotionCliConnector> {
+  const connection = await requireConnectorConnection("notion");
+  if (connection.mode === "cli" || connection.connectedAccountId === "cli:notion") {
+    return new NotionCliConnector();
+  }
+  const apiKey = process.env.COMPOSIO_API_KEY;
+  if (apiKey === undefined || apiKey.trim().length === 0) {
+    throw new ConnectorNeedsActionError(
+      "COMPOSIO_API_KEY is required to ingest Notion",
+      "Set COMPOSIO_API_KEY and rerun: almanac ingest notion",
+    );
+  }
+  const composio = options.composio ?? new ComposioClient({ apiKey });
+  let status = connection.status;
+  try {
+    const account = await composio.getConnectedAccount(connection.connectedAccountId);
+    status = account.status;
+    await setConnectorConnection({
+      ...connection,
+      status,
+      updatedAt: account.updatedAt ?? new Date().toISOString(),
+    });
+  } catch {
+    if (status !== "ACTIVE") {
+      throw new ConnectorNeedsActionError(
+        "Notion authorization has not finished",
+        "Finish the Notion authorization, then run: almanac connectors status",
+      );
+    }
+  }
+  if (status !== "ACTIVE") {
+    throw new ConnectorNeedsActionError(
+      `Notion connection is ${status}`,
+      "Finish the Notion authorization, then run: almanac connectors status",
+    );
+  }
+  return new NotionConnector({
+    composio,
+    connectedAccountId: connection.connectedAccountId,
+  });
+}
+
+async function writeNotionSourceArtifact(
+  repoRoot: string,
+  bundle: import("../connectors/types.js").NormalizedSourceBundle,
+): Promise<{ runId: string; path: string }> {
+  const runId = createRunId();
+  const path = join(runsDir(repoRoot), `${runId}.notion-source.md`);
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, renderNotionSourceArtifact(bundle), { encoding: "utf8", mode: 0o600 });
+  return { runId, path };
+}
+
+function notionIngestContext(
+  bundle: import("../connectors/types.js").NormalizedSourceBundle,
+  options: { artifactPath?: string } = {},
+): string {
+  const lines = [
+    "Command context:",
+    "- Command: ingest",
+    "- Connector: notion",
+    `- Selector: ${bundle.selector.kind} (${bundle.selector.value})`,
+    `- Fetched at: ${bundle.fetchedAt}`,
+    `- Candidate limit: ${bundle.limits.candidateLimit}`,
+    `- Full-fetch limit: ${bundle.limits.fullFetchLimit}`,
+    "",
+    "Notion source guidance:",
+    "Treat Notion content as source evidence, not as output.",
+    "Do not summarize the Notion source. Do not mirror the Notion hierarchy by default. Do not copy private notes wholesale.",
+    "Extract only information that improves the Almanac wiki for future project work: decisions, product rationale, user research conclusions, workflows, constraints, gotchas, terminology, incidents, open questions, and cross-links between human context and code behavior.",
+    "Prefer updating existing pages over creating new pages. When a claim touches implementation, verify it against the codebase. Keep Notion URLs, object IDs, and edit timestamps as provenance where useful. No-op if the source is personal, transient, duplicative, or not useful for future coding sessions.",
+    "If Notion explains why a code path exists, update or create the page about that code path, decision, or product flow. If code contradicts Notion, trust code for current behavior and preserve Notion only as historical rationale when that history is useful.",
+  ];
+  if (bundle.candidates !== undefined && bundle.candidates.length > 0) {
+    lines.push("", "Notion candidates:");
+    for (const candidate of bundle.candidates) {
+      lines.push(
+        `- ${candidate.title} (${candidate.object}; ${candidate.id})` +
+          `${candidate.url === undefined ? "" : ` ${candidate.url}`}` +
+          `${candidate.lastEditedTime === undefined ? "" : ` last_edited=${candidate.lastEditedTime}`}`,
+      );
+    }
+  }
+  if (options.artifactPath !== undefined) {
+    lines.push(
+      "",
+      "Fetched Notion documents:",
+      `Read the Notion source artifact at ${options.artifactPath}. It is a local, gitignored, mode-0600 run artifact created for this ingest.`,
+    );
+    return lines.filter((line) => line !== "").join("\n");
+  }
+  lines.push("", "Fetched Notion documents:");
+  lines.push(...renderNotionDocuments(bundle));
+  return lines.filter((line) => line !== "").join("\n");
+}
+
+function renderNotionSourceArtifact(
+  bundle: import("../connectors/types.js").NormalizedSourceBundle,
+): string {
+  return [
+    "Fetched Notion documents:",
+    ...renderNotionDocuments(bundle),
+    "",
+  ].join("\n");
+}
+
+function renderNotionDocuments(
+  bundle: import("../connectors/types.js").NormalizedSourceBundle,
+): string[] {
+  const lines: string[] = [];
+  for (const document of bundle.documents) {
+    lines.push(
+      "",
+      `## ${document.title}`,
+      `- Notion id: ${document.id}`,
+      document.url === undefined ? "" : `- URL: ${document.url}`,
+      document.createdTime === undefined ? "" : `- Created: ${document.createdTime}`,
+      document.lastEditedTime === undefined ? "" : `- Last edited: ${document.lastEditedTime}`,
+      document.parent === undefined ? "" : `- Parent: ${document.parent}`,
+      "",
+      document.text.length > 0 ? document.text : "[No supported Notion text blocks were returned.]",
+    );
+    if (document.omittedBlocks !== undefined && document.omittedBlocks.length > 0) {
+      lines.push("", "Omitted Notion blocks:");
+      for (const omitted of document.omittedBlocks) {
+        lines.push(`- ${omitted.blockId} (${omitted.type}): ${omitted.reason}`);
+      }
+    }
+  }
+  return lines;
 }

@@ -13,6 +13,7 @@ import {
   parseCodexAppServerUsage,
   parseCodexUsage,
   runCodexAppServer,
+  firstActionableStderrLine,
 } from "../src/harness/providers/codex.js";
 import type { AgentRunSpec } from "../src/harness/types.js";
 
@@ -244,6 +245,16 @@ describe("Codex harness provider", () => {
       totalProcessedTokens: 140,
       maxTokens: 200000,
     });
+  });
+
+  it("ignores non-terminal Codex stderr warnings when selecting failure text", () => {
+    expect(firstActionableStderrLine([
+      "WARNING: proceeding, even though we could not update PATH: Operation not permitted (os error 1)",
+      "actual fatal error",
+    ].join("\n"))).toBe("actual fatal error");
+    expect(firstActionableStderrLine(
+      "WARNING: proceeding, even though we could not update PATH: Operation not permitted (os error 1)\n",
+    )).toBeUndefined();
   });
 
   it("maps app-server warnings and nested errors", () => {

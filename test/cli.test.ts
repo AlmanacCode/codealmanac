@@ -207,6 +207,9 @@ describe("registerCommands", () => {
       "init",
       "capture",
       "ingest",
+      "connect",
+      "connectors",
+      "disconnect",
       "garden",
       "jobs",
       "ps",
@@ -242,6 +245,12 @@ describe("registerCommands", () => {
       .toEqual(["list", "doctor", "use", "model"]);
     expect(findCommand(program, ["config"]).commands.map((cmd) => cmd.name()))
       .toEqual(["list", "get", "set", "unset"]);
+    expect(findCommand(program, ["connect"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["notion"]);
+    expect(findCommand(program, ["connectors"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["status"]);
+    expect(findCommand(program, ["disconnect"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["notion"]);
 
     expect(optionFlags(findCommand(program, ["setup"]))).toContain("-y, --yes");
     expect(optionFlags(findCommand(program, ["setup"]))).toContain(
@@ -262,7 +271,16 @@ describe("registerCommands", () => {
     expect(optionFlags(findCommand(program, ["ingest"]))).toContain(
       "--using <provider[/model]>",
     );
+    expect(optionFlags(findCommand(program, ["ingest"]))).toContain(
+      "--page <notion-url-or-id>",
+    );
     expect(optionFlags(findCommand(program, ["ingest"]))).toContain("--verbose");
+    expect(optionFlags(findCommand(program, ["connect", "notion"]))).toContain(
+      "--auth-config-id <id>",
+    );
+    expect(optionFlags(findCommand(program, ["disconnect", "notion"]))).toContain(
+      "--revoke",
+    );
     expect(optionFlags(findCommand(program, ["garden"]))).toContain("--json");
     expect(optionFlags(findCommand(program, ["garden"]))).toContain("--verbose");
     expect(optionFlags(findCommand(program, ["topics", "show"]))).toContain(

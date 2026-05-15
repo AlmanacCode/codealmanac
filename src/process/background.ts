@@ -1,8 +1,10 @@
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
+import { closeSync, openSync } from "node:fs";
 
 import type { AgentRunSpec, HarnessRunHooks } from "../harness/types.js";
 import type { HarnessResult } from "../harness/events.js";
+import { stripLoadedProjectEnv } from "../env.js";
 import { createRunId } from "./ids.js";
 import { initializeRunLog } from "./logs.js";
 import { startForegroundProcess, type StartProcessResult } from "./manager.js";
@@ -26,6 +28,7 @@ export type SpawnBackgroundFn = (args: {
   args: string[];
   cwd: string;
   env: NodeJS.ProcessEnv;
+  stderrPath: string;
 }) => BackgroundChild;
 
 export interface StartBackgroundProcessOptions {
@@ -82,9 +85,10 @@ export async function startBackgroundProcess(
       args: [entrypoint, "__run-job", runId],
       cwd: options.repoRoot,
       env: {
-        ...process.env,
+        ...stripLoadedProjectEnv(process.env),
         CODEALMANAC_INTERNAL_SESSION: "1",
       },
+      stderrPath: `${queued.logPath}.stderr`,
     });
   } catch (err: unknown) {
     await writeRunRecord(
@@ -147,11 +151,17 @@ function defaultSpawnBackground(args: {
   args: string[];
   cwd: string;
   env: NodeJS.ProcessEnv;
+  stderrPath: string;
 }): ChildProcess {
-  return spawn(args.command, args.args, {
-    cwd: args.cwd,
-    env: args.env,
-    detached: true,
-    stdio: "ignore",
-  });
+  const stderrFd = openSync(args.stderrPath, "a");
+  try {
+    return spawn(args.command, args.args, {
+      cwd: args.cwd,
+      env: args.env,
+      detached: true,
+      stdio: ["ignore", "ignore", stderrFd],
+    });
+  } finally {
+    closeSync(stderrFd);
+  }
 }

@@ -24,6 +24,7 @@ describe("process manager background execution", () => {
         args: string[];
         cwd: string;
         env: NodeJS.ProcessEnv;
+        stderrPath: string;
       }> = [];
       let unrefCalled = false;
 
@@ -71,6 +72,12 @@ describe("process manager background execution", () => {
           env: expect.objectContaining({
             CODEALMANAC_INTERNAL_SESSION: "1",
           }) as NodeJS.ProcessEnv,
+          stderrPath: join(
+            repo,
+            ".almanac",
+            "runs",
+            "run_20260509195600_background.jsonl.stderr",
+          ),
         },
       ]);
       expect(unrefCalled).toBe(true);

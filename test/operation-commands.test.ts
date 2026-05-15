@@ -1,4 +1,4 @@
-import { mkdir, utimes, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -10,6 +10,9 @@ import {
   runIngestCommand,
   runInitCommand,
 } from "../src/commands/operations.js";
+import type { NotionConnector } from "../src/connectors/notion.js";
+import { ComposioClient } from "../src/connectors/composio.js";
+import { setConnectorConnection } from "../src/connectors/store.js";
 import { writeConfig } from "../src/update/config.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
@@ -303,6 +306,227 @@ describe("operation command wrappers", () => {
           mode: "background",
           status: "queued",
         },
+      });
+    });
+  });
+
+  it("routes Notion ingest through Absorb with connector source guidance", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-notion-ingest");
+      await initWiki({ cwd: repo, name: "cmd-notion-ingest", description: "" });
+      const seen: unknown[] = [];
+
+      const result = await runIngestCommand({
+        cwd: repo,
+        paths: ["notion"],
+        notionConnector: {
+          fetchBundle: async () => ({
+            connector: "notion",
+            selector: { kind: "workspace", value: "notion" },
+            fetchedAt: "2026-05-15T12:00:00.000Z",
+            limits: { candidateLimit: 25, fullFetchLimit: 5 },
+            candidates: [
+              {
+                id: "page_1",
+                object: "page",
+                title: "Connector Strategy",
+                url: "https://notion.so/page_1",
+                lastEditedTime: "2026-05-15T11:00:00.000Z",
+              },
+            ],
+            documents: [
+              {
+                id: "page_1",
+                title: "Connector Strategy",
+                url: "https://notion.so/page_1",
+                lastEditedTime: "2026-05-15T11:00:00.000Z",
+                text: "Use Composio for v1, but keep the connector abstraction provider-neutral.",
+              },
+            ],
+          }),
+        } as unknown as NotionConnector,
+        startBackground: async (options) => {
+          seen.push(options);
+          return {
+            runId: "run_notion_ingest",
+            childPid: 4321,
+            record: {
+              version: 1,
+              id: "run_notion_ingest",
+              operation: "absorb",
+              status: "queued",
+              repoRoot: options.repoRoot,
+              pid: 0,
+              provider: options.spec.provider.id,
+              startedAt: "2026-05-15T12:00:00.000Z",
+              logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+            },
+          };
+        },
+      });
+
+      expect(result.stdout).toBe("ingest started: run_notion_ingest\n");
+      expect(seen[0]).toMatchObject({
+        spec: {
+          metadata: {
+            operation: "absorb",
+            targetKind: "connector:notion",
+            targetPaths: ["https://notion.so/page_1"],
+          },
+        },
+      });
+      const prompt = (seen[0] as { spec: { prompt: string } }).spec.prompt;
+      const runId = (seen[0] as { runId?: string }).runId;
+      const artifactPath = join(repo, ".almanac", "runs", `${runId}.notion-source.md`);
+      expect(prompt).toContain("Connector: notion");
+      expect(prompt).toContain("Treat Notion content as source evidence");
+      expect(prompt).toContain("Do not summarize the Notion source");
+      expect(prompt).toContain(artifactPath);
+      expect(prompt).toContain("Connector Strategy");
+      expect(prompt).not.toContain("Use Composio for v1");
+      await expect(readFile(artifactPath, "utf8")).resolves.toContain("Use Composio for v1");
+      expect((await stat(artifactPath)).mode & 0o777).toBe(0o600);
+    });
+  });
+
+  it("rejects Notion selector options on normal file ingest paths", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-notion-selector-file");
+      await initWiki({ cwd: repo, name: "cmd-notion-selector-file", description: "" });
+
+      const result = await runIngestCommand({
+        cwd: repo,
+        paths: ["docs"],
+        notionQuery: "roadmap",
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain('Notion selector options require path "notion"');
+    });
+  });
+
+  it("rejects multiple Notion selector options", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-notion-selector-multiple");
+      await initWiki({ cwd: repo, name: "cmd-notion-selector-multiple", description: "" });
+
+      const result = await runIngestCommand({
+        cwd: repo,
+        paths: ["notion"],
+        notionPage: "page_1",
+        notionQuery: "roadmap",
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Use only one Notion selector");
+    });
+  });
+
+  it("requires API-mode Notion connections to be active before ingest", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-notion-ingest-pending");
+      await initWiki({ cwd: repo, name: "cmd-notion-ingest-pending", description: "" });
+      await setConnectorConnection({
+        id: "notion",
+        provider: "composio",
+        connectedAccountId: "ca_pending",
+        mode: "api",
+        userId: "local",
+        authConfigId: "ac_notion",
+        status: "PENDING",
+        createdAt: "2026-05-15T12:00:00.000Z",
+        updatedAt: "2026-05-15T12:00:00.000Z",
+      });
+      const originalKey = process.env.COMPOSIO_API_KEY;
+      process.env.COMPOSIO_API_KEY = "test";
+      try {
+        const result = await runIngestCommand({
+          cwd: repo,
+          paths: ["notion"],
+          notionComposio: new ComposioClient({
+            apiKey: "test",
+            fetch: (async () =>
+              new Response(JSON.stringify({ id: "ca_pending", status: "PENDING" }), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              })) as typeof fetch,
+          }),
+          startBackground: async () => {
+            throw new Error("should not start");
+          },
+        });
+
+        expect(result.exitCode).toBe(1);
+        expect(result.stderr).toContain("Notion connection is PENDING");
+      } finally {
+        process.env.COMPOSIO_API_KEY = originalKey;
+      }
+    });
+  });
+
+  it("reports missing Notion connection as a needs-action ingest outcome", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-notion-ingest-missing");
+      await initWiki({ cwd: repo, name: "cmd-notion-ingest-missing", description: "" });
+
+      const result = await runIngestCommand({
+        cwd: repo,
+        paths: ["notion"],
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Notion is not connected");
+      expect(result.stderr).toContain("run: almanac connect notion");
+    });
+  });
+
+  it("checks for an initialized wiki before fetching Notion content", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-notion-ingest-no-wiki");
+
+      const result = await runIngestCommand({
+        cwd: repo,
+        paths: ["notion"],
+        notionConnector: {
+          fetchBundle: async () => {
+            throw new Error("should not fetch notion before .almanac check");
+          },
+        } as unknown as NotionConnector,
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("no .almanac/ found");
+      expect(result.stderr).toContain("run: almanac init");
+    });
+  });
+
+  it("returns a noop when Notion selection fetches no documents", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-notion-ingest-empty");
+      await initWiki({ cwd: repo, name: "cmd-notion-ingest-empty", description: "" });
+
+      const result = await runIngestCommand({
+        cwd: repo,
+        paths: ["notion"],
+        notionConnector: {
+          fetchBundle: async () => ({
+            connector: "notion",
+            selector: { kind: "workspace", value: "notion" },
+            fetchedAt: "2026-05-15T12:00:00.000Z",
+            candidates: [],
+            documents: [],
+            limits: {
+              candidateLimit: 25,
+              fullFetchLimit: 5,
+            },
+          }),
+        } as unknown as NotionConnector,
+      });
+
+      expect(result).toMatchObject({
+        exitCode: 0,
+        stdout: "No Notion documents matched the workspace selector; nothing to ingest.\n",
+        stderr: "",
       });
     });
   });
