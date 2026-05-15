@@ -11,6 +11,7 @@ import { toKebabCase } from "../slug.js";
 import { topicsYamlPath } from "../topics/paths.js";
 import {
   getViewerJob,
+  type ViewerJobPageChangeDetails,
   listViewerJobs,
   type ViewerJobDetail,
   type ViewerJobRun,
@@ -218,7 +219,17 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
     },
 
     async job(runId) {
-      return getViewerJob(ctx.repoRoot, runId);
+      return withFreshDb(ctx.repoRoot, async (db) => {
+        const detail = await getViewerJob(ctx.repoRoot, runId);
+        if (detail === null) return null;
+        return {
+          ...detail,
+          run: {
+            ...detail.run,
+            pageChangeDetails: pageChangeDetails(db, detail.run.pageChanges),
+          },
+        };
+      });
     },
   };
 }
@@ -287,6 +298,29 @@ function pageSummaryBySlug(db: Database.Database, slug: string): ViewerPageSumma
      LIMIT 1`,
     [slug],
   )[0] ?? null;
+}
+
+function pageChangeDetails(
+  db: Database.Database,
+  changes: ViewerJobRun["pageChanges"],
+): ViewerJobPageChangeDetails | undefined {
+  if (changes === undefined) return undefined;
+  return {
+    created: pageChangeRefs(db, changes.created),
+    updated: pageChangeRefs(db, changes.updated),
+    archived: pageChangeRefs(db, changes.archived),
+    deleted: changes.deleted.map((slug) => ({ slug, title: null })),
+  };
+}
+
+function pageChangeRefs(
+  db: Database.Database,
+  slugs: string[],
+): Array<{ slug: string; title: string | null }> {
+  return slugs.map((slug) => {
+    const page = pageSummaryBySlug(db, slug);
+    return { slug, title: page?.title ?? null };
+  });
 }
 
 function topicSummaries(

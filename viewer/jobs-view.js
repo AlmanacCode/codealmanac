@@ -7,6 +7,7 @@ import {
 
 export function createJobsView(deps) {
   let pollTimer = null;
+  let transcriptMode = "normal";
 
   async function renderList() {
     const result = await deps.api(deps.jobsPath());
@@ -39,49 +40,54 @@ export function createJobsView(deps) {
     const detail = await deps.api(deps.jobPath(runId));
     const run = detail.run;
     const agents = detail.agents ?? [];
-    const transcript = buildTranscript(detail.events, agents);
+    const transcript = buildTranscript(detail.events, agents, { mode: transcriptMode });
+    const visibleTranscript = transcriptMode === "normal" ? groupNormalTranscript(transcript) : transcript;
     const startMs = new Date(run.startedAt).getTime();
     document.title = `${run.displayTitle} — Almanac Jobs`;
-    const heroStrip = detailHeroStrip(run);
     deps.reader.innerHTML = `
       ${deps.pageActions()}
-      <section class="ca-hero">
-        <div class="ca-section-label">${deps.escapeHtml(run.operation)}</div>
-        <h1 class="ca-display-h1">${deps.escapeHtml(run.displayTitle)}</h1>
-        <p class="ca-lede">${deps.escapeHtml(run.displaySubtitle ?? runFallbackSubtitle(run))}</p>
-        <div class="ca-run-marks">
-          ${statusMark(run.displayStatus)}
-          ${run.transcriptSource ? `<span class="ca-run-mark">${deps.escapeHtml(transcriptSourceLabel(run))}</span>` : ""}
-          <span class="ca-run-mark">${deps.escapeHtml(providerLabel(run))}</span>
-          <span class="ca-run-mark">${deps.escapeHtml(deps.formatElapsed(run.elapsedMs))}</span>
-          ${run.targetKind ? `<span class="ca-run-mark">${deps.escapeHtml(run.targetKind)}</span>` : ""}
-        </div>
-        ${heroStrip !== "" ? `<div class="ca-hero-strip" aria-label="Run barometer">${heroStrip}</div>` : ""}
-      </section>
-
-      <section class="ca-colophon-section">
-        <h2 class="ca-section-label">Colophon</h2>
-        <dl class="ca-colophon">
-          ${colophonEntries(run).map(colophonEntry).join("")}
-        </dl>
-      </section>
+      ${runOverview(run)}
 
       ${failureCallout(run)}
       ${warningsSection(detail.warnings ?? [])}
       ${agentsSection(agents, run)}
-      ${targetsSection(run)}
 
       <section class="ca-transcript-section">
         <h2 class="ca-section-label">Logs</h2>
         <div class="ca-transcript-heading">
           <span class="ca-display-h2">Transcript</span>
-          <small>${detail.events.length} ${detail.events.length === 1 ? "event" : "events"}</small>
+          <small>${visibleTranscript.length} ${visibleTranscript.length === 1 ? "event" : "events"} · ${deps.escapeHtml(transcriptMode)}</small>
         </div>
-        ${terminalFrame(run, agents, transcript, startMs)}
+        ${terminalFrame(run, agents, visibleTranscript, startMs, transcriptMode)}
       </section>
     `;
-    wireTranscriptFilters();
+    wireTranscriptControls(run.id);
+    wireSourceActions();
     if (isLiveStatus(run.displayStatus)) schedulePoll(run.id);
+  }
+
+  function runOverview(run) {
+    return `
+      <section class="ca-job-overview">
+        <div class="ca-section-label">${deps.escapeHtml(run.operation)}</div>
+        <div class="ca-job-overview-head">
+          <div>
+            <h1 class="ca-display-h1">${deps.escapeHtml(run.displayTitle)}</h1>
+            <div class="ca-run-marks ca-job-primary-marks">
+              ${statusMark(run.displayStatus)}
+              <span class="ca-run-mark">${deps.escapeHtml(providerLabel(run))}</span>
+              <span class="ca-run-mark">${deps.escapeHtml(deps.formatElapsed(run.elapsedMs))}</span>
+            </div>
+          </div>
+          ${usageCard(run)}
+        </div>
+        <div class="ca-job-brief-grid">
+          ${changesCard(run)}
+          ${sourceCard(run)}
+        </div>
+        ${runDetails(run)}
+      </section>
+    `;
   }
 
   function clearPoll() {
@@ -305,6 +311,132 @@ export function createJobsView(deps) {
     return parts;
   }
 
+  function changesCard(run) {
+    const details = run.pageChangeDetails ?? pageChangeDetailsFromSlugs(run.pageChanges);
+    const hasChanges = details && ["created", "updated", "archived", "deleted"]
+      .some((kind) => details[kind]?.length > 0);
+    return `
+      <article class="ca-job-card ca-job-card-changes">
+        <div class="ca-job-card-kicker">What changed</div>
+        ${
+          hasChanges
+            ? `<div class="ca-page-change-list">
+                ${pageChangeGroup("created", "Created", "+", details.created)}
+                ${pageChangeGroup("updated", "Updated", "~", details.updated)}
+                ${pageChangeGroup("archived", "Archived", "-", details.archived)}
+                ${pageChangeGroup("deleted", "Deleted", "x", details.deleted)}
+              </div>`
+            : `<p class="ca-job-card-empty">No wiki pages changed.</p>`
+        }
+        ${run.pageChanges?.summary ? `<p class="ca-job-change-summary">${linkedChangeSummary(run)}</p>` : ""}
+      </article>
+    `;
+  }
+
+  function pageChangeGroup(kind, label, mark, pages = []) {
+    if (pages.length === 0) return "";
+    return `
+      <div class="ca-page-change-group ca-page-change-${deps.escapeAttr(kind)}">
+        <div class="ca-page-change-label"><span>${deps.escapeHtml(mark)}</span>${deps.escapeHtml(label)}</div>
+        <div class="ca-page-change-links">
+          ${pages.map((page) => pageChangeLink(page, kind)).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function pageChangeLink(page, kind) {
+    const title = page.title ?? pageTitleFromSlug(page.slug);
+    if (kind === "deleted") {
+      return `<span class="ca-page-change-link is-deleted">${deps.escapeHtml(title)}</span>`;
+    }
+    const href = deps.pageRoute(page.slug);
+    return `
+      <a class="ca-page-change-link" href="${deps.escapeAttr(href)}" data-route="${deps.escapeAttr(href)}">
+        <span>${deps.escapeHtml(title)}</span>
+        <code>${deps.escapeHtml(page.slug)}</code>
+      </a>
+    `;
+  }
+
+  function pageChangeDetailsFromSlugs(changes) {
+    if (!changes) return null;
+    const ref = (slug) => ({ slug, title: null });
+    return {
+      created: changes.created.map(ref),
+      updated: changes.updated.map(ref),
+      archived: changes.archived.map(ref),
+      deleted: changes.deleted.map(ref),
+    };
+  }
+
+  function sourceCard(run) {
+    const path = run.targetPaths?.[0] ?? null;
+    const label = sourceLabel(run);
+    return `
+      <article class="ca-job-card ca-job-card-source">
+        <div class="ca-job-card-kicker">Source</div>
+        <h2>${deps.escapeHtml(label)}</h2>
+        ${path ? `<p class="ca-source-name">${deps.escapeHtml(basename(path))}</p>` : `<p class="ca-job-card-empty">No source target recorded.</p>`}
+        <div class="ca-source-actions">
+          ${path ? `<button type="button" class="ca-source-action" data-copy-text="${deps.escapeAttr(path)}">Copy path</button>` : ""}
+          ${path ? `<details class="ca-source-path"><summary>Show path</summary><pre>${deps.escapeHtml(path)}</pre></details>` : ""}
+          <span class="ca-source-soon">${deps.escapeHtml(sourceOpenLabel(run))}</span>
+        </div>
+      </article>
+    `;
+  }
+
+  function usageCard(run) {
+    const usage = run.summary?.usage;
+    const total = usage?.totalTokens;
+    const processed = usage?.totalProcessedTokens;
+    const cached = usage?.cachedInputTokens;
+    return `
+      <article class="ca-job-usage">
+        <div class="ca-job-card-kicker">Usage</div>
+        <strong>${total !== undefined ? deps.escapeHtml(deps.formatNumber(total)) : "—"}</strong>
+        <span>${total !== undefined ? "tokens" : "tokens unavailable"}</span>
+        <small>${usageSubline(run, processed, cached)}</small>
+      </article>
+    `;
+  }
+
+  function usageSubline(run, processed, cached) {
+    const parts = [];
+    if (run.summary?.turns !== undefined) parts.push(`${run.summary.turns} ${run.summary.turns === 1 ? "turn" : "turns"}`);
+    if (processed !== undefined) parts.push(`${deps.formatNumber(processed)} processed`);
+    if (cached !== undefined) parts.push(`${deps.formatNumber(cached)} cached`);
+    if (run.summary?.costUsd !== undefined) parts.push(`$${run.summary.costUsd.toFixed(4)}`);
+    else parts.push("cost estimate coming soon");
+    return parts.join(" · ");
+  }
+
+  function runDetails(run) {
+    return `
+      <details class="ca-run-details">
+        <summary>Run details</summary>
+        <dl class="ca-colophon">
+          ${colophonEntries(run).map(colophonEntry).join("")}
+        </dl>
+      </details>
+    `;
+  }
+
+  function sourceLabel(run) {
+    if (run.transcriptSource === "codex") return "Codex session transcript";
+    if (run.transcriptSource === "claude") return "Claude session transcript";
+    if (run.transcriptSource === "file") return "Transcript file";
+    if (run.targetKind === "wiki") return "Wiki";
+    return run.targetKind ? `${run.targetKind.charAt(0).toUpperCase()}${run.targetKind.slice(1)} target` : "Run target";
+  }
+
+  function sourceOpenLabel(run) {
+    if (run.transcriptSource === "codex") return "Open in Codex coming soon";
+    if (run.transcriptSource === "claude") return "Open in Claude coming soon";
+    return "Inline transcript viewer coming soon";
+  }
+
   function detailHeroStrip(run) {
     const cells = [];
     cells.push(heroCell("status", statusWord(run.displayStatus)));
@@ -396,6 +528,9 @@ export function createJobsView(deps) {
 
   function agentsSection(agents, run) {
     if (!agents.length) return "";
+    const helpers = agents.filter((agent) => agent.role === "helper");
+    const hasNonRoot = agents.some((agent) => agent.role !== "root");
+    if (helpers.length === 0 && !hasNonRoot) return "";
     const root = agents.find((agent) => agent.role === "root");
     const endedBy = doneActorLabel(agents, run);
     return `
@@ -443,10 +578,9 @@ export function createJobsView(deps) {
 
   function agentDeck(root, agents, endedBy) {
     const helpers = agents.filter((agent) => agent.role === "helper").length;
-    const rootName = root?.label ?? "Main";
     const helperText = helpers === 1 ? "1 helper" : `${helpers} helpers`;
-    const endText = endedBy ? ` The terminal result came from ${endedBy}.` : "";
-    return `${rootName} coordinated ${helperText}.${endText}`;
+    const endText = endedBy && endedBy !== "Main" ? ` The terminal result came from ${endedBy}.` : "";
+    return `${helperText} participated in this run.${endText}`;
   }
 
   function doneActorLabel(agents, run) {
@@ -460,27 +594,29 @@ export function createJobsView(deps) {
     return match ? match[0] : "H";
   }
 
-  function terminalFrame(run, agents, transcript, startMs) {
+  function terminalFrame(run, agents, transcript, startMs, mode) {
     const eventCount = transcript.length;
     const sessionId = run.providerSessionId ? run.providerSessionId.slice(0, 8) : run.id.slice(0, 8);
     const titlePath = `run/${sessionId}.log`;
     return `
-      <div class="ca-terminal" data-component="terminal">
-        <div class="ca-terminal-bar">
-          <span class="ca-terminal-dots" aria-hidden="true">
-            <span class="ca-terminal-dot ca-terminal-dot-red"></span>
-            <span class="ca-terminal-dot ca-terminal-dot-yellow"></span>
-            <span class="ca-terminal-dot ca-terminal-dot-green"></span>
-          </span>
-          <span class="ca-terminal-title">
-            <span class="ca-terminal-title-prefix">~/.almanac/runs/</span>${deps.escapeHtml(titlePath)}
-          </span>
-          <span class="ca-terminal-events">${eventCount} ${eventCount === 1 ? "event" : "events"}</span>
-        </div>
-        ${transcriptFilters(agents)}
+      <div class="ca-terminal ca-terminal-${deps.escapeAttr(mode)}" data-component="terminal">
+        ${mode === "debug" ? `
+          <div class="ca-terminal-bar">
+            <span class="ca-terminal-dots" aria-hidden="true">
+              <span class="ca-terminal-dot ca-terminal-dot-red"></span>
+              <span class="ca-terminal-dot ca-terminal-dot-yellow"></span>
+              <span class="ca-terminal-dot ca-terminal-dot-green"></span>
+            </span>
+            <span class="ca-terminal-title">
+              <span class="ca-terminal-title-prefix">~/.almanac/runs/</span>${deps.escapeHtml(titlePath)}
+            </span>
+            <span class="ca-terminal-events">${eventCount} ${eventCount === 1 ? "event" : "events"}</span>
+          </div>
+        ` : ""}
+        ${transcriptControls(agents, mode)}
         <div class="ca-transcript">
           ${
-            transcript.map((entry) => transcriptEntry(entry, startMs)).join("")
+            transcript.map((entry) => transcriptEntry(entry, startMs, mode)).join("")
             || `<div class="ca-meta-empty">No log events have been written yet.</div>`
           }
         </div>
@@ -488,26 +624,49 @@ export function createJobsView(deps) {
     `;
   }
 
-  function transcriptFilters(agents) {
+  function transcriptControls(agents, mode) {
     const filters = [
       ["all", "all"],
       ["main", "main"],
       ...agents.filter((agent) => agent.role === "helper").map((agent) => [agent.threadId, agent.label]),
       ["tools", "tools"],
-      ["raw", "raw"],
+      ...(mode === "debug" ? [["raw", "raw"]] : []),
     ];
     return `
-      <div class="ca-transcript-filters" role="toolbar" aria-label="Transcript filters">
-        ${filters.map(([value, label], index) => `
-          <button type="button" class="ca-transcript-filter${index === 0 ? " is-active" : ""}" data-filter="${deps.escapeAttr(value)}">
-            ${deps.escapeHtml(label)}
+      <div class="ca-transcript-mode" role="toolbar" aria-label="Transcript mode">
+        ${["normal", "debug"].map((value) => `
+          <button
+            type="button"
+            class="ca-transcript-mode-button${mode === value ? " is-active" : ""}"
+            data-transcript-mode="${deps.escapeAttr(value)}"
+          >
+            ${deps.escapeHtml(value)}
           </button>
         `).join("")}
       </div>
+      ${mode === "debug" ? `
+        <div class="ca-transcript-filters" role="toolbar" aria-label="Debug transcript filters">
+          ${filters.map(([value, label], index) => `
+            <button type="button" class="ca-transcript-filter${index === 0 ? " is-active" : ""}" data-filter="${deps.escapeAttr(value)}">
+              ${deps.escapeHtml(label)}
+            </button>
+          `).join("")}
+        </div>
+      ` : ""}
     `;
   }
 
-  function wireTranscriptFilters() {
+  function wireTranscriptControls(runId) {
+    const modeButtons = deps.reader.querySelectorAll("[data-transcript-mode]");
+    modeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.getAttribute("data-transcript-mode") === "debug" ? "debug" : "normal";
+        if (mode === transcriptMode) return;
+        transcriptMode = mode;
+        renderDetail(runId).catch((error) => deps.renderError(error));
+      });
+    });
+
     const buttons = deps.reader.querySelectorAll(".ca-transcript-filter");
     const rows = deps.reader.querySelectorAll("[data-actor-filter]");
     buttons.forEach((button) => {
@@ -525,6 +684,23 @@ export function createJobsView(deps) {
             actor === filter;
           row.hidden = !visible;
         });
+      });
+    });
+  }
+
+  function wireSourceActions() {
+    const buttons = deps.reader.querySelectorAll("[data-copy-text]");
+    buttons.forEach((button) => {
+      button.addEventListener("click", async () => {
+        const text = button.getAttribute("data-copy-text") ?? "";
+        try {
+          await navigator.clipboard.writeText(text);
+          button.textContent = "Copied";
+          window.setTimeout(() => { button.textContent = "Copy path"; }, 1200);
+        } catch {
+          button.textContent = "Copy failed";
+          window.setTimeout(() => { button.textContent = "Copy path"; }, 1200);
+        }
       });
     });
   }
@@ -552,14 +728,17 @@ export function createJobsView(deps) {
     `;
   }
 
-  function transcriptEntry(entry, startMs) {
+  function transcriptEntry(entry, startMs, mode) {
+    if (entry.type === "activity") return activityStep(entry, startMs, mode);
     if (entry.type === "assistant") {
+      const showMarker = shouldShowActorMarker(entry.actor, mode);
+      const meta = chatMeta(entry.actor, mode, entry.timestamp);
       return `
-        <div class="ca-chat-row ca-chat-row-assistant ${actorClass(entry.actor)}" ${actorData(entry.actor, "message")}>
+        <div class="ca-chat-row ca-chat-row-assistant ${actorClass(entry.actor)}${showMarker ? "" : " ca-chat-row-implicit-actor"}" ${actorData(entry.actor, "message")}>
           ${timeOffsetCell(entry.timestamp, startMs)}
-          <div class="ca-chat-avatar" aria-hidden="true">${deps.escapeHtml(actorGlyph(entry.actor))}</div>
+          ${showMarker ? `<div class="ca-chat-avatar" aria-hidden="true">${deps.escapeHtml(actorGlyph(entry.actor))}</div>` : ""}
           <div class="ca-chat-bubble">
-            <div class="ca-chat-meta">${actorPill(entry.actor)}${entry.timestamp ? ` <span>${deps.escapeHtml(deps.formatTimestamp(entry.timestamp))}</span>` : ""}</div>
+            ${meta}
             <div class="ca-chat-text">${deps.renderMarkdown(entry.text.trim())}</div>
           </div>
         </div>
@@ -576,8 +755,26 @@ export function createJobsView(deps) {
         </div>
       `;
     }
-    if (entry.type === "status" || entry.type === "lifecycle") return statusStep(entry, startMs);
-    return toolStep(entry, startMs);
+    if (entry.type === "status" || entry.type === "lifecycle") return statusStep(entry, startMs, mode);
+    return toolStep(entry, startMs, mode);
+  }
+
+  function activityStep(entry, startMs, mode) {
+    return `
+      <div class="ca-activity-flow" data-actor-filter="root" data-kind-filter="tool">
+        ${timeOffsetCell(entry.timestamp, startMs)}
+        <details class="ca-activity-card">
+          <summary class="ca-activity-summary">
+            <span class="ca-activity-icon" aria-hidden="true">⌘</span>
+            <span class="ca-activity-title">${deps.escapeHtml(entry.title)}</span>
+            <span class="ca-activity-count">${deps.escapeHtml(`${entry.tools.length} ${entry.tools.length === 1 ? "step" : "steps"}`)}</span>
+          </summary>
+          <div class="ca-activity-body">
+            ${entry.tools.map((tool) => toolStep(tool, startMs, mode)).join("")}
+          </div>
+        </details>
+      </div>
+    `;
   }
 
   function timeOffsetCell(timestamp, startMs) {
@@ -602,7 +799,7 @@ export function createJobsView(deps) {
     return n < 10 ? `0${n}` : String(n);
   }
 
-  function statusStep(entry, startMs) {
+  function statusStep(entry, startMs, mode) {
     return `
       <div class="ca-tool-step ca-tool-status ca-tool-status-${deps.escapeAttr(entry.tone)} ${actorClass(entry.actor)}" ${actorData(entry.actor, entry.type)}>
         ${timeOffsetCell(entry.timestamp, startMs)}
@@ -611,7 +808,7 @@ export function createJobsView(deps) {
           <div>
             <div class="ca-tool-step-title">${deps.escapeHtml(entry.title)}</div>
             <div class="ca-tool-step-meta">
-              ${actorPill(entry.actor)}<span>${deps.escapeHtml(entry.type === "lifecycle" ? "agent lifecycle" : entry.tone)}</span>${entry.timestamp ? ` <span>${deps.escapeHtml(deps.formatTimestamp(entry.timestamp))}</span>` : ""}
+              ${actorPill(entry.actor, mode)}<span>${deps.escapeHtml(entry.type === "lifecycle" ? "agent lifecycle" : entry.tone)}</span>${entry.timestamp ? ` <span>${deps.escapeHtml(deps.formatTimestamp(entry.timestamp))}</span>` : ""}
             </div>
             ${entry.detail ? `<details class="ca-status-detail"><summary>details</summary><pre>${deps.escapeHtml(entry.detail)}</pre></details>` : ""}
           </div>
@@ -620,7 +817,7 @@ export function createJobsView(deps) {
     `;
   }
 
-  function toolStep(step, startMs) {
+  function toolStep(step, startMs, mode) {
     const model = getToolCardModel(step);
     return `
       <div class="ca-tool-flow ca-tool-${deps.escapeAttr(model.kind)} ${actorClass(step.actor)}" ${actorData(step.actor, "tool")}>
@@ -629,16 +826,14 @@ export function createJobsView(deps) {
           <summary class="ca-tool-summary">
             <span class="ca-tool-step-icon">${deps.escapeHtml(model.icon)}</span>
             <span class="ca-tool-copy">
-              ${actorPill(step.actor)}
+              ${actorPill(step.actor, mode)}
               <span class="ca-tool-title">${deps.escapeHtml(model.title)}</span>
               ${model.target ? `<span class="ca-tool-preview">${deps.escapeHtml(model.target)}</span>` : ""}
             </span>
             ${toolState(model)}
           </summary>
           <div class="ca-tool-body">
-            ${toolOverview(step, model)}
-            ${toolInput(step)}
-            ${toolResult(step)}
+            ${mode === "debug" ? debugToolBody(step, model) : normalToolBody(step, model)}
           </div>
         </details>
       </div>
@@ -650,28 +845,33 @@ export function createJobsView(deps) {
     return `<span class="ca-tool-state ca-tool-state-${deps.escapeAttr(model.statusLabel)}">${deps.escapeHtml(model.statusLabel)}</span>`;
   }
 
-  function toolOverview(step, model) {
-    const rows = [
-      ["Tool", step.name],
-      ["Actor", actorLabel(step.actor)],
-      ["Kind", model.kind],
-      ["Started", step.timestamp ? deps.formatTimestamp(step.timestamp) : ""],
-      ["Result", step.resultTimestamp ? deps.formatTimestamp(step.resultTimestamp) : ""],
-      ["Path", step.display?.path],
-      ["Command", step.display?.command],
-      ["Cwd", step.display?.cwd],
-      ["Exit", step.display?.exitCode ?? step.resultDisplay?.exitCode],
-    ].filter(([, value]) => value !== undefined && value !== null && String(value).length > 0);
+  function debugToolBody(step, model) {
+    return `
+      ${toolOverview(step, model, "debug")}
+      ${debugToolInput(step)}
+      ${debugToolResult(step)}
+    `;
+  }
 
-    if (model.kind === "agent") {
-      const parsed = parseJsonObject(step.input);
-      rows.push(
-        ...[
-          ["Agent type", parsed?.subagent_type],
-          ["Description", parsed?.description],
-        ].filter(([, value]) => typeof value === "string" && value.length > 0),
-      );
-    }
+  function normalToolBody(step, model) {
+    return `
+      ${toolOverview(step, model, "normal")}
+      ${normalToolInput(step, model)}
+      ${normalToolResult(step, model)}
+    `;
+  }
+
+  function toolOverview(step, model, mode) {
+    const rows = [
+      ...(mode === "debug" ? [
+        ["Tool", step.name],
+        ["Actor", actorLabel(step.actor)],
+        ["Kind", model.kind],
+        ["Started", step.timestamp ? deps.formatTimestamp(step.timestamp) : ""],
+        ["Result", step.resultTimestamp ? deps.formatTimestamp(step.resultTimestamp) : ""],
+      ] : []),
+      ...normalToolFacts(step, model),
+    ].filter(([, value]) => value !== undefined && value !== null && String(value).length > 0);
 
     if (rows.length === 0) return "";
     return `
@@ -686,7 +886,77 @@ export function createJobsView(deps) {
     `;
   }
 
-  function toolInput(step) {
+  function normalToolFacts(step, model) {
+    const parsed = parseJsonObject(step.input);
+    const exit = step.display?.exitCode ?? step.resultDisplay?.exitCode;
+    if (model.kind === "shell") {
+      return [
+        ["Cwd", step.display?.cwd ?? parsed?.cwd],
+        ["Exit", exit],
+      ];
+    }
+    if (model.kind === "read" || model.kind === "write" || model.kind === "edit") {
+      return [
+        ["Path", step.display?.path ?? parsed?.file_path ?? parsed?.path],
+        ["Exit", exit],
+      ];
+    }
+    if (model.kind === "search") {
+      return [
+        ["Path", step.display?.path ?? parsed?.path],
+        ["Exit", exit],
+      ];
+    }
+    if (model.kind === "agent") {
+      return [
+        ["Agent type", parsed?.subagent_type],
+        ["Description", parsed?.description],
+      ];
+    }
+    return [
+      ["Target", model.target],
+      ["Exit", exit],
+    ];
+  }
+
+  function normalToolInput(step, model) {
+    const parsed = parseJsonObject(step.input);
+    if (model.kind === "agent" && typeof parsed?.prompt === "string") {
+      return toolTextSection("Task", parsed.prompt);
+    }
+    if (model.kind === "shell") {
+      const command = step.display?.command ?? parsed?.command;
+      return typeof command === "string" ? toolTextSection("Command", command) : "";
+    }
+    if (model.kind === "edit" || model.kind === "write") {
+      const content = parsed?.diff ?? parsed?.content ?? parsed?.old_string ?? parsed?.new_string;
+      return typeof content === "string" ? toolTextSection(model.kind === "write" ? "Content" : "Change", content) : "";
+    }
+    if (model.kind === "search") {
+      const query = parsed?.query ?? parsed?.pattern ?? parsed?.command;
+      return typeof query === "string" ? toolTextSection("Search", query) : "";
+    }
+    return "";
+  }
+
+  function normalToolResult(step, model) {
+    if (!step.hasResult) return `<div class="ca-tool-pending">Waiting for result...</div>`;
+    const text = stringifyEventValue(step.result);
+    if (text.trim().length === 0) return "";
+    const title = step.isError ? "Error" : model.kind === "shell" ? "Output" : "Result";
+    return toolTextSection(title, text);
+  }
+
+  function toolTextSection(title, value) {
+    return `
+      <div class="ca-tool-section">
+        <div class="ca-tool-section-title">${deps.escapeHtml(title)}</div>
+        <pre>${deps.escapeHtml(value)}</pre>
+      </div>
+    `;
+  }
+
+  function debugToolInput(step) {
     if (!step.input) return "";
     const parsed = parseJsonObject(step.input);
     const prompt = parsed?.prompt;
@@ -699,7 +969,7 @@ export function createJobsView(deps) {
     `;
   }
 
-  function toolResult(step) {
+  function debugToolResult(step) {
     if (!step.hasResult) {
       return `<div class="ca-tool-pending">Waiting for result...</div>`;
     }
@@ -746,10 +1016,23 @@ export function createJobsView(deps) {
     return "?";
   }
 
-  function actorPill(actor) {
+  function shouldShowActorMarker(actor, mode) {
+    if (mode === "debug") return true;
+    return actor?.role === "helper" || actor?.role === "unknown";
+  }
+
+  function actorPill(actor, mode) {
+    if (!shouldShowActorMarker(actor, mode)) return "";
     const label = actorLabel(actor) ?? "Run";
     const role = actor?.role ?? "system";
     return `<span class="ca-actor-pill ca-actor-pill-${deps.escapeAttr(role)}">${deps.escapeHtml(label)}</span>`;
+  }
+
+  function chatMeta(actor, mode, timestamp) {
+    const pill = actorPill(actor, mode);
+    const time = mode === "debug" && timestamp ? ` <span>${deps.escapeHtml(deps.formatTimestamp(timestamp))}</span>` : "";
+    if (!pill && !time) return "";
+    return `<div class="ca-chat-meta">${pill}${time}</div>`;
   }
 
   function runFallbackSubtitle(run) {
@@ -766,6 +1049,41 @@ export function createJobsView(deps) {
       .replace(/`([^`]+)`/g, "$1")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  function linkedChangeSummary(run) {
+    const summary = cleanSummary(run.pageChanges?.summary ?? "");
+    const refs = new Map();
+    const details = run.pageChangeDetails ?? pageChangeDetailsFromSlugs(run.pageChanges);
+    for (const kind of ["created", "updated", "archived"]) {
+      for (const page of details?.[kind] ?? []) refs.set(page.slug, page.title ?? pageTitleFromSlug(page.slug));
+    }
+    let html = "";
+    let index = 0;
+    const linkPattern = /\[([^\]]+)\]\(([^)]*\/([^/)]+)\.md)\)/g;
+    for (const match of summary.matchAll(linkPattern)) {
+      const start = match.index ?? 0;
+      const slug = match[3];
+      html += deps.escapeHtml(summary.slice(index, start));
+      const title = refs.get(slug) ?? match[1].replace(/\.md$/, "");
+      const href = deps.pageRoute(slug);
+      html += `<a href="${deps.escapeAttr(href)}" data-route="${deps.escapeAttr(href)}">${deps.escapeHtml(title)}</a>`;
+      index = start + match[0].length;
+    }
+    html += deps.escapeHtml(summary.slice(index));
+    return html;
+  }
+
+  function basename(path) {
+    return String(path).split(/[\\/]/).filter(Boolean).at(-1) ?? String(path);
+  }
+
+  function pageTitleFromSlug(slug) {
+    return String(slug)
+      .split("-")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
   }
 
   function formatClock(iso) {
@@ -793,6 +1111,69 @@ export function createJobsView(deps) {
     renderDetail,
     renderList,
   };
+}
+
+function groupNormalTranscript(transcript) {
+  const grouped = [];
+  let pending = [];
+
+  const flush = () => {
+    if (pending.length === 0) return;
+    grouped.push({
+      type: "activity",
+      timestamp: pending[0]?.timestamp ?? null,
+      title: activityTitle(pending),
+      tools: pending,
+    });
+    pending = [];
+  };
+
+  for (const entry of transcript) {
+    if (entry.type === "tool" && entry.actor?.role !== "helper" && entry.actor?.role !== "unknown") {
+      pending.push(entry);
+      continue;
+    }
+    flush();
+    grouped.push(entry);
+  }
+  flush();
+  return grouped;
+}
+
+function activityTitle(tools) {
+  const counts = new Map();
+  for (const tool of tools) {
+    const kind = getToolCardModel(tool).kind;
+    const bucket =
+      kind === "shell" ? "command" :
+      kind === "read" || kind === "search" || kind === "web" ? "explore" :
+      kind === "write" || kind === "edit" ? "edit" :
+      kind === "agent" ? "delegate" :
+      "tool";
+    counts.set(bucket, (counts.get(bucket) ?? 0) + 1);
+  }
+  const parts = [
+    countPhrase(counts.get("explore") ?? 0, "Explored", "file"),
+    countPhrase(counts.get("edit") ?? 0, "edited", "file"),
+    countPhrase(counts.get("command") ?? 0, "ran", "command"),
+    countPhrase(counts.get("delegate") ?? 0, "delegated", "task"),
+    countPhrase(counts.get("tool") ?? 0, "used", "tool"),
+  ].filter(Boolean);
+  return parts.length > 0 ? joinPhrases(parts) : `${tools.length} tool ${tools.length === 1 ? "step" : "steps"}`;
+}
+
+function countPhrase(count, verb, noun) {
+  if (count <= 0) return "";
+  return `${verb} ${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+function joinPhrases(parts) {
+  if (parts.length === 1) return capitalizeFirst(parts[0]);
+  return `${capitalizeFirst(parts.slice(0, -1).join(", "))}, ${parts.at(-1)}`;
+}
+
+function capitalizeFirst(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function countJobs(runs) {

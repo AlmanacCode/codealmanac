@@ -37,6 +37,7 @@ const jobsView = createJobsView({
   jobsPath: () => wikiApi("/jobs"),
   jobPath: (runId) => wikiApi(`/jobs/${encodeURIComponent(runId)}`),
   jobRoute: (runId) => wikiRoute(`/jobs/${runId}`),
+  pageRoute: (slug) => wikiRoute(`/page/${encodeURIComponent(slug)}`),
   isCurrentJobRoute: (runId) => location.pathname === wikiRoute(`/jobs/${runId}`),
   pageActions: () => renderPageActions(wikiRoute("/")),
   renderError,

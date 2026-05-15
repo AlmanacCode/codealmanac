@@ -1,7 +1,8 @@
-export function buildTranscript(entries, agents = []) {
+export function buildTranscript(entries, agents = [], options = {}) {
   const transcript = [];
   const toolsById = new Map();
   const agentLabels = new Map(agents.map((agent) => [agent.threadId, agent.label]));
+  const mode = options.mode === "debug" ? "debug" : "normal";
   let assistant = null;
 
   const ensureAssistant = (timestamp, actor) => {
@@ -40,8 +41,15 @@ export function buildTranscript(entries, agents = []) {
 
     if (event.type === "done" && event.result) {
       const bubble = ensureAssistant(entry.timestamp, actor);
-      bubble.text += `${bubble.text ? "\n\n" : ""}${event.result}`;
+      const result = event.result.trim();
+      if (result.length > 0 && !bubble.text.trim().endsWith(result)) {
+        bubble.text += `${bubble.text ? "\n\n" : ""}${event.result}`;
+      }
       if (!event.error) continue;
+    }
+
+    if (mode !== "debug" && (event.type === "tool_summary" || event.type === "context_usage")) {
+      continue;
     }
 
     closeAssistant();

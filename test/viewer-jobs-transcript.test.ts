@@ -22,6 +22,21 @@ describe("viewer jobs transcript projection", () => {
     ]);
   });
 
+  it("does not duplicate a done result already present in assistant text", () => {
+    const transcript = buildTranscript([
+      { line: 1, timestamp: "2026-05-11T01:00:00.000Z", event: { type: "text", content: "final answer" } },
+      { line: 2, timestamp: "2026-05-11T01:00:01.000Z", event: { type: "done", result: "final answer" } },
+    ]);
+
+    expect(transcript).toEqual([
+      {
+        type: "assistant",
+        timestamp: "2026-05-11T01:00:00.000Z",
+        text: "final answer",
+      },
+    ]);
+  });
+
   it("replaces streamed deltas with a matching full text snapshot", () => {
     const transcript = buildTranscript([
       { line: 1, timestamp: "2026-05-11T01:00:00.000Z", event: { type: "text_delta", content: "hello" } },
@@ -35,6 +50,51 @@ describe("viewer jobs transcript projection", () => {
         timestamp: "2026-05-11T01:00:00.000Z",
         text: "hello world",
       },
+    ]);
+  });
+
+  it("omits noisy bookkeeping events from the visible transcript", () => {
+    const transcript = buildTranscript([
+      { line: 1, timestamp: "2026-05-11T01:00:00.000Z", event: { type: "text_delta", content: "before" } },
+      {
+        line: 2,
+        timestamp: "2026-05-11T01:00:01.000Z",
+        event: { type: "context_usage", usage: { inputTokens: 10, totalTokens: 12 } },
+      },
+      {
+        line: 3,
+        timestamp: "2026-05-11T01:00:02.000Z",
+        event: { type: "tool_summary", summary: "read package.json" },
+      },
+      { line: 4, timestamp: "2026-05-11T01:00:03.000Z", event: { type: "text_delta", content: " after" } },
+    ]);
+
+    expect(transcript).toEqual([
+      {
+        type: "assistant",
+        timestamp: "2026-05-11T01:00:00.000Z",
+        text: "before after",
+      },
+    ]);
+  });
+
+  it("keeps bookkeeping events in debug mode", () => {
+    const transcript = buildTranscript([
+      {
+        line: 1,
+        timestamp: "2026-05-11T01:00:01.000Z",
+        event: { type: "context_usage", usage: { inputTokens: 10, totalTokens: 12 } },
+      },
+      {
+        line: 2,
+        timestamp: "2026-05-11T01:00:02.000Z",
+        event: { type: "tool_summary", summary: "read package.json" },
+      },
+    ], [], { mode: "debug" });
+
+    expect(transcript).toMatchObject([
+      { type: "status", title: "Context usage" },
+      { type: "status", title: "Tool summary", detail: "read package.json" },
     ]);
   });
 

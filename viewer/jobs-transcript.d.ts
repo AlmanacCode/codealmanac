@@ -94,6 +94,7 @@ export interface ToolCardModel {
 export function buildTranscript(
   entries: TranscriptLogEntry[],
   agents?: TranscriptAgent[],
+  options?: { mode?: "normal" | "debug" },
 ): TranscriptEntry[];
 export function getToolCardModel(step: ToolTranscriptEntry): ToolCardModel;
 export function stringifyEventValue(value: unknown): string;

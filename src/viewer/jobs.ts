@@ -28,6 +28,19 @@ export interface ViewerJobRun extends RunView {
   displayTitle: string;
   displaySubtitle: string | null;
   transcriptSource: "claude" | "codex" | "file" | null;
+  pageChangeDetails?: ViewerJobPageChangeDetails;
+}
+
+export interface ViewerJobPageChangeRef {
+  slug: string;
+  title: string | null;
+}
+
+export interface ViewerJobPageChangeDetails {
+  created: ViewerJobPageChangeRef[];
+  updated: ViewerJobPageChangeRef[];
+  archived: ViewerJobPageChangeRef[];
+  deleted: ViewerJobPageChangeRef[];
 }
 
 export interface ViewerJobDetail {

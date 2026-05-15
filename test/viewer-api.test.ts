@@ -265,6 +265,15 @@ describe("viewer api", () => {
       expect(detail?.run.model).toBe("gpt-5.5");
       expect(detail?.run.providerSessionId).toBe("session-123");
       expect(detail?.run.displaySubtitle).toBe("src/viewer/api.ts");
+      expect(detail?.run.pageChangeDetails).toEqual({
+        created: [{ slug: "new-page", title: null }],
+        updated: [
+          { slug: "viewer-jobs", title: null },
+          { slug: "viewer-api", title: null },
+        ],
+        archived: [],
+        deleted: [],
+      });
       expect(detail?.events).toHaveLength(3);
       expect(detail?.events[0]).toEqual({
         line: 1,
