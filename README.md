@@ -66,6 +66,10 @@ npx codealmanac search --mentions src/checkout.ts
 npx codealmanac show checkout-flow
 ```
 
+<p align="center">
+  <img src="viewer/readme-sample-wiki.png" alt="Terminal showing Almanac search and show commands against the sample wiki">
+</p>
+
 The sample wiki shows the checked-in `.almanac/` files directly: a notability guide, topics, and two short pages that capture a flow and a gotcha.
 
 ## Choose Your Path
