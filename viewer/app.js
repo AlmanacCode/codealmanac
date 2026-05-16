@@ -9,6 +9,7 @@ import {
   wikiRoute as buildWikiRoute,
 } from "./routes.js";
 import { createSearchSuggestions } from "./search-suggestions.js";
+import { createMarkdown } from "./markdown.js";
 
 const state = {
   wikis: [],
@@ -19,6 +20,26 @@ const state = {
   topicFilter: null,
   historyIndex: 0,
 };
+
+const { renderMarkdown } = createMarkdown({
+  resolveWikilink: (target) => ({
+    href: routeForWikilink(target, state.currentWiki),
+    label: labelForWikilink(target, pageLabel),
+  }),
+  resolveLink: (href) => {
+    if (/^https?:\/\//i.test(href)) return { type: "external", href };
+    const slug = pageSlugFromMarkdownTarget(href);
+    if (slug !== null) {
+      const known = pageLabel(slug);
+      return {
+        type: "page",
+        route: wikiRoute(`/page/${encodeURIComponent(slug)}`),
+        label: known === slug ? null : known,
+      };
+    }
+    return { type: "dead" };
+  },
+});
 
 const els = {
   shell: document.querySelector("#app"),
@@ -487,11 +508,6 @@ function renderPageArticle(page) {
   `;
 }
 
-function renderArticleSummary(summary) {
-  const text = summary?.trim();
-  return text ? `<p class="ca-article-summary">${escapeHtml(text)}</p>` : "";
-}
-
 async function renderTopic(slug) {
   const topic = await api(wikiApi(`/topic/${encodeURIComponent(slug)}`));
   rememberPages(topic.pages);
@@ -633,76 +649,6 @@ function renderPageActions(fallbackRoute) {
       <button class="ca-back-button" type="button" data-back data-fallback-route="${escapeAttr(fallbackRoute)}">Back</button>
     </div>
   `;
-}
-
-function renderMarkdown(source, options = {}) {
-  const blocks = [];
-  let inCode = false;
-  let code = [];
-  let decoratedHeading = false;
-  const decorateTitle = options.decorateTitle === true;
-
-  for (const line of source.split(/\r?\n/)) {
-    if (line.startsWith("```")) {
-      if (inCode) {
-        blocks.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
-        code = [];
-        inCode = false;
-      } else {
-        inCode = true;
-      }
-      continue;
-    }
-    if (inCode) {
-      code.push(line);
-      continue;
-    }
-    if (line.trim().length === 0) {
-      blocks.push("");
-      continue;
-    }
-    if (line.startsWith("### ")) blocks.push(`<h3>${inline(line.slice(4))}</h3>`);
-    else if (line.startsWith("## ")) blocks.push(`<h2>${inline(line.slice(3))}</h2>`);
-    else if (line.startsWith("# ")) {
-      blocks.push(renderHeading(line.slice(2), decorateTitle && !decoratedHeading, options.summary));
-      decoratedHeading = true;
-    }
-    else if (line.startsWith("- ")) blocks.push(`<p>• ${inline(line.slice(2))}</p>`);
-    else blocks.push(`<p>${inline(line)}</p>`);
-  }
-  if (inCode) blocks.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
-  return blocks.filter(Boolean).join("\n");
-}
-
-function renderHeading(text, decorated, summary = null) {
-  const level = decorated ? "h1" : "h2";
-  const heading = `<${level}>${inline(text)}</${level}>`;
-  if (!decorated) return heading;
-  return `${heading}\n${renderArticleSummary(summary)}\n<div class="ca-page-ornament" aria-hidden="true"><span>✥</span></div>`;
-}
-
-function inline(text) {
-  return escapeHtml(text)
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\[\[([^\]]+)\]\]/g, (_, target) => {
-      const route = routeForWikilink(target, state.currentWiki);
-      const label = labelForWikilink(target, pageLabel);
-      return `<a href="${escapeAttr(route)}" data-route="${escapeAttr(route)}">${escapeHtml(label)}</a>`;
-    })
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, target) => renderMarkdownLink(label, target));
-}
-
-function renderMarkdownLink(label, target) {
-  if (/^https?:\/\//.test(target)) {
-    return `<a href="${escapeAttr(target)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
-  }
-  const pageSlug = pageSlugFromMarkdownTarget(target);
-  if (pageSlug !== null) {
-    const route = wikiRoute(`/page/${encodeURIComponent(pageSlug)}`);
-    const text = pageLabel(pageSlug) === pageSlug ? label.replace(/\.md$/, "") : pageLabel(pageSlug);
-    return `<a href="${escapeAttr(route)}" data-route="${escapeAttr(route)}">${escapeHtml(text)}</a>`;
-  }
-  return `<span>${escapeHtml(label)}</span>`;
 }
 
 function pageSlugFromMarkdownTarget(target) {

@@ -8,6 +8,8 @@ describe("viewer UI assets", () => {
     const indexHtml = await readFile(join(process.cwd(), "viewer", "index.html"), "utf8");
     const logo = await readFile(join(process.cwd(), "viewer", "almanac-logo.png"));
     const appJs = await readFile(join(process.cwd(), "viewer", "app.js"), "utf8");
+    const markdownJs = await readFile(join(process.cwd(), "viewer", "markdown.js"), "utf8");
+    const markedEsm = await readFile(join(process.cwd(), "viewer", "vendor", "marked.esm.js"));
     const routesJs = await readFile(join(process.cwd(), "viewer", "routes.js"), "utf8");
     const jobsJs = await readFile(join(process.cwd(), "viewer", "jobs-view.js"), "utf8");
     const jobsTranscriptJs = await readFile(join(process.cwd(), "viewer", "jobs-transcript.js"), "utf8");
@@ -52,12 +54,14 @@ describe("viewer UI assets", () => {
     expect(appJs).toContain("event.state");
     expect(appJs).toContain("Back");
     expect(appJs).not.toContain("ca-page-header");
-    expect(appJs).toContain("renderHeading");
     expect(appJs).toContain("renderMarkdown(page.body, { decorateTitle: true, summary: page.summary })");
-    expect(appJs).toContain("function renderMarkdown(source, options = {})");
-    expect(appJs).toContain("renderArticleSummary");
-    expect(appJs).toContain('const level = decorated ? "h1" : "h2";');
-    expect(appJs).toContain("ca-page-ornament");
+    expect(appJs).toContain('import { createMarkdown } from "./markdown.js"');
+    expect(appJs).toContain("createMarkdown({");
+    expect(appJs).not.toContain("function renderMarkdown(source");
+    expect(markdownJs).toContain("export function createMarkdown");
+    expect(markdownJs).toContain('from "./vendor/marked.esm.js"');
+    expect(markdownJs).toContain("ca-page-ornament");
+    expect(markedEsm.byteLength).toBeGreaterThan(0);
     expect(appJs).toContain('wikiPath === "/jobs"');
     expect(appJs).toContain('wikiPath.startsWith("/jobs/")');
     expect(appJs).toContain('import { createJobsView } from "./jobs-view.js"');
