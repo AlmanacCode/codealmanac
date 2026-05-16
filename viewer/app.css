@@ -973,6 +973,75 @@ a { color: var(--ca-accent); text-decoration: none; }
   color: inherit;
 }
 
+.ca-prose ul,
+.ca-prose ol {
+  margin: 0 0 16px;
+  padding-left: 26px;
+}
+
+.ca-prose li { margin: 0 0 6px; }
+
+.ca-prose li > ul,
+.ca-prose li > ol {
+  margin: 6px 0 0;
+}
+
+.ca-prose ul ul { list-style-type: circle; }
+
+.ca-prose li:has(> input[type="checkbox"]) { list-style: none; }
+
+.ca-prose li input[type="checkbox"] {
+  margin: 0 8px 0 -22px;
+}
+
+.ca-prose strong { font-weight: 600; }
+
+.ca-prose em { font-style: italic; }
+
+.ca-prose del { text-decoration: line-through; }
+
+.ca-prose blockquote {
+  margin: 18px 0;
+  padding: 4px 18px;
+  border-left: 3px solid var(--ca-border);
+  color: var(--ca-muted);
+}
+
+.ca-prose blockquote p:last-child { margin-bottom: 0; }
+
+.ca-prose hr {
+  margin: 32px 0;
+  border: 0;
+  border-top: 1px solid var(--ca-border-light);
+}
+
+.ca-prose table {
+  width: 100%;
+  margin: 18px 0;
+  border-collapse: collapse;
+  font-family: var(--ca-serif);
+  font-size: 15px;
+}
+
+.ca-prose th,
+.ca-prose td {
+  padding: 8px 12px;
+  border: 1px solid var(--ca-border-light);
+  text-align: left;
+  line-height: 1.6;
+}
+
+.ca-prose thead th {
+  background: var(--ca-surface-deep);
+  font-weight: 600;
+}
+
+.ca-prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--ca-radius);
+}
+
 /* ────────────────────────────────────────────────────────────
    Right rail (page detail only)
    ──────────────────────────────────────────────────────────── */
