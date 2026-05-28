@@ -10,6 +10,12 @@ project memory more coherent, navigable, current, and trustworthy.
 
 ## Algorithm
 
+Before general cleanup, run `almanac review list --status decided`. For each
+decided item, read it with `almanac review show <id>`, apply the decision to the
+relevant wiki pages, then mark it applied with `almanac review apply <id>
+"summary of edits"`. These items are human/editor decisions waiting for agent
+implementation; do this before looking for new work.
+
 1. Inspect pages, topics, links, hubs, archived pages, supersession chains,
    referenced files, and cited sources where useful.
 2. Find graph problems: duplicate pages, thin placeholders, stale claims,

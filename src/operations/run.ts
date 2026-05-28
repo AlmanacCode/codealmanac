@@ -110,7 +110,7 @@ async function sourceControlRuntimeContext(repoRoot: string): Promise<string> {
     return [
       "Source control runtime context:",
       "- Auto-commit wiki source changes: enabled",
-      "- If durable wiki source files changed, commit only `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml`.",
+      "- If durable wiki source files changed, commit only `.almanac/README.md`, `.almanac/pages/`, `.almanac/topics.yaml`, and `.almanac/review.yaml`.",
       "- Use commit style: `almanac: <imperative one-line summary>` followed by an optional body explaining what changed and why.",
     ].join("\n");
   }

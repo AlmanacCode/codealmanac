@@ -1,5 +1,13 @@
 import { Command } from "commander";
 
+import {
+  runReviewAdd,
+  runReviewApply,
+  runReviewDecide,
+  runReviewList,
+  runReviewReopen,
+  runReviewShow,
+} from "../commands/review.js";
 import { runTag, runUntag } from "../commands/tag.js";
 import {
   runTopicsCreate,
@@ -15,6 +23,114 @@ import { autoRegisterIfNeeded } from "../registry/autoregister.js";
 import { collectOption, emit, readStdin } from "./helpers.js";
 
 export function registerEditCommands(program: Command): void {
+  const review = program
+    .command("review")
+    .description("manage wiki review escalations");
+
+  review
+    .command("add [markdown...]")
+    .description("add an unresolved wiki conflict or ambiguity")
+    .option("--wiki <name>", "target a specific registered wiki")
+    .option("--json", "emit structured JSON")
+    .action(async (markdownArg: string[], opts: { wiki?: string; json?: boolean }) => {
+      await autoRegisterIfNeeded(process.cwd());
+      const markdown = markdownArg.length > 0 ? markdownArg.join(" ") : undefined;
+      const result = await runReviewAdd({
+        cwd: process.cwd(),
+        wiki: opts.wiki,
+        markdown,
+        stdinInput: markdown === undefined ? await readStdin() : undefined,
+        json: opts.json,
+      });
+      emit(result);
+    });
+
+  review
+    .command("list", { isDefault: true })
+    .description("list review escalations")
+    .option("--status <status>", "open, decided, applied, or all")
+    .option("--wiki <name>", "target a specific registered wiki")
+    .option("--json", "emit structured JSON")
+    .action(
+      async (opts: { status?: "open" | "decided" | "applied" | "all"; wiki?: string; json?: boolean }) => {
+        await autoRegisterIfNeeded(process.cwd());
+        const result = await runReviewList({
+          cwd: process.cwd(),
+          wiki: opts.wiki,
+          status: opts.status,
+          json: opts.json,
+        });
+        emit(result);
+      },
+    );
+
+  review
+    .command("show <id>")
+    .description("show one review escalation")
+    .option("--wiki <name>", "target a specific registered wiki")
+    .option("--json", "emit structured JSON")
+    .action(async (id: string, opts: { wiki?: string; json?: boolean }) => {
+      await autoRegisterIfNeeded(process.cwd());
+      const result = await runReviewShow({
+        cwd: process.cwd(),
+        wiki: opts.wiki,
+        id,
+        json: opts.json,
+      });
+      emit(result);
+    });
+
+  review
+    .command("decide <id> [markdown...]")
+    .description("record the human/editor decision for a review escalation")
+    .option("--wiki <name>", "target a specific registered wiki")
+    .action(async (id: string, markdownArg: string[], opts: { wiki?: string }) => {
+      await autoRegisterIfNeeded(process.cwd());
+      const markdown = markdownArg.length > 0 ? markdownArg.join(" ") : undefined;
+      const result = await runReviewDecide({
+        cwd: process.cwd(),
+        wiki: opts.wiki,
+        id,
+        markdown,
+        stdinInput: markdown === undefined ? await readStdin() : undefined,
+      });
+      emit(result);
+    });
+
+  review
+    .command("apply <id> [markdown...]")
+    .description("mark a decided review escalation applied after wiki edits")
+    .option("--wiki <name>", "target a specific registered wiki")
+    .action(async (id: string, markdownArg: string[], opts: { wiki?: string }) => {
+      await autoRegisterIfNeeded(process.cwd());
+      const markdown = markdownArg.length > 0 ? markdownArg.join(" ") : undefined;
+      const result = await runReviewApply({
+        cwd: process.cwd(),
+        wiki: opts.wiki,
+        id,
+        markdown,
+        stdinInput: markdown === undefined ? await readStdin() : undefined,
+      });
+      emit(result);
+    });
+
+  review
+    .command("reopen <id> [markdown...]")
+    .description("move a review escalation back to open")
+    .option("--wiki <name>", "target a specific registered wiki")
+    .action(async (id: string, markdownArg: string[], opts: { wiki?: string }) => {
+      await autoRegisterIfNeeded(process.cwd());
+      const markdown = markdownArg.length > 0 ? markdownArg.join(" ") : undefined;
+      const result = await runReviewReopen({
+        cwd: process.cwd(),
+        wiki: opts.wiki,
+        id,
+        markdown,
+        stdinInput: markdown === undefined ? await readStdin() : undefined,
+      });
+      emit(result);
+    });
+
   program
     .command("tag [page] [topics...]")
     .description("add topics to a page (auto-creates missing topics)")

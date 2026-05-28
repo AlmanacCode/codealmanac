@@ -39,7 +39,11 @@ describe("garden operation", () => {
       expect(spec.prompt).toContain("Page Syntax And Writing Conventions");
       expect(spec.prompt).toContain("Source Control Hygiene");
       expect(spec.prompt).toContain("almanac: <imperative one-line summary>");
+      expect(spec.prompt).toContain(".almanac/review.yaml");
       expect(spec.prompt).toContain("Garden Operation");
+      expect(spec.prompt).toContain("almanac review list --status decided");
+      expect(spec.prompt).toContain("almanac review show <id>");
+      expect(spec.prompt).toContain("almanac review apply <id>");
       expect(spec.prompt).toContain(`Repository root: ${repo}`);
       expect(spec.prompt).toContain("Focus on stale pages.");
     });

@@ -43,7 +43,7 @@ describe("build operation", () => {
       expect(spec.prompt).toContain("almanac: <imperative one-line summary>");
       expect(spec.prompt).toContain("Auto-commit wiki source changes: enabled");
       expect(spec.prompt).toContain(
-        "If durable wiki source files changed, commit only `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml`",
+        "If durable wiki source files changed, commit only `.almanac/README.md`, `.almanac/pages/`, `.almanac/topics.yaml`, and `.almanac/review.yaml`",
       );
       expect(spec.prompt).toContain(
         "You are building the first substantial Almanac wiki",

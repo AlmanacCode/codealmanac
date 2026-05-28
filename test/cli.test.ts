@@ -222,6 +222,7 @@ describe("registerCommands", () => {
       "show",
       "health",
       "list",
+      "review",
       "tag",
       "untag",
       "topics",
@@ -253,6 +254,8 @@ describe("registerCommands", () => {
         "delete",
         "describe",
       ]);
+    expect(findCommand(program, ["review"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["add", "list", "show", "decide", "apply", "reopen"]);
     expect(findCommand(program, ["automation"]).commands.map((cmd) => cmd.name()))
       .toEqual(["install", "uninstall", "status"]);
     expect(findCommand(program, ["capture"]).commands.map((cmd) => cmd.name()))

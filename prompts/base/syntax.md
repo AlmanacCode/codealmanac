@@ -145,7 +145,8 @@ Every edit should make the graph easier to understand, navigate, or trust.
 
 Before finishing a successful Build, Absorb, or Garden run, check whether you
 created, changed, archived, deleted, or retopiced wiki source files. Wiki source
-files are `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml`.
+files are `.almanac/README.md`, `.almanac/pages/`, `.almanac/topics.yaml`, and
+`.almanac/review.yaml`.
 
 Only create a git commit when the runtime context says auto-commit is enabled.
 When it is enabled, commit only those wiki source changes and use the commit
