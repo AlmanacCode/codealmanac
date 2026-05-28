@@ -28,7 +28,9 @@ Topics form a DAG serialized in `.almanac/topics.yaml`. A page can belong to mul
 | `decisions` | Architectural choices — "why X over Y" |
 | `agents` | AI agent integration: harness providers, operation prompts, Build/Absorb/Garden (child of `flows` + `stack`) |
 | `cli` | CLI command surface and wiring (child of `systems`) |
+| `automation` | Scheduled background behavior and the CLI surfaces that install, inspect, and remove it (child of `flows` + `cli`) |
 | `storage` | SQLite index and registry persistence (child of `systems`) |
+| `product` | Product positioning, evaluation strategy, and market-facing claims about CodeAlmanac |
 
 Add domain topics as the wiki grows. New topics go in `topics.yaml`; `almanac topics create` handles this.
 

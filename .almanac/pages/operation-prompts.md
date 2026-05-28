@@ -14,8 +14,9 @@ files:
   - prompts/agents/.gitkeep
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
+  - /Users/kushagrachitkara/.claude/projects/-Users-kushagrachitkara-Downloads-reverie-codealmanac/a26d91c7-8f31-42a7-9203-a2ff89134cc9.jsonl
 status: active
-verified: 2026-05-11
+verified: 2026-05-24
 ---
 
 # Operation Prompts
@@ -56,10 +57,14 @@ Absorb starts from an input and distills reusable project understanding into the
 
 For session-transcript inputs, a later 2026-05-11 capture review identified one prompt gap worth preserving: `prompts/operations/absorb.md` currently says to treat the input as raw material, but it does not yet explicitly tell the agent to parse transcript JSONL structurally and ignore repeated raw envelopes, long tool schemas, and oversized stdout unless they matter to a durable conclusion. That is current prompt debt, not a missing concept in the product model.
 
+A 2026-05-24 Claude session added a second Absorb quality rule from direct user feedback: a wiki stops being trusted if the agent uses it as a scratchpad for unresolved intake work. In that session the agent created transient pages for open questions and field inventories while helping a user fill a STEM OPT packet in an Obsidian vault, and the user explicitly pushed back that the wiki was becoming a notepad rather than memory. The durable product lesson is that unanswered question lists, per-form field dumps, and other active worksheet scaffolding belong in chat, task trackers, or source documents until they condense into reusable understanding. When new input only exposes missing facts, Absorb should usually no-op or update one stable synthesis page with the verified conclusion later, not preserve the collection process itself as wiki memory.
+
 Garden cultivates the graph. It improves clusters, hubs, topics, links, page boundaries, staleness, archive/supersession chains, and synthesis quality. The editorial model behind those outcomes is captured in [[wiki-organization-primitives]].
 
 ## Design implication
 
 If Build, Absorb, or Garden need better judgment, edit the relevant base or operation prompt. Do not recreate the removed writer/reviewer/review-apply pipeline in TypeScript. Helper/subagents remain optional provider behavior described inside operation prompts, not fixed CodeAlmanac product roles. This prompt layer is separate from prescriptive agent rules such as [[agents-md]] or `CLAUDE.md`: operation prompts carry run-specific Almanac behavior, while instruction files carry durable session conventions for a given agent harness.
+
+The same prompt-first rule applies to product evaluation. If a benchmark reveals that agents retrieve the wrong pages, preserve scratchpad intake work, or miss durable conclusions, the first fix target is usually prompt doctrine before adding new orchestration. [[repo-memory-benchmarks]] records the current evaluation frame for that claim.
 
 The transcript-capture review also produced a concrete example of that rule: if large session JSONL files become too expensive or noisy for Absorb, the first corrective move should be to strengthen `prompts/operations/absorb.md` with transcript-specific extraction guidance, and only then consider extra preflight tooling such as size warnings or caps.

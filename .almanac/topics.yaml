@@ -38,3 +38,8 @@ topics:
     title: Storage
     description: SQLite index, registry persistence, and file layout
     parents: [systems]
+
+  - slug: product
+    title: Product
+    description: Product positioning, evaluation strategy, and market-facing claims for Codealmanac
+    parents: []
