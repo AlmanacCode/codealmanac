@@ -16,6 +16,31 @@ relevant wiki pages, then mark it applied with `almanac review apply <id>
 "summary of edits"`. These items are human/editor decisions waiting for agent
 implementation; do this before looking for new work.
 
+## Review Escalations
+
+Use `almanac review add` only for unresolved source conflicts.
+
+Before raising review, verify against current code, tests, config, current
+external docs, and existing wiki pages. If those sources resolve the conflict,
+edit the wiki directly. If one source is stale, remove the stale claim or mark
+it historical. Do not ask the human to decide a fact that the repo already
+answers.
+
+Do not use review for feature ideas, product suggestions, missing links, routine
+stale prose, unsupported claims you can delete, source migrations with a
+deterministic fixer, or questions the code already answers.
+
+Raise review only when competing sources both plausibly describe intended truth
+and choosing between them requires a human/editor decision.
+
+A good review item sets the scene:
+
+- the claim in conflict
+- the sources that disagree
+- what verification was attempted
+- why the normal truth hierarchy did not resolve it
+- the specific decision needed
+
 1. Inspect pages, topics, links, hubs, archived pages, supersession chains,
    referenced files, and cited sources where useful.
 2. Find graph problems: duplicate pages, thin placeholders, stale claims,

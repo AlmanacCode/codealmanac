@@ -44,6 +44,11 @@ describe("garden operation", () => {
       expect(spec.prompt).toContain("almanac review list --status decided");
       expect(spec.prompt).toContain("almanac review show <id>");
       expect(spec.prompt).toContain("almanac review apply <id>");
+      expect(spec.prompt).toContain("Use `almanac review add` only for unresolved source conflicts.");
+      expect(spec.prompt).toContain("Do not use review for feature ideas");
+      expect(spec.prompt).toContain("Do not ask the human to decide a fact");
+      expect(spec.prompt).toContain("answers.");
+      expect(spec.prompt).toContain("the sources that disagree");
       expect(spec.prompt).toContain(`Repository root: ${repo}`);
       expect(spec.prompt).toContain("Focus on stale pages.");
     });
