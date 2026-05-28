@@ -148,7 +148,7 @@ export function registerSetupCommands(program: Command): void {
     .option("--skip-automation", "opt out of scheduled auto-capture")
     .option("--auto-capture-every <duration>", "scheduled auto-capture interval (default: 5h)")
     .option("--auto-capture-quiet <duration>", "scheduled auto-capture quiet window (default: 45m)")
-    .option("--garden-every <duration>", "scheduled Garden interval (default: 2d)")
+    .option("--garden-every <duration>", "scheduled Garden interval (default: 4h)")
     .option("--garden-off", "disable scheduled Garden automation")
     .option("--auto-update", "install scheduled Almanac self-update")
     .option("--auto-update-every <duration>", "scheduled self-update interval (default: 1d)")

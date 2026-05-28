@@ -327,7 +327,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
     .description("install the macOS launchd automation jobs")
     .option("--every <duration>", "run interval for capture or a single selected task")
     .option("--quiet <duration>", "minimum quiet time before capture (default: 45m)")
-    .option("--garden-every <duration>", "Garden run interval (default: 2d)")
+    .option("--garden-every <duration>", "Garden run interval (default: 4h)")
     .option("--garden-off", "disable scheduled Garden automation")
     .action(async (tasks: string[], opts: {
       every?: string;

@@ -9,7 +9,7 @@ export const UPDATE_LABEL = "com.codealmanac.update";
 
 export const DEFAULT_CAPTURE_INTERVAL = "5h";
 export const DEFAULT_CAPTURE_QUIET = "45m";
-export const DEFAULT_GARDEN_INTERVAL = "2d";
+export const DEFAULT_GARDEN_INTERVAL = "4h";
 export const DEFAULT_UPDATE_INTERVAL = "1d";
 
 export type ScheduledTaskId = "capture" | "garden" | "update";

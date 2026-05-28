@@ -72,7 +72,7 @@ export interface SetupOptions {
   automationEvery?: string;
   /** Configure the scheduled auto-capture quiet window. Defaults to 45m. */
   automationQuiet?: string;
-  /** Configure the scheduled Garden interval. Defaults to 2d. */
+  /** Configure the scheduled Garden interval. Defaults to 4h. */
   gardenEvery?: string;
   /** Don't install the scheduled Garden job. */
   gardenOff?: boolean;

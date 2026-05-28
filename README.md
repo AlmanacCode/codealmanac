@@ -139,7 +139,7 @@ almanac setup --auto-commit
 almanac setup --no-auto-commit
 almanac setup --auto-capture-every 2h
 almanac setup --auto-capture-quiet 30m
-almanac setup --garden-every 2d
+almanac setup --garden-every 4h
 almanac setup --garden-off
 almanac setup --auto-update
 almanac setup --auto-update-every 1d

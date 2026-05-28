@@ -27,6 +27,7 @@ sources:
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T15-56-34-019e280f-f145-7432-a87a-55b96c429856.jsonl
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T16-08-39-019e281b-0256-7b60-86f9-ca8990e73c39.jsonl
   - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T11-12-35-019e6f5b-eaff-7600-abd8-c83c7cdc491a.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
   - https://www.npmjs.com/package/auto-launch
   - https://www.npmjs.com/package/node-schedule
   - https://www.npmjs.com/package/node-windows
@@ -48,7 +49,7 @@ Automation is the scheduler layer around Almanac's recurring maintenance work. I
 
 The capture plist path is `~/Library/LaunchAgents/com.codealmanac.capture-sweep.plist`. The Garden plist path is `~/Library/LaunchAgents/com.codealmanac.garden.plist`. The update plist path is `~/Library/LaunchAgents/com.codealmanac.update.plist`. All task plists write stdout and stderr logs under `~/.almanac/logs/`.
 
-The capture job runs `almanac capture sweep` with a quiet-window argument. The default schedule is every `5h`, and the default quiet window is `45m`. The Garden job runs `almanac garden` every `2d` by default. The update job runs bare `almanac update` every `1d` by default and relies on [[self-update]] for no-op behavior when the installed package is current.
+The capture job runs `almanac capture sweep` with a quiet-window argument. The default schedule is every `5h`, and the default quiet window is `45m`. The Garden job runs `almanac garden` every `4h` by default. The update job runs bare `almanac update` every `1d` by default and relies on [[self-update]] for no-op behavior when the installed package is current.
 
 The automation code is split by responsibility. `[[src/automation/tasks.ts]]` owns `ScheduledTaskDefinition` records for capture, Garden, and update: labels, default intervals, plist paths, log filenames, working-directory policy, and default command arguments. `[[src/automation/launchd.ts]]` owns plist rendering, PATH construction, bootstrap/removal, and loaded-state checks. `[[src/automation/legacy-hooks.ts]]` owns private migration cleanup for older hook-based installs. `[[src/commands/automation.ts]]` remains the command transaction that validates options, writes the activation baseline for capture, turns task definitions into launchd jobs, calls launchd helpers, and formats user output.
 
@@ -82,6 +83,19 @@ The task definition is the source of truth for each task's scheduler identity: l
 The 2026-05-14 [[self-update]] work added a boundary case to this model. Automatic CLI self-update uses scheduler mechanics, but the work command stays `almanac update` rather than becoming a private scheduler-only update command. Automation owns task selection, the launchd task definition, and status plumbing through `almanac automation install update`; the update command owns package mutation, version checks, and idempotent no-op behavior when the installed version is current.
 
 There is no `.almanac/triggers.yaml` in the current implementation. A trigger file is a future product generalization discussed for non-code Almanacs: one scheduler command such as `almanac sweep` could read project-local trigger rules and decide whether to index changed sources, absorb new source records, or garden a changed graph. The current implementation uses typed scheduled tasks in `[[src/automation/tasks.ts]]`, not project-local trigger configuration.
+
+## Freshness trigger policy
+
+The product rule for keeping a wiki current is semantic rather than file-count based. Absorb keeps facts current from completed work sessions; Garden keeps the wiki graph healthy after accumulated drift. A raw threshold such as "run Garden after five changed files" is too weak because small edits can touch many files without changing durable project memory, while one prompt, indexer, provider-harness, lifecycle-command, source-parsing, schema, automation, or viewer API change can materially change the wiki's current truth.
+
+The current default posture is:
+
+- run `almanac capture sweep` on its scheduler cadence, with quiet-session eligibility deciding whether any Absorb run starts
+- run `almanac garden` every `4h` by default
+- run `almanac health` after wiki-writing runs and before committing wiki changes
+- use `almanac review` only when Absorb or Garden finds a verified source conflict that needs human judgment
+
+Manual Garden is justified after high-impact work, not after arbitrary file counts. Useful signals include a large feature branch, a public CLI contract change, changes to prompts or lifecycle commands, changes to the indexer or source model, changes to automation or provider runtime boundaries, more than about five pages changed by one Absorb pass, `almanac health` reporting structural problems, or several pages changing around one topic until navigation starts to feel unclear.
 
 ## Fast-path and failure posture
 

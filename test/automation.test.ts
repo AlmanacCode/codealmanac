@@ -84,7 +84,7 @@ describe("almanac automation", () => {
 
       const gardenPlist = await readFile(gardenPlistPath, "utf8");
       expect(gardenPlist).toContain("<string>com.codealmanac.garden</string>");
-      expect(gardenPlist).toContain("<integer>172800</integer>");
+      expect(gardenPlist).toContain("<integer>14400</integer>");
       expect(gardenPlist).toContain("<string>garden</string>");
     });
   });

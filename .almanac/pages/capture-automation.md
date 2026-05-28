@@ -442,7 +442,7 @@ The capture plist owns the sweep wakeup interval, likely via `StartInterval = 18
 - command: `almanac capture sweep`
 - stdout/stderr: user-visible log files under a CodeAlmanac-owned log directory
 
-The Garden plist owns graph-maintenance cadence, using `StartInterval = 172800` for the default two-day cadence:
+The Garden plist owns graph-maintenance cadence, using `StartInterval = 14400` for the default four-hour cadence:
 
 - command: `almanac garden`
 - working directory: the nearest wiki root found from the install command's current directory
