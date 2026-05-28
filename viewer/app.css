@@ -679,6 +679,137 @@ a { color: var(--ca-accent); text-decoration: none; }
 }
 
 /* ────────────────────────────────────────────────────────────
+   Review queue
+   ──────────────────────────────────────────────────────────── */
+
+.ca-review-section {
+  margin-top: 26px;
+}
+
+.ca-review-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--ca-border-light);
+}
+
+.ca-review-section-head h2 {
+  margin: 0 0 8px;
+  color: var(--ca-ink);
+  font-family: var(--ca-sans);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.ca-review-section-head span {
+  color: var(--ca-faint);
+  font-family: var(--ca-mono);
+  font-size: 12px;
+}
+
+.ca-review-list {
+  display: grid;
+  gap: 14px;
+}
+
+.ca-review-item {
+  border: 1px solid var(--ca-paper-edge);
+  border-left: 4px solid var(--ca-border);
+  border-radius: var(--ca-radius);
+  background: var(--ca-paper);
+  padding: 18px 20px;
+  box-shadow: 0 1px 0 rgba(52, 47, 37, 0.03), 0 8px 22px -24px rgba(52, 47, 37, 0.20);
+}
+
+.ca-review-open { border-left-color: var(--ca-rust); }
+.ca-review-decided { border-left-color: var(--ca-accent); }
+.ca-review-applied { border-left-color: var(--ca-sage); }
+
+.ca-review-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.ca-review-item-head h3 {
+  margin: 3px 0 0;
+  color: var(--ca-ink);
+  font-family: var(--ca-serif);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.18;
+}
+
+.ca-review-status,
+.ca-review-id,
+.ca-review-meta {
+  font-family: var(--ca-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ca-review-status {
+  color: var(--ca-accent);
+}
+
+.ca-review-id {
+  max-width: 32ch;
+  color: var(--ca-faint);
+  overflow-wrap: anywhere;
+  text-align: right;
+  text-transform: none;
+}
+
+.ca-review-body {
+  max-width: 76ch;
+}
+
+.ca-review-note {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--ca-border-light);
+  border-radius: var(--ca-radius-sm);
+  background: var(--ca-surface);
+}
+
+.ca-review-note h4 {
+  margin: 0 0 6px;
+  color: var(--ca-muted);
+  font-family: var(--ca-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ca-review-note .ca-prose p,
+.ca-review-body.ca-prose p {
+  margin: 0 0 10px;
+}
+
+.ca-review-note .ca-prose p:last-child,
+.ca-review-body.ca-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.ca-review-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dotted var(--ca-border);
+  color: var(--ca-faint);
+  text-transform: none;
+}
+
+/* ────────────────────────────────────────────────────────────
    Library (wiki directory)
    ──────────────────────────────────────────────────────────── */
 

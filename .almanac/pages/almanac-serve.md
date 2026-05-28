@@ -45,7 +45,15 @@ sources:
   - id: review-escalations-session
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
-    note: Records that the review escalation CLI shipped without a serve UI.
+    note: Records the review escalation CLI and the follow-up serve UI route.
+  - id: serve-command-registration
+    type: file
+    path: src/cli/register-query-commands.ts
+    note: Defines the `almanac serve` host and port options and their defaults.
+  - id: serve-runtime
+    type: file
+    path: src/commands/serve.ts
+    note: Prints the viewer URL and keeps the local server running until interrupt.
 ---
 
 # almanac serve (Local Viewer)
@@ -62,14 +70,25 @@ The answer is a local viewer rather than a cloud app, hosted service, or complex
 
 ## Invocation
 
+Run the installed CLI from a repo that contains `.almanac/`:
+
 ```bash
 almanac serve
 ```
 
-Opens at:
+By default the command binds `127.0.0.1:3927`; `src/commands/serve.ts` prints the exact URL as `almanac viewer: <url>` before waiting for Ctrl+C. [@serve-command-registration] [@serve-runtime]
 
-```text
-http://localhost:3927
+Use `--port <n>` when the default port is busy, and use `--host <host>` only when the viewer needs to bind somewhere other than localhost. [@serve-command-registration]
+
+```bash
+almanac serve --port 4320
+```
+
+From a source checkout, build first and run the compiled local binary when testing uninstalled viewer changes:
+
+```bash
+npm run build
+node dist/codealmanac.js serve
 ```
 
 The viewer reads `.almanac/pages/*.md` and `.almanac/index.db`. It triggers an implicit reindex (same as other query commands) so the index is fresh.
@@ -82,6 +101,7 @@ The viewer reads `.almanac/pages/*.md` and `.almanac/index.db`. It triggers an i
 /topic/:slug               topic + descendant pages list
 /search?q=...              FTS search results
 /file?path=src/foo.ts      pages mentioning a file
+/review                    review inbox for unresolved source conflicts
 /jobs                      jobs dashboard — list of recent runs
 /jobs/:runId               job detail — settings, status, stream timeline
 ```
@@ -91,6 +111,8 @@ The left-rail search box uses `/api/suggest` while typing, then `/search?q=...` 
 The page rail (left and right panels) is hidden for `/jobs` and `/jobs/:runId` routes — these views use a dedicated full-width layout rather than the three-panel wiki layout.
 
 The home route treats `.almanac/pages/getting-started.md` as the single markdown-backed front door. `project-overview.md` is no longer a featured fallback in the viewer API or frontend; it can still be read as a normal page if a wiki has one.
+
+The review route reads `.almanac/review.yaml` through the viewer API and groups items by `open`, `decided`, and `applied`. It is a decision inbox, not a generic issue tracker: open items are unresolved source conflicts, decided items are ready for Garden to apply, and applied items are audit history.
 
 ## What the viewer provides
 
@@ -105,14 +127,13 @@ The home route treats `.almanac/pages/getting-started.md` as the single markdown
 - Archive / superseded indicators
 - Jobs dashboard with run list and detail/stream view
 - Graph sidebar (deferred)
-- Future [[wiki-clarifications]] / review inbox for human decisions on unresolved conflicts raised by lifecycle agents
+- Review inbox for human decisions on unresolved conflicts raised by lifecycle agents
 
 ## What the viewer does not do
 
 - No authentication
 - No cloud sync or remote access
 - No editing UI (markdown stays in editor/filesystem)
-- No review-escalation UI yet; `.almanac/review.yaml` is currently managed through `almanac review`
 - No AI calls
 - No database writes (except implicit reindex)
 - No separate content model

@@ -180,6 +180,12 @@ async function route(pathname, search = "", push = true) {
     return;
   }
 
+  if (wikiPath === "/review") {
+    await renderReview();
+    clearPageRail();
+    return;
+  }
+
   if (wikiPath === "/jobs") {
     await jobsView.renderList();
     clearPageRail();
@@ -257,6 +263,7 @@ function setActiveNav(pathname) {
     const active = route === "/"
       ? pathname === "/" || pathname.startsWith("/w/")
         && !pathname.includes("/jobs")
+        && !pathname.includes("/review")
       : state.currentWiki !== null && (
         route === "/jobs"
           ? pathname === wikiRoute("/jobs") || pathname.startsWith(wikiRoute("/jobs/"))
@@ -564,6 +571,85 @@ async function renderFile(path) {
   `;
 }
 
+async function renderReview() {
+  const result = await api(wikiApi("/review"));
+  document.title = `Review — ${state.currentWiki}`;
+  const items = Array.isArray(result.items) ? result.items : [];
+  const counts = result.counts ?? { open: 0, decided: 0, applied: 0 };
+  els.reader.innerHTML = `
+    ${renderPageActions(wikiRoute("/"))}
+    <section class="ca-hero">
+      <h1 class="ca-display-h1">Review</h1>
+      <p class="ca-lede">
+        Source conflicts that need a human decision before Garden can safely update the wiki.
+      </p>
+      <div class="ca-hero-strip" aria-label="Review state">
+        <span class="ca-hero-strip-cell">
+          <span class="ca-hero-strip-label">open</span>
+          <span class="ca-hero-strip-value">${escapeHtml(counts.open ?? 0)}</span>
+        </span>
+        <span class="ca-hero-strip-cell">
+          <span class="ca-hero-strip-label">decided</span>
+          <span class="ca-hero-strip-value">${escapeHtml(counts.decided ?? 0)}</span>
+        </span>
+        <span class="ca-hero-strip-cell">
+          <span class="ca-hero-strip-label">applied</span>
+          <span class="ca-hero-strip-value">${escapeHtml(counts.applied ?? 0)}</span>
+        </span>
+      </div>
+    </section>
+    ${reviewSection("Open", "Needs a human/editor decision.", items.filter((item) => item.status === "open"))}
+    ${reviewSection("Decided", "Ready for Garden to apply.", items.filter((item) => item.status === "decided"))}
+    ${reviewSection("Applied", "Already applied to the wiki.", items.filter((item) => item.status === "applied"))}
+  `;
+}
+
+function reviewSection(title, emptyText, items) {
+  return `
+    <section class="ca-review-section" aria-label="${escapeAttr(title)} review items">
+      <div class="ca-review-section-head">
+        <h2>${escapeHtml(title)}</h2>
+        <span>${escapeHtml(items.length)}</span>
+      </div>
+      ${items.length > 0
+        ? `<div class="ca-review-list">${items.map(reviewItem).join("")}</div>`
+        : `<div class="ca-bento-empty">${escapeHtml(emptyText)}</div>`}
+    </section>
+  `;
+}
+
+function reviewItem(item) {
+  return `
+    <article class="ca-review-item ca-review-${escapeAttr(item.status)}">
+      <header class="ca-review-item-head">
+        <div>
+          <span class="ca-review-status">${escapeHtml(item.status)}</span>
+          <h3>${escapeHtml(item.summary || item.id)}</h3>
+        </div>
+        <span class="ca-review-id">${escapeHtml(item.id)}</span>
+      </header>
+      <div class="ca-review-body ca-prose">${renderMarkdown(item.body || "")}</div>
+      ${item.decision ? `
+        <div class="ca-review-note">
+          <h4>Decision</h4>
+          <div class="ca-prose">${renderMarkdown(item.decision)}</div>
+        </div>
+      ` : ""}
+      ${item.application ? `
+        <div class="ca-review-note">
+          <h4>Application</h4>
+          <div class="ca-prose">${renderMarkdown(item.application)}</div>
+        </div>
+      ` : ""}
+      <footer class="ca-review-meta">
+        ${item.created_at ? `<span>Created ${escapeHtml(formatIsoDate(item.created_at))}</span>` : ""}
+        ${item.decided_at ? `<span>Decided ${escapeHtml(formatIsoDate(item.decided_at))}</span>` : ""}
+        ${item.applied_at ? `<span>Applied ${escapeHtml(formatIsoDate(item.applied_at))}</span>` : ""}
+      </footer>
+    </article>
+  `;
+}
+
 function renderPageRail(page) {
   els.pageMeta.innerHTML = `
     <div class="ca-meta-title">${escapeHtml(pageTitle(page))}</div>
@@ -761,6 +847,12 @@ function formatDate(epochSeconds) {
 
 function formatTimestamp(iso) {
   return new Date(iso).toLocaleString();
+}
+
+function formatIsoDate(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.valueOf())) return iso;
+  return date.toLocaleString();
 }
 
 function formatElapsed(ms) {

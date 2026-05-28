@@ -7,6 +7,12 @@ import { ensureFreshIndex } from "../indexer/index.js";
 import { looksLikeDir, normalizePath } from "../indexer/paths.js";
 import { openIndex } from "../indexer/schema.js";
 import { getPageView, type PageView } from "../query/page-view.js";
+import {
+  loadReviewFile,
+  reviewYamlPath,
+  type ReviewItem,
+  type ReviewStatus,
+} from "../review/store.js";
 import { toKebabCase } from "../slug.js";
 import { topicsYamlPath } from "../topics/paths.js";
 import {
@@ -74,8 +80,14 @@ export interface ViewerApi {
   search(query: string): Promise<{ query: string; pages: ViewerPageSummary[] }>;
   suggest(query: string): Promise<{ query: string; pages: ViewerPageSummary[] }>;
   file(path: string): Promise<{ path: string; pages: ViewerPageSummary[] }>;
+  review(): Promise<ViewerReview>;
   jobs(): Promise<{ runs: ViewerJobRun[] }>;
   job(runId: string): Promise<ViewerJobDetail | null>;
+}
+
+export interface ViewerReview {
+  items: ReviewItem[];
+  counts: Record<ReviewStatus, number>;
 }
 
 export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
@@ -210,6 +222,18 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
           : pageSummaries(db, fileMentionSql(trimmed), fileMentionParams(trimmed));
         return { path: trimmed, pages };
       });
+    },
+
+    async review() {
+      const file = await loadReviewFile(reviewYamlPath(ctx.repoRoot));
+      return {
+        items: file.items,
+        counts: {
+          open: file.items.filter((item) => item.status === "open").length,
+          decided: file.items.filter((item) => item.status === "decided").length,
+          applied: file.items.filter((item) => item.status === "applied").length,
+        },
+      };
     },
 
     async jobs() {

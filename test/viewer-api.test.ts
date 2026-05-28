@@ -135,6 +135,52 @@ describe("viewer api", () => {
     });
   });
 
+  it("returns review escalation items and counts", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writeFile(
+        join(repo, ".almanac", "review.yaml"),
+        `version: 1
+items:
+  - id: source-conflict
+    status: open
+    summary: Source conflict
+    created_at: "2026-05-28T12:00:00.000Z"
+    body: |
+      # Source conflict
+
+      Two sources disagree.
+    decided_at: null
+    decision: null
+    applied_at: null
+    application: null
+  - id: applied-conflict
+    status: applied
+    summary: Applied conflict
+    created_at: "2026-05-28T13:00:00.000Z"
+    body: |
+      # Applied conflict
+    decided_at: "2026-05-28T14:00:00.000Z"
+    decision: Use current code.
+    applied_at: "2026-05-28T15:00:00.000Z"
+    application: Updated the wiki.
+`,
+        "utf8",
+      );
+
+      const api = createViewerApi({ repoRoot: repo });
+      const review = await api.review();
+
+      expect(review.counts).toEqual({ open: 1, decided: 0, applied: 1 });
+      expect(review.items.map((item) => item.id)).toEqual(["source-conflict", "applied-conflict"]);
+      expect(review.items[0]).toMatchObject({
+        status: "open",
+        summary: "Source conflict",
+      });
+    });
+  });
+
   it("reports markdown-backed getting-started when it exists", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");
