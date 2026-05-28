@@ -11,27 +11,27 @@ understanding that would be costly, useful, or risky to reconstruct later.
 Good page candidates include:
 
 - **Entity**: a named thing the project reasons about, such as `run`,
-  `provider`, `topic`, `stripe`, `postgres`, or `claude-agent-sdk`.
+`provider`, `topic`, `stripe`, `postgres`, or `claude-agent-sdk`.
 - **Subsystem**: an area with responsibility and boundaries.
 - **Flow**: behavior that crosses files, commands, systems, or agents.
 - **Contract**: obligations between callers, providers, schemas, APIs,
-  commands, file formats, or external services.
+commands, file formats, or external services.
 - **Data model**: records, schemas, storage formats, indexes, serialized files,
-  or external payloads whose shape affects behavior.
+or external payloads whose shape affects behavior.
 - **Operation**: a recurring project or product action with inputs, outputs,
-  side effects, and verification.
+side effects, and verification.
 - **Decision or rationale**: why the project chose one path over plausible
-  alternatives.
+alternatives.
 - **Risk or invariant**: a rule, coupling, assumption, or fragile behavior that
-  future work must preserve.
+future work must preserve.
 - **Dependency**: an external runtime, service, SDK, API, framework, law,
-  platform, or tool as used by this project.
+platform, or tool as used by this project.
 - **Influence**: an external idea, paper, tradition, book, framework, or prior
-  art that shaped this project.
+art that shaped this project.
 - **Research synthesis**: conclusions from docs, papers, experiments, external
-  references, or design exploration.
+references, or design exploration.
 - **Market or product synthesis**: durable understanding about users,
-  positioning, pricing, competitors, sentiment, or product strategy.
+positioning, pricing, competitors, sentiment, or product strategy.
 - **Incident or postmortem**: what happened, what was learned, and what changed.
 - **Hub**: a navigational page that explains a dense cluster.
 
@@ -116,24 +116,5 @@ A hub should explain:
 Small clusters do not need separate hub pages. The main entity or subsystem
 page can act as the local hub until navigation becomes unclear.
 
-## Splitting And Merging
+## **type: runtime-view**
 
-Use summary style. A page may start broad. When a section grows into an
-independently useful concept, split it into its own page and leave a short
-summary plus link on the original page.
-
-Split when:
-
-- a section has its own internal structure
-- other pages want to link to that section specifically
-- incidents, decisions, or docs cluster around a subtopic
-- a page is doing multiple unrelated jobs
-
-Merge when:
-
-- two pages answer the same future-agent question
-- one page is only a stub pointing to another
-- a set of date-stamped fragments should become an evolving synthesis page
-
-Archive or supersede when knowledge is no longer current but remains useful as
-history. Delete only when the page has no durable value.

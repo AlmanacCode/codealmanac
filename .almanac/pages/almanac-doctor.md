@@ -79,6 +79,8 @@ Doctor still does not repair setup artifacts directly, but its instruction check
 
 The command also remains diagnostic-only. Even when a fix is straightforward, such as reinstalling automation or rerunning setup to restore guide files, doctor only prints the suggested command.
 
+A 2026-05-28 source-provenance discussion clarified the future repair boundary. `doctor --fix`, if added, should repair install and environment problems such as SQLite ABI state, setup-owned instruction entries, registry entries, and automation installation. Deterministic wiki-corpus repairs such as legacy `files:` to structured `sources:` migration belong to `almanac health --fix`, because [[source-provenance|source provenance]] is wiki content health rather than install health.
+
 ## Product direction recorded on 2026-05-12
 
 The captured Codex session on 2026-05-12 proposed `almanac doctor --fix` as a follow-on feature after the repo itself hit a real `better-sqlite3` ABI mismatch during exploration. The proposal was to auto-repair only safe local problems that doctor already knows how to diagnose:

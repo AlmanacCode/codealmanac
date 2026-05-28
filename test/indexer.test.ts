@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -205,6 +206,175 @@ superseded_by: stripe-async
     });
   });
 
+  it("indexes structured sources and derives file refs from file sources", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "source-backed",
+        `---
+title: Source Backed
+topics: [x]
+sources:
+  - id: schema
+    type: file
+    path: src/indexer/schema.ts
+    note: Defines index tables.
+  - id: docs
+    type: web
+    url: https://example.com/docs
+    title: Example Docs
+    retrieved_at: 2026-05-28
+    note: Documents external behavior.
+---
+
+Body.
+`,
+      );
+
+      await runIndexer({ repoRoot: repo });
+
+      const db = openIndex(join(repo, ".almanac", "index.db"));
+      try {
+        const refs = db
+          .prepare(
+            "SELECT path, original_path, is_dir FROM file_refs WHERE page_slug = ?",
+          )
+          .all("source-backed");
+        expect(refs).toEqual([
+          {
+            path: "src/indexer/schema.ts",
+            original_path: "src/indexer/schema.ts",
+            is_dir: 0,
+          },
+        ]);
+
+        const sources = db
+          .prepare(
+            `SELECT source_id, source_type, target, title, retrieved_at, note, legacy
+             FROM page_sources WHERE page_slug = ? ORDER BY source_id`,
+          )
+          .all("source-backed");
+        expect(sources).toEqual([
+          {
+            source_id: "docs",
+            source_type: "web",
+            target: "https://example.com/docs",
+            title: "Example Docs",
+            retrieved_at: "2026-05-28",
+            note: "Documents external behavior.",
+            legacy: 0,
+          },
+          {
+            source_id: "schema",
+            source_type: "file",
+            target: "src/indexer/schema.ts",
+            title: null,
+            retrieved_at: null,
+            note: "Defines index tables.",
+            legacy: 0,
+          },
+        ]);
+      } finally {
+        db.close();
+      }
+    });
+  });
+
+  it("normalizes file source targets in page_sources", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "odd-path-source",
+        `---
+topics: [x]
+sources:
+  - id: odd-path
+    type: file
+    path: ./Src//Foo.ts
+    note: Oddly written path.
+---
+
+Body.
+`,
+      );
+
+      await runIndexer({ repoRoot: repo });
+
+      const db = openIndex(join(repo, ".almanac", "index.db"));
+      try {
+        const source = db
+          .prepare(
+            "SELECT target FROM page_sources WHERE page_slug = ? AND source_id = ?",
+          )
+          .get("odd-path-source", "odd-path") as { target: string } | undefined;
+        expect(source?.target).toBe("src/foo.ts");
+      } finally {
+        db.close();
+      }
+    });
+  });
+
+  it("isolates legacy files and URL sources as legacy page sources", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "legacy-source-backed",
+        `---
+topics: [x]
+files:
+  - src/legacy.ts
+sources:
+  - https://example.com/legacy-docs
+  - local transcript note
+---
+
+Body.
+`,
+      );
+
+      await runIndexer({ repoRoot: repo });
+
+      const db = openIndex(join(repo, ".almanac", "index.db"));
+      try {
+        const refs = db
+          .prepare("SELECT path FROM file_refs WHERE page_slug = ?")
+          .all("legacy-source-backed");
+        expect(refs).toEqual([{ path: "src/legacy.ts" }]);
+
+        const sources = db
+          .prepare(
+            `SELECT source_id, source_type, target, note, legacy
+             FROM page_sources WHERE page_slug = ? ORDER BY source_type, source_id`,
+          )
+          .all("legacy-source-backed");
+        expect(sources).toEqual([
+          {
+            source_id: "legacy",
+            source_type: "file",
+            target: "src/legacy.ts",
+            note: "Migrated from legacy files.",
+            legacy: 1,
+          },
+          {
+            source_id: "legacy-docs",
+            source_type: "web",
+            target: "https://example.com/legacy-docs",
+            note: "Migrated from legacy sources.",
+            legacy: 1,
+          },
+        ]);
+      } finally {
+        db.close();
+      }
+    });
+  });
+
   it("records cross-wiki links", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");
@@ -309,6 +479,84 @@ Body without the indexed phrase.
           .prepare("SELECT slug FROM fts_pages WHERE fts_pages MATCH ?")
           .all("operation* AND harness*");
         expect(fts).toEqual([{ slug: "summary-only" }]);
+      } finally {
+        db.close();
+      }
+    });
+  });
+
+  it("migrates v3 schemas and reindexes unchanged pages into page_sources", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      const raw = `---
+title: Source Page
+summary: Source page summary.
+topics: [x]
+sources:
+  - id: schema
+    type: file
+    path: src/indexer/schema.ts
+    note: Defines index tables.
+---
+
+# Source Page
+
+Body.
+`;
+      await writePage(repo, "source-page", raw);
+
+      const dbPath = join(repo, ".almanac", "index.db");
+      const pagePath = join(repo, ".almanac", "pages", "source-page.md");
+      const oldDb = new Database(dbPath);
+      try {
+        oldDb.exec(`
+          CREATE TABLE pages (
+            slug          TEXT PRIMARY KEY,
+            title         TEXT,
+            summary       TEXT,
+            file_path     TEXT NOT NULL,
+            content_hash  TEXT NOT NULL,
+            updated_at    INTEGER NOT NULL,
+            archived_at   INTEGER,
+            superseded_by TEXT
+          );
+          PRAGMA user_version = 3;
+        `);
+        oldDb
+          .prepare(
+            `INSERT INTO pages
+              (slug, title, summary, file_path, content_hash, updated_at, archived_at, superseded_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            "source-page",
+            "Source Page",
+            "Source page summary.",
+            pagePath,
+            createHash("sha256").update(raw).digest("hex"),
+            1,
+            null,
+            null,
+          );
+      } finally {
+        oldDb.close();
+      }
+
+      const result = await ensureFreshIndex({ repoRoot: repo });
+      expect(result.changed).toBe(1);
+
+      const db = openIndex(dbPath);
+      try {
+        const source = db
+          .prepare("SELECT source_id, target FROM page_sources WHERE page_slug = ?")
+          .get("source-page") as
+          | { source_id: string; target: string }
+          | undefined;
+        expect(source).toEqual({
+          source_id: "schema",
+          target: "src/indexer/schema.ts",
+        });
       } finally {
         db.close();
       }

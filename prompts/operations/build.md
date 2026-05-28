@@ -20,9 +20,8 @@ explaining where to start, which pages to read first, which dense clusters
 matter, and what to read next for common work areas. Link directly to the most
 important pages and local hubs with `[[...]]`.
 
-Use `getting-started.md` for the required orientation role. `project-overview.md` is optional
-and should only exist if a separate project-identity or product state page earns
-its place in the graph.
+Use `getting-started.md` for the required orientation role. Do not create a
+second front-door page such as `project-overview.md`.
 
 ## Tooling Boundary
 
@@ -38,21 +37,24 @@ updated.
 ## Algorithm
 
 1. Orient to the corpus: repo layout, commands, package/config files, docs,
-   entrypoints, generated outputs, tests, schemas, data files, and external
+  entrypoints, generated outputs, tests, schemas, data files, and external
    dependencies.
 2. Build a working map of the repo from multiple angles: entities,
-   subsystems, flows, contracts, data models, operations, external systems,
+  subsystems, flows, contracts, data models, operations, external systems,
    product/project concepts, and dense clusters.
 3. Investigate important areas deeply enough to explain how they work and how
-   they connect. Tests are often the clearest source of intended behavior.
+  they connect. Tests are often the clearest source of intended behavior.
 4. Compare code against existing docs and research. Do not copy docs; preserve
-   the applied conclusions and project-specific meaning.
+  the applied conclusions and project-specific meaning.
 5. Identify page candidates by future value. Ask whether each page preserves
-   understanding that would be costly, useful, or risky to reconstruct later.
+  understanding that would be costly, useful, or risky to reconstruct later.
 6. Design the initial graph: pages, topics, links, and any local hubs.
 7. Write detailed, grounded pages directly under `.almanac/pages/`.
-8. Re-read the wiki as a future agent. Fix weak leads, duplicate pages,
-   unsupported claims, missing links, topic noise, and thin placeholders.
+8. Use structured `sources:` frontmatter for evidence. Do not emit legacy
+  `files:` on new pages; use `sources` entries with `type: file` for repo
+  files, tests, prompts, migrations, and config.
+9. Re-read the wiki as a future agent. Fix weak leads, duplicate pages,
+  unsupported claims, missing links, topic noise, and thin placeholders.
 
 Be thorough. Create many pages when many pages are justified. Do not stay tiny
 to be safe. The quality gate is not page count; it is whether each page earns

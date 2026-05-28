@@ -1,6 +1,6 @@
 # Almanac Wiki
 
-This is the Almanac wiki for the codealmanac repo itself — the CLI and agent harness that produces and queries `.almanac/` wikis. It preserves the project understanding that code alone cannot carry: design decisions, subsystem contracts, agent prompt behavior, external runtime assumptions, product semantics, and gotchas found in real runs.
+This is the Almanac wiki for the codealmanac repo itself — the CLI and agent harness that produces and queries `.almanac/` wikis. It preserves the project understanding that code alone cannot carry: design decisions, subsystem contracts, agent prompt behavior, external runtime assumptions, product semantics, constraints, and failure modes found in real runs.
 
 The primary reader is an AI coding agent picking up a new session. Write accordingly: dense, factual, linked.
 
@@ -9,7 +9,7 @@ The primary reader is an AI coding agent picking up a new session. Write accordi
 Write a page when there is **non-obvious knowledge that will help a future agent**. Specifically:
 
 - A decision that took discussion, research, or trial-and-error (e.g. GLOB vs LIKE for path queries)
-- A gotcha discovered through failure (e.g. FTS5 ON DELETE CASCADE doesn't fire)
+- A failure mode discovered through a real run (e.g. FTS5 ON DELETE CASCADE doesn't fire)
 - A cross-cutting flow that spans multiple files (e.g. capture resolving a transcript, starting Absorb, and recording a run)
 - A constraint or invariant not visible from the code (e.g. registry entries are never auto-dropped)
 - A subsystem or third-party integration referenced by multiple pages
@@ -32,6 +32,7 @@ Topics form a DAG serialized in `.almanac/topics.yaml`. A page can belong to mul
 | `cli` | CLI command surface and wiring (child of `systems`) |
 | `automation` | Scheduled background behavior and its command surface (child of `flows` + `cli`) |
 | `storage` | SQLite index and registry persistence (child of `systems`) |
+| `wiki-design` | Product and architecture decisions about what a codebase wiki should contain and how pages, hubs, topics, and links should fit together (child of `systems` + `decisions`) |
 | `product-positioning` | Product, market, user, pricing, and positioning synthesis that shapes how CodeAlmanac is explained and sold |
 | `fundraising` | Investor-facing narrative, pitch deck, and financing assumptions (child of `product-positioning`) |
 
@@ -39,12 +40,15 @@ Add domain topics as the wiki grows. New topics go in `topics.yaml`; `almanac to
 
 ## Page shapes
 
-Four shapes cover most pages here. They are suggestions, not a schema.
+Common shapes cover most pages here. They are suggestions, not a schema.
 
 - **Entity** — a stable named thing: Claude Agent SDK, the SQLite indexer, the global registry
 - **Decision** — "why we chose X" — includes the rejected alternatives and their cost
 - **Flow** — a multi-file process: build operation, capture flow, process manager run lifecycle
-- **Gotcha** — a specific surprise, constraint, or invariant to preserve
+- **Constraint** — a rule, invariant, or coupling future work must preserve
+- **Failure Mode** — a specific way behavior breaks, usually discovered through a real run or test
+
+Major entities, subsystems, and external dependencies may need a subject neighborhood rather than a single page. The anchor page names the subject and routes readers; supporting pages cover behavior, structure, contracts, rationale, constraints, failure modes, workflows, or sources when those subtopics have independent value.
 
 ## Writing conventions
 
@@ -68,7 +72,7 @@ Every entity page should be linked from the pages that depend on it. A page with
 
 ## Pages live in `.almanac/pages/`
 
-One markdown file per page, kebab-case slug. Frontmatter carries `title:`, `topics:`, and `files:` (list the specific files where this thing lives). The rest is prose.
+One markdown file per page, kebab-case slug. Frontmatter carries `title:`, `topics:`, and `sources:` entries with stable IDs, types, targets, and notes. Use `sources[type=file]` for repo files that should power file-aware retrieval; legacy `files:` is still read for older pages during migration.
 
 The flat layout is intentional. Topics are a multi-parent DAG — a single page can belong to `flows`, `decisions`, `storage`, and `cli` simultaneously. Nesting pages under topic folders would either lose those relationships or require duplication.
 

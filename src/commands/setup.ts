@@ -148,7 +148,7 @@ export async function runSetup(
   if (
     options.skipAutomation === true &&
     options.skipGuides === true &&
-    options.autoCommit !== true
+    options.autoCommit === undefined
   ) {
     out.write(
       "almanac: nothing to install — use --help to see what setup does\n",

@@ -6,6 +6,7 @@ files:
   - docs/strategy/codealmanac-vs-deepwiki-supermemory.md
 sources:
   - /Users/rohan/.codex/sessions/2026/05/15/rollout-2026-05-15T01-30-45-019e2a1d-a038-7633-81ea-a1dfc6cb50bd.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/27/rollout-2026-05-27T15-11-37-019e6b10-6850-7512-ac56-e74118e4c6d2.jsonl
   - /Users/rohan/.codex/hooks.json
   - /Users/rohan/.codex/supermemory/recall.js
   - /Users/rohan/.codex/supermemory/flush.js
@@ -18,7 +19,7 @@ sources:
   - https://supermemory.ai/docs/concepts/graph-memory
   - https://supermemory.ai/docs/concepts/memory-vs-rag
   - https://supermemory.ai/docs/concepts/user-profiles
-verified: 2026-05-20
+verified: 2026-05-27
 ---
 
 `codex-supermemory` is the Codex-specific Supermemory integration tested during the 2026-05-19 competitor evaluation. It installed `codex-supermemory@1.0.5`, copied hook scripts into `~/.codex/supermemory/`, added Supermemory skills under `~/.codex/skills/`, enabled Codex hooks, and used Supermemory's hosted API instead of a local daemon.
@@ -52,6 +53,10 @@ The quality difference is therefore not "Supermemory stores raw chunks and CodeA
 The first explicit project search for CodeAlmanac returned no memories. After saving a short project-scoped evaluation note with `save-memory.js`, the same integration returned the saved note through both `search-memory.js --project` and a manual `recall.js` `UserPromptSubmit` payload.
 
 That test verified the product feel rather than only the code shape: once authenticated, Supermemory can make a memory appear in the next Codex prompt without the agent deciding to search first.
+
+The 2026-05-27 personal Gmail workflow showed the same product mechanic in a non-code task inside the CodeAlmanac repo. `UserPromptSubmit` injected a `[SUPERMEMORY CONTEXT]` block before the assistant answered, and a later turn injected prior findings from the same task thread so the assistant could continue from the previous action order without re-reading every email result.
+
+That behavior is useful and risky for CodeAlmanac positioning. It demonstrates why automatic recall feels immediate, but it also shows that broad user and project memories can enter a coding workspace even when the task is not about the repo. CodeAlmanac should treat this as a boundary lesson: prompt-time memory needs scope, source labels, and user-visible evidence when the retrieved facts may cross personal, project, and company contexts.
 
 ## Product Lesson
 

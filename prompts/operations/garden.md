@@ -27,6 +27,11 @@ project memory more coherent, navigable, current, and trustworthy.
 7. Re-read edited areas as a future agent. Verify that leads, links,
    frontmatter, and page boundaries make the graph easier to use.
 
+If you find legacy `files:` or string-list `sources:` frontmatter, use or
+recommend the deterministic fixer (`almanac health --fix`) for mechanical
+migration. Garden may improve source notes, citations, and links after the
+mechanical rewrite, but Garden is not the migration engine.
+
 You may create, update, rewrite, merge, split, archive, supersede, retopic,
 relink, or create hub/index pages when that improves the wiki. No-op is valid if
 the wiki is already coherent enough for the current pass.

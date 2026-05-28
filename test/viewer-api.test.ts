@@ -41,8 +41,11 @@ async function seedViewerWiki(repo: string): Promise<void> {
 title: SQLite Indexer
 summary: Derived search index for wiki pages.
 topics: [storage, systems, agents]
-files:
-  - src/indexer/index.ts
+sources:
+  - id: indexer
+    type: file
+    path: src/indexer/index.ts
+    note: Implements indexing.
 ---
 
 # SQLite Indexer
@@ -87,7 +90,6 @@ describe("viewer api", () => {
       expect(overview.topics.find((t) => t.slug === "systems")?.parents).toEqual([]);
       expect(overview.topics.find((t) => t.slug === "storage")?.parents).toEqual(["systems"]);
       expect(overview.topics.find((t) => t.slug === "agents")?.parents).toEqual(["systems"]);
-      expect(overview.featuredPages.projectOverview).toBeNull();
       expect(overview.featuredPages.gettingStarted).toBeNull();
 
       const page = await api.page("sqlite-indexer");
@@ -95,6 +97,17 @@ describe("viewer api", () => {
       expect(page?.topics).toEqual(["agents", "storage", "systems"]);
       expect(page?.file_refs).toEqual([
         { path: "src/indexer/index.ts", is_dir: false },
+      ]);
+      expect(page?.sources).toEqual([
+        {
+          id: "indexer",
+          type: "file",
+          target: "src/indexer/index.ts",
+          title: null,
+          retrieved_at: null,
+          note: "Implements indexing.",
+          legacy: false,
+        },
       ]);
       expect(page?.wikilinks_out).toContain("wikilink-syntax");
       expect(page?.wikilinks_in).toContain("wikilink-syntax");
@@ -122,15 +135,10 @@ describe("viewer api", () => {
     });
   });
 
-  it("reports markdown-backed overview tabs when pages exist", async () => {
+  it("reports markdown-backed getting-started when it exists", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");
       await scaffoldWiki(repo);
-      await writePage(
-        repo,
-        "project-overview",
-        "---\ntitle: Project Overview\ntopics: [product]\n---\n\n# Project Overview\n\nBody.\n",
-      );
       await writePage(
         repo,
         "getting-started",
@@ -140,7 +148,6 @@ describe("viewer api", () => {
       const api = createViewerApi({ repoRoot: repo });
       const overview = await api.overview();
 
-      expect(overview.featuredPages.projectOverview?.slug).toBe("project-overview");
       expect(overview.featuredPages.gettingStarted?.slug).toBe("getting-started");
     });
   });

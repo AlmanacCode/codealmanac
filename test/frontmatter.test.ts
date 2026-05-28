@@ -23,6 +23,8 @@ Body goes here.
     expect(fm.summary).toBe("Checkout decisions and invariants for future agents.");
     expect(fm.topics).toEqual(["checkout", "flows"]);
     expect(fm.files).toEqual(["src/checkout/handler.ts", "src/checkout/"]);
+    expect(fm.sources).toEqual([]);
+    expect(fm.legacySourceStrings).toEqual([]);
     expect(fm.body).toMatch(/^# Checkout Flow/m);
   });
 
@@ -30,8 +32,80 @@ Body goes here.
     const fm = parseFrontmatter("# Just a heading\n\nNo frontmatter.\n");
     expect(fm.topics).toEqual([]);
     expect(fm.files).toEqual([]);
+    expect(fm.sources).toEqual([]);
+    expect(fm.legacySourceStrings).toEqual([]);
     expect(fm.title).toBeUndefined();
     expect(fm.body).toMatch(/^# Just a heading/);
+  });
+
+  it("parses structured sources and legacy source strings", () => {
+    const fm = parseFrontmatter(
+      `---
+title: Capture
+sources:
+  - id: capture-command
+    type: file
+    path: src/commands/capture.ts
+    note: Starts capture.
+  - id: sdk-docs
+    type: web
+    url: https://example.com/docs
+    title: SDK Docs
+    retrieved_at: 2026-05-28
+    note: External behavior.
+  - https://legacy.example.com/docs
+files:
+  - src/legacy.ts
+---
+
+Body.
+`,
+    );
+
+    expect(fm.sources).toEqual([
+      {
+        id: "capture-command",
+        type: "file",
+        path: "src/commands/capture.ts",
+        note: "Starts capture.",
+      },
+      {
+        id: "sdk-docs",
+        type: "web",
+        url: "https://example.com/docs",
+        title: "SDK Docs",
+        retrieved_at: "2026-05-28",
+        note: "External behavior.",
+      },
+    ]);
+    expect(fm.files).toEqual(["src/legacy.ts"]);
+    expect(fm.legacySourceStrings).toEqual(["https://legacy.example.com/docs"]);
+  });
+
+  it("ignores malformed structured sources", () => {
+    const fm = parseFrontmatter(
+      `---
+sources:
+  - type: file
+    path: src/no-id.ts
+  - id: no-path
+    type: file
+  - id: manual
+    type: manual
+    note: Human-provided evidence.
+---
+
+Body.
+`,
+    );
+
+    expect(fm.sources).toEqual([
+      {
+        id: "manual",
+        type: "manual",
+        note: "Human-provided evidence.",
+      },
+    ]);
   });
 
   it("tolerates extra frontmatter fields", () => {

@@ -148,6 +148,35 @@ describe("almanac search", () => {
     });
   });
 
+  it("--mentions on a file matches pages that cite it as a structured source", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "source-backed",
+        `---
+topics: [x]
+sources:
+  - id: schema
+    type: file
+    path: src/indexer/schema.ts
+    note: Defines index tables.
+---
+
+body
+`,
+      );
+
+      const r = await runSearch({
+        cwd: repo,
+        topics: [],
+        mentions: "src/indexer/schema.ts",
+      });
+      expect(r.stdout.trim().split("\n")).toEqual(["source-backed"]);
+    });
+  });
+
   it("--mentions on a folder matches pages referencing any file inside", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");

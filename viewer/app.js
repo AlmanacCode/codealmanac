@@ -26,6 +26,7 @@ const els = {
   pageMeta: document.querySelector("#page-meta"),
   backlinks: document.querySelector("#backlinks"),
   fileRefs: document.querySelector("#file-refs"),
+  sources: document.querySelector("#sources"),
   searchForm: document.querySelector("#search-form"),
   searchInput: document.querySelector("#search-input"),
   topbarLinks: document.querySelectorAll(".ca-topbar-nav [data-route]"),
@@ -448,7 +449,7 @@ async function optionalPage(summary) {
 
 async function renderGettingStarted() {
   const gettingStarted = await optionalPage(
-    state.overview.featuredPages?.gettingStarted ?? state.overview.featuredPages?.projectOverview,
+    state.overview.featuredPages?.gettingStarted,
   );
   if (gettingStarted !== null) {
     rememberPages([gettingStarted]);
@@ -462,8 +463,7 @@ async function renderGettingStarted() {
     <section class="ca-hero">
       <h1 class="ca-display-h1">No getting started page</h1>
       <p class="ca-lede">
-        Add <span class="ca-file-code">.almanac/pages/getting-started.md</span> or
-        <span class="ca-file-code">.almanac/pages/project-overview.md</span> to show page content here.
+        Add <span class="ca-file-code">.almanac/pages/getting-started.md</span> to show page content here.
       </p>
     </section>
   `;
@@ -584,12 +584,16 @@ function renderPageRail(page) {
   els.fileRefs.innerHTML = page.file_refs.length > 0
     ? page.file_refs.map((ref) => linkButton(ref.path, wikiRoute(`/file?path=${encodeURIComponent(ref.path)}`), "", "ca-file-link")).join("")
     : `<div class="ca-meta-empty">No file refs.</div>`;
+  els.sources.innerHTML = Array.isArray(page.sources) && page.sources.length > 0
+    ? page.sources.map(sourceItem).join("")
+    : `<div class="ca-meta-empty">No sources.</div>`;
 }
 
 function clearPageRail() {
   els.pageMeta.innerHTML = `<div class="ca-meta-empty">Select a page.</div>`;
   els.backlinks.innerHTML = "";
   els.fileRefs.innerHTML = "";
+  els.sources.innerHTML = "";
 }
 
 function pageCard(page) {
@@ -624,6 +628,27 @@ function linkButton(label, route, detail = "", extraClass = "") {
       <span class="ca-link-label">${escapeHtml(label)}</span>
       ${detail ? `<span class="ca-link-detail">${escapeHtml(detail)}</span>` : ""}
     </button>
+  `;
+}
+
+function sourceItem(source) {
+  const detail = source.note || source.type;
+  if (source.type === "file") {
+    return linkButton(source.target, wikiRoute(`/file?path=${encodeURIComponent(source.target)}`), detail, "ca-file-link");
+  }
+  if (source.type === "web") {
+    return `
+      <a class="ca-link-button" href="${escapeAttr(source.target)}" target="_blank" rel="noreferrer">
+        <span class="ca-link-label">${escapeHtml(source.id)}</span>
+        <span class="ca-link-detail">${escapeHtml(detail)}</span>
+      </a>
+    `;
+  }
+  return `
+    <div class="ca-link-button" role="listitem">
+      <span class="ca-link-label">${escapeHtml(source.id)}</span>
+      <span class="ca-link-detail">${escapeHtml(detail)}</span>
+    </div>
   `;
 }
 

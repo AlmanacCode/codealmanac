@@ -46,7 +46,6 @@ export interface ViewerOverview {
     sidebarLimit: number;
   };
   featuredPages: {
-    projectOverview: ViewerPageSummary | null;
     gettingStarted: ViewerPageSummary | null;
   };
 }
@@ -108,7 +107,6 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
           }),
           topicNavigation,
           featuredPages: {
-            projectOverview: pageSummaryBySlug(db, "project-overview"),
             gettingStarted: pageSummaryBySlug(db, "getting-started"),
           },
         };

@@ -34,17 +34,25 @@ sources:
   - ../openalmanac/frontend/src/components/wiki/layout/WikiLayout.tsx
   - ../usealmanac/index.html
   - ../usealmanac/logo1.png
+  - id: front-door-cleanup
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
+    note: Records the cleanup that removed project-overview as a viewer featured-page fallback.
+  - id: source-rail
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
+    note: Records the source-provenance implementation that added source records to the page view and viewer rail.
 ---
 
 # almanac serve (Local Viewer)
 
-`almanac serve` is a lightweight local read-only web viewer for browsing a repo's Almanac wiki. It is the preferred "read the wiki" experience for humans — filesystem browsing and `browse/` pages are the fallback and editor interface, not the primary UX. Designed and implemented 2026-05-10.
+`almanac serve` is a lightweight local read-only web viewer for browsing a repo's Almanac wiki. It is the preferred "read the wiki" experience for humans; filesystem browsing is the fallback and editor interface, not the primary UX. Designed and implemented 2026-05-10.
 
 The viewer is mostly a read-only client over existing wiki/index/run-record primitives, but a 2026-05-15 codebase-smell review found one current drift point: `[[src/viewer/api.ts]]` has its own FTS query builders, file-reference SQL, parent-folder prefix calculation, and GLOB escaping. Those rules overlap with CLI search semantics and are historically subtle. Future work should extract shared query helpers for submitted FTS queries, suggestion-prefix FTS queries, and file-reference matching instead of letting the viewer and CLI evolve separate path/search behavior.
 
 ## Rationale
 
-A wiki graph is awkward to inspect as files. You want backlinks, topic pages, file references, archive state, search, and "what should I read next?" rendered and linked — not raw markdown in a file tree. A folder tree cannot show this well even with `browse/` curation pages.
+A wiki graph is awkward to inspect as files. You want backlinks, topic pages, file references, archive state, search, and "what should I read next?" rendered and linked, not raw markdown in a file tree. A folder tree cannot show this well.
 
 The answer is a local viewer rather than a cloud app, hosted service, or complex editing tool. Markdown stays the source of truth; the viewer is disposable.
 
@@ -78,6 +86,8 @@ The left-rail search box uses `/api/suggest` while typing, then `/search?q=...` 
 
 The page rail (left and right panels) is hidden for `/jobs` and `/jobs/:runId` routes — these views use a dedicated full-width layout rather than the three-panel wiki layout.
 
+The home route treats `.almanac/pages/getting-started.md` as the single markdown-backed front door. `project-overview.md` is no longer a featured fallback in the viewer API or frontend; it can still be read as a normal page if a wiki has one.
+
 ## What the viewer provides
 
 - Page reading with rendered markdown
@@ -87,10 +97,11 @@ The page rail (left and right panels) is hidden for `/jobs` and `/jobs/:runId` r
 - Topic browser
 - Backlinks panel per page
 - File reference listings (pages mentioning a given source file)
+- Source listings in the page rail, with file sources linked to `/file` views and web sources linked externally
 - Archive / superseded indicators
 - Jobs dashboard with run list and detail/stream view
 - Graph sidebar (deferred)
-- Future [[wiki-clarifications]] view for human answers to unresolved questions raised by lifecycle agents
+- Future [[wiki-clarifications]] / review inbox for human decisions on unresolved conflicts raised by lifecycle agents
 
 ## What the viewer does not do
 
@@ -163,11 +174,13 @@ viewer/               # bundled static frontend (no build step required at runti
 
 ## Key API types
 
-`ViewerApi` exposes eight methods: `overview()` (wiki stats + recent pages + root topics), `page(slug)` (full `PageView` including body markdown, backlinks, topics, file refs, and a `related_pages` array), `topic(slug)` (topic metadata + children + pages), `search(query)` (FTS results or recent pages when query is empty), `suggest(query)` (top eight FTS page hits for instant suggestions), `file(path)` (pages from `file_refs` matching path semantics), `jobs()` (list of all run records as `ViewerJobRun[]`), and `job(runId)` (one `ViewerJobRun` plus its JSONL event log).
+`ViewerApi` exposes eight methods: `overview()` (wiki stats + recent pages + root topics), `page(slug)` (full `PageView` including body markdown, backlinks, topics, file refs, source records, and a `related_pages` array), `topic(slug)` (topic metadata + children + pages), `search(query)` (FTS results or recent pages when query is empty), `suggest(query)` (top eight FTS page hits for instant suggestions), `file(path)` (pages from `file_refs` matching path semantics), `jobs()` (list of all run records as `ViewerJobRun[]`), and `job(runId)` (one `ViewerJobRun` plus its JSONL event log).
 
 `search()` and `suggest()` use different FTS query builders. `search()` calls `buildFtsQuery()`, which wraps each whitespace-split term in exact-phrase quotes (`"term"`) and ANDs them — suitable for complete submitted queries. `suggest()` calls `buildFtsPrefixQuery()`, which appends `*` to each quoted term (`"term"*`) — FTS5 prefix matching that returns results while the user is still typing. Using `buildFtsQuery` for suggest would break as-you-type completion because incomplete words would not match their eventual full form.
 
-`PageView` is defined in `src/query/page-view.ts` and includes: slug, title, summary, file\_path, updated\_at, archived\_at, superseded\_by, supersedes, topics, file\_refs, wikilinks\_out, wikilinks\_in, cross\_wiki\_links, and body (raw markdown). When returned by the viewer API `page()` method, a `related_pages` field is appended — page summaries for all wikilinks\_in, wikilinks\_out, and supersedes/superseded\_by targets, deduplicated, for the frontend to render titles without extra fetches.
+`PageView` is defined in `src/query/page-view.ts` and includes: slug, title, summary, file\_path, updated\_at, archived\_at, superseded\_by, supersedes, topics, file\_refs, source records, wikilinks\_out, wikilinks\_in, cross\_wiki\_links, and body (raw markdown). When returned by the viewer API `page()` method, a `related_pages` field is appended — page summaries for all wikilinks\_in, wikilinks\_out, and supersedes/superseded\_by targets, deduplicated, for the frontend to render titles without extra fetches.
+
+`overview()` returns `featuredPages.gettingStarted` when the wiki contains `getting-started.md`. It does not return `featuredPages.projectOverview`; the 2026-05-28 front-door cleanup made `getting-started.md` the only special homepage convention.
 
 `ViewerJobRun` extends `RunView` (from [[process-manager-runs]] via `toRunView()`) with display fields: `displayTitle` (human label derived from operation and target kind), `displaySubtitle` (nullable summary derived from the final `done`/`text` event in the log, falling back to the first target path or the model string), and `transcriptSource` for session captures. The transcript-source field intentionally differs from `provider`: a Claude or Codex transcript may be processed by a Codex, Claude, or future provider agent. `src/viewer/jobs.ts` derives the source from the run spec's capture context when available and falls back to transcript-path conventions for older records. The `enrichRunView()` helper computes these fields after parsing the event log. Run IDs are validated by `isSafeRunId()` (regex `/^run_[A-Za-z0-9_-]+$/`) before any path construction to prevent path traversal.
 
@@ -238,7 +251,7 @@ Topics list      (wikilinks clickable)    File refs
 Recent pages
 ```
 
-The left rail handles navigation and search. The main reader renders markdown (headings, paragraphs, lists, code blocks, inline code, wikilinks). The right rail shows backlinks and file references. Wikilinks in the reader navigate within the viewer via client-side routing.
+The left rail handles navigation and search. The main reader renders markdown (headings, paragraphs, lists, code blocks, inline code, wikilinks). The right rail shows backlinks, file references, and page sources. File sources route to the viewer's `/file` page, web sources open externally, and non-file/non-web source types render as source rows without navigation. Wikilinks in the reader navigate within the viewer via client-side routing.
 
 The overview topic statistic counts every indexed topic. The topic filter strip shows top-level/root topics only and labels itself as such; when nested topics exist outside the strip, the strip shows the nested-topic count so the totals do not appear contradictory.
 
@@ -248,7 +261,7 @@ The library route should use direct product copy. Avoid poetic phrases such as "
 
 ## Relationship to filesystem layout
 
-The viewer is the reason a full two-level docs tree is not needed. Because the viewer handles navigation, topic browsing, and backlinks, the `browse/` pages in [[wiki-organization-primitives]] can stay small and curated instead of becoming a complete parallel hierarchy.
+The viewer is the reason a full two-level docs tree is not needed. Because the viewer handles navigation, topic browsing, and backlinks, curated hub pages can stay inside `.almanac/pages/` instead of becoming a complete parallel hierarchy.
 
 The viewer still reads from `.almanac/pages/` — the migration to a visible `almanac/` directory discussed in [[wiki-organization-primitives]] has not been implemented as of 2026-05-10 and is a breaking spec change that would need a migration command.
 

@@ -4,8 +4,9 @@ summary: Just-in-time context surfacing is the product direction where CodeAlman
 topics: [product-positioning, agents]
 sources:
   - /Users/rohan/.codex/sessions/2026/05/15/rollout-2026-05-15T01-30-45-019e2a1d-a038-7633-81ea-a1dfc6cb50bd.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/27/rollout-2026-05-27T15-11-37-019e6b10-6850-7512-ac56-e74118e4c6d2.jsonl
 status: active
-verified: 2026-05-15
+verified: 2026-05-27
 ---
 
 # Just-In-Time Context Surfacing
@@ -13,6 +14,8 @@ verified: 2026-05-15
 Just-in-time context surfacing is the product direction that answers CodeAlmanac's activation gap. The current wiki can preserve high-signal project memory, but a future agent still has to remember to run `almanac search` and open the right pages. The stronger experience is automatic surfacing before decisions, with the repo-owned wiki remaining the evidence source.
 
 The distinction is automatic surfacing, not automatic believing. CodeAlmanac should not stuff broad memory into every session or treat retrieved text as ground truth. It should notice when an agent is about to change behavior, show a small cited set of relevant constraints, and let the agent drill into full pages such as [[capture-flow]], [[capture-ledger]], or [[accidental-special-case-architecture]] when needed.
+
+The 2026-05-27 [[codex-supermemory]] session reinforced the boundary by showing automatic recall in a non-code Gmail workflow launched from the CodeAlmanac repo. The injected memory helped the assistant continue a prior task, but it also mixed personal task context into a project workspace. CodeAlmanac's version should therefore surface repo-governed, file-aware evidence packets rather than broad personal or cross-project memory blocks.
 
 ## Runtime Shape
 
@@ -59,6 +62,8 @@ Every bullet should name its source page. The agent can proceed after reading it
 The canonical memory must remain `.almanac/pages/` and `.almanac/topics.yaml`. A session-local observation cache can improve retrieval and recency, but it should not become the source of truth for project memory. [[wiki-lifecycle-operations]] and [[capture-flow]] still own durable writeback through Absorb and Garden.
 
 This boundary keeps the contrast with [[agentmemory-competitor]] and [[codex-supermemory]] sharp. Memory daemons and hosted hook integrations win on automatic capture and recall, but they tend toward user-level memory stores and broad context injection. CodeAlmanac's differentiated path is cited, repo-local, file-aware constraint surfacing from a governed wiki.
+
+Scope should be visible in the output. A future context packet should distinguish repo wiki pages, session-local observations, and external connector evidence so an agent can tell whether a surfaced fact is a project invariant, a recent working note, or a personal-account memory.
 
 ## MVP Implication
 

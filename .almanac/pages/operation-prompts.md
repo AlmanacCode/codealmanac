@@ -2,20 +2,57 @@
 title: Operation Prompts
 summary: Operation prompts define how Build, Absorb, and Garden turn repo evidence into wiki memory, and transcript-heavy Absorb runs should be improved in prompt space first.
 topics: [agents, decisions]
-files:
-  - src/agent/prompts.ts
-  - src/operations/run.ts
-  - prompts/base/purpose.md
-  - prompts/base/notability.md
-  - prompts/base/syntax.md
-  - prompts/operations/build.md
-  - prompts/operations/absorb.md
-  - prompts/operations/garden.md
-  - prompts/agents/.gitkeep
 sources:
-  - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
+  - id: prompt-loader
+    type: file
+    path: src/agent/prompts.ts
+    note: Resolves bundled base and operation prompt files.
+  - id: operation-runner
+    type: file
+    path: src/operations/run.ts
+    note: Assembles base prompts, operation prompts, runtime context, and source-control context.
+  - id: purpose-prompt
+    type: file
+    path: prompts/base/purpose.md
+    note: Defines the shared Almanac purpose prompt module.
+  - id: notability-prompt
+    type: file
+    path: prompts/base/notability.md
+    note: Defines page, topic, hub, and graph notability doctrine.
+  - id: syntax-prompt
+    type: file
+    path: prompts/base/syntax.md
+    note: Defines page syntax, source grounding, and source-control hygiene.
+  - id: build-prompt
+    type: file
+    path: prompts/operations/build.md
+    note: Defines the Build operation algorithm.
+  - id: absorb-prompt
+    type: file
+    path: prompts/operations/absorb.md
+    note: Defines the Absorb operation algorithm.
+  - id: garden-prompt
+    type: file
+    path: prompts/operations/garden.md
+    note: Defines the Garden operation algorithm.
+  - id: agents-placeholder
+    type: file
+    path: prompts/agents/.gitkeep
+    note: Marks the empty future home for helper-agent prompts.
+  - id: transcript-capture-review
+    type: conversation
+    path: /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
+    note: Records the transcript-capture prompt gap about noisy JSONL inputs.
+  - id: organization-discussion
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/27/rollout-2026-05-27T16-27-22-019e6b55-bee7-79d3-ba21-2852c5372082.jsonl
+    note: Records the design discussion behind graph organization prompt doctrine.
+  - id: source-provenance-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
+    note: Records the source provenance, getting-started convention, and auto-commit prompt changes.
 status: active
-verified: 2026-05-11
+verified: 2026-05-28
 ---
 
 # Operation Prompts
@@ -38,7 +75,7 @@ V1 prompt layout is base doctrine plus operation algorithms. The bundled base pr
 6. source-control runtime context
 7. command-specific context
 
-`joinPrompts()` concatenates these modules with `---` separators. There is no manifest, proposal file, evidence pipeline, or prompt-state object between the CLI and the provider adapter. The source-control runtime context resolves `auto_commit` from user config and explicitly tells the agent whether it may create an `almanac: <summary>` git commit. Disabled is the default, so Build, Absorb, and Garden leave wiki changes in the working tree unless setup or `almanac config set auto_commit true` opted in.
+`joinPrompts()` concatenates these modules with `---` separators. There is no manifest, proposal file, evidence pipeline, or prompt-state object between the CLI and the provider adapter. The source-control runtime context resolves `auto_commit` from user config and explicitly tells the agent whether it may create a wiki-only git commit. Auto-commit is now on by default through `defaultConfig().auto_commit`; `almanac setup --no-auto-commit` or `almanac config set auto_commit false` are the opt-out paths. The commit-message contract is `almanac: <imperative one-line summary>` followed by an optional body explaining what changed and why.
 
 ## Base modules
 
@@ -46,11 +83,21 @@ V1 prompt layout is base doctrine plus operation algorithms. The bundled base pr
 
 `notability.md` defines what deserves a page, topic, cluster, or hub. It treats page genres as vocabulary, not schema, and explicitly includes internal entities, external dependencies, influences, research synthesis, market/product synthesis, and hubs.
 
-`syntax.md` defines frontmatter, source grounding, natural slugs, wikilink syntax, page shape, writing conventions, and source-control hygiene. It keeps current indexed fields (`title`, `topics`, `files`, archive/supersession fields) while allowing prompt-level fields such as `sources`, `status`, `verified`, and `external_version`. Its source-control rule treats `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml` as wiki source files, but commits them only when the runtime context says auto-commit is enabled. The anti-cramming / anti-thinning failure modes documented in [[farzapedia]] and the prohibited-phrase list there are sharper enforcement vocabulary than what `syntax.md` currently names; they are a candidate for a future `syntax.md` revision.
+`syntax.md` defines frontmatter, source grounding, natural slugs, wikilink syntax, page shape, writing conventions, and source-control hygiene. It now treats structured `sources:` as the canonical provenance field, with `files:` documented as legacy compatibility for older pages. The indexed frontmatter fields include `title`, `topics`, `sources`, and archive/supersession fields; [[source-provenance]] explains how `sources[type=file]` and legacy `files:` still populate file-aware query behavior. Its source-control rule treats `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml` as wiki source files, but commits them only when the runtime context says auto-commit is enabled. When commits are enabled, the subject must be concise, imperative, and specific, and the optional body is reserved for non-obvious decisions, migrations, source corrections, or graph cleanups that future agents should understand from Git history. The anti-cramming / anti-thinning failure modes documented in [[farzapedia]] and the prohibited-phrase list there are sharper enforcement vocabulary than what `syntax.md` currently names; they are a candidate for a future `syntax.md` revision.
+
+The next base-module candidate is `prompts/base/organization.md`. A 2026-05-27 discussion grounded in [[wiki-organization-primitives]], [[documenting-software-architectures]], Diataxis, and Write the Docs concluded that the prompt stack needs graph-shape doctrine in addition to page-worthiness and page syntax. That module should answer where knowledge belongs in the graph: anchor, hub, workflow page, reference page, decision page, archive, or no-op. It should use strong slugs, leads, links, topics, and hub prose for editorial meaning instead of adding `subject:` or `type:` frontmatter. It should not introduce proposal files, deterministic pre-query pipelines, or a separate TypeScript state machine.
+
+The same module should require composition planning before article prose. A 2026-05-27 Codex critique found that an agent can produce factually useful prose while still blurring page boundaries if it starts drafting before deciding the article set. The intended rule is: identify durable entities and concepts, choose the smallest page set that covers them without cramming, state each page's scope and exclusions, assign adjacent facts to their owning pages, and only then write article prose. This belongs in prompt doctrine, not in a TypeScript planning artifact or a persisted proposal file.
+
+The composition-planning rule should also make page shape more flexible than prose paragraphs alone. Quick facts, summary tables, timelines, bullet lists, and infobox-style sections are allowed when they make dense entity pages easier to scan. They should supplement sourced article prose rather than replace it.
+
+One current prompt artifact conflicts with that decision: `prompts/base/notability.md` still ends with a stray `## **type: runtime-view**` heading. That heading is prompt debt from the rejected frontmatter-schema direction, not an accepted page convention. Future prompt work should remove it or fold the intended architecture-view vocabulary into the prose-only organization module.
 
 ## Operation algorithms
 
 Build is a deep first construction pass. It should explore the corpus from multiple angles, synthesize entities/subsystems/flows/contracts/data models/project-world clusters, and build a substantial first wiki when the pages are justified.
+
+Build has one required navigation-page convention: `.almanac/pages/getting-started.md`. The prompt names it as the canonical wiki front door and explicitly rejects creating `project-overview.md` as a second front-door page. `project-overview.md` remains available as an ordinary subject page when the concept itself earns a page.
 
 Absorb starts from an input and distills reusable project understanding into the existing graph. It prefers evolving synthesis pages over date-stamped fragments, and creates temporal pages only when time or event context is part of the meaning.
 

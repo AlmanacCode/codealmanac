@@ -154,6 +154,7 @@ export function registerSetupCommands(program: Command): void {
     .option("--auto-update-every <duration>", "scheduled self-update interval (default: 1d)")
     .option("--skip-guides", "opt out of the CLAUDE.md guides")
     .option("--auto-commit", "allow Almanac lifecycle runs to commit wiki source changes")
+    .option("--no-auto-commit", "leave lifecycle wiki changes in the working tree")
     .action(
       async (opts: {
         yes?: boolean;

@@ -68,6 +68,20 @@ CREATE TABLE IF NOT EXISTS file_refs (
 );
 CREATE INDEX IF NOT EXISTS idx_file_refs_path ON file_refs(path);
 
+CREATE TABLE IF NOT EXISTS page_sources (
+  page_slug    TEXT NOT NULL REFERENCES pages(slug) ON DELETE CASCADE,
+  source_id    TEXT NOT NULL,
+  source_type  TEXT NOT NULL,
+  target       TEXT NOT NULL,
+  title        TEXT,
+  retrieved_at TEXT,
+  note         TEXT,
+  legacy       INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (page_slug, source_id)
+);
+CREATE INDEX IF NOT EXISTS idx_page_sources_type ON page_sources(source_type);
+CREATE INDEX IF NOT EXISTS idx_page_sources_target ON page_sources(target);
+
 CREATE TABLE IF NOT EXISTS wikilinks (
   source_slug TEXT NOT NULL REFERENCES pages(slug) ON DELETE CASCADE,
   target_slug TEXT NOT NULL,
@@ -98,8 +112,9 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_pages USING fts5(slug, title, content);
  *   1 — initial slice-2 schema
  *   2 — slice-3-review: added `file_refs.original_path`
  *   3 — added `pages.summary`
+ *   4 — added `page_sources`
  */
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 export function isIndexSchemaStale(dbPath: string): boolean {
   let db: Database.Database;
@@ -160,6 +175,9 @@ export function openIndex(dbPath: string): Database.Database {
         // pages table may not exist yet, or a partially migrated DB may
         // already have the column. The schema DDL below covers fresh DBs.
       }
+    }
+    if (currentVersion < 4) {
+      db.exec("DROP TABLE IF EXISTS page_sources");
     }
     // The indexer's fast-path skips pages whose content_hash matches.
     // After metadata/table migrations, clear the hash column so the next

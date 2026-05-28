@@ -378,6 +378,14 @@ function metadataHeader(rec: ShowRecord): string {
     lines.push(`${DIM}files:${RST}      ${parts.join(", ")}`);
   }
 
+  if (rec.sources.length > 0) {
+    const parts = rec.sources.map((s) => {
+      if (s.type === "file") return `${s.id} (file: ${s.target})`;
+      return `${s.id} (${s.type})`;
+    });
+    lines.push(`${DIM}sources:${RST}    ${parts.join(", ")}`);
+  }
+
   lines.push(
     `${DIM}updated:${RST}    ${new Date(rec.updated_at * 1000).toISOString()}`,
   );

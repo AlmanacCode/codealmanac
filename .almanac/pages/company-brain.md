@@ -11,8 +11,9 @@ sources:
   - https://github.com/garrytan/gbrain
   - https://www.ycombinator.com/companies/hyper-4
   - https://www.ycombinator.com/launches/QKg-hyper-the-self-driving-company-brain
+  - /Users/rohan/.codex/sessions/2026/05/27/rollout-2026-05-27T16-27-22-019e6b55-bee7-79d3-ba21-2852c5372082.jsonl
 status: active
-verified: 2026-05-20
+verified: 2026-05-28
 ---
 
 # Company Brain
@@ -89,9 +90,23 @@ A general company-brain product should separate raw source ingestion from durabl
 
 This distinction protects the product from becoming a broad RAG dump. The valuable artifact is not every Slack thread or CRM object; it is a page such as "Acme onboarding constraints", "refund exception policy", "enterprise SSO rollout status", or "Q2 pricing decision" that preserves the conclusion future agents need before acting.
 
-The generalized form should use scoped brains instead of one undifferentiated company brain. Useful scopes include company-wide policy, engineering, sales, a named customer, a named project, and a specific incident. Each scope can carry its own notability rules, topics, lifecycle, and access policy. CodeAlmanac's repo-local `.almanac/` is one specialized scope with file-aware retrieval and git as the review boundary.
+The 2026-05-27 generalized-Almanac discussion sharpened the product model into three primitives: sources, memory, and tasks. Sources are preserved originals such as PDFs, emails, screenshots, receipts, passports, contracts, Slack exports, Google Docs, notes, and transcripts. Memory is the maintained synthesis layer that answers current questions. Tasks are unresolved conflicts, missing evidence, review needs, and stale-claim cleanup.
+
+A generalized Almanac therefore needs first-class source objects, not only page `sources:` strings or CodeAlmanac-style `files:` references. A source object records the original path, content hash, source kind, observed time, extracted text location, detected entities, visibility scope, duplicate state, and archive or supersession status. The memory page cites the source object; it should not become the place where the raw document, OCR output, agent scratch work, and durable conclusion all collapse together.
+
+The ideal ingestion flow starts with an inbox, fingerprints files, extracts text and metadata, classifies document kinds, resolves entities, detects duplicates and near-duplicates, compares new evidence against current memory, proposes page updates, applies low-risk changes, and sends risky changes to review. Garden-style maintenance then removes stale derived text, preserves source lineage, and keeps conflict queues visible. The system should ask what durable understanding changed before it creates a page.
+
+The generalized form should use scoped almanacs instead of one undifferentiated company brain. Useful scopes include company-wide policy, engineering, sales, a named customer, a named project, and a specific incident. Each scope can carry its own notability rules, topics, lifecycle, and access policy. CodeAlmanac's repo-local `.almanac/` is one specialized scope with file-aware retrieval and git as the review boundary.
+
+Scoped almanacs are especially important when personal and company documents overlap. A Reverie almanac should preserve only company-relevant facts about workers, officers, founders, contractors, advisors, legal documents, tax records, banking, compliance, ownership, and immigration dependencies. A personal almanac can preserve broader private context such as relationships, preferences, housing, finances, identity records, and open loops. A shared source vault can hold the same original document for both, but each almanac needs its own projection and charter.
+
+Passports and identity documents show the boundary. A company almanac should reference a passport only when it supports a company process such as bank KYC, director or officer verification, E-Verify, I-9, or immigration dependency tracking. It should not absorb broad personal context merely because the source exists. The minimal company projection is that an identity document exists for a named workflow if authorized; the personal projection can carry broader life-admin context.
 
 Permissioning is the core product problem for a multi-source company brain. A conservative first rule is that a user can see a synthesized page only when they can see all cited source evidence, unless the page has been explicitly republished to a broader scope. Redacted summaries can come later, but the initial trust model should favor source-derived access over convenience.
+
+For team use, the original source should often stay in the system that already owns it. Google Drive can remain the system of record for shared legal documents, Gmail for email threads, Slack for conversations, DocuSign for executed agreements, Mercury for banking records, Stripe Atlas for formation artifacts, and GitHub for code and review history. The company brain then stores source references, metadata, extracted caches, and citations instead of becoming the primary file store for every original.
+
+This creates two sharing layers. The maintained wiki page can be shared through GitHub or another reviewable page store, while the cited evidence still uses the original system's permissions. The product can later add permission-aware serving, but the first trust boundary is simple: shared pages are visible to the Almanac audience, and source links require access in the source system unless the page has been explicitly republished or redacted for a broader scope.
 
 General company memory also needs first-class recency and contradiction states because operational knowledge changes faster than codebase architecture. Pages need statuses such as current, stale, superseded, disputed, and archived. Garden-style maintenance should detect conflicts such as a pricing page that says annual discounts are 20 percent while a newer sales note says the maximum discount is 15 percent.
 
@@ -103,10 +118,12 @@ CodeAlmanac should use company-brain language when talking to investors or AI-ag
 
 CodeAlmanac should also keep the codebase scope explicit. A broad "company brain" claim invites comparison against hosted cross-company platforms with connectors, admin surfaces, and permission systems that CodeAlmanac does not currently build. "Codebase brain" or "project memory for coding agents" keeps the promise aligned with the product.
 
+The owned product vocabulary should use "Almanac" rather than "brain." [[almanac-product-family]] captures the generalized naming rule: Code Almanac, Personal Almanac, Company Almanac, Project Almanac, and Research Almanac are scoped maintained knowledge layers over different source worlds. "Brain" remains market-category language, not the preferred product noun.
+
 The strongest competitive framing is not "better search." It is "cultivated project memory." Search retrieves what already exists. CodeAlmanac's lifecycle operations turn expensive session understanding into durable pages that future agents can use before they touch code.
 
 The product experience should still move toward [[just-in-time-context-surfacing]]. The category lesson from memory daemons is that explicit search is too easy to skip in a live coding session. CodeAlmanac's differentiated version is cited, file-aware constraint surfacing from the wiki before edits, not uncited context stuffing from a personal memory stream.
 
 ## Related Pages
 
-[[pitch-deck-fundraising]] explains how this category should be compressed into an investor deck. [[agentmemory-competitor]] explains the strongest adjacent local-daemon coding-agent memory product found in the 2026-05-15 comparison. [[codex-supermemory]] explains the lighter Codex hook integration that makes Supermemory feel immediate after install. [[mem0]] explains an operational memory-store competitor whose extraction and retrieval model clarifies the difference between runtime recall and repo-governed project knowledge. [[just-in-time-context-surfacing]] explains the product mechanism that would make repo-owned memory automatic without becoming uncited memory injection. [[wiki-lifecycle-operations]] explains the Build, Absorb, and Garden operations that keep the wiki current. [[farzapedia]] explains an adjacent AI-maintained wiki reference whose synthesis-first writing rules shaped Almanac prompts.
+[[almanac-product-family]] explains the broader product vocabulary for scoped almanacs over codebases, personal contexts, companies, projects, and research corpora. [[pitch-deck-fundraising]] explains how this category should be compressed into an investor deck. [[agentmemory-competitor]] explains the strongest adjacent local-daemon coding-agent memory product found in the 2026-05-15 comparison. [[codex-supermemory]] explains the lighter Codex hook integration that makes Supermemory feel immediate after install. [[mem0]] explains an operational memory-store competitor whose extraction and retrieval model clarifies the difference between runtime recall and repo-governed project knowledge. [[just-in-time-context-surfacing]] explains the product mechanism that would make repo-owned memory automatic without becoming uncited memory injection. [[wiki-lifecycle-operations]] explains the Build, Absorb, and Garden operations that keep the wiki current. [[farzapedia]] explains an adjacent AI-maintained wiki reference whose synthesis-first writing rules shaped Almanac prompts.

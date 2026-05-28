@@ -136,6 +136,7 @@ almanac setup --yes
 almanac setup --skip-automation
 almanac setup --skip-guides
 almanac setup --auto-commit
+almanac setup --no-auto-commit
 almanac setup --auto-capture-every 2h
 almanac setup --auto-capture-quiet 30m
 almanac setup --garden-every 2d
@@ -146,8 +147,8 @@ almanac setup --auto-update-every 1d
 
 Interactive setup asks about scheduled self-update and defaults to yes. Unattended setup uses `--auto-update` when you want the same opt-in without prompts.
 
-Auto-commit is opt-in. Without `--auto-commit`, lifecycle runs leave wiki
-changes in your working tree for review.
+Auto-commit is on by default. Use `--no-auto-commit` when lifecycle runs should
+leave wiki changes in your working tree for review.
 
 Pick the provider Almanac should use for write-capable commands:
 

@@ -439,6 +439,10 @@ function parseSetupShortcutFlags(args: string[]): SetupShortcutOptions | null {
       opts.autoCommit = true;
       continue;
     }
+    if (arg === "--no-auto-commit" && parsed.value === undefined) {
+      opts.autoCommit = false;
+      continue;
+    }
     return null;
   }
   return opts;

@@ -123,7 +123,7 @@ describe("codealmanac setup", () => {
       expect(plist).toContain("<string>capture</string>");
       expect(plist).toContain("<string>sweep</string>");
       await expect(readConfig()).resolves.toMatchObject({
-        auto_commit: false,
+        auto_commit: true,
         automation: { capture_since: expect.any(String) },
       });
       expect(await readFile(codexHooks, "utf8")).not.toContain("almanac-capture.sh");
@@ -306,14 +306,13 @@ describe("codealmanac setup", () => {
     });
   });
 
-  it("enables auto-commit only when explicitly requested in unattended setup", async () => {
+  it("enables auto-commit by default in unattended setup", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
 
       await runSetup({
         yes: true,
         isTTY: false,
-        autoCommit: true,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
         automationExec: async () => ({}),
@@ -328,10 +327,10 @@ describe("codealmanac setup", () => {
     });
   });
 
-  it("unattended setup preserves an existing auto-commit opt-in", async () => {
+  it("unattended setup preserves an existing auto-commit opt-out", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
-      await writeConfig({ auto_commit: true });
+      await writeConfig({ auto_commit: false });
 
       await runSetup({
         yes: true,
@@ -345,7 +344,7 @@ describe("codealmanac setup", () => {
       });
 
       await expect(readConfig()).resolves.toMatchObject({
-        auto_commit: true,
+        auto_commit: false,
       });
     });
   });
@@ -420,12 +419,12 @@ describe("codealmanac setup", () => {
     });
   });
 
-  it("--auto-commit still applies when automation and guides are skipped", async () => {
+  it("--no-auto-commit still applies when automation and guides are skipped", async () => {
     await withTempHome(async (home) => {
       const env = await scaffold(home);
       const res = await runSetup({
         yes: true,
-        autoCommit: true,
+        autoCommit: false,
         skipAutomation: true,
         skipGuides: true,
         isTTY: false,
@@ -440,7 +439,7 @@ describe("codealmanac setup", () => {
       expect(existsSync(env.plistPath)).toBe(false);
       expect(existsSync(join(env.claudeDir, "almanac.md"))).toBe(false);
       await expect(readConfig()).resolves.toMatchObject({
-        auto_commit: true,
+        auto_commit: false,
       });
     });
   });

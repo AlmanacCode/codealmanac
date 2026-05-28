@@ -27,9 +27,9 @@ describe("viewer UI assets", () => {
     expect(indexHtml).not.toContain("Backlinks");
     expect(indexHtml).not.toContain("recent-list");
     expect(appJs).not.toContain("recentList");
-    expect(appJs).toContain("featuredPages?.projectOverview");
     expect(appJs).toContain("featuredPages?.gettingStarted");
-    expect(appJs).toContain("featuredPages?.gettingStarted ?? state.overview.featuredPages?.projectOverview");
+    expect(appJs).not.toContain("featuredPages?.projectOverview");
+    expect(appJs).not.toContain("projectOverview");
     expect(appJs).not.toContain("const projectOverview = await optionalPage");
     expect(appJs).toContain("state.wikis");
     expect(appJs).toContain("state.currentWiki");

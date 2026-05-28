@@ -7,10 +7,14 @@ files:
   - src/commands/init.ts
   - src/commands/operations.ts
   - prompts/operations/build.md
+  - src/viewer/api.ts
+  - viewer/app.js
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/10/rollout-2026-05-10T14-49-00-019e13dd-740e-7421-9d32-51615ab7c84f.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T00-28-55-019e6d0e-a0d0-7ec0-bbbd-92d2c677608c.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
 status: active
-verified: 2026-05-11
+verified: 2026-05-28
 ---
 
 # Build Operation
@@ -23,6 +27,8 @@ Build is the V1 operation behind `almanac init`. It replaced the old public `alm
 
 Provider selection comes from `--using <provider[/model]>` when present. Otherwise lifecycle commands read the configured default provider/model through `readConfig({ cwd })`; they do not hardcode Claude as the command default.
 
+A 2026-05-28 UX discussion set the timing rule for future progress display. Deterministic scaffold work should report elapsed time rather than an ETA because it should finish quickly enough that a remaining-time estimate looks artificial. AI-backed Build work may show elapsed time plus approximate remaining time, but the remaining estimate should be marked with `~` and treated as a rough guide rather than a promise.
+
 ## Run spec shape
 
 `src/operations/build.ts` loads `prompts/operations/build.md`, appends runtime context containing the repository root and `.almanac/` paths, and requests the base file-editing tools: read, write, edit, search, and shell. The spec metadata is `{ operation: "build", targetKind: "repo" }`.
@@ -32,6 +38,12 @@ The build prompt explicitly tells agents not to use MCP tools, OpenAlmanac tools
 The helper-agent guidance also separates scout work from build completion. Helpers may be given read-only investigation tasks, but their output is only evidence. The main build agent must not adopt helper read-only constraints for `.almanac/`; after helpers return, it still owns synthesis and must write actual markdown pages instead of ending with page candidates or a "pages to add later" report.
 
 Build does not call a bootstrap-specific SDK wrapper. It uses the same [[harness-providers]] boundary as Absorb and Garden.
+
+## Required navigation page
+
+Build now has one front-door convention: `.almanac/pages/getting-started.md`. The Build prompt requires this page as the wiki navigation entry point and says it is for routing a future reader through the wiki, not for repository setup or install instructions.
+
+`project-overview.md` is not a paired front-door convention. A page with that slug can still exist if a specific wiki has a normal project-overview subject, but Build should not create it as an optional second homepage and [[almanac-serve|the local viewer]] should not treat it as a fallback for the home route.
 
 ## Non-code corpus boundary
 

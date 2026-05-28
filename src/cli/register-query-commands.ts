@@ -174,6 +174,7 @@ export function registerQueryCommands(program: Command): void {
     .option("--stdin", "read page slugs from stdin (limit to these pages)")
     .option("--json", "emit structured JSON")
     .option("--wiki <name>", "target a specific registered wiki")
+    .option("--fix", "apply safe deterministic wiki metadata fixes")
     .action(
       async (opts: {
         topic?: string;
@@ -181,6 +182,7 @@ export function registerQueryCommands(program: Command): void {
         stdin?: boolean;
         json?: boolean;
         wiki?: string;
+        fix?: boolean;
       }) => {
         await autoRegisterIfNeeded(process.cwd());
         const result = await runHealth({
@@ -191,6 +193,7 @@ export function registerQueryCommands(program: Command): void {
           stdinInput: opts.stdin === true ? await readStdin() : undefined,
           json: opts.json,
           wiki: opts.wiki,
+          fix: opts.fix,
         });
         emit(result);
       },

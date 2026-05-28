@@ -40,9 +40,11 @@ describe("build operation", () => {
       expect(spec.prompt).toContain("Page Notability And Graph Structure");
       expect(spec.prompt).toContain("Page Syntax And Writing Conventions");
       expect(spec.prompt).toContain("Source Control Hygiene");
-      expect(spec.prompt).toContain("almanac: <short summary>");
-      expect(spec.prompt).toContain("Auto-commit wiki source changes: disabled");
-      expect(spec.prompt).toContain("Do not create a git commit for wiki changes");
+      expect(spec.prompt).toContain("almanac: <imperative one-line summary>");
+      expect(spec.prompt).toContain("Auto-commit wiki source changes: enabled");
+      expect(spec.prompt).toContain(
+        "If durable wiki source files changed, commit only `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml`",
+      );
       expect(spec.prompt).toContain(
         "You are building the first substantial Almanac wiki",
       );
@@ -50,27 +52,25 @@ describe("build operation", () => {
         "Always create `.almanac/pages/getting-started.md`",
       );
       expect(spec.prompt).toContain(
-        "`project-overview.md` is optional",
+        "second front-door page such as `project-overview.md`",
       );
       expect(spec.prompt).toContain(`Repository root: ${repo}`);
       expect(spec.prompt).toContain("Extra context.");
     });
   });
 
-  it("tells the operation prompt when auto-commit is enabled", async () => {
+  it("tells the operation prompt when auto-commit is disabled", async () => {
     await withTempHome(async (home) => {
       await expect(runConfigSet({
         key: "auto_commit",
-        value: "true",
+        value: "false",
       })).resolves.toMatchObject({ exitCode: 0 });
-      const repo = await makeRepo(home, "build-auto-commit");
+      const repo = await makeRepo(home, "build-no-auto-commit");
 
       const spec = await createBuildRunSpec({ repoRoot: repo });
 
-      expect(spec.prompt).toContain("Auto-commit wiki source changes: enabled");
-      expect(spec.prompt).toContain(
-        "If durable wiki source files changed, commit only `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml`",
-      );
+      expect(spec.prompt).toContain("Auto-commit wiki source changes: disabled");
+      expect(spec.prompt).toContain("Do not create a git commit for wiki changes");
     });
   });
 

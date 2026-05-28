@@ -44,6 +44,11 @@ topics:
     description: Product, market, user, pricing, and positioning synthesis that shapes how CodeAlmanac is explained and sold
     parents: []
 
+  - slug: wiki-design
+    title: Wiki Design
+    description: Product and architecture decisions about what a codebase wiki should contain and how pages, hubs, topics, and links should fit together
+    parents: [systems, decisions]
+
   - slug: fundraising
     title: Fundraising
     description: Investor-facing narrative, pitch deck, and financing assumptions for CodeAlmanac

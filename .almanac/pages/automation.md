@@ -26,11 +26,12 @@ sources:
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T16-02-00-019e2814-eaf1-77a1-848f-737a32ef277b.jsonl
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T15-56-34-019e280f-f145-7432-a87a-55b96c429856.jsonl
   - /Users/rohan/.codex/sessions/2026/05/14/rollout-2026-05-14T16-08-39-019e281b-0256-7b60-86f9-ca8990e73c39.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T11-12-35-019e6f5b-eaff-7600-abd8-c83c7cdc491a.jsonl
   - https://www.npmjs.com/package/auto-launch
   - https://www.npmjs.com/package/node-schedule
   - https://www.npmjs.com/package/node-windows
 status: active
-verified: 2026-05-14
+verified: 2026-05-28
 ---
 
 # Automation
@@ -79,6 +80,8 @@ The 2026-05-14 refactor chose a `ScheduledTaskDefinition` model for known Almana
 The task definition is the source of truth for each task's scheduler identity: label, plist path, logs, working-directory policy, and command arguments. The default interval constants live in `[[src/automation/tasks.ts]]` beside those task records, so changing scheduled task cadence stays inside the task-definition module instead of in command-level plist branches.
 
 The 2026-05-14 [[self-update]] work added a boundary case to this model. Automatic CLI self-update uses scheduler mechanics, but the work command stays `almanac update` rather than becoming a private scheduler-only update command. Automation owns task selection, the launchd task definition, and status plumbing through `almanac automation install update`; the update command owns package mutation, version checks, and idempotent no-op behavior when the installed version is current.
+
+There is no `.almanac/triggers.yaml` in the current implementation. A trigger file is a future product generalization discussed for non-code Almanacs: one scheduler command such as `almanac sweep` could read project-local trigger rules and decide whether to index changed sources, absorb new source records, or garden a changed graph. The current implementation uses typed scheduled tasks in `[[src/automation/tasks.ts]]`, not project-local trigger configuration.
 
 ## Fast-path and failure posture
 

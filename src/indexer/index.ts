@@ -19,6 +19,11 @@ import {
   normalizePathPreservingCase,
   looksLikeDir,
 } from "./paths.js";
+import {
+  normalizePageSources,
+  type DerivedFileRef,
+  type IndexedPageSource,
+} from "./page-sources.js";
 import { isIndexSchemaStale, openIndex } from "./schema.js";
 import { applyTopicsYaml, TOPICS_YAML_FILENAME } from "./topics-yaml.js";
 import { extractWikilinks } from "./wikilinks.js";
@@ -198,7 +203,8 @@ async function indexPagesInto(
     archivedAt: number | null;
     supersededBy: string | null;
     topics: string[];
-    frontmatterFiles: string[];
+    sourceFileRefs: DerivedFileRef[];
+    pageSources: IndexedPageSource[];
     wikilinks: ReturnType<typeof extractWikilinks>;
     content: string;
   }> = [];
@@ -280,6 +286,11 @@ async function indexPagesInto(
     const fm = parseFrontmatter(raw);
     const title = fm.title ?? firstH1(fm.body) ?? base;
     const links = extractWikilinks(fm.body);
+    const normalizedSources = normalizePageSources({
+      sources: fm.sources,
+      legacyFiles: fm.files,
+      legacySourceStrings: fm.legacySourceStrings,
+    });
 
     planned.push({
       slug,
@@ -292,7 +303,8 @@ async function indexPagesInto(
       archivedAt: fm.archived_at,
       supersededBy: fm.superseded_by,
       topics: fm.topics,
-      frontmatterFiles: fm.files,
+      sourceFileRefs: normalizedSources.fileRefs,
+      pageSources: normalizedSources.sources,
       wikilinks: links,
       content: fm.body,
     });
@@ -348,6 +360,17 @@ async function indexPagesInto(
     "INSERT OR IGNORE INTO file_refs (page_slug, path, original_path, is_dir) VALUES (?, ?, ?, ?)",
   );
 
+  const deletePageSources = db.prepare<[string]>(
+    "DELETE FROM page_sources WHERE page_slug = ?",
+  );
+  const insertPageSource = db.prepare<
+    [string, string, string, string, string | null, string | null, string | null, number]
+  >(
+    `INSERT OR IGNORE INTO page_sources
+       (page_slug, source_id, source_type, target, title, retrieved_at, note, legacy)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  );
+
   const deleteWikilinks = db.prepare<[string]>(
     "DELETE FROM wikilinks WHERE source_slug = ?",
   );
@@ -386,6 +409,7 @@ async function indexPagesInto(
       // uniform and makes "remove a topic from frontmatter" work.
       deletePageTopics.run(p.slug);
       deleteFileRefs.run(p.slug);
+      deletePageSources.run(p.slug);
       deleteWikilinks.run(p.slug);
       deleteXwiki.run(p.slug);
       // Same virtual-table reason as the deletion branch above — FTS5
@@ -410,13 +434,27 @@ async function indexPagesInto(
         insertPageTopic.run(p.slug, topicSlug);
       }
 
-      // Frontmatter `files:` — normalize each entry, inferring directness
-      // from its trailing slash. Authors who write `src/payments` (no
-      // trailing slash) are asserting a file; this matches how `[[...]]`
-      // classifies the same string. We store both the lowercased form
-      // (for `--mentions` GLOB queries) and the casing-preserving form
-      // (for dead-ref `existsSync` on case-sensitive filesystems).
-      for (const raw of p.frontmatterFiles) {
+      for (const source of p.pageSources) {
+        const sourceTarget = source.type === "file"
+          ? normalizePath(source.target, looksLikeDir(source.target))
+          : source.target;
+        insertPageSource.run(
+          p.slug,
+          source.id,
+          source.type,
+          sourceTarget,
+          source.title ?? null,
+          source.retrieved_at ?? null,
+          source.note ?? null,
+          source.legacy ? 1 : 0,
+        );
+      }
+
+      // Source-derived file references. `src/indexer/page-sources.ts`
+      // is the only place that knows legacy `files:` can still become
+      // file refs; the indexer consumes the normalized model.
+      for (const ref of p.sourceFileRefs) {
+        const raw = ref.rawPath;
         const isDir = looksLikeDir(raw);
         const path = normalizePath(raw, isDir);
         const originalPath = normalizePathPreservingCase(raw, isDir);

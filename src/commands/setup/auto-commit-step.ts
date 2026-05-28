@@ -1,4 +1,4 @@
-import { writeConfig } from "../../config/index.js";
+import { readConfig, writeConfig } from "../../config/index.js";
 import {
   BAR,
   DIM,
@@ -18,23 +18,32 @@ export async function runAutoCommitSetupStep(args: {
   interactive: boolean;
   options: AutoCommitSetupStepOptions;
 }): Promise<void> {
-  let autoCommitAction: InstallDecision = "skip";
-  if (args.options.autoCommit === true) {
+  let autoCommitAction: InstallDecision | "preserve" = "preserve";
+  if (args.options.autoCommit === false) {
+    autoCommitAction = "skip";
+  } else if (args.options.autoCommit === true) {
     autoCommitAction = "install";
   } else if (args.interactive) {
     autoCommitAction = await confirm(
       args.out,
       "Commit Almanac wiki updates automatically?",
-      false,
+      true,
     );
   }
 
   if (autoCommitAction === "install") {
     await writeConfig({ auto_commit: true });
     stepDone(args.out, "Auto-commit enabled");
-  } else {
-    if (args.interactive) await writeConfig({ auto_commit: false });
+  } else if (autoCommitAction === "skip") {
+    await writeConfig({ auto_commit: false });
     stepSkipped(args.out, `Auto-commit ${DIM}disabled${RST}`);
+  } else {
+    const config = await readConfig();
+    if (config.auto_commit) {
+      stepDone(args.out, "Auto-commit enabled");
+    } else {
+      stepSkipped(args.out, `Auto-commit ${DIM}disabled${RST}`);
+    }
   }
   args.out.write(BAR + "\n");
 }

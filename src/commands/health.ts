@@ -7,11 +7,16 @@ import type Database from "better-sqlite3";
 
 import { BLUE, BOLD, DIM, GREEN, RED, RST } from "../ansi.js";
 import { parseDuration } from "../indexer/duration.js";
+import { parseFrontmatter } from "../indexer/frontmatter.js";
 import { ensureFreshIndex } from "../indexer/index.js";
 import { resolveWikiRoot } from "../indexer/resolve-wiki.js";
 import { openIndex } from "../indexer/schema.js";
 import { findEntry } from "../registry/index.js";
 import { toKebabCase } from "../slug.js";
+import {
+  applySourceFrontmatterFix,
+  writeSourceFrontmatterFix,
+} from "../sources/frontmatter-rewrite.js";
 import { subtreeInDb } from "../topics/dag.js";
 
 /**
@@ -40,6 +45,11 @@ export interface HealthReport {
   dead_refs: { slug: string; path: string }[];
   broken_links: { source_slug: string; target_slug: string }[];
   broken_xwiki: { source_slug: string; target_wiki: string; target_slug: string }[];
+  missing_sources: { slug: string; source_id: string }[];
+  unused_sources: { slug: string; source_id: string }[];
+  legacy_frontmatter: { slug: string; fields: string[] }[];
+  unfixable_sources: { slug: string; source: string }[];
+  duplicate_sources: { slug: string; source_id: string }[];
   empty_topics: { slug: string }[];
   empty_pages: { slug: string }[];
   slug_collisions: { slug: string; paths: string[] }[];
@@ -53,6 +63,7 @@ export interface HealthOptions {
   stdin?: boolean;
   stdinInput?: string;
   json?: boolean;
+  fix?: boolean;
 }
 
 export interface HealthCommandOutput {
@@ -71,17 +82,27 @@ export async function runHealth(
   options: HealthOptions,
 ): Promise<HealthCommandOutput> {
   const repoRoot = await resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
-  await ensureFreshIndex({ repoRoot });
-
   const almanacDir = join(repoRoot, ".almanac");
   const pagesDir = join(almanacDir, "pages");
+  const staleSeconds = options.stale !== undefined
+    ? parseDuration(options.stale)
+    : DEFAULT_STALE_SECONDS;
+
+  await ensureFreshIndex({ repoRoot });
+
+  if (options.fix === true) {
+    const fixDb = openIndex(join(almanacDir, "index.db"));
+    try {
+      await fixLegacySourceFrontmatter(fixDb, resolveScope(fixDb, options));
+    } finally {
+      fixDb.close();
+    }
+    await ensureFreshIndex({ repoRoot });
+  }
+
   const db = openIndex(join(almanacDir, "index.db"));
 
   try {
-    const staleSeconds = options.stale !== undefined
-      ? parseDuration(options.stale)
-      : DEFAULT_STALE_SECONDS;
-
     const scope = resolveScope(db, options);
 
     const report: HealthReport = {
@@ -90,6 +111,11 @@ export async function runHealth(
       dead_refs: await findDeadRefs(db, scope, repoRoot),
       broken_links: findBrokenLinks(db, scope),
       broken_xwiki: await findBrokenXwiki(db, scope),
+      missing_sources: await findMissingSources(db, scope),
+      unused_sources: await findUnusedSources(db, scope),
+      legacy_frontmatter: await findLegacyFrontmatter(db, scope),
+      unfixable_sources: await findUnfixableSources(db, scope),
+      duplicate_sources: await findDuplicateSources(db, scope),
       empty_topics: findEmptyTopics(db, scope),
       empty_pages: await findEmptyPages(db, scope, pagesDir),
       slug_collisions: await findSlugCollisions(pagesDir),
@@ -337,6 +363,179 @@ async function findBrokenXwiki(
   return out;
 }
 
+async function findMissingSources(
+  db: Database.Database,
+  scope: HealthScope,
+): Promise<{ slug: string; source_id: string }[]> {
+  const rows = db
+    .prepare<[], { slug: string; file_path: string }>(
+      `SELECT slug, file_path FROM pages
+       WHERE archived_at IS NULL
+       ORDER BY slug`,
+    )
+    .all();
+  const sourceRows = db
+    .prepare<[string], { source_id: string }>(
+      "SELECT source_id FROM page_sources WHERE page_slug = ?",
+    );
+  const out: { slug: string; source_id: string }[] = [];
+  for (const row of rows) {
+    if (!inPageScope(scope, row.slug)) continue;
+    const citations = await citationsForFile(row.file_path);
+    if (citations.size === 0) continue;
+    const sourceIds = new Set(sourceRows.all(row.slug).map((r) => r.source_id));
+    for (const citation of citations) {
+      if (!sourceIds.has(citation)) {
+        out.push({ slug: row.slug, source_id: citation });
+      }
+    }
+  }
+  return out;
+}
+
+async function findUnusedSources(
+  db: Database.Database,
+  scope: HealthScope,
+): Promise<{ slug: string; source_id: string }[]> {
+  const rows = db
+    .prepare<[], { slug: string; file_path: string }>(
+      `SELECT slug, file_path FROM pages
+       WHERE archived_at IS NULL
+       ORDER BY slug`,
+    )
+    .all();
+  const sourceRows = db
+    .prepare<[string], { source_id: string }>(
+      "SELECT source_id FROM page_sources WHERE page_slug = ? ORDER BY source_id",
+    );
+  const out: { slug: string; source_id: string }[] = [];
+  for (const row of rows) {
+    if (!inPageScope(scope, row.slug)) continue;
+    const citations = await citationsForFile(row.file_path);
+    for (const source of sourceRows.all(row.slug)) {
+      if (!citations.has(source.source_id)) {
+        out.push({ slug: row.slug, source_id: source.source_id });
+      }
+    }
+  }
+  return out;
+}
+
+async function findLegacyFrontmatter(
+  db: Database.Database,
+  scope: HealthScope,
+): Promise<{ slug: string; fields: string[] }[]> {
+  const rows = db
+    .prepare<[], { slug: string; file_path: string }>(
+      `SELECT slug, file_path FROM pages
+       WHERE archived_at IS NULL
+       ORDER BY slug`,
+    )
+    .all();
+  const out: { slug: string; fields: string[] }[] = [];
+  for (const row of rows) {
+    if (!inPageScope(scope, row.slug)) continue;
+    let raw: string;
+    try {
+      raw = await readFile(row.file_path, "utf8");
+    } catch {
+      continue;
+    }
+    const fm = parseFrontmatter(raw);
+    const fields: string[] = [];
+    if (fm.files.length > 0) fields.push("files");
+    if (fm.legacySourceStrings.length > 0) fields.push("sources");
+    if (fields.length > 0) out.push({ slug: row.slug, fields });
+  }
+  return out;
+}
+
+async function findUnfixableSources(
+  db: Database.Database,
+  scope: HealthScope,
+): Promise<{ slug: string; source: string }[]> {
+  const rows = db
+    .prepare<[], { slug: string; file_path: string }>(
+      `SELECT slug, file_path FROM pages
+       WHERE archived_at IS NULL
+       ORDER BY slug`,
+    )
+    .all();
+  const out: { slug: string; source: string }[] = [];
+  for (const row of rows) {
+    if (!inPageScope(scope, row.slug)) continue;
+    let raw: string;
+    try {
+      raw = await readFile(row.file_path, "utf8");
+    } catch {
+      continue;
+    }
+    const fm = parseFrontmatter(raw);
+    for (const source of fm.legacySourceStrings) {
+      if (!isHttpUrl(source)) out.push({ slug: row.slug, source });
+    }
+  }
+  return out;
+}
+
+function isHttpUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+async function findDuplicateSources(
+  db: Database.Database,
+  scope: HealthScope,
+): Promise<{ slug: string; source_id: string }[]> {
+  const rows = db
+    .prepare<[], { slug: string; file_path: string }>(
+      `SELECT slug, file_path FROM pages
+       WHERE archived_at IS NULL
+       ORDER BY slug`,
+    )
+    .all();
+  const out: { slug: string; source_id: string }[] = [];
+  for (const row of rows) {
+    if (!inPageScope(scope, row.slug)) continue;
+    let raw: string;
+    try {
+      raw = await readFile(row.file_path, "utf8");
+    } catch {
+      continue;
+    }
+    const fm = parseFrontmatter(raw);
+    const counts = new Map<string, number>();
+    for (const source of fm.sources) {
+      counts.set(source.id, (counts.get(source.id) ?? 0) + 1);
+    }
+    for (const [sourceId, count] of counts.entries()) {
+      if (count > 1) out.push({ slug: row.slug, source_id: sourceId });
+    }
+  }
+  return out;
+}
+
+async function citationsForFile(filePath: string): Promise<Set<string>> {
+  let raw: string;
+  try {
+    raw = await readFile(filePath, "utf8");
+  } catch {
+    return new Set();
+  }
+  const body = parseFrontmatter(raw).body;
+  const out = new Set<string>();
+  const re = /\[@([a-z0-9][a-z0-9-]*)\]/g;
+  for (const match of body.matchAll(re)) {
+    const id = match[1];
+    if (id !== undefined) out.add(id);
+  }
+  return out;
+}
+
 /** Topics with zero pages. */
 function findEmptyTopics(
   db: Database.Database,
@@ -448,6 +647,25 @@ async function findSlugCollisions(
   return out;
 }
 
+async function fixLegacySourceFrontmatter(
+  db: Database.Database,
+  scope: HealthScope,
+): Promise<void> {
+  const rows = db
+    .prepare<[], { slug: string; file_path: string }>(
+      `SELECT slug, file_path FROM pages
+       WHERE archived_at IS NULL
+       ORDER BY slug`,
+    )
+    .all();
+  for (const row of rows) {
+    if (!inPageScope(scope, row.slug)) continue;
+    const raw = await readFile(row.file_path, "utf8");
+    const fixed = applySourceFrontmatterFix(raw);
+    await writeSourceFrontmatterFix(row.file_path, fixed);
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // pretty-print
 // ─────────────────────────────────────────────────────────────────────
@@ -492,6 +710,41 @@ function formatReport(r: HealthReport): string {
         (b) =>
           `  ${BLUE}${b.source_slug}${RST} → ${b.target_wiki}:${b.target_slug} ${DIM}(wiki unregistered or unreachable)${RST}`,
       ),
+    ),
+  );
+  sections.push(
+    section(
+      "missing-sources",
+      r.missing_sources.length,
+      r.missing_sources.map((s) => `  ${BLUE}${s.slug}${RST} cites ${s.source_id} ${DIM}(missing source)${RST}`),
+    ),
+  );
+  sections.push(
+    section(
+      "unused-sources",
+      r.unused_sources.length,
+      r.unused_sources.map((s) => `  ${BLUE}${s.slug}${RST} lists ${s.source_id} ${DIM}(not cited)${RST}`),
+    ),
+  );
+  sections.push(
+    section(
+      "legacy-frontmatter",
+      r.legacy_frontmatter.length,
+      r.legacy_frontmatter.map((s) => `  ${BLUE}${s.slug}${RST} uses ${s.fields.join(", ")}`),
+    ),
+  );
+  sections.push(
+    section(
+      "unfixable-sources",
+      r.unfixable_sources.length,
+      r.unfixable_sources.map((s) => `  ${BLUE}${s.slug}${RST} has ambiguous legacy source ${s.source}`),
+    ),
+  );
+  sections.push(
+    section(
+      "duplicate-sources",
+      r.duplicate_sources.length,
+      r.duplicate_sources.map((s) => `  ${BLUE}${s.slug}${RST} repeats ${s.source_id}`),
     ),
   );
   sections.push(

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -238,12 +238,214 @@ describe("almanac health", () => {
         "broken_links",
         "broken_xwiki",
         "dead_refs",
+        "duplicate_sources",
         "empty_pages",
         "empty_topics",
+        "legacy_frontmatter",
+        "missing_sources",
         "orphans",
         "slug_collisions",
         "stale",
+        "unfixable_sources",
+        "unused_sources",
       ]);
+    });
+  });
+
+  it("reports source citation and legacy frontmatter problems", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "sources",
+        `---
+topics: [x]
+files:
+  - src/legacy.ts
+sources:
+  - id: real-source
+    type: manual
+    note: Human note.
+  - https://example.com/docs
+---
+
+Claim. [@missing-source]
+`,
+      );
+      await runIndexer({ repoRoot: repo });
+
+      const result = await runHealth({ cwd: repo, json: true });
+      const report = JSON.parse(result.stdout);
+      expect(report.missing_sources).toEqual([
+        { slug: "sources", source_id: "missing-source" },
+      ]);
+      expect(report.unused_sources).toEqual([
+        { slug: "sources", source_id: "docs" },
+        { slug: "sources", source_id: "legacy" },
+        { slug: "sources", source_id: "real-source" },
+      ]);
+      expect(report.legacy_frontmatter).toEqual([
+        { slug: "sources", fields: ["files", "sources"] },
+      ]);
+      expect(report.unfixable_sources).toEqual([]);
+    });
+  });
+
+  it("reports ambiguous legacy source strings and duplicate structured source IDs", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "bad-sources",
+        `---
+topics: [x]
+sources:
+  - id: repeated
+    type: manual
+    note: First note.
+  - id: repeated
+    type: manual
+    note: Second note.
+  - local transcript note
+---
+
+Claim. [@repeated]
+`,
+      );
+      await runIndexer({ repoRoot: repo });
+
+      const result = await runHealth({ cwd: repo, json: true });
+      const report = JSON.parse(result.stdout);
+      expect(report.duplicate_sources).toEqual([
+        { slug: "bad-sources", source_id: "repeated" },
+      ]);
+      expect(report.unfixable_sources).toEqual([
+        { slug: "bad-sources", source: "local transcript note" },
+      ]);
+    });
+  });
+
+  it("--fix rewrites safe legacy source frontmatter without changing body prose", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "legacy",
+        `---
+title: Legacy
+topics: [x]
+files:
+  - src/foo.ts
+sources:
+  - https://example.com/docs
+---
+
+# Legacy
+
+Body stays byte-identical.
+`,
+      );
+
+      const result = await runHealth({ cwd: repo, fix: true, json: true });
+      const report = JSON.parse(result.stdout);
+      expect(report.legacy_frontmatter).toEqual([]);
+
+      const page = await readFile(
+        join(repo, ".almanac", "pages", "legacy.md"),
+        "utf8",
+      );
+      expect(page).not.toMatch(/^files:/m);
+      expect(page).toContain("type: file");
+      expect(page).toContain("path: src/foo.ts");
+      expect(page).toContain("type: web");
+      expect(page).toContain("url: https://example.com/docs");
+      expect(page).not.toContain("retrieved_at:");
+      expect(page.endsWith("# Legacy\n\nBody stays byte-identical.\n")).toBe(true);
+    });
+  });
+
+  it("--fix respects topic scope", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await runTopicsCreate({ cwd: repo, name: "target" });
+      await runTopicsCreate({ cwd: repo, name: "other" });
+      await writePage(
+        repo,
+        "target-page",
+        "---\ntopics: [target]\nfiles:\n  - src/target.ts\n---\n\nbody.\n",
+      );
+      await writePage(
+        repo,
+        "other-page",
+        "---\ntopics: [other]\nfiles:\n  - src/other.ts\n---\n\nbody.\n",
+      );
+
+      await runHealth({ cwd: repo, topic: "target", fix: true, json: true });
+
+      const targetPage = await readFile(
+        join(repo, ".almanac", "pages", "target-page.md"),
+        "utf8",
+      );
+      const otherPage = await readFile(
+        join(repo, ".almanac", "pages", "other-page.md"),
+        "utf8",
+      );
+      expect(targetPage).not.toMatch(/^files:/m);
+      expect(targetPage).toContain("type: file");
+      expect(otherPage).toMatch(/^files:/m);
+    });
+  });
+
+  it("--fix validates stale duration before rewriting pages", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(
+        repo,
+        "legacy",
+        "---\ntopics: [x]\nfiles:\n  - src/foo.ts\n---\n\nbody.\n",
+      );
+
+      await expect(
+        runHealth({ cwd: repo, fix: true, stale: "bad", json: true }),
+      ).rejects.toThrow(/invalid duration/);
+
+      const page = await readFile(
+        join(repo, ".almanac", "pages", "legacy.md"),
+        "utf8",
+      );
+      expect(page).toMatch(/^files:/m);
+    });
+  });
+
+  it("--fix skips malformed frontmatter instead of aborting", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writeFile(
+        join(repo, ".almanac", "pages", "broken.md"),
+        "---\ntopics: [unclosed\nfiles:\n  - src/foo.ts\n---\n\nbody.\n",
+        "utf8",
+      );
+
+      const origWrite = process.stderr.write.bind(process.stderr);
+      process.stderr.write = ((): boolean => true) as typeof process.stderr.write;
+      try {
+        const result = await runHealth({ cwd: repo, fix: true, json: true });
+        expect(result.exitCode).toBe(0);
+      } finally {
+        process.stderr.write = origWrite;
+      }
+
+      const page = await readFile(
+        join(repo, ".almanac", "pages", "broken.md"),
+        "utf8",
+      );
+      expect(page).toContain("topics: [unclosed");
     });
   });
 
@@ -318,6 +520,11 @@ describe("almanac health", () => {
         dead_refs: expect.any(Array),
         broken_links: expect.any(Array),
         broken_xwiki: expect.any(Array),
+        missing_sources: expect.any(Array),
+        unused_sources: expect.any(Array),
+        legacy_frontmatter: expect.any(Array),
+        unfixable_sources: expect.any(Array),
+        duplicate_sources: expect.any(Array),
         empty_topics: expect.any(Array),
         empty_pages: expect.any(Array),
         slug_collisions: expect.any(Array),

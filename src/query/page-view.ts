@@ -13,6 +13,15 @@ export interface PageView {
   supersedes: string[];
   topics: string[];
   file_refs: Array<{ path: string; is_dir: boolean }>;
+  sources: Array<{
+    id: string;
+    type: string;
+    target: string;
+    title: string | null;
+    retrieved_at: string | null;
+    note: string | null;
+    legacy: boolean;
+  }>;
   wikilinks_out: string[];
   wikilinks_in: string[];
   cross_wiki_links: Array<{ wiki: string; target: string }>;
@@ -54,6 +63,33 @@ export async function getPageView(
     )
     .all(slug)
     .map((r) => ({ path: r.original_path, is_dir: r.is_dir === 1 }));
+
+  const sources = db
+    .prepare<
+      [string],
+      {
+        source_id: string;
+        source_type: string;
+        target: string;
+        title: string | null;
+        retrieved_at: string | null;
+        note: string | null;
+        legacy: number;
+      }
+    >(
+      `SELECT source_id, source_type, target, title, retrieved_at, note, legacy
+       FROM page_sources WHERE page_slug = ? ORDER BY source_id`,
+    )
+    .all(slug)
+    .map((r) => ({
+      id: r.source_id,
+      type: r.source_type,
+      target: r.target,
+      title: r.title,
+      retrieved_at: r.retrieved_at,
+      note: r.note,
+      legacy: r.legacy === 1,
+    }));
 
   const linksOut = db
     .prepare<[string], { target_slug: string }>(
@@ -102,6 +138,7 @@ export async function getPageView(
     supersedes: supersedesRows,
     topics,
     file_refs: refs,
+    sources,
     wikilinks_out: linksOut,
     wikilinks_in: linksIn,
     cross_wiki_links: xwiki,

@@ -19,10 +19,16 @@ Common fields:
 title: Human Readable Title
 summary: One direct sentence explaining what this page helps future agents understand.
 topics: [topic-one, topic-two]
-files:
-  - src/path/to/file.ts
 sources:
-  - https://example.com/docs
+  - id: implementation-file
+    type: file
+    path: src/path/to/file.ts
+    note: Supports the page's code claims.
+  - id: external-docs
+    type: web
+    url: https://example.com/docs
+    retrieved_at: 2026-05-28
+    note: Supports the external dependency claims.
 status: active
 verified: 2026-05-10
 external_version: "api-or-doc-version-if-relevant"
@@ -32,17 +38,32 @@ archived_at: 2026-05-10
 ---
 ```
 
-`title`, `summary`, `topics`, `files`, `archived_at`, `supersedes`, and
-`superseded_by` are understood by current tooling. Other fields are allowed as
-durable prompt-level conventions and future index inputs.
+`title`, `summary`, `topics`, `sources`, `archived_at`, `supersedes`, and
+`superseded_by` are understood by current tooling. Legacy `files:` frontmatter
+is still read for compatibility, but new pages should use `sources:` with
+`type: file`.
 
 Use `summary:` as the page's search-result snippet: one factual sentence,
 not a paragraph, explaining what the page is about and why an agent would
 open it.
 
-Use `files:` for repo files and folders that support the page. Use `sources:`
-for external docs, papers, URLs, transcripts, notes, market reads, research
-inputs, commits, or other non-repo material that supports the page.
+Use `sources:` for evidence. Use `type: file` for repo files, tests,
+migrations, prompts, and config. Use other source types for external docs,
+papers, URLs, transcripts, notes, market reads, research inputs, commits, pull
+requests, or other material that supports the page. Every source needs a stable
+`id` and a `note` explaining what the source supports.
+
+Cite non-obvious claims with `[@source-id]`. Do not cite a source you did not
+inspect. Citations are evidence; wikilinks are navigation.
+
+Code is current truth for present-tense code claims. Conversations, old pull
+requests, old commits, and incident notes are historical evidence unless the
+claim is verified against current code, tests, config, or current external
+docs.
+
+Package update must not rewrite wiki files. Safe mechanical migration of legacy
+source frontmatter belongs behind an explicit wiki-maintenance command such as
+`almanac health --fix`.
 
 Do not add fields mechanically. Frontmatter should make the page more
 retrievable, grounded, or maintainable.
@@ -63,8 +84,10 @@ Disambiguation is content-based:
 - trailing `/` means folder
 - otherwise it is a page slug
 
-Link the first meaningful mention of a related page in a section. Do not link
-every repeated word. A page with no inbound or outbound links is suspect.
+Link the first meaningful mention of a related page in a section. Prefer
+`[[page-slug|readable text]]` when a slug-only link would interrupt sentence
+flow. Do not link every repeated word. A page with no inbound or outbound links
+is suspect.
 
 ## Grounding
 
@@ -77,7 +100,7 @@ either omit it or mark it as an open question.
 For external docs or research, cite the source and preserve the conclusion that
 matters to this project. Do not copy long external passages into the wiki.
 
-For code claims, prefer exact file references in `files:` and links in prose.
+For code claims, prefer exact `sources[type=file]` references and links in prose.
 For behavior claims, inspect tests when available.
 
 ## Page Shape
@@ -126,7 +149,17 @@ files are `.almanac/README.md`, `.almanac/pages/`, and `.almanac/topics.yaml`.
 
 Only create a git commit when the runtime context says auto-commit is enabled.
 When it is enabled, commit only those wiki source changes and use the commit
-message shape `almanac: <short summary>`.
+message shape below:
+
+```text
+almanac: <imperative one-line summary>
+
+<optional body explaining what changed and why>
+```
+
+The subject line should be concise, imperative, and specific. Add a body when
+the wiki change records a non-obvious decision, migration, source correction,
+or graph cleanup that future agents should understand from git history.
 
 When auto-commit is disabled, do not create a git commit. Leave wiki source
 changes in the working tree for the user to review.

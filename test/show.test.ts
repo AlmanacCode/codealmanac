@@ -29,9 +29,19 @@ async function seed(repo: string): Promise<void> {
 title: Checkout Flow
 summary: Checkout flow explains the entrypoint and related payment links.
 topics: [checkout, flows]
-files:
-  - src/checkout/handler.ts
-  - src/checkout/
+sources:
+  - id: checkout-folder
+    type: file
+    path: src/checkout/
+    note: Contains checkout implementation files.
+  - id: checkout-handler
+    type: file
+    path: src/checkout/handler.ts
+    note: Implements checkout handling.
+  - id: checkout-docs
+    type: web
+    url: https://example.com/checkout
+    note: External checkout reference.
 ---
 
 # Checkout Flow
@@ -98,6 +108,7 @@ describe("almanac show — default view", () => {
       expect(r.stdout).toMatch(/slug:\s+checkout-flow/);
       expect(r.stdout).toMatch(/summary:\s+Checkout flow explains/);
       expect(r.stdout).toMatch(/topics:\s+checkout, flows/);
+      expect(r.stdout).toMatch(/sources:\s+checkout-docs \(web\), checkout-folder \(file: src\/checkout\/\), checkout-handler \(file: src\/checkout\/handler.ts\)/);
       expect(r.stdout).toMatch(/\n---\n/);
       expect(r.stdout).toMatch(/# Checkout Flow/);
     });
@@ -178,6 +189,35 @@ describe("almanac show — view modes", () => {
         "Checkout flow explains the entrypoint and related payment links.",
       );
       expect(parsed.topics).toEqual(["checkout", "flows"]);
+      expect(parsed.sources).toEqual([
+        {
+          id: "checkout-docs",
+          type: "web",
+          target: "https://example.com/checkout",
+          title: null,
+          retrieved_at: null,
+          note: "External checkout reference.",
+          legacy: false,
+        },
+        {
+          id: "checkout-folder",
+          type: "file",
+          target: "src/checkout/",
+          title: null,
+          retrieved_at: null,
+          note: "Contains checkout implementation files.",
+          legacy: false,
+        },
+        {
+          id: "checkout-handler",
+          type: "file",
+          target: "src/checkout/handler.ts",
+          title: null,
+          retrieved_at: null,
+          note: "Implements checkout handling.",
+          legacy: false,
+        },
+      ]);
       expect(parsed.wikilinks_out).toEqual(["stripe-async"]);
       expect(parsed.cross_wiki_links).toEqual([
         { wiki: "openalmanac", target: "supabase" },
