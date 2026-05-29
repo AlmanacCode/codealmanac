@@ -51,6 +51,10 @@ sources:
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
     note: Records the source provenance, getting-started convention, auto-commit prompt changes, and review-escalation prompt discussion.
+  - id: scratchpad-feedback-session
+    type: conversation
+    path: /Users/kushagrachitkara/.claude/projects/-Users-kushagrachitkara-Downloads-reverie-codealmanac/a26d91c7-8f31-42a7-9203-a2ff89134cc9.jsonl
+    note: Records user feedback that Absorb should not preserve active worksheet scaffolding as wiki memory.
 status: active
 verified: 2026-05-28
 ---
@@ -103,6 +107,8 @@ Absorb starts from an input and distills reusable project understanding into the
 
 For session-transcript inputs, a later 2026-05-11 capture review identified one prompt gap worth preserving: `prompts/operations/absorb.md` currently says to treat the input as raw material, but it does not yet explicitly tell the agent to parse transcript JSONL structurally and ignore repeated raw envelopes, long tool schemas, and oversized stdout unless they matter to a durable conclusion. That is current prompt debt, not a missing concept in the product model.
 
+A 2026-05-24 Claude session added a second Absorb quality rule from direct user feedback: a wiki stops being trusted if the agent uses it as a scratchpad for unresolved intake work. In that session the agent created transient pages for open questions and field inventories while helping a user fill a STEM OPT packet in an Obsidian vault, and the user explicitly pushed back that the wiki was becoming a notepad rather than memory. The durable product lesson is that unanswered question lists, per-form field dumps, and other active worksheet scaffolding belong in chat, task trackers, or source documents until they condense into reusable understanding. When new input only exposes missing facts, Absorb should usually no-op or update one stable synthesis page with the verified conclusion later, not preserve the collection process itself as wiki memory.
+
 Garden cultivates the graph. It improves clusters, hubs, topics, links, page boundaries, staleness, archive/supersession chains, and synthesis quality. The editorial model behind those outcomes is captured in [[wiki-organization-primitives]].
 
 Garden now has two implemented review workflows. Before general cleanup, `prompts/operations/garden.md` tells the agent to list decided review items, read each item, apply the human decision to pages, and mark the item applied through `almanac review apply`. The same prompt now tells Garden to use `almanac review add` only for unresolved source conflicts after checking current code, tests, config, current external docs, and existing wiki pages; Garden must edit the wiki directly when those sources answer the question, must treat stale claims as historical or remove them, and must not use review for feature ideas, product suggestions, missing links, routine stale prose, unsupported claims it can delete, deterministic source migrations, or facts the repo already answers. [@source-provenance-session]
@@ -110,5 +116,7 @@ Garden now has two implemented review workflows. Before general cleanup, `prompt
 ## Design implication
 
 If Build, Absorb, or Garden need better judgment, edit the relevant base or operation prompt. Do not recreate the removed writer/reviewer/review-apply pipeline in TypeScript. Helper/subagents remain optional provider behavior described inside operation prompts, not fixed CodeAlmanac product roles. This prompt layer is separate from prescriptive agent rules such as [[agents-md]] or `CLAUDE.md`: operation prompts carry run-specific Almanac behavior, while instruction files carry durable session conventions for a given agent harness.
+
+The same prompt-first rule applies to product evaluation. If a benchmark reveals that agents retrieve the wrong pages, preserve scratchpad intake work, or miss durable conclusions, the first fix target is usually prompt doctrine before adding new orchestration. [[repo-memory-benchmarks]] records the current evaluation frame for that claim.
 
 The transcript-capture review also produced a concrete example of that rule: if large session JSONL files become too expensive or noisy for Absorb, the first corrective move should be to strengthen `prompts/operations/absorb.md` with transcript-specific extraction guidance, and only then consider extra preflight tooling such as size warnings or caps.

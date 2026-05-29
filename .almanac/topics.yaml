@@ -39,10 +39,15 @@ topics:
     description: SQLite index, registry persistence, and file layout
     parents: [systems]
 
+  - slug: product
+    title: Product
+    description: Product positioning, evaluation strategy, and market-facing claims for CodeAlmanac
+    parents: []
+
   - slug: product-positioning
     title: Product Positioning
     description: Product, market, user, pricing, and positioning synthesis that shapes how CodeAlmanac is explained and sold
-    parents: []
+    parents: [product]
 
   - slug: wiki-design
     title: Wiki Design

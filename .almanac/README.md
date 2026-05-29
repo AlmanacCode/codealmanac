@@ -30,8 +30,9 @@ Topics form a DAG serialized in `.almanac/topics.yaml`. A page can belong to mul
 | `decisions` | Architectural choices — "why X over Y" |
 | `agents` | AI agent integration: harness providers, operation prompts, Build/Absorb/Garden (child of `flows` + `stack`) |
 | `cli` | CLI command surface and wiring (child of `systems`) |
-| `automation` | Scheduled background behavior and its command surface (child of `flows` + `cli`) |
+| `automation` | Scheduled background behavior and the CLI surfaces that install, inspect, and remove it (child of `flows` + `cli`) |
 | `storage` | SQLite index and registry persistence (child of `systems`) |
+| `product` | Product positioning, evaluation strategy, and market-facing claims about CodeAlmanac |
 | `wiki-design` | Product and architecture decisions about what a codebase wiki should contain and how pages, hubs, topics, and links should fit together (child of `systems` + `decisions`) |
 | `product-positioning` | Product, market, user, pricing, and positioning synthesis that shapes how CodeAlmanac is explained and sold |
 | `fundraising` | Investor-facing narrative, pitch deck, and financing assumptions (child of `product-positioning`) |
