@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { runCaptureSweepCommand } from "../src/commands/capture-sweep.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 import { writeConfig } from "../src/config/index.js";
+import { runRecordPath, writeRunRecord } from "../src/process/index.js";
 
 describe("almanac capture sweep", () => {
   it("dry-runs quiet Claude and Codex transcripts mapped to .almanac repos", async () => {
@@ -45,6 +46,33 @@ describe("almanac capture sweep", () => {
       );
       await utimes(subagentTranscript, old, old);
 
+      const internalCodexTranscript = join(codexDir, "internal-codex.jsonl");
+      await writeFile(
+        internalCodexTranscript,
+        `${JSON.stringify({
+          type: "session_meta",
+          payload: {
+            id: "internal-codex",
+            cwd: repo,
+            env: { CODEALMANAC_ABSORB_RUN: "1" },
+          },
+        })}\n`,
+        "utf8",
+      );
+      await utimes(internalCodexTranscript, old, old);
+
+      const internalClaudeTranscript = join(claudeDir, "internal-claude.jsonl");
+      await writeFile(
+        internalClaudeTranscript,
+        `${JSON.stringify({
+          sessionId: "internal-claude",
+          cwd: repo,
+          env: { CODEALMANAC_INTERNAL_SESSION: "1" },
+        })}\n`,
+        "utf8",
+      );
+      await utimes(internalClaudeTranscript, old, old);
+
       const result = await runCaptureSweepCommand({
         cwd: repo,
         homeDir: home,
@@ -62,6 +90,124 @@ describe("almanac capture sweep", () => {
         .toEqual(["claude", "codex"]);
       expect(existsSync(join(repo, ".almanac", "runs", "capture-ledger.json")))
         .toBe(false);
+    });
+  });
+
+  it("enqueues every eligible capture job in a live sweep", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "repo");
+      await scaffoldWiki(repo);
+      const codexDir = join(home, ".codex", "sessions");
+      await mkdir(codexDir, { recursive: true });
+      const old = new Date("2026-05-11T10:00:00.000Z");
+
+      for (const id of ["codex-1", "codex-2"]) {
+        const transcript = join(codexDir, `${id}.jsonl`);
+        await writeFile(
+          transcript,
+          `${JSON.stringify({ type: "session_meta", payload: { id, cwd: repo } })}\n`,
+          "utf8",
+        );
+        await utimes(transcript, old, old);
+      }
+
+      const started: string[] = [];
+      let runIndex = 0;
+      const result = await runCaptureSweepCommand({
+        cwd: repo,
+        homeDir: home,
+        json: true,
+        quiet: "45m",
+        now: new Date("2026-05-11T12:00:00.000Z"),
+        startBackground: async (options) => {
+          started.push(options.spec.metadata?.targetPaths?.[0] ?? "missing");
+          runIndex += 1;
+          const runId = `run_enqueued_${runIndex}`;
+          return {
+            runId,
+            childPid: 123,
+            record: {
+              version: 1,
+              id: runId,
+              operation: "absorb",
+              status: "queued",
+              repoRoot: options.repoRoot,
+              pid: 0,
+              provider: options.spec.provider.id,
+              model: options.spec.provider.model,
+              startedAt: "2026-05-11T12:00:00.000Z",
+              logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+            },
+          };
+        },
+      });
+
+      const parsed = JSON.parse(result.stdout);
+      expect(started).toHaveLength(2);
+      expect(parsed.summary.started).toHaveLength(2);
+      expect(parsed.summary.skipped).not.toContainEqual(expect.objectContaining({
+        reason: "sweep-start-limit",
+      }));
+    });
+  });
+
+  it("still enqueues sweep captures when an absorb job is already queued", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "repo");
+      await scaffoldWiki(repo);
+      await writeRunRecord(runRecordPath(repo, "run_active_absorb"), {
+        version: 1,
+        id: "run_active_absorb",
+        operation: "absorb",
+        status: "queued",
+        repoRoot: repo,
+        pid: 0,
+        provider: "claude",
+        startedAt: "2026-05-11T11:50:00.000Z",
+        logPath: join(repo, ".almanac", "runs", "run_active_absorb.jsonl"),
+      });
+      const codexDir = join(home, ".codex", "sessions");
+      await mkdir(codexDir, { recursive: true });
+      const transcript = join(codexDir, "ready.jsonl");
+      await writeFile(
+        transcript,
+        `${JSON.stringify({ type: "session_meta", payload: { id: "codex-1", cwd: repo } })}\n`,
+        "utf8",
+      );
+      const old = new Date("2026-05-11T10:00:00.000Z");
+      await utimes(transcript, old, old);
+
+      const result = await runCaptureSweepCommand({
+        cwd: repo,
+        homeDir: home,
+        json: true,
+        quiet: "45m",
+        now: new Date("2026-05-11T12:00:00.000Z"),
+        startBackground: async (options) => ({
+          runId: "run_queued_after_active",
+          childPid: 123,
+          record: {
+            version: 1,
+            id: "run_queued_after_active",
+            operation: "absorb",
+            status: "queued",
+            repoRoot: options.repoRoot,
+            pid: 0,
+            provider: options.spec.provider.id,
+            startedAt: "2026-05-11T12:00:00.000Z",
+            logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+          },
+        }),
+      });
+
+      const parsed = JSON.parse(result.stdout);
+      expect(parsed.summary.started).toHaveLength(1);
+      expect(parsed.summary.started[0]).toMatchObject({
+        runId: "run_queued_after_active",
+      });
+      expect(parsed.summary.skipped).not.toContainEqual(expect.objectContaining({
+        reason: "repo-capture-already-running",
+      }));
     });
   });
 
