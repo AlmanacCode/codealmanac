@@ -104,7 +104,7 @@ export async function startBackgroundProcess(
   return { runId, record: queued, childPid };
 }
 
-export interface RunBackgroundChildOptions {
+export interface RunBackgroundWorkerOptions {
   repoRoot: string;
   now?: () => Date;
   pid?: number;
@@ -116,7 +116,7 @@ export interface RunBackgroundChildOptions {
 }
 
 export async function runBackgroundWorker(
-  options: RunBackgroundChildOptions,
+  options: RunBackgroundWorkerOptions,
 ): Promise<void> {
   const now = options.now ?? (() => new Date());
   while (true) {

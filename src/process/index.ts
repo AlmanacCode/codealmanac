@@ -35,7 +35,7 @@ export {
 export type { RunLogEntry } from "./logs.js";
 export type {
   BackgroundChild,
-  RunBackgroundChildOptions,
+  RunBackgroundWorkerOptions,
   SpawnBackgroundFn,
   StartBackgroundProcessOptions,
   StartBackgroundProcessResult,
