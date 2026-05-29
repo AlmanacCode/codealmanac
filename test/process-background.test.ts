@@ -319,6 +319,73 @@ describe("process manager background execution", () => {
         .resolves.toMatchObject({ status: "queued" });
     });
   });
+
+  it("supports repeated worker wakeups without starting parallel runs", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "background-parallel-worker");
+      await scaffoldWiki(repo);
+
+      const first = await startBackgroundProcess({
+        repoRoot: repo,
+        runId: "run_20260509210700_first",
+        entrypoint: "/tmp/codealmanac.js",
+        now: fixedClock(["2026-05-09T21:07:00.000Z"]),
+        spec: {
+          provider: { id: "codex" },
+          cwd: repo,
+          prompt: "first",
+          metadata: { operation: "garden" },
+        },
+        spawnBackground: () => ({ pid: 444 }),
+      });
+      const second = await startBackgroundProcess({
+        repoRoot: repo,
+        runId: "run_20260509210701_second",
+        entrypoint: "/tmp/codealmanac.js",
+        now: fixedClock(["2026-05-09T21:07:01.000Z"]),
+        spec: {
+          provider: { id: "codex" },
+          cwd: repo,
+          prompt: "second",
+          metadata: { operation: "garden" },
+        },
+        spawnBackground: () => ({ pid: 445 }),
+      });
+
+      let activeRuns = 0;
+      let maxActiveRuns = 0;
+      const seenPrompts: string[] = [];
+      const harnessRun = async (spec: { prompt: string }) => {
+        activeRuns += 1;
+        maxActiveRuns = Math.max(maxActiveRuns, activeRuns);
+        seenPrompts.push(spec.prompt);
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        activeRuns -= 1;
+        return { success: true, result: spec.prompt };
+      };
+      await Promise.all([
+        runBackgroundWorker({
+          repoRoot: repo,
+          pid: 444,
+          harnessRun,
+        }),
+        runBackgroundWorker({
+          repoRoot: repo,
+          pid: 445,
+          harnessRun,
+        }),
+      ]);
+
+      const firstRecord = await readRunRecord(runRecordPath(repo, first.runId));
+      const secondRecord = await readRunRecord(runRecordPath(repo, second.runId));
+      expect(firstRecord).toMatchObject({ status: "done" });
+      expect(secondRecord).toMatchObject({ status: "done" });
+      expect([444, 445]).toContain(firstRecord!.pid);
+      expect(secondRecord!.pid).toBe(firstRecord!.pid);
+      expect(seenPrompts).toEqual(["first", "second"]);
+      expect(maxActiveRuns).toBe(1);
+    });
+  });
 });
 
 function fixedClock(values: string[]): () => Date {
