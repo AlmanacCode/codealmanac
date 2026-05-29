@@ -63,6 +63,8 @@ The canonical memory must remain `.almanac/pages/` and `.almanac/topics.yaml`. A
 
 This boundary keeps the contrast with [[agentmemory-competitor]] and [[codex-supermemory]] sharp. Memory daemons and hosted hook integrations win on automatic capture and recall, but they tend toward user-level memory stores and broad context injection. CodeAlmanac's differentiated path is cited, repo-local, file-aware constraint surfacing from a governed wiki.
 
+The same boundary applies to the remote product described in [[github-native-wiki-maintenance]]. Hosted infrastructure can run GitHub webhooks, index `.almanac/`, post PR comments, and open wiki-maintenance PRs, but the durable memory still belongs in reviewed markdown rather than a hosted memory database.
+
 Scope should be visible in the output. A future context packet should distinguish repo wiki pages, session-local observations, and external connector evidence so an agent can tell whether a surfaced fact is a project invariant, a recent working note, or a personal-account memory.
 
 ## MVP Implication

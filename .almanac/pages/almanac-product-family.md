@@ -6,19 +6,22 @@ sources:
   - /Users/rohan/.codex/sessions/2026/05/27/rollout-2026-05-27T16-27-22-019e6b55-bee7-79d3-ba21-2852c5372082.jsonl
   - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T11-12-35-019e6f5b-eaff-7600-abd8-c83c7cdc491a.jsonl
   - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-24-15-019e70e7-1dc0-7e30-a996-f47b766b4ee6.jsonl
 status: active
-verified: 2026-05-28
+verified: 2026-05-29
 ---
 
 # Almanac Product Family
 
 Almanac is the product name for a maintained body of useful knowledge over a project-scoped source world. [[company-brain]] remains useful as market-category language, but the product vocabulary should use "Almanac" for the artifact a user creates, asks, reviews, and gardens.
 
-CodeAlmanac is the codebase-shaped member of this family. Its source world is a repository: source files, tests, docs, commits, sessions, and project decisions. Its maintained knowledge layer is `.almanac/pages/`, `.almanac/topics.yaml`, and `.almanac/README.md`, with local derived state in `.almanac/index.db` and `.almanac/runs/`. The generalized product should keep this transferable internal shape instead of introducing a separate product ontology where `pages/`, `topics.yaml`, and `Almanac.md` move to the project root.
+CodeAlmanac is the codebase-shaped member of this family. Its source world is a repository: source files, tests, docs, commits, sessions, and project decisions. The current implementation stores maintained knowledge in `.almanac/pages/`, `.almanac/topics.yaml`, and `.almanac/README.md`, with local derived state in `.almanac/index.db` and `.almanac/runs/`.
 
-The product split should make `almanac` the general engine, but profile names are not the starting primitive. The reusable model should first define objects and operations that keep the CodeAlmanac `.almanac/` shape transferable: projects, sources, source adapters, source records, extracts, pages, topics, runs, triggers, indexing, `ask`, `search`, `show`, Absorb, Garden, and `serve`. Code-specific behavior can then be expressed as repo-aware source adapters, file and folder wikilinks, coding-session capture, code-specific README instructions, AGENTS.md installation, and query affordances such as `--mentions src/path`.
+The 2026-05-28 remote-product discussion tested whether public and team repositories should move canonical shared knowledge to `ALMANAC.md` plus `almanac/pages/`. The follow-up rejected that as the default because it adds repo-root visual clutter, makes the product feel like another docs surface, and is more invasive for open-source maintainers. The later Mintlify comparison produced a better rule: the wiki root should be configurable, and `.almanac/` can remain the local control and state directory when the wiki root is somewhere else. Current repos use `.almanac/` for both durable knowledge and local state; `docs/almanac/` is a plausible public/team wiki-root profile for repos whose docs tree can carry project memory; a top-level `almanac/` should remain opt-in because it has the highest repo-root footprint.
 
-The generalized product should feel like a project workspace that gets smarter when the user adds sources. Originals are preserved as sources, maintained understanding lives in `.almanac/pages/`, and ambiguous or risky changes remain visible instead of silently overwriting current memory. The wiki must not become the workspace where raw documents, extracted text, generated summaries, agent scratchpads, entity pages, and durable conclusions collapse together.
+The product split should make `almanac` the general engine, but profile names are not the starting primitive. The reusable model should first define objects and operations that keep the CodeAlmanac knowledge model transferable: projects, sources, source adapters, source records, extracts, pages, topics, runs, triggers, indexing, `ask`, `search`, `show`, Absorb, Garden, and `serve`. Code-specific behavior can then be expressed as repo-aware source adapters, file and folder wikilinks, coding-session capture, code-specific README instructions, AGENTS.md installation, and query affordances such as `--mentions src/path`.
+
+The generalized product should feel like a project workspace that gets smarter when the user adds sources. Originals are preserved as sources, maintained understanding lives in reviewed Almanac pages, and ambiguous or risky changes remain visible instead of silently overwriting current memory. The wiki must not become the workspace where raw documents, extracted text, generated summaries, agent scratchpads, entity pages, and durable conclusions collapse together.
 
 The 2026-05-27 Reverie examples sharpened the writing target. A generalized Almanac page should read like a Wikipedia-style article about the named thing, not like a document index, source summary, or operations memo. A page such as `reverie-project-inc.md` should state sourced facts about the company itself: incorporation jurisdiction, entity type, formation channel, E-Verify status, governance state, records, people, and open factual uncertainties. Source documents such as bylaws, certificates, EIN letters, passports, and emails are citations and evidence; they are not the product surface.
 
@@ -82,7 +85,72 @@ Project resolution should prefer an explicit project argument, then the nearest 
 
 ## General Directory Shape
 
-A generalized Almanac should keep CodeAlmanac's attach-to-a-project shape:
+A generalized Almanac should keep CodeAlmanac's attach-to-a-project shape, but the wiki root path should become configurable. The important invariant is not the literal directory name; it is that each project has one canonical root for maintained pages and one clear root for local machine state. Those roots can be the same directory in local/private mode, or separate directories in public/team mode.
+
+The current implementation shape is:
+
+```text
+project-root/
+  .almanac/
+    README.md
+    pages/
+      architecture.md
+      open-questions.md
+    topics.yaml
+    config.yaml
+    index.db
+    runs/
+    extracted/
+    cache/
+```
+
+The public/team product shape can put reviewed knowledge under a visible docs path while keeping local machinery in `.almanac/`:
+
+```text
+project-root/
+  docs/
+    almanac/
+      README.md
+      pages/
+        architecture.md
+        open-questions.md
+      topics.yaml
+      config.yaml
+      issues.yaml
+  .almanac/
+    local.yaml
+    index.db
+    runs/
+    extracted/
+    cache/
+```
+
+In that shape, `docs/almanac/` is the wiki root and `.almanac/` is the local control/state root. A config value such as `wiki_root: docs/almanac` in `.almanac/local.yaml` can make the relationship explicit. There is still one source of truth for pages: `docs/almanac/pages/`.
+
+The hidden local/private shape can use `.almanac/` for both reviewed knowledge and local state:
+
+```text
+project-root/
+  .almanac/
+    README.md
+    pages/
+      architecture.md
+      open-questions.md
+    topics.yaml
+    config.yaml
+    issues.yaml
+    local.yaml
+    index.db
+    runs/
+    extracted/
+    cache/
+```
+
+`README.md`, `pages/`, `topics.yaml`, `config.yaml`, and `issues.yaml` are the reviewed project memory and policy surfaces. `index.db`, `runs/`, `extracted/`, and `cache/` are ignored local machinery.
+
+`docs/almanac/` has a real adoption benefit because it reads like documentation-scoped project memory without adding a top-level branded folder. It also has a real cost for projects whose `docs/` directory is a curated product documentation site, a Mintlify or static-site source tree, or an area owned by a docs team. For those projects, `.almanac/` is cleaner because it behaves like `.github/`, `.cursor/`, `.claude/`, or `.vscode/`: repository infrastructure that agents and maintainers know to inspect, but normal users do not have to see.
+
+For personal, local, or early generalized Almanacs, the same all-in-one profile can sit beside project sources:
 
 ```text
 project-root/
@@ -99,9 +167,9 @@ project-root/
     events.jsonl
 ```
 
-The project root is the source world. In CodeAlmanac the source world is code, docs, tests, commits, and sessions. In a research, personal, company, or project Almanac the source world can include `sources/`, connected external systems, and any ordinary project folders the user adds. `.almanac/README.md` is the charter that tells agents what the project memory is for, who it should help, and what it should avoid. `.almanac/pages/` holds maintained synthesis. `.almanac/topics.yaml` is optional until the page graph needs neighborhoods. `.almanac/index.db`, `.almanac/runs/`, extracted text, fingerprints, and event logs are local derived state.
+The project root is the source world. In CodeAlmanac the source world is code, docs, tests, commits, and sessions. In a research, personal, company, or project Almanac the source world can include `sources/`, connected external systems, and any ordinary project folders the user adds. The charter tells agents what the project memory is for, who it should help, and what it should avoid. The page directory holds maintained synthesis. The topics file is optional until the page graph needs neighborhoods. Indexes, runs, extracted text, fingerprints, and event logs are local derived state.
 
-The GUI can expose "Project", "Sources", "Knowledge", and "Ask" as product concepts without making those names the filesystem contract. The filesystem contract stays CodeAlmanac-like so agents can use the same query and editing model across code, research, personal, and company projects.
+The GUI can expose "Project", "Sources", "Knowledge", and "Ask" as product concepts without making those names the filesystem contract. The filesystem contract should preserve the same query and editing model across code, research, personal, and company projects, with `pages/` under the chosen Almanac root remaining the maintained page directory.
 
 Typed page folders such as `.almanac/pages/people/`, `.almanac/pages/organizations/`, and `.almanac/pages/projects/` are not the starting primitive. They are object-class browsing folders that Garden can propose after an almanac grows large enough that flat `.almanac/pages/` becomes painful. A page is first a maintained named thing: `gagan-sharma.md`, `reverie.md`, `immigration.md`, `taxes-2025.md`, `identity-documents.md`, or `open-questions.md`. The title, lead, links, topics, and evidence tell readers what kind of thing it is.
 
@@ -188,13 +256,15 @@ ignored by default:
   .almanac/extracted/
 ```
 
-`.almanac/pages/`, `.almanac/README.md`, `.almanac/topics.yaml`, and source metadata are reviewable product memory. `sources/` can contain passports, bank documents, emails, medical records, contracts, and receipts, so publishing it should be explicit opt-in. A public research Almanac can opt into tracking public source files or source references when the corpus is meant to be shared. `.almanac/index.db`, `.almanac/runs/`, extracted text, fingerprints, and event logs are local machine state. A later company mode can allow selected public or company-safe source folders, but v0 should make source publication a deliberate choice.
+`.almanac/README.md`, `.almanac/pages/`, `.almanac/topics.yaml`, and source metadata are reviewable product memory. `sources/` can contain passports, bank documents, emails, medical records, contracts, and receipts, so publishing it should be explicit opt-in. A public research Almanac can opt into tracking public source files or source references when the corpus is meant to be shared. `.almanac/index.db`, `.almanac/runs/`, extracted text, fingerprints, and event logs are local machine state. A later company mode can allow selected public or company-safe source folders, but v0 should make source publication a deliberate choice.
 
 ## Team Source Systems
 
-A team Almanac should usually treat Google Drive, Gmail, Slack, DocuSign, Stripe Atlas, Mercury, GitHub, and similar tools as original source systems rather than copying every file into the Almanac folder. The shared Almanac repository can track `.almanac/README.md`, `.almanac/pages/`, `.almanac/topics.yaml`, and source metadata, while cached files, extracted text, private local copies, and local `.almanac/` state remain ignored.
+A team Almanac should usually treat Google Drive, Gmail, Slack, DocuSign, Stripe Atlas, Mercury, GitHub, and similar tools as original source systems rather than copying every file into the Almanac folder. The shared Almanac repository can track `.almanac/README.md`, `.almanac/pages/`, `.almanac/topics.yaml`, and source metadata, while cached files, extracted text, private local copies, and other local `.almanac/` state remain ignored.
 
 The source object for a team document can be a reference instead of a copied file: origin system, canonical URL, provider id, title, source kind, last-seen time, hash or version marker, and inherited access policy. A page then cites the source object, and a reader who clicks the citation needs permission in the original system. This keeps Google Drive or another document store as the system of record for shared originals while Almanac remains the maintained wiki and source index over those systems.
+
+The public/team product names should be Almanac OSS, Almanac Teams, Almanac Enterprise, and Almanac Orgs. Almanac Teams names the private-repository GitHub App product; it sells governance and workflow rather than storage volume. The customer problem is that engineering teams lose project memory while AI increases the rate of code change. The concrete buyer wants senior engineers to stop repeating context, agents to stop violating hidden invariants, contributors to arrive prepared, and project decisions to remain reviewable as code changes.
 
 Reference mode and archive mode are distinct product modes. Reference mode keeps originals in source systems and stores citations, metadata, extraction caches, and maintained pages; it fits teams. Archive mode copies originals into `sources/`; it fits personal, local, offline, or legal-archive use cases where the Almanac folder intentionally owns the evidence.
 

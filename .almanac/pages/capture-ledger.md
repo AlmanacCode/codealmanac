@@ -14,8 +14,9 @@ files:
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
   - /Users/rohan/.codex/sessions/2026/05/13/rollout-2026-05-13T23-00-06-019e246d-595d-76d3-bd45-6433245065ac.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-27-05-019e70e9-b7d7-7900-9fc0-da2a6f0b532d.jsonl
 status: implemented
-verified: 2026-05-14
+verified: 2026-05-28
 ---
 
 # Capture Ledger
@@ -43,6 +44,10 @@ The per-transcript record tracks:
 - recovery context when a continuation cannot advance cleanly: `lastError`
 
 This is stronger than whole-file hash dedupe. It lets append-only JSONL transcripts capture only new continuation while still guarding against rewrites or failed background jobs.
+
+The 2026-05-28 sweep incident made the ledger's ownership role broader than retry bookkeeping. Automatic capture must classify and reserve candidate work before invoking an LLM. The provenance boundary asks whether a transcript is real project work or CodeAlmanac maintenance exhaust such as an Absorb job reading another transcript; [[capture-flow]] now excludes internal Absorb transcripts during discovery. The ownership boundary asks whether another queued or running Absorb job already owns the repo or transcript range; [[capture-automation]] now skips a repo while an Absorb run is active and caps live sweep fan-out to one started job by default.
+
+That ordering is the cost invariant. The LLM decides whether claimed project-work evidence contains durable wiki knowledge. Deterministic sweep and ledger code decide whether the evidence is eligible, non-recursive, and unowned before any model tokens are spent.
 
 ## Ledger key
 

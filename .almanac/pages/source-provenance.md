@@ -87,6 +87,10 @@ sources:
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T14-59-42-019e702b-db29-70a0-9c7b-978028922a64.jsonl
     note: Records the recovery of a deleted-looking Codex conversation by copying the archived JSONL from ~/.codex/archived_sessions/ back into the dated ~/.codex/sessions/ tree and verifying byte identity.
+  - id: lifecycle-provenance-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-27-05-019e70e9-b7d7-7900-9fc0-da2a6f0b532d.jsonl
+    note: Records the capture-sweep discussion that clarified internal or Almanac-tagged sessions as automatic-capture exclusions rather than project evidence.
 status: active
 ---
 
@@ -131,6 +135,8 @@ GitHub pull requests fit the current `pr` source type because a PR is a durable 
 The same source can support current truth, historical context, rejected alternatives, or unresolved questions depending on the claim that cites it. The first implementation does not add source status fields because the underlying problem is simpler: each `note` must state what the source supports. A fixed issue should be cited as the original report plus the current fix source; a brainstorming conversation should be cited as brainstorming unless code, tests, or prompts implemented the idea; and a PR discussion that changed before merge should not be cited as current behavior without a current code or prompt source. [@implementation-session]
 
 Source ordering is not a currentness model. A wiki page may cite old commits, stale issues, untimestamped external docs, local conversations, and current code in the same source list, and those sources can disagree because they belong to different moments in the project. The durable rule from the 2026-05-28 discussion is to mark uncertainty in prose or source notes rather than infer truth from source order: code and tests anchor present-tense code claims, external docs need `retrieved_at` when current dependency behavior matters, and unresolved or speculative material should be written as an open question until a current source confirms it. [@implementation-session]
+
+The later 2026-05-28 capture-sweep discussion exposed a second provenance layer that is broader than page evidence. Capture/Absorb needs provenance and ownership classification for the transcript material it is about to process: a transcript can be ordinary user/project work, helper-agent output, or CodeAlmanac maintenance output. Internal Absorb, Garden, Build, job-log, diagnostic, or other Almanac-tagged sessions are not automatic-capture evidence unless a user explicitly asks to ingest them. This operation-level policy is related to `sources:`, but it is not the same field: `sources:` explains what supports a page claim, while lifecycle provenance decides whether an input is in scope, unclaimed, and worth spending LLM tokens on before Absorb starts. [@lifecycle-provenance-session]
 
 ## Citation Contract
 

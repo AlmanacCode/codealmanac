@@ -11,7 +11,8 @@ files:
 sources:
   - docs/plans/2026-05-14-provider-automation-boundary-refactor.md
   - /Users/rohan/.codex/sessions/2026/05/13/rollout-2026-05-13T23-00-06-019e246d-595d-76d3-bd45-6433245065ac.jsonl
-verified: 2026-05-14
+  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-27-05-019e70e9-b7d7-7900-9fc0-da2a6f0b532d.jsonl
+verified: 2026-05-28
 ---
 
 # Wiki Lifecycle Operations
@@ -51,6 +52,27 @@ Operations choose:
 - run metadata such as operation, target kind, and target paths
 
 Operations do not know how Claude, Codex, or Cursor run. They also do not create proposal JSON, reviewer state machines, dry-run artifacts, or source/evidence pipeline objects. When judgment is needed, the prompt owns it.
+
+## Provenance and protection policy
+
+The 2026-05-28 capture-sweep incident made one cross-operation requirement explicit: automated write operations need provenance, ownership, and protection boundaries before they invoke an LLM or mutate wiki state. [[capture-automation]] applies the observed fix to scheduled Absorb by excluding CodeAlmanac maintenance transcripts and reserving candidate work before token spend. The incident did not show Garden deleting protected pages; Garden enters the policy because it is the operation allowed to merge, archive, relink, and retopic wiki memory.
+
+Absorb must distinguish user/project evidence from CodeAlmanac's own maintenance exhaust. Garden must not archive, delete, or rewrite protected Almanac-owned system memory just because it looks generated, stale, or low-quality in isolation. Build must not overwrite existing wiki structure without knowing whether pages are user-authored, system-authored, generated, protected, stale, or superseded.
+
+A loose tag such as `almanac` is ambiguous on pages, but it is meaningful on sessions when the tag marks the session as Almanac maintenance. The user correction in the 2026-05-28 discussion was specifically about session evidence: a session tagged `almanac` should be excluded from automatic capture, not treated as user/project work. Page protection is a separate future Garden/Build policy, not the observed failure.
+
+The durable direction is a shared lifecycle provenance policy where cheap deterministic code or persisted metadata classifies inputs and outputs before operation prompts make editorial judgments.
+
+The policy needs to answer these questions before mutation:
+
+- what kind of source is being processed
+- who or what produced it
+- whether it has already been processed
+- whether another job already owns it
+- whether it is protected
+- whether this operation is allowed to mutate it
+
+This does not require a full rewrite of the lifecycle architecture. It is a requirements correction: every lifecycle operation should receive classified inputs and write classified outputs, while prompts remain responsible for deciding what classified project evidence means for durable wiki memory.
 
 ## Current tool policy
 
