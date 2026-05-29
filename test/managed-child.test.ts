@@ -99,4 +99,19 @@ describe("managed child process cleanup", () => {
 
     expect(hasDetached).toBe(false);
   });
+
+  it("fails clearly on Windows instead of using untested cleanup", () => {
+    const platform = Object.getOwnPropertyDescriptor(process, "platform");
+    Object.defineProperty(process, "platform", { value: "win32" });
+
+    try {
+      expect(() =>
+        spawnManagedChildProcess(process.execPath, ["--version"], {
+          stdio: "ignore",
+        }),
+      ).toThrow("managed provider process cleanup is not implemented on Windows");
+    } finally {
+      if (platform) Object.defineProperty(process, "platform", platform);
+    }
+  });
 });

@@ -4,7 +4,7 @@
 
 **Goal:** Replace the Unix-shaped process-group helper with a provider-process abstraction that provider adapters can use without knowing platform-specific process-tree cleanup details.
 
-**Architecture:** Provider adapters should ask for a managed provider process and receive a child process plus lifecycle helpers. POSIX cleanup uses detached process groups and negative-pid signaling. Windows behavior is explicit and isolated behind the same interface so future Windows support can add job objects or a bounded `taskkill` implementation without changing provider adapters.
+**Architecture:** Provider adapters should ask for a managed provider process and receive a child process plus lifecycle helpers. POSIX cleanup uses detached process groups and negative-pid signaling. Windows provider-process cleanup is intentionally unsupported until there is a tested implementation; the managed boundary should fail clearly on Windows rather than claim unverified process-tree ownership.
 
 **Tech Stack:** TypeScript, Node child_process, Vitest, existing harness provider adapters.
 
@@ -62,7 +62,7 @@ export function spawnManagedChildProcess(
 
 Implementation rules:
 - POSIX: use `detached: true`, record child pid as `treeId`, signal `-treeId`, wait, then escalate.
-- Windows: use ordinary spawn for now and terminate the child pid only, with a clear comment naming the future implementation target.
+- Windows: throw a clear unsupported-platform error before spawning. Do not add `taskkill`, Job Object, or child-only cleanup until it can be tested.
 - Do not monkey-patch `child.kill`.
 - Treat `ESRCH` as unavailable. Do not treat `EPERM` as dead.
 
@@ -173,7 +173,7 @@ Record:
 - provider process ownership is a harness/provider execution concern
 - managed child process is the abstraction
 - POSIX process groups are implementation detail
-- Windows behavior is explicit and isolated for future support
+- Windows provider-process cleanup is explicitly unsupported until tested
 
 **Step 2: Run wiki health**
 
