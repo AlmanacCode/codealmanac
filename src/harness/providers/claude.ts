@@ -244,10 +244,7 @@ function buildClaudeOptions(
     includePartialMessages: true,
     forwardSubagentText: true,
     persistSession: spec.providerSession?.persistence === "ephemeral" ? false : undefined,
-    env: {
-      ...process.env,
-      CODEALMANAC_INTERNAL_SESSION: "1",
-    },
+    env: process.env,
     ...(claudeExecutable !== undefined
       ? { pathToClaudeCodeExecutable: claudeExecutable }
       : {}),

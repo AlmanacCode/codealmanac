@@ -84,10 +84,10 @@ describe("almanac capture sweep", () => {
 
       expect(result.exitCode).toBe(0);
       const parsed = JSON.parse(result.stdout);
-      expect(parsed.summary.scanned).toBe(2);
-      expect(parsed.summary.started).toHaveLength(2);
+      expect(parsed.summary.scanned).toBe(4);
+      expect(parsed.summary.started).toHaveLength(4);
       expect(parsed.summary.started.map((s: { app: string }) => s.app).sort())
-        .toEqual(["claude", "codex"]);
+        .toEqual(["claude", "claude", "codex", "codex"]);
       expect(existsSync(join(repo, ".almanac", "runs", "capture-ledger.json")))
         .toBe(false);
     });

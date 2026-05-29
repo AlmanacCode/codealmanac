@@ -146,9 +146,7 @@ describe("Claude harness provider", () => {
         includePartialMessages: true,
         persistSession: false,
         pathToClaudeCodeExecutable: "/usr/local/bin/claude",
-        env: expect.objectContaining({
-          CODEALMANAC_INTERNAL_SESSION: "1",
-        }),
+        env: process.env,
       },
     });
   });

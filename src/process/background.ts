@@ -78,7 +78,6 @@ export async function startBackgroundProcess(
   const spawnFn = options.spawnBackground ?? defaultSpawnBackground;
   const childEnv: NodeJS.ProcessEnv = {
     ...process.env,
-    CODEALMANAC_INTERNAL_SESSION: "1",
   };
   let child: BackgroundChild;
   try {

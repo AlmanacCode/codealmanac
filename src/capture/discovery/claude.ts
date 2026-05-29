@@ -1,6 +1,12 @@
 import { join, sep } from "node:path";
 
-import { candidateFromMeta, collectJsonl, parseJsonObject, readFirstLines, stringField } from "./jsonl.js";
+import {
+  candidateFromMeta,
+  collectJsonl,
+  parseJsonObject,
+  readFirstLines,
+  stringField,
+} from "./jsonl.js";
 import type { SessionCandidate } from "./types.js";
 
 export async function discoverClaude(home: string): Promise<SessionCandidate[]> {

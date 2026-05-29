@@ -68,9 +68,7 @@ describe("process manager background execution", () => {
             "__run-worker",
           ],
           cwd: repo,
-          env: expect.objectContaining({
-            CODEALMANAC_INTERNAL_SESSION: "1",
-          }) as NodeJS.ProcessEnv,
+          env: expect.any(Object) as NodeJS.ProcessEnv,
         },
       ]);
       expect(unrefCalled).toBe(true);

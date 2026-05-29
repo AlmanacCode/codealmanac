@@ -47,9 +47,7 @@ describe("Codex harness provider", () => {
         "--ephemeral",
         "system\n\n---\n\nrun garden",
       ],
-      env: expect.objectContaining({
-        CODEALMANAC_INTERNAL_SESSION: "1",
-      }),
+      env: process.env,
     });
   });
 
@@ -104,9 +102,7 @@ describe("Codex harness provider", () => {
       command: "codex",
       cwd: "/repo",
       args: ["app-server", "--config", "mcp_servers={}", "--listen", "stdio://"],
-      env: expect.objectContaining({
-        CODEALMANAC_INTERNAL_SESSION: "1",
-      }),
+      env: process.env,
     });
 
     await expect(

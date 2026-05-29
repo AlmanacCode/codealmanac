@@ -96,8 +96,5 @@ export function codexClientVersion(): string {
 }
 
 function codexEnv(): NodeJS.ProcessEnv {
-  return {
-    ...process.env,
-    CODEALMANAC_INTERNAL_SESSION: "1",
-  };
+  return process.env;
 }
