@@ -7,6 +7,7 @@ sources:
   - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T11-12-35-019e6f5b-eaff-7600-abd8-c83c7cdc491a.jsonl
   - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
   - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-24-15-019e70e7-1dc0-7e30-a996-f47b766b4ee6.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-27-05-019e70e9-b7d7-7900-9fc0-da2a6f0b532d.jsonl
 status: active
 verified: 2026-05-29
 ---
@@ -17,7 +18,7 @@ Almanac is the product name for a maintained body of useful knowledge over a pro
 
 CodeAlmanac is the codebase-shaped member of this family. Its source world is a repository: source files, tests, docs, commits, sessions, and project decisions. The current implementation stores maintained knowledge in `.almanac/pages/`, `.almanac/topics.yaml`, and `.almanac/README.md`, with local derived state in `.almanac/index.db` and `.almanac/runs/`.
 
-The 2026-05-28 remote-product discussion tested whether public and team repositories should move canonical shared knowledge to `ALMANAC.md` plus `almanac/pages/`. The follow-up rejected that as the default because it adds repo-root visual clutter, makes the product feel like another docs surface, and is more invasive for open-source maintainers. The later Mintlify comparison produced a better rule: the wiki root should be configurable, and `.almanac/` can remain the local control and state directory when the wiki root is somewhere else. Current repos use `.almanac/` for both durable knowledge and local state; `docs/almanac/` is a plausible public/team wiki-root profile for repos whose docs tree can carry project memory; a top-level `almanac/` should remain opt-in because it has the highest repo-root footprint.
+The 2026-05-28 remote-product discussion tested whether public and team repositories should move canonical shared knowledge to `ALMANAC.md` plus `almanac/pages/`. The follow-up rejected that as the default because it adds repo-root visual clutter, makes the product feel like another docs surface, and is more invasive for open-source maintainers. The later Mintlify comparison produced a better rule: the wiki root should be configurable, `docs/almanac/` is the preferred public/team profile when the repository can carry project memory under `docs/`, and `.almanac/` remains the quiet local/private profile. Current repos use `.almanac/` for both durable knowledge and local state; the product direction is to move generated indexes, runs, extracts, and caches out of the canonical Almanac root by default, using user cache or hosted coordination storage instead of an in-root `.state/` directory. A top-level `almanac/` should remain opt-in because it has the highest repo-root footprint.
 
 The product split should make `almanac` the general engine, but profile names are not the starting primitive. The reusable model should first define objects and operations that keep the CodeAlmanac knowledge model transferable: projects, sources, source adapters, source records, extracts, pages, topics, runs, triggers, indexing, `ask`, `search`, `show`, Absorb, Garden, and `serve`. Code-specific behavior can then be expressed as repo-aware source adapters, file and folder wikilinks, coding-session capture, code-specific README instructions, AGENTS.md installation, and query affordances such as `--mentions src/path`.
 
@@ -85,7 +86,7 @@ Project resolution should prefer an explicit project argument, then the nearest 
 
 ## General Directory Shape
 
-A generalized Almanac should keep CodeAlmanac's attach-to-a-project shape, but the wiki root path should become configurable. The important invariant is not the literal directory name; it is that each project has one canonical root for maintained pages and one clear root for local machine state. Those roots can be the same directory in local/private mode, or separate directories in public/team mode.
+A generalized Almanac should keep CodeAlmanac's attach-to-a-project shape, but the wiki root path should become configurable. The important invariant is not the literal directory name; it is that each project has one canonical root for maintained pages and that rebuildable machine state is not confused with reviewable memory. Public/team mode should separate those concerns by default.
 
 The current implementation shape is:
 
@@ -104,7 +105,7 @@ project-root/
     cache/
 ```
 
-The public/team product shape can put reviewed knowledge under a visible docs path while keeping local machinery in `.almanac/`:
+The public/team product shape should put reviewed knowledge under a visible docs path while keeping local machinery outside the wiki root:
 
 ```text
 project-root/
@@ -117,15 +118,9 @@ project-root/
       topics.yaml
       config.yaml
       issues.yaml
-  .almanac/
-    local.yaml
-    index.db
-    runs/
-    extracted/
-    cache/
 ```
 
-In that shape, `docs/almanac/` is the wiki root and `.almanac/` is the local control/state root. A config value such as `wiki_root: docs/almanac` in `.almanac/local.yaml` can make the relationship explicit. There is still one source of truth for pages: `docs/almanac/pages/`.
+In that shape, `docs/almanac/` is the wiki root and the only source of truth for pages. Local commands can store `index.db`, run history, extracts, and caches under a platform user-cache path keyed by repository identity, while hosted deployments can store equivalent derived state in the hosted job/index store.
 
 The hidden local/private shape can use `.almanac/` for both reviewed knowledge and local state:
 
@@ -146,7 +141,7 @@ project-root/
     cache/
 ```
 
-`README.md`, `pages/`, `topics.yaml`, `config.yaml`, and `issues.yaml` are the reviewed project memory and policy surfaces. `index.db`, `runs/`, `extracted/`, and `cache/` are ignored local machinery.
+`README.md`, `pages/`, `topics.yaml`, `config.yaml`, and `issues.yaml` are the reviewed project memory and policy surfaces. `index.db`, `runs/`, `extracted/`, and `cache/` are rebuildable machinery and should move out of the Almanac root by default when the product can do so without breaking existing local workflows.
 
 `docs/almanac/` has a real adoption benefit because it reads like documentation-scoped project memory without adding a top-level branded folder. It also has a real cost for projects whose `docs/` directory is a curated product documentation site, a Mintlify or static-site source tree, or an area owned by a docs team. For those projects, `.almanac/` is cleaner because it behaves like `.github/`, `.cursor/`, `.claude/`, or `.vscode/`: repository infrastructure that agents and maintainers know to inspect, but normal users do not have to see.
 

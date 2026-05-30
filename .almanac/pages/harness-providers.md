@@ -45,6 +45,8 @@ The 2026-05-28 provider-session persistence discussion added one placement rule 
 
 Provider session persistence is not the same problem as provider process ownership. Non-persistent maintenance sessions keep future sweeps from rediscovering Almanac's own provider-history transcripts; they do not guarantee that killing a CodeAlmanac run kills the provider CLI process and MCP children already spawned for that run. CLI-backed providers now go through the managed child process boundary in `[[src/process/managed-child.ts]]`. Provider adapters ask for a managed child and call `terminate()` or `attachAbort()`; POSIX process groups are the implementation detail behind that boundary rather than a provider-facing concept. Windows provider-process cleanup is intentionally unsupported until it has a tested implementation, so provider adapters should not add their own Windows cleanup branches.
 
+Codex adapters treat provider-process cleanup as a post-run hygiene step, not as the source of the operation result. `[[src/harness/providers/codex/app-server.ts]]` and `[[src/harness/providers/codex/exec.ts]]` catch managed-child termination failures, emit a `HarnessEvent` error such as `Provider process cleanup failed: ...`, and still resolve the harness result that came from the provider protocol. That prevents a cleanup failure from leaving a run unresolved while still preserving the cleanup failure in `.almanac/runs/<run-id>.jsonl`.
+
 The harness layer is also distinct from the agent readiness code under `src/agent/readiness/`. See [[provider-lifecycle-boundary]] for the current boundary: harness providers are the execution adapter layer; readiness, auth, instruction installation, and persisted config are separate agent-support lifecycles.
 
 ## Adapters

@@ -23,7 +23,9 @@ V1 names the AI write surface as three product operations: Build, Absorb, and Ga
 
 Build creates the first useful wiki for a repo. It is exposed as `almanac init` and documented in [[build-operation]].
 
-Absorb improves the wiki from bounded starting context. `almanac capture` calls Absorb with coding-session transcript context; [[ingest-operation]] (`almanac ingest <file-or-folder>`) calls the same operation with user-provided file or folder context. Absorb is not a public command name.
+Absorb improves the wiki from bounded starting context. `almanac capture` calls Absorb with coding-session transcript context; [[ingest-operation]] (`almanac ingest <file-or-folder>`) calls the same operation with user-provided file or folder context. Absorb is not a public command name in the current CLI.
+
+The connector-facing local command should extend `ingest` rather than expose `absorb` as the front-facing verb. A source-aware form such as `almanac ingest github:pr:123` would parse source addresses, let source briefs attach connector guidance and provenance hints, enable operation-level connector runtime access, and then run the same Absorb operation algorithm against the current working tree. [[evidence-bundles]] records that boundary so GitHub PRs, issues, git ranges, and future connectors do not become one-off prompt-text adapters.
 
 Garden improves the wiki as a whole graph. `almanac garden` gives the agent the existing `.almanac/` graph and asks for merge, split, archive, relink, retopic, and no-op judgment without a session-specific source. Those graph-shape outcomes are the editorial layer described in [[wiki-organization-primitives]].
 

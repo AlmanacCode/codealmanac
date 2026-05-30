@@ -122,7 +122,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   program
     .command("ingest <paths...>")
-    .description("absorb knowledge from one or more files or folders")
+    .description("absorb knowledge from files, folders, or source refs")
     .option("--using <provider[/model]>", "provider and optional model")
     .option("--foreground", "run now instead of starting a background job")
     .option("--json", "emit structured JSON for background job start")

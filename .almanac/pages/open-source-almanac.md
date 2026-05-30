@@ -4,6 +4,7 @@ summary: Open-source Almanac is the free public-repo product direction where Cod
 topics: [product-positioning, competitive-research, wiki-design]
 sources:
   - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-24-15-019e70e7-1dc0-7e30-a996-f47b766b4ee6.jsonl
+  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-27-05-019e70e9-b7d7-7900-9fc0-da2a6f0b532d.jsonl
   - docs/strategy/2026-05-29-open-source-almanac-concept.md
   - docs/strategy/2026-05-28-remote-codealmanac-product-concept.md
   - docs/research/2026-05-28-open-source-codebase-wiki-and-review-tools.md
@@ -33,7 +34,7 @@ AI raises the cost of bad contributions. GitHub Octoverse 2024 reported broad AI
 
 Free OSS Almanac should keep project memory public, Git-backed, and reviewable while staying quiet in the repository layout. The 2026-05-28 follow-up rejected a required `ALMANAC.md` entry point and a visible top-level `almanac/` directory because those make adoption feel more invasive and compete with existing README, docs, examples, package files, and framework conventions.
 
-The later directory discussion separated the wiki-root choice from the local-state boundary. `.almanac/` remains the least invasive all-in-one default for public repositories because it behaves like repo infrastructure. `docs/almanac/` is a plausible docs-friendly wiki-root profile because it gives humans a visible path without adding a top-level brand directory, but it can conflict with projects whose `docs/` tree is a curated user-facing documentation site. When the wiki root is `docs/almanac/`, `.almanac/` should remain the local control and state directory for indexes, runs, extracts, caches, and root configuration such as `wiki_root: docs/almanac`.
+The later directory discussion separated the wiki-root choice from generated state. `docs/almanac/` is the preferred public/team default when a repository can carry internal project memory under `docs/`: it gives humans a visible path, avoids a top-level brand directory, and feels closer to existing architecture and maintainer documentation. `.almanac/` remains the quiet local/private profile and the fallback for projects whose `docs/` tree is a curated user-facing documentation site. In the public/team profile, the Almanac root should contain only durable project memory such as `README.md`, `pages/`, `topics.yaml`, `config.yaml`, and `issues.yaml`; generated indexes, runs, extracts, and caches should live in user cache or hosted coordination storage rather than under `docs/almanac/.state/`.
 
 The hosted service can index, render, comment, detect high-confidence stale knowledge, and propose maintenance PRs, but it should not store hidden canonical memory for public projects. This preserves the same trust boundary described in [[github-native-wiki-maintenance]] while making public repos the adoption surface for the broader [[almanac-product-family]].
 
@@ -69,7 +70,7 @@ The social protocol is more useful than abstract AI disclosure: if a contributio
 
 ## Free Boundary
 
-The public-repo product should be genuinely free because the strategic value is making `.almanac/` a normal repository convention. Public repo indexing, local CLI use, hosted read-only rendering, limited context comments, post-merge wiki PRs, maintainer routing suggestions, and badges such as "Almanac maintained" or "AI contribution guide available" belong in the free tier.
+The public-repo product should be genuinely free because the strategic value is making an Almanac root a normal repository convention. Public repo indexing, local CLI use, hosted read-only rendering, limited context comments, post-merge wiki PRs, maintainer routing suggestions, and badges such as "Almanac maintained" or "AI contribution guide available" belong in the free tier.
 
 Paid boundaries should be private repos, org-wide private memory, enterprise retention controls, SSO, private model routing, cross-repo confidential context, audit exports, and hosted job history. Free OSS should not be a funnel that withholds the core mechanism from maintainers who cannot pay.
 

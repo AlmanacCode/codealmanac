@@ -307,6 +307,87 @@ describe("operation command wrappers", () => {
     });
   });
 
+  it("runs ingest from GitHub PR source refs", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-ingest-github-source");
+      await initWiki({ cwd: repo, name: "cmd-ingest-github-source", description: "" });
+      const seen: unknown[] = [];
+
+      const result = await runIngestCommand({
+        cwd: repo,
+        paths: ["github:pr:123"],
+        using: "codex",
+        resolveSource: async (ref) => ({
+          kind: "github.pr",
+          raw: ref.raw,
+          repo: "owner/repo",
+          url: "https://github.com/owner/repo/pull/123",
+          number: "123",
+        }),
+        startBackground: async (options) => {
+          seen.push(options);
+          return {
+            runId: "run_github_ingest",
+            childPid: 4321,
+            record: {
+              version: 1,
+              id: "run_github_ingest",
+              operation: "absorb",
+              status: "queued",
+              repoRoot: options.repoRoot,
+              pid: 0,
+              provider: options.spec.provider.id,
+              model: options.spec.provider.model,
+              startedAt: "2026-05-09T20:17:00.000Z",
+              logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+            },
+          };
+        },
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe("ingest started: run_github_ingest\n");
+      expect(seen[0]).toMatchObject({
+        spec: {
+          metadata: {
+            targetKind: "source",
+            targetPaths: ["github:pr:123"],
+          },
+        },
+      });
+      const prompt = (seen[0] as { spec: { prompt: string } }).spec.prompt;
+      expect(prompt).toContain("Input source: github:pr:123");
+      expect(prompt).toContain("Source kind: GitHub pull request");
+      expect(prompt).toContain("Repository: owner/repo");
+      expect(prompt).toContain("gh pr view 123 --repo owner/repo");
+      expect(prompt).toContain("gh pr diff 123 --repo owner/repo");
+      expect(prompt).toContain("sources:");
+      expect(prompt).toContain("type: pr");
+    });
+  });
+
+  it("rejects mixed source refs and local paths for ingest", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "cmd-ingest-mixed-source-path");
+      await initWiki({
+        cwd: repo,
+        name: "cmd-ingest-mixed-source-path",
+        description: "",
+      });
+
+      const result = await runIngestCommand({
+        cwd: repo,
+        paths: ["github:pr:123", "notes.md"],
+        using: "codex",
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain(
+        "ingest cannot mix source refs and local paths yet",
+      );
+    });
+  });
+
   it("capture and garden default to background", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "cmd-capture-garden");
