@@ -7,7 +7,7 @@ import {
   addEntry,
   readRegistry,
   type RegistryEntry,
-} from "./index.js";
+} from "./store.js";
 
 /**
  * If the current working directory (or any parent) has a `.almanac/` that
@@ -106,7 +106,7 @@ function resolveNameCollision(
 }
 
 /**
- * Mirror `pathsEqual` in `registry/index.ts` — case-insensitive on
+ * Mirror `pathsEqual` in `registry/store.ts` — case-insensitive on
  * macOS/Windows, case-sensitive on Linux. Duplicated here rather than
  * exported to keep the registry module's public surface small.
  */

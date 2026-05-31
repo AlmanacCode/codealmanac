@@ -3,7 +3,7 @@ import {
   type AgentProviderId,
 } from "../../../config/index.js";
 import type { ProviderStatus, SpawnCliFn } from "../../types.js";
-import { getAgentProvider } from "./index.js";
+import { getAgentProvider } from "./catalog.js";
 
 export async function assertAgentAuth(args: {
   provider: AgentProviderId;

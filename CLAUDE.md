@@ -32,7 +32,7 @@ There is no prize for preserving awkward code. Prefer the structure a new mainta
 | `src/commands/` | One file per CLI command | `init.ts`, `list.ts`, `search.ts`, `show.ts`, `path.ts`, `info.ts`, `reindex.ts` |
 | `src/agent/` | Agent facade, provider registry, provider adapters, prompt loading | `sdk.ts`, `types.ts`, `providers/` |
 | `src/indexer/` | SQLite indexer — schema, frontmatter parse, `[[...]]` classifier, freshness | `schema.ts`, `index.ts`, `frontmatter.ts`, `wikilinks.ts`, `paths.ts` (normalization), `resolve-wiki.ts`, `duration.ts` |
-| `src/registry/` | Global registry at `~/.almanac/registry.json` — atomic read/write + auto-register | `index.ts`, `autoregister.ts` |
+| `src/registry/` | Global registry at `~/.almanac/registry.json` — atomic read/write + auto-register | `store.ts` (read/write), `index.ts` (facade), `autoregister.ts` |
 | `src/topics/` | Topic DAG serialized to `.almanac/topics.yaml` + page frontmatter rewrites (slice 3) | `yaml.ts`, `frontmatter-rewrite.ts` |
 | `test/` | Vitest suites, one per feature area | `helpers.ts` (`withTempHome`, `makeRepo`, `writePage`), `*.test.ts` |
 | `prompts/` | Agent prompts bundled in the npm package | `bootstrap.md`, `writer.md`, `reviewer.md` |
@@ -116,6 +116,6 @@ Things we do not do. If a plan proposes one, push back.
 - **Agent SDK reference:** `docs/research/agent-sdk.md` — version pin, auth, message types, streaming, subagent routing, pitfalls. Read before slice 4 or 5 work.
 - **Prompts:** `prompts/bootstrap.md`, `prompts/writer.md`, `prompts/reviewer.md`
 - **SQLite schema DDL:** `src/indexer/schema.ts` (single-source, applied idempotently on open)
-- **Registry I/O:** `src/registry/index.ts` (atomic read/write) + `src/registry/autoregister.ts` (silent-on-command policy)
+- **Registry I/O:** `src/registry/store.ts` (atomic read/write), `src/registry/index.ts` (facade), and `src/registry/autoregister.ts` (silent-on-command policy)
 - **Walk-up resolver:** `src/paths.ts` — nearest `.almanac/` from a `cwd`, like git's nearest `.git/`
 - **Test sandbox helpers:** `test/helpers.ts`

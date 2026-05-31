@@ -4,12 +4,13 @@ summary: "`~/.almanac/registry.json` is the machine-local index of known wikis a
 topics: [systems, storage]
 files:
   - src/registry/index.ts
+  - src/registry/store.ts
   - src/registry/autoregister.ts
   - src/paths.ts
   - src/commands/init.ts
   - src/commands/list.ts
   - src/cli/register-query-commands.ts
-verified: 2026-05-13
+verified: 2026-05-31
 ---
 
 # Global Registry
@@ -18,7 +19,7 @@ verified: 2026-05-13
 
 ## Read/write
 
-`src/registry/index.ts` provides `readRegistry()` and `writeRegistry()`. Writes are atomic: content is written to a `.tmp` file, then renamed over the target. A missing registry file is treated as an empty array (first-run state); a malformed file is a hard error.
+`src/registry/store.ts` provides `readRegistry()` and `writeRegistry()`. `src/registry/index.ts` is the stable public facade for existing callers. Writes are atomic: content is written to a `.tmp` file, then renamed over the target. A missing registry file is treated as an empty array (first-run state); a malformed file is a hard error.
 
 ## Auto-registration
 
