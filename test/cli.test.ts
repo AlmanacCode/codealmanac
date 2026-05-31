@@ -498,10 +498,15 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     );
 
     expect(bootstrapMock).toHaveBeenCalledWith({
-      setupOptions: { yes: true },
       setupArgs: ["--yes"],
+      runLocalSetup: expect.any(Function),
     });
     expect(setupMock).not.toHaveBeenCalled();
+    const bootstrapOptions = bootstrapMock.mock.calls[0]![0] as {
+      runLocalSetup: () => Promise<SetupResult>;
+    };
+    await bootstrapOptions.runLocalSetup();
+    expect(setupMock).toHaveBeenCalledWith({ yes: true });
   });
 
   it("honors the launcher-preserved codealmanac invocation name", async () => {
@@ -525,10 +530,15 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     );
 
     expect(bootstrapMock).toHaveBeenCalledWith({
-      setupOptions: { yes: true },
       setupArgs: ["--yes"],
+      runLocalSetup: expect.any(Function),
     });
     expect(setupMock).not.toHaveBeenCalled();
+    const bootstrapOptions = bootstrapMock.mock.calls[0]![0] as {
+      runLocalSetup: () => Promise<SetupResult>;
+    };
+    await bootstrapOptions.runLocalSetup();
+    expect(setupMock).toHaveBeenCalledWith({ yes: true });
   });
 
   it("routes explicit `codealmanac setup --yes` before heavy command registration", async () => {

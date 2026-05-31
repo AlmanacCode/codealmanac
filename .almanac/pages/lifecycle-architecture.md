@@ -8,7 +8,7 @@ files:
   - src/cli/register-wiki-lifecycle-commands.ts
   - src/process/
   - src/harness/
-  - src/automation/
+  - src/platform/automation/
 sources:
   - prompts/base/purpose.md
   - prompts/base/notability.md

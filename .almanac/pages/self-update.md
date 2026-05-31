@@ -4,16 +4,16 @@ summary: Almanac self-update uses a background notifier plus an idempotent globa
 topics: [cli, systems, automation, decisions]
 files:
   - src/cli/commands/update.ts
-  - src/update/check.ts
-  - src/update/notifier-worker.ts
-  - src/update/announce.ts
-  - src/update/state.ts
-  - src/update/install.ts
-  - src/update/lock.ts
-  - src/update/version.ts
+  - src/platform/update/check.ts
+  - src/platform/update/notifier-worker.ts
+  - src/platform/update/announce.ts
+  - src/platform/update/state.ts
+  - src/platform/update/install.ts
+  - src/platform/update/lock.ts
+  - src/platform/update/version.ts
   - src/cli/commands/doctor/updates.ts
   - src/cli/sqlite-free.ts
-  - src/automation/tasks.ts
+  - src/platform/automation/tasks.ts
   - src/cli/commands/automation.ts
   - src/cli/commands/setup/index.ts
   - src/cli/commands/setup/automation-step.ts
@@ -30,17 +30,17 @@ Almanac self-update means updating the globally installed `codealmanac` package 
 
 ## Current contract
 
-`[[src/update/notifier-worker.ts]]` spawns a detached copy of the current CLI with `--internal-check-updates` after normal commands. The worker calls `checkForUpdate()` and writes `~/.almanac/update-state.json`; it never prints output and it skips test, worker, help, version, and notifier-disabled paths.
+`[[src/platform/update/notifier-worker.ts]]` spawns a detached copy of the current CLI with `--internal-check-updates` after normal commands. The worker calls `checkForUpdate()` and writes `~/.almanac/update-state.json`; it never prints output and it skips test, worker, help, version, and notifier-disabled paths.
 
-`[[src/update/check.ts]]` queries `https://registry.npmjs.org/codealmanac` for `dist-tags.latest` with a 24h cache and a 3s timeout. Failed checks record `last_fetch_failed_at` and preserve the last known `latest_version`, so an offline check does not forget a previously discovered release.
+`[[src/platform/update/check.ts]]` queries `https://registry.npmjs.org/codealmanac` for `dist-tags.latest` with a 24h cache and a 3s timeout. Failed checks record `last_fetch_failed_at` and preserve the last known `latest_version`, so an offline check does not forget a previously discovered release.
 
-`[[src/update/announce.ts]]` synchronously reads `~/.almanac/update-state.json` and `~/.almanac/config.toml` before Commander handles a command. It prints the update banner to stderr only when `latest_version` is newer than the installed package version, the version has not been dismissed, and `update_notifier` is not `false`.
+`[[src/platform/update/announce.ts]]` synchronously reads `~/.almanac/update-state.json` and `~/.almanac/config.toml` before Commander handles a command. It prints the update banner to stderr only when `latest_version` is newer than the installed package version, the version has not been dismissed, and `update_notifier` is not `false`.
 
 `[[src/cli/commands/update.ts]]` owns the update surface. `almanac update --check` forces a registry query, `--dismiss` suppresses the current latest version, the deprecated notifier flags write `update_notifier`, and bare `almanac update` checks npm before running `npm i -g codealmanac@latest` with inherited stdio. The install path does not run `sudo`; permission failures are left visible in npm output and summarized afterward.
 
-`[[src/update/install.ts]]` owns the npm install subprocess and its user-facing failure messages. `[[src/update/lock.ts]]` owns the global `.update-install.lock` file so manual and scheduled update attempts cannot overlap. `[[src/update/version.ts]]` owns installed package-version lookup for the check, announce, and update paths.
+`[[src/platform/update/install.ts]]` owns the npm install subprocess and its user-facing failure messages. `[[src/platform/update/lock.ts]]` owns the global `.update-install.lock` file so manual and scheduled update attempts cannot overlap. `[[src/platform/update/version.ts]]` owns installed package-version lookup for the check, announce, and update paths.
 
-`[[src/update/state.ts]]` is intentionally a small regenerable JSON file. Missing, empty, malformed, or unreadable state becomes an empty state instead of breaking every CLI invocation.
+`[[src/platform/update/state.ts]]` is intentionally a small regenerable JSON file. Missing, empty, malformed, or unreadable state becomes an empty state instead of breaking every CLI invocation.
 
 ## Auto-update design pressure
 
@@ -52,7 +52,7 @@ The 2026-05-14 auto-update implementation rejected private scheduler-only update
 
 The scheduled job runs the same visible command, `almanac update`. There is no documented private flag like `--auto-if-needed`, `--scheduled`, or `--from-automation`.
 
-The scheduler-management surface stays under [[automation]] as task selection: `almanac automation install update`, `almanac automation status update`, and `almanac automation uninstall update`. Installing the update task without `--every` uses the default `1d` cadence from `[[src/automation/tasks.ts]]`, which renders to a launchd `StartInterval` of `86400` seconds. That shape keeps the product concepts separate: `update` owns package mutation and version checks, while `automation` owns launchd installation, status, and removal for recurring Almanac tasks.
+The scheduler-management surface stays under [[automation]] as task selection: `almanac automation install update`, `almanac automation status update`, and `almanac automation uninstall update`. Installing the update task without `--every` uses the default `1d` cadence from `[[src/platform/automation/tasks.ts]]`, which renders to a launchd `StartInterval` of `86400` seconds. That shape keeps the product concepts separate: `update` owns package mutation and version checks, while `automation` owns launchd installation, status, and removal for recurring Almanac tasks.
 
 Bare `almanac update` is idempotent enough for launchd. It checks the registry first, exits successfully when the installed version is current, installs only when a newer version exists, skips dismissed versions, and holds a global lock so manual and scheduled invocations cannot overlap.
 
@@ -66,7 +66,7 @@ The user-facing syntax does not leak launchd implementation details. The public 
 
 ## Relationship to automation
 
-`[[src/automation/tasks.ts]]` models known scheduled Almanac tasks with labels, default intervals, plist paths, log names, working-directory policy, and program arguments. Auto-update extends that task-definition model instead of copying plist construction into `[[src/cli/commands/update.ts]]` or adding another ad hoc branch to `[[src/cli/commands/automation.ts]]`.
+`[[src/platform/automation/tasks.ts]]` models known scheduled Almanac tasks with labels, default intervals, plist paths, log names, working-directory policy, and program arguments. Auto-update extends that task-definition model instead of copying plist construction into `[[src/cli/commands/update.ts]]` or adding another ad hoc branch to `[[src/cli/commands/automation.ts]]`.
 
 `[[src/cli/commands/automation.ts]]` selects task IDs and iterates task definitions. The default install still targets capture plus Garden for compatibility, while positional task selection handles explicit operations such as `almanac automation install update --every 1d`.
 
@@ -78,9 +78,9 @@ Automation status reports automatic self-update through the same task status API
 
 ## Simplification before implementation
 
-`[[src/update/notifier-worker.ts]]` is named for the detached notifier worker for `--internal-check-updates`. Recurring launchd automation lives under `[[src/automation/]]`, so notifier scheduling and OS scheduler management do not share a misleading module name.
+`[[src/platform/update/notifier-worker.ts]]` is named for the detached notifier worker for `--internal-check-updates`. Recurring launchd automation lives under `[[src/platform/automation/]]`, so notifier scheduling and OS scheduler management do not share a misleading module name.
 
-Installed-version lookup has one shared owner in `[[src/update/version.ts]]`. Update-state parsing still has a tolerant async owner in `[[src/update/state.ts]]` and a small synchronous doctor reader in `[[src/update/notifier-worker.ts]]`.
+Installed-version lookup has one shared owner in `[[src/platform/update/version.ts]]`. Update-state parsing still has a tolerant async owner in `[[src/platform/update/state.ts]]` and a small synchronous doctor reader in `[[src/platform/update/notifier-worker.ts]]`.
 
 ## Fast-path requirement
 

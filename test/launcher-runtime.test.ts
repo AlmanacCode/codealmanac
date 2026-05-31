@@ -10,7 +10,7 @@ import {
   readInstallRuntimeSync,
   sameExecutablePath,
   writeInstallRuntime,
-} from "../src/install/launcher-runtime.js";
+} from "../src/platform/install/launcher-runtime.js";
 import { withTempHome } from "./helpers.js";
 
 describe("install launcher runtime", () => {

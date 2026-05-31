@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   readInstallRuntimeSync,
   sameExecutablePath,
-} from "./install/launcher-runtime.js";
+} from "./platform/install/launcher-runtime.js";
 
 /**
  * Check whether the `better-sqlite3` native binding is compatible with

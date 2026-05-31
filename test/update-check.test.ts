@@ -3,8 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { checkForUpdate } from "../src/update/check.js";
-import { writeState } from "../src/update/state.js";
+import { checkForUpdate } from "../src/platform/update/check.js";
+import { writeState } from "../src/platform/update/state.js";
 import { withTempHome } from "./helpers.js";
 
 /**

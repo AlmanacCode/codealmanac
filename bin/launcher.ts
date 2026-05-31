@@ -6,7 +6,7 @@ import {
   formatMissingPinnedNodeMessage,
   isUsablePinnedNode,
   readInstallRuntimeSync,
-} from "../src/install/launcher-runtime.js";
+} from "../src/platform/install/launcher-runtime.js";
 
 const distDir = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(distDir, "..");

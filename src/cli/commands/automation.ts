@@ -12,8 +12,8 @@ import {
   readProgramArgumentAfter,
   removeLaunchdJob,
   writeLaunchdPlist,
-} from "../../automation/launchd.js";
-import type { LaunchdJobDefinition } from "../../automation/launchd.js";
+} from "../../platform/automation/launchd.js";
+import type { LaunchdJobDefinition } from "../../platform/automation/launchd.js";
 import {
   DEFAULT_AUTOMATION_TASK_IDS,
   DEFAULT_CAPTURE_INTERVAL,
@@ -28,13 +28,13 @@ import {
   scheduledTaskLogPaths,
   type ScheduledTaskDefinition,
   type ScheduledTaskId,
-} from "../../automation/tasks.js";
+} from "../../platform/automation/tasks.js";
 import type { CommandResult } from "../helpers.js";
 import { ensureAutomationCaptureSince } from "../../config/index.js";
 import { parseDuration } from "../../wiki/indexer/duration.js";
 import { findNearestAlmanacDir } from "../../paths.js";
 
-export { cleanupLegacyHooks } from "../../automation/legacy-hooks.js";
+export { cleanupLegacyHooks } from "../../platform/automation/legacy-hooks.js";
 
 export interface AutomationOptions {
   tasks?: ScheduledTaskId[];

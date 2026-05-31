@@ -12,9 +12,9 @@ files:
   - src/process/records.ts
   - src/paths.ts
   - src/cli/commands/automation.ts
-  - src/automation/tasks.ts
-  - src/automation/launchd.ts
-  - src/automation/legacy-hooks.ts
+  - src/platform/automation/tasks.ts
+  - src/platform/automation/launchd.ts
+  - src/platform/automation/legacy-hooks.ts
   - src/config/index.ts
   - src/capture/input.ts
   - src/cli/commands/operations.ts

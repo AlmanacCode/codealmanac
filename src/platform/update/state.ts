@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { getGlobalAlmanacDir } from "../paths.js";
+import { getGlobalAlmanacDir } from "../../paths.js";
 
 /**
  * `~/.almanac/update-state.json` — the only piece of persistent state

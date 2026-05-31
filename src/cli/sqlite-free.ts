@@ -1,6 +1,6 @@
 import { runSetup } from "./commands/setup/index.js";
 import type { runDoctor } from "./commands/doctor/index.js";
-import { runCodealmanacBootstrap } from "../install/global.js";
+import { runCodealmanacBootstrap } from "../platform/install/global.js";
 import { emit } from "./helpers.js";
 
 export interface SetupShortcutOptions {
@@ -61,8 +61,8 @@ export async function tryRunSetupShortcut(args: {
   ) {
     emit(
       await runCodealmanacBootstrapFn({
-        setupOptions: setupInvocation,
         setupArgs: args.argvArgs,
+        runLocalSetup: () => runSetupFn(setupInvocation),
       }),
     );
   } else if (args.programName === "almanac" || args.deps.runSetup !== undefined) {
@@ -70,8 +70,8 @@ export async function tryRunSetupShortcut(args: {
   } else {
     emit(
       await runCodealmanacBootstrapFn({
-        setupOptions: setupInvocation,
         setupArgs: args.argvArgs,
+        runLocalSetup: () => runSetupFn(setupInvocation),
       }),
     );
   }

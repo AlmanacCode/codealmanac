@@ -1,16 +1,16 @@
 import { spawn } from "node:child_process";
 
-import { checkForUpdate } from "../../update/check.js";
+import { checkForUpdate } from "../../platform/update/check.js";
 import {
   readConfig,
   writeConfig,
   type GlobalConfig,
 } from "../../config/index.js";
-import { installLatestPackage } from "../../update/install.js";
-import { acquireUpdateLock } from "../../update/lock.js";
-import { isNewer } from "../../update/semver.js";
-import { readState, writeState } from "../../update/state.js";
-import { readInstalledVersion } from "../../update/version.js";
+import { installLatestPackage } from "../../platform/update/install.js";
+import { acquireUpdateLock } from "../../platform/update/lock.js";
+import { isNewer } from "../../platform/update/semver.js";
+import { readState, writeState } from "../../platform/update/state.js";
+import { readInstalledVersion } from "../../platform/update/version.js";
 
 /**
  * `almanac update` — manual upgrade command, the counterpart to the

@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { runCodealmanacBootstrap } from "../src/install/global.js";
+import { runCodealmanacBootstrap } from "../src/platform/install/global.js";
 import { withTempHome } from "./helpers.js";
 
 function fakeSpawn(
@@ -44,18 +44,17 @@ describe("runCodealmanacBootstrap", () => {
       await writePackage(currentRoot, "0.1.5");
 
       const calls: { cmd: string; args: string[]; stdio: unknown; env?: NodeJS.ProcessEnv }[] = [];
-      const runSetup = vi.fn();
+      const runLocalSetup = vi.fn();
       const result = await runCodealmanacBootstrap({
-        setupOptions: { yes: true },
         setupArgs: ["--yes"],
+        runLocalSetup,
         currentPackageRoot: currentRoot,
         globalPackageRoot: globalRoot,
-        runSetup,
         spawnFn: fakeSpawn(calls, [0, 0]),
       });
 
       expect(result.exitCode).toBe(0);
-      expect(runSetup).not.toHaveBeenCalled();
+      expect(runLocalSetup).not.toHaveBeenCalled();
       expect(calls).toHaveLength(2);
       expect(calls[0]).toMatchObject({
         cmd: "npm",
@@ -81,23 +80,22 @@ describe("runCodealmanacBootstrap", () => {
       await writePackage(globalRoot, "0.1.5");
 
       const calls: { cmd: string; args: string[]; stdio: unknown }[] = [];
-      const runSetup = vi.fn().mockResolvedValue({
+      const runLocalSetup = vi.fn().mockResolvedValue({
         stdout: "setup\n",
         stderr: "",
         exitCode: 0,
       });
       const result = await runCodealmanacBootstrap({
-        setupOptions: { yes: true },
         setupArgs: ["--yes"],
+        runLocalSetup,
         currentPackageRoot: globalRoot,
         globalPackageRoot: globalRoot,
-        runSetup,
         spawnFn: fakeSpawn(calls, []),
       });
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toBe("setup\n");
-      expect(runSetup).toHaveBeenCalledWith({ yes: true });
+      expect(runLocalSetup).toHaveBeenCalledTimes(1);
       expect(calls).toHaveLength(0);
     });
   });
@@ -111,11 +109,10 @@ describe("runCodealmanacBootstrap", () => {
 
       const calls: { cmd: string; args: string[]; stdio: unknown }[] = [];
       const result = await runCodealmanacBootstrap({
-        setupOptions: {},
         setupArgs: [],
+        runLocalSetup: vi.fn(),
         currentPackageRoot: currentRoot,
         globalPackageRoot: globalRoot,
-        runSetup: vi.fn(),
         spawnFn: fakeSpawn(calls, [0]),
       });
 
@@ -136,20 +133,19 @@ describe("runCodealmanacBootstrap", () => {
       await writePackage(currentRoot, "0.1.5");
 
       const calls: { cmd: string; args: string[]; stdio: unknown }[] = [];
-      const runSetup = vi.fn();
+      const runLocalSetup = vi.fn();
       const result = await runCodealmanacBootstrap({
-        setupOptions: {},
         setupArgs: [],
+        runLocalSetup,
         currentPackageRoot: currentRoot,
         globalPackageRoot: globalRoot,
-        runSetup,
         spawnFn: fakeSpawn(calls, [243]),
       });
 
       expect(result.exitCode).toBe(243);
       expect(result.stderr).toMatch(/npm install failed/);
       expect(result.stderr).toMatch(/sudo npm i -g codealmanac@latest/);
-      expect(runSetup).not.toHaveBeenCalled();
+      expect(runLocalSetup).not.toHaveBeenCalled();
       expect(calls).toHaveLength(1);
     });
   });

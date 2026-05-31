@@ -1,7 +1,7 @@
 import { mkdir, open, readFile, stat, unlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { getGlobalAlmanacDir } from "../paths.js";
+import { getGlobalAlmanacDir } from "../../paths.js";
 
 export interface UpdateLock {
   path: string;

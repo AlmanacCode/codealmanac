@@ -4,7 +4,7 @@ import {
   getConfigPath,
   getLegacyConfigPath,
   parseConfigText,
-} from "../config/index.js";
+} from "../../config/index.js";
 import { isNewer } from "./semver.js";
 import { getStatePath, type UpdateState } from "./state.js";
 import { readInstalledVersion } from "./version.js";

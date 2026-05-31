@@ -7,10 +7,10 @@ files:
   - scripts/postinstall.cjs
   - bin/install-launchers.ts
   - bin/launcher.ts
-  - src/install/launcher-runtime.ts
+  - src/platform/install/launcher-runtime.ts
   - src/abi-guard.ts
   - src/cli.ts
-  - src/install/global.ts
+  - src/platform/install/global.ts
   - test/launcher-runtime.test.ts
   - test/global-bootstrap.test.ts
   - test/cli.test.ts
@@ -55,4 +55,4 @@ npm install -g codealmanac@latest
 
 ## Relationship to setup bootstrap
 
-`src/install/global.ts` still treats bare `codealmanac` as the npm bootstrap surface. When the current package root is not the durable global install, it runs `npm i -g codealmanac@latest` if needed and reruns setup from the global package's `dist/launcher.js`, not from `dist/codealmanac.js`. That keeps the post-bootstrap setup flow on the same pinned-runtime path as later interactive CLI invocations.
+`src/platform/install/global.ts` still treats bare `codealmanac` as the npm bootstrap surface. When the current package root is not the durable global install, it runs `npm i -g codealmanac@latest` if needed and reruns setup from the global package's `dist/launcher.js`, not from `dist/codealmanac.js`. That keeps the post-bootstrap setup flow on the same pinned-runtime path as later interactive CLI invocations.

@@ -4,9 +4,9 @@ summary: "Automation is the macOS launchd layer that schedules known Almanac mai
 topics: [automation, cli, flows]
 files:
   - src/cli/commands/automation.ts
-  - src/automation/tasks.ts
-  - src/automation/launchd.ts
-  - src/automation/legacy-hooks.ts
+  - src/platform/automation/tasks.ts
+  - src/platform/automation/launchd.ts
+  - src/platform/automation/legacy-hooks.ts
   - src/cli/commands/setup/index.ts
   - src/cli/commands/setup/automation-step.ts
   - src/cli/commands/uninstall.ts
@@ -51,7 +51,7 @@ The capture plist path is `~/Library/LaunchAgents/com.codealmanac.capture-sweep.
 
 The capture job runs `almanac capture sweep` with a quiet-window argument. The default schedule is every `5h`, and the default quiet window is `45m`. The Garden job runs `almanac garden` every `4h` by default. The update job runs bare `almanac update` every `1d` by default and relies on [[self-update]] for no-op behavior when the installed package is current.
 
-The automation code is split by responsibility. `[[src/automation/tasks.ts]]` owns `ScheduledTaskDefinition` records for capture, Garden, and update: labels, default intervals, plist paths, log filenames, working-directory policy, and default command arguments. `[[src/automation/launchd.ts]]` owns plist rendering, PATH construction, bootstrap/removal, and loaded-state checks. `[[src/automation/legacy-hooks.ts]]` owns private migration cleanup for older hook-based installs. `[[src/cli/commands/automation.ts]]` remains the command transaction that validates options, writes the activation baseline for capture, turns task definitions into launchd jobs, calls launchd helpers, and formats user output.
+The automation code is split by responsibility. `[[src/platform/automation/tasks.ts]]` owns `ScheduledTaskDefinition` records for capture, Garden, and update: labels, default intervals, plist paths, log filenames, working-directory policy, and default command arguments. `[[src/platform/automation/launchd.ts]]` owns plist rendering, PATH construction, bootstrap/removal, and loaded-state checks. `[[src/platform/automation/legacy-hooks.ts]]` owns private migration cleanup for older hook-based installs. `[[src/cli/commands/automation.ts]]` remains the command transaction that validates options, writes the activation baseline for capture, turns task definitions into launchd jobs, calls launchd helpers, and formats user output.
 
 Every task gets an explicit `PATH` assembled for launchd from the current environment plus fallback locations such as `/usr/local/bin`, `/opt/homebrew/bin`, and `/usr/bin`. The Garden plist also records a `WorkingDirectory`: `runAutomationInstall()` resolves it to the nearest repo containing `.almanac/`, falling back to the current directory when no wiki root is found.
 
@@ -78,11 +78,11 @@ That terminology keeps `capture sweep` honest. `capture sweep` is not a lifecycl
 
 The 2026-05-14 refactor chose a `ScheduledTaskDefinition` model for known Almanac tasks such as capture, Garden, and update. That model shares launchd plist rendering, PATH construction, log naming, bootstrap/bootout, and status mechanics while preserving the distinction between scheduler tasks, coordinator commands, process-manager runs, and semantic wiki operations. Adding another scheduled Almanac maintenance command should start by adding a task definition, not by copying plist labels, log paths, and working-directory rules into `[[src/cli/commands/automation.ts]]`.
 
-The task definition is the source of truth for each task's scheduler identity: label, plist path, logs, working-directory policy, and command arguments. The default interval constants live in `[[src/automation/tasks.ts]]` beside those task records, so changing scheduled task cadence stays inside the task-definition module instead of in command-level plist branches.
+The task definition is the source of truth for each task's scheduler identity: label, plist path, logs, working-directory policy, and command arguments. The default interval constants live in `[[src/platform/automation/tasks.ts]]` beside those task records, so changing scheduled task cadence stays inside the task-definition module instead of in command-level plist branches.
 
 The 2026-05-14 [[self-update]] work added a boundary case to this model. Automatic CLI self-update uses scheduler mechanics, but the work command stays `almanac update` rather than becoming a private scheduler-only update command. Automation owns task selection, the launchd task definition, and status plumbing through `almanac automation install update`; the update command owns package mutation, version checks, and idempotent no-op behavior when the installed version is current.
 
-There is no `.almanac/triggers.yaml` in the current implementation. A trigger file is a future product generalization discussed for non-code Almanacs: one scheduler command such as `almanac sweep` could read project-local trigger rules and decide whether to index changed sources, absorb new source records, or garden a changed graph. The current implementation uses typed scheduled tasks in `[[src/automation/tasks.ts]]`, not project-local trigger configuration.
+There is no `.almanac/triggers.yaml` in the current implementation. A trigger file is a future product generalization discussed for non-code Almanacs: one scheduler command such as `almanac sweep` could read project-local trigger rules and decide whether to index changed sources, absorb new source records, or garden a changed graph. The current implementation uses typed scheduled tasks in `[[src/platform/automation/tasks.ts]]`, not project-local trigger configuration.
 
 ## Freshness trigger policy
 

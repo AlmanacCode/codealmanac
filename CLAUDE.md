@@ -30,6 +30,7 @@ There is no prize for preserving awkward code. Prefer the structure a new mainta
 | `bin/` | npm bin shim — error-formatter around `src/cli.ts` | `codealmanac.ts` |
 | `src/` | TypeScript source | `cli.ts` (commander wiring), `paths.ts` (walk-up to nearest `.almanac/`), `slug.ts` (kebab-case canonicalization) |
 | `src/cli/commands/` | CLI command adapters and command-private helpers | `operations.ts`, `list.ts`, `search.ts`, `show.ts`, `reindex.ts` |
+| `src/platform/` | Local machine integration for install, self-update, and scheduler automation | `install/`, `update/`, `automation/` |
 | `src/init/` | Repo initialization and wiki scaffolding shared by CLI and Build | `scaffold.ts` |
 | `src/agent/` | Agent facade, provider registry, provider adapters, prompt loading | `sdk.ts`, `types.ts`, `providers/` |
 | `src/wiki/indexer/` | SQLite indexer — schema, frontmatter parse, `[[...]]` classifier, freshness | `schema.ts`, `index.ts`, `frontmatter.ts`, `wikilinks.ts`, `paths.ts` (normalization), `resolve-wiki.ts`, `duration.ts` |

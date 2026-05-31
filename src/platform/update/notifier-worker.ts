@@ -6,7 +6,7 @@ import {
   getConfigPath,
   getLegacyConfigPath,
   parseConfigText,
-} from "../config/index.js";
+} from "../../config/index.js";
 import { getStatePath, type UpdateState } from "./state.js";
 
 /**
@@ -15,7 +15,7 @@ import { getStatePath, type UpdateState } from "./state.js";
  * This is deliberately separate from scheduled Almanac automation. It
  * only keeps `~/.almanac/update-state.json` fresh enough for the
  * pre-command banner and `doctor`; launchd/cron-style recurring tasks
- * live under `src/automation/`.
+ * live under `src/platform/automation/`.
  */
 
 export function scheduleBackgroundUpdateCheck(argv: string[]): void {

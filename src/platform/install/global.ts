@@ -4,7 +4,6 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { runSetup, type SetupOptions, type SetupResult } from "../cli/commands/setup/index.js";
 import { isNewer } from "../update/semver.js";
 
 /**
@@ -19,28 +18,32 @@ import { isNewer } from "../update/semver.js";
  */
 
 export interface CodealmanacBootstrapOptions {
-  setupOptions: SetupOptions;
   setupArgs: string[];
+  runLocalSetup: () => Promise<CodealmanacBootstrapResult>;
 
   // Injection points for tests.
-  runSetup?: typeof runSetup;
   spawnFn?: typeof spawn;
   currentPackageRoot?: string;
   globalPackageRoot?: string;
   env?: NodeJS.ProcessEnv;
 }
 
+export interface CodealmanacBootstrapResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
+
 const SKIP_BOOTSTRAP_ENV = "CODEALMANAC_SKIP_GLOBAL_BOOTSTRAP";
 
 export async function runCodealmanacBootstrap(
   opts: CodealmanacBootstrapOptions,
-): Promise<SetupResult> {
+): Promise<CodealmanacBootstrapResult> {
   const env = opts.env ?? process.env;
-  const runSetupFn = opts.runSetup ?? runSetup;
   const currentRoot = opts.currentPackageRoot ?? findCurrentPackageRoot();
 
   if (env[SKIP_BOOTSTRAP_ENV] === "1") {
-    return await runSetupFn(opts.setupOptions);
+    return await opts.runLocalSetup();
   }
 
   const globalRootResult =
@@ -58,7 +61,7 @@ export async function runCodealmanacBootstrap(
 
   const globalRoot = globalRootResult.path;
   if (samePath(currentRoot, globalRoot)) {
-    return await runSetupFn(opts.setupOptions);
+    return await opts.runLocalSetup();
   }
 
   if (await shouldInstallGlobal(currentRoot, globalRoot)) {
@@ -132,8 +135,10 @@ function findCurrentPackageRoot(): string {
   const candidates = [
     // Bundled: `.../codealmanac/dist/codealmanac.js` -> package root.
     path.resolve(here, ".."),
-    // Source: `.../codealmanac/src/install/global.ts` -> package root.
+    // Old source/dist layout: `.../codealmanac/src/install/global.ts` -> package root.
     path.resolve(here, "..", ".."),
+    // Source/dist platform layout: `.../codealmanac/src/platform/install/global.ts`.
+    path.resolve(here, "..", "..", ".."),
   ];
 
   for (const candidate of candidates) {
@@ -148,7 +153,7 @@ function findCurrentPackageRoot(): string {
     }
   }
 
-  return path.resolve(here, "..", "..");
+  return path.resolve(here, "..", "..", "..");
 }
 
 async function resolveGlobalPackageRoot(

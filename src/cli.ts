@@ -11,13 +11,13 @@ import {
   tryRunSetupShortcut,
   tryRunSqliteFreeCommand,
 } from "./cli/sqlite-free.js";
-import { runCodealmanacBootstrap } from "./install/global.js";
+import { runCodealmanacBootstrap } from "./platform/install/global.js";
 import type { runDoctor } from "./cli/commands/doctor/index.js";
-import { announceUpdateIfAvailable } from "./update/announce.js";
+import { announceUpdateIfAvailable } from "./platform/update/announce.js";
 import {
   runInternalUpdateCheck,
   scheduleBackgroundUpdateCheck,
-} from "./update/notifier-worker.js";
+} from "./platform/update/notifier-worker.js";
 
 /**
  * Optional dependency overrides for `run`. Tests use these to avoid

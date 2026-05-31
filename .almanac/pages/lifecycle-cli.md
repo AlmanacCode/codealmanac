@@ -15,7 +15,7 @@ files:
   - src/cli/commands/setup/automation-step.ts
   - src/cli/commands/automation.ts
   - src/review/store.ts
-  - src/automation/tasks.ts
+  - src/platform/automation/tasks.ts
 sources:
   - /Users/kushagrachitkara/.codex/sessions/2026/05/11/rollout-2026-05-11T14-32-08-019e18f4-5e73-7790-ba49-73cc02544a58.jsonl
   - docs/research/2026-05-07-cli-surface-design.md
@@ -83,7 +83,7 @@ The install command also establishes the auto-capture activation cursor. On firs
 
 Setup now installs capture and Garden automation by default, with `--skip-automation`, `--auto-capture-every <duration>`, `--auto-capture-quiet <duration>`, `--garden-every <duration>`, and `--garden-off` replacing the old hook-oriented setup controls. Interactive setup then asks a separate "Keep Almanac automatically updated?" prompt; the default answer is yes, and the accepted prompt installs the update task through the same automation surface. Unattended `setup --yes` leaves scheduled self-update disabled unless `--auto-update` is passed, because global CLI mutation stays an explicit non-interactive choice. The shared duration parser now accepts seconds as well as minutes/hours/days/weeks, which mainly matters for focused scheduler smoke tests such as `--quiet 1s` rather than for normal defaults. The same setup path also installs the global Claude and Codex instruction surfaces described in [[global-agent-instructions]]. Auto-commit is a separate source-control boundary from scheduling, but it is no longer opt-in: `defaultConfig().auto_commit` is true, `setup --yes` preserves that default, and `--no-auto-commit` or `almanac config set auto_commit false` are the explicit opt-out paths. The resulting `auto_commit` user config controls operation prompt behavior rather than the scheduler itself. When both `--skip-automation` and `--skip-guides` are passed, `runSetup()` short-circuits before rendering the setup banner and prints only `almanac: nothing to install — use --help to see what setup does`.
 
-Bare `codealmanac` setup has one extra install-path rule captured in [[install-time-node-launcher]]. If setup starts from an `npx` or other non-global package root, `src/install/global.ts` upgrades or reuses the durable global install and reruns `setup` from that package's `dist/launcher.js`. That keeps setup and later interactive CLI invocations on the same pinned Node runtime instead of letting SQLite behavior depend on whichever `node` happens to resolve later from `PATH`.
+Bare `codealmanac` setup has one extra install-path rule captured in [[install-time-node-launcher]]. If setup starts from an `npx` or other non-global package root, `src/platform/install/global.ts` upgrades or reuses the durable global install and reruns `setup` from that package's `dist/launcher.js`. That keeps setup and later interactive CLI invocations on the same pinned Node runtime instead of letting SQLite behavior depend on whichever `node` happens to resolve later from `PATH`.
 
 Setup and uninstall still run private legacy-hook cleanup before touching scheduler state. That cleanup is intentionally shape-aware: it removes CodeAlmanac-owned `almanac-capture.sh` commands across provider-era event names such as `SessionEnd`, `Stop`, and `sessionEnd`, then drops empty wrapper objects and empty hook containers so historical hook files are actually healed rather than left with dead scaffolding.
 

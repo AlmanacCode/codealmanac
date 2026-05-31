@@ -1,18 +1,22 @@
 import { spawn, type SpawnOptions } from "node:child_process";
 
-import type { CommandResult } from "../cli/helpers.js";
-
 export interface InstallLatestPackageOptions {
   spawnFn?: typeof spawn;
 }
 
+export interface InstallLatestPackageResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
+
 export async function installLatestPackage(
   options: InstallLatestPackageOptions = {},
-): Promise<CommandResult> {
+): Promise<InstallLatestPackageResult> {
   const spawnFn = options.spawnFn ?? spawn;
   const spawnOpts: SpawnOptions = { stdio: "inherit" };
 
-  return await new Promise<CommandResult>((resolve) => {
+  return await new Promise<InstallLatestPackageResult>((resolve) => {
     const child = spawnFn(
       "npm",
       ["i", "-g", "codealmanac@latest"],
