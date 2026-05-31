@@ -1,5 +1,3 @@
-import { resolve } from "node:path";
-
 import type { CommandResult } from "../cli/helpers.js";
 import { renderOutcome } from "../cli/outcome.js";
 import type { HarnessEvent } from "../harness/events.js";
@@ -8,12 +6,12 @@ import { runAbsorbOperation } from "../operations/absorb.js";
 import { runBuildOperation } from "../operations/build.js";
 import { runGardenOperation } from "../operations/garden.js";
 import { readConfig } from "../config/index.js";
+import { GitHubSourceError } from "../ingest/github.js";
+import { renderIngestContext } from "../ingest/context.js";
 import {
-  GitHubSourceError,
-  resolveGitHubSource,
-  type Source,
-} from "../ingest/github.js";
-import { parseSourceRef, type SourceRef } from "../ingest/source-ref.js";
+  resolveIngestInput,
+  type ResolveSourceFn,
+} from "../ingest/input.js";
 import { resolveCaptureTranscripts } from "./session-transcripts.js";
 import type {
   OperationProviderSelection,
@@ -61,7 +59,7 @@ export interface IngestCommandOptions extends OperationCommandDeps {
   foreground?: boolean;
   json?: boolean;
   yes?: boolean;
-  resolveSource?: (ref: SourceRef, cwd: string) => Promise<Source>;
+  resolveSource?: ResolveSourceFn;
 }
 
 export interface GardenCommandOptions extends OperationCommandDeps {
@@ -173,7 +171,11 @@ export async function runIngestCommand(
   }
 
   try {
-    const input = await resolveIngestInput(options);
+    const input = await resolveIngestInput({
+      cwd: options.cwd,
+      inputs: options.paths,
+      resolveSource: options.resolveSource,
+    });
     if (!input.ok) {
       return renderOutcome(
         { type: "error", message: input.message },
@@ -184,7 +186,7 @@ export async function runIngestCommand(
       cwd: options.cwd,
       provider: provider.value,
       background: options.foreground !== true,
-      context: ingestContext(input.value),
+      context: renderIngestContext(input.value),
       targetKind: input.value.kind,
       targetPaths: input.value.targets,
       onEvent: options.onEvent,
@@ -422,113 +424,6 @@ function captureContext(options: CaptureCommandOptions): string {
   }
   if (options.contextNote !== undefined && options.contextNote.trim().length > 0) {
     lines.push("", options.contextNote.trim());
-  }
-  return lines.join("\n");
-}
-
-type ResolvedIngestInput =
-  | { kind: "path"; targets: string[]; paths: string[] }
-  | { kind: "source"; targets: string[]; sources: Source[] };
-
-async function resolveIngestInput(
-  options: IngestCommandOptions,
-): Promise<
-  | { ok: true; value: ResolvedIngestInput }
-  | { ok: false; message: string }
-> {
-  const sourceRefs: SourceRef[] = [];
-  const paths: string[] = [];
-  for (const input of options.paths) {
-    const parsed = parseSourceRef(input);
-    if (parsed.ok) {
-      sourceRefs.push(parsed.value);
-      continue;
-    }
-    if (parsed.reason === "not-source-ref") {
-      paths.push(input);
-      continue;
-    }
-    return { ok: false, message: parsed.message };
-  }
-
-  if (sourceRefs.length > 0 && paths.length > 0) {
-    return {
-      ok: false,
-      message:
-        "ingest cannot mix source refs and local paths yet; run separate ingest commands",
-    };
-  }
-
-  if (sourceRefs.length > 0) {
-    const resolveSource = options.resolveSource ?? defaultResolveSource;
-    const sources: Source[] = [];
-    for (const sourceRef of sourceRefs) {
-      sources.push(await resolveSource(sourceRef, options.cwd));
-    }
-    return {
-      ok: true,
-      value: {
-        kind: "source",
-        targets: sources.map((source) => source.raw),
-        sources,
-      },
-    };
-  }
-
-  const resolvedPaths = paths.map((path) => resolve(options.cwd, path));
-  return {
-    ok: true,
-    value: {
-      kind: "path",
-      targets: resolvedPaths,
-      paths: resolvedPaths,
-    },
-  };
-}
-
-function defaultResolveSource(ref: SourceRef, cwd: string): Promise<Source> {
-  if (ref.provider === "github") return resolveGitHubSource({ ref, cwd });
-  throw new Error(`unsupported source provider '${ref.provider}'`);
-}
-
-function ingestContext(input: ResolvedIngestInput): string {
-  if (input.kind === "source") return sourceIngestContext(input.sources);
-  return [
-    "Command context:",
-    "- Command: ingest",
-    "- Paths:",
-    ...input.paths.map((path) => `  - ${path}`),
-  ].join("\n");
-}
-
-function sourceIngestContext(sources: Source[]): string {
-  const lines = [
-    "Command context:",
-    "- Command: ingest",
-    "- Sources:",
-  ];
-  for (const source of sources) {
-    if (source.kind === "github.pr") {
-      lines.push(
-        `  - Input source: ${source.raw}`,
-        "    Source kind: GitHub pull request",
-        `    Repository: ${source.repo}`,
-        `    URL: ${source.url}`,
-        "",
-        "GitHub PR ingest guidance:",
-        "Use the GitHub CLI (`gh`) to inspect this PR as needed.",
-        "",
-        "Suggested commands:",
-        `- gh pr view ${source.number} --repo ${source.repo} --json title,body,url,author,baseRefName,headRefName,mergedAt,files,reviews,comments,closingIssuesReferences`,
-        `- gh pr diff ${source.number} --repo ${source.repo}`,
-        "",
-        "Treat PR discussion as evidence, not final truth.",
-        "Prefer current code and the merged diff for present-tense behavior.",
-        "Update the Almanac only if this PR contains durable project memory.",
-        "If this PR supports a wiki claim, cite it with a `sources:` entry of `type: pr`.",
-        "No-op if the PR does not improve durable project memory.",
-      );
-    }
   }
   return lines.join("\n");
 }

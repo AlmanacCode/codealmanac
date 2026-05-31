@@ -65,47 +65,11 @@ export function inferActor(event: HarnessEvent): RunActor {
     };
   }
 
-  const actor = actorFromDisplayRaw(event);
-  if (actor !== null) return actor;
-
   return {
     threadId: null,
     role: "unknown",
     confidence: "unknown",
     label: "Unknown actor",
-  };
-}
-
-function actorFromDisplayRaw(event: HarnessEvent): RunActor | null {
-  const display =
-    event.type === "tool_use" || event.type === "tool_result"
-      ? event.display
-      : undefined;
-  const raw = display?.raw;
-  if (raw === null || typeof raw !== "object") return null;
-  const actor = (raw as { _codealmanacActor?: unknown })._codealmanacActor;
-  if (actor === null || typeof actor !== "object") return null;
-  const threadId = (actor as { threadId?: unknown }).threadId;
-  const role = (actor as { role?: unknown }).role;
-  if (
-    role !== "root" &&
-    role !== "helper" &&
-    role !== "unknown"
-  ) {
-    return null;
-  }
-  return {
-    threadId: typeof threadId === "string" ? threadId : null,
-    role,
-    parentThreadId:
-      typeof (actor as { parentThreadId?: unknown }).parentThreadId === "string"
-        ? (actor as { parentThreadId: string }).parentThreadId
-        : null,
-    confidence: role === "unknown" ? "unknown" : "provider",
-    label:
-      typeof (actor as { label?: unknown }).label === "string"
-        ? (actor as { label: string }).label
-        : actorLabel(role),
   };
 }
 

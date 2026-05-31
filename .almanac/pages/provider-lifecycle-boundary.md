@@ -16,6 +16,12 @@ files:
   - src/commands/doctor/agents.ts
   - src/process/manager.ts
   - src/config/index.ts
+  - src/config/providers.ts
+  - src/config/schema.ts
+  - src/config/codec.ts
+  - src/config/store.ts
+  - src/config/paths.ts
+  - src/config/origins.ts
 sources:
   - docs/plans/2026-05-14-provider-automation-boundary-refactor.md
   - /Users/rohan/.config/superpowers/worktrees/codealmanac/long-term-arch-cleanup/docs/plans/2026-05-14-long-term-architecture-cleanup.md
@@ -29,7 +35,7 @@ sources:
   - /Users/rohan/Desktop/Projects/t3code/apps/server/src/provider/Services/ProviderRegistry.ts
   - /Users/rohan/Desktop/Projects/t3code/apps/server/src/provider/Services/ProviderAdapterRegistry.ts
 status: active
-verified: 2026-05-15
+verified: 2026-05-31
 ---
 
 # Provider Lifecycle Boundary
@@ -54,15 +60,15 @@ No production code path found in the 2026-05-14 review called `getAgentProvider(
 
 That setup/status responsibility is distinct from execution. It answers questions such as whether a provider CLI is installed and authenticated, which model choices should be shown, which fix command should be printed, and which provider-specific instruction files setup should write. Those are agent readiness concerns, not per-run execution concerns.
 
-The setup/status path is also distinct from persisted config. `src/config/index.ts` owns global config including `agent.default`, `agent.models`, update notifier state, and automation state. `src/commands/config.ts` and `src/commands/config-keys.ts` expose config keys, `src/commands/setup/index.ts` orchestrates first-run choices, and `src/commands/agents.ts` manages agent choice and model choice after setup. Setup is a workflow over config, readiness, automation, and guide installation; it should not become the home for reusable provider readiness logic.
+The setup/status path is also distinct from persisted config. `src/config/index.ts` is now a stable facade over focused config modules: `src/config/schema.ts` owns defaults and normalization, `src/config/codec.ts` owns TOML/JSON parsing and serialization, `src/config/store.ts` owns filesystem reads/writes, legacy migration, config merging, and `automation.capture_since`, `src/config/origins.ts` owns origin reporting, `src/config/paths.ts` owns config path resolution, and `src/config/providers.ts` owns provider ids and feature-gated provider availability. `src/commands/config.ts` and `src/commands/config-keys.ts` expose config keys, `src/commands/setup/index.ts` orchestrates first-run choices, and `src/commands/agents.ts` manages agent choice and model choice after setup. Setup is a workflow over config, readiness, automation, and guide installation; it should not become the home for reusable provider readiness logic.
 
-`[[src/config/index.ts]]` still carries more provider identity than this boundary wants. It defines `ALL_AGENT_PROVIDER_IDS`, Cursor enablement, enabled-provider lists, provider-id type guards, provider-list formatting, and disabled-provider messages. A 2026-05-15 codebase-smell review classified that as config owning provider catalog behavior: config should persist and normalize selected values, while a small agent/provider catalog should own which providers exist, which are enabled by feature flags, and how disabled-provider messages are phrased.
+`src/config/providers.ts` is a small provider-id catalog, not a runtime provider layer. It owns `ALL_AGENT_PROVIDER_IDS`, Cursor enablement, enabled-provider lists, provider-id type guards, provider-list formatting, and disabled-provider messages because those facts are needed by config normalization and setup/status views. Runtime capabilities, transports, tool mapping, and execution behavior remain under `src/harness/providers/`.
 
 ## Cleanup target
 
 The cleanup target is a refactor slice, not a rewrite. The target shape is:
 
-- one shared provider catalog for ids, display names, defaults, and any model catalog that should be shared
+- one shared provider catalog for ids and feature-gated availability
 - one execution adapter layer under `src/harness/providers/`
 - one agent readiness or agent config layer for installed/authenticated/model-choice state used by setup, agents, and doctor commands
 - one config module for persisted user config, replacing the misleading old `src/update/config.ts` ownership

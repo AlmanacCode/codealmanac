@@ -8,14 +8,14 @@ import {
   codexClientVersion,
   combineCodexPrompt,
 } from "./request.js";
+import { mapCodexAppServerNotification } from "./app-notifications.js";
+import { classifyCodexFailure } from "./failures.js";
 import {
   asRecord,
-  classifyCodexFailure,
-  mapCodexAppServerNotification,
   stringField,
-  toHarnessResult,
-  type CodexRunState,
-} from "./events.js";
+} from "./fields.js";
+import { toHarnessResult } from "./result.js";
+import type { CodexRunState } from "./types.js";
 
 interface JsonRpcResponse {
   id: number | string;

@@ -2,12 +2,10 @@ import type { HarnessResult } from "../../events.js";
 import type { HarnessRunHooks } from "../../types.js";
 import { spawnManagedChildProcess } from "../../../process/managed-child.js";
 import type { CodexExecRequest } from "./request.js";
-import {
-  applyCodexJsonlEvent,
-  classifyCodexFailure,
-  toHarnessResult,
-  type CodexRunState,
-} from "./events.js";
+import { classifyCodexFailure } from "./failures.js";
+import { applyCodexJsonlEvent } from "./jsonl-events.js";
+import { toHarnessResult } from "./result.js";
+import type { CodexRunState } from "./types.js";
 
 export function runCodexCli(
   request: CodexExecRequest,

@@ -4,9 +4,13 @@ import { join } from "node:path";
 import type Database from "better-sqlite3";
 
 import { ensureFreshIndex } from "../indexer/index.js";
-import { looksLikeDir, normalizePath } from "../indexer/paths.js";
 import { openIndex } from "../indexer/schema.js";
 import { getPageView, type PageView } from "../query/page-view.js";
+import {
+  buildFileMentionFilter,
+  buildQuotedPrefixFtsQuery,
+  buildQuotedTermFtsQuery,
+} from "../query/search.js";
 import {
   loadReviewFile,
   reviewYamlPath,
@@ -193,7 +197,7 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
     async search(query) {
       return withFreshDb(ctx.repoRoot, (db) => {
         const trimmed = query.trim();
-        const ftsQuery = trimmed.length > 0 ? buildFtsQuery(trimmed) : "";
+        const ftsQuery = trimmed.length > 0 ? buildQuotedTermFtsQuery(trimmed) : "";
         if (trimmed.length > 0 && ftsQuery.length === 0) return { query: trimmed, pages: [] };
         const sql = trimmed.length > 0 ? pageSearchSql(50) : recentPagesSql(50);
         const params = trimmed.length > 0 ? [ftsQuery] : [];
@@ -205,11 +209,11 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
       return withFreshDb(ctx.repoRoot, (db) => {
         const trimmed = query.trim();
         if (trimmed.length === 0) return { query: trimmed, pages: [] };
-        const ftsQuery = buildFtsQuery(trimmed);
+        const ftsQuery = buildQuotedTermFtsQuery(trimmed);
         if (ftsQuery.length === 0) return { query: trimmed, pages: [] };
         return {
           query: trimmed,
-          pages: pageSummaries(db, pageSearchSql(8), [buildFtsPrefixQuery(trimmed)]),
+          pages: pageSummaries(db, pageSearchSql(8), [buildQuotedPrefixFtsQuery(trimmed)]),
         };
       });
     },
@@ -377,27 +381,9 @@ function topicSummaries(
   }));
 }
 
-function buildFtsQuery(input: string): string {
-  return input
-    .split(/\s+/)
-    .map((term) => term.replace(/"/g, ""))
-    .filter((term) => term.length > 0)
-    .map((term) => `"${term}"`)
-    .join(" AND ");
-}
-
-function buildFtsPrefixQuery(input: string): string {
-  return input
-    .split(/\s+/)
-    .map((term) => term.replace(/["*]/g, ""))
-    .filter((term) => term.length > 0)
-    .map((term) => `"${term}"*`)
-    .join(" AND ");
-}
-
 function fileMentionSql(input: string): string {
-  const isDir = looksLikeDir(input);
-  if (isDir) {
+  const mention = buildFileMentionFilter(input);
+  if (mention.isDir) {
     return `SELECT DISTINCT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
             FROM pages p
             JOIN file_refs r ON r.page_slug = p.slug
@@ -405,9 +391,8 @@ function fileMentionSql(input: string): string {
             ORDER BY p.updated_at DESC, p.slug ASC
             LIMIT 100`;
   }
-  const prefixes = parentFolderPrefixes(normalizePath(input, false));
-  const placeholders = prefixes.map(() => "?").join(", ");
-  const folderClause = prefixes.length > 0
+  const placeholders = mention.parentFolders.map(() => "?").join(", ");
+  const folderClause = mention.parentFolders.length > 0
     ? `OR (r.is_dir = 1 AND r.path IN (${placeholders}))`
     : "";
   return `SELECT DISTINCT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
@@ -419,22 +404,7 @@ function fileMentionSql(input: string): string {
 }
 
 function fileMentionParams(input: string): string[] {
-  const isDir = looksLikeDir(input);
-  const norm = normalizePath(input, isDir);
-  if (isDir) return [norm, `${escapeGlobMeta(norm)}*`];
-  return [norm, ...parentFolderPrefixes(norm)];
-}
-
-function parentFolderPrefixes(path: string): string[] {
-  const parts = path.split("/");
-  if (parts.length <= 1) return [];
-  const prefixes: string[] = [];
-  for (let i = 1; i < parts.length; i++) {
-    prefixes.push(`${parts.slice(0, i).join("/")}/`);
-  }
-  return prefixes;
-}
-
-function escapeGlobMeta(input: string): string {
-  return input.replace(/([*?\[])/g, "[$1]");
+  const mention = buildFileMentionFilter(input);
+  if (mention.isDir) return [mention.normalizedPath, mention.globPrefix];
+  return [mention.normalizedPath, ...mention.parentFolders];
 }

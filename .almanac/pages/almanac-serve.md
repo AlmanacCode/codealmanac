@@ -3,14 +3,17 @@ title: almanac serve (Local Viewer)
 summary: "`almanac serve` is a local read-only viewer over wiki pages, the SQLite index, run records, and review escalations."
 topics: [cli, decisions, systems]
 status: active
-verified: 2026-05-28
+verified: 2026-05-31
 files:
   - src/commands/serve.ts
   - src/viewer/api.ts
+  - src/viewer/job-projections.ts
+  - src/viewer/job-types.ts
   - src/viewer/jobs.ts
   - src/viewer/server.ts
   - src/viewer/static.ts
   - src/query/page-view.ts
+  - src/query/search.ts
   - viewer/index.html
   - viewer/almanac-logo.png
   - viewer/app.js
@@ -60,7 +63,7 @@ sources:
 
 `almanac serve` is a lightweight local read-only web viewer for browsing a repo's Almanac wiki. It is the preferred "read the wiki" experience for humans; filesystem browsing is the fallback and editor interface, not the primary UX. Designed and implemented 2026-05-10.
 
-The viewer is mostly a read-only client over existing wiki/index/run-record primitives, but a 2026-05-15 codebase-smell review found one current drift point: `[[src/viewer/api.ts]]` has its own FTS query builders, file-reference SQL, parent-folder prefix calculation, and GLOB escaping. Those rules overlap with CLI search semantics and are historically subtle. Future work should extract shared query helpers for submitted FTS queries, suggestion-prefix FTS queries, and file-reference matching instead of letting the viewer and CLI evolve separate path/search behavior.
+The viewer is mostly a read-only client over existing wiki/index/run-record primitives. `[[src/query/search.ts]]` owns shared FTS query builders and file-reference matching primitives used by both `[[src/commands/search.ts]]` and `[[src/viewer/api.ts]]`, including parent-folder prefix calculation and SQLite GLOB escaping for literal path queries.
 
 ## Rationale
 
@@ -164,7 +167,7 @@ Next.js was explicitly rejected as too heavy. Express was not added; Node's `htt
 
 ## Source module structure
 
-The viewer is a read-only client over the same persisted index and page/run-record source files that the CLI uses. It should not introduce a separate database model or forked parser. Its current query-helper duplication in `[[src/viewer/api.ts]]` is cleanup debt, not the desired architecture.
+The viewer is a read-only client over the same persisted index and page/run-record source files that the CLI uses. It should not introduce a separate database model or forked parser. Shared query mechanics live under `[[src/query/]]` rather than in viewer-specific helpers.
 
 Actual source layout:
 
@@ -175,13 +178,15 @@ src/
 
   viewer/
     api.ts            # createViewerApi(): overview(), page(), topic(), search(), suggest(), file(), jobs(), job()
-    jobs.ts           # jobs API logic: listViewerJobs(), getViewerJob(), display title/subtitle,
-                      #   JSONL parsing, isSafeRunId(), isPidAlive()
+    job-projections.ts # derived job display fields, transcript source, agent traces, warnings
+    job-types.ts      # shared viewer job response shapes
+    jobs.ts           # jobs API logic: listViewerJobs(), getViewerJob(), JSONL parsing, run-id safety
     server.ts         # startViewerServer(): HTTP routing for /api/* and static assets
     static.ts         # readViewerAsset() / readViewerIndex(): serves viewer/ from package root
 
   query/
     page-view.ts      # getPageView(db, slug) → PageView; shared by show command and viewer API
+    search.ts         # shared FTS query builders and file-reference matching primitives
 
 viewer/               # bundled static frontend (no build step required at runtime)
   index.html
@@ -194,7 +199,7 @@ viewer/               # bundled static frontend (no build step required at runti
   search-suggestions.js # left-rail search suggestion controller
 ```
 
-`serve.ts` owns only the CLI interface. `server.ts` owns HTTP. `api.ts` owns wiki-API payload assembly and delegates jobs concerns to `src/viewer/jobs.ts`. `jobs.ts` owns all run-record concerns: storage access, display title/subtitle derivation, JSONL log parsing, run-id validation, and PID liveness. `page-view.ts` is extracted shared logic: the `show` command and viewer API both call it. The frontend in `viewer/` is plain HTML + vanilla JS with no compile step. `app.js` handles routing and wiki views; `jobs-view.js` handles jobs rendering; `jobs-transcript.js` handles stream projection and tool/result pairing; `search-suggestions.js` owns the debounced search suggestion interaction.
+`serve.ts` owns only the CLI interface. `server.ts` owns HTTP. `api.ts` owns wiki-API payload assembly and delegates jobs concerns to `src/viewer/jobs.ts`. `jobs.ts` owns run-record storage access, JSONL log parsing, run-id validation, and PID liveness. `job-projections.ts` owns derived job display fields, transcript-source inference, agent traces, and run warnings. `job-types.ts` owns the shared viewer job response shapes. `page-view.ts` is extracted shared logic: the `show` command and viewer API both call it. The frontend in `viewer/` is plain HTML + vanilla JS with no compile step. `app.js` handles routing and wiki views; `jobs-view.js` handles jobs rendering; `jobs-transcript.js` handles stream projection and tool/result pairing; `search-suggestions.js` owns the debounced search suggestion interaction.
 
 `jobs.ts` delegates to `src/process/index.ts` — specifically `listRunRecords()`, `readRunRecord()`, `runRecordPath()`, `runLogPath()`, and `toRunView()` — for all run storage access. The viewer does not duplicate the storage rules or introduce its own process model.
 
@@ -202,13 +207,13 @@ viewer/               # bundled static frontend (no build step required at runti
 
 `ViewerApi` exposes eight methods: `overview()` (wiki stats + recent pages + root topics), `page(slug)` (full `PageView` including body markdown, backlinks, topics, file refs, source records, and a `related_pages` array), `topic(slug)` (topic metadata + children + pages), `search(query)` (FTS results or recent pages when query is empty), `suggest(query)` (top eight FTS page hits for instant suggestions), `file(path)` (pages from `file_refs` matching path semantics), `jobs()` (list of all run records as `ViewerJobRun[]`), and `job(runId)` (one `ViewerJobRun` plus its JSONL event log).
 
-`search()` and `suggest()` use different FTS query builders. `search()` calls `buildFtsQuery()`, which wraps each whitespace-split term in exact-phrase quotes (`"term"`) and ANDs them — suitable for complete submitted queries. `suggest()` calls `buildFtsPrefixQuery()`, which appends `*` to each quoted term (`"term"*`) — FTS5 prefix matching that returns results while the user is still typing. Using `buildFtsQuery` for suggest would break as-you-type completion because incomplete words would not match their eventual full form.
+`search()` and `suggest()` use different FTS query builders from `[[src/query/search.ts]]`. `search()` calls `buildQuotedTermFtsQuery()`, which wraps each whitespace-split term in exact-phrase quotes (`"term"`) and ANDs them — suitable for complete submitted queries. `suggest()` calls `buildQuotedPrefixFtsQuery()`, which appends `*` to each quoted term (`"term"*`) — FTS5 prefix matching that returns results while the user is still typing. Using the submitted-query builder for suggest would break as-you-type completion because incomplete words would not match their eventual full form.
 
 `PageView` is defined in `src/query/page-view.ts` and includes: slug, title, summary, file\_path, updated\_at, archived\_at, superseded\_by, supersedes, topics, file\_refs, source records, wikilinks\_out, wikilinks\_in, cross\_wiki\_links, and body (raw markdown). When returned by the viewer API `page()` method, a `related_pages` field is appended — page summaries for all wikilinks\_in, wikilinks\_out, and supersedes/superseded\_by targets, deduplicated, for the frontend to render titles without extra fetches.
 
 `overview()` returns `featuredPages.gettingStarted` when the wiki contains `getting-started.md`. It does not return `featuredPages.projectOverview`; the 2026-05-28 front-door cleanup made `getting-started.md` the only special homepage convention.
 
-`ViewerJobRun` extends `RunView` (from [[process-manager-runs]] via `toRunView()`) with display fields: `displayTitle` (human label derived from operation and target kind), `displaySubtitle` (nullable summary derived from the final `done`/`text` event in the log, falling back to the first target path or the model string), and `transcriptSource` for session captures. The transcript-source field intentionally differs from `provider`: a Claude or Codex transcript may be processed by a Codex, Claude, or future provider agent. `src/viewer/jobs.ts` derives the source from the run spec's capture context when available and falls back to transcript-path conventions for older records. The `enrichRunView()` helper computes these fields after parsing the event log. Run IDs are validated by `isSafeRunId()` (regex `/^run_[A-Za-z0-9_-]+$/`) before any path construction to prevent path traversal.
+`ViewerJobRun` extends `RunView` (from [[process-manager-runs]] via `toRunView()`) with display fields: `displayTitle` (human label derived from operation and target kind), `displaySubtitle` (nullable summary derived from the final `done`/`text` event in the log, falling back to the first target path or the model string), and `transcriptSource` for session captures. The transcript-source field intentionally differs from `provider`: a Claude or Codex transcript may be processed by a Codex, Claude, or future provider agent. `src/viewer/job-projections.ts` derives the source from the run spec's capture context when available and falls back to transcript-path conventions for older records. The `enrichRunView()` helper computes these fields after `jobs.ts` parses the event log. Run IDs are validated by `isSafeRunId()` (regex `/^run_[A-Za-z0-9_-]+$/`) before any path construction to prevent path traversal.
 
 `ViewerJobDetail` is the shape returned by `job(runId)`: `{ run: ViewerJobRun; events: ViewerJobLogEvent[] }`. `ViewerJobLogEvent` is a discriminated union: a valid line is `{ line: number; timestamp: string | null; event: HarnessEvent }` and an unparseable line is `{ line: number; invalid: true; raw: string; error: string }`. The `readJobLogEvents()` helper reads the JSONL log file line-by-line, unwraps the process-manager `{ timestamp, event }` envelope, skips blank lines, and preserves invalid lines as error-shaped display rows rather than throwing. This is intentional: a corrupt or truncated log should still render the rest of the timeline.
 

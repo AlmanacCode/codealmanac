@@ -12,12 +12,14 @@ files:
   - src/process/types.ts
   - src/harness/providers/claude.ts
   - src/commands/jobs.ts
+  - src/viewer/job-projections.ts
+  - src/viewer/job-types.ts
   - src/viewer/jobs.ts
   - viewer/jobs-view.js
   - viewer/jobs.css
 sources:
   - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-27-05-019e70e9-b7d7-7900-9fc0-da2a6f0b532d.jsonl
-verified: 2026-05-29
+verified: 2026-05-31
 ---
 
 # Process Manager Runs
@@ -101,7 +103,7 @@ Two review constraints protect that contract. If post-harness finalization fails
 
 ## Jobs viewer
 
-`almanac serve` exposes the same run data through the local viewer API at `/api/jobs` (list) and `/api/jobs/:runId` (detail with JSONL events). See [[almanac-serve]] for the type shapes and polling design. The viewer uses `listRunRecords`, `readRunRecord`, `runRecordPath`, `runLogPath`, and `toRunView` from `src/process/index.ts` — no storage logic is duplicated. Jobs API logic (type definitions, display title/subtitle derivation, JSONL parsing, safe run-id validation) lives in `src/viewer/jobs.ts`; the frontend UI is split across `viewer/jobs-view.js` and `viewer/jobs.css`.
+`almanac serve` exposes the same run data through the local viewer API at `/api/jobs` (list) and `/api/jobs/:runId` (detail with JSONL events). See [[almanac-serve]] for the type shapes and polling design. The viewer uses `listRunRecords`, `readRunRecord`, `runRecordPath`, `runLogPath`, and `toRunView` from `src/process/index.ts` — no storage logic is duplicated. Jobs storage/API logic and JSONL parsing live in `src/viewer/jobs.ts`; viewer job response types live in `src/viewer/job-types.ts`; derived display title/subtitle, transcript-source inference, agent traces, and run warnings live in `src/viewer/job-projections.ts`. The frontend UI is split across `viewer/jobs-view.js` and `viewer/jobs.css`.
 
 ## Agent-thread attribution gap
 
