@@ -14,8 +14,16 @@ sources:
   - https://github.com/ossf/scorecard
   - https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/creating-a-default-community-health-file
   - https://github.com/ossf/wg-vulnerability-disclosures/issues/178
+  - id: yc-market-scan
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/31/rollout-2026-05-31T23-31-46-019e8173-bc02-7503-a102-e9de99d6bb9c.jsonl
+    note: Records the YC CLI market scan that identified OSS maintainers and AI-forward tiny teams as the recommended first beachhead.
+  - id: oss-maintainer-research
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/31/rollout-2026-05-31T23-31-46-019e8173-bc02-7503-a102-e9de99d6bb9c.jsonl
+    note: Records the Reddit-focused maintainer research that reframed the OSS pain as low-context issues, low-context pull requests, review burden, and AI-slop amplification rather than demand for a wiki.
 status: active
-verified: 2026-05-29
+verified: 2026-06-01
 ---
 
 # Open-Source Almanac
@@ -24,11 +32,15 @@ Open-source Almanac is the free public-repository version of CodeAlmanac. It sho
 
 The 2026-05-29 open-source research pass changed the product framing from "free wiki hosting for OSS" to "maintainer-attention infrastructure for public repos." Open-source maintainers already maintain README files, contribution docs, security policies, issue templates, CI, labels, and release notes. The missing layer is the reviewed project memory that explains architecture, invariants, rejected approaches, review expectations, compatibility rules, triage answers, and maintainer preferences before someone opens work that a maintainer must review.
 
+The 2026-05-31 YC CLI market scan kept OSS maintainers as one of the two best first segments, alongside AI-forward tiny teams. The OSS reason is still repetition: maintainers repeatedly explain contribution rules, architecture boundaries, rejected approaches, and recurring gotchas in issues and pull requests. The tiny-team reason is context loss: founders and engineers work out decisions in Claude, Codex, Slack, texts, issues, and PRs, then lose the reasoning before the next agent or teammate needs it. [@yc-market-scan]
+
 ## Maintainer Problem
 
 The core open-source pain is attention scarcity. The Tidelift 2024 maintainer report says 60 percent of surveyed maintainers had quit or considered quitting, and it names compensation, feeling underappreciated, time balance, support burden, entitlement, and project politics as recurring causes. Linux Foundation and GitHub funding research shows large ecosystem investment, but most investment arrives as contributor labor rather than direct maintainer funding, so tools that make contributors arrive better prepared can reduce the burden more directly than another documentation surface.
 
 AI raises the cost of bad contributions. GitHub Octoverse 2024 reported broad AI-tool adoption among open-source respondents, and OpenSSF vulnerability-disclosure discussions identify low-quality AI-generated reports and contributions as a current maintainer burden. Almanac's OSS wedge should therefore be "better AI-assisted contributions," not "AI maintains your project."
+
+The 2026-05-31 Reddit-focused maintainer research sharpened this from "maintainers repeat themselves" to "low-context issues and pull requests consume maintainer attention." Maintainers complained that contributors ignore guides and PR templates, submit work without enough documentation for review, and use AI to produce plausible but low-effort pull requests. The product implication is that Almanac OSS should reduce review and triage load by making existing project context hard to miss at issue and PR time; it should not ask maintainers to maintain another broad wiki surface. [@oss-maintainer-research]
 
 ## Product Shape
 
@@ -53,7 +65,7 @@ Those pages should complement README, CONTRIBUTING, SECURITY, and issue template
 
 ## GitHub Workflow
 
-The free GitHub App should be quiet by default. It should post at most one context comment on an issue or pull request, cite specific Almanac pages, avoid blocking by default, and open wiki-maintenance PRs after maintainers make durable decisions.
+The free GitHub App should be quiet by default. It should post at most one context comment on an issue or pull request, cite specific Almanac pages, avoid blocking by default, and open Almanac update PRs after maintainers make durable decisions.
 
 The useful OSS features are narrow:
 
@@ -68,9 +80,11 @@ The useful OSS features are narrow:
 
 The social protocol is more useful than abstract AI disclosure: if a contribution was AI-assisted, cite the Almanac pages it used. That shifts maintainer review from "was a model involved?" to "did the contributor load and follow project-specific context?"
 
+The first OSS workflow should stay narrower than a general issue bot. PR Context Cards should cite one to three relevant Almanac pages when touched files or issue labels match known project memory. `/almanac note` should let a maintainer turn a review comment or issue reply into a durable decision candidate at the moment the explanation appears. Repeated-answer detection should propose memory pages only when the same maintainer explanation pattern recurs, because broad automatic summarization would recreate the documentation burden this product is meant to reduce. [@yc-market-scan]
+
 ## Free Boundary
 
-The public-repo product should be genuinely free because the strategic value is making an Almanac root a normal repository convention. Public repo indexing, local CLI use, hosted read-only rendering, limited context comments, post-merge wiki PRs, maintainer routing suggestions, and badges such as "Almanac maintained" or "AI contribution guide available" belong in the free tier.
+The public-repo product should be genuinely free because the strategic value is making an Almanac root a normal repository convention. Public repo indexing, local CLI use, hosted read-only rendering, limited context comments, post-merge Almanac update PRs, maintainer routing suggestions, and badges such as "Almanac maintained" or "AI contribution guide available" belong in the free tier.
 
 Paid boundaries should be private repos, org-wide private memory, enterprise retention controls, SSO, private model routing, cross-repo confidential context, audit exports, and hosted job history. Free OSS should not be a funnel that withholds the core mechanism from maintainers who cannot pay.
 
@@ -96,4 +110,4 @@ The first useful moment should be a pull request receiving a short cited note th
 
 ## Related Pages
 
-[[github-native-wiki-maintenance]] explains the remote GitHub App loop that OSS Almanac should reuse. [[company-brain]] explains the broader market category of agent-readable operational memory. [[just-in-time-context-surfacing]] explains why context should appear before action rather than live only in a separate wiki browser. [[almanac-product-family]] explains why "Almanac" should be the product noun across scoped knowledge products.
+[[customer-segmentation]] explains why OSS maintainers are one of the first customer groups instead of a later enterprise segment. [[github-native-wiki-maintenance]] explains the remote GitHub App loop that OSS Almanac should reuse. [[company-brain]] explains the broader market category of agent-readable operational memory. [[just-in-time-context-surfacing]] explains why context should appear before action rather than live only in a separate wiki browser. [[almanac-product-family]] explains why "Almanac" should be the product noun across scoped knowledge products.

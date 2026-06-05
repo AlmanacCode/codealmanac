@@ -3,13 +3,40 @@ title: Almanac Product Family
 summary: Almanac is the product name for project-scoped, maintained knowledge layers whose user-facing loop is adding sources and querying knowledge.
 topics: [product-positioning, wiki-design]
 sources:
-  - /Users/rohan/.codex/sessions/2026/05/27/rollout-2026-05-27T16-27-22-019e6b55-bee7-79d3-ba21-2852c5372082.jsonl
-  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T11-12-35-019e6f5b-eaff-7600-abd8-c83c7cdc491a.jsonl
-  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
-  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-24-15-019e70e7-1dc0-7e30-a996-f47b766b4ee6.jsonl
-  - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-27-05-019e70e9-b7d7-7900-9fc0-da2a6f0b532d.jsonl
+  - id: product-scope-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/27/rollout-2026-05-27T16-27-22-019e6b55-bee7-79d3-ba21-2852c5372082.jsonl
+    note: Records early product-scope discussion about generalized Almanacs and the distinction between source documents and maintained synthesis pages.
+  - id: source-portability-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T11-12-35-019e6f5b-eaff-7600-abd8-c83c7cdc491a.jsonl
+    note: Records individual and team source-portability assumptions for repo, web, workspace, local, and private evidence.
+  - id: remote-product-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T12-14-55-019e6f94-fae1-7780-b2c9-3e2f3d6b6f3e.jsonl
+    note: Records remote-product discussion about configurable Almanac roots and the distinction between canonical pages and generated local or hosted state.
+  - id: public-team-repo-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-24-15-019e70e7-1dc0-7e30-a996-f47b766b4ee6.jsonl
+    note: Records public and team repository product framing for repo-owned Almanac pages.
+  - id: mintlify-comparison-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-27-05-019e70e9-b7d7-7900-9fc0-da2a6f0b532d.jsonl
+    note: Records the Mintlify comparison that shaped configurable public and team Almanac roots.
+  - id: product-packaging-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/31/rollout-2026-05-31T23-31-46-019e8173-bc02-7503-a102-e9de99d6bb9c.jsonl
+    note: Records the product-packaging discussion that settled on one core Almanac loop, one repo-owned substrate, multiple surfaces, and hosted coordination as an extension rather than a separate product.
+  - id: hosted-settings-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/31/rollout-2026-05-31T23-31-46-019e8173-bc02-7503-a102-e9de99d6bb9c.jsonl
+    note: Records the v1 decision that hosted dashboard or database settings own GitHub App behavior instead of repo configuration.
+  - id: reddit-launch-post-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/06/03/rollout-2026-06-03T15-00-37-019e8f12-d796-7bb0-94d7-a98a4de5c44e.jsonl
+    note: Records the plain-language Reddit launch framing that describes Almanac as preserving scattered architecture context without becoming hidden hosted memory.
 status: active
-verified: 2026-05-29
+verified: 2026-06-01
 ---
 
 # Almanac Product Family
@@ -18,9 +45,15 @@ Almanac is the product name for a maintained body of useful knowledge over a pro
 
 CodeAlmanac is the codebase-shaped member of this family. Its source world is a repository: source files, tests, docs, commits, sessions, and project decisions. The current implementation stores maintained knowledge in `.almanac/pages/`, `.almanac/topics.yaml`, and `.almanac/README.md`, with local derived state in `.almanac/index.db` and `.almanac/runs/`.
 
+The 2026-06-03 Reddit launch framing described the user problem as architecture and decision context scattering across AI chats, commits, pull requests, Slack, and individual memory. The product response should stay plain: Almanac is a self-updating repo wiki that preserves decisions, cross-file system explanations, rejected approaches, invariants, and already-debugged gotchas in readable Markdown, with Garden preventing the wiki from turning into a pile of notes and Git review preventing the memory layer from becoming a hidden hosted graph. [@reddit-launch-post-session]
+
 The 2026-05-28 remote-product discussion tested whether public and team repositories should move canonical shared knowledge to `ALMANAC.md` plus `almanac/pages/`. The follow-up rejected that as the default because it adds repo-root visual clutter, makes the product feel like another docs surface, and is more invasive for open-source maintainers. The later Mintlify comparison produced a better rule: the wiki root should be configurable, `docs/almanac/` is the preferred public/team profile when the repository can carry project memory under `docs/`, and `.almanac/` remains the quiet local/private profile. Current repos use `.almanac/` for both durable knowledge and local state; the product direction is to move generated indexes, runs, extracts, and caches out of the canonical Almanac root by default, using user cache or hosted coordination storage instead of an in-root `.state/` directory. A top-level `almanac/` should remain opt-in because it has the highest repo-root footprint.
 
 The product split should make `almanac` the general engine, but profile names are not the starting primitive. The reusable model should first define objects and operations that keep the CodeAlmanac knowledge model transferable: projects, sources, source adapters, source records, extracts, pages, topics, runs, triggers, indexing, `ask`, `search`, `show`, Absorb, Garden, and `serve`. Code-specific behavior can then be expressed as repo-aware source adapters, file and folder wikilinks, coding-session capture, code-specific README instructions, AGENTS.md installation, and query affordances such as `--mentions src/path`.
+
+The 2026-05-31 product-packaging discussion settled that CodeAlmanac should be one product with one core loop, not separate products for solo developers, OSS maintainers, and teams. The loop is: work happens in a source system, durable project memory is identified, that memory is written as repo-owned Markdown, and future work receives the memory at the right moment. Audience lanes only change the source systems and surfaces: individual developers use local CLI and agent capture, OSS maintainers use GitHub issues and pull requests, and teams add hosted dashboards, policies, and connectors. [@product-packaging-session]
+
+The business model follows the same split. [[almanac-business-model]] defines the open layer as the local CLI, repo-owned memory format, local indexing, and individual capture or absorb workflows, while the paid layer is hosted coordination for teams: connectors, GitHub checks, Almanac update PRs, review queues, permissions, policy, audit logs, and hosted agent context. This makes the free product the trust substrate instead of a crippled funnel.
 
 The generalized product should feel like a project workspace that gets smarter when the user adds sources. Originals are preserved as sources, maintained understanding lives in reviewed Almanac pages, and ambiguous or risky changes remain visible instead of silently overwriting current memory. The wiki must not become the workspace where raw documents, extracted text, generated summaries, agent scratchpads, entity pages, and durable conclusions collapse together.
 
@@ -43,6 +76,12 @@ The same product primitive can be scoped to different source worlds:
 - **Research Almanac**: maintained memory over a research corpus, papers, notes, interviews, and conclusions. A Karpathy-style LLM wiki is the model case: a user keeps adding useful papers, notes, videos, and transcripts, and the Almanac turns them into a navigable, agent-queryable body of synthesis rather than a pile of source files.
 
 Scoped almanacs prevent source leakage. A shared original such as a passport, contract, email thread, or receipt can support multiple almanacs, but each almanac needs its own projection and charter. A company almanac should only preserve the company-relevant fact an identity document supports, while a personal almanac can preserve broader private context.
+
+## Configuration And Operation
+
+Customization should configure the memory loop rather than turn Almanac into a general workflow builder. Configuration should answer which sources are allowed, which changes are worth capturing, who reviews memory changes, where context should surface, which paths or source types are excluded, and what project-specific memory bar applies. Credentials and billing should stay outside repo-owned wiki pages: local mode uses local environment credentials, GitHub Action mode uses repository or organization secrets, and hosted mode uses Almanac-managed settings. The 2026-06-03 settings discussion made hosted dashboard or database settings the v1 source of truth for GitHub App behavior instead of adding repo configuration before the hosted loop is proven. [@product-packaging-session] [@hosted-settings-session]
+
+The useful deployment ladder is local CLI, GitHub Action or public-repo GitHub App, hosted GitHub App for private and team repositories, team connectors and dashboard, then enterprise self-hosted or VPC deployment. Local and self-run modes make the trust model credible because users can bring their own compute and API keys. Hosted mode is the paid path because teams generally want Almanac to manage webhook receipt, queueing, retries, model calls, connector auth, review queues, permissions, audit, and reliability. [@product-packaging-session]
 
 ## Individual And Team Products
 
@@ -178,7 +217,7 @@ The generalized navigation model is therefore: folder equals namespace or primar
 
 The generalized engine should be described in terms of objects before it introduces product variants. A project is the root that owns one `.almanac/` wiki. A source is raw material the project can learn from, such as a file, folder, URL, transcript, repo file, or email export. A source adapter discovers or reads one kind of source. A source record stores durable metadata such as id, path or URL, hash, type, status, and last-indexed time. An extract is derived text or metadata rebuilt from a source. A page is maintained markdown synthesis. A topic is a conceptual neighborhood in `topics.yaml`. A run records one deterministic or agentic operation. A trigger is a rule that decides when to run an operation.
 
-A source record should be broad enough for code and non-code Almanacs. Supported source types should include repo file, test, migration, config, prompt, web URL, commit, PR, issue, conversation, manual note, wiki page, email export, and external document. Web source records need URL, title when known, retrieved date, and optionally an archived snapshot or content hash. Source IDs should be stable enough for prose citations such as `[@writer-prompt]`, and source notes should say what the source supports rather than merely naming it.
+A source record should be broad enough for code and non-code Almanacs. Supported source types should include repo file, test, migration, config, prompt, web URL, commit, PR, issue, conversation, manual note, wiki page, email export, and external document. Web source records need URL, title when known, retrieved date, and optionally an archived snapshot or content hash. Source IDs should be stable enough for prose citations, and source notes should say what the source supports rather than merely naming it.
 
 The allowed modification vocabulary should stay small. Source modifications register a source, update a source hash or version, mark a source unavailable, or record extraction metadata. Index modifications rebuild extracted text, update search tables, or update source-page mention edges. Page modifications create, update, merge, split, archive, redirect or alias, or no-op. Topic modifications create topics, retopic pages, link or unlink topic parents, or remove empty topics when safe. Run modifications start, finish, fail, cancel, or reconcile pending work.
 
@@ -269,4 +308,4 @@ Use "Almanac" for the owned product surface: create an almanac, attach sources, 
 
 ## Related Pages
 
-[[company-brain]] explains the adjacent market category and why CodeAlmanac's wedge should stay narrower than a broad enterprise memory platform. [[superpaper]] explains why an Obsidian-first personal knowledge system is useful prior art but should not become the model for source-document ingestion. [[wiki-organization-primitives]] explains the page, link, topic, anchor, hub, and Garden primitives that keep Almanac graphs coherent.
+[[almanac-business-model]] explains why the local repo-owned core should remain open while hosted coordination and governance become paid. [[company-brain]] explains the adjacent market category and why CodeAlmanac's wedge should stay narrower than a broad enterprise memory platform. [[superpaper]] explains why an Obsidian-first personal knowledge system is useful prior art but should not become the model for source-document ingestion. [[wiki-organization-primitives]] explains the page, link, topic, anchor, hub, and Garden primitives that keep Almanac graphs coherent.

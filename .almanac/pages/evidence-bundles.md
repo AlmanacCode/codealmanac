@@ -43,7 +43,12 @@ sources:
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/05/30/rollout-2026-05-30T18-19-49-019e7b2f-c7d8-7640-a485-6de2f5a4a62f.jsonl
     note: Records the architecture analysis that corrected the boundary between indexer-owned markdown source metadata and external source-connector input before adding another source kind.
+  - id: hosted-github-connector-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/31/rollout-2026-05-31T23-31-46-019e8173-bc02-7503-a102-e9de99d6bb9c.jsonl
+    note: Records the hosted GitHub App decision to use GitHub App installation tokens and native GitHub source tools for the core hosted path while keeping Composio for broader connectors.
 status: proposed
+verified: 2026-06-02
 ---
 
 # Evidence Bundles
@@ -52,7 +57,7 @@ Evidence bundles are the operation input boundary for connector-driven Almanac w
 
 The concept is separate from [[source-provenance]]. `sources:` in page frontmatter explains why a durable wiki claim is supported after a page has been written. An evidence bundle explains what happened before a page exists, what branch it applies to, which source box the agent may inspect, and whether that trigger has already been processed. [@github-context-research] [@connector-session]
 
-A later connector-design discussion reframed the surrounding architecture as five roles: a connector gives the agent source tools, a `SourceRef` is a stable pointer to an external object, a `SourceCatalog` lets the agent discover readable sources and source tools, an operation tells the agent what happened, and a publisher writes back through the target system such as opening a GitHub Memory PR. In that model the flow is `Trigger -> Operation starts -> Agent reads source tools -> Agent decides -> Agent responds through publisher`; the evidence bundle is the manifest and source-reference part of that larger operation boundary. [@connector-session]
+A later connector-design discussion reframed the surrounding architecture as five roles: a connector gives the agent source tools, a `SourceRef` is a stable pointer to an external object, a `SourceCatalog` lets the agent discover readable sources and source tools, an operation tells the agent what happened, and a publisher writes back through the target system such as opening a GitHub Almanac update PR. In that model the flow is `Trigger -> Operation starts -> Agent reads source tools -> Agent decides -> Agent responds through publisher`; the evidence bundle is the manifest and source-reference part of that larger operation boundary. [@connector-session]
 
 ## Why It Exists
 
@@ -66,7 +71,7 @@ The cheap deterministic layer may answer these questions before invoking an LLM:
 
 - is this branch maintained by Almanac
 - is this webhook delivery or source trigger already processed
-- is this event from Almanac's own Memory PR or maintenance bot
+- is this event from Almanac's own Almanac update PR or maintenance bot
 - does Almanac have permission to read the source system
 - is the source too large to fetch without pagination, caching, or rate limiting
 - is the per-wiki operation queue already responsible for this source
@@ -111,7 +116,9 @@ This keeps GitHub as a first-class source connector while Composio supplies conn
 
 The next implementation slice should make the operation-input layer explicit before adding GitHub issues, git ranges, Composio-backed tools, or hosted publishers. The proposed naming is `SourceAddress` for the raw user string, `SourceRef` for parsed stable identity, and `SourceBrief` for resolved operation-facing facts plus provenance hints. A `source-connectors` module should own source-address parsing, GitHub resolution, GitHub prompt guidance, and source-specific errors. Page-source parsing and normalization should stay with the markdown-to-SQLite projection path, while the deterministic legacy-frontmatter rewrite stays under `[[src/wiki/health/]]` because only `health --fix` applies it. [@source-architecture-session]
 
-Hosted GitHub App runs separate the trigger from the source-access path. A GitHub webhook explains why the run exists, while the GitHub App installation token gives the worker access to pull requests, diffs, comments, linked issues, repository contents, branches, and write-back actions allowed by the selected mode. Core GitHub Absorb therefore does not require Composio; Composio is only an optional secondary access runtime when the GitHub source points to non-GitHub systems such as Linear, Slack, Gmail, or Notion. [@connector-session]
+Hosted GitHub App runs separate the trigger from the source-access path. A GitHub webhook explains why the run exists, while the GitHub App installation token gives the worker access to pull requests, diffs, comments, linked issues, repository contents, branches, and write-back actions allowed by the selected mode. Core GitHub Absorb therefore does not require Composio; Composio is only an optional secondary access runtime when the GitHub source points to non-GitHub systems such as Linear, Slack, Gmail, or Notion. [@hosted-github-connector-session]
+
+The hosted worker should give the agent two surfaces: a repository checkout for code, tests, docs, and the configured Almanac root, and GitHub source tools for PR title and body, files, diffs, commits, issue comments, reviews, review comments, linked issues, and labels. Those tools should be backed by Octokit or direct GitHub REST or GraphQL calls using the GitHub App installation token; the official GitHub MCP server can remain a possible tool transport, but it is not the core hosted connector strategy. [@hosted-github-connector-session]
 
 The older `origin/codex/feat/add-wiki-connectors` branch implemented a different Notion-shaped connector model. `almanac connect notion` stored a Composio connected account globally, and `almanac ingest notion` used Almanac code to call Notion through Composio, normalize pages or search results into a `NormalizedSourceBundle`, write a `.almanac/runs/<run-id>.notion-source.md` artifact for background execution, and pass Notion-specific guidance into Absorb. That branch still treated external material as evidence rather than wiki output, but it pre-fetched document content before the agent ran instead of exposing live Composio tools to the agent. [@notion-connector-branch] [@connector-session]
 
@@ -119,7 +126,7 @@ That distinction matters for GitHub source-aware ingest. Notion page ingest can 
 
 `SourceCatalog` is the discovery surface for source refs and source tools. It lets an operation tell the agent that GitHub, Slack, Linear, or another connector is available without forcing all connector data into one filesystem-like source folder.
 
-`Publisher` is the write-back boundary for operation outputs. A publisher can open a GitHub Memory PR, post a PR-time review note, leave a source question for a maintainer, or record a no-change result. It should receive the agent's chosen output after source reading and reasoning, not before.
+`Publisher` is the write-back boundary for operation outputs. A publisher can open a GitHub Almanac update PR, post a PR-time review note, leave a source question for a maintainer, or record a no-change result. It should receive the agent's chosen output after source reading and reasoning, not before.
 
 `ReviewNote` is a PR-time output object, not a page edit. Its useful kinds are memory-specific: invariant checks, wiki drift warnings, prior-decision reminders, and linked-issue gaps.
 
@@ -143,7 +150,7 @@ The operation flow is `Trigger -> Operation starts -> Agent reads source tools -
 
 The agent response can have several shapes:
 
-- `wiki_patch` edits the Almanac root and asks the publisher to open or update a Memory PR.
+- `wiki_patch` edits the Almanac root and asks the publisher to open or update an Almanac update PR.
 - `review_note` posts a bounded PR-time comment or check when existing project memory changes review behavior.
 - `source_question` asks a maintainer to clarify source material that is likely durable but not safely inferable.
 - `no_change_summary` records that the agent inspected the source handles and found no durable memory change.
@@ -155,7 +162,7 @@ This response boundary keeps connector code from becoming a hidden relevance eng
 
 Evidence bundles should not encode whether an operation runs locally, in a GitHub Action, or in hosted cloud infrastructure. The bundle names the source event, source refs, branch, repository, Almanac root, permission scope, and dedupe identity. The operation runtime decides where the repository checkout lives and how the agent may read code. [@connector-session]
 
-Local mode can use the user's existing working tree and GitHub token, so a manual command can run against a pull request, issue, or git range without webhooks or hosted state. GitHub Action mode can use the checked-out repository supplied by the workflow and open a Memory PR through the action's token. Hosted mode can allocate a sandbox or worktree, check out the maintained branch, attach GitHub source tools, run the same operation model, and publish through a GitHub App. These are runtime implementations of the same operation contract, not separate product concepts. [@connector-session]
+Local mode can use the user's existing working tree and GitHub token, so a manual command can run against a pull request, issue, or git range without webhooks or hosted state. GitHub Action mode can use the checked-out repository supplied by the workflow and open an Almanac update PR through the action's token. Hosted mode can allocate a sandbox or worktree, check out the maintained branch, attach GitHub source tools, run the same operation model, and publish through a GitHub App. These are runtime implementations of the same operation contract, not separate product concepts. [@connector-session]
 
 The source connector still owns GitHub-specific reads such as pull request body, diff, review comments, linked issues, commits, labels, and file-at-ref access. The repository checkout gives the agent full codebase and wiki access for the relevant branch. A serious GitHub ingestion run needs both surfaces: source objects explain what happened, and the checkout lets the agent verify code, tests, docs, and existing Almanac pages before deciding whether durable memory changed. [@connector-session]
 
@@ -173,9 +180,9 @@ MCP can provide the transport for some source tools, but it does not replace the
 
 ## GitHub Flow
 
-For pull requests before merge, the GitHub adapter should create source refs for the pull request, proposed diff or commit range, changed files, linked issues, review comments, and target-branch Almanac root. A lightweight review-note operation can then use source and wiki tools to decide whether one updateable Context Card or check would help review. It should not normally open a wiki-update PR because the code is still provisional. [@github-context-research] [@connector-session]
+For pull requests before merge, the GitHub adapter should create source refs for the pull request, proposed diff or commit range, changed files, linked issues, review comments, and target-branch Almanac root. A lightweight review-note operation can then use source and wiki tools to decide whether one updateable Context Card or check would help review. It should not normally open an Almanac update PR because the code is still provisional. [@github-context-research] [@connector-session]
 
-For merged pull requests, the adapter should create source refs for the merged pull request, commits, merged diff, reviews, comments, linked issues, changed files, and current Almanac root on the base branch. Absorb should then run against that branch with source tools available and open a Memory PR only when durable project memory changed. The target branch of the Memory PR should match the branch that received the merge. [@github-context-research] [@connector-session]
+For merged pull requests, the adapter should create source refs for the merged pull request, commits, merged diff, reviews, comments, linked issues, changed files, and current Almanac root on the base branch. Absorb should then run against that branch with source tools available and open an Almanac update PR only when durable project memory changed. The target branch of the Almanac update PR should match the branch that received the merge. [@github-context-research] [@connector-session]
 
 For issue events, the bundle should usually create a candidate source record rather than a direct page edit. A closed issue becomes strong evidence when the agent reads it and finds a linked merged pull request or maintainer rationale such as an intentional `wontfix` decision.
 
@@ -187,8 +194,10 @@ GitHub logic should not be hardcoded inside Absorb prompt construction. A GitHub
 
 The connector-tool boundary is settled as `SourceBrief` plus operation-level source access. GitHub remains the ingest connector because GitHub PRs, issues, diffs, reviews, and linked objects need source-specific prompt guidance and provenance. Local v1 satisfies source access by telling the agent to use `almanac source github ...`, which reads through Composio for the selected GitHub account. Absorb receives source briefs and readable source handles; it should not know GitHub internals. Sources must still be addressable, searchable or listable, permission-aware, and readable by the agent without making TypeScript preselect the important material.
 
-The maintained unit is `(repo, branch, almanac root)`. A pull request merged into `dev` should use `dev`'s Almanac pages and target `dev` with any Memory PR. A release branch can carry different project memory from `main`, and preview branches can be rendered or reviewed without becoming durable maintenance targets.
+`almanac source github pr 123 --comments`, `--diff`, `--reviews`, `--files`, and similar commands are acceptable CLI surface only when they stay source-inspection adapters for agents and local debugging. They should sit over the same GitHub source connector core as any hosted MCP or native tool adapter, not become a separate GitHub client for approving reviews, merging pull requests, labels, or other general GitHub operations. MCP is the cleaner hosted agent surface when it works because it gives structured tool calls and schemas; the CLI remains useful for local runs, tests, GitHub Actions, and agents that can only run shell commands. [@hosted-github-connector-session]
+
+The maintained unit is `(repo, branch, almanac root)`. A pull request merged into `dev` should use `dev`'s Almanac pages and target `dev` with any Almanac update PR. A release branch can carry different project memory from `main`, and preview branches can be rendered or reviewed without becoming durable maintenance targets.
 
 ## Related Pages
 
-[[github-native-wiki-maintenance]] describes the hosted product loop that turns GitHub events into Context Cards, queued work, and Memory PRs. [[source-provenance]] describes the page-level evidence model that records why completed wiki claims are believable. [[almanac-product-family]] places source adapters, records, triggers, runs, pages, topics, and operations inside the generalized Almanac object model.
+[[github-native-wiki-maintenance]] describes the hosted product loop that turns GitHub events into Context Cards, queued work, and Almanac update PRs. [[source-provenance]] describes the page-level evidence model that records why completed wiki claims are believable. [[almanac-product-family]] places source adapters, records, triggers, runs, pages, topics, and operations inside the generalized Almanac object model.

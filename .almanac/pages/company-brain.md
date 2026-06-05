@@ -12,8 +12,12 @@ sources:
   - https://www.ycombinator.com/companies/hyper-4
   - https://www.ycombinator.com/launches/QKg-hyper-the-self-driving-company-brain
   - /Users/rohan/.codex/sessions/2026/05/27/rollout-2026-05-27T16-27-22-019e6b55-bee7-79d3-ba21-2852c5372082.jsonl
+  - id: yc-market-scan
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/31/rollout-2026-05-31T23-31-46-019e8173-bc02-7503-a102-e9de99d6bb9c.jsonl
+    note: Records the YC CLI and Bookface market scan that compared company-brain, codebase-context, PR-review, and agent-memory competitors, then narrowed CodeAlmanac positioning around engineering memory, context freshness, and retrieval.
 status: active
-verified: 2026-05-28
+verified: 2026-06-01
 ---
 
 # Company Brain
@@ -62,6 +66,10 @@ The memory-daemon camp includes [[agentmemory-competitor]], [[codex-supermemory]
 
 The platform camp includes Hyper, Glean, Dust, Hebbia, Sana, Guru, and Notion AI. These products sell connectors, hosted ingestion, permission models, workflow surfaces, agent builders, or invisible context injection. Their advantage is breadth, deployment polish, enterprise administration, and lower day-one operational burden for teams that want to buy the system rather than maintain it.
 
+The codebase-context camp is more crowded than the broad company-brain page originally implied. The 2026-05-31 YC CLI scan identified direct or near-direct products around codebase context, self-maintaining code knowledge bases, repository graphs, code search, specs as durable agent context, horizontal agent memory, and AI PR review. The named YC-adjacent set included Driver, Sage AI, Verba, Graphify Labs, Sourcebot, OpenSpec, Mem0, Nessie, Zep, Greptile, and cubic. That validates demand for "agents should understand the codebase" while making "AI codebase docs" a weak undifferentiated pitch. [@yc-market-scan]
+
+The same Bookface pass made broad "company brain" a dangerous default category for CodeAlmanac. Memoir, Peppr AI, and Dashworks already occupy versions of hosted company knowledge, living docs, and internal search across Slack, Notion, Drive, email, and other company systems. Datost and Platus show a stronger adjacent pattern: company context becomes easier to sell when attached to a vertical job such as data analysis or legal work. CodeAlmanac should therefore avoid a generic company-brain promise and describe the narrower job it owns: engineering memory and agent memory for codebases. [@yc-market-scan]
+
 CodeAlmanac should not pitch as if these products do not exist. They validate the same category need. The differentiator is scope and control: CodeAlmanac is for the software-project memory that coding agents need before making changes, not for every Slack thread or CRM object in a company.
 
 ## User Problem Boundary
@@ -71,6 +79,10 @@ The memory products and CodeAlmanac overlap on the top-level pain: AI agents lac
 Memory products such as [[codex-supermemory]], [[mem0]], and [[agentmemory-competitor]] primarily address "my agent forgets." They preserve user, session, project, and tool context so the next prompt can receive relevant remembered facts without manual search.
 
 CodeAlmanac addresses "my codebase forgets." The failure is not only that one agent lacks prior context; it is that architectural decisions, invariants, incident lessons, and rejected designs vanish into transcripts instead of becoming shared project memory. The buyer problem is strongest for teams, open-source repos, long-lived systems, multiple agents, PR review, onboarding, and any workflow where a remembered fact needs to be inspectable, cited, and tied to files.
+
+The strongest short positioning from the YC market scan is: "`CLAUDE.md` is a prompt; Almanac is the repo's memory." `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, README files, and pasted prompt context are the free incumbent because they are simple, already adopted, and visible to agents. CodeAlmanac's answer is not a larger prompt file; it is a governed, cited, repo-owned memory layer that future humans and agents can inspect, edit, and review through Git. [@yc-market-scan]
+
+The follow-up HN and YC validation pass weakened the stronger claim that developers already want an inspectable repo-owned Markdown wiki. The evidence supports context decay, repeated architecture re-explanation, stale instruction files, trust loss when docs rot, and some preference for source-controlled plain-text context; it does not yet prove demand for a full wiki, willingness to maintain another documentation surface, trust in auto-generated memory, or Git review as the primary buyer desire. The safer hypothesis is that developers want agents to remember project-specific constraints without bloating context or going stale. CodeAlmanac should test that as context freshness and retrieval first, with the wiki artifact justified by provenance and review only when it changes agent behavior. [@yc-market-scan]
 
 The 2026-05-20 product-feedback read validated that the current language is landing with the intended audience. Respondents echoed the project vocabulary around "why" behind code, tribal knowledge, design rationales, gotchas, institutional memory, and context drift. The in-repo markdown wiki also registered as a trust feature because it is durable, reviewable, and naturally fits PR review rather than hiding project knowledge in prompts or a vector database.
 
@@ -126,4 +138,4 @@ The product experience should still move toward [[just-in-time-context-surfacing
 
 ## Related Pages
 
-[[github-native-wiki-maintenance]] explains the remote CodeAlmanac product thesis: a GitHub App and hosted maintenance layer over repo-owned `.almanac/` pages, not a hosted canonical memory store. [[almanac-product-family]] explains the broader product vocabulary for scoped almanacs over codebases, personal contexts, companies, projects, and research corpora. [[pitch-deck-fundraising]] explains how this category should be compressed into an investor deck. [[agentmemory-competitor]] explains the strongest adjacent local-daemon coding-agent memory product found in the 2026-05-15 comparison. [[codex-supermemory]] explains the lighter Codex hook integration that makes Supermemory feel immediate after install. [[mem0]] explains an operational memory-store competitor whose extraction and retrieval model clarifies the difference between runtime recall and repo-governed project knowledge. [[just-in-time-context-surfacing]] explains the product mechanism that would make repo-owned memory automatic without becoming uncited memory injection. [[wiki-lifecycle-operations]] explains the Build, Absorb, and Garden operations that keep the wiki current. [[farzapedia]] explains an adjacent AI-maintained wiki reference whose synthesis-first writing rules shaped Almanac prompts.
+[[customer-segmentation]] explains the customer groups CodeAlmanac should prioritize before broad company-brain markets. [[github-native-wiki-maintenance]] explains the remote CodeAlmanac product thesis: a GitHub App and hosted maintenance layer over repo-owned `.almanac/` pages, not a hosted canonical memory store. [[almanac-product-family]] explains the broader product vocabulary for scoped almanacs over codebases, personal contexts, companies, projects, and research corpora. [[pitch-deck-fundraising]] explains how this category should be compressed into an investor deck. [[agentmemory-competitor]] explains the strongest adjacent local-daemon coding-agent memory product found in the 2026-05-15 comparison. [[codex-supermemory]] explains the lighter Codex hook integration that makes Supermemory feel immediate after install. [[mem0]] explains an operational memory-store competitor whose extraction and retrieval model clarifies the difference between runtime recall and repo-governed project knowledge. [[just-in-time-context-surfacing]] explains the product mechanism that would make repo-owned memory automatic without becoming uncited memory injection. [[wiki-lifecycle-operations]] explains the Build, Absorb, and Garden operations that keep the wiki current. [[farzapedia]] explains an adjacent AI-maintained wiki reference whose synthesis-first writing rules shaped Almanac prompts.

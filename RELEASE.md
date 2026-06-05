@@ -22,6 +22,39 @@ npm view codealmanac version     # confirm the new version is live
 The `publishcodealmanac` Claude skill wraps these steps. Prefer invoking
 the skill over running the commands by hand; skill keeps the checks uniform.
 
+## Dev channel
+
+Two npm dist-tags, two branches:
+
+| Channel | Branch | Publish | Consumers install |
+|---------|--------|---------|-------------------|
+| stable  | `main` | `npm publish` (default `latest`) | `npm i -g codealmanac` |
+| dev     | `dev`  | `npm publish --tag dev` | `npm i -g codealmanac@dev` |
+
+The dev channel ships bleeding-edge builds from `dev` without touching
+`latest`, so stable users are never affected. The hosted Modal worker
+(`usealmanac`) installs `codealmanac@dev` to exercise unreleased work like the
+`gh`-based `ingest github:pr` flow.
+
+Dev builds are **prereleases of the next patch**, above the live `latest`:
+
+```bash
+cd ~/Desktop/Projects/codealmanac
+git switch dev
+npm test && npm run build
+npm view codealmanac version            # e.g. 0.2.25 (latest)
+npm version 0.2.26-dev.0                # explicit; or: npm version prerelease --preid dev
+                                        # add --no-git-tag-version if the tree is dirty
+                                        # with unrelated local changes, then commit + tag by hand
+npm publish --tag dev --access public   # ALWAYS --tag dev
+git push && git push --tags
+npm view codealmanac dist-tags          # confirm: dev -> new prerelease, latest unchanged
+```
+
+Run via `/publishcodealmanac dev`. The one rule that must never break: a
+`-dev.` prerelease must never land on the `latest` tag. If it does, fix
+forward by publishing a real stable version to `latest` immediately.
+
 ## Why local and not CI
 
 Publishing runs from the maintainer's machine using the npm auth token in

@@ -5,8 +5,12 @@ topics: [product-positioning, agents]
 sources:
   - /Users/rohan/.codex/sessions/2026/05/15/rollout-2026-05-15T01-30-45-019e2a1d-a038-7633-81ea-a1dfc6cb50bd.jsonl
   - /Users/rohan/.codex/sessions/2026/05/27/rollout-2026-05-27T15-11-37-019e6b10-6850-7512-ac56-e74118e4c6d2.jsonl
+  - id: market-validation
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/31/rollout-2026-05-31T23-31-46-019e8173-bc02-7503-a102-e9de99d6bb9c.jsonl
+    note: Records the HN and YC validation pass that narrowed the product hypothesis from repo-owned wiki demand to context freshness, bounded retrieval, provenance, and stale-context detection.
 status: active
-verified: 2026-05-27
+verified: 2026-06-01
 ---
 
 # Just-In-Time Context Surfacing
@@ -16,6 +20,8 @@ Just-in-time context surfacing is the product direction that answers CodeAlmanac
 The distinction is automatic surfacing, not automatic believing. CodeAlmanac should not stuff broad memory into every session or treat retrieved text as ground truth. It should notice when an agent is about to change behavior, show a small cited set of relevant constraints, and let the agent drill into full pages such as [[capture-flow]], [[capture-ledger]], or [[accidental-special-case-architecture]] when needed.
 
 The 2026-05-27 [[codex-supermemory]] session reinforced the boundary by showing automatic recall in a non-code Gmail workflow launched from the CodeAlmanac repo. The injected memory helped the assistant continue a prior task, but it also mixed personal task context into a project workspace. CodeAlmanac's version should therefore surface repo-governed, file-aware evidence packets rather than broad personal or cross-project memory blocks.
+
+The 2026-05-31 HN and YC validation pass made this direction the safest product hypothesis rather than only an activation improvement. The evidence showed developers struggling with context decay, repeated setup, stale instructions, and trust in documentation, but it did not show clear demand for a full repo-owned wiki. The testable promise is narrower: before an agent touches a pull request or file, it should read only the two or three relevant durable notes, with provenance and stale-context signals visible. [@market-validation]
 
 ## Runtime Shape
 
@@ -63,7 +69,7 @@ The canonical memory must remain `.almanac/pages/` and `.almanac/topics.yaml`. A
 
 This boundary keeps the contrast with [[agentmemory-competitor]] and [[codex-supermemory]] sharp. Memory daemons and hosted hook integrations win on automatic capture and recall, but they tend toward user-level memory stores and broad context injection. CodeAlmanac's differentiated path is cited, repo-local, file-aware constraint surfacing from a governed wiki.
 
-The same boundary applies to the remote product described in [[github-native-wiki-maintenance]]. Hosted infrastructure can run GitHub webhooks, index `.almanac/`, post PR comments, and open wiki-maintenance PRs, but the durable memory still belongs in reviewed markdown rather than a hosted memory database.
+The same boundary applies to the remote product described in [[github-native-wiki-maintenance]]. Hosted infrastructure can run GitHub webhooks, index `.almanac/`, post PR comments, and open Almanac update PRs, but the durable memory still belongs in reviewed markdown rather than a hosted memory database.
 
 Scope should be visible in the output. A future context packet should distinguish repo wiki pages, session-local observations, and external connector evidence so an agent can tell whether a surfaced fact is a project invariant, a recent working note, or a personal-account memory.
 

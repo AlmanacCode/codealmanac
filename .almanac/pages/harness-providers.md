@@ -32,7 +32,11 @@ sources:
   - /Users/rohan/.codex/sessions/2026/05/13/rollout-2026-05-13T23-00-06-019e246d-595d-76d3-bd45-6433245065ac.jsonl
   - /Users/rohan/.codex/sessions/2026/05/15/rollout-2026-05-15T01-43-21-019e2a29-293a-7263-b6ce-0a9dc0af792a.jsonl
   - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-27-05-019e70e9-b7d7-7900-9fc0-da2a6f0b532d.jsonl
-verified: 2026-05-31
+  - id: hosted-proposal-structured-output-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/05/31/rollout-2026-05-31T23-31-46-019e8173-bc02-7503-a102-e9de99d6bb9c.jsonl
+    note: Records the hosted proposal discussion that checked Codex and Claude structured-output support and verified targeted harness tests.
+verified: 2026-06-03
 ---
 
 # Harness Providers
@@ -44,6 +48,8 @@ The V1 harness layer is Almanac's provider-neutral execution boundary. Operation
 ## Provider-neutral contract
 
 `AgentRunSpec` contains provider selection, `cwd`, optional system prompt, assembled prompt, base tool requests, optional helper agent specs, optional skills/MCP config, limits, output schema, and operation metadata. Provider-neutral files must not import Claude, Codex, or Cursor SDK types.
+
+Structured output is a harness-level capability, not a complete Almanac proposal feature. `AgentRunSpec.output.schemaPath` can carry a schema path, and the Codex adapter maps it to Codex's structured-output request field. The current Claude adapter does not map an output schema and is marked as unsupported for structured output in provider metadata. A hosted pull-request proposal flow therefore can start on the Codex path, but it still needs product-level operation wiring for a proposal schema, prompt instructions, stored diff or file artifacts, and an apply step before `Update this PR` can commit Almanac changes back to a pull-request branch. [@hosted-proposal-structured-output-session]
 
 `HarnessEvent` normalizes stream output into text, tool use, tool result, tool summary, context usage, error, and done events. Tool events can carry structured display details such as kind, title, path, command, status, exit code, and duration; `jobs attach` and lifecycle commands run with `--verbose` use those fields to show activity like "Reading file" or "Running command" instead of only provider-specific tool names. Quiet foreground lifecycle runs still log those events to JSONL, but they do not print the live tool stream to stdout. Run summaries preserve provider session id, cost, turns, and usage only when the adapter can actually supply them.
 
@@ -59,7 +65,7 @@ The harness layer is also distinct from the agent readiness code under `src/agen
 
 ## Adapters
 
-The Claude adapter maps base tools to Claude Agent SDK tools, passes `tools` and `allowedTools`, sets `permissionMode: "dontAsk"`, supports programmatic per-run subagents, and reports cost/usage when available. Claude-specific auth and capability flags are documented in [[claude-agent-sdk]].
+The Claude adapter maps base tools to Claude Agent SDK tools, passes `tools` and `allowedTools`, sets `permissionMode: "dontAsk"`, supports programmatic per-run subagents, and reports cost/usage when available. Claude-specific auth and capability flags are documented in [[claude-agent-sdk]]. As of the 2026-06-03 structured-output check, Claude metadata advertises `structuredOutput: false`; adding Claude to a hosted proposal flow would require new adapter support or a prompt-only JSON fallback. [@hosted-proposal-structured-output-session]
 
 The Codex adapter uses `codex app-server --config mcp_servers={} --listen stdio://` with a three-phase JSON-RPC handshake: `initialize` (sends `clientInfo` and `capabilities: { experimentalApi: true }`), then `thread/start` (sets `approvalPolicy: "never"`, `sandbox: "workspace-write"`, `ephemeral` from `AgentRunSpec.providerSession.persistence`, and `developerInstructions` from the system prompt), then `turn/start` (sends the combined prompt as a single text input item with `sandboxPolicy: { type: "workspaceWrite", networkAccess: <bool> }`). Network access is false for normal maintenance runs and true only when `AgentRunSpec.connectors` declares a connector runtime requirement such as Composio-backed GitHub source ingest. [[src/harness/providers/codex.ts]] is now a provider facade; request construction lives in [[src/harness/providers/codex/request.ts]], JSON-RPC process handling lives in [[src/harness/providers/codex/app-server.ts]], app-server notification mapping lives in [[src/harness/providers/codex/app-notifications.ts]], legacy `codex exec --json` event handling lives in [[src/harness/providers/codex/jsonl-events.ts]], and [[src/harness/providers/codex/events.ts]] is only the public compatibility facade for existing imports. Actor/subagent trace state lives in [[src/harness/providers/codex/actors.ts]], structured tool display shaping lives in [[src/harness/providers/codex/tool-display.ts]], usage parsing lives in [[src/harness/providers/codex/usage.ts]], failure classification lives in [[src/harness/providers/codex/failures.ts]], loose protocol field decoding lives in [[src/harness/providers/codex/fields.ts]], and readiness probing lives in [[src/harness/providers/codex/status.ts]]. The `mcp_servers={}` override prevents user-level Codex MCP config from leaking tools into Almanac runs while preserving normal Codex auth. Two separate timeouts bound each run. Each of the three JSON-RPC handshake requests has a 30-second per-call timeout (default `CODEX_APP_SERVER_RPC_TIMEOUT_MS = 30_000`; overridable via env var `CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS` for testing), guarding against a stalled or incompatible app-server at startup. After `turn/start` resolves successfully, a separate 30-minute watchdog begins (default `CODEX_APP_SERVER_TURN_TIMEOUT_MS = 30 * 60_000`; overridable via `CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS` for testing), guarding against a model or agent that accepts the turn but never emits `turn/completed`. The two timeouts address distinct failure modes: startup unresponsiveness versus mid-execution stall. The adapter streams notifications until `turn/completed` and then kills the child process.
 
@@ -71,7 +77,7 @@ Server-initiated requests are handled noninteractively so lifecycle commands nev
 
 `warning` notifications are non-terminal: the adapter maps them to `tool_summary` events (`Warning: <message>`) so a config or model warning during a turn does not fail the run. `error` notifications read the message from `params.error.message`, `params.error.detail`, or `params.message` and classify the failure via `classifyCodexFailure`.
 
-The adapter supports model override, reasoning effort, structured output schema (passed as `outputSchema` on the turn), and usage reporting. Per-run programmatic subagents, MCP, skills, and max-cost are unsupported and rejected at spec validation time. The older `codex exec --json` helpers remain in [[src/harness/providers/codex/exec.ts]] as compatibility utilities, but the default V1 run path is app-server.
+The adapter supports model override, reasoning effort, structured output schema (passed as `outputSchema` on the turn), and usage reporting. The 2026-06-03 check verified that the Codex path is the only implemented provider path for structured output in this repo today, and the targeted harness suites for provider registry, Codex, and Claude passed with that capability split. Per-run programmatic subagents, MCP, skills, and max-cost are unsupported and rejected at spec validation time. The older `codex exec --json` helpers remain in [[src/harness/providers/codex/exec.ts]] as compatibility utilities, but the default V1 run path is app-server. [@hosted-proposal-structured-output-session]
 
 Cursor remains an explicit placeholder provider in V1. It is present in metadata as the future extension point, but runs fail clearly until a real adapter lands.
 
