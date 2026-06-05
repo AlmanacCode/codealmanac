@@ -43,6 +43,7 @@ export async function createOperationRunSpec(args: {
   targetKind?: string;
   targetPaths?: string[];
   connectors?: ConnectorRuntimeRequirement[];
+  networkAccess?: boolean;
 }): Promise<AgentRunSpec> {
   const basePrompts = await Promise.all(
     BASE_PROMPTS.map((name) => loadPrompt(name)),
@@ -63,6 +64,7 @@ export async function createOperationRunSpec(args: {
     prompt,
     tools: BASE_OPERATION_TOOLS,
     connectors: args.connectors,
+    networkAccess: args.networkAccess,
     limits: {
       maxTurns: DEFAULT_MAX_TURNS,
     },

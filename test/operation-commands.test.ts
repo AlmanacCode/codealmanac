@@ -323,7 +323,6 @@ describe("operation command wrappers", () => {
           repo: "owner/repo",
           url: "https://github.com/owner/repo/pull/123",
           number: "123",
-          connector: githubConnector(),
         }),
         startBackground: async (options) => {
           seen.push(options);
@@ -360,27 +359,11 @@ describe("operation command wrappers", () => {
       expect(prompt).toContain("Input source: github:pr:123");
       expect(prompt).toContain("Source kind: GitHub pull request");
       expect(prompt).toContain("Repository: owner/repo");
-      expect(prompt).toContain("Connector: Composio github toolkit");
-      expect(prompt).toContain("Account: work");
-      expect(prompt).not.toContain("gh pr view");
-      expect(prompt).toContain("Use the agent source command");
-      expect(prompt).toContain(
-        "almanac source github pr 123 --repo owner/repo --account work",
-      );
-      expect(seen[0]).toMatchObject({
-        spec: {
-          connectors: [
-            {
-              provider: "composio",
-              toolkit: "github",
-              account: "work",
-              connectedAccountId: "ca_work",
-              sourceCommand: "almanac source github pr 123 --repo owner/repo --account work",
-            },
-          ],
-        },
-      });
-      expect(prompt).toContain("sources:");
+      expect(prompt).toContain("The `gh` CLI is installed and authenticated");
+      expect(prompt).toContain("gh pr view 123 --repo owner/repo");
+      expect(prompt).toContain("gh pr diff 123 --repo owner/repo");
+      expect(prompt).not.toContain("Composio");
+      expect(prompt).not.toContain("almanac source github");
       expect(prompt).toContain("type: pr");
     });
   });
@@ -403,7 +386,6 @@ describe("operation command wrappers", () => {
             repo: `${ref.repo?.owner}/${ref.repo?.repo}`,
             url: `https://github.com/${ref.repo?.owner}/${ref.repo?.repo}/issues/${ref.id}`,
             number: ref.id,
-            connector: githubConnector(),
           };
         },
         startBackground: async (options) => {
@@ -440,14 +422,10 @@ describe("operation command wrappers", () => {
       const prompt = (seen[0] as { spec: { prompt: string } }).spec.prompt;
       expect(prompt).toContain("Source kind: GitHub issue");
       expect(prompt).toContain("Number: 11");
-      expect(prompt).toContain("Connector: Composio github toolkit");
-      expect(prompt).toContain("Account: work");
-      expect(prompt).not.toContain("Resolved GitHub issue source material:");
-      expect(prompt).not.toContain("gh issue view");
-      expect(prompt).toContain("Use the agent source command");
-      expect(prompt).toContain(
-        "almanac source github issue 11 --repo owner/repo --account work",
-      );
+      expect(prompt).toContain("The `gh` CLI is installed and authenticated");
+      expect(prompt).toContain("gh issue view 11 --repo owner/repo");
+      expect(prompt).not.toContain("Composio");
+      expect(prompt).not.toContain("almanac source github");
       expect(prompt).toContain("type: web");
     });
   });
@@ -672,12 +650,3 @@ describe("operation command wrappers", () => {
     });
   });
 });
-
-function githubConnector() {
-  return {
-    provider: "composio" as const,
-    toolkit: "github" as const,
-    account: "work",
-    connectedAccountId: "ca_work",
-  };
-}

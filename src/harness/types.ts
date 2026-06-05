@@ -38,6 +38,12 @@ export interface AgentRunSpec {
   skills?: string[];
   mcpServers?: Record<string, unknown>;
   connectors?: ConnectorRuntimeRequirement[];
+  /**
+   * Whether the run needs outbound network access (e.g. the agent will use
+   * `gh` to reach api.github.com). Sandboxed providers gate the network on
+   * this; it is independent of any connector runtime.
+   */
+  networkAccess?: boolean;
   limits?: {
     maxTurns?: number;
     maxCostUsd?: number;

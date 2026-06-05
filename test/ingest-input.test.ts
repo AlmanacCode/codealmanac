@@ -30,7 +30,6 @@ describe("resolveIngestInput", () => {
         repo: "owner/repo",
         url: "https://github.com/owner/repo/pull/123",
         number: "123",
-        connector: githubConnector(),
       }),
     })).resolves.toEqual({
       ok: true,
@@ -44,7 +43,6 @@ describe("resolveIngestInput", () => {
             repo: "owner/repo",
             url: "https://github.com/owner/repo/pull/123",
             number: "123",
-            connector: githubConnector(),
           },
         ],
       },
@@ -71,7 +69,6 @@ describe("resolveIngestInput", () => {
             repo: "owner/repo",
             url: "https://github.com/owner/repo/issues/11",
             number: "11",
-            connector: githubConnector(),
           },
         ],
       },
@@ -117,7 +114,6 @@ function githubIssueFacts(ref: Parameters<ResolveSourceFn>[0]) {
     repo: `${ref.repo?.owner}/${ref.repo?.repo}`,
     url: `https://github.com/${ref.repo?.owner}/${ref.repo?.repo}/issues/${ref.id}`,
     number: ref.id,
-    connector: githubConnector(),
   };
 }
 
@@ -133,7 +129,6 @@ describe("renderIngestContext", () => {
           repo: "owner/repo",
           url: "https://github.com/owner/repo/pull/123",
           number: "123",
-          connector: githubConnector(),
         },
       ],
     });
@@ -142,14 +137,11 @@ describe("renderIngestContext", () => {
     expect(context).toContain("Source kind: GitHub pull request");
     expect(context).toContain("Repository: owner/repo");
     expect(context).toContain("Number: 123");
-    expect(context).toContain("Connector: Composio github toolkit");
-    expect(context).toContain("Account: work");
-    expect(context).not.toContain("Resolved GitHub PR source material:");
-    expect(context).not.toContain("gh pr view");
-    expect(context).toContain("Use the agent source command");
-    expect(context).toContain(
-      "almanac source github pr 123 --repo owner/repo --account work",
-    );
+    expect(context).toContain("The `gh` CLI is installed and authenticated");
+    expect(context).toContain("gh pr view 123 --repo owner/repo");
+    expect(context).toContain("gh pr diff 123 --repo owner/repo");
+    expect(context).not.toContain("Composio");
+    expect(context).not.toContain("almanac source github");
     expect(context).toContain("type: pr");
   });
 
@@ -167,7 +159,6 @@ describe("renderIngestContext", () => {
           repo: "owner/repo",
           url: "https://github.com/owner/repo/issues/11",
           number: "11",
-          connector: githubConnector(),
         },
         {
           kind: "web.url",
@@ -179,26 +170,12 @@ describe("renderIngestContext", () => {
 
     expect(context).toContain("Source kind: GitHub issue");
     expect(context).toContain("Number: 11");
-    expect(context).toContain("Connector: Composio github toolkit");
-    expect(context).toContain("Account: work");
-    expect(context).not.toContain("Resolved GitHub issue source material:");
-    expect(context).not.toContain("gh issue view");
-    expect(context).toContain("Use the agent source command");
-    expect(context).toContain(
-      "almanac source github issue 11 --repo owner/repo --account work",
-    );
-    expect(context).toContain("type: web");
+    expect(context).toContain("The `gh` CLI is installed and authenticated");
+    expect(context).toContain("gh issue view 11 --repo owner/repo");
+    expect(context).not.toContain("Composio");
+    expect(context).not.toContain("almanac source github");
     expect(context).toContain("Source kind: web URL");
     expect(context).toContain("URL: https://example.com/spec");
     expect(context).toContain("type: web");
   });
 });
-
-function githubConnector() {
-  return {
-    provider: "composio" as const,
-    toolkit: "github" as const,
-    account: "work",
-    connectedAccountId: "ca_work",
-  };
-}

@@ -3,15 +3,6 @@ import { promisify } from "node:util";
 
 import type { GitHubSource } from "./source.js";
 import type { SourceRef } from "./source-ref.js";
-import {
-  readConfig,
-  type GlobalConfig,
-  type GitHubConnectorAccountConfig,
-} from "../config/index.js";
-import {
-  connectorStatusLabel,
-  isActiveConnectorAccount,
-} from "../connectors/status.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -35,17 +26,11 @@ export class GitHubSourceError extends Error {
 export async function resolveGitHubSource(args: {
   ref: Extract<SourceRef, { provider: "github" }>;
   cwd: string;
-  account?: string;
   runCommand?: CommandRunner;
-  config?: GlobalConfig;
 }): Promise<GitHubSource> {
   const runCommand = args.runCommand ?? defaultCommandRunner;
   const repo = args.ref.repo ?? await resolveRepoFromRemote(runCommand, args.cwd);
   if (repo === null) throw githubRemoteError();
-  const account = selectGitHubAccount(
-    args.config ?? await readConfig({ cwd: args.cwd }),
-    args.account,
-  );
 
   const repoName = `${repo.owner}/${repo.repo}`;
   const sourceKind = args.ref.kind === "pr" ? "pull" : "issues";
@@ -55,12 +40,6 @@ export async function resolveGitHubSource(args: {
     repo: repoName,
     url: `https://github.com/${repoName}/${sourceKind}/${args.ref.id}`,
     number: args.ref.id,
-    connector: {
-      provider: "composio",
-      toolkit: "github",
-      account: account.alias,
-      connectedAccountId: account.connected_account_id,
-    },
   };
 }
 
@@ -118,53 +97,6 @@ async function resolveRepoFromRemote(
 
 function isSafeGitHubPart(part: string): boolean {
   return /^[A-Za-z0-9_.-]+$/.test(part);
-}
-
-function selectGitHubAccount(
-  config: GlobalConfig,
-  requestedAccount: string | undefined,
-): GitHubConnectorAccountConfig {
-  const alias = requestedAccount ?? config.connectors.github.default_account;
-  if (alias === null) throw githubConnectionError();
-  const account = config.connectors.github.accounts[alias];
-  if (account === undefined) {
-    throw new GitHubSourceError(
-      `GitHub connector account '${alias}' is not configured.`,
-      [
-        "Connect GitHub through Composio:",
-        "",
-        `  almanac connect github --account ${alias}`,
-      ].join("\n"),
-    );
-  }
-  if (!isActiveConnectorAccount(account)) {
-    throw new GitHubSourceError(
-      `GitHub connector account '${alias}' is ${connectorStatusLabel(account.status)}, not ACTIVE.`,
-      [
-        "Finish connecting GitHub through Composio before ingesting this source:",
-        "",
-        `  almanac connect github --account ${alias} --wait`,
-        "",
-        "Or inspect connection state:",
-        "",
-        "  almanac connect github --status",
-      ].join("\n"),
-    );
-  }
-  return account;
-}
-
-function githubConnectionError(): GitHubSourceError {
-  return new GitHubSourceError(
-    "GitHub ingest needs a connected GitHub account.",
-    [
-      "Connect GitHub through Composio first:",
-      "",
-      "  almanac connect github",
-      "",
-      "Then rerun the ingest command.",
-    ].join("\n"),
-  );
 }
 
 function githubRemoteError(): GitHubSourceError {

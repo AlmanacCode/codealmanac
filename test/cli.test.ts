@@ -295,7 +295,6 @@ describe("registerCommands", () => {
       "--using <provider[/model]>",
     );
     expect(optionFlags(findCommand(program, ["ingest"]))).toContain("--verbose");
-    expect(optionFlags(findCommand(program, ["ingest"]))).toContain("--account <alias>");
     expect(optionFlags(findCommand(program, ["garden"]))).toContain("--json");
     expect(optionFlags(findCommand(program, ["garden"]))).toContain("--verbose");
     expect(optionFlags(findCommand(program, ["topics", "show"]))).toContain(

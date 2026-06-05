@@ -126,51 +126,8 @@ describe("Codex harness provider", () => {
     );
   });
 
-  it("enables app-server network access when connector runtime is required", async () => {
-    const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-connector-bin-"));
-    const codexPath = join(binDir, "codex");
-    await writeFile(
-      codexPath,
-      `#!/usr/bin/env node
-const readline = require("node:readline");
-const rl = readline.createInterface({ input: process.stdin });
-function send(msg) { process.stdout.write(JSON.stringify(msg) + "\\n"); }
-rl.on("line", (line) => {
-  const msg = JSON.parse(line);
-  if (msg.method === "initialize") {
-    send({ id: msg.id, result: { userAgent: "fake-codex" } });
-    return;
-  }
-  if (msg.method === "thread/start") {
-    send({ id: msg.id, result: { thread: { id: "thread-1" } } });
-    return;
-  }
-  if (msg.method === "turn/start") {
-    if (msg.params.sandboxPolicy.networkAccess !== true) {
-      send({ id: msg.id, error: { code: -32000, message: "network disabled" } });
-      return;
-    }
-    send({ id: msg.id, result: { turn: { id: "turn-1" } } });
-    send({
-      method: "item/completed",
-      params: {
-        threadId: "thread-1",
-        turnId: "turn-1",
-        item: { type: "agentMessage", id: "msg-1", text: "ok" }
-      }
-    });
-    send({
-      method: "turn/completed",
-      params: { threadId: "thread-1", turnId: "turn-1", turn: { id: "turn-1", status: "completed" } }
-    });
-  }
-});
-`,
-    );
-    await chmod(codexPath, 0o755);
-    const oldPath = process.env.PATH;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
-    try {
+  it("enables app-server network access when a legacy connector runtime is required", async () => {
+    await withNetworkRequiringCodex(async () => {
       const result = await runCodexAppServer({
         provider: { id: "codex" },
         cwd: process.cwd(),
@@ -188,9 +145,21 @@ rl.on("line", (line) => {
       });
 
       expect(result).toMatchObject({ success: true, result: "ok" });
-    } finally {
-      process.env.PATH = oldPath;
-    }
+    });
+  });
+
+  it("enables app-server network access when the run requests it (no connector)", async () => {
+    await withNetworkRequiringCodex(async () => {
+      const result = await runCodexAppServer({
+        provider: { id: "codex" },
+        cwd: process.cwd(),
+        prompt: "run",
+        networkAccess: true,
+        metadata: { operation: "absorb" },
+      });
+
+      expect(result).toMatchObject({ success: true, result: "ok" });
+    });
   });
 
   it("maps app-server notifications to structured harness events", () => {
@@ -1027,3 +996,59 @@ rl.on("line", (line) => {
     });
   });
 });
+
+/**
+ * Runs `run` with a fake `codex` on PATH that completes its turn only when the
+ * app-server sandbox policy has `networkAccess: true`, and errors otherwise.
+ * Lets a test assert that a given spec enables sandbox network access.
+ */
+async function withNetworkRequiringCodex(run: () => Promise<void>): Promise<void> {
+  const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-network-bin-"));
+  const codexPath = join(binDir, "codex");
+  await writeFile(
+    codexPath,
+    `#!/usr/bin/env node
+const readline = require("node:readline");
+const rl = readline.createInterface({ input: process.stdin });
+function send(msg) { process.stdout.write(JSON.stringify(msg) + "\\n"); }
+rl.on("line", (line) => {
+  const msg = JSON.parse(line);
+  if (msg.method === "initialize") {
+    send({ id: msg.id, result: { userAgent: "fake-codex" } });
+    return;
+  }
+  if (msg.method === "thread/start") {
+    send({ id: msg.id, result: { thread: { id: "thread-1" } } });
+    return;
+  }
+  if (msg.method === "turn/start") {
+    if (msg.params.sandboxPolicy.networkAccess !== true) {
+      send({ id: msg.id, error: { code: -32000, message: "network disabled" } });
+      return;
+    }
+    send({ id: msg.id, result: { turn: { id: "turn-1" } } });
+    send({
+      method: "item/completed",
+      params: {
+        threadId: "thread-1",
+        turnId: "turn-1",
+        item: { type: "agentMessage", id: "msg-1", text: "ok" }
+      }
+    });
+    send({
+      method: "turn/completed",
+      params: { threadId: "thread-1", turnId: "turn-1", turn: { id: "turn-1", status: "completed" } }
+    });
+  }
+});
+`,
+  );
+  await chmod(codexPath, 0o755);
+  const oldPath = process.env.PATH;
+  process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+  try {
+    await run();
+  } finally {
+    process.env.PATH = oldPath;
+  }
+}

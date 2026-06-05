@@ -19,6 +19,7 @@ export interface AbsorbOperationOptions {
   targetKind?: string;
   targetPaths?: string[];
   connectors?: ConnectorRuntimeRequirement[];
+  networkAccess?: boolean;
   runId?: string;
   onEvent?: (event: import("../harness/events.js").HarnessEvent) => void | Promise<void>;
   startForeground?: StartForegroundProcess;
@@ -32,6 +33,7 @@ export async function createAbsorbRunSpec(args: {
   targetKind?: string;
   targetPaths?: string[];
   connectors?: ConnectorRuntimeRequirement[];
+  networkAccess?: boolean;
 }): Promise<AgentRunSpec> {
   return createOperationRunSpec({
     operation: "absorb",
@@ -42,6 +44,7 @@ export async function createAbsorbRunSpec(args: {
     targetKind: args.targetKind,
     targetPaths: args.targetPaths,
     connectors: args.connectors,
+    networkAccess: args.networkAccess,
   });
 }
 
@@ -59,6 +62,7 @@ export async function runAbsorbOperation(
     targetKind: options.targetKind,
     targetPaths: options.targetPaths,
     connectors: options.connectors,
+    networkAccess: options.networkAccess,
   });
 
   return runOperationProcess({

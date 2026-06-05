@@ -336,7 +336,7 @@ export async function runCodexAppServer(
             sandboxPolicy: {
               type: "workspaceWrite",
               writableRoots: [spec.cwd],
-              networkAccess: connectorNetworkAccess(spec),
+              networkAccess: requiresNetworkAccess(spec),
               excludeTmpdirEnvVar: false,
               excludeSlashTmp: false,
             },
@@ -355,8 +355,10 @@ export async function runCodexAppServer(
   });
 }
 
-function connectorNetworkAccess(spec: AgentRunSpec): boolean {
-  return (spec.connectors?.length ?? 0) > 0;
+function requiresNetworkAccess(spec: AgentRunSpec): boolean {
+  // Explicit network requirement (e.g. source ingest using `gh`), or a legacy
+  // connector runtime that needs the network. Independent of each other.
+  return spec.networkAccess === true || (spec.connectors?.length ?? 0) > 0;
 }
 
 function installSignalHandlers(onSignal: (signal: NodeJS.Signals) => void): () => void {
