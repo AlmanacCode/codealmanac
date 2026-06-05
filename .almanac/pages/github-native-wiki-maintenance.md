@@ -18,8 +18,12 @@ sources:
   - https://www.mintlify.com/docs/organize/settings
   - https://www.mintlify.com/docs/deploy/github
   - https://www.mintlify.com/docs/deploy/preview-deployments
+  - id: pr-12-hosted-app-smoke
+    type: pr
+    url: https://github.com/AlmanacCode/codealmanac/pull/12
+    note: Records the live same-repository smoke test for the hosted Almanac GitHub App update loop.
 status: active
-verified: 2026-05-29
+verified: 2026-06-05
 ---
 
 # GitHub-Native Wiki Maintenance
@@ -62,6 +66,10 @@ The remote product should make local wiki knowledge unavoidable at the moments w
 6. Keep quiet when no useful wiki action exists.
 
 The highest-value checks are not generic code review comments. They are docs-drift checks, invariant conflicts, missing decision or flow updates, stale pages, broken file references, and "this change deserves an Almanac update" signals. That keeps the product aligned with [[just-in-time-context-surfacing]]: a few cited constraints at action time, not broad context injection.
+
+The 2026-06-05 hosted GitHub App smoke test narrowed the first production update loop. For v1 live delivery, a same-repository pull request receives one Almanac check, a maintainer approves the update, the hosted worker runs CodeAlmanac against the PR context, and the hosted backend commits only repo-owned Almanac files back to the PR branch [@pr-12-hosted-app-smoke]. Fork follow-up PR delivery is intentionally out of the first loop, and GitHub commits remain a backend responsibility rather than something delegated to local CLI code or a contributor-side agent [@pr-12-hosted-app-smoke].
+
+The same smoke test exposed a GitHub API product constraint: check-action copy must stay within GitHub Check Runs API limits, so the PR-facing status should remain compact and point reviewers toward the wiki diff or hosted view instead of becoming a long report body [@pr-12-hosted-app-smoke].
 
 ## Canonical State Boundary
 
