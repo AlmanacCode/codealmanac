@@ -10,9 +10,7 @@ import { ensureFreshIndex } from "../indexer/index.js";
 import { openIndex } from "../indexer/schema.js";
 import { findEntry } from "../registry/index.js";
 import { toKebabCase } from "../../slug.js";
-import {
-  collectSourceHealthFindings,
-} from "../sources/health.js";
+import * as sources from "../sources/index.js";
 import {
   inPageScope,
   resolveHealthScope,
@@ -69,7 +67,7 @@ export async function collectHealthReport(
 
   try {
     const scope = resolveHealthScope(db, options);
-    const sourceFindings = await collectSourceHealthFindings(db, scope);
+    const sourceFindings = await sources.collectSourceHealthFindings(db, scope);
 
     return {
       orphans: findOrphans(db, scope),

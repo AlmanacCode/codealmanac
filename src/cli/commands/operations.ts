@@ -1,27 +1,15 @@
 import type { CommandResult } from "../helpers.js";
 import { renderOutcome } from "../outcome.js";
 import type { HarnessEvent } from "../../harness/events.js";
-import { startCaptureRun, CaptureInputError } from "../../capture/start.js";
-import { startIngestRun, IngestInputError } from "../../ingest/start.js";
-import { runBuildOperation } from "../../operations/build.js";
-import { MissingWikiError } from "../../operations/errors.js";
-import { runGardenOperation } from "../../operations/garden.js";
-import {
-  parseUsing,
-  resolveOperationProviderSelection,
-} from "../../operations/provider-selection.js";
-import { GitHubSourceError } from "../../ingest/github.js";
-import type { ResolveSourceFn } from "../../ingest/input.js";
-import type {
-  OperationProviderSelection,
-  OperationRunResult,
-  StartBackgroundProcess,
-  StartForegroundProcess,
-} from "../../operations/types.js";
+import * as capture from "../../capture/index.js";
+import * as ingest from "../../ingest/index.js";
+import * as operations from "../../operations/index.js";
+
+export { parseUsing } from "../../operations/index.js";
 
 export interface OperationCommandDeps {
-  startForeground?: StartForegroundProcess;
-  startBackground?: StartBackgroundProcess;
+  startForeground?: operations.StartForegroundProcess;
+  startBackground?: operations.StartBackgroundProcess;
   onEvent?: (event: HarnessEvent) => void | Promise<void>;
 }
 
@@ -58,7 +46,7 @@ export interface IngestCommandOptions extends OperationCommandDeps {
   foreground?: boolean;
   json?: boolean;
   yes?: boolean;
-  resolveSource?: ResolveSourceFn;
+  resolveSource?: ingest.ResolveSourceFn;
 }
 
 export interface GardenCommandOptions extends OperationCommandDeps {
@@ -78,7 +66,7 @@ export async function runInitCommand(
   if (options.json === true && !background) return jsonForegroundError(options.json);
 
   try {
-    const result = await runBuildOperation({
+    const result = await operations.build({
       cwd: options.cwd,
       provider: provider.value,
       background,
@@ -104,7 +92,7 @@ export async function runCaptureCommand(
   }
 
   try {
-    const started = await startCaptureRun({
+    const started = await capture.startRun({
       ...options,
       provider: provider.value,
     });
@@ -124,7 +112,7 @@ export async function runIngestCommand(
   }
 
   try {
-    const started = await startIngestRun({
+    const started = await ingest.startRun({
       ...options,
       provider: provider.value,
     });
@@ -144,7 +132,7 @@ export async function runGardenCommand(
   }
 
   try {
-    const result = await runGardenOperation({
+    const result = await operations.garden({
       cwd: options.cwd,
       provider: provider.value,
       background: options.foreground !== true,
@@ -158,18 +146,16 @@ export async function runGardenCommand(
   }
 }
 
-export { parseUsing };
-
 async function resolveProviderOrOutcome(
   options: {
     cwd: string;
     using?: string;
     json?: boolean;
   },
-): Promise<{ value: OperationProviderSelection } | { error: CommandResult }> {
+): Promise<{ value: operations.OperationProviderSelection } | { error: CommandResult }> {
   try {
     return {
-      value: await resolveOperationProviderSelection({
+      value: await operations.resolveProvider({
         cwd: options.cwd,
         using: options.using,
       }),
@@ -186,7 +172,7 @@ async function resolveProviderOrOutcome(
 
 function renderOperationResult(
   operation: string,
-  result: OperationRunResult,
+  result: operations.OperationRunResult,
   json: boolean | undefined,
 ): CommandResult {
   const record = result.background?.record ?? result.foreground?.record;
@@ -265,40 +251,20 @@ function renderOperationError(
   json: boolean | undefined,
 ): CommandResult {
   const message = err instanceof Error ? err.message : String(err);
-  if (err instanceof MissingWikiError) {
+  if (err instanceof operations.OperationError) {
+    if (err.outcome === "needs-action" && err.fix !== undefined) {
+      return renderOutcome(
+        {
+          type: "needs-action",
+          message: err.message,
+          fix: err.fix,
+          data: err.data,
+        },
+        { json },
+      );
+    }
     return renderOutcome(
-      {
-        type: "needs-action",
-        message,
-        fix: err.fix,
-      },
-      { json },
-    );
-  }
-  if (err instanceof CaptureInputError) {
-    return renderOutcome(
-      {
-        type: "needs-action",
-        message: err.message,
-        fix: err.fix,
-        data: err.data,
-      },
-      { json },
-    );
-  }
-  if (err instanceof IngestInputError) {
-    return renderOutcome(
-      { type: "error", message: err.message },
-      { json },
-    );
-  }
-  if (err instanceof GitHubSourceError) {
-    return renderOutcome(
-      {
-        type: "needs-action",
-        message: err.message,
-        fix: err.fix,
-      },
+      { type: "error", message: err.message, data: err.data },
       { json },
     );
   }

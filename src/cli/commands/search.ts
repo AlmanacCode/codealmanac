@@ -7,10 +7,7 @@ import { parseDuration } from "../../wiki/indexer/duration.js";
 import { ensureFreshIndex } from "../../wiki/indexer/index.js";
 import { resolveWikiRoot } from "../../wiki/indexer/resolve-wiki.js";
 import { openIndex } from "../../wiki/indexer/schema.js";
-import {
-  buildFileMentionFilter,
-  buildTokenPrefixFtsQuery,
-} from "../../wiki/query/search.js";
+import * as query from "../../wiki/query/index.js";
 
 export interface SearchOptions {
   cwd: string;
@@ -145,7 +142,7 @@ function executeQuery(
   // This also lets SQLite use `idx_file_refs_path` as an equality
   // probe rather than a range scan.
   if (options.mentions !== undefined && options.mentions.length > 0) {
-    const mention = buildFileMentionFilter(options.mentions);
+    const mention = query.search.buildFileMentionFilter(options.mentions);
     if (mention.isDir) {
       // Query is a folder. Match: the exact folder, OR any file/sub-
       // folder whose path starts with the folder prefix. The prefix
@@ -218,7 +215,7 @@ function executeQuery(
   // join entirely.
   let sql: string;
   if (options.query !== undefined && options.query.trim().length > 0) {
-    const ftsExpr = buildTokenPrefixFtsQuery(options.query);
+    const ftsExpr = query.search.buildTokenPrefixFtsQuery(options.query);
     sql = `
       SELECT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
       FROM pages p

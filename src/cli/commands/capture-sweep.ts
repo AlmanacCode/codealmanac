@@ -1,22 +1,10 @@
 import { homedir } from "node:os";
 
-import {
-  discoverCandidates,
-  type SweepApp,
-} from "../../capture/discovery/index.js";
-import {
-  executeCaptureSweep,
-  type SweepSummary,
-} from "../../capture/sweep.js";
-import { startCaptureRun } from "../../capture/start.js";
+import * as capture from "../../capture/index.js";
+import * as operations from "../../operations/index.js";
 import type { CommandResult } from "../helpers.js";
 import { parseDuration } from "../../wiki/indexer/duration.js";
 import { readConfig } from "../../config/index.js";
-import { resolveOperationProviderSelection } from "../../operations/provider-selection.js";
-import type {
-  OperationProviderSelection,
-  StartBackgroundProcess,
-} from "../../operations/types.js";
 
 export interface CaptureSweepOptions {
   cwd: string;
@@ -28,7 +16,7 @@ export interface CaptureSweepOptions {
   now?: Date;
   homeDir?: string;
   configPath?: string;
-  startBackground?: StartBackgroundProcess;
+  startBackground?: operations.StartBackgroundProcess;
 }
 
 const DEFAULT_QUIET = "45m";
@@ -44,13 +32,13 @@ export async function runCaptureSweepCommand(
 
   const home = options.homeDir ?? homedir();
   const captureSince = await readCaptureSince(options.configPath);
-  const candidates = await discoverCandidates({
+  const candidates = await capture.discoverCandidates({
     apps: apps.value,
     home,
   });
-  const providers = new Map<string, OperationProviderSelection>();
+  const providers = new Map<string, operations.OperationProviderSelection>();
 
-  const summary = await executeCaptureSweep({
+  const summary = await capture.sweep({
     candidates,
     captureSince,
     quietMs: quiet.ms,
@@ -63,7 +51,7 @@ export async function runCaptureSweepCommand(
           using: options.using,
           cache: providers,
         });
-        const started = await startCaptureRun({
+        const started = await capture.startRun({
           cwd: candidate.repoRoot,
           provider,
           sessionFiles: [candidate.transcriptPath],
@@ -86,12 +74,12 @@ export async function runCaptureSweepCommand(
 async function providerForRepo(args: {
   repoRoot: string;
   using?: string;
-  cache: Map<string, OperationProviderSelection>;
-}): Promise<OperationProviderSelection> {
+  cache: Map<string, operations.OperationProviderSelection>;
+}): Promise<operations.OperationProviderSelection> {
   const key = `${args.repoRoot}\0${args.using ?? ""}`;
   const cached = args.cache.get(key);
   if (cached !== undefined) return cached;
-  const provider = await resolveOperationProviderSelection({
+  const provider = await operations.resolveProvider({
     cwd: args.repoRoot,
     using: args.using,
   });
@@ -99,11 +87,11 @@ async function providerForRepo(args: {
   return provider;
 }
 
-function parseApps(value: string | undefined): { ok: true; value: SweepApp[] } | { ok: false; error: string } {
+function parseApps(value: string | undefined): { ok: true; value: capture.SweepApp[] } | { ok: false; error: string } {
   if (value === undefined || value.trim().length === 0) {
     return { ok: true, value: ["claude", "codex"] };
   }
-  const apps: SweepApp[] = [];
+  const apps: capture.SweepApp[] = [];
   for (const raw of value.split(",")) {
     const app = raw.trim();
     if (app === "claude" || app === "codex") {
@@ -143,7 +131,7 @@ function renderSweepError(message: string, json: boolean | undefined): CommandRe
 }
 
 function renderSweepSummary(
-  summary: SweepSummary,
+  summary: capture.SweepSummary,
   json: boolean | undefined,
 ): CommandResult {
   if (json === true) {

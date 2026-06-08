@@ -3,7 +3,7 @@ import { resolveWikiRoot } from "../../../wiki/indexer/resolve-wiki.js";
 import { openIndex } from "../../../wiki/indexer/schema.js";
 import { toKebabCase } from "../../../slug.js";
 import { indexDbPath } from "../../../wiki/topics/paths.js";
-import { topicDetail } from "../../../wiki/query/topics.js";
+import * as query from "../../../wiki/query/index.js";
 import {
   formatShow,
   pagesDirectlyTagged,
@@ -34,7 +34,7 @@ export async function runTopicsShow(
 
   const db = openIndex(indexDbPath(repoRoot));
   try {
-    const detail = topicDetail(db, slug);
+    const detail = query.topics.topicDetail(db, slug);
     if (detail === null) {
       return {
         stdout: "",

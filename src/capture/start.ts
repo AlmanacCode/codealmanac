@@ -1,6 +1,6 @@
 import type { HarnessEvent } from "../harness/events.js";
 import { runAbsorbOperation } from "../operations/absorb.js";
-import { MissingWikiError } from "../operations/errors.js";
+import { MissingWikiError, OperationError } from "../operations/errors.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,
@@ -10,14 +10,13 @@ import type {
 import { findNearestAlmanacDir } from "../paths.js";
 import { resolveCaptureTranscripts } from "./input.js";
 
-export class CaptureInputError extends Error {
+export class CaptureInputError extends OperationError {
   constructor(
     message: string,
-    public readonly fix: string,
-    public readonly data?: Record<string, unknown>,
+    fix: string,
+    data?: Record<string, unknown>,
   ) {
-    super(message);
-    this.name = "CaptureInputError";
+    super(message, { outcome: "needs-action", fix, data });
   }
 }
 

@@ -2,7 +2,7 @@ import { BLUE, DIM, RST } from "../../../ansi.js";
 import { ensureFreshIndex } from "../../../wiki/indexer/index.js";
 import { resolveWikiRoot } from "../../../wiki/indexer/resolve-wiki.js";
 import { openIndex } from "../../../wiki/indexer/schema.js";
-import { topicSummaries } from "../../../wiki/query/topics.js";
+import * as query from "../../../wiki/query/index.js";
 import { indexDbPath } from "../../../wiki/topics/paths.js";
 import { formatTextTable } from "../table.js";
 import type { TopicsCommandOutput, TopicsListOptions } from "./types.js";
@@ -21,7 +21,7 @@ export async function runTopicsList(
 
   const db = openIndex(indexDbPath(repoRoot));
   try {
-    const rows = topicSummaries(db, { order: "slug" });
+    const rows = query.topics.topicSummaries(db, { order: "slug" });
 
     if (options.json === true) {
       return {

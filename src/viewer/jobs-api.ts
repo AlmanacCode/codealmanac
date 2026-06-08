@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 
-import { pageSummaryBySlug } from "../wiki/query/pages.js";
+import * as query from "../wiki/query/index.js";
 import {
   getViewerJob,
   type ViewerJobPageChangeDetails,
@@ -54,7 +54,7 @@ function pageChangeRefs(
   slugs: string[],
 ): Array<{ slug: string; title: string | null }> {
   return slugs.map((slug) => {
-    const page = pageSummaryBySlug(db, slug);
+    const page = query.pages.pageSummaryBySlug(db, slug);
     return { slug, title: page?.title ?? null };
   });
 }

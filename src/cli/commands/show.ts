@@ -4,7 +4,7 @@ import { BLUE, DIM, RST } from "../../ansi.js";
 import { ensureFreshIndex } from "../../wiki/indexer/index.js";
 import { resolveWikiRoot } from "../../wiki/indexer/resolve-wiki.js";
 import { openIndex } from "../../wiki/indexer/schema.js";
-import { getPageView, type PageView } from "../../wiki/query/page-view.js";
+import * as query from "../../wiki/query/index.js";
 
 /**
  * `almanac show <slug>` — structured view of a page.
@@ -71,7 +71,7 @@ export interface ShowCommandOutput {
  * means callers can JSON.parse downstream tooling without chasing nested
  * subschemas.
  */
-export type ShowRecord = PageView;
+export type ShowRecord = query.PageView;
 
 export async function runShow(
   options: ShowOptions,
@@ -98,7 +98,7 @@ export async function runShow(
     const records: ShowRecord[] = [];
     const missing: string[] = [];
     for (const slug of slugs) {
-      const rec = await getPageView(db, slug);
+      const rec = await query.getPageView(db, slug);
       if (rec === null) {
         missing.push(slug);
         continue;

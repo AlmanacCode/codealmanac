@@ -1,8 +1,5 @@
 import { resolveWikiRoot } from "../../wiki/indexer/resolve-wiki.js";
-import {
-  migrateLegacySources,
-  type MigrateLegacySourcesResult,
-} from "../../wiki/sources/maintenance.js";
+import * as sources from "../../wiki/sources/index.js";
 
 export interface MigrateLegacySourcesOptions {
   cwd: string;
@@ -23,7 +20,7 @@ export async function runMigrateLegacySources(
   options: MigrateLegacySourcesOptions,
 ): Promise<MigrateCommandOutput> {
   const repoRoot = await resolveWikiRoot({ cwd: options.cwd, wiki: options.wiki });
-  const result = await migrateLegacySources({
+  const result = await sources.migrateLegacySources({
     repoRoot,
     topic: options.topic,
     stdinSlugs: stdinSlugs(options),
@@ -54,7 +51,7 @@ function stdinSlugs(options: MigrateLegacySourcesOptions): string[] | undefined 
   return slugs;
 }
 
-function formatResult(result: MigrateLegacySourcesResult): string {
+function formatResult(result: sources.MigrateLegacySourcesResult): string {
   if (result.migrated_pages === 0) {
     return "almanac: no migratable legacy source frontmatter found.\n";
   }
@@ -62,7 +59,7 @@ function formatResult(result: MigrateLegacySourcesResult): string {
   return `almanac: migrated legacy source frontmatter in ${result.migrated_pages} ${noun}.\n`;
 }
 
-function warning(result: MigrateLegacySourcesResult): string {
+function warning(result: sources.MigrateLegacySourcesResult): string {
   const count = result.unfixable_sources.length;
   if (count === 0) return "";
   const noun = count === 1 ? "source" : "sources";

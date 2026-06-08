@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
+import { OperationError } from "../operations/errors.js";
 import type { GitHubSource } from "./source.js";
 import type { SourceRef } from "./source-ref.js";
 
@@ -17,9 +18,9 @@ export type CommandRunner = (
   options: { cwd: string },
 ) => Promise<{ stdout: string; stderr: string }>;
 
-export class GitHubSourceError extends Error {
-  constructor(message: string, readonly fix: string) {
-    super(message);
+export class GitHubSourceError extends OperationError {
+  constructor(message: string, fix: string) {
+    super(message, { outcome: "needs-action", fix });
   }
 }
 

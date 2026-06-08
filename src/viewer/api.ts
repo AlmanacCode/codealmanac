@@ -5,21 +5,7 @@ import type Database from "better-sqlite3";
 
 import { ensureFreshIndex } from "../wiki/indexer/index.js";
 import { openIndex } from "../wiki/indexer/schema.js";
-import { getPageView, type PageView } from "../wiki/query/page-view.js";
-import {
-  pageSummaryBySlug,
-  pagesBySlug,
-  pagesMentioningPath,
-  recentPages,
-  searchPages,
-  type PageSummary,
-} from "../wiki/query/pages.js";
-import {
-  topicDetail,
-  topicSummaries,
-  type TopicDetail,
-  type TopicSummary,
-} from "../wiki/query/topics.js";
+import * as wikiQuery from "../wiki/query/index.js";
 import { toKebabCase } from "../slug.js";
 import { topicsYamlPath } from "../wiki/topics/paths.js";
 import {
@@ -36,7 +22,7 @@ export interface ViewerApiContext {
   repoRoot: string;
 }
 
-export type ViewerPageSummary = PageSummary;
+export type ViewerPageSummary = wikiQuery.PageSummary;
 
 export interface ViewerOverview {
   repoRoot: string;
@@ -55,12 +41,12 @@ export interface ViewerOverview {
   };
 }
 
-export type ViewerTopicSummary = TopicSummary;
-export type ViewerTopic = TopicDetail;
+export type ViewerTopicSummary = wikiQuery.TopicSummary;
+export type ViewerTopic = wikiQuery.TopicDetail;
 
 export interface ViewerApi {
   overview(): Promise<ViewerOverview>;
-  page(slug: string): Promise<PageView | null>;
+  page(slug: string): Promise<wikiQuery.PageView | null>;
   topic(slug: string): Promise<ViewerTopic | null>;
   search(query: string): Promise<{ query: string; pages: ViewerPageSummary[] }>;
   suggest(query: string): Promise<{ query: string; pages: ViewerPageSummary[] }>;
@@ -91,16 +77,16 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
           wikiTitle: "Almanac",
           pageCount: counts.page_count,
           topicCount: counts.topic_count,
-          recentPages: recentPages(db, 60),
-          topics: topicSummaries(db, { rootsOnly: false, order: "page_count" }),
-          rootTopics: topicSummaries(db, {
+          recentPages: wikiQuery.pages.recentPages(db, 60),
+          topics: wikiQuery.topics.topicSummaries(db, { rootsOnly: false, order: "page_count" }),
+          rootTopics: wikiQuery.topics.topicSummaries(db, {
             rootsOnly: true,
             limit: topicNavigation.source === "curated" ? 24 : topicNavigation.sidebarLimit,
             order: "page_count",
           }),
           topicNavigation,
           featuredPages: {
-            gettingStarted: pageSummaryBySlug(db, "getting-started"),
+            gettingStarted: wikiQuery.pages.pageSummaryBySlug(db, "getting-started"),
           },
         };
       });
@@ -108,7 +94,7 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
 
     async page(slug) {
       return withFreshDb(ctx.repoRoot, async (db) => {
-        const page = await getPageView(db, toKebabCase(slug));
+        const page = await wikiQuery.getPageView(db, toKebabCase(slug));
         if (page === null) return null;
         const relatedSlugs = Array.from(new Set([
           ...page.wikilinks_in,
@@ -116,20 +102,20 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
           ...page.supersedes,
           ...(page.superseded_by !== null ? [page.superseded_by] : []),
         ]));
-        const related_pages = pagesBySlug(db, relatedSlugs);
+        const related_pages = wikiQuery.pages.pagesBySlug(db, relatedSlugs);
         return { ...page, related_pages };
       });
     },
 
     async topic(slug) {
       return withFreshDb(ctx.repoRoot, (db) => {
-        return topicDetail(db, slug);
+        return wikiQuery.topics.topicDetail(db, slug);
       });
     },
 
     async search(query) {
       return withFreshDb(ctx.repoRoot, (db) => {
-        return searchPages(db, { query, limit: 50 });
+        return wikiQuery.pages.searchPages(db, { query, limit: 50 });
       });
     },
 
@@ -137,13 +123,13 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
       return withFreshDb(ctx.repoRoot, (db) => {
         const trimmed = query.trim();
         if (trimmed.length === 0) return { query: trimmed, pages: [] };
-        return searchPages(db, { query: trimmed, limit: 8, prefix: true });
+        return wikiQuery.pages.searchPages(db, { query: trimmed, limit: 8, prefix: true });
       });
     },
 
     async file(path) {
       return withFreshDb(ctx.repoRoot, (db) => {
-        return pagesMentioningPath(db, path);
+        return wikiQuery.pages.pagesMentioningPath(db, path);
       });
     },
 

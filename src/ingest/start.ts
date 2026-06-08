@@ -1,6 +1,7 @@
 import type { HarnessEvent } from "../harness/events.js";
 import type { FinalOutputSpec } from "../harness/final-output.js";
 import { runAbsorbOperation } from "../operations/absorb.js";
+import { OperationError } from "../operations/errors.js";
 import {
   ALMANAC_OPERATION_REPORT_OUTPUT,
   githubPullRequestReportInstructions,
@@ -18,10 +19,9 @@ import {
   type ResolveSourceFn,
 } from "./input.js";
 
-export class IngestInputError extends Error {
+export class IngestInputError extends OperationError {
   constructor(message: string) {
     super(message);
-    this.name = "IngestInputError";
   }
 }
 
