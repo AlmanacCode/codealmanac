@@ -1,61 +1,12 @@
 import { createRequire } from "node:module";
 
 import type { AgentRunSpec } from "../../types.js";
-import type { FinalOutputSpec } from "../../final-output.js";
-
-export interface CodexExecRequest {
-  command: "codex";
-  args: string[];
-  cwd: string;
-  env: NodeJS.ProcessEnv;
-  outputSpec?: FinalOutputSpec;
-}
 
 export interface CodexAppServerRequest {
   command: "codex";
   args: string[];
   cwd: string;
   env: NodeJS.ProcessEnv;
-}
-
-export function buildCodexExecRequest(spec: AgentRunSpec): CodexExecRequest {
-  const unsupported = unsupportedCodexSpecFields(spec);
-  if (unsupported.length > 0) {
-    throw new Error(
-      `Codex exec adapter does not support: ${unsupported.join(", ")}`,
-    );
-  }
-  const args = [
-    "exec",
-    "--json",
-    "--sandbox",
-    "workspace-write",
-    "--skip-git-repo-check",
-    "-C",
-    spec.cwd,
-  ];
-  if (spec.provider.model !== undefined && spec.provider.model.length > 0) {
-    args.push("--model", spec.provider.model);
-  }
-  if (spec.output?.kind === "json_schema") {
-    if (spec.output.schemaPath === undefined) {
-      throw new Error(
-        "Codex exec adapter requires output.schemaPath for structured output",
-      );
-    }
-    args.push("--output-schema", spec.output.schemaPath);
-  }
-  if (spec.providerSession?.persistence === "ephemeral") {
-    args.push("--ephemeral");
-  }
-  args.push(combineCodexPrompt(spec));
-  return {
-    command: "codex",
-    args,
-    cwd: spec.cwd,
-    env: codexEnv(),
-    outputSpec: spec.output,
-  };
 }
 
 export function buildCodexAppServerRequest(spec: AgentRunSpec): CodexAppServerRequest {

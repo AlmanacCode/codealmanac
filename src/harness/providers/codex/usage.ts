@@ -26,7 +26,7 @@ export function parseCodexAppServerUsage(value: unknown): AgentUsage | undefined
   });
 }
 
-export function parseCodexUsage(value: unknown): AgentUsage | undefined {
+function parseCodexUsage(value: unknown): AgentUsage | undefined {
   if (value === null || typeof value !== "object") return undefined;
   const obj = value as Record<string, unknown>;
   const inputTokens =

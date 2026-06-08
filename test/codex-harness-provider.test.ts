@@ -4,17 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
-  applyCodexJsonlEvent,
   buildCodexAppServerRequest,
-  buildCodexExecRequest,
-  combineCodexPrompt,
   createCodexHarnessProvider,
   mapCodexAppServerNotification,
   parseCodexAppServerUsage,
-  parseCodexUsage,
   runCodexAppServer,
 } from "../src/harness/providers/codex.js";
-import type { AgentRunSpec } from "../src/harness/types.js";
 import {
   createProcessTreeFixture,
   isProcessAlive,
@@ -23,51 +18,6 @@ import {
 } from "./helpers.js";
 
 describe("Codex harness provider", () => {
-  it("builds a simple codex exec JSONL request", () => {
-    const spec: AgentRunSpec = {
-      provider: { id: "codex", model: "gpt-5.4" },
-      cwd: "/repo",
-      systemPrompt: "system",
-      prompt: "run garden",
-      output: {
-        kind: "json_schema",
-        name: "test_report",
-        schemaPath: "/tmp/schema.json",
-        schema: {
-          type: "object",
-          properties: {
-            summary: { type: "string" },
-          },
-          required: ["summary"],
-        },
-      },
-      providerSession: { persistence: "ephemeral" },
-      metadata: { operation: "garden" },
-    };
-
-    expect(combineCodexPrompt(spec)).toBe("system\n\n---\n\nrun garden");
-    expect(buildCodexExecRequest(spec)).toMatchObject({
-      command: "codex",
-      cwd: "/repo",
-      args: [
-        "exec",
-        "--json",
-        "--sandbox",
-        "workspace-write",
-        "--skip-git-repo-check",
-        "-C",
-        "/repo",
-        "--model",
-        "gpt-5.4",
-        "--output-schema",
-        "/tmp/schema.json",
-        "--ephemeral",
-        "system\n\n---\n\nrun garden",
-      ],
-      env: process.env,
-    });
-  });
-
   it("passes app-server output schema and parses root structured output", async () => {
     const binDir = await mkdtemp(join(tmpdir(), "codealmanac-codex-output-bin-"));
     const codexPath = join(binDir, "codex");
@@ -922,144 +872,6 @@ rl.on("line", (line) => {
     }
   });
 
-  it("normalizes Codex JSONL events and usage", async () => {
-    const events: unknown[] = [];
-    const state = { success: false, result: "" };
-
-    await applyCodexJsonlEvent(
-      state,
-      {
-        type: "item.completed",
-        session_id: "session-1",
-        item: {
-          type: "agent_message",
-          text: "final text",
-        },
-      },
-      {
-        onEvent: (event) => {
-          events.push(event);
-        },
-      },
-    );
-    await applyCodexJsonlEvent(
-      state,
-      {
-        type: "item.completed",
-        item: {
-          type: "tool_call",
-          id: "tool-1",
-          name: "shell",
-          input: { command: "git status" },
-        },
-      },
-      {
-        onEvent: (event) => {
-          events.push(event);
-        },
-      },
-    );
-    await applyCodexJsonlEvent(
-      state,
-      {
-        type: "turn.completed",
-        usage: {
-          input_tokens: 10,
-          cached_input_tokens: 3,
-          output_tokens: 8,
-          reasoning_output_tokens: 2,
-        },
-      },
-      {
-        onEvent: (event) => {
-          events.push(event);
-        },
-      },
-    );
-
-    expect(state).toEqual({
-      success: true,
-      result: "final text",
-      providerSessionId: "session-1",
-      turns: 1,
-      usage: {
-        inputTokens: 10,
-        cachedInputTokens: 3,
-        outputTokens: 8,
-        reasoningOutputTokens: 2,
-        totalTokens: 18,
-      },
-    });
-    expect(events).toEqual([
-      { type: "text", content: "final text" },
-      {
-        type: "tool_use",
-        id: "tool-1",
-        tool: "shell",
-        input: '{"command":"git status"}',
-      },
-      {
-        type: "done",
-        result: "final text",
-        providerSessionId: "session-1",
-        turns: 1,
-        usage: {
-          inputTokens: 10,
-          cachedInputTokens: 3,
-          outputTokens: 8,
-          reasoningOutputTokens: 2,
-          totalTokens: 18,
-        },
-      },
-    ]);
-  });
-
-  it("unwraps Codex JSONL envelopes and classifies provider failures", async () => {
-    const events: unknown[] = [];
-    const state = { success: false, result: "" };
-
-    await applyCodexJsonlEvent(
-      state,
-      {
-        id: "0",
-        msg: {
-          type: "error",
-          message:
-            "unexpected status 400 Bad Request: {\"detail\":\"The 'gpt-5.5' model requires a newer version of Codex. Please upgrade to the latest app or CLI and try again.\"}",
-        },
-      },
-      {
-        onEvent: (event) => {
-          events.push(event);
-        },
-      },
-    );
-
-    expect(state).toMatchObject({
-      success: false,
-      error: "Codex model gpt-5.5 requires a newer Codex CLI.",
-      failure: {
-        provider: "codex",
-        code: "codex.model_requires_newer_cli",
-        message: "Codex model gpt-5.5 requires a newer Codex CLI.",
-        fix: "Upgrade Codex, or run with --using codex/<supported-model>.",
-        details: {
-          model: "gpt-5.5",
-          statusCode: 400,
-        },
-      },
-    });
-    expect(events).toEqual([
-      {
-        type: "error",
-        error: "Codex model gpt-5.5 requires a newer Codex CLI.",
-        failure: expect.objectContaining({
-          code: "codex.model_requires_newer_cli",
-        }),
-      },
-    ]);
-  });
-
   it("checks Codex CLI readiness", async () => {
     const ready = createCodexHarnessProvider({
       commandExists: () => true,
@@ -1083,13 +895,6 @@ rl.on("line", (line) => {
     });
   });
 
-  it("ignores missing usage fields", () => {
-    expect(parseCodexUsage(undefined)).toBeUndefined();
-    expect(parseCodexUsage({ outputTokens: 2 })).toEqual({
-      outputTokens: 2,
-      totalTokens: 2,
-    });
-  });
 });
 
 /**
