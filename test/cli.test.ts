@@ -611,8 +611,8 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     expect(doctorMock).toHaveBeenCalledWith({
       cwd: process.cwd(),
       installOnly: true,
-      json: false,
-      wikiOnly: false,
+      json: undefined,
+      wikiOnly: undefined,
     });
   });
 

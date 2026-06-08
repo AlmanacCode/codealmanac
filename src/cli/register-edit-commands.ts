@@ -1,25 +1,5 @@
 import { Command } from "commander";
 
-import {
-  runReviewAdd,
-  runReviewApply,
-  runReviewDecide,
-  runReviewList,
-  runReviewReopen,
-  runReviewShow,
-} from "./commands/review.js";
-import { runMigrateLegacySources } from "./commands/migrate.js";
-import { runTag, runUntag } from "./commands/tag.js";
-import {
-  runTopicsCreate,
-  runTopicsDelete,
-  runTopicsDescribe,
-  runTopicsLink,
-  runTopicsList,
-  runTopicsRename,
-  runTopicsShow,
-  runTopicsUnlink,
-} from "./commands/topics/index.js";
 import { autoRegisterIfNeeded } from "../wiki/registry/autoregister.js";
 import { collectOption, emit, readStdin } from "./helpers.js";
 
@@ -35,6 +15,7 @@ export function registerEditCommands(program: Command): void {
     .option("--json", "emit structured JSON")
     .action(async (markdownArg: string[], opts: { wiki?: string; json?: boolean }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runReviewAdd } = await import("./commands/review.js");
       const markdown = markdownArg.length > 0 ? markdownArg.join(" ") : undefined;
       const result = await runReviewAdd({
         cwd: process.cwd(),
@@ -55,6 +36,7 @@ export function registerEditCommands(program: Command): void {
     .action(
       async (opts: { status?: "open" | "decided" | "applied" | "all"; wiki?: string; json?: boolean }) => {
         await autoRegisterIfNeeded(process.cwd());
+        const { runReviewList } = await import("./commands/review.js");
         const result = await runReviewList({
           cwd: process.cwd(),
           wiki: opts.wiki,
@@ -72,6 +54,7 @@ export function registerEditCommands(program: Command): void {
     .option("--json", "emit structured JSON")
     .action(async (id: string, opts: { wiki?: string; json?: boolean }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runReviewShow } = await import("./commands/review.js");
       const result = await runReviewShow({
         cwd: process.cwd(),
         wiki: opts.wiki,
@@ -87,6 +70,7 @@ export function registerEditCommands(program: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (id: string, markdownArg: string[], opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runReviewDecide } = await import("./commands/review.js");
       const markdown = markdownArg.length > 0 ? markdownArg.join(" ") : undefined;
       const result = await runReviewDecide({
         cwd: process.cwd(),
@@ -104,6 +88,7 @@ export function registerEditCommands(program: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (id: string, markdownArg: string[], opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runReviewApply } = await import("./commands/review.js");
       const markdown = markdownArg.length > 0 ? markdownArg.join(" ") : undefined;
       const result = await runReviewApply({
         cwd: process.cwd(),
@@ -121,6 +106,7 @@ export function registerEditCommands(program: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (id: string, markdownArg: string[], opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runReviewReopen } = await import("./commands/review.js");
       const markdown = markdownArg.length > 0 ? markdownArg.join(" ") : undefined;
       const result = await runReviewReopen({
         cwd: process.cwd(),
@@ -144,6 +130,7 @@ export function registerEditCommands(program: Command): void {
         opts: { stdin?: boolean; wiki?: string },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
+        const { runTag } = await import("./commands/tag.js");
         const resolvedTopics = opts.stdin === true
           ? [page, ...topicsArg].filter(
               (t): t is string => typeof t === "string" && t.length > 0,
@@ -168,6 +155,7 @@ export function registerEditCommands(program: Command): void {
     .action(
       async (page: string, topic: string, opts: { wiki?: string }) => {
         await autoRegisterIfNeeded(process.cwd());
+        const { runUntag } = await import("./commands/tag.js");
         const result = await runUntag({
           cwd: process.cwd(),
           page,
@@ -196,6 +184,7 @@ export function registerEditCommands(program: Command): void {
       json?: boolean;
     }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runMigrateLegacySources } = await import("./commands/migrate.js");
       const result = await runMigrateLegacySources({
         cwd: process.cwd(),
         topic: opts.topic,
@@ -218,6 +207,7 @@ export function registerEditCommands(program: Command): void {
     .option("--json", "emit structured JSON")
     .action(async (opts: { wiki?: string; json?: boolean }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runTopicsList } = await import("./commands/topics/list.js");
       const result = await runTopicsList({
         cwd: process.cwd(),
         wiki: opts.wiki,
@@ -238,6 +228,7 @@ export function registerEditCommands(program: Command): void {
         opts: { descendants?: boolean; wiki?: string; json?: boolean },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
+        const { runTopicsShow } = await import("./commands/topics/show.js");
         const result = await runTopicsShow({
           cwd: process.cwd(),
           slug,
@@ -257,6 +248,7 @@ export function registerEditCommands(program: Command): void {
     .action(
       async (name: string, opts: { parent?: string[]; wiki?: string }) => {
         await autoRegisterIfNeeded(process.cwd());
+        const { runTopicsCreate } = await import("./commands/topics/create.js");
         const result = await runTopicsCreate({
           cwd: process.cwd(),
           name,
@@ -273,6 +265,7 @@ export function registerEditCommands(program: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (child: string, parent: string, opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runTopicsLink } = await import("./commands/topics/link.js");
       const result = await runTopicsLink({
         cwd: process.cwd(),
         child,
@@ -288,6 +281,7 @@ export function registerEditCommands(program: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (child: string, parent: string, opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runTopicsUnlink } = await import("./commands/topics/unlink.js");
       const result = await runTopicsUnlink({
         cwd: process.cwd(),
         child,
@@ -303,6 +297,7 @@ export function registerEditCommands(program: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (oldSlug: string, newSlug: string, opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runTopicsRename } = await import("./commands/topics/rename.js");
       const result = await runTopicsRename({
         cwd: process.cwd(),
         oldSlug,
@@ -318,6 +313,7 @@ export function registerEditCommands(program: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (slug: string, opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runTopicsDelete } = await import("./commands/topics/delete.js");
       const result = await runTopicsDelete({
         cwd: process.cwd(),
         slug,
@@ -332,6 +328,7 @@ export function registerEditCommands(program: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (slug: string, text: string, opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runTopicsDescribe } = await import("./commands/topics/describe.js");
       const result = await runTopicsDescribe({
         cwd: process.cwd(),
         slug,

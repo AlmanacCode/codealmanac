@@ -1,5 +1,3 @@
-import { runSetup } from "./commands/setup/index.js";
-import type { runDoctor } from "./commands/doctor/index.js";
 import { runCodealmanacBootstrap } from "../platform/install/global.js";
 import { emit } from "./helpers.js";
 
@@ -19,25 +17,9 @@ export interface SetupShortcutOptions {
 }
 
 export interface SqliteFreeDeps {
-  runSetup?: typeof runSetup;
+  runSetup?: typeof import("./commands/setup/index.js").runSetup;
   runCodealmanacBootstrap?: typeof runCodealmanacBootstrap;
-  runDoctor?: typeof runDoctor;
 }
-
-type SqliteFreeHandler = (
-  args: string[],
-  deps: Required<Pick<SqliteFreeDeps, "runSetup">> & Pick<SqliteFreeDeps, "runDoctor">,
-) => Promise<boolean>;
-
-const SQLITE_FREE_COMMANDS: Record<string, SqliteFreeHandler> = {
-  setup: runSetupFastPath,
-  automation: runAutomationFastPath,
-  agents: runAgentsFastPath,
-  config: runConfigFastPath,
-  update: runUpdateFastPath,
-  doctor: runDoctorFastPath,
-  uninstall: runUninstallFastPath,
-};
 
 export async function tryRunSetupShortcut(args: {
   programName: "almanac" | "codealmanac";
@@ -50,7 +32,8 @@ export async function tryRunSetupShortcut(args: {
   const setupInvocation = tryParseSetupShortcut(args.argvArgs);
   if (setupInvocation === null) return false;
 
-  const runSetupFn = args.deps.runSetup ?? runSetup;
+  const runSetupFn = args.deps.runSetup ??
+    (await import("./commands/setup/index.js")).runSetup;
   const runCodealmanacBootstrapFn =
     args.deps.runCodealmanacBootstrap ?? runCodealmanacBootstrap;
 
@@ -75,230 +58,6 @@ export async function tryRunSetupShortcut(args: {
     );
   }
   return true;
-}
-
-export async function tryRunSqliteFreeCommand(
-  args: string[],
-  deps: SqliteFreeDeps,
-): Promise<boolean> {
-  if (args.includes("--help") || args.includes("-h")) return false;
-  const [command] = args;
-  if (command === undefined) return false;
-  const handler = SQLITE_FREE_COMMANDS[command];
-  if (handler === undefined) return false;
-  return await handler(args, {
-    runSetup: deps.runSetup ?? runSetup,
-    runDoctor: deps.runDoctor,
-  });
-}
-
-async function runSetupFastPath(
-  args: string[],
-  deps: Required<Pick<SqliteFreeDeps, "runSetup">>,
-): Promise<boolean> {
-  const parsed = parseSetupFlags(args.slice(1));
-  if (parsed.ok === false) {
-    emit({ stdout: "", stderr: `almanac: ${parsed.error}\n`, exitCode: 1 });
-    return true;
-  }
-  emit(await deps.runSetup(parsed.options));
-  return true;
-}
-
-async function runAutomationFastPath(args: string[]): Promise<boolean> {
-  const subcommand = args[1];
-  const {
-    parseAutomationTaskIds,
-    runAutomationInstall,
-    runAutomationStatus,
-    runAutomationUninstall,
-  } = await import("./commands/automation.js");
-  if (subcommand === "install") {
-    const parsed = parseAutomationInstallFlags(args.slice(2));
-    if (!parsed.ok) {
-      emit({ stdout: "", stderr: `almanac: ${parsed.error}\n`, exitCode: 1 });
-      return true;
-    }
-    const tasks = parseAutomationTaskIds(parsed.tasks);
-    if (!tasks.ok) {
-      emit({ stdout: "", stderr: `almanac: ${tasks.error}\n`, exitCode: 1 });
-      return true;
-    }
-    emit(await runAutomationInstall({
-      ...parsed.options,
-      tasks: tasks.tasks,
-      cwd: process.cwd(),
-    }));
-    return true;
-  }
-  if (subcommand === "uninstall") {
-    const tasks = parseAutomationTaskIds(args.slice(2));
-    if (!tasks.ok) {
-      emit({ stdout: "", stderr: `almanac: ${tasks.error}\n`, exitCode: 1 });
-      return true;
-    }
-    emit(await runAutomationUninstall({ tasks: tasks.tasks }));
-    return true;
-  }
-  if (subcommand === "status") {
-    const tasks = parseAutomationTaskIds(args.slice(2));
-    if (!tasks.ok) {
-      emit({ stdout: "", stderr: `almanac: ${tasks.error}\n`, exitCode: 1 });
-      return true;
-    }
-    emit(await runAutomationStatus({ tasks: tasks.tasks }));
-    return true;
-  }
-  return false;
-}
-
-async function runAgentsFastPath(args: string[]): Promise<boolean> {
-  const subcommand = args[1];
-  const {
-    runAgentsDoctor,
-    runAgentsList,
-    runAgentsModel,
-    runAgentsUse,
-  } = await import("./commands/agents.js");
-  if (subcommand === "list" || subcommand === undefined) {
-    emit(await runAgentsList());
-    return true;
-  }
-  if (subcommand === "doctor") {
-    emit(await runAgentsDoctor());
-    return true;
-  }
-  if (subcommand === "use") {
-    emit(await runAgentsUse({ provider: args[2] ?? "" }));
-    return true;
-  }
-  if (subcommand === "model") {
-    emit(await runAgentsModel({
-      provider: args[2] ?? "",
-      model: args[3] === "--default" ? undefined : args[3],
-      defaultModel: args.includes("--default"),
-    }));
-    return true;
-  }
-  return false;
-}
-
-async function runConfigFastPath(args: string[]): Promise<boolean> {
-  const subcommand = args[1];
-  const {
-    runConfigGet,
-    runConfigList,
-    runConfigSet,
-    runConfigUnset,
-  } = await import("./commands/config.js");
-  if (subcommand === "list" || subcommand === undefined) {
-    emit(await runConfigList({
-      json: args.includes("--json"),
-      showOrigin: args.includes("--show-origin"),
-    }));
-    return true;
-  }
-  if (subcommand === "get") {
-    emit(await runConfigGet({
-      key: args[2] ?? "",
-      json: args.includes("--json"),
-      showOrigin: args.includes("--show-origin"),
-    }));
-    return true;
-  }
-  if (subcommand === "set") {
-    const values = args.slice(2).filter((arg) => arg !== "--project");
-    emit(await runConfigSet({
-      key: values[0] ?? "",
-      value: values[1],
-      project: args.includes("--project"),
-    }));
-    return true;
-  }
-  if (subcommand === "unset") {
-    const values = args.slice(2).filter((arg) => arg !== "--project");
-    emit(await runConfigUnset({
-      key: values[0] ?? "",
-      project: args.includes("--project"),
-    }));
-    return true;
-  }
-  return false;
-}
-
-async function runUpdateFastPath(args: string[]): Promise<boolean> {
-  const { runUpdate } = await import("./commands/update.js");
-  emit(await runUpdate(parseUpdateFlags(args.slice(1))));
-  return true;
-}
-
-async function runDoctorFastPath(
-  args: string[],
-  deps: Required<Pick<SqliteFreeDeps, "runSetup">> & Pick<SqliteFreeDeps, "runDoctor">,
-): Promise<boolean> {
-  const runDoctorFn = deps.runDoctor ?? (await import("./commands/doctor/index.js")).runDoctor;
-  emit(await runDoctorFn({
-    cwd: process.cwd(),
-    ...parseDoctorFlags(args.slice(1)),
-  }));
-  return true;
-}
-
-async function runUninstallFastPath(args: string[]): Promise<boolean> {
-  const { runUninstall } = await import("./commands/uninstall.js");
-  emit(await runUninstall(parseUninstallFlags(args.slice(1))));
-  return true;
-}
-
-function parseSetupFlags(args: string[]): {
-  ok: true;
-  options: SetupShortcutOptions;
-} | {
-  ok: false;
-  error: string;
-} {
-  const options = parseSetupShortcutFlags(args);
-  return options === null
-    ? { ok: false, error: "invalid setup option value" }
-    : { ok: true, options };
-}
-
-function parseUpdateFlags(args: string[]): {
-  dismiss?: boolean;
-  check?: boolean;
-  enableNotifier?: boolean;
-  disableNotifier?: boolean;
-} {
-  return {
-    dismiss: args.includes("--dismiss"),
-    check: args.includes("--check"),
-    enableNotifier: args.includes("--enable-notifier"),
-    disableNotifier: args.includes("--disable-notifier"),
-  };
-}
-
-function parseUninstallFlags(args: string[]): {
-  yes?: boolean;
-  keepAutomation?: boolean;
-  keepGuides?: boolean;
-} {
-  return {
-    yes: args.includes("--yes") || args.includes("-y"),
-    keepAutomation: args.includes("--keep-automation"),
-    keepGuides: args.includes("--keep-guides"),
-  };
-}
-
-function parseDoctorFlags(args: string[]): {
-  json?: boolean;
-  installOnly?: boolean;
-  wikiOnly?: boolean;
-} {
-  return {
-    json: args.includes("--json"),
-    installOnly: args.includes("--install-only"),
-    wikiOnly: args.includes("--wiki-only"),
-  };
 }
 
 export function parseAutomationInstallFlags(args: string[]): {

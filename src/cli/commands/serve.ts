@@ -12,7 +12,7 @@ export async function runServe(options: ServeOptions): Promise<void> {
     port: options.port,
   });
 
-  process.stdout.write(`almanac viewer: ${server.url}\n`);
+  process.stdout.write(`almanac console: ${server.url}\n`);
   process.stdout.write("Press Ctrl+C to stop.\n");
   await waitForInterrupt();
   await server.close();

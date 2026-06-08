@@ -49,18 +49,6 @@ export interface ProviderViewOptions {
   spawnCli?: SpawnCliFn;
 }
 
-const LOGIN_FIXES: Record<AgentProviderId, string> = {
-  claude: "run: claude auth login --claudeai",
-  codex: "run: codex login",
-  cursor: "run: cursor-agent login",
-};
-
-const INSTALL_FIXES: Record<AgentProviderId, string> = {
-  claude: "install Claude Code, then run: claude auth login --claudeai",
-  codex: "install Codex CLI, then run: codex login",
-  cursor: "install cursor-agent, then run: cursor-agent login",
-};
-
 export function getProviderLabel(id: AgentProviderId): string {
   return AGENT_PROVIDER_METADATA[id].displayName;
 }
@@ -95,9 +83,9 @@ export async function buildProviderSetupView(
       effectiveModel,
       providerDefaultModel,
       configuredModel,
-      account: status.authenticated ? accountFromDetail(status.detail) : null,
+      account: status.authenticated ? status.accountLabel ?? null : null,
       detail: status.detail,
-      fixCommand: fixFor(id, readiness),
+      fixCommand: fixFor(status),
       modelChoices: await buildProviderModelChoices(id, configuredModel, {
         spawnCli: opts.spawnCli,
       }),
@@ -188,38 +176,21 @@ export function parseAgentSelection(value: string): {
 }
 
 function getReadiness(status: ProviderStatus): ProviderReadiness {
-  if (!status.installed) return "missing";
-  if (/not (logged|signed) in|not authenticated/i.test(status.detail)) {
-    return "not-authenticated";
-  }
-  if (!status.authenticated) return "not-authenticated";
-  return "ready";
+  if (status.readiness === "ready") return "ready";
+  if (status.readiness === "not_authenticated") return "not-authenticated";
+  return "missing";
 }
 
-function fixFor(
-  id: AgentProviderId,
-  readiness: ProviderReadiness,
-): string | null {
-  if (readiness === "ready") return null;
-  if (readiness === "missing") return INSTALL_FIXES[id];
-  return LOGIN_FIXES[id];
+function fixFor(status: ProviderStatus): string | null {
+  if (status.readiness === "ready") return null;
+  if (status.readiness === "missing_executable" || status.readiness === "unknown") {
+    return status.installFix ?? null;
+  }
+  return status.loginFix ?? null;
 }
 
 export function enabledProviderListForMessage(): string {
   return formatEnabledAgentProviderList();
-}
-
-function accountFromDetail(detail: string): string | null {
-  const clean = detail.trim();
-  if (
-    clean.length === 0 ||
-    clean === "ready" ||
-    clean === "logged in" ||
-    clean === "ANTHROPIC_API_KEY set"
-  ) {
-    return null;
-  }
-  return clean;
 }
 
 function normalizeModel(value: string | null | undefined): string | null {
@@ -231,6 +202,7 @@ function missingStatus(id: AgentProviderId): ProviderStatus {
     id,
     installed: false,
     authenticated: false,
+    readiness: "unknown",
     detail: "provider status unavailable",
   };
 }

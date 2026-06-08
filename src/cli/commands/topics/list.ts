@@ -2,6 +2,7 @@ import { BLUE, DIM, RST } from "../../../ansi.js";
 import { ensureFreshIndex } from "../../../wiki/indexer/index.js";
 import { resolveWikiRoot } from "../../../wiki/indexer/resolve-wiki.js";
 import { openIndex } from "../../../wiki/indexer/schema.js";
+import { topicSummaries } from "../../../wiki/query/topics.js";
 import { indexDbPath } from "../../../wiki/topics/paths.js";
 import { formatTextTable } from "../table.js";
 import type { TopicsCommandOutput, TopicsListOptions } from "./types.js";
@@ -20,26 +21,7 @@ export async function runTopicsList(
 
   const db = openIndex(indexDbPath(repoRoot));
   try {
-    const rows = db
-      .prepare<
-        [],
-        { slug: string; title: string | null; description: string | null; page_count: number }
-      >(
-        // page_count excludes archived pages — matches the policy used
-        // by `topics show` (see `pagesDirectlyTagged`) and by every
-        // page-scoped check in `health`. Pick one rule and apply it
-        // everywhere; a topic with "5 pages" in `topics list` and "3
-        // pages" in `topics show` is a trust-eroding inconsistency.
-        `SELECT t.slug, t.title, t.description,
-                (SELECT COUNT(*)
-                   FROM page_topics pt
-                   JOIN pages p ON p.slug = pt.page_slug
-                   WHERE pt.topic_slug = t.slug AND p.archived_at IS NULL
-                ) AS page_count
-         FROM topics t
-         ORDER BY t.slug`,
-      )
-      .all();
+    const rows = topicSummaries(db, { order: "slug" });
 
     if (options.json === true) {
       return {

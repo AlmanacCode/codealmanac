@@ -1,10 +1,24 @@
 import type { HarnessFailure } from "../../events.js";
 import { pruneUndefined } from "./fields.js";
 
-export function classifyCodexFailure(raw: string): HarnessFailure {
-  const detail = extractJsonDetail(raw);
+export type CodexFailureInput =
+  | string
+  | {
+      message: string;
+      code?: number;
+      data?: unknown;
+      statusCode?: number;
+    };
+
+export function classifyCodexFailure(input: CodexFailureInput): HarnessFailure {
+  const raw = typeof input === "string" ? input : input.message;
+  const detail = typeof input === "string"
+    ? extractJsonDetail(input)
+    : structuredDetail(input.data) ?? extractJsonDetail(input.message);
   const text = detail ?? raw;
-  const statusCode = extractStatusCode(raw);
+  const statusCode = typeof input === "string"
+    ? extractStatusCode(input)
+    : input.statusCode ?? input.code ?? extractStatusCode(input.message);
   const model =
     matchFirst(text, /The '([^']+)' model requires a newer version of Codex/) ??
     matchFirst(text, /The '([^']+)' model is not supported/);
@@ -16,7 +30,7 @@ export function classifyCodexFailure(raw: string): HarnessFailure {
       message: `Codex model ${model} requires a newer Codex CLI.`,
       fix: "Upgrade Codex, or run with --using codex/<supported-model>.",
       raw,
-      details: codexFailureDetails({ model, statusCode }),
+      details: codexFailureDetails({ model, statusCode, data: structuredData(input) }),
     };
   }
 
@@ -27,7 +41,7 @@ export function classifyCodexFailure(raw: string): HarnessFailure {
       message: `Codex model ${model} is not available for this account.`,
       fix: "Choose a supported model with --using codex/<model>, or update the configured Codex model.",
       raw,
-      details: codexFailureDetails({ model, statusCode }),
+      details: codexFailureDetails({ model, statusCode, data: structuredData(input) }),
     };
   }
 
@@ -38,7 +52,7 @@ export function classifyCodexFailure(raw: string): HarnessFailure {
       message: "Codex is not authenticated in this environment.",
       fix: "Run `codex login` in the same environment, or make the existing Codex auth available to this process.",
       raw,
-      details: codexFailureDetails({ statusCode: statusCode ?? 401 }),
+      details: codexFailureDetails({ statusCode: statusCode ?? 401, data: structuredData(input) }),
     };
   }
 
@@ -57,7 +71,7 @@ export function classifyCodexFailure(raw: string): HarnessFailure {
     code: "codex.process_failed",
     message: text,
     raw,
-    details: codexFailureDetails({ statusCode }),
+    details: codexFailureDetails({ statusCode, data: structuredData(input) }),
   };
 }
 
@@ -82,6 +96,19 @@ function extractJsonDetail(raw: string): string | undefined {
     return undefined;
   }
   return undefined;
+}
+
+function structuredDetail(data: unknown): string | undefined {
+  if (data === null || typeof data !== "object" || Array.isArray(data)) {
+    return undefined;
+  }
+  const record = data as Record<string, unknown>;
+  const detail = record.detail ?? record.message;
+  return typeof detail === "string" && detail.length > 0 ? detail : undefined;
+}
+
+function structuredData(input: CodexFailureInput): unknown {
+  return typeof input === "string" ? undefined : input.data;
 }
 
 function extractStatusCode(raw: string): number | undefined {

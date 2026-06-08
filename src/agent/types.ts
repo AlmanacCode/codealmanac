@@ -1,4 +1,4 @@
-import type { AgentProviderId } from "../config/index.js";
+import type { AgentProviderId } from "./provider-id.js";
 
 export interface SpawnedProcess {
   stdout: { on: (event: "data", cb: (data: Buffer | string) => void) => void };
@@ -20,8 +20,18 @@ export interface ProviderStatus {
   id: AgentProviderId;
   installed: boolean;
   authenticated: boolean;
+  readiness: ProviderReadinessStatus;
   detail: string;
+  accountLabel?: string;
+  installFix?: string;
+  loginFix?: string;
 }
+
+export type ProviderReadinessStatus =
+  | "ready"
+  | "missing_executable"
+  | "not_authenticated"
+  | "unknown";
 
 export interface ProviderModelChoice {
   value: string | null;

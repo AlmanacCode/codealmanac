@@ -11,13 +11,16 @@ import { openIndex } from "../indexer/schema.js";
 import { findEntry } from "../registry/index.js";
 import { toKebabCase } from "../../slug.js";
 import {
-  applySourceFrontmatterFix,
-  writeSourceFrontmatterFix,
-} from "./legacy-frontmatter-fix.js";
-import { subtreeInDb } from "../topics/dag.js";
+  collectSourceHealthFindings,
+} from "../sources/health.js";
+import {
+  inPageScope,
+  resolveHealthScope,
+  type HealthScope,
+} from "./scope.js";
 
 /**
- * Health report collection and deterministic health repairs.
+ * Health report collection.
  *
  * This module owns wiki-health checks over the SQLite index and filesystem.
  * CLI option parsing and report rendering live in `src/cli/commands/health/`.
@@ -46,17 +49,6 @@ export interface HealthReportOptions {
   stdinSlugs?: string[];
 }
 
-export interface MigrateLegacySourcesOptions {
-  repoRoot: string;
-  topic?: string;
-  stdinSlugs?: string[];
-}
-
-export interface MigrateLegacySourcesResult {
-  migrated_pages: number;
-  unfixable_sources: { slug: string; source: string }[];
-}
-
 /**
  * Default `--stale` window. 90 days matches the spec. Users can tune
  * with `--stale <duration>` using the shared parser.
@@ -76,7 +68,8 @@ export async function collectHealthReport(
   const db = openIndex(join(almanacDir, "index.db"));
 
   try {
-    const scope = resolveScope(db, options);
+    const scope = resolveHealthScope(db, options);
+    const sourceFindings = await collectSourceHealthFindings(db, scope);
 
     return {
       orphans: findOrphans(db, scope),
@@ -84,11 +77,11 @@ export async function collectHealthReport(
       dead_refs: await findDeadRefs(db, scope, repoRoot),
       broken_links: findBrokenLinks(db, scope),
       broken_xwiki: await findBrokenXwiki(db, scope),
-      missing_sources: await findMissingSources(db, scope),
-      unused_sources: await findUnusedSources(db, scope),
-      legacy_frontmatter: await findLegacyFrontmatter(db, scope),
-      unfixable_sources: await findUnfixableSources(db, scope),
-      duplicate_sources: await findDuplicateSources(db, scope),
+      missing_sources: sourceFindings.missing_sources,
+      unused_sources: sourceFindings.unused_sources,
+      legacy_frontmatter: sourceFindings.legacy_frontmatter,
+      unfixable_sources: sourceFindings.unfixable_sources,
+      duplicate_sources: sourceFindings.duplicate_sources,
       empty_topics: findEmptyTopics(db, scope),
       empty_pages: await findEmptyPages(db, scope, pagesDir),
       slug_collisions: await findSlugCollisions(pagesDir),
@@ -96,70 +89,6 @@ export async function collectHealthReport(
   } finally {
     db.close();
   }
-}
-
-export async function migrateLegacySources(
-  options: MigrateLegacySourcesOptions,
-): Promise<MigrateLegacySourcesResult> {
-  const almanacDir = join(options.repoRoot, ".almanac");
-  await ensureFreshIndex({ repoRoot: options.repoRoot });
-  const db = openIndex(join(almanacDir, "index.db"));
-  try {
-    return await fixLegacySourceFrontmatter(db, resolveScope(db, options));
-  } finally {
-    db.close();
-    await ensureFreshIndex({ repoRoot: options.repoRoot });
-  }
-}
-
-interface HealthScope {
-  /** When non-null, restrict page-scoped checks to these slugs. */
-  pages: Set<string> | null;
-  /** When non-null, restrict topic-scoped checks to these slugs. */
-  topics: Set<string> | null;
-}
-
-/**
- * Compute the active page/topic scope from `--topic` and `--stdin`
- * flags. Both null = no restriction (report everything).
- */
-function resolveScope(db: Database.Database, options: HealthReportOptions): HealthScope {
-  let pages: Set<string> | null = null;
-  let topics: Set<string> | null = null;
-
-  if (options.topic !== undefined) {
-    const rootSlug = toKebabCase(options.topic);
-    if (rootSlug.length > 0) {
-      const subtree = subtreeInDb(db, rootSlug);
-      topics = new Set(subtree);
-      const placeholders = subtree.map(() => "?").join(", ");
-      const rows = db
-        .prepare<unknown[], { page_slug: string }>(
-          `SELECT DISTINCT page_slug FROM page_topics
-           WHERE topic_slug IN (${placeholders})`,
-        )
-        .all(...subtree);
-      pages = new Set(rows.map((r) => r.page_slug));
-    }
-  }
-
-  if (options.stdinSlugs !== undefined) {
-    const stdinPages = new Set(options.stdinSlugs);
-    // Intersect with any existing topic-scoped set.
-    if (pages === null) pages = stdinPages;
-    else {
-      const out = new Set<string>();
-      for (const s of stdinPages) if (pages.has(s)) out.add(s);
-      pages = out;
-    }
-  }
-
-  return { pages, topics };
-}
-
-function inPageScope(scope: HealthScope, slug: string): boolean {
-  if (scope.pages === null) return true;
-  return scope.pages.has(slug);
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -332,179 +261,6 @@ async function findBrokenXwiki(
   return out;
 }
 
-async function findMissingSources(
-  db: Database.Database,
-  scope: HealthScope,
-): Promise<{ slug: string; source_id: string }[]> {
-  const rows = db
-    .prepare<[], { slug: string; file_path: string }>(
-      `SELECT slug, file_path FROM pages
-       WHERE archived_at IS NULL
-       ORDER BY slug`,
-    )
-    .all();
-  const sourceRows = db
-    .prepare<[string], { source_id: string }>(
-      "SELECT source_id FROM page_sources WHERE page_slug = ?",
-    );
-  const out: { slug: string; source_id: string }[] = [];
-  for (const row of rows) {
-    if (!inPageScope(scope, row.slug)) continue;
-    const citations = await citationsForFile(row.file_path);
-    if (citations.size === 0) continue;
-    const sourceIds = new Set(sourceRows.all(row.slug).map((r) => r.source_id));
-    for (const citation of citations) {
-      if (!sourceIds.has(citation)) {
-        out.push({ slug: row.slug, source_id: citation });
-      }
-    }
-  }
-  return out;
-}
-
-async function findUnusedSources(
-  db: Database.Database,
-  scope: HealthScope,
-): Promise<{ slug: string; source_id: string }[]> {
-  const rows = db
-    .prepare<[], { slug: string; file_path: string }>(
-      `SELECT slug, file_path FROM pages
-       WHERE archived_at IS NULL
-       ORDER BY slug`,
-    )
-    .all();
-  const sourceRows = db
-    .prepare<[string], { source_id: string }>(
-      "SELECT source_id FROM page_sources WHERE page_slug = ? ORDER BY source_id",
-    );
-  const out: { slug: string; source_id: string }[] = [];
-  for (const row of rows) {
-    if (!inPageScope(scope, row.slug)) continue;
-    const citations = await citationsForFile(row.file_path);
-    for (const source of sourceRows.all(row.slug)) {
-      if (!citations.has(source.source_id)) {
-        out.push({ slug: row.slug, source_id: source.source_id });
-      }
-    }
-  }
-  return out;
-}
-
-async function findLegacyFrontmatter(
-  db: Database.Database,
-  scope: HealthScope,
-): Promise<{ slug: string; fields: string[] }[]> {
-  const rows = db
-    .prepare<[], { slug: string; file_path: string }>(
-      `SELECT slug, file_path FROM pages
-       WHERE archived_at IS NULL
-       ORDER BY slug`,
-    )
-    .all();
-  const out: { slug: string; fields: string[] }[] = [];
-  for (const row of rows) {
-    if (!inPageScope(scope, row.slug)) continue;
-    let raw: string;
-    try {
-      raw = await readFile(row.file_path, "utf8");
-    } catch {
-      continue;
-    }
-    const fm = parseFrontmatter(raw);
-    const fields: string[] = [];
-    if (fm.files.length > 0) fields.push("files");
-    if (fm.legacySourceStrings.length > 0) fields.push("sources");
-    if (fields.length > 0) out.push({ slug: row.slug, fields });
-  }
-  return out;
-}
-
-async function findUnfixableSources(
-  db: Database.Database,
-  scope: HealthScope,
-): Promise<{ slug: string; source: string }[]> {
-  const rows = db
-    .prepare<[], { slug: string; file_path: string }>(
-      `SELECT slug, file_path FROM pages
-       WHERE archived_at IS NULL
-       ORDER BY slug`,
-    )
-    .all();
-  const out: { slug: string; source: string }[] = [];
-  for (const row of rows) {
-    if (!inPageScope(scope, row.slug)) continue;
-    let raw: string;
-    try {
-      raw = await readFile(row.file_path, "utf8");
-    } catch {
-      continue;
-    }
-    const fm = parseFrontmatter(raw);
-    for (const source of fm.legacySourceStrings) {
-      if (!isHttpUrl(source)) out.push({ slug: row.slug, source });
-    }
-  }
-  return out;
-}
-
-function isHttpUrl(raw: string): boolean {
-  try {
-    const url = new URL(raw);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-async function findDuplicateSources(
-  db: Database.Database,
-  scope: HealthScope,
-): Promise<{ slug: string; source_id: string }[]> {
-  const rows = db
-    .prepare<[], { slug: string; file_path: string }>(
-      `SELECT slug, file_path FROM pages
-       WHERE archived_at IS NULL
-       ORDER BY slug`,
-    )
-    .all();
-  const out: { slug: string; source_id: string }[] = [];
-  for (const row of rows) {
-    if (!inPageScope(scope, row.slug)) continue;
-    let raw: string;
-    try {
-      raw = await readFile(row.file_path, "utf8");
-    } catch {
-      continue;
-    }
-    const fm = parseFrontmatter(raw);
-    const counts = new Map<string, number>();
-    for (const source of fm.sources) {
-      counts.set(source.id, (counts.get(source.id) ?? 0) + 1);
-    }
-    for (const [sourceId, count] of counts.entries()) {
-      if (count > 1) out.push({ slug: row.slug, source_id: sourceId });
-    }
-  }
-  return out;
-}
-
-async function citationsForFile(filePath: string): Promise<Set<string>> {
-  let raw: string;
-  try {
-    raw = await readFile(filePath, "utf8");
-  } catch {
-    return new Set();
-  }
-  const body = parseFrontmatter(raw).body;
-  const out = new Set<string>();
-  const re = /\[@([a-z0-9][a-z0-9-]*)\]/g;
-  for (const match of body.matchAll(re)) {
-    const id = match[1];
-    if (id !== undefined) out.add(id);
-  }
-  return out;
-}
-
 /** Topics with zero pages. */
 function findEmptyTopics(
   db: Database.Database,
@@ -554,9 +310,7 @@ async function findEmptyPages(
     } catch {
       continue;
     }
-    // Strip frontmatter if present.
-    const m = raw.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?([\s\S]*)$/);
-    const body = m !== null ? (m[1] ?? "") : raw;
+    const body = parseFrontmatter(raw).body;
     // "Empty" = after dropping frontmatter, heading lines, and blank
     // lines, nothing non-trivial remains. A single-line wikilink or
     // one-sentence paragraph counts as content; a page with only a
@@ -614,33 +368,4 @@ async function findSlugCollisions(
   }
   out.sort((a, b) => a.slug.localeCompare(b.slug));
   return out;
-}
-
-async function fixLegacySourceFrontmatter(
-  db: Database.Database,
-  scope: HealthScope,
-): Promise<MigrateLegacySourcesResult> {
-  const rows = db
-    .prepare<[], { slug: string; file_path: string }>(
-      `SELECT slug, file_path FROM pages
-       WHERE archived_at IS NULL
-       ORDER BY slug`,
-    )
-    .all();
-  let migratedPages = 0;
-  const unfixableSources: { slug: string; source: string }[] = [];
-  for (const row of rows) {
-    if (!inPageScope(scope, row.slug)) continue;
-    const raw = await readFile(row.file_path, "utf8");
-    const fixed = applySourceFrontmatterFix(raw);
-    if (fixed.changed) migratedPages += 1;
-    for (const source of fixed.notFixable) {
-      unfixableSources.push({ slug: row.slug, source });
-    }
-    await writeSourceFrontmatterFix(row.file_path, fixed);
-  }
-  return {
-    migrated_pages: migratedPages,
-    unfixable_sources: unfixableSources,
-  };
 }

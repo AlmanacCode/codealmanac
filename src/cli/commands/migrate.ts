@@ -2,7 +2,7 @@ import { resolveWikiRoot } from "../../wiki/indexer/resolve-wiki.js";
 import {
   migrateLegacySources,
   type MigrateLegacySourcesResult,
-} from "../../wiki/health/index.js";
+} from "../../wiki/sources/maintenance.js";
 
 export interface MigrateLegacySourcesOptions {
   cwd: string;

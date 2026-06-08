@@ -1,8 +1,12 @@
 import { existsSync } from "node:fs";
-import { readFile, readdir, stat } from "node:fs/promises";
 import { homedir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, resolve } from "node:path";
 
+import {
+  discoverCandidates,
+  type SessionCandidate,
+  type SweepApp,
+} from "./discovery/index.js";
 import { parseDuration } from "../wiki/indexer/duration.js";
 
 export interface ResolveCaptureTranscriptsOptions {
@@ -17,16 +21,13 @@ export interface ResolveCaptureTranscriptsOptions {
   allApps?: boolean;
   now?: () => Date;
   claudeProjectsDir?: string;
+  codexSessionsDir?: string;
+  homeDir?: string;
 }
 
 export type ResolveCaptureTranscriptsResult =
-  | { ok: true; paths: string[]; app: "claude" | "file" }
+  | { ok: true; paths: string[]; app: "claude" | "codex" | "file" | "mixed" }
   | { ok: false; error: string; fix: string };
-
-interface TranscriptEntry {
-  path: string;
-  mtime: number;
-}
 
 export async function resolveCaptureTranscripts(
   options: ResolveCaptureTranscriptsOptions,
@@ -45,34 +46,20 @@ export async function resolveCaptureTranscripts(
     return { ok: true, paths, app: "file" };
   }
 
-  const app = options.app ?? "claude";
-  if (options.allApps === true) {
+  const apps = requestedApps(options);
+  if (!apps.ok) {
     return {
       ok: false,
-      error: "capture --all-apps discovery is not implemented yet",
-      fix: "run capture per app, pass transcript files explicitly, or use almanac ingest <file-or-folder>",
-    };
-  }
-  if (app !== "claude") {
-    return {
-      ok: false,
-      error: `capture discovery for ${app} sessions is not implemented yet`,
+      error: apps.error,
       fix: "pass one or more transcript files, or use almanac ingest <file-or-folder>",
     };
   }
-
-  const projectsDir =
-    options.claudeProjectsDir ?? join(homedir(), ".claude", "projects");
-  if (!existsSync(projectsDir)) {
-    return {
-      ok: false,
-      error:
-        `could not auto-resolve Claude transcript; ${projectsDir} does not exist`,
-      fix: "pass --session <id> with a Claude transcript available, or pass a transcript file",
-    };
-  }
-
-  const transcripts = await collectTranscripts(projectsDir);
+  const candidates = (await discoverCandidates({
+    apps: apps.value,
+    home: options.homeDir ?? homedir(),
+    claudeProjectsDir: options.claudeProjectsDir,
+    codexSessionsDir: options.codexSessionsDir,
+  })).filter((candidate) => candidate.repoRoot === options.repoRoot);
   if (options.session !== undefined && options.session.length > 0) {
     if (hasBulkScope(options)) {
       return {
@@ -81,42 +68,71 @@ export async function resolveCaptureTranscripts(
         fix: "use --session for one transcript, or remove --session to capture a filtered set",
       };
     }
-    const expected = `${options.session}.jsonl`;
-    const match = transcripts.find((entry) => basename(entry.path) === expected);
+    const match = candidates.find((candidate) => matchesSession(candidate, options.session));
     if (match === undefined) {
       return {
         ok: false,
-        error: `no Claude transcript found for session ${options.session}`,
+        error: `no ${appLabel(apps.value)} transcript found for session ${options.session}`,
         fix: "pass an existing transcript file",
       };
     }
-    return { ok: true, paths: [match.path], app: "claude" };
+    return { ok: true, paths: [match.transcriptPath], app: match.app };
   }
 
-  let matches = await filterTranscriptsByCwd(transcripts, options.repoRoot);
+  let matches = candidates;
   const cutoff = parseSinceCutoff(options.since, options.now?.() ?? new Date());
   if (!cutoff.ok) return cutoff;
   const cutoffMtime = cutoff.mtime;
   if (cutoffMtime !== undefined) {
-    matches = matches.filter((entry) => entry.mtime >= cutoffMtime);
+    matches = matches.filter((candidate) => candidate.mtimeMs >= cutoffMtime);
   }
   if (matches.length === 0) {
     return {
       ok: false,
       error:
-        `could not auto-resolve Claude transcript for cwd ${options.repoRoot}`,
+        `could not auto-resolve ${appLabel(apps.value)} transcript for cwd ${options.repoRoot}`,
       fix: "pass --session <id> or a transcript file",
     };
   }
-  matches.sort((a, b) => b.mtime - a.mtime);
+  matches.sort((a, b) => b.mtimeMs - a.mtimeMs);
   const limit = normalizeLimit(options.limit);
   if (!limit.ok) return limit;
   const count = options.all === true ? limit.value ?? matches.length : limit.value ?? 1;
+  const selected = matches.slice(0, count);
   return {
     ok: true,
-    paths: matches.slice(0, count).map((entry) => entry.path),
-    app: "claude",
+    paths: selected.map((candidate) => candidate.transcriptPath),
+    app: selectedApp(selected),
   };
+}
+
+function requestedApps(
+  options: ResolveCaptureTranscriptsOptions,
+): { ok: true; value: SweepApp[] } | { ok: false; error: string } {
+  if (options.allApps === true) return { ok: true, value: ["claude", "codex"] };
+  const app = options.app ?? "claude";
+  if (app === "claude" || app === "codex") return { ok: true, value: [app] };
+  return { ok: false, error: `capture discovery for ${app} sessions is not implemented yet` };
+}
+
+function matchesSession(candidate: SessionCandidate, session: string | undefined): boolean {
+  if (session === undefined) return false;
+  return candidate.sessionId === session ||
+    basename(candidate.transcriptPath) === `${session}.jsonl`;
+}
+
+function appLabel(apps: SweepApp[]): string {
+  const app = apps[0];
+  return apps.length === 1 && app !== undefined ? app : "supported app";
+}
+
+function selectedApp(
+  candidates: SessionCandidate[],
+): "claude" | "codex" | "mixed" {
+  const first = candidates[0]?.app;
+  return first !== undefined && candidates.every((candidate) => candidate.app === first)
+    ? first
+    : "mixed";
 }
 
 function hasBulkScope(options: ResolveCaptureTranscriptsOptions): boolean {
@@ -162,65 +178,4 @@ function parseSinceCutoff(
       fix: "pass a date or a duration like 2w, 30d, 12h, or 45m",
     };
   }
-}
-
-async function collectTranscripts(
-  projectsDir: string,
-): Promise<TranscriptEntry[]> {
-  const out: TranscriptEntry[] = [];
-  let topLevel: string[];
-  try {
-    topLevel = await readdir(projectsDir);
-  } catch {
-    return out;
-  }
-  for (const name of topLevel) {
-    const projectDir = join(projectsDir, name);
-    let entries: string[];
-    try {
-      entries = await readdir(projectDir);
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (!entry.endsWith(".jsonl")) continue;
-      const full = join(projectDir, entry);
-      try {
-        const st = await stat(full);
-        if (st.isFile()) out.push({ path: full, mtime: st.mtimeMs });
-      } catch {
-        continue;
-      }
-    }
-  }
-  return out;
-}
-
-async function filterTranscriptsByCwd(
-  transcripts: TranscriptEntry[],
-  repoRoot: string,
-): Promise<TranscriptEntry[]> {
-  const dirHash = `-${repoRoot.replace(/^\/+/, "").replace(/\//g, "-")}`;
-  const byDirName = transcripts.filter((entry) => {
-    const parent = basename(join(entry.path, ".."));
-    return parent === dirHash || parent.endsWith(dirHash);
-  });
-  if (byDirName.length > 0) return byDirName;
-
-  const needle = `"cwd":"${repoRoot}"`;
-  const hits: TranscriptEntry[] = [];
-  for (const transcript of transcripts) {
-    try {
-      const head = await readHead(transcript.path, 4096);
-      if (head.includes(needle)) hits.push(transcript);
-    } catch {
-      continue;
-    }
-  }
-  return hits;
-}
-
-async function readHead(path: string, bytes: number): Promise<string> {
-  const content = await readFile(path, "utf8");
-  return content.length > bytes ? content.slice(0, bytes) : content;
 }

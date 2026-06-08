@@ -5,6 +5,7 @@ import type {
   ProviderStatus,
   SpawnCliFn,
 } from "../../types.js";
+import { PROVIDER_DEFINITIONS } from "../../provider-id.js";
 import {
   commandExists,
   runInjectedStatusCommand,
@@ -13,9 +14,9 @@ import {
 
 const metadata: AgentProviderMetadata = {
   id: "codex",
-  displayName: "Codex",
-  defaultModel: null,
-  executable: "codex",
+  displayName: PROVIDER_DEFINITIONS.codex.displayName,
+  defaultModel: PROVIDER_DEFINITIONS.codex.defaultModel,
+  executable: PROVIDER_DEFINITIONS.codex.executable,
 };
 
 const CODEX_MODEL_ORDER = [
@@ -141,7 +142,10 @@ async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
       id: metadata.id,
       installed: false,
       authenticated: false,
+      readiness: "missing_executable",
       detail: `${metadata.executable} not found on PATH`,
+      installFix: "install Codex CLI, then run: codex login",
+      loginFix: "run: codex login",
     };
   }
 
@@ -156,7 +160,11 @@ async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
     id: metadata.id,
     installed: true,
     authenticated: auth.ok,
+    readiness: auth.ok ? "ready" : "not_authenticated",
     detail: auth.detail,
+    accountLabel: auth.ok ? auth.detail : undefined,
+    installFix: "install Codex CLI, then run: codex login",
+    loginFix: "run: codex login",
   };
 }
 

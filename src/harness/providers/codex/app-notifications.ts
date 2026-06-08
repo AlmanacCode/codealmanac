@@ -8,6 +8,7 @@ import {
 import { classifyCodexFailure } from "./failures.js";
 import {
   asRecord,
+  numberField,
   stringField,
 } from "./fields.js";
 import {
@@ -158,7 +159,11 @@ export function mapCodexAppServerNotification(
     const error = asRecord(turn.error);
     const errorMessage = stringField(error, "message");
     if (errorMessage !== undefined) {
-      const failure = classifyCodexFailure(errorMessage);
+      const failure = classifyCodexFailure({
+        message: errorMessage,
+        statusCode: numberField(error, "statusCode") ?? numberField(error, "code"),
+        data: error,
+      });
       if (context.isRootCompletion !== false) {
         state.success = false;
         state.error = failure.message;
@@ -185,7 +190,11 @@ export function mapCodexAppServerNotification(
       stringField(error, "detail") ??
       stringField(params, "message") ??
       "Codex error";
-    const failure = classifyCodexFailure(message);
+    const failure = classifyCodexFailure({
+      message,
+      statusCode: numberField(error, "statusCode") ?? numberField(error, "code"),
+      data: error,
+    });
     state.success = false;
     state.error = failure.message;
     state.failure = failure;

@@ -10,8 +10,11 @@ import {
 } from "./jsonl.js";
 import type { SessionCandidate } from "./types.js";
 
-export async function discoverCodex(home: string): Promise<SessionCandidate[]> {
-  const root = join(home, ".codex", "sessions");
+export async function discoverCodex(
+  home: string,
+  sessionsDir?: string,
+): Promise<SessionCandidate[]> {
+  const root = sessionsDir ?? join(home, ".codex", "sessions");
   const files = await collectJsonl(root);
   const out: SessionCandidate[] = [];
   for (const file of files) {

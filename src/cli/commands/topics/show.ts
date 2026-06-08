@@ -3,6 +3,7 @@ import { resolveWikiRoot } from "../../../wiki/indexer/resolve-wiki.js";
 import { openIndex } from "../../../wiki/indexer/schema.js";
 import { toKebabCase } from "../../../slug.js";
 import { indexDbPath } from "../../../wiki/topics/paths.js";
+import { topicDetail } from "../../../wiki/query/topics.js";
 import {
   formatShow,
   pagesDirectlyTagged,
@@ -33,13 +34,8 @@ export async function runTopicsShow(
 
   const db = openIndex(indexDbPath(repoRoot));
   try {
-    const row = db
-      .prepare<
-        [string],
-        { slug: string; title: string | null; description: string | null }
-      >("SELECT slug, title, description FROM topics WHERE slug = ?")
-      .get(slug);
-    if (row === undefined) {
+    const detail = topicDetail(db, slug);
+    if (detail === null) {
       return {
         stdout: "",
         stderr: `almanac: no such topic "${slug}"\n`,
@@ -47,30 +43,16 @@ export async function runTopicsShow(
       };
     }
 
-    const parents = db
-      .prepare<[string], { parent_slug: string }>(
-        "SELECT parent_slug FROM topic_parents WHERE child_slug = ? ORDER BY parent_slug",
-      )
-      .all(slug)
-      .map((r) => r.parent_slug);
-
-    const children = db
-      .prepare<[string], { child_slug: string }>(
-        "SELECT child_slug FROM topic_parents WHERE parent_slug = ? ORDER BY child_slug",
-      )
-      .all(slug)
-      .map((r) => r.child_slug);
-
     const pageSlugs = options.descendants === true
       ? pagesForSubtree(db, slug)
       : pagesDirectlyTagged(db, slug);
 
     const record: TopicsShowRecord = {
-      slug: row.slug,
-      title: row.title,
-      description: row.description,
-      parents,
-      children,
+      slug: detail.slug,
+      title: detail.title,
+      description: detail.description,
+      parents: detail.parents.map((parent) => parent.slug),
+      children: detail.children.map((child) => child.slug),
       pages: pageSlugs,
       descendants_used: options.descendants === true,
     };

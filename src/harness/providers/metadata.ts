@@ -3,6 +3,7 @@ import type {
   HarnessProviderId,
   ProviderMetadata,
 } from "../types.js";
+import { PROVIDER_DEFINITIONS } from "../../agent/provider-id.js";
 
 const BASE_CAPABILITIES: Omit<
   HarnessCapabilities,
@@ -31,8 +32,8 @@ const BASE_CAPABILITIES: Omit<
 export const HARNESS_PROVIDER_METADATA: Record<HarnessProviderId, ProviderMetadata> = {
   claude: {
     id: "claude",
-    displayName: "Claude",
-    defaultModel: "claude-sonnet-4-6",
+    displayName: PROVIDER_DEFINITIONS.claude.displayName,
+    defaultModel: PROVIDER_DEFINITIONS.claude.defaultModel,
     capabilities: {
       ...BASE_CAPABILITIES,
       reasoningEffort: false,
@@ -60,8 +61,8 @@ export const HARNESS_PROVIDER_METADATA: Record<HarnessProviderId, ProviderMetada
   },
   codex: {
     id: "codex",
-    displayName: "Codex",
-    defaultModel: null,
+    displayName: PROVIDER_DEFINITIONS.codex.displayName,
+    defaultModel: PROVIDER_DEFINITIONS.codex.defaultModel,
     capabilities: {
       ...BASE_CAPABILITIES,
       modelOptions: true,
@@ -90,8 +91,8 @@ export const HARNESS_PROVIDER_METADATA: Record<HarnessProviderId, ProviderMetada
   },
   cursor: {
     id: "cursor",
-    displayName: "Cursor",
-    defaultModel: null,
+    displayName: PROVIDER_DEFINITIONS.cursor.displayName,
+    defaultModel: PROVIDER_DEFINITIONS.cursor.defaultModel,
     capabilities: {
       nonInteractive: false,
       streaming: false,

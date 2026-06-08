@@ -4,8 +4,8 @@ Long-form manual for the `almanac` CLI installed by the `codealmanac` npm packag
 
 Groupings match `almanac --help`:
 
-1. **Query** — `search`, `show`, `health`, `list`
-2. **Edit** — `tag`, `untag`, `topics ...`
+1. **Query** — `search`, `show`, `health`, `list`, `serve`
+2. **Edit** — `tag`, `untag`, `migrate`, `topics ...`
 3. **Wiki lifecycle** — `init`, `capture`, `ingest`, `garden`, `jobs`, `automation ...`, `reindex`
 4. **Setup** — `setup`, `uninstall`, `doctor`, `update`
 
@@ -88,6 +88,16 @@ If `legacy-frontmatter` is non-empty, `health` writes a stderr warning that poin
 |---|---|
 | `--json` | Structured JSON. |
 | `--drop <name>` | Remove a wiki from the registry. The **only** way entries are ever removed. Skips auto-register. |
+
+#### `almanac serve`
+
+Start the local read-only Almanac console. The console exposes registered wikis,
+page/search/topic APIs, review state, and run/job transcript APIs. It does not
+invoke AI, mutate wiki files, or install scheduler state.
+
+| Flag | Default | Semantics |
+|---|---|---|
+| `--port <n>` | `0` | Port to bind. `0` chooses an available local port. |
 
 ### 1.2 Edit
 

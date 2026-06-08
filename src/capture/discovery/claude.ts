@@ -9,8 +9,11 @@ import {
 } from "./jsonl.js";
 import type { SessionCandidate } from "./types.js";
 
-export async function discoverClaude(home: string): Promise<SessionCandidate[]> {
-  const root = join(home, ".claude", "projects");
+export async function discoverClaude(
+  home: string,
+  projectsDir?: string,
+): Promise<SessionCandidate[]> {
+  const root = projectsDir ?? join(home, ".claude", "projects");
   const files = await collectJsonl(root);
   const out: SessionCandidate[] = [];
   for (const file of files) {

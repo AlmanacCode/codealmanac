@@ -7,25 +7,28 @@ import { ensureFreshIndex } from "../wiki/indexer/index.js";
 import { openIndex } from "../wiki/indexer/schema.js";
 import { getPageView, type PageView } from "../wiki/query/page-view.js";
 import {
-  buildFileMentionFilter,
-  buildQuotedPrefixFtsQuery,
-  buildQuotedTermFtsQuery,
-} from "../wiki/query/search.js";
+  pageSummaryBySlug,
+  pagesBySlug,
+  pagesMentioningPath,
+  recentPages,
+  searchPages,
+  type PageSummary,
+} from "../wiki/query/pages.js";
 import {
-  loadReviewFile,
-  reviewYamlPath,
-  type ReviewItem,
-  type ReviewStatus,
-} from "../review/store.js";
+  topicDetail,
+  topicSummaries,
+  type TopicDetail,
+  type TopicSummary,
+} from "../wiki/query/topics.js";
 import { toKebabCase } from "../slug.js";
 import { topicsYamlPath } from "../wiki/topics/paths.js";
 import {
-  getViewerJob,
-  type ViewerJobPageChangeDetails,
-  listViewerJobs,
+  getViewerJobDetail,
+  getViewerJobs,
   type ViewerJobDetail,
   type ViewerJobRun,
-} from "./jobs.js";
+} from "./jobs-api.js";
+import { getViewerReview, type ViewerReview } from "./review-api.js";
 
 const SIDEBAR_TAG_LIMIT = 8;
 
@@ -33,15 +36,7 @@ export interface ViewerApiContext {
   repoRoot: string;
 }
 
-export interface ViewerPageSummary {
-  slug: string;
-  title: string | null;
-  summary: string | null;
-  updated_at: number;
-  archived_at: number | null;
-  superseded_by: string | null;
-  topics: string[];
-}
+export type ViewerPageSummary = PageSummary;
 
 export interface ViewerOverview {
   repoRoot: string;
@@ -60,22 +55,8 @@ export interface ViewerOverview {
   };
 }
 
-export interface ViewerTopicSummary {
-  slug: string;
-  title: string | null;
-  description: string | null;
-  page_count: number;
-  parents: string[];
-}
-
-export interface ViewerTopic {
-  slug: string;
-  title: string | null;
-  description: string | null;
-  parents: Array<{ slug: string; title: string | null }>;
-  children: Array<{ slug: string; title: string | null; page_count: number }>;
-  pages: ViewerPageSummary[];
-}
+export type ViewerTopicSummary = TopicSummary;
+export type ViewerTopic = TopicDetail;
 
 export interface ViewerApi {
   overview(): Promise<ViewerOverview>;
@@ -87,11 +68,6 @@ export interface ViewerApi {
   review(): Promise<ViewerReview>;
   jobs(): Promise<{ runs: ViewerJobRun[] }>;
   job(runId: string): Promise<ViewerJobDetail | null>;
-}
-
-export interface ViewerReview {
-  items: ReviewItem[];
-  counts: Record<ReviewStatus, number>;
 }
 
 export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
@@ -115,11 +91,12 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
           wikiTitle: "Almanac",
           pageCount: counts.page_count,
           topicCount: counts.topic_count,
-          recentPages: pageSummaries(db, recentPagesSql(60), []),
-          topics: topicSummaries(db, { rootsOnly: false }),
+          recentPages: recentPages(db, 60),
+          topics: topicSummaries(db, { rootsOnly: false, order: "page_count" }),
           rootTopics: topicSummaries(db, {
             rootsOnly: true,
             limit: topicNavigation.source === "curated" ? 24 : topicNavigation.sidebarLimit,
+            order: "page_count",
           }),
           topicNavigation,
           featuredPages: {
@@ -139,69 +116,20 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
           ...page.supersedes,
           ...(page.superseded_by !== null ? [page.superseded_by] : []),
         ]));
-        const related_pages = relatedSlugs.length > 0
-          ? pageSummaries(db, pagesBySlugSql(relatedSlugs.length), relatedSlugs)
-          : [];
+        const related_pages = pagesBySlug(db, relatedSlugs);
         return { ...page, related_pages };
       });
     },
 
     async topic(slug) {
       return withFreshDb(ctx.repoRoot, (db) => {
-        const topicSlug = toKebabCase(slug);
-        const row = db
-          .prepare<[string], { slug: string; title: string | null; description: string | null }>(
-            "SELECT slug, title, description FROM topics WHERE slug = ?",
-          )
-          .get(topicSlug);
-        if (row === undefined) return null;
-
-        const parents = db
-          .prepare<[string], { slug: string; title: string | null }>(
-            `SELECT t.slug, t.title
-             FROM topic_parents tp
-             JOIN topics t ON t.slug = tp.parent_slug
-             WHERE tp.child_slug = ?
-             ORDER BY t.slug`,
-          )
-          .all(topicSlug);
-
-        const children = db
-          .prepare<[string], { slug: string; title: string | null; page_count: number }>(
-            `SELECT t.slug, t.title, COUNT(p.slug) AS page_count
-             FROM topic_parents tp
-             JOIN topics t ON t.slug = tp.child_slug
-             LEFT JOIN page_topics pt ON pt.topic_slug = t.slug
-             LEFT JOIN pages p ON p.slug = pt.page_slug AND p.archived_at IS NULL
-             WHERE tp.parent_slug = ?
-             GROUP BY t.slug, t.title
-             ORDER BY t.slug`,
-          )
-          .all(topicSlug);
-
-        const pages = pageSummaries(
-          db,
-          `SELECT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
-           FROM pages p
-           JOIN page_topics pt ON pt.page_slug = p.slug
-           WHERE p.archived_at IS NULL AND pt.topic_slug = ?
-           ORDER BY p.updated_at DESC, p.slug ASC
-           LIMIT 100`,
-          [topicSlug],
-        );
-
-        return { ...row, parents, children, pages };
+        return topicDetail(db, slug);
       });
     },
 
     async search(query) {
       return withFreshDb(ctx.repoRoot, (db) => {
-        const trimmed = query.trim();
-        const ftsQuery = trimmed.length > 0 ? buildQuotedTermFtsQuery(trimmed) : "";
-        if (trimmed.length > 0 && ftsQuery.length === 0) return { query: trimmed, pages: [] };
-        const sql = trimmed.length > 0 ? pageSearchSql(50) : recentPagesSql(50);
-        const params = trimmed.length > 0 ? [ftsQuery] : [];
-        return { query: trimmed, pages: pageSummaries(db, sql, params) };
+        return searchPages(db, { query, limit: 50 });
       });
     },
 
@@ -209,52 +137,27 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
       return withFreshDb(ctx.repoRoot, (db) => {
         const trimmed = query.trim();
         if (trimmed.length === 0) return { query: trimmed, pages: [] };
-        const ftsQuery = buildQuotedTermFtsQuery(trimmed);
-        if (ftsQuery.length === 0) return { query: trimmed, pages: [] };
-        return {
-          query: trimmed,
-          pages: pageSummaries(db, pageSearchSql(8), [buildQuotedPrefixFtsQuery(trimmed)]),
-        };
+        return searchPages(db, { query: trimmed, limit: 8, prefix: true });
       });
     },
 
     async file(path) {
       return withFreshDb(ctx.repoRoot, (db) => {
-        const trimmed = path.trim();
-        const pages = trimmed.length === 0
-          ? []
-          : pageSummaries(db, fileMentionSql(trimmed), fileMentionParams(trimmed));
-        return { path: trimmed, pages };
+        return pagesMentioningPath(db, path);
       });
     },
 
     async review() {
-      const file = await loadReviewFile(reviewYamlPath(ctx.repoRoot));
-      return {
-        items: file.items,
-        counts: {
-          open: file.items.filter((item) => item.status === "open").length,
-          decided: file.items.filter((item) => item.status === "decided").length,
-          applied: file.items.filter((item) => item.status === "applied").length,
-        },
-      };
+      return getViewerReview(ctx.repoRoot);
     },
 
     async jobs() {
-      return listViewerJobs(ctx.repoRoot);
+      return getViewerJobs(ctx.repoRoot);
     },
 
     async job(runId) {
       return withFreshDb(ctx.repoRoot, async (db) => {
-        const detail = await getViewerJob(ctx.repoRoot, runId);
-        if (detail === null) return null;
-        return {
-          ...detail,
-          run: {
-            ...detail.run,
-            pageChangeDetails: pageChangeDetails(db, detail.run.pageChanges),
-          },
-        };
+        return getViewerJobDetail(ctx.repoRoot, runId, db);
       });
     },
   };
@@ -271,140 +174,4 @@ async function withFreshDb<T>(
   } finally {
     db.close();
   }
-}
-
-function recentPagesSql(limit = 12): string {
-  return `SELECT slug, title, summary, updated_at, archived_at, superseded_by
-          FROM pages
-          WHERE archived_at IS NULL
-          ORDER BY updated_at DESC, slug ASC
-          LIMIT ${limit}`;
-}
-
-function pagesBySlugSql(count: number): string {
-  const placeholders = Array.from({ length: count }, () => "?").join(", ");
-  return `SELECT slug, title, summary, updated_at, archived_at, superseded_by
-          FROM pages
-          WHERE slug IN (${placeholders})
-          ORDER BY title COLLATE NOCASE, slug ASC`;
-}
-
-function pageSearchSql(limit: number): string {
-  return `SELECT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
-          FROM pages p
-          JOIN fts_pages f ON f.slug = p.slug
-          WHERE p.archived_at IS NULL AND fts_pages MATCH ?
-          ORDER BY f.rank ASC, p.updated_at DESC, p.slug ASC
-          LIMIT ${limit}`;
-}
-
-function pageSummaries(
-  db: Database.Database,
-  sql: string,
-  params: Array<string | number>,
-): ViewerPageSummary[] {
-  const rows = db
-    .prepare<unknown[], Omit<ViewerPageSummary, "topics">>(sql)
-    .all(...params);
-  const topicsStmt = db.prepare<[string], { topic_slug: string }>(
-    "SELECT topic_slug FROM page_topics WHERE page_slug = ? ORDER BY topic_slug",
-  );
-  return rows.map((row) => ({
-    ...row,
-    topics: topicsStmt.all(row.slug).map((r) => r.topic_slug),
-  }));
-}
-
-function pageSummaryBySlug(db: Database.Database, slug: string): ViewerPageSummary | null {
-  return pageSummaries(
-    db,
-    `SELECT slug, title, summary, updated_at, archived_at, superseded_by
-     FROM pages
-     WHERE archived_at IS NULL AND slug = ?
-     LIMIT 1`,
-    [slug],
-  )[0] ?? null;
-}
-
-function pageChangeDetails(
-  db: Database.Database,
-  changes: ViewerJobRun["pageChanges"],
-): ViewerJobPageChangeDetails | undefined {
-  if (changes === undefined) return undefined;
-  return {
-    created: pageChangeRefs(db, changes.created),
-    updated: pageChangeRefs(db, changes.updated),
-    archived: pageChangeRefs(db, changes.archived),
-    deleted: changes.deleted.map((slug) => ({ slug, title: null })),
-  };
-}
-
-function pageChangeRefs(
-  db: Database.Database,
-  slugs: string[],
-): Array<{ slug: string; title: string | null }> {
-  return slugs.map((slug) => {
-    const page = pageSummaryBySlug(db, slug);
-    return { slug, title: page?.title ?? null };
-  });
-}
-
-function topicSummaries(
-  db: Database.Database,
-  options: { rootsOnly: boolean; limit?: number },
-): ViewerTopicSummary[] {
-  const rootJoin = options.rootsOnly
-    ? "LEFT JOIN topic_parents parent ON parent.child_slug = t.slug"
-    : "";
-  const rootWhere = options.rootsOnly ? "WHERE parent.parent_slug IS NULL" : "";
-  const limit = options.limit === undefined ? "" : `LIMIT ${options.limit}`;
-  const rows = db
-    .prepare<[], Omit<ViewerTopicSummary, "parents">>(
-      `SELECT t.slug, t.title, t.description, COUNT(p.slug) AS page_count
-       FROM topics t
-       ${rootJoin}
-       LEFT JOIN page_topics pt ON pt.topic_slug = t.slug
-       LEFT JOIN pages p ON p.slug = pt.page_slug AND p.archived_at IS NULL
-       ${rootWhere}
-       GROUP BY t.slug, t.title, t.description
-       ORDER BY page_count DESC, t.slug ASC
-       ${limit}`,
-    )
-    .all();
-  const parentsStmt = db.prepare<[string], { parent_slug: string }>(
-    "SELECT parent_slug FROM topic_parents WHERE child_slug = ? ORDER BY parent_slug ASC",
-  );
-  return rows.map((topic) => ({
-    ...topic,
-    page_count: Number(topic.page_count),
-    parents: parentsStmt.all(topic.slug).map((row) => row.parent_slug),
-  }));
-}
-
-function fileMentionSql(input: string): string {
-  const mention = buildFileMentionFilter(input);
-  if (mention.isDir) {
-    return `SELECT DISTINCT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
-            FROM pages p
-            JOIN file_refs r ON r.page_slug = p.slug
-            WHERE p.archived_at IS NULL AND (r.path = ? OR r.path GLOB ?)
-            ORDER BY p.updated_at DESC, p.slug ASC
-            LIMIT 100`;
-  }
-  const placeholders = mention.parentFolders.map(() => "?").join(", ");
-  const folderClause = mention.parentFolders.length > 0
-    ? `OR (r.is_dir = 1 AND r.path IN (${placeholders}))`
-    : "";
-  return `SELECT DISTINCT p.slug, p.title, p.summary, p.updated_at, p.archived_at, p.superseded_by
-          FROM pages p
-          JOIN file_refs r ON r.page_slug = p.slug
-          WHERE p.archived_at IS NULL AND (r.path = ? ${folderClause})
-          ORDER BY p.updated_at DESC, p.slug ASC
-          LIMIT 100`;
-}
-
-function fileMentionParams(input: string): string[] {
-  const mention = buildFileMentionFilter(input);
-  if (mention.isDir) return [mention.normalizedPath, mention.globPrefix];
-  return [mention.normalizedPath, ...mention.parentFolders];
 }

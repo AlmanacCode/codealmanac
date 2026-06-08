@@ -43,7 +43,7 @@ describe("process run logs", () => {
     });
   });
 
-  it("does not infer actors from provider-private display raw", async () => {
+  it("does not infer actors from provider display ids", async () => {
     const dir = await mkdtemp(join(tmpdir(), "codealmanac-run-log-"));
     const path = join(dir, "run.jsonl");
     await initializeRunLog(path);
@@ -54,13 +54,9 @@ describe("process run logs", () => {
         type: "tool_use",
         tool: "shell",
         display: {
-          raw: {
-            _codealmanacActor: {
-              threadId: "thread-1",
-              role: "root",
-              confidence: "provider",
-            },
-          },
+          kind: "shell",
+          providerThreadId: "thread-1",
+          providerTurnId: "turn-1",
         },
       },
       new Date("2026-05-31T12:00:00.000Z"),

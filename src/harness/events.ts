@@ -42,7 +42,8 @@ export interface HarnessToolDisplay {
   exitCode?: number | null;
   durationMs?: number | null;
   summary?: string;
-  raw?: unknown;
+  providerThreadId?: string;
+  providerTurnId?: string;
 }
 
 export interface RunActor {

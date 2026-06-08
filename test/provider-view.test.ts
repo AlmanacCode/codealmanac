@@ -13,19 +13,25 @@ const statuses: ProviderStatus[] = [
     id: "claude",
     installed: true,
     authenticated: true,
+    readiness: "ready",
     detail: "Claude account: rohan@example.com",
+    accountLabel: "Claude account: rohan@example.com",
   },
   {
     id: "codex",
     installed: true,
     authenticated: true,
+    readiness: "ready",
     detail: "ChatGPT account: rohan@example.com",
+    accountLabel: "ChatGPT account: rohan@example.com",
   },
   {
     id: "cursor",
     installed: true,
     authenticated: false,
+    readiness: "not_authenticated",
     detail: "not logged in",
+    loginFix: "run: cursor-agent login",
   },
 ];
 

@@ -652,9 +652,9 @@ describe("operation command wrappers", () => {
       const older = join(projectDir, "older.jsonl");
       const middle = join(projectDir, "middle.jsonl");
       const newer = join(projectDir, "newer.jsonl");
-      await writeFile(older, `{"cwd":"${repo}"}\n`);
-      await writeFile(middle, `{"cwd":"${repo}"}\n`);
-      await writeFile(newer, `{"cwd":"${repo}"}\n`);
+      await writeFile(older, `${JSON.stringify({ sessionId: "older", cwd: repo })}\n`);
+      await writeFile(middle, `${JSON.stringify({ sessionId: "middle", cwd: repo })}\n`);
+      await writeFile(newer, `${JSON.stringify({ sessionId: "newer", cwd: repo })}\n`);
       const oldDate = new Date("2026-05-09T20:00:00.000Z");
       const middleDate = new Date("2026-05-09T20:00:30.000Z");
       const newDate = new Date("2026-05-09T20:01:00.000Z");
@@ -703,15 +703,55 @@ describe("operation command wrappers", () => {
     });
   });
 
-  it("does not launch unsupported app capture without a transcript file", async () => {
+  it("auto-resolves Codex transcript scopes for capture", async () => {
     await withTempHome(async (home) => {
-      const repo = await makeRepo(home, "cmd-capture-empty");
-      await initWiki({ cwd: repo, name: "cmd-capture-empty", description: "" });
+      const repo = await makeRepo(home, "cmd-capture-codex-auto");
+      await initWiki({ cwd: repo, name: "cmd-capture-codex-auto", description: "" });
+      const codexDir = join(home, ".codex", "sessions");
+      await mkdir(codexDir, { recursive: true });
+      const transcript = join(codexDir, "codex-session.jsonl");
+      await writeFile(
+        transcript,
+        `${JSON.stringify({
+          type: "session_meta",
+          payload: { id: "codex-session", cwd: repo },
+        })}\n`,
+      );
+      const seen: unknown[] = [];
 
-      const result = await runCaptureCommand({ cwd: repo, app: "codex" });
+      const result = await runCaptureCommand({
+        cwd: repo,
+        app: "codex",
+        startBackground: async (options) => {
+          seen.push(options);
+          return {
+            runId: "run_capture_codex_auto",
+            childPid: 333,
+            record: {
+              version: 1,
+              id: "run_capture_codex_auto",
+              operation: "absorb",
+              status: "queued",
+              repoRoot: options.repoRoot,
+              pid: 0,
+              provider: options.spec.provider.id,
+              startedAt: "2026-05-09T20:20:00.000Z",
+              logPath: join(options.repoRoot, ".almanac", "runs", "x.jsonl"),
+            },
+          };
+        },
+      });
 
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("capture discovery for codex sessions");
+      expect(result.stdout).toBe("capture started: run_capture_codex_auto\n");
+      expect(seen[0]).toMatchObject({
+        spec: {
+          metadata: {
+            operation: "absorb",
+            targetKind: "session",
+            targetPaths: [transcript],
+          },
+        },
+      });
     });
   });
 });

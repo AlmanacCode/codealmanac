@@ -9,7 +9,6 @@ import {
   parseAutomationInstallFlags,
   tryParseSetupShortcut,
   tryRunSetupShortcut,
-  tryRunSqliteFreeCommand,
 } from "./cli/sqlite-free.js";
 import { runCodealmanacBootstrap } from "./platform/install/global.js";
 import type { runDoctor } from "./cli/commands/doctor/index.js";
@@ -89,12 +88,11 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
     return;
   }
 
-  if (await tryRunSqliteFreeCommand(argv.slice(2), deps)) {
-    return;
-  }
-
   const { registerCommands } = await import("./cli/register-commands.js");
-  registerCommands(program);
+  registerCommands(program, {
+    runSetup: deps.runSetup,
+    runDoctor: deps.runDoctor,
+  });
   configureGroupedHelp(program);
 
   await program.parseAsync(argv);

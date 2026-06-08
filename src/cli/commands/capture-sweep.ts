@@ -8,10 +8,15 @@ import {
   executeCaptureSweep,
   type SweepSummary,
 } from "../../capture/sweep.js";
+import { startCaptureRun } from "../../capture/start.js";
 import type { CommandResult } from "../helpers.js";
 import { parseDuration } from "../../wiki/indexer/duration.js";
 import { readConfig } from "../../config/index.js";
-import { runCaptureCommand, type CaptureCommandOptions } from "./operations.js";
+import { resolveOperationProviderSelection } from "../../operations/provider-selection.js";
+import type {
+  OperationProviderSelection,
+  StartBackgroundProcess,
+} from "../../operations/types.js";
 
 export interface CaptureSweepOptions {
   cwd: string;
@@ -23,7 +28,7 @@ export interface CaptureSweepOptions {
   now?: Date;
   homeDir?: string;
   configPath?: string;
-  startBackground?: CaptureCommandOptions["startBackground"];
+  startBackground?: StartBackgroundProcess;
 }
 
 const DEFAULT_QUIET = "45m";
@@ -43,6 +48,7 @@ export async function runCaptureSweepCommand(
     apps: apps.value,
     home,
   });
+  const providers = new Map<string, OperationProviderSelection>();
 
   const summary = await executeCaptureSweep({
     candidates,
@@ -51,28 +57,46 @@ export async function runCaptureSweepCommand(
     dryRun: options.dryRun === true,
     now,
     startCapture: async ({ candidate, contextNote }) => {
-      const result = await runCaptureCommand({
-        cwd: candidate.repoRoot,
-        sessionFiles: [candidate.transcriptPath],
-        app: candidate.app,
-        session: candidate.sessionId,
-        using: options.using,
-        foreground: false,
-        json: true,
-        startBackground: options.startBackground,
-        contextNote,
-      });
-      if (result.exitCode !== 0) {
-        return { ok: false, error: result.stderr.trim() || result.stdout.trim() };
+      try {
+        const provider = await providerForRepo({
+          repoRoot: candidate.repoRoot,
+          using: options.using,
+          cache: providers,
+        });
+        const started = await startCaptureRun({
+          cwd: candidate.repoRoot,
+          provider,
+          sessionFiles: [candidate.transcriptPath],
+          app: candidate.app,
+          session: candidate.sessionId,
+          foreground: false,
+          startBackground: options.startBackground,
+          contextNote,
+        });
+        return { ok: true, runId: started.runId };
+      } catch (err: unknown) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
       }
-      const runId = extractRunId(result.stdout);
-      return runId === null
-        ? { ok: false, error: "capture command did not report a run id" }
-        : { ok: true, runId };
     },
   });
 
   return renderSweepSummary(summary, options.json);
+}
+
+async function providerForRepo(args: {
+  repoRoot: string;
+  using?: string;
+  cache: Map<string, OperationProviderSelection>;
+}): Promise<OperationProviderSelection> {
+  const key = `${args.repoRoot}\0${args.using ?? ""}`;
+  const cached = args.cache.get(key);
+  if (cached !== undefined) return cached;
+  const provider = await resolveOperationProviderSelection({
+    cwd: args.repoRoot,
+    using: args.using,
+  });
+  args.cache.set(key, provider);
+  return provider;
 }
 
 function parseApps(value: string | undefined): { ok: true; value: SweepApp[] } | { ok: false; error: string } {
@@ -105,17 +129,6 @@ async function readCaptureSince(configPath: string | undefined): Promise<Date | 
   if (raw === null) return null;
   const ms = Date.parse(raw);
   return Number.isFinite(ms) ? new Date(ms) : null;
-}
-
-function extractRunId(stdout: string): string | null {
-  try {
-    const parsed = JSON.parse(stdout) as { data?: { runId?: unknown } };
-    const runId = parsed.data?.runId;
-    return typeof runId === "string" ? runId : null;
-  } catch {
-    const match = stdout.match(/capture started:\s+(run_[^\s]+)/);
-    return match?.[1] ?? null;
-  }
 }
 
 function renderSweepError(message: string, json: boolean | undefined): CommandResult {

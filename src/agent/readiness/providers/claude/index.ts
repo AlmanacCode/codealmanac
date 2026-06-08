@@ -5,6 +5,7 @@ import type {
   ProviderStatus,
   SpawnCliFn,
 } from "../../../types.js";
+import { PROVIDER_DEFINITIONS } from "../../../provider-id.js";
 import {
   assertClaudeAuth,
   checkClaudeAuth,
@@ -13,13 +14,13 @@ import {
   type ClaudeAuthStatus,
 } from "../../../auth/claude.js";
 
-export const DEFAULT_AGENT_MODEL = "claude-sonnet-4-6";
+export const DEFAULT_AGENT_MODEL = PROVIDER_DEFINITIONS.claude.defaultModel!;
 
 const metadata: AgentProviderMetadata = {
   id: "claude",
-  displayName: "Claude",
+  displayName: PROVIDER_DEFINITIONS.claude.displayName,
   defaultModel: DEFAULT_AGENT_MODEL,
-  executable: "claude",
+  executable: PROVIDER_DEFINITIONS.claude.executable,
 };
 
 export const claudeProvider: AgentProvider = {
@@ -80,12 +81,26 @@ async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
     process.env.ANTHROPIC_API_KEY.length > 0;
   const installed = spawnCli !== undefined || resolveClaudeExecutable() !== undefined;
   const authenticated = auth.loggedIn || hasApiKey;
+  const readiness = !installed
+    ? "missing_executable"
+    : authenticated
+      ? "ready"
+      : "not_authenticated";
   const detail = authenticated
     ? auth.email ?? (hasApiKey ? "ANTHROPIC_API_KEY set" : "logged in")
     : installed
       ? "not logged in"
       : `${metadata.executable} not found on PATH`;
-  return { id: metadata.id, installed, authenticated, detail };
+  return {
+    id: metadata.id,
+    installed,
+    authenticated,
+    readiness,
+    detail,
+    accountLabel: auth.loggedIn ? auth.email : undefined,
+    installFix: "install Claude Code, then run: claude auth login --claudeai",
+    loginFix: "run: claude auth login --claudeai",
+  };
 }
 
 async function assertReady(spawnCli?: SpawnCliFn): Promise<void> {

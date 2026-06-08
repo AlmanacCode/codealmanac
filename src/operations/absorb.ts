@@ -1,6 +1,7 @@
 import type { AgentRunSpec } from "../harness/types.js";
 import type { FinalOutputSpec } from "../harness/final-output.js";
 import { findNearestAlmanacDir } from "../paths.js";
+import { MissingWikiError } from "./errors.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,
@@ -50,9 +51,7 @@ export async function runAbsorbOperation(
   options: AbsorbOperationOptions,
 ): Promise<OperationRunResult> {
   const repoRoot = findNearestAlmanacDir(options.cwd);
-  if (repoRoot === null) {
-    throw new Error("no .almanac/ found in this directory or any parent");
-  }
+  if (repoRoot === null) throw new MissingWikiError();
   const spec = await createAbsorbRunSpec({
     repoRoot,
     provider: options.provider,

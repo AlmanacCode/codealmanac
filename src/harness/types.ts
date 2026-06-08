@@ -1,8 +1,9 @@
 import type { HarnessEvent, HarnessResult } from "./events.js";
 import type { FinalOutputSpec } from "./final-output.js";
 import type { ToolRequest } from "./tools.js";
+import type { AgentProviderId } from "../agent/provider-id.js";
 
-export type HarnessProviderId = "claude" | "codex" | "cursor";
+export type HarnessProviderId = AgentProviderId;
 export type OperationKind = "build" | "absorb" | "garden";
 export type ProviderSessionPersistence = "ephemeral" | "persistent";
 

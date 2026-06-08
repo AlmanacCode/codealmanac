@@ -1,7 +1,18 @@
-export const ALL_AGENT_PROVIDER_IDS = ["claude", "codex", "cursor"] as const;
-export type AgentProviderId = (typeof ALL_AGENT_PROVIDER_IDS)[number];
-export const AGENT_PROVIDER_IDS = ALL_AGENT_PROVIDER_IDS;
-export const DEFAULT_AGENT_PROVIDER_IDS = ["claude", "codex"] as const;
+import {
+  AGENT_PROVIDER_IDS,
+  ALL_AGENT_PROVIDER_IDS,
+  DEFAULT_AGENT_PROVIDER_IDS,
+  isAgentProviderId,
+  type AgentProviderId,
+} from "../agent/provider-id.js";
+
+export {
+  AGENT_PROVIDER_IDS,
+  ALL_AGENT_PROVIDER_IDS,
+  DEFAULT_AGENT_PROVIDER_IDS,
+  isAgentProviderId,
+  type AgentProviderId,
+};
 
 export function isCursorEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.CODEALMANAC_ENABLE_CURSOR === "1";
@@ -33,8 +44,4 @@ export function disabledAgentProviderMessage(provider: string): string {
     return "cursor support is disabled. Set CODEALMANAC_ENABLE_CURSOR=1 to enable experimental Cursor support.";
   }
   return `${provider} support is disabled.`;
-}
-
-export function isAgentProviderId(value: string): value is AgentProviderId {
-  return (ALL_AGENT_PROVIDER_IDS as readonly string[]).includes(value);
 }

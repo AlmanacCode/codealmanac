@@ -146,8 +146,10 @@ conversation.
 
 ## 6. Repo-specific instantiation — codealmanac
 
-- The CLI never touches AI except `capture` and `bootstrap`; everything else is
-  pure query/organization over the SQLite index.
+- Only lifecycle operations invoke AI or write page prose. Read commands may
+  refresh derived local index state and read committed markdown for display or
+  validation. Organization commands may deterministically rewrite wiki metadata
+  through explicit verbs such as `tag`, `topics`, `review`, and `migrate`.
 - **Intelligence lives in prompts, not pipelines.** No propose/review/apply
   state machines, no orchestration JSON schema between writer and reviewer, no
   `--dry-run` rehearsals. The writer owns outcomes.

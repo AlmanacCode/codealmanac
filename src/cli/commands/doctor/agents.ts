@@ -1,6 +1,4 @@
 import { buildProviderSetupView } from "../../../agent/readiness/view.js";
-import { checkClaudeAuth } from "../../../agent/readiness/providers/claude/index.js";
-import type { ProviderStatus } from "../../../agent/types.js";
 import type { AgentDoctorCheck, DoctorOptions } from "./types.js";
 
 export async function gatherAgentChecks(
@@ -8,11 +6,7 @@ export async function gatherAgentChecks(
 ): Promise<AgentDoctorCheck[]> {
   const view = await buildProviderSetupView({
     spawnCli: options.spawnCli,
-    statuses:
-      options.providerStatuses ??
-      (options.spawnCli === undefined
-        ? undefined
-        : await injectedProviderStatuses(options)),
+    statuses: options.providerStatuses,
   });
   return view.choices.map((choice) => {
     return {
@@ -32,36 +26,4 @@ export async function gatherAgentChecks(
       fix: choice.fixCommand ?? undefined,
     };
   });
-}
-
-async function injectedProviderStatuses(
-  options: DoctorOptions,
-): Promise<ProviderStatus[]> {
-  const auth = await checkClaudeAuth(options.spawnCli);
-  const hasApiKey =
-    process.env.ANTHROPIC_API_KEY !== undefined &&
-    process.env.ANTHROPIC_API_KEY.length > 0;
-  const claudeReady = auth.loggedIn || hasApiKey;
-  return [
-    {
-      id: "claude",
-      installed: true,
-      authenticated: claudeReady,
-      detail: claudeReady
-        ? auth.email ?? (hasApiKey ? "ANTHROPIC_API_KEY set" : "logged in")
-        : "not logged in",
-    },
-    {
-      id: "codex",
-      installed: false,
-      authenticated: false,
-      detail: "codex status not injected",
-    },
-    {
-      id: "cursor",
-      installed: false,
-      authenticated: false,
-      detail: "cursor-agent status not injected",
-    },
-  ];
 }

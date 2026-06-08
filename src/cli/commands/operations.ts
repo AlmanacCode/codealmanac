@@ -1,24 +1,17 @@
 import type { CommandResult } from "../helpers.js";
 import { renderOutcome } from "../outcome.js";
 import type { HarnessEvent } from "../../harness/events.js";
-import type { FinalOutputSpec } from "../../harness/final-output.js";
-import type { HarnessProviderId } from "../../harness/types.js";
-import { runAbsorbOperation } from "../../operations/absorb.js";
+import { startCaptureRun, CaptureInputError } from "../../capture/start.js";
+import { startIngestRun, IngestInputError } from "../../ingest/start.js";
 import { runBuildOperation } from "../../operations/build.js";
+import { MissingWikiError } from "../../operations/errors.js";
 import { runGardenOperation } from "../../operations/garden.js";
-import { readConfig } from "../../config/index.js";
+import {
+  parseUsing,
+  resolveOperationProviderSelection,
+} from "../../operations/provider-selection.js";
 import { GitHubSourceError } from "../../ingest/github.js";
-import { renderIngestContext } from "../../ingest/context.js";
-import {
-  ALMANAC_OPERATION_REPORT_OUTPUT,
-  githubPullRequestReportInstructions,
-} from "../../operations/reports.js";
-import {
-  resolveIngestInput,
-  type ResolvedIngestInput,
-  type ResolveSourceFn,
-} from "../../ingest/input.js";
-import { resolveCaptureTranscripts } from "../../capture/input.js";
+import type { ResolveSourceFn } from "../../ingest/input.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,
@@ -111,51 +104,11 @@ export async function runCaptureCommand(
   }
 
   try {
-    const repoRoot = await resolveCaptureRepoRoot(options.cwd, options.json);
-    if (typeof repoRoot !== "string") return repoRoot;
-    const resolved = await resolveCaptureTranscripts({
-      repoRoot,
-      cwd: options.cwd,
-      files: options.sessionFiles,
-      app: options.app,
-      session: options.session,
-      since: options.since,
-      limit: options.limit,
-      all: options.all,
-      allApps: options.allApps,
-      claudeProjectsDir: options.claudeProjectsDir,
-    });
-    if (!resolved.ok) {
-      return renderOutcome(
-        {
-          type: "needs-action",
-          message: resolved.error,
-          fix: resolved.fix,
-          data: {
-            app: options.app,
-            session: options.session,
-            since: options.since,
-            limit: options.limit,
-            all: options.all,
-            allApps: options.allApps,
-          },
-        },
-        { json: options.json },
-      );
-    }
-    const paths = resolved.paths;
-    const result = await runAbsorbOperation({
-      cwd: options.cwd,
+    const started = await startCaptureRun({
+      ...options,
       provider: provider.value,
-      background: options.foreground !== true,
-      context: captureContext({ ...options, sessionFiles: paths }),
-      targetKind: "session",
-      targetPaths: paths,
-      onEvent: options.onEvent,
-      startForeground: options.startForeground,
-      startBackground: options.startBackground,
     });
-    return renderOperationResult("capture", result, options.json);
+    return renderOperationResult("capture", started.result, options.json);
   } catch (err: unknown) {
     return renderOperationError(err, options.json);
   }
@@ -166,70 +119,19 @@ export async function runIngestCommand(
 ): Promise<CommandResult> {
   const provider = await resolveProviderOrOutcome(options);
   if ("error" in provider) return provider.error;
-  if (options.paths.length === 0) {
-    return renderOutcome(
-      { type: "error", message: "ingest requires at least one file or folder" },
-      { json: options.json },
-    );
-  }
   if (options.json === true && options.foreground === true) {
     return jsonForegroundError(options.json);
   }
 
   try {
-    const input = await resolveIngestInput({
-      cwd: options.cwd,
-      inputs: options.paths,
-      resolveSource: options.resolveSource,
-    });
-    if (!input.ok) {
-      return renderOutcome(
-        { type: "error", message: input.message },
-        { json: options.json },
-      );
-    }
-    const result = await runAbsorbOperation({
-      cwd: options.cwd,
+    const started = await startIngestRun({
+      ...options,
       provider: provider.value,
-      background: options.foreground !== true,
-      context: ingestOperationContext(input.value),
-      targetKind: input.value.kind,
-      targetPaths: input.value.targets,
-      // Source ingest (GitHub via `gh`, or a web URL) needs the network;
-      // local-file ingest does not.
-      networkAccess: input.value.kind === "source",
-      output: githubPullRequestReportOutput(input.value),
-      onEvent: options.onEvent,
-      startForeground: options.startForeground,
-      startBackground: options.startBackground,
     });
-    return renderOperationResult("ingest", result, options.json);
+    return renderOperationResult("ingest", started.result, options.json);
   } catch (err: unknown) {
     return renderOperationError(err, options.json);
   }
-}
-
-function ingestOperationContext(input: ResolvedIngestInput): string {
-  const base = renderIngestContext(input);
-  if (!isSingleGitHubPullRequestInput(input)) return base;
-  return [
-    base,
-    githubPullRequestReportInstructions({ almanacRoot: ".almanac/" }),
-  ].join("\n\n");
-}
-
-function githubPullRequestReportOutput(
-  input: ResolvedIngestInput,
-): FinalOutputSpec | undefined {
-  return isSingleGitHubPullRequestInput(input)
-    ? ALMANAC_OPERATION_REPORT_OUTPUT
-    : undefined;
-}
-
-function isSingleGitHubPullRequestInput(input: ResolvedIngestInput): boolean {
-  return input.kind === "source" &&
-    input.sources.length === 1 &&
-    input.sources.every((source) => source.kind === "github.pr");
 }
 
 export async function runGardenCommand(
@@ -256,22 +158,7 @@ export async function runGardenCommand(
   }
 }
 
-export function parseUsing(value: string | undefined): OperationProviderSelection {
-  if (value === undefined || value.trim().length === 0) {
-    return { id: "codex" };
-  }
-  const [rawProvider, ...modelParts] = value.split("/");
-  if (!isProviderId(rawProvider)) {
-    throw new Error(
-      `invalid --using "${value}" (expected claude, codex, or cursor)`,
-    );
-  }
-  const model = modelParts.join("/");
-  return {
-    id: rawProvider,
-    model: model.length > 0 ? model : undefined,
-  };
-}
+export { parseUsing };
 
 async function resolveProviderOrOutcome(
   options: {
@@ -281,13 +168,12 @@ async function resolveProviderOrOutcome(
   },
 ): Promise<{ value: OperationProviderSelection } | { error: CommandResult }> {
   try {
-    if (options.using !== undefined) {
-      return { value: parseUsing(options.using) };
-    }
-    const config = await readConfig({ cwd: options.cwd });
-    const id = config.agent.default;
-    const model = config.agent.models[id] ?? undefined;
-    return { value: { id, model: model ?? undefined } };
+    return {
+      value: await resolveOperationProviderSelection({
+        cwd: options.cwd,
+        using: options.using,
+      }),
+    };
   } catch (err: unknown) {
     return {
       error: renderOutcome(
@@ -296,10 +182,6 @@ async function resolveProviderOrOutcome(
       ),
     };
   }
-}
-
-function isProviderId(value: string | undefined): value is HarnessProviderId {
-  return value === "claude" || value === "codex" || value === "cursor";
 }
 
 function renderOperationResult(
@@ -383,13 +265,30 @@ function renderOperationError(
   json: boolean | undefined,
 ): CommandResult {
   const message = err instanceof Error ? err.message : String(err);
-  if (message.includes("no .almanac/")) {
+  if (err instanceof MissingWikiError) {
     return renderOutcome(
       {
         type: "needs-action",
         message,
-        fix: "run: almanac init",
+        fix: err.fix,
       },
+      { json },
+    );
+  }
+  if (err instanceof CaptureInputError) {
+    return renderOutcome(
+      {
+        type: "needs-action",
+        message: err.message,
+        fix: err.fix,
+        data: err.data,
+      },
+      { json },
+    );
+  }
+  if (err instanceof IngestInputError) {
+    return renderOutcome(
+      { type: "error", message: err.message },
       { json },
     );
   }
@@ -406,23 +305,6 @@ function renderOperationError(
   return renderOutcome({ type: "error", message }, { json });
 }
 
-async function resolveCaptureRepoRoot(
-  cwd: string,
-  json: boolean | undefined,
-): Promise<string | CommandResult> {
-  const { findNearestAlmanacDir } = await import("../../paths.js");
-  const repoRoot = findNearestAlmanacDir(cwd);
-  if (repoRoot !== null) return repoRoot;
-  return renderOutcome(
-    {
-      type: "needs-action",
-      message: "no .almanac/ found in this directory or any parent",
-      fix: "run: almanac init",
-    },
-    { json },
-  );
-}
-
 function jsonForegroundError(json: boolean | undefined): CommandResult {
   return renderOutcome({
     type: "error",
@@ -437,26 +319,4 @@ function initContext(options: InitCommandOptions): string {
     `- Force requested: ${options.force === true ? "yes" : "no"}`,
     `- Non-interactive confirmation: ${options.yes === true ? "yes" : "no"}`,
   ].join("\n");
-}
-
-function captureContext(options: CaptureCommandOptions): string {
-  const lines = ["Command context:", "- Command: capture"];
-  if (options.app !== undefined) lines.push(`- App: ${options.app}`);
-  if (options.session !== undefined) lines.push(`- Session id: ${options.session}`);
-  if (options.since !== undefined) lines.push(`- Since: ${options.since}`);
-  if (options.limit !== undefined) lines.push(`- Limit: ${options.limit}`);
-  if (options.all === true) lines.push("- Capture all matching sessions");
-  if (options.allApps === true) lines.push("- Capture all supported apps");
-  const paths = options.sessionFiles ?? [];
-  if (paths.length > 0) {
-    lines.push("- Session/transcript files:");
-    for (const path of paths) lines.push(`  - ${path}`);
-  }
-  if (paths.length === 0 && options.session === undefined) {
-    lines.push("- No explicit session file or session id was provided.");
-  }
-  if (options.contextNote !== undefined && options.contextNote.trim().length > 0) {
-    lines.push("", options.contextNote.trim());
-  }
-  return lines.join("\n");
 }

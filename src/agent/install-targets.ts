@@ -8,6 +8,7 @@ import {
   ensureCodexInstructions,
   hasCodexInstructions,
 } from "./instructions/codex.js";
+import { PROVIDER_DEFINITIONS } from "./provider-id.js";
 
 export const CLAUDE_IMPORT_LINE = "@~/.claude/almanac.md";
 export const LEGACY_CLAUDE_IMPORT_LINE = "@~/.claude/codealmanac.md";
@@ -40,8 +41,8 @@ type InstructionTarget = {
 };
 
 export const AGENT_INSTRUCTION_TARGETS: readonly InstructionTarget[] = [
-  { id: "claude", displayName: "Claude" },
-  { id: "codex", displayName: "Codex" },
+  { id: "claude", displayName: PROVIDER_DEFINITIONS.claude.displayName },
+  { id: "codex", displayName: PROVIDER_DEFINITIONS.codex.displayName },
 ];
 
 export async function installAgentInstructions(

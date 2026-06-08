@@ -43,7 +43,7 @@ export function codexItemDisplay(
       title: "Editing file",
       status: itemStatus(item, fallbackStatus),
       durationMs: numberField(item, "durationMs") ?? null,
-      raw: withProviderIds(item, providerIds),
+      ...providerDisplayIds(providerIds),
     };
   }
   if (type === "mcpToolCall") {
@@ -51,7 +51,7 @@ export function codexItemDisplay(
       kind: "mcp",
       title: `MCP ${stringField(item, "tool") ?? "tool"}`,
       status: itemStatus(item, fallbackStatus),
-      raw: withProviderIds(item, providerIds),
+      ...providerDisplayIds(providerIds),
     };
   }
   if (type === "dynamicToolCall") {
@@ -60,7 +60,7 @@ export function codexItemDisplay(
       kind: inferToolKind(tool),
       title: toolTitle(tool),
       status: itemStatus(item, fallbackStatus),
-      raw: withProviderIds(item, providerIds),
+      ...providerDisplayIds(providerIds),
     };
   }
   if (type === "webSearch") {
@@ -69,7 +69,7 @@ export function codexItemDisplay(
       title: "Web search",
       summary: stringField(item, "query"),
       status: itemStatus(item, fallbackStatus),
-      raw: withProviderIds(item, providerIds),
+      ...providerDisplayIds(providerIds),
     };
   }
   if (type === "imageView") {
@@ -78,7 +78,7 @@ export function codexItemDisplay(
       title: "Viewing image",
       path: stringField(item, "path"),
       status: itemStatus(item, fallbackStatus),
-      raw: withProviderIds(item, providerIds),
+      ...providerDisplayIds(providerIds),
     };
   }
   if (type === "collabAgentToolCall") {
@@ -86,7 +86,7 @@ export function codexItemDisplay(
       kind: "agent",
       title: `Agent ${stringField(item, "tool") ?? "tool"}`,
       status: itemStatus(item, fallbackStatus),
-      raw: withProviderIds(item, providerIds),
+      ...providerDisplayIds(providerIds),
     };
   }
   return undefined;
@@ -122,7 +122,7 @@ function commandExecutionDisplay(
     status: itemStatus(item, fallbackStatus),
     exitCode: numberField(item, "exitCode") ?? null,
     durationMs: numberField(item, "durationMs") ?? null,
-    raw: withProviderIds(item, providerIds),
+    ...providerDisplayIds(providerIds),
   };
 }
 
@@ -176,15 +176,11 @@ function toolTitle(tool: string): string {
   }
 }
 
-function withProviderIds(
-  item: Record<string, unknown>,
+function providerDisplayIds(
   providerIds?: { threadId?: string; turnId?: string },
-): Record<string, unknown> {
+): Pick<HarnessToolDisplay, "providerThreadId" | "providerTurnId"> {
   return {
-    ...item,
-    _codealmanacProviderIds: {
-      threadId: providerIds?.threadId ?? null,
-      turnId: providerIds?.turnId ?? null,
-    },
+    providerThreadId: providerIds?.threadId,
+    providerTurnId: providerIds?.turnId,
   };
 }

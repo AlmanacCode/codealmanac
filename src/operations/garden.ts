@@ -1,5 +1,6 @@
 import type { AgentRunSpec } from "../harness/types.js";
 import { findNearestAlmanacDir } from "../paths.js";
+import { MissingWikiError } from "./errors.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,
@@ -39,9 +40,7 @@ export async function runGardenOperation(
   options: GardenOperationOptions,
 ): Promise<OperationRunResult> {
   const repoRoot = findNearestAlmanacDir(options.cwd);
-  if (repoRoot === null) {
-    throw new Error("no .almanac/ found in this directory or any parent");
-  }
+  if (repoRoot === null) throw new MissingWikiError();
   const spec = await createGardenRunSpec({
     repoRoot,
     provider: options.provider,

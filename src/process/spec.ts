@@ -3,10 +3,10 @@ import { dirname, join } from "node:path";
 
 import type {
   AgentRunSpec,
-  HarnessProviderId,
   OperationKind,
   ProviderSessionPersistence,
 } from "../harness/types.js";
+import { isAgentProviderId, type AgentProviderId } from "../agent/provider-id.js";
 import { runsDir } from "./records.js";
 
 export function runSpecPath(repoRoot: string, runId: string): string {
@@ -63,8 +63,8 @@ function isAgentRunSpec(value: unknown): value is AgentRunSpec {
   );
 }
 
-function isProviderId(value: unknown): value is HarnessProviderId {
-  return value === "claude" || value === "codex" || value === "cursor";
+function isProviderId(value: unknown): value is AgentProviderId {
+  return typeof value === "string" && isAgentProviderId(value);
 }
 
 function isOperationKind(value: unknown): value is OperationKind {

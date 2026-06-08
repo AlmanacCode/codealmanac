@@ -1,10 +1,5 @@
 import { Command } from "commander";
 
-import { runHealth } from "./commands/health/index.js";
-import { listWikis } from "./commands/list.js";
-import { runSearch, type SearchOutputMode } from "./commands/search.js";
-import { runServe } from "./commands/serve.js";
-import { runShow } from "./commands/show.js";
 import { autoRegisterIfNeeded } from "../wiki/registry/autoregister.js";
 import {
   collectOption,
@@ -13,14 +8,17 @@ import {
   readStdin,
 } from "./helpers.js";
 
+export type SearchOutputMode = "slugs" | "summaries" | "json";
+
 export function registerQueryCommands(program: Command): void {
   program
     .command("serve")
-    .description("start the local read-only wiki viewer")
+    .description("start the local read-only Almanac console")
     .option("--host <host>", "host to bind", "127.0.0.1")
     .option("--port <n>", "port to bind", parsePositiveInt, 3927)
     .action(async (opts: { host?: string; port?: number }) => {
       await autoRegisterIfNeeded(process.cwd());
+      const { runServe } = await import("./commands/serve.js");
       await runServe({
         cwd: process.cwd(),
         host: opts.host,
@@ -72,6 +70,7 @@ export function registerQueryCommands(program: Command): void {
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
+        const { runSearch } = await import("./commands/search.js");
         const result = await runSearch({
           cwd: process.cwd(),
           query,
@@ -132,6 +131,7 @@ export function registerQueryCommands(program: Command): void {
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
+        const { runShow } = await import("./commands/show.js");
         const result = await runShow({
           cwd: process.cwd(),
           slug,
@@ -174,6 +174,7 @@ export function registerQueryCommands(program: Command): void {
         wiki?: string;
       }) => {
         await autoRegisterIfNeeded(process.cwd());
+        const { runHealth } = await import("./commands/health/index.js");
         const result = await runHealth({
           cwd: process.cwd(),
           topic: opts.topic,
@@ -201,6 +202,7 @@ export function registerQueryCommands(program: Command): void {
         if (opts.drop === undefined) {
           await autoRegisterIfNeeded(process.cwd());
         }
+        const { listWikis } = await import("./commands/list.js");
         const result = await listWikis(opts);
         process.stdout.write(result.stdout);
         if (result.exitCode !== 0) {

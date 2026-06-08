@@ -4,6 +4,7 @@ import type {
   ProviderStatus,
   SpawnCliFn,
 } from "../../types.js";
+import { PROVIDER_DEFINITIONS } from "../../provider-id.js";
 import {
   commandExists,
   runInjectedStatusCommand,
@@ -12,9 +13,9 @@ import {
 
 const metadata: AgentProviderMetadata = {
   id: "cursor",
-  displayName: "Cursor",
-  defaultModel: null,
-  executable: "cursor-agent",
+  displayName: PROVIDER_DEFINITIONS.cursor.displayName,
+  defaultModel: PROVIDER_DEFINITIONS.cursor.defaultModel,
+  executable: PROVIDER_DEFINITIONS.cursor.executable,
 };
 
 export const cursorProvider: AgentProvider = {
@@ -29,7 +30,10 @@ async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
       id: metadata.id,
       installed: false,
       authenticated: false,
+      readiness: "missing_executable",
       detail: `${metadata.executable} not found on PATH`,
+      installFix: "install cursor-agent, then run: cursor-agent login",
+      loginFix: "run: cursor-agent login",
     };
   }
 
@@ -40,7 +44,11 @@ async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
     id: metadata.id,
     installed: true,
     authenticated: auth.ok,
+    readiness: auth.ok ? "ready" : "not_authenticated",
     detail: auth.detail,
+    accountLabel: auth.ok ? auth.detail : undefined,
+    installFix: "install cursor-agent, then run: cursor-agent login",
+    loginFix: "run: cursor-agent login",
   };
 }
 
