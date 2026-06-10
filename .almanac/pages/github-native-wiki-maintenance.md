@@ -18,6 +18,11 @@ sources:
   - https://www.mintlify.com/docs/organize/settings
   - https://www.mintlify.com/docs/deploy/github
   - https://www.mintlify.com/docs/deploy/preview-deployments
+  - id: pr-15
+    type: pr
+    url: https://github.com/AlmanacCode/codealmanac/pull/15
+    number: "15"
+    note: First live hosted Almanac GitHub App smoke-test PR against this repository.
 status: active
 verified: 2026-05-29
 ---
@@ -62,6 +67,8 @@ The remote product should make local wiki knowledge unavoidable at the moments w
 6. Keep quiet when no useful wiki action exists.
 
 The highest-value checks are not generic code review comments. They are docs-drift checks, invariant conflicts, missing decision or flow updates, stale pages, broken file references, and "this change deserves an Almanac update" signals. That keeps the product aligned with [[just-in-time-context-surfacing]]: a few cited constraints at action time, not broad context injection.
+
+PR 15 was the first live smoke test of this hosted path against CodeAlmanac itself. The branch changed only a README comment, but its purpose was to exercise the hosted GitHub App sequence from webhook receipt through check creation, approval, Modal execution, delivery, and metering; the resulting GitHub check run was named `Almanac`, pointed at `https://usealmanac.com`, and reported an action-required "Updating the Almanac" state rather than posting review findings [@pr-15]. Treat this as operational validation of the GitHub-native maintenance loop, not as evidence that README-only smoke diffs deserve durable wiki pages.
 
 ## Canonical State Boundary
 

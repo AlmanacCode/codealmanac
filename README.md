@@ -287,3 +287,5 @@ Almanac is pre-1.0. Breaking changes are possible before 1.0 and will be called 
 ## License
 
 Apache License 2.0. See [LICENSE](./LICENSE).
+
+<!-- pipeline smoke test: first real Almanac run through the hosted GitHub App -->
