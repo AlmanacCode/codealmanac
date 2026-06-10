@@ -28,7 +28,19 @@ sources:
   - /Users/rohan/.codex/sessions/2026/05/28/rollout-2026-05-28T18-27-05-019e70e9-b7d7-7900-9fc0-da2a6f0b532d.jsonl
   - https://openai.com/api/pricing/
   - https://developers.openai.com/api/docs/models/gpt-5.5
-verified: 2026-05-28
+  - id: capture-discovery-cwd
+    type: file
+    path: src/capture/discovery/jsonl.ts
+    note: Candidate discovery maps each transcript's recorded cwd to the nearest repo root containing .almanac.
+  - id: absorb-noop-contract
+    type: file
+    path: prompts/operations/absorb.md
+    note: The Absorb prompt says transcript inputs are raw material and instructs the agent to no-op when the input does not improve durable project memory.
+  - id: capture-session-2026-06-09
+    type: transcript
+    path: /Users/kushagrachitkara/.codex/sessions/2026/06/09/rollout-2026-06-09T10-54-13-019ead85-4907-76b2-b07f-2f843f0d836a.jsonl
+    note: Records a Codex maintenance session that left a repo-mapped but project-unrelated transcript note uncommitted, clarifying the boundary between repo ownership and project relevance.
+verified: 2026-06-09
 ---
 
 # Capture Flow
@@ -179,6 +191,8 @@ Provider-specific behavior is adapter-owned. Claude may support helper agents th
 ## No-op captures
 
 Capture can produce no page changes if the transcript does not meet the notability bar. In V1 the observable record is a completed run with zero created, updated, and archived pages in `.almanac/runs/`.
+
+Repo mapping is only an ownership decision, not a relevance decision. Discovery maps a transcript to a wiki by recovering its recorded `cwd` and walking upward to the nearest `.almanac/`, but Absorb still has to decide whether the conversation improves durable project memory. A 2026-06-09 Codex maintenance session preserved that boundary explicitly: a local wiki edit that referenced a personal, repo-unrelated transcript was deliberately left uncommitted because repo attribution alone did not make the session relevant to CodeAlmanac. [@capture-discovery-cwd] [@absorb-noop-contract] [@capture-session-2026-06-09]
 
 ## Log files
 

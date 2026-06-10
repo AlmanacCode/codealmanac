@@ -16,8 +16,16 @@ sources:
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/05/31/rollout-2026-05-31T23-31-46-019e8173-bc02-7503-a102-e9de99d6bb9c.jsonl
     note: Records the YC CLI and Bookface market scan that compared company-brain, codebase-context, PR-review, and agent-memory competitors, then narrowed CodeAlmanac positioning around engineering memory, context freshness, and retrieval.
+  - id: dosu-experiment-session
+    type: transcript
+    path: /Users/kushagrachitkara/.claude/projects/-Users-kushagrachitkara-Downloads-reverie-codealmanac/767924bf-14a8-48e3-8c5c-a69523619cb9.jsonl
+    note: Records the 2026-06-09 Dosu MCP experiment on an empty deployment, including missing source data, `save_topic`, and immediate `init_knowledge` read-back.
+  - id: dosu-codex-setup-session
+    type: transcript
+    path: /Users/kushagrachitkara/.codex/sessions/2026/06/09/rollout-2026-06-09T15-28-27-019eae80-59af-7060-b6de-e0f8d96d48ca.jsonl
+    note: Records the Codex-side Dosu setup experiment, including browser-auth gating, the missing pre-auth MCP config entry, and the conclusion that the deployment still needed a connected source before retrieval would work.
 status: active
-verified: 2026-06-01
+verified: 2026-06-09
 ---
 
 # Company Brain
@@ -65,6 +73,8 @@ The primitive camp includes GBrain and CodeAlmanac. These systems are open-sourc
 The memory-daemon camp includes [[agentmemory-competitor]], [[codex-supermemory]], and [[mem0]]. These products compete for the same "agents should not need context re-explained" pain, but they use hook capture, memory databases, retrieval APIs, and context injection instead of a repo-owned wiki artifact.
 
 The platform camp includes Hyper, Glean, Dust, Hebbia, Sana, Guru, and Notion AI. These products sell connectors, hosted ingestion, permission models, workflow surfaces, agent builders, or invisible context injection. Their advantage is breadth, deployment polish, enterprise administration, and lower day-one operational burden for teams that want to buy the system rather than maintain it.
+
+[[dosu]] is a narrower managed-knowledge reference point inside the same camp. The 2026-06-09 tool-surface experiment showed a hosted curation model where source connection was not available through the observed MCP surface, and a successful `save_topic` write did not immediately reappear through `init_knowledge`. A second 2026-06-09 Codex setup session reinforced the same separation from the install side: `npx @dosu/cli setup --agent --tool codex` still left source attachment as a distinct step before retrieval could work. That makes Dosu useful as a contrast for review-gated or async-curated knowledge flows rather than a repo-owned memory artifact. [@dosu-experiment-session] [@dosu-codex-setup-session]
 
 The codebase-context camp is more crowded than the broad company-brain page originally implied. The 2026-05-31 YC CLI scan identified direct or near-direct products around codebase context, self-maintaining code knowledge bases, repository graphs, code search, specs as durable agent context, horizontal agent memory, and AI PR review. The named YC-adjacent set included Driver, Sage AI, Verba, Graphify Labs, Sourcebot, OpenSpec, Mem0, Nessie, Zep, Greptile, and cubic. That validates demand for "agents should understand the codebase" while making "AI codebase docs" a weak undifferentiated pitch. [@yc-market-scan]
 

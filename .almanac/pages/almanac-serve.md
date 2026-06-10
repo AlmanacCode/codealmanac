@@ -57,6 +57,10 @@ sources:
     type: file
     path: src/cli/commands/serve.ts
     note: Prints the viewer URL and keeps the local server running until interrupt.
+  - id: brand-direction-session
+    type: conversation
+    path: /Users/kushagrachitkara/.codex/sessions/2026/06/04/rollout-2026-06-04T21-40-03-019e9366-1b93-7be3-bf26-f15c447068bd.jsonl
+    note: Records the later brand exploration that preferred a celestial moon-and-instrument mark over the older centered-monogram and open-book directions.
 ---
 
 # almanac serve (Local Viewer)
@@ -270,7 +274,7 @@ The frontend uses the `usealmanac.com` brand direction: warm paper surfaces, Pal
 
 The accent color was revised from OpenAlmanac navy (`#1a3a5c`) to the usealmanac green (`#166534`) on 2026-05-12 so the local viewer matches the public landing page. A 2026-05-15 attempt to switch the viewer to a brighter OpenAlmanac-inspired blue (`#255f8f`) was reverted at user request, so green remains the active viewer direction. The active token namespace is `--ca-*` in `viewer/app.css`.
 
-The brand mark is the usealmanac open-book logo at `viewer/almanac-logo.png`. The left rail subtitle is `Agent-maintained knowledge`, matching the landing-page eyebrow.
+The brand mark is the usealmanac open-book logo at `viewer/almanac-logo.png`. The left rail subtitle is `Agent-maintained knowledge`, matching the landing-page eyebrow. A later June 2026 brand exploration preferred the more minimal celestial mark described in [[almanac-brand-direction]], but those assets have not been applied to the viewer yet. [@brand-direction-session]
 
 Three-panel layout (desktop):
 
