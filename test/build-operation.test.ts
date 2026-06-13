@@ -40,22 +40,23 @@ describe("build operation", () => {
         },
       });
       expect(spec.prompt).toContain("Almanac is cultivated project memory");
-      expect(spec.prompt).toContain("Page Notability And Graph Structure");
+      expect(spec.prompt).toContain("Page Selection And Organization");
       expect(spec.prompt).toContain("Page Syntax And Writing Conventions");
       expect(spec.prompt).toContain("Source Control Hygiene");
       expect(spec.prompt).toContain("almanac: <imperative one-line summary>");
       expect(spec.prompt).toContain("Auto-commit wiki source changes: enabled");
       expect(spec.prompt).toContain(
-        "If durable wiki source files changed, commit only `.almanac/README.md`, `.almanac/pages/`, `.almanac/topics.yaml`, and `.almanac/review.yaml`",
+        "If durable wiki source files changed, commit only `docs/almanac/`, `.almanac/review.yaml`, and any legacy `.almanac/pages/` or `.almanac/topics.yaml` files you intentionally maintained",
       );
       expect(spec.prompt).toContain(
         "You are building the first substantial Almanac wiki",
       );
+      expect(spec.prompt).toContain(`Wiki content directory: ${repo}/docs/almanac`);
       expect(spec.prompt).toContain(
-        "Always create `.almanac/pages/getting-started.md`",
+        "Always create or update `docs/almanac/README.md`",
       );
       expect(spec.prompt).toContain(
-        "second front-door page such as `project-overview.md`",
+        "Do not create a second front door such as `getting-started.md` or",
       );
       expect(spec.prompt).toContain(`Repository root: ${repo}`);
       expect(spec.prompt).toContain("Extra context.");

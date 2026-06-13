@@ -41,13 +41,16 @@ describe("absorb operation", () => {
         },
       });
       expect(spec.prompt).toContain("Almanac is cultivated project memory");
-      expect(spec.prompt).toContain("Page Notability And Graph Structure");
+      expect(spec.prompt).toContain("Page Selection And Organization");
       expect(spec.prompt).toContain("Page Syntax And Writing Conventions");
       expect(spec.prompt).toContain("Source Control Hygiene");
       expect(spec.prompt).toContain("almanac: <imperative one-line summary>");
       expect(spec.prompt).toContain("Auto-commit wiki source changes: enabled");
+      expect(spec.prompt).toContain(`Wiki content directory: ${repo}/docs/almanac`);
       expect(spec.prompt).toContain(".almanac/review.yaml");
       expect(spec.prompt).toContain("Absorb Operation");
+      expect(spec.prompt).toContain("Put unsettled current work in `active/`");
+      expect(spec.prompt).toContain("Preserve old knowledge when it explains the current state");
       expect(spec.prompt).toContain(`Repository root: ${repo}`);
       expect(spec.prompt).toContain(`Session transcript: ${transcript}`);
     });

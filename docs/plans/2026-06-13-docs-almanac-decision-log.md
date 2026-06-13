@@ -46,3 +46,30 @@ query index, not the authoring source.
 Why: the scaffold should teach the shape and give agents a contract. Full
 coverage requires repo-specific reading and should come from build/garden/capture
 runs, not static boilerplate.
+
+## 6. `README.md` Is The Front Door
+
+The canonical orientation page is `docs/almanac/README.md`. Build should not
+create `getting-started.md` or `project-overview.md` as a second front door.
+
+Why: this matches normal documentation repositories and keeps the browse tree
+obvious to humans.
+
+## 7. The Manual Lives Inside The Wiki
+
+The durable writing guidance lives under `docs/almanac/_manual/`, with local
+maintenance conventions under `docs/almanac/_meta/`.
+
+Why: agents and humans should read the same guidance in the same documentation
+surface. Prompt changes define agent behavior; the manual makes the behavior
+auditable and editable.
+
+## 8. Section READMEs Are Orientation, Not Migration
+
+The initial `concepts/`, `architecture/`, `guides/`, `reference/`,
+`decisions/`, `incidents/`, `active/`, and `context/` pages explain what belongs
+in each section. They do not claim the legacy `.almanac/pages/` corpus has been
+semantically migrated.
+
+Why: the structure should be visible now, while full migration remains a
+separate content-quality task.

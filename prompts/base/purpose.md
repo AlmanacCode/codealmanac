@@ -1,19 +1,15 @@
 # Wiki Purpose
 
-Almanac is cultivated project memory.
+Almanac is cultivated project memory for a codebase.
 
-The wiki is a deep-research cache over the project. It preserves the
-understanding that an expert agent builds after reading, tracing, comparing,
-and connecting raw inputs. Future agents should start from this reusable
-understanding instead of repeatedly reorienting from zero.
+Readable wiki content lives in `docs/almanac/`. Local runtime state lives in
+`.almanac/`. Treat `docs/almanac/` as ordinary project documentation: public,
+browsable, reviewable, and worth reading without special agent context.
 
-The codebase is the anchor, not the boundary. The wiki may absorb code,
-sessions, docs, research, market reads, product thinking, incidents,
-conversations, external systems, laws, papers, team practices, and anything
-else that materially shapes work on the project.
-
-The page is not the raw input. The input is material to be distilled into the
-project's memory.
+The reader is a new maintainer: a human joining the repository or an agent
+starting with no session memory. Write for that reader. The prose should be
+clear enough for a person and structured enough for an agent to query, verify,
+and update.
 
 ## The Core Test
 
@@ -22,64 +18,47 @@ understanding that would be costly, useful, or risky to reconstruct later.
 
 That includes:
 
-- how the codebase works
-- what named entities mean in this project
-- how subsystems, files, commands, and external systems interact
-- what conclusions were drawn from reading docs or doing research
-- what the project currently believes about product, users, market, or design
-- what decisions, constraints, risks, and incidents should shape future work
-- what is intentionally not used or not done
+- how the codebase works across files and runtime boundaries
+- what project-specific names mean
+- how commands, jobs, files, providers, data stores, and external systems
+  interact
+- why a shape exists and which plausible alternatives were rejected
+- what changed after incidents, migrations, failed attempts, or design reversals
+- what product, market, competitor, or strategy context materially shapes work
+- what current sources support, contradict, or fail to establish
 
-Do not reduce the wiki to a bug-prevention notebook. Avoiding future mistakes
-matters, but the larger goal is reusable understanding.
+Do not reduce the wiki to a bug-prevention notebook. The larger goal is a
+readable knowledge base that helps future work start from the best current
+understanding.
 
-## Project-World Map
+## Code Is Truth, The Wiki Is Interpretation
 
-Pages may cover things outside the repo when they matter to the project.
-`stripe.md`, `postgres.md`, `claude-agent-sdk.md`,
-`anthropic-prompt-caching.md`, or `agent-tools-market.md` can all be valid
-pages.
+Current code, tests, config, and current external docs are authoritative for
+present-tense behavior. The wiki explains meaning: why the code has this shape,
+which paths matter, what assumptions surround it, what has broken before, and
+what a new reader should inspect next.
 
-Do not copy the world. Preserve the useful understanding produced by engaging
-with the world.
-
-For an external thing, write about its role in this project:
-
-- what we use
-- what we do not use
-- what assumptions we rely on
-- what versions, APIs, contracts, or docs matter
-- what conclusions we reached
-- what pages, decisions, code, or project beliefs it connects to
-
-Pure reference material is allowed when it is reusable project memory. It still
-needs to be distilled, grounded, and connected to the project graph.
+When the wiki and code disagree, trust the code and update the wiki. When old
+knowledge still explains the current shape, keep it in prose as history:
+"The project used to do X; it now does Y because Z."
 
 ## Synthesis Over Logs
 
-Prefer evolving synthesis pages over chronological logs.
+Prefer evolving articles over chronological logs. A session, issue, transcript,
+PR, research note, or design conversation is raw material. Distill the durable
+understanding into the page whose subject owns it.
 
-If an input says something about market sentiment, pricing, product
-positioning, user trust, an external dependency, or an internal subsystem,
-fold it into the durable page that tracks that idea.
+Use `active/` only for current work that is not settled enough to become durable
+documentation. When the work settles, fold the useful parts into `concepts/`,
+`architecture/`, `guides/`, `reference/`, `decisions/`, `incidents/`, or
+`context/`. Delete active notes that never became durable knowledge.
 
-Create a temporal page only when the time, event, or snapshot is itself part of
-the meaning. A dated market read, incident, migration, API breaking change, or
-launch-period observation may deserve a temporal page. If you create one, also
-connect it to the synthesis page or hub it informs.
+## Project-World Map
 
-The wiki is not a diary, transcript store, or progress log. It is cultivated
-project memory.
+The repo is the anchor, not the boundary. The wiki may cover external services,
+competitors, product strategy, research, legal constraints, standards, and
+market evidence when they materially shape this project.
 
-## Inputs Are Starting Points
-
-Build starts from the repo corpus.
-
-Absorb starts from a concrete input: a session, file, folder, diff, document,
-research note, market read, conversation, or other context.
-
-Garden starts from the current wiki graph.
-
-In every case, the starting point is not a boundary. Inspect related code,
-wiki pages, docs, tests, history, or sources when useful. Keep the scope
-proportional to what the input reveals.
+External pages are not generic encyclopedia entries. Write the project-specific
+role: what we use, what we avoid, what assumptions matter, what sources support
+the claim, and which code or decisions depend on it.

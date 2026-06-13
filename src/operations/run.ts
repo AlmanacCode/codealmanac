@@ -107,8 +107,9 @@ function operationRuntimeContext(repoRoot: string): string {
   return [
     "Runtime context:",
     `- Repository root: ${repoRoot}`,
-    `- Almanac directory: ${repoRoot}/.almanac`,
-    `- Wiki pages directory: ${repoRoot}/.almanac/pages`,
+    `- Wiki content directory: ${repoRoot}/docs/almanac`,
+    `- Almanac runtime directory: ${repoRoot}/.almanac`,
+    `- Legacy wiki pages directory, read during migration: ${repoRoot}/.almanac/pages`,
   ].join("\n");
 }
 
@@ -118,7 +119,7 @@ async function sourceControlRuntimeContext(repoRoot: string): Promise<string> {
     return [
       "Source control runtime context:",
       "- Auto-commit wiki source changes: enabled",
-      "- If durable wiki source files changed, commit only `.almanac/README.md`, `.almanac/pages/`, `.almanac/topics.yaml`, and `.almanac/review.yaml`.",
+      "- If durable wiki source files changed, commit only `docs/almanac/`, `.almanac/review.yaml`, and any legacy `.almanac/pages/` or `.almanac/topics.yaml` files you intentionally maintained.",
       "- Use commit style: `almanac: <imperative one-line summary>` followed by an optional body explaining what changed and why.",
     ].join("\n");
   }

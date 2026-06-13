@@ -41,20 +41,21 @@ describe("garden operation", () => {
         },
       });
       expect(spec.prompt).toContain("Almanac is cultivated project memory");
-      expect(spec.prompt).toContain("Page Notability And Graph Structure");
+      expect(spec.prompt).toContain("Page Selection And Organization");
       expect(spec.prompt).toContain("Page Syntax And Writing Conventions");
       expect(spec.prompt).toContain("Source Control Hygiene");
       expect(spec.prompt).toContain("almanac: <imperative one-line summary>");
       expect(spec.prompt).toContain(".almanac/review.yaml");
       expect(spec.prompt).toContain("Garden Operation");
+      expect(spec.prompt).toContain(`Wiki content directory: ${repo}/docs/almanac`);
       expect(spec.prompt).toContain("almanac review list --status decided");
       expect(spec.prompt).toContain("almanac review show <id>");
       expect(spec.prompt).toContain("almanac review apply <id>");
       expect(spec.prompt).toContain("Use `almanac review add` only for unresolved source conflicts.");
       expect(spec.prompt).toContain("Do not use review for feature ideas");
-      expect(spec.prompt).toContain("Do not ask the human to decide a fact");
-      expect(spec.prompt).toContain("answers.");
-      expect(spec.prompt).toContain("the sources that disagree");
+      expect(spec.prompt).toContain("questions the code already answers");
+      expect(spec.prompt).toContain("old active notes");
+      expect(spec.prompt).toContain("the disagreeing sources");
       expect(spec.prompt).toContain(`Repository root: ${repo}`);
       expect(spec.prompt).toContain("Focus on stale pages.");
     });

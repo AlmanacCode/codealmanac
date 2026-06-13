@@ -1,0 +1,49 @@
+topics:
+  - slug: concepts
+    title: Concepts
+    description: Core vocabulary and mental models for the codebase
+    parents: []
+  - slug: architecture
+    title: Architecture
+    description: Subsystem boundaries, runtime flows, storage, and integration shape
+    parents: []
+  - slug: guides
+    title: Guides
+    description: Task-oriented maintainer workflows
+    parents: []
+  - slug: reference
+    title: Reference
+    description: Exact public contracts such as commands, formats, config, schemas, and APIs
+    parents: []
+  - slug: decisions
+    title: Decisions
+    description: Accepted choices and the reasoning behind them
+    parents: []
+  - slug: incidents
+    title: Incidents
+    description: Failures, migrations, regressions, and lessons that still shape work
+    parents: []
+  - slug: active
+    title: Active
+    description: Current investigations and design threads not yet folded into durable pages
+    parents: []
+  - slug: context
+    title: Context
+    description: Product, market, competitor, user, fundraising, and strategy background
+    parents: []
+  - slug: prompt-system
+    title: Prompt System
+    description: Operation prompts, writing doctrine, and agent-facing guidance
+    parents: [architecture]
+  - slug: provider-harness
+    title: Provider Harness
+    description: Runtime provider adapters, readiness boundaries, and provider-neutral run contracts
+    parents: [architecture]
+  - slug: wiki-indexing
+    title: Wiki Indexing
+    description: SQLite indexing, wikilinks, file references, topics, and query behavior
+    parents: [architecture]
+  - slug: product-positioning
+    title: Product Positioning
+    description: Product, market, competitor, pricing, trust, and audience synthesis
+    parents: [context]
