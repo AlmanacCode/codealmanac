@@ -12,6 +12,7 @@ import {
 import {
   canonicalTopicsYamlPath,
   canonicalWikiDir,
+  legacyTopicsYamlPath,
   runtimeDir,
 } from "../wiki/locations.js";
 
@@ -63,7 +64,11 @@ export async function initWiki(options: InitOptions): Promise<InitResult> {
     await writeFile(readmePath, starterReadme(), "utf8");
   }
   if (!existsSync(topicsPath)) {
-    await writeFile(topicsPath, starterTopicsYaml(), "utf8");
+    await writeFile(
+      topicsPath,
+      await starterOrLegacyTopicsYaml(repoRoot),
+      "utf8",
+    );
   }
   const manualReadme = join(manualDir, "README.md");
   if (!existsSync(manualReadme)) {
@@ -232,6 +237,14 @@ function starterTopicsYaml(): string {
     description: Product, market, competitor, and strategy background
     parents: []
 `;
+}
+
+async function starterOrLegacyTopicsYaml(repoRoot: string): Promise<string> {
+  const legacyPath = legacyTopicsYamlPath(repoRoot);
+  if (existsSync(legacyPath)) {
+    return readFile(legacyPath, "utf8");
+  }
+  return starterTopicsYaml();
 }
 
 function starterManualReadme(): string {

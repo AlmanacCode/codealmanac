@@ -46,6 +46,32 @@ describe("initWiki (internal helper)", () => {
     });
   });
 
+  it("preserves legacy topic metadata when creating the docs wiki", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "legacy-topics");
+      await mkdir(join(repo, ".almanac"), { recursive: true });
+      await writeFile(
+        join(repo, ".almanac", "topics.yaml"),
+        "topics:\n" +
+          "  - slug: provider-harness\n" +
+          "    title: Provider Harness\n" +
+          "    description: Runtime provider boundary\n" +
+          "    parents: [agents]\n",
+        "utf8",
+      );
+
+      await initWiki({ cwd: repo, name: "legacy-topics", description: "" });
+
+      const topics = await readFile(
+        join(repo, "docs", "almanac", "topics.yaml"),
+        "utf8",
+      );
+      expect(topics).toContain("slug: provider-harness");
+      expect(topics).toContain("description: Runtime provider boundary");
+      expect(topics).toContain("parents: [agents]");
+    });
+  });
+
   it("registers the repo in the global registry", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "example");

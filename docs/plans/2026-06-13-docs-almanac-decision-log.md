@@ -83,14 +83,20 @@ tracked canonical marker such as `docs/almanac/README.md` or
 Why: after a clean clone, empty `.almanac/` runtime directories may not exist,
 but the tracked documentation wiki still must be discoverable from subfolders.
 
-## 10. Legacy Topic Writes Stay Legacy Until Canonical Topics Exist
+## 10. Legacy Topic Metadata Must Not Be Shadowed
 
 Topic mutation commands write `docs/almanac/topics.yaml` only when that
 canonical file exists or the repo is already a canonical docs wiki without a
 legacy topics file. Legacy-only repos keep writing `.almanac/topics.yaml`.
 
+When `init` creates `docs/almanac/topics.yaml` in a repo that already has
+legacy `.almanac/topics.yaml`, it copies the legacy topic file instead of
+writing the starter topic scaffold.
+
 Why: a single `tag` or `topics create` command must not create a partial
-canonical topic file that shadows a richer legacy topic DAG.
+canonical topic file that shadows a richer legacy topic DAG. The same rule
+applies to `init` because `build` calls `init` before deciding whether the wiki
+already has pages.
 
 ## 11. Health Uses `page_id` For Collision Checks
 
