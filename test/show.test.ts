@@ -391,7 +391,7 @@ describe("almanac show — single field flags (bare output)", () => {
         path: true,
       });
       expect(r.stdout.trim()).toMatch(
-        /\/\.almanac\/pages\/checkout-flow\.md$/,
+        /[\\/]\.almanac[\\/]pages[\\/]checkout-flow\.md$/,
       );
     });
   });

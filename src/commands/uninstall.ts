@@ -47,6 +47,8 @@ export interface UninstallOptions {
   // ─── Injection points ────────────────────────────────────────────
   automationPlistPath?: string;
   gardenPlistPath?: string;
+  /** Override scheduler platform; production uses `process.platform`. */
+  platform?: NodeJS.Platform;
   automationExec?: AutomationExecFn;
   claudeDir?: string;
   codexDir?: string;
@@ -93,6 +95,7 @@ export async function runUninstall(
       plistPath: options.automationPlistPath,
       gardenPlistPath: options.gardenPlistPath,
       exec: options.automationExec,
+      platform: options.platform,
     });
     if (res.exitCode !== 0) {
       return { stdout: "", stderr: res.stderr, exitCode: res.exitCode };

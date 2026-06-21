@@ -76,6 +76,25 @@ export async function writePage(
   return path;
 }
 
+/**
+ * A fake CLI written for tests is a `#!/usr/bin/env node` shebang script,
+ * which Windows cannot execute directly. This adds a `.cmd` shim next to it
+ * (like npm's global bins) that runs the script through `node`, so the same
+ * fixture works on Windows — and exercises the production `.cmd` shim path.
+ * No-op on POSIX.
+ */
+export async function addWindowsCmdShim(
+  binDir: string,
+  name: string,
+): Promise<void> {
+  if (process.platform !== "win32") return;
+  await writeFile(
+    join(binDir, `${name}.cmd`),
+    `@echo off\r\nnode "%~dp0${name}" %*\r\n`,
+    "utf8",
+  );
+}
+
 export async function createProcessTreeFixture(prefix: string): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), prefix));
   const grandchild = join(dir, "grandchild.js");

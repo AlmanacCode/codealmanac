@@ -1,8 +1,9 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
 import type { SpawnCliFn, SpawnedProcess } from "../types.js";
+import { crossSpawn, resolveExecutable } from "../../process/exec.js";
 
 /**
  * Claude auth gate — accepts either an active Claude subscription login
@@ -34,12 +35,7 @@ const AUTH_TIMEOUT_MS = 10_000;
  * the same binary so Almanac agrees with `claude auth status`.
  */
 export function resolveClaudeExecutable(): string | undefined {
-  const result = spawnSync("sh", ["-lc", "command -v claude"], {
-    encoding: "utf8",
-  });
-  if (result.status !== 0) return undefined;
-  const found = result.stdout.trim().split("\n")[0]?.trim();
-  return found !== undefined && found.length > 0 ? found : undefined;
+  return resolveExecutable("claude");
 }
 
 /**
@@ -58,8 +54,9 @@ function resolveCliJsPath(): string {
  * Claude Code CLI.
  */
 export const defaultSpawnCli: SpawnCliFn = (args: string[]) => {
-  const command = resolveClaudeExecutable() ?? "claude";
-  const child = spawn(command, args, {
+  // Pass the bare command so crossSpawn lets the shell resolve the npm
+  // `.cmd` shim on Windows; on POSIX it resolves via PATH as before.
+  const child = crossSpawn("claude", args, {
     stdio: ["ignore", "pipe", "pipe"],
   });
   return child as unknown as SpawnedProcess;

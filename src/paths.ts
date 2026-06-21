@@ -48,9 +48,24 @@ export function getRepoAlmanacDir(cwd: string): string {
  * init` anywhere inside their home directory (outside a real wiki), we
  * must NOT treat `~` as an enclosing wiki root. Otherwise init would try
  * to register the home dir itself as a wiki.
+ *
+ * When the walk starts inside the user's home directory we stop at the
+ * home boundary rather than ascending into system directories above it: a
+ * wiki located *above* your home is never the one you mean, and the only
+ * `.almanac` at home itself is the global state dir (skipped above). This
+ * also keeps tests hermetic on Windows, where the OS temp dir lives under
+ * the home directory and would otherwise let a sandbox walk into the real
+ * `~/.almanac`.
  */
+function samePath(a: string, b: string): boolean {
+  return process.platform === "win32"
+    ? a.toLowerCase() === b.toLowerCase()
+    : a === b;
+}
+
 export function findNearestAlmanacDir(startDir: string): string | null {
   const globalDir = getGlobalAlmanacDir();
+  const home = homedir();
   let current = isAbsolute(startDir) ? startDir : resolve(startDir);
 
   // Walk until we hit the filesystem root. `dirname("/")` returns `"/"`,
@@ -59,6 +74,12 @@ export function findNearestAlmanacDir(startDir: string): string | null {
     const candidate = join(current, ".almanac");
     if (candidate !== globalDir && existsSync(candidate)) {
       return current;
+    }
+    // Do not ascend above the user's home directory (the global
+    // `~/.almanac` was already skipped just above). Compare case-insensitively
+    // on Windows, where drive-letter / path casing can differ.
+    if (samePath(current, home)) {
+      return null;
     }
     const parent = dirname(current);
     if (parent === current) {

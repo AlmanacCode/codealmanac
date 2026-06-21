@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { crossSpawn } from "../../../process/exec.js";
 
 import type { HarnessResult } from "../../events.js";
 import type { HarnessRunHooks } from "../../types.js";
@@ -15,7 +15,7 @@ export function runCodexCli(
   hooks?: HarnessRunHooks,
 ): Promise<HarnessResult> {
   return new Promise((resolve) => {
-    const child = spawn(request.command, request.args, {
+    const child = crossSpawn(request.command, request.args, {
       cwd: request.cwd,
       env: request.env,
       stdio: ["ignore", "pipe", "pipe"],
@@ -50,11 +50,11 @@ export function runCodexCli(
       }
     };
 
-    child.stdout.on("data", (chunk) => {
+    child.stdout?.on("data", (chunk) => {
       stdoutBuf += chunk.toString("utf8");
       flushLines();
     });
-    child.stderr.on("data", (chunk) => {
+    child.stderr?.on("data", (chunk) => {
       stderr += chunk.toString("utf8");
     });
     child.on("error", (err: NodeJS.ErrnoException) => {

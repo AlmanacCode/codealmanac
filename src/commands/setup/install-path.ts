@@ -1,8 +1,9 @@
 import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
-import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { looksEphemeralInstallPath } from "../../install/ephemeral.js";
 
 /**
  * Return the directory of the currently-running codealmanac install by
@@ -40,32 +41,41 @@ export function detectCurrentInstallPath(): string {
  *   - `~/.npm/_npx/` — npm's npx cache (GC'd on version bumps or
  *     `npm cache clean`)
  *   - `~/.local/share/pnpm/dlx/` — pnpm's dlx (like npx) cache
- *   - `/tmp/` or `/var/folders/` — common CI / temp paths
+ *   - `/tmp/`, `/var/folders/`, `%TEMP%`, `%TMP%` — common temp paths
  *
  * A global install (`~/.nvm/.../lib/node_modules/`, `/usr/local/lib/...`,
  * `~/.local/lib/node_modules/`) is NOT ephemeral.
  */
 export function detectEphemeral(installPath: string): boolean {
-  if (installPath.length === 0) return false;
-  const home = homedir();
-  if (installPath.startsWith(path.join(home, ".npm", "_npx"))) return true;
-  if (
-    installPath.startsWith(path.join(home, ".local", "share", "pnpm", "dlx"))
-  ) return true;
-  if (installPath.startsWith("/tmp/")) return true;
-  if (installPath.startsWith("/var/folders/")) return true;
-  return false;
+  return looksEphemeralInstallPath(installPath);
 }
 
 /**
- * Spawn `npm install -g codealmanac@latest` in a child process and wait
- * for it to finish. Rejects on non-zero exit or spawn error.
+ * The platform command that installs codealmanac globally. On Windows npm is
+ * the `npm.cmd` shim, which cannot be spawned directly without a shell.
+ */
+export function globalInstallCommand(
+  platform: NodeJS.Platform = process.platform,
+): { file: string; args: string[] } {
+  if (platform === "win32") {
+    return {
+      file: "cmd.exe",
+      args: ["/d", "/s", "/c", "npm.cmd install -g codealmanac@latest"],
+    };
+  }
+  return { file: "npm", args: ["install", "-g", "codealmanac@latest"] };
+}
+
+/**
+ * Spawn the global install in a child process and wait for it to finish.
+ * Rejects on non-zero exit or spawn error.
  */
 export function spawnGlobalInstall(): Promise<void> {
+  const command = globalInstallCommand();
   return new Promise((resolve, reject) => {
     execFile(
-      "npm",
-      ["install", "-g", "codealmanac@latest"],
+      command.file,
+      command.args,
       { shell: false },
       (err, _stdout, stderr) => {
         if (err !== null) {

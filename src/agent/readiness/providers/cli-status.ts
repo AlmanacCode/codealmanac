@@ -1,15 +1,12 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { type ChildProcess } from "node:child_process";
 
 import type { SpawnCliFn } from "../../types.js";
+import { commandExists, crossSpawn } from "../../../process/exec.js";
 
 const STATUS_TIMEOUT_MS = 3_000;
 
-export function commandExists(command: string): boolean {
-  const result = spawnSync("sh", ["-lc", `command -v ${command}`], {
-    encoding: "utf8",
-  });
-  return result.status === 0 && result.stdout.trim().length > 0;
-}
+// Re-exported so providers keep a single import site for PATH detection.
+export { commandExists };
 
 export function runInjectedStatusCommand(
   spawnCli: SpawnCliFn,
@@ -75,7 +72,7 @@ export function runStatusCommand(
       resolve(value);
     };
     try {
-      child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+      child = crossSpawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       resolve({ ok: false, detail: msg });

@@ -87,6 +87,7 @@ describe("almanac doctor", () => {
         cwd: repo,
         json: true,
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         sqliteProbe: SQLITE_OK,
@@ -120,6 +121,7 @@ describe("almanac doctor", () => {
         cwd: home,
         json: true,
         automationPlistPath: missingPlist,
+        platform: "darwin",
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         sqliteProbe: SQLITE_OK,
@@ -136,6 +138,44 @@ describe("almanac doctor", () => {
     });
   });
 
+  it("reports the Windows Task Scheduler task when the manifest exists", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyInstall(home);
+      const manifestPath = join(home, ".almanac", "automation", "windows-capture.json");
+      await mkdir(dirname(manifestPath), { recursive: true });
+      await writeFile(
+        manifestPath,
+        JSON.stringify({
+          scheduler: "windows-task-scheduler",
+          taskName: "\\CodeAlmanac\\CaptureSweep",
+          command: ["almanac.cmd", "capture", "sweep"],
+          intervalSeconds: 3600,
+        }),
+        "utf8",
+      );
+
+      const r = await runDoctor({
+        cwd: home,
+        json: true,
+        platform: "win32",
+        automationHome: home,
+        windowsTaskExists: () => true,
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.3",
+      });
+
+      const parsed = JSON.parse(r.stdout);
+      const automation = parsed.install.find(
+        (c: { key: string }) => c.key === "install.automation",
+      );
+      expect(automation.status).toBe("ok");
+      expect(automation.message).toMatch(/Windows Task Scheduler/);
+    });
+  });
+
   it("reports auth problems without hiding other install checks", async () => {
     await withTempHome(async (home) => {
       const env = await scaffoldHealthyInstall(home);
@@ -143,6 +183,7 @@ describe("almanac doctor", () => {
         cwd: home,
         json: true,
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_OUT_STDOUT),
         sqliteProbe: SQLITE_OK,

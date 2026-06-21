@@ -100,6 +100,8 @@ export interface SetupOptions {
   updatePlistPath?: string;
   /** Override launchctl execution. */
   automationExec?: AutomationExecFn;
+  /** Override scheduler platform; production uses `process.platform`. */
+  platform?: NodeJS.Platform;
   /** Override `~/.claude/` dir for guide install. */
   claudeDir?: string;
   /** Override `~/.codex/` dir for Codex instruction install. */

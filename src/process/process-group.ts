@@ -1,6 +1,9 @@
-import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
+import { spawnSync, type ChildProcess, type SpawnOptions } from "node:child_process";
+
+import { crossSpawn } from "./exec.js";
 
 const DEFAULT_GRACE_MS = 2_000;
+const IS_WINDOWS = process.platform === "win32";
 
 export interface ProcessGroupChild extends ChildProcess {
   readonly processGroupId?: number;
@@ -17,9 +20,14 @@ export function spawnInProcessGroup(
   args: readonly string[],
   options: SpawnOptions,
 ): ProcessGroupChild {
-  const child = spawn(command, [...args], {
+  // On POSIX, `detached: true` puts the child in its own process group so we
+  // can signal the whole group. On Windows we deliberately do NOT detach:
+  // a detached child gets a new console that breaks piped stdio, and we
+  // terminate the tree by pid via `taskkill /T` instead. crossSpawn handles
+  // Windows `.cmd`/`.ps1` shims.
+  const child = crossSpawn(command, args, {
     ...options,
-    detached: true,
+    detached: !IS_WINDOWS,
   }) as ProcessGroupChild;
   const processGroupId = child.pid;
   Object.defineProperty(child, "processGroupId", {
@@ -29,6 +37,16 @@ export function spawnInProcessGroup(
 
   const killProcess = child.kill.bind(child);
   child.kill = ((signal: NodeJS.Signals = "SIGTERM") => {
+    // Windows has no process-group signals; force-kill the tree by pid.
+    if (IS_WINDOWS) {
+      const killedTree = killWindowsTree(child);
+      try {
+        return killProcess(signal) || killedTree;
+      } catch (err: unknown) {
+        if (isProcessUnavailableError(err)) return killedTree;
+        throw err;
+      }
+    }
     const sentGroupSignal = sendProcessGroupSignal(child, signal);
     try {
       return killProcess(signal) || sentGroupSignal;
@@ -77,6 +95,20 @@ export function attachAbortSignalToProcessGroup(
   return remove;
 }
 
+/**
+ * Force-terminate a child and all of its descendants on Windows via
+ * `taskkill /T /F`. Windows offers no graceful group signal, so this is
+ * always a hard kill — acceptable for run cancellation.
+ */
+function killWindowsTree(child: ProcessGroupChild): boolean {
+  const pid = child.pid;
+  if (pid === undefined) return false;
+  const result = spawnSync("taskkill", ["/PID", String(pid), "/T", "/F"], {
+    stdio: "ignore",
+  });
+  return result.status === 0;
+}
+
 function sendProcessGroupSignal(
   child: ProcessGroupChild,
   signal: NodeJS.Signals,
@@ -99,8 +131,11 @@ function hasExited(child: ChildProcess): boolean {
 function isProcessGroupAlive(child: ProcessGroupChild): boolean {
   const processGroupId = child.processGroupId ?? child.pid;
   if (processGroupId === undefined) return false;
+  // On Windows we can only probe the single pid (no process groups); once the
+  // root has exited the taskkill tree is gone too.
+  const probeTarget = IS_WINDOWS ? processGroupId : -processGroupId;
   try {
-    process.kill(-processGroupId, 0);
+    process.kill(probeTarget, 0);
     return true;
   } catch (err: unknown) {
     return !isProcessUnavailableError(err);

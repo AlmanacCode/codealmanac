@@ -1,10 +1,9 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { type ChildProcess } from "node:child_process";
+
+import { commandExists, crossSpawn } from "../../../process/exec.js";
 
 export function defaultCommandExists(command: string): boolean {
-  const result = spawnSync("sh", ["-lc", `command -v ${command}`], {
-    encoding: "utf8",
-  });
-  return result.status === 0 && result.stdout.trim().length > 0;
+  return commandExists(command);
 }
 
 export function defaultRunStatus(
@@ -16,7 +15,7 @@ export function defaultRunStatus(
     let stdout = "";
     let stderr = "";
     try {
-      child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+      child = crossSpawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
     } catch (err: unknown) {
       resolve({
         ok: false,

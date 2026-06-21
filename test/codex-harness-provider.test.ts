@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { chmod, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 
 import {
   applyCodexJsonlEvent,
@@ -16,6 +16,7 @@ import {
 } from "../src/harness/providers/codex.js";
 import type { AgentRunSpec } from "../src/harness/types.js";
 import {
+  addWindowsCmdShim,
   createProcessTreeFixture,
   isProcessAlive,
   waitForDead,
@@ -406,8 +407,9 @@ rl.on("line", (line) => {
 `,
     );
     await chmod(codexPath, 0o755);
+    await addWindowsCmdShim(binDir, "codex");
     const oldPath = process.env.PATH;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    process.env.PATH = `${binDir}${delimiter}${oldPath ?? ""}`;
     try {
       const events: unknown[] = [];
       await expect(
@@ -526,8 +528,9 @@ rl.on("line", (line) => {
 `,
     );
     await chmod(codexPath, 0o755);
+    await addWindowsCmdShim(binDir, "codex");
     const oldPath = process.env.PATH;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    process.env.PATH = `${binDir}${delimiter}${oldPath ?? ""}`;
     try {
       const events: unknown[] = [];
       await expect(
@@ -585,9 +588,10 @@ setInterval(() => {}, 1000);
 `,
     );
     await chmod(codexPath, 0o755);
+    await addWindowsCmdShim(binDir, "codex");
     const oldPath = process.env.PATH;
     const oldTimeout = process.env.CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    process.env.PATH = `${binDir}${delimiter}${oldPath ?? ""}`;
     process.env.CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS = "25";
     try {
       await expect(
@@ -638,9 +642,10 @@ setInterval(() => {}, 1000);
 `,
     );
     await chmod(codexPath, 0o755);
+    await addWindowsCmdShim(binDir, "codex");
     const oldPath = process.env.PATH;
     const oldTurnTimeout = process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    process.env.PATH = `${binDir}${delimiter}${oldPath ?? ""}`;
     process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS = "25";
     try {
       await expect(
@@ -705,9 +710,10 @@ setInterval(() => {}, 1000);
 `,
     );
     await chmod(codexPath, 0o755);
+    await addWindowsCmdShim(binDir, "codex");
     const oldPath = process.env.PATH;
     const oldTurnTimeout = process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    process.env.PATH = `${binDir}${delimiter}${oldPath ?? ""}`;
     process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS = "250";
     try {
       const run = runCodexAppServer({
@@ -764,9 +770,10 @@ rl.on("line", (line) => {
 `,
     );
     await chmod(codexPath, 0o755);
+    await addWindowsCmdShim(binDir, "codex");
     const oldPath = process.env.PATH;
     const oldTurnTimeout = process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS;
-    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    process.env.PATH = `${binDir}${delimiter}${oldPath ?? ""}`;
     process.env.CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS = "25";
     try {
       await expect(

@@ -54,6 +54,8 @@ almanac
 
 Requires Node 20, or Node 22 and newer. The npm package is `codealmanac`; the commands are `almanac` and `alm`.
 
+Works on macOS, Linux, and native Windows (PowerShell or cmd) — WSL counts as Linux. Scheduled automation uses launchd on macOS and Task Scheduler on Windows.
+
 ## Try The Sample Wiki
 
 Want to see the shape before running an agent over your own repo?

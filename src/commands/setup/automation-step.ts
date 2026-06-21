@@ -27,6 +27,8 @@ export interface AutomationSetupStepOptions {
   gardenPlistPath?: string;
   updatePlistPath?: string;
   automationExec?: AutomationExecFn;
+  /** Override scheduler platform; production uses `process.platform`. */
+  platform?: NodeJS.Platform;
 }
 
 export type SetupStepResult =
@@ -59,6 +61,7 @@ export async function runAutomationSetupStep(args: {
       );
     } else {
       await cleanupLegacyHooks();
+      const platform = args.options.platform ?? process.platform;
       const res = await runAutomationInstall({
         tasks: ["capture", "garden"],
         every: args.options.automationEvery,
@@ -67,14 +70,15 @@ export async function runAutomationSetupStep(args: {
         gardenOff: args.options.gardenOff,
         cwd: process.cwd(),
         programArguments: args.ephemeral
-          ? globalAlmanacProgramArguments(args.options.automationQuiet)
+          ? globalAlmanacProgramArguments(platform, args.options.automationQuiet)
           : undefined,
         gardenProgramArguments: args.ephemeral
-          ? globalGardenProgramArguments()
+          ? globalGardenProgramArguments(platform)
           : undefined,
         plistPath: args.options.automationPlistPath,
         gardenPlistPath: args.options.gardenPlistPath,
         exec: args.options.automationExec,
+        platform,
       });
       if (res.exitCode !== 0) {
         stepActive(args.out, `Auto-capture automation: ${res.stderr.trim()}`);
@@ -100,10 +104,11 @@ export async function runAutomationSetupStep(args: {
           tasks: ["update"],
           every: args.options.autoUpdateEvery,
           updateProgramArguments: args.ephemeral
-            ? globalUpdateProgramArguments()
+            ? globalUpdateProgramArguments(platform)
             : undefined,
           updatePlistPath: args.options.updatePlistPath,
           exec: args.options.automationExec,
+          platform,
         });
         if (update.exitCode !== 0) {
           stepActive(args.out, `Auto-update automation: ${update.stderr.trim()}`);
@@ -125,14 +130,22 @@ export async function runAutomationSetupStep(args: {
   return { ok: true };
 }
 
-function globalAlmanacProgramArguments(quiet = "45m"): string[] {
+function globalAlmanacProgramArguments(
+  platform: NodeJS.Platform,
+  quiet = "45m",
+): string[] {
+  if (platform === "win32") {
+    return ["almanac.cmd", "capture", "sweep", "--quiet", quiet];
+  }
   return ["/usr/bin/env", "almanac", "capture", "sweep", "--quiet", quiet];
 }
 
-function globalGardenProgramArguments(): string[] {
+function globalGardenProgramArguments(platform: NodeJS.Platform): string[] {
+  if (platform === "win32") return ["almanac.cmd", "garden"];
   return ["/usr/bin/env", "almanac", "garden"];
 }
 
-function globalUpdateProgramArguments(): string[] {
+function globalUpdateProgramArguments(platform: NodeJS.Platform): string[] {
+  if (platform === "win32") return ["almanac.cmd", "update"];
   return ["/usr/bin/env", "almanac", "update"];
 }

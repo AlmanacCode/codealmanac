@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
@@ -7,7 +8,7 @@ import {
   hasClaudeImportLine,
 } from "../../agent/install-targets.js";
 import type { ClaudeAuthStatus } from "../../agent/readiness/providers/claude/index.js";
-import { defaultPlistPath } from "../automation.js";
+import { defaultPlistPath, windowsManifestPath } from "../automation.js";
 import {
   classifyInstallPath,
   detectInstallPath,
@@ -41,8 +42,12 @@ export async function gatherInstallChecks(
   const auth = await safeCheckAuth(options.spawnCli);
   checks.push(describeAuth(auth));
 
-  const plistPath = options.automationPlistPath ?? defaultPlistPath(homedir());
-  checks.push(describeAutomation(plistPath));
+  checks.push(describeAutomation({
+    platform: options.platform ?? process.platform,
+    home: options.automationHome ?? homedir(),
+    plistPath: options.automationPlistPath,
+    windowsTaskExists: options.windowsTaskExists ?? defaultWindowsTaskExists,
+  }));
 
   const claudeDir = options.claudeDir ?? path.join(homedir(), ".claude");
   const codexDir = options.codexDir ?? path.join(homedir(), ".codex");
@@ -114,7 +119,16 @@ function describeAuth(auth: ClaudeAuthStatus): Check {
   };
 }
 
-function describeAutomation(plistPath: string): Check {
+function describeAutomation(args: {
+  platform: NodeJS.Platform;
+  home: string;
+  plistPath?: string;
+  windowsTaskExists: (taskName: string) => boolean;
+}): Check {
+  if (args.platform === "win32") {
+    return describeWindowsAutomation(args.home, args.windowsTaskExists);
+  }
+  const plistPath = args.plistPath ?? defaultPlistPath(args.home);
   if (existsSync(plistPath)) {
     return {
       status: "ok",
@@ -128,6 +142,60 @@ function describeAutomation(plistPath: string): Check {
     message: "auto-capture automation not installed",
     fix: "run: almanac automation install",
   };
+}
+
+function describeWindowsAutomation(
+  home: string,
+  windowsTaskExists: (taskName: string) => boolean,
+): Check {
+  const manifestPath = windowsManifestPath("capture", home);
+  const taskName = readWindowsTaskName(manifestPath);
+  if (taskName === null) {
+    return {
+      status: "problem",
+      key: "install.automation",
+      message: existsSync(manifestPath)
+        ? `auto-capture automation manifest is invalid (${manifestPath})`
+        : "auto-capture automation not installed",
+      fix: "run: almanac automation install",
+    };
+  }
+  if (!windowsTaskExists(taskName)) {
+    return {
+      status: "problem",
+      key: "install.automation",
+      message: `auto-capture manifest exists but the Windows Task Scheduler task is missing (${taskName})`,
+      fix: "run: almanac automation install",
+    };
+  }
+  return {
+    status: "ok",
+    key: "install.automation",
+    message: `auto-capture automation installed with Windows Task Scheduler (${taskName})`,
+  };
+}
+
+function readWindowsTaskName(manifestPath: string): string | null {
+  try {
+    const parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+      scheduler?: unknown;
+      taskName?: unknown;
+    };
+    if (parsed.scheduler === "windows-task-scheduler" && typeof parsed.taskName === "string") {
+      return parsed.taskName;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function defaultWindowsTaskExists(taskName: string): boolean {
+  if (process.platform !== "win32") return true;
+  const result = spawnSync("schtasks", ["/Query", "/TN", taskName], {
+    encoding: "utf8",
+  });
+  return result.status === 0;
 }
 
 function describeGuides(claudeDir: string): Check {
