@@ -35,6 +35,7 @@ describe("almanac automation", () => {
       };
 
       const first = await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenPlistPath,
         exec,
@@ -51,6 +52,7 @@ describe("almanac automation", () => {
       });
 
       const second = await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenPlistPath,
         exec,
@@ -109,6 +111,7 @@ describe("almanac automation", () => {
       );
 
       const result = await runAutomationInstall({
+        platform: "darwin",
         cwd: nested,
         plistPath,
         gardenPlistPath,
@@ -139,6 +142,7 @@ describe("almanac automation", () => {
       );
 
       const result = await runAutomationInstall({
+        platform: "darwin",
         every: "1m",
         quiet: "1s",
         gardenEvery: "1w",
@@ -182,6 +186,7 @@ describe("almanac automation", () => {
       );
 
       await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenPlistPath,
         exec: async () => ({}),
@@ -190,6 +195,7 @@ describe("almanac automation", () => {
       expect(await readFile(gardenPlistPath, "utf8")).toContain("<string>garden</string>");
 
       const result = await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenPlistPath,
         gardenOff: true,
@@ -225,6 +231,7 @@ describe("almanac automation", () => {
       );
 
       const result = await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenOff: true,
         exec: async () => ({}),
@@ -259,6 +266,7 @@ describe("almanac automation", () => {
       );
 
       await runAutomationInstall({
+        platform: "darwin",
         plistPath,
         gardenPlistPath,
         exec: async () => ({}),
@@ -266,6 +274,7 @@ describe("almanac automation", () => {
       });
 
       const result = await runAutomationStatus({
+        platform: "darwin",
         plistPath,
         gardenPlistPath,
         exec: async (_file, args) => {
@@ -294,6 +303,7 @@ describe("almanac automation", () => {
       );
 
       const result = await runAutomationInstall({
+        platform: "darwin",
         tasks: ["update"],
         every: "1d",
         updatePlistPath,
@@ -322,12 +332,14 @@ describe("almanac automation", () => {
         "com.codealmanac.update.plist",
       );
       await runAutomationInstall({
+        platform: "darwin",
         tasks: ["update"],
         updatePlistPath,
         exec: async () => ({}),
       });
 
       const result = await runAutomationStatus({
+        platform: "darwin",
         tasks: ["update"],
         updatePlistPath,
         exec: async () => ({}),
@@ -349,12 +361,14 @@ describe("almanac automation", () => {
         "com.codealmanac.update.plist",
       );
       await runAutomationInstall({
+        platform: "darwin",
         tasks: ["update"],
         updatePlistPath,
         exec: async () => ({}),
       });
 
       const result = await runAutomationUninstall({
+        platform: "darwin",
         tasks: ["update"],
         updatePlistPath,
         exec: async () => ({}),
@@ -363,6 +377,99 @@ describe("almanac automation", () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("automation removed");
       await expect(readFile(updatePlistPath, "utf8")).rejects.toThrow();
+    });
+  });
+});
+
+describe("almanac automation — Windows Task Scheduler", () => {
+  it("creates schtasks tasks and records manifests", async () => {
+    await withTempHome(async (home) => {
+      const calls: string[][] = [];
+      const result = await runAutomationInstall({
+        platform: "win32",
+        homeDir: home,
+        every: "1h",
+        gardenEvery: "1d",
+        exec: async (file, args) => {
+          calls.push([file, ...args]);
+          return {};
+        },
+        now: new Date("2026-05-12T05:10:00.000Z"),
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("scheduler: Windows Task Scheduler");
+      expect(result.stdout).toContain("capture task: \\CodeAlmanac\\CaptureSweep");
+
+      // capture: 1h → 60 minutes; garden: 1d → DAILY.
+      const captureCall = calls.find((c) => c.includes("\\CodeAlmanac\\CaptureSweep"));
+      expect(captureCall).toEqual(
+        expect.arrayContaining(["schtasks", "/Create", "/SC", "MINUTE", "/MO", "60", "/F"]),
+      );
+      const gardenCall = calls.find((c) => c.includes("\\CodeAlmanac\\Garden"));
+      expect(gardenCall).toEqual(expect.arrayContaining(["/SC", "DAILY", "/MO", "1"]));
+
+      const manifest = JSON.parse(
+        await readFile(
+          join(home, ".almanac", "automation", "windows-capture.json"),
+          "utf8",
+        ),
+      );
+      expect(manifest).toMatchObject({
+        scheduler: "windows-task-scheduler",
+        taskName: "\\CodeAlmanac\\CaptureSweep",
+        intervalSeconds: 3600,
+      });
+    });
+  });
+
+  it("rejects sub-minute intervals on Windows", async () => {
+    await withTempHome(async (home) => {
+      const result = await runAutomationInstall({
+        platform: "win32",
+        homeDir: home,
+        every: "30s",
+        gardenOff: true,
+        exec: async () => ({}),
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("whole minutes");
+    });
+  });
+
+  it("reports and uninstalls Windows tasks via manifests", async () => {
+    await withTempHome(async (home) => {
+      await runAutomationInstall({
+        platform: "win32",
+        homeDir: home,
+        gardenOff: true,
+        exec: async () => ({}),
+        now: new Date("2026-05-12T05:10:00.000Z"),
+      });
+
+      const status = await runAutomationStatus({ platform: "win32", homeDir: home });
+      expect(status.stdout).toContain("auto-capture automation: installed");
+      expect(status.stdout).toContain("scheduler: Windows Task Scheduler");
+
+      const deleted: string[][] = [];
+      const uninstall = await runAutomationUninstall({
+        platform: "win32",
+        homeDir: home,
+        exec: async (file, args) => {
+          deleted.push([file, ...args]);
+          return {};
+        },
+      });
+      expect(uninstall.exitCode).toBe(0);
+      expect(uninstall.stdout).toContain("automation removed");
+      expect(
+        deleted.some(
+          (c) => c.includes("/Delete") && c.includes("\\CodeAlmanac\\CaptureSweep"),
+        ),
+      ).toBe(true);
+      await expect(
+        readFile(join(home, ".almanac", "automation", "windows-capture.json"), "utf8"),
+      ).rejects.toThrow();
     });
   });
 });

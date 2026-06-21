@@ -107,6 +107,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         automationExec: async (file: string, args: string[]) => {
           calls.push([file, ...args].join(" "));
           return {};
@@ -119,7 +120,8 @@ describe("codealmanac setup", () => {
       expect(res.exitCode).toBe(0);
       expect(existsSync(env.plistPath)).toBe(true);
       const plist = await readFile(env.plistPath, "utf8");
-      expect(plist).toContain("dist/codealmanac.js");
+      // Normalize separators — the embedded path is OS-native (`\` on Windows).
+      expect(plist.replaceAll("\\", "/")).toContain("dist/codealmanac.js");
       expect(plist).toContain("<string>capture</string>");
       expect(plist).toContain("<string>sweep</string>");
       await expect(readConfig()).resolves.toMatchObject({
@@ -143,6 +145,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin" as const,
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
@@ -169,6 +172,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         automationExec: async () => {
           throw new Error("should not run");
         },
@@ -192,6 +196,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
@@ -221,6 +226,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         updatePlistPath,
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
@@ -262,6 +268,7 @@ describe("codealmanac setup", () => {
         interactive: true,
         options: {
           automationPlistPath: env.plistPath,
+          platform: "darwin",
           updatePlistPath,
           automationExec: async () => ({}),
         },
@@ -290,6 +297,7 @@ describe("codealmanac setup", () => {
           model: "claude-opus-4-6",
           spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
           automationPlistPath: env.plistPath,
+          platform: "darwin",
           automationExec: async () => ({}),
           claudeDir: env.claudeDir,
           guidesDir: env.guidesDir,
@@ -315,6 +323,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
@@ -337,6 +346,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
@@ -357,6 +367,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_OUT_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
@@ -384,6 +395,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
@@ -407,6 +419,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
         stdout: env.out,
@@ -430,6 +443,7 @@ describe("codealmanac setup", () => {
         isTTY: false,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
         stdout: env.out,
@@ -454,6 +468,7 @@ describe("codealmanac setup", () => {
         spawnGlobalInstall: async () => {},
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
         guidesDir: env.guidesDir,
@@ -480,6 +495,7 @@ describe("codealmanac setup", () => {
         },
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         automationExec: async () => {
           throw new Error("should not install automation from ephemeral path");
         },

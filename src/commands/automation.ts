@@ -1,6 +1,8 @@
+import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
 
 import {
   bootstrapLaunchdJob,
@@ -33,8 +35,20 @@ import type { CommandResult } from "../cli/helpers.js";
 import { ensureAutomationCaptureSince } from "../config/index.js";
 import { parseDuration } from "../indexer/duration.js";
 import { findNearestAlmanacDir } from "../paths.js";
+import {
+  installWindowsAutomation,
+  statusWindowsAutomation,
+  uninstallWindowsAutomation,
+  type WindowsAutomationJob,
+} from "./automation/windows.js";
 
 export { cleanupLegacyHooks } from "../automation/legacy-hooks.js";
+export {
+  defaultWindowsCaptureManifestPath,
+  readWindowsManifest,
+  windowsManifestPath,
+  windowsTaskName,
+} from "./automation/windows.js";
 
 export interface AutomationOptions {
   tasks?: ScheduledTaskId[];
@@ -54,6 +68,8 @@ export interface AutomationOptions {
   exec?: ExecFn;
   now?: Date;
   configPath?: string;
+  /** Override scheduler platform; production uses `process.platform`. */
+  platform?: NodeJS.Platform;
 }
 
 export interface AutomationStatusOptions {
@@ -63,6 +79,8 @@ export interface AutomationStatusOptions {
   gardenPlistPath?: string;
   updatePlistPath?: string;
   exec?: ExecFn;
+  /** Override scheduler platform; production uses `process.platform`. */
+  platform?: NodeJS.Platform;
 }
 
 interface PlannedAutomationJob {
@@ -82,6 +100,25 @@ const TASK_LABELS: Record<ScheduledTaskId, string> = {
   update: "auto-update automation",
 };
 
+const execFileAsync = promisify(execFile);
+
+async function defaultWindowsExec(
+  file: string,
+  args: string[],
+): Promise<{ stdout?: string; stderr?: string }> {
+  return await execFileAsync(file, args);
+}
+
+function toWindowsJob(planned: PlannedAutomationJob): WindowsAutomationJob {
+  return {
+    taskId: planned.task.id,
+    intervalInput: planned.intervalInput,
+    intervalSeconds: planned.job.intervalSeconds,
+    programArguments: planned.job.programArguments,
+    workingDirectory: planned.job.workingDirectory,
+  };
+}
+
 export async function runAutomationInstall(
   options: AutomationOptions = {},
 ): Promise<CommandResult> {
@@ -90,8 +127,6 @@ export async function runAutomationInstall(
     return { stdout: "", stderr: `almanac: ${plan.error}\n`, exitCode: 1 };
   }
 
-  await writeAutomationPlists(plan.value);
-
   const captureJob = plan.value.jobs.find((job) => job.task.id === "capture");
   const captureSince = captureJob === undefined
     ? null
@@ -99,6 +134,19 @@ export async function runAutomationInstall(
       (options.now ?? new Date()).toISOString(),
       options.configPath,
     );
+
+  if ((options.platform ?? process.platform) === "win32") {
+    return installWindowsAutomation({
+      home: options.homeDir ?? homedir(),
+      jobs: plan.value.jobs.map(toWindowsJob),
+      disabledTaskIds: plan.value.disabledGardenPlistPath !== null ? ["garden"] : [],
+      captureSince,
+      exec: options.exec ?? defaultWindowsExec,
+    });
+  }
+
+  await writeAutomationPlists(plan.value);
+
   const activated = await activateAutomationJobs(plan.value, options.exec);
   if (!activated.ok) {
     return activated.result;
@@ -116,6 +164,13 @@ export async function runAutomationUninstall(
 ): Promise<CommandResult> {
   const home = options.homeDir ?? homedir();
   const tasks = selectedTaskIds(options.tasks, false);
+  if ((options.platform ?? process.platform) === "win32") {
+    return uninstallWindowsAutomation({
+      home,
+      taskIds: tasks,
+      exec: options.exec ?? defaultWindowsExec,
+    });
+  }
   const exec = options.exec;
   const removed: string[] = [];
   for (const task of tasks.map((id) => scheduledTaskDefinition(id))) {
@@ -145,6 +200,9 @@ export async function runAutomationStatus(
 ): Promise<CommandResult> {
   const home = options.homeDir ?? homedir();
   const tasks = selectedTaskIds(options.tasks, false);
+  if ((options.platform ?? process.platform) === "win32") {
+    return statusWindowsAutomation({ home, taskIds: tasks });
+  }
   const sections: string[] = [];
   for (const task of tasks.map((id) => scheduledTaskDefinition(id))) {
     const status = await readLaunchdJobStatus({

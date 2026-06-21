@@ -54,6 +54,7 @@ describe("almanac uninstall", () => {
         yes: true,
         isTTY: false,
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         gardenPlistPath: env.gardenPlistPath,
         automationExec: async (file: string, args: string[]) => {
           calls.push([file, ...args].join(" "));
@@ -85,6 +86,7 @@ describe("almanac uninstall", () => {
         yes: true,
         isTTY: false,
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
@@ -102,6 +104,7 @@ describe("almanac uninstall", () => {
         yes: true,
         isTTY: false,
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
@@ -124,6 +127,7 @@ describe("almanac uninstall", () => {
         keepAutomation: true,
         isTTY: false,
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => {
           throw new Error("should not run");
@@ -148,6 +152,7 @@ describe("almanac uninstall", () => {
         keepGuides: true,
         isTTY: false,
         automationPlistPath: env.plistPath,
+        platform: "darwin",
         gardenPlistPath: env.gardenPlistPath,
         automationExec: async () => ({}),
         claudeDir: env.claudeDir,
