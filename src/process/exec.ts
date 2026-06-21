@@ -120,11 +120,9 @@ export interface CrossSpawnOptions extends SpawnOptions {
 }
 
 /**
- * Quote an argument so it survives cmd.exe re-parsing under `shell: true`.
- * Node does not escape args when `shell` is enabled — it joins them with
- * spaces — so any arg containing whitespace or a cmd metacharacter must be
- * wrapped. The live callers pass only simple flags, but quoting keeps the
- * helper honest if that changes.
+ * Quote an argument so it survives cmd.exe parsing. Any token containing
+ * whitespace or a cmd metacharacter is wrapped in double quotes (embedded
+ * quotes escaped). Used to build a verbatim cmd.exe command line.
  */
 export function quoteWindowsArg(arg: string): string {
   if (arg.length === 0) return '""';
@@ -132,46 +130,41 @@ export function quoteWindowsArg(arg: string): string {
   return `"${arg.replaceAll('"', '\\"')}"`;
 }
 
+const WINDOWS_SHIM_EXTENSIONS = new Set([".cmd", ".bat", ".ps1"]);
+
 /**
  * Spawn a child process, transparently handling Windows command shims.
  *
  * On Windows, npm installs CLIs (codex, claude, cursor-agent) as `.cmd`/`.ps1`
- * shims, and Node ≥20 refuses to spawn those without `shell: true`. We enable
- * the shell and let cmd.exe resolve the shim via PATHEXT, quoting args so they
- * are not re-split.
+ * shims that Node >=20 cannot spawn directly. We run those through cmd.exe with
+ * a hand-quoted, verbatim command line. We avoid `shell: true` because it is
+ * deprecated (DEP0190) and does not escape args — we escape them ourselves.
  *
- * NOTE: with `shell: true`, multi-line or metacharacter-heavy args cannot be
- * passed reliably to a `.cmd` shim — a Windows command-line limitation, not a
- * quoting bug. The live run path (Codex app-server) sends prompts over stdio,
- * so only simple flag args reach the command line here.
+ * NOTE: a multi-line / metacharacter-heavy arg cannot be passed reliably to a
+ * `.cmd` shim — a Windows command-line limitation, not a quoting bug. The live
+ * run path (Codex app-server) sends prompts over stdio, so only simple flag
+ * args reach the command line here.
  */
-const WINDOWS_SHIM_EXTENSIONS = new Set([".cmd", ".bat", ".ps1"]);
-
-/** Whether a Windows command must be launched through a shell to run. */
-export function needsWindowsShell(
-  command: string,
-  options: ResolveOptions = {},
-): boolean {
-  const resolved = resolveExecutable(command, options) ?? command;
-  return WINDOWS_SHIM_EXTENSIONS.has(path.win32.extname(resolved).toLowerCase());
-}
-
 export function crossSpawn(
   command: string,
   args: readonly string[],
   options: CrossSpawnOptions = {},
 ): ChildProcess {
   const { platform = process.platform, ...spawnOptions } = options;
-  if (platform === "win32" && needsWindowsShell(command, { platform })) {
-    // npm `.cmd`/`.ps1` shims need a shell on Node ≥20. Let cmd.exe resolve
-    // the bare command via PATHEXT and quote args so they are not re-split.
-    return spawn(command, args.map(quoteWindowsArg), {
-      ...spawnOptions,
-      shell: true,
-    });
+  if (platform === "win32") {
+    const resolved = resolveExecutable(command, { platform }) ?? command;
+    if (WINDOWS_SHIM_EXTENSIONS.has(path.win32.extname(resolved).toLowerCase())) {
+      const comspec = process.env.ComSpec ?? process.env.COMSPEC ?? "cmd.exe";
+      const line = [resolved, ...args].map(quoteWindowsArg).join(" ");
+      return spawn(comspec, ["/d", "/s", "/c", `"${line}"`], {
+        ...spawnOptions,
+        windowsVerbatimArguments: true,
+      });
+    }
+    // A directly-runnable executable (.exe, node, an absolute path) is spawned
+    // without a shell so the child's pid is the real process — important for
+    // process-group termination.
+    return spawn(resolved, [...args], spawnOptions);
   }
-  // A directly-runnable executable (.exe, node, an absolute path) is spawned
-  // without a shell so the child's pid is the real process — important for
-  // process-group termination.
   return spawn(command, [...args], spawnOptions);
 }
