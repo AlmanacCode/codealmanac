@@ -20,6 +20,12 @@ export interface DoctorOptions {
   providerStatuses?: ProviderStatus[];
   /** Override auto-capture launchd plist path. */
   automationPlistPath?: string;
+  /** Override scheduler platform; production uses `process.platform`. */
+  platform?: NodeJS.Platform;
+  /** Override the `~/.almanac/` home used for Windows manifest lookup. */
+  automationHome?: string;
+  /** Override the Windows Task Scheduler task-existence probe. */
+  windowsTaskExists?: (taskName: string) => boolean;
   /** Override `~/.claude/settings.json` path. */
   settingsPath?: string;
   /** Override `~/.almanac/` directory. */

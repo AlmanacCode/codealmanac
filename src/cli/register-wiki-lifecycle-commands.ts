@@ -324,7 +324,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   automation
     .command("install [tasks...]")
-    .description("install the macOS launchd automation jobs")
+    .description("install the platform scheduler automation jobs (launchd on macOS, Task Scheduler on Windows)")
     .option("--every <duration>", "run interval for capture or a single selected task")
     .option("--quiet <duration>", "minimum quiet time before capture (default: 45m)")
     .option("--garden-every <duration>", "Garden run interval (default: 4h)")
@@ -353,7 +353,7 @@ export function registerWikiLifecycleCommands(program: Command): void {
 
   automation
     .command("uninstall [tasks...]")
-    .description("remove the macOS launchd automation jobs")
+    .description("remove the platform scheduler automation jobs (launchd on macOS, Task Scheduler on Windows)")
     .action(async (tasks: string[]) => {
       const parsed = parseAutomationTaskIds(tasks);
       if (!parsed.ok) {
