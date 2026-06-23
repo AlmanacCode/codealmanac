@@ -1,6 +1,6 @@
 ---
 title: TypeScript Runtime Choice
-summary: CodeAlmanac should stay TypeScript while it remains an npm-installed developer CLI, even though a Python port is technically feasible.
+summary: CodeAlmanac remains a TypeScript npm CLI, but the sibling Python port is now the newer implementation for general Almanac concepts.
 topics: [decisions, stack, cli]
 sources:
   - id: porting-session
@@ -35,9 +35,13 @@ sources:
     type: file
     path: .almanac/pages/sqlite-indexer.md
     note: Documents the better-sqlite3 native-binding constraint that a Python port would remove from the query stack.
+  - id: state-comparison-session
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/06/22/rollout-2026-06-22T15-50-06-019ef186-d8dd-7d92-b5c9-b39e4468c891.jsonl
+    note: Records the later comparison that found this repo narrower than ../almanac/old and behind the active Python port for general manual, source, run, server, and viewer concepts.
 ---
 
-CodeAlmanac's current runtime choice is TypeScript. A Python port is feasible, but the current decision is to keep TypeScript while the product remains an npm-installed developer CLI with local wiki browsing, provider-backed lifecycle jobs, and Node package distribution. The user's main pressure in the 2026-06-07 porting discussion was personal TypeScript unfamiliarity, and the cheaper response is to make the TypeScript codebase easier to read rather than to rewrite the product runtime. [@porting-session]
+CodeAlmanac's current runtime choice in this repository is TypeScript. The earlier decision was to keep this repo TypeScript while it remained an npm-installed developer CLI with local wiki browsing, provider-backed lifecycle jobs, and Node package distribution. The later [[python-core-port]] comparison narrows that claim: `/Users/rohan/Desktop/Projects/almanac` now contains the active Python port for general Almanac concepts, while this repo remains the older and narrower codebase-wiki implementation. [@porting-session] [@state-comparison-session]
 
 ## Current Runtime Shape
 
@@ -53,12 +57,18 @@ The 2026-06-07 session estimated a query-only Python port as medium difficulty a
 
 Python becomes more attractive if Almanac turns into a Python-native agent or documentation engine for ML, data, or research-heavy teams. TypeScript remains more attractive while the product's first install path is npm, the local viewer remains close to web tooling, and contributors expect a Node developer-tool package. [@porting-session] [@package-metadata]
 
+## Relationship To The Python Port
+
+The active sibling Python port lives under `/Users/rohan/Desktop/Projects/almanac/src/almanac/`. It has first-class bundled manual files, package data for prompts and skills, `manual sync`, a durable `sources` catalog, source-backed `ingest`, run-ledger services, server routes, and a separate React/Vite viewer over the Python server API. Those surfaces are newer than this repo's TypeScript implementation for general Almanac work. [@state-comparison-session]
+
+This repo has partial equivalents: root `MANUAL.md`, operation prompts, `absorb`, an `ingest` alias, source provenance for page frontmatter, local capture, and a local viewer. It does not ship the full manual bundle, source-library workflow, source-backed ingest architecture, or service-owned Python run/source/provenance model. Future agents should read [[python-core-port]] before deciding whether to backport a general-Almanac concept into this TypeScript codebase. [@state-comparison-session]
+
 ## Decision Rule
 
-Do not port CodeAlmanac to Python just to lower the maintainer's personal TypeScript learning cost. Treat that pressure as a documentation and architecture-readability problem: keep modules small, keep type boundaries explicit, and add a Python-reader-oriented guide if the TypeScript surface blocks real work.
+Do not port this TypeScript repo to Python just to lower the maintainer's personal TypeScript learning cost. Treat that pressure as a documentation and architecture-readability problem: keep modules small, keep type boundaries explicit, and add a Python-reader-oriented guide if the TypeScript surface blocks real work.
 
-Reconsider Python only if the product strategy changes. Valid triggers include a Python-first customer segment, a need to embed Almanac as a Python library, a decision to split a language-neutral core from CLI wrappers, or repeated distribution failures that the Node launcher and doctor path cannot solve.
+Reconsider this repo's runtime only if the local codebase-wiki package needs to converge with the active Python port or if the product strategy changes. Valid triggers include a Python-first customer segment, a need to embed Almanac as a Python library, a decision to split a language-neutral core from CLI wrappers, or repeated distribution failures that the Node launcher and doctor path cannot solve. [@state-comparison-session]
 
 ## Related Pages
 
-[[almanac-product-family]] explains the broader product scopes that could change the runtime decision. [[sqlite-indexer]] and [[install-time-node-launcher]] document the current Node ABI constraint. [[process-manager-runs]] and [[harness-providers]] document the runtime surfaces that make full parity harder than query-command parity.
+[[python-core-port]] explains the sibling Python implementation that now carries the newer general-Almanac concepts. [[almanac-product-family]] explains the broader product scopes that could change this repo's runtime decision. [[sqlite-indexer]] and [[install-time-node-launcher]] document the current Node ABI constraint. [[process-manager-runs]] and [[harness-providers]] document the runtime surfaces that make full parity harder than query-command parity.
