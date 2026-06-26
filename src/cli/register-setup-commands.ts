@@ -114,11 +114,11 @@ export function registerSetupCommands(
 
   program
     .command("setup")
-    .description("install automation + agent guides")
-    .option("-y, --yes", "skip prompts; install everything")
+    .description("set up local Almanac access")
+    .option("-y, --yes", "skip prompts; use setup defaults")
     .option("--agent <agent>", "default agent: claude, codex, or cursor")
     .option("--model <model>", "default model for the selected agent")
-    .option("--skip-automation", "opt out of scheduled sync")
+    .option("--skip-automation", "skip scheduled setup tasks")
     .option("--sync-every <duration>", "scheduled sync interval (default: 5h)")
     .option("--sync-quiet <duration>", "scheduled sync quiet window (default: 45m)")
     .option("--garden-every <duration>", "scheduled Garden interval (default: 4h)")

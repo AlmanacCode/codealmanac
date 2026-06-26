@@ -132,13 +132,13 @@ verified: 2026-06-08T00:00:00.000Z
 
 # Automation
 
-Automation is the scheduler layer around Almanac's recurring maintenance work. In the current product shape, that means launchd jobs on macOS for `almanac sync`, `almanac garden`, and opt-in `almanac update`. The scheduler decides when Almanac starts. Almanac still decides which quiet transcripts to sync into Absorb, whether a wiki needs gardening, whether a package update exists, and how job state is recorded.
+Automation is the scheduler layer around Almanac's recurring maintenance work. In the current product shape, that means launchd jobs on macOS for `almanac sync`, `almanac garden`, and `almanac update`. The scheduler decides when Almanac starts. Almanac still decides which quiet transcripts to sync into Absorb, whether a wiki needs gardening, whether a package update exists, and how job state is recorded.
 
 ## Public command surface
 
 `almanac automation install|status|uninstall` is the explicit scheduler-management surface. `install` writes launchd plists, bootstraps them with `launchctl`, and prints the effective sync interval, quiet window, activation timestamp, commands, and plist paths. `status` reads the plist files back and checks whether launchd has each job loaded, so a stale plist and a loaded scheduler job are separate reported facts. `uninstall` unloads and removes whichever CodeAlmanac plists exist.
 
-`almanac setup` is the onboarding entry point for the same automation surface. Setup installs scheduled sync and scheduled Garden by default unless the user passes `--skip-automation` or `--garden-off`. Interactive setup asks a separate "Keep Almanac automatically updated?" prompt after scheduled wiki maintenance is accepted and installed; that prompt defaults to yes and installs the update task. Unattended setup leaves the update task disabled unless `--auto-update` is passed. That makes automation a first-run product behavior while keeping global CLI self-update as its own onboarding choice.
+`almanac setup` uses the automation surface only for setup-plan gates. Default setup installs scheduled CLI self-update and does not install scheduled sync or Garden. Interactive setup asks "Keep the Almanac CLI updated automatically?" with default yes; unattended setup uses the same default unless `--skip-automation` is present. Sync/Garden automation is installed manually with `almanac automation install`, or through setup only when explicit legacy sync/Garden flags such as `--sync-every`, `--sync-quiet`, `--garden-every`, or `--garden-off` are present.
 
 ## Launchd contract
 

@@ -362,7 +362,7 @@ The preferred onboarding shape discussed in the session was:
 2. Accepting that prompt installs the scheduler-backed sweep.
 3. Power-user commands such as `almanac sync`, `almanac sync status`, and scheduler-management commands remain available for inspection and control.
 
-Later turns in the same session made the v1 product decision stricter than that intermediate framing: setup should replace the hook prompt, and the documented automatic-session path should be scheduler-only rather than "hooks plus scheduler." Setup now installs scheduled sync and Garden by default, with `--skip-automation`, `--sync-every`, and `--sync-quiet` controlling the sync scheduler path.
+Later turns in the same session made the v1 product decision stricter than that intermediate framing: the documented automatic-session path should be scheduler-only rather than "hooks plus scheduler." Default setup no longer installs scheduled sync and Garden. Users install recurring sync/Garden with `almanac automation install`, or opt into the compatibility setup path by passing explicit sync/Garden flags such as `--sync-every`, `--sync-quiet`, `--garden-every`, or `--garden-off`.
 
 The same plan revision also proposed the likely replacement wording:
 

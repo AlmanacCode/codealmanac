@@ -4,7 +4,6 @@ import {
   DIM,
   type InstallDecision,
   RST,
-  confirm,
   stepDone,
   stepSkipped,
 } from "./output.js";
@@ -23,12 +22,6 @@ export async function runAutoCommitSetupStep(args: {
     autoCommitAction = "skip";
   } else if (args.options.autoCommit === true) {
     autoCommitAction = "install";
-  } else if (args.interactive) {
-    autoCommitAction = await confirm(
-      args.out,
-      "Commit Almanac wiki updates automatically?",
-      true,
-    );
   }
 
   if (autoCommitAction === "install") {

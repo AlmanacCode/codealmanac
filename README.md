@@ -36,13 +36,13 @@ Almanac makes that context durable. It stores atomic markdown pages in `.almanac
 npx codealmanac
 
 cd your-repo
-almanac init
+# create or update the repo wiki from https://codealmanac.com/dashboard
 
 almanac search "auth"
 almanac show checkout-flow
 ```
 
-That is the whole first path: install Almanac, build the first wiki for a repo, then search and read it. From then on, scheduled sync periodically runs `almanac sync` for quiet Claude/Codex transcripts, and scheduled Garden keeps the wiki graph tidy.
+That is the happy path: install Almanac locally, create the repo wiki from the dashboard, then use the CLI to search and read it from your agent. OSS-only users can still run `almanac init` and `almanac automation install` manually.
 
 Prefer the explicit install?
 
@@ -78,8 +78,9 @@ The sample wiki shows the checked-in `.almanac/` files directly: a notability gu
 |---|---|
 | Install and run guided setup | `npx codealmanac` |
 | Install globally yourself | `npm install -g codealmanac && almanac` |
-| Build a new wiki in a repo | `almanac init` |
+| Create a repo wiki | `https://codealmanac.com/dashboard` |
 | Search an existing wiki | `almanac search "query"` |
+| Initialize locally without the dashboard | `almanac init` |
 | Check setup and provider auth | `almanac doctor` |
 | See scheduled sync status | `almanac automation status` |
 
@@ -127,7 +128,9 @@ Absorb writes nothing if the input does not meet the notability bar. Silence is 
 
 ## Setup And Auth
 
-Bare `almanac` opens the setup wizard. It chooses your default agent/model, checks readiness, installs scheduled sync and Garden automation, asks whether to keep Almanac automatically updated, and adds optional agent guides.
+Bare `almanac` opens the setup wizard. It chooses your default agent/model, checks readiness, installs the local agent guides, and asks whether to keep the CLI updated automatically.
+
+Setup no longer installs scheduled sync or Garden automation by default. Create the repo's wiki from the dashboard, then use the CLI to query it locally. Sync and Garden remain available through `almanac automation install` and the explicit setup flags below.
 
 Useful unattended setup flags:
 
@@ -145,10 +148,10 @@ almanac setup --auto-update
 almanac setup --auto-update-every 1d
 ```
 
-Interactive setup asks about scheduled self-update and defaults to yes. Unattended setup uses `--auto-update` when you want the same opt-in without prompts.
+Interactive setup asks about CLI self-update and defaults to yes. Unattended setup uses the same default unless `--skip-automation` is present.
 
-Auto-commit is on by default. Use `--no-auto-commit` when lifecycle runs should
-leave wiki changes in your working tree for review.
+Auto-commit is off by default. Use `--auto-commit` only when lifecycle runs
+should commit wiki source changes automatically.
 
 Pick the provider Almanac should use for write-capable commands:
 

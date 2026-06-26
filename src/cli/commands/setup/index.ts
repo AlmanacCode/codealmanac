@@ -8,6 +8,10 @@ export {
 } from "../../../agent/instructions/codex.js";
 import { chooseDefaultAgent, type AgentChoice } from "./agent-choice.js";
 import { runAutoCommitSetupStep } from "./auto-commit-step.js";
+import {
+  runAutoUpdateSetupStep,
+  skipAutoUpdateSetupStep,
+} from "./auto-update-step.js";
 import { runAutomationSetupStep } from "./automation-step.js";
 export { IMPORT_LINE, hasImportLine } from "./guides.js";
 import { runGlobalInstallStep } from "./global-install-step.js";
@@ -26,6 +30,7 @@ import {
   printBanner,
   stepDone,
 } from "./output.js";
+import { buildSetupPlan } from "./setup-plan.js";
 
 export type AutomationExecFn = (
   file: string,
@@ -41,26 +46,28 @@ export type AutomationExecFn = (
  * + step-indicator style, same interactive + `--yes` + non-interactive
  * modes.
  *
- * Setup installs:
+ * Setup configures:
  *
-   *   1. macOS launchd jobs that periodically run `almanac sync`
- *      and `almanac garden`.
- *   2. The short "how to use Almanac" guide at
+ *   1. The default agent/model used by lifecycle commands.
+ *   2. A durable global install when running from an ephemeral `npx` path.
+ *   3. Optional scheduled Almanac CLI self-update.
+ *   4. The short "how to use Almanac" guide at
  *      `~/.claude/almanac.md`, sourced from `guides/mini.md` in the
  *      package.
- *   3. The full reference at `~/.claude/almanac-reference.md`,
+ *   5. The full reference at `~/.claude/almanac-reference.md`,
  *      sourced from `guides/reference.md`.
- *   4. An `@~/.claude/almanac.md` import line in `~/.claude/CLAUDE.md`
+ *   6. An `@~/.claude/almanac.md` import line in `~/.claude/CLAUDE.md`
  *      so Claude Code picks up the short guide globally.
- *   5. An inline managed Almanac section in `~/.codex/AGENTS.md`
+ *   7. An inline managed Almanac section in `~/.codex/AGENTS.md`
  *      (or `AGENTS.override.md` when that is the active non-empty file).
  *      Codex does not expand Claude-style `@file` imports in AGENTS files,
  *      so the instructions must live inline to be model-visible.
  *
  * Everything is idempotent — running setup again is safe.
- * `--skip-automation` and `--skip-guides` opt out of the individual
- * installs. `--yes` or a non-TTY stdin skips all prompts and installs
- * everything.
+ * Local sync/Garden automation is no longer part of default onboarding. It
+ * remains available through `almanac automation install` and explicit legacy
+ * setup flags. `--yes` or a non-TTY stdin skips prompts and uses setup-plan
+ * defaults.
  */
 
 export interface SetupOptions {
@@ -193,21 +200,48 @@ export async function runSetup(
   out.write(BAR + "\n");
 
   const globalInstall = await runGlobalInstallStep({ out, interactive, options });
-  const automation = await runAutomationSetupStep({
-    out,
-    interactive,
-    options,
-    ephemeral: globalInstall.ephemeral,
-    durableGlobalInstall: globalInstall.durableGlobalInstall,
-  });
-  if (!automation.ok) {
-    return { stdout: "", stderr: automation.stderr, exitCode: automation.exitCode };
+  const plan = await buildSetupPlan({ out, interactive, options });
+  if (plan.syncAutomation) {
+    const automation = await runAutomationSetupStep({
+      out,
+      interactive,
+      options,
+      ephemeral: globalInstall.ephemeral,
+      durableGlobalInstall: globalInstall.durableGlobalInstall,
+    });
+    if (!automation.ok) {
+      return { stdout: "", stderr: automation.stderr, exitCode: automation.exitCode };
+    }
   }
-  const guides = await runGuidesSetupStep({ out, interactive, options });
-  if (!guides.ok) {
-    return { stdout: "", stderr: guides.stderr, exitCode: guides.exitCode };
+  if (plan.cliAutoUpdate) {
+    if (globalInstall.ephemeral && !globalInstall.durableGlobalInstall) {
+      skipAutoUpdateSetupStep(out);
+    } else {
+      const update = await runAutoUpdateSetupStep({
+        out,
+        options: {
+          autoUpdateEvery: options.autoUpdateEvery,
+          updatePlistPath: options.updatePlistPath,
+          updateProgramArguments: globalInstall.ephemeral
+            ? globalUpdateProgramArguments()
+            : undefined,
+          automationExec: options.automationExec,
+        },
+      });
+      if (!update.ok) {
+        return { stdout: "", stderr: update.stderr, exitCode: update.exitCode };
+      }
+    }
   }
-  await runAutoCommitSetupStep({ out, interactive, options });
+  if (plan.agentInstructions) {
+    const guides = await runGuidesSetupStep({ out, options });
+    if (!guides.ok) {
+      return { stdout: "", stderr: guides.stderr, exitCode: guides.exitCode };
+    }
+  }
+  if (plan.autoCommit || options.autoCommit === false) {
+    await runAutoCommitSetupStep({ out, interactive, options });
+  }
 
   stepDone(out, `${BLUE}Setup complete${RST}`);
   out.write("\n");
@@ -221,4 +255,8 @@ export async function runSetup(
   printNextSteps(out, existingPageCount);
 
   return { stdout: "", stderr: "", exitCode: 0 };
+}
+
+function globalUpdateProgramArguments(): string[] {
+  return ["/usr/bin/env", "almanac", "update"];
 }

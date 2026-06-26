@@ -56,6 +56,7 @@ describe("operation command wrappers", () => {
         spec: {
           provider: {
             id: "codex",
+            model: "gpt-5.5",
           },
         },
       });

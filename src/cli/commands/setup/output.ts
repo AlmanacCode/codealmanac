@@ -30,7 +30,7 @@ export function printBanner(out: NodeJS.WritableStream): void {
     const color = GRADIENT[Math.min(i, GRADIENT.length - 1)] ?? "";
     out.write(`${color}${LOGO_LINES[i]}${RST}\n`);
   }
-  out.write(`\n${WHITE_BOLD}  Set up your automatic codebase wiki${RST}\n`);
+  out.write(`\n${WHITE_BOLD}  Set up local Almanac access${RST}\n`);
 }
 
 export function printBadge(out: NodeJS.WritableStream): void {

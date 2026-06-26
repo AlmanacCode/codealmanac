@@ -58,7 +58,7 @@ describe("config command", () => {
   it("sets update_notifier through the canonical config surface", async () => {
     await withTempHome(async () => {
       await expect(readConfig()).resolves.toMatchObject({
-        auto_commit: true,
+        auto_commit: false,
       });
 
       await expect(runConfigSet({
@@ -83,24 +83,24 @@ describe("config command", () => {
     await withTempHome(async (home) => {
       const listed = await runConfigList({ showOrigin: true });
       expect(listed.stdout).toContain("auto_commit");
-      expect(listed.stdout).toContain("true");
+      expect(listed.stdout).toContain("false");
 
       await expect(runConfigSet({
         key: "auto_commit",
-        value: "false",
+        value: "true",
       })).resolves.toMatchObject({ exitCode: 0 });
       await expect(readConfig()).resolves.toMatchObject({
-        auto_commit: false,
+        auto_commit: true,
       });
 
       const path = join(home, ".almanac", "config.toml");
-      expect(await readFile(path, "utf8")).toContain("auto_commit = false");
+      expect(await readFile(path, "utf8")).toContain("auto_commit = true");
 
       await expect(runConfigUnset({
         key: "auto_commit",
       })).resolves.toMatchObject({ exitCode: 0 });
       await expect(readConfig()).resolves.toMatchObject({
-        auto_commit: true,
+        auto_commit: false,
       });
     });
   });
@@ -203,7 +203,7 @@ describe("config command", () => {
 
       const toml = await readFile(join(home, ".almanac", "config.toml"), "utf8");
       expect(toml).toContain("update_notifier = false");
-      expect(toml).not.toContain("auto_commit");
+      expect(toml).toContain("auto_commit = true");
       expect(toml).toContain("[agent.models]");
       expect(toml).toContain('codex = "gpt-5.3-codex"');
       expect(toml).toContain("[automation]");

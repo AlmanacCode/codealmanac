@@ -20,8 +20,8 @@ describe("agents command", () => {
             ready: true,
             installed: true,
             authenticated: true,
-            effectiveModel: null,
-            providerDefaultModel: null,
+            effectiveModel: "gpt-5.5",
+            providerDefaultModel: "gpt-5.5",
             configuredModel: null,
             account: "user@example.com",
             detail: "Logged in",
@@ -53,7 +53,7 @@ describe("agents command", () => {
       "DEFAULT  AGENT   STATUS   RECOMMENDED  MODEL             DETAIL",
     );
     expect(result.stdout).toContain(
-      "*        Codex   ready    recommended  provider default  user@example.com",
+      "*        Codex   ready    recommended  gpt-5.5           user@example.com",
     );
     expect(result.stdout).toContain(
       "         Cursor  missing               provider default  install cursor-agent",

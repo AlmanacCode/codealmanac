@@ -33,7 +33,7 @@ const CODEX_MODEL_LABELS: Record<string, string> = {
   "gpt-5.3-codex": "GPT-5.3 Codex",
 };
 
-const RECOMMENDED_CODEX_MODEL = "gpt-5.4";
+const RECOMMENDED_CODEX_MODEL = "gpt-5.5";
 
 export const codexProvider: AgentProvider = {
   metadata,

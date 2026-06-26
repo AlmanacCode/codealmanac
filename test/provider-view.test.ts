@@ -96,19 +96,20 @@ describe("provider setup view", () => {
         label: "Codex",
         recommended: true,
         readiness: "ready",
-        effectiveModel: null,
+        effectiveModel: "gpt-5.5",
+        providerDefaultModel: "gpt-5.5",
         account: "ChatGPT account: rohan@example.com",
         modelChoices: [
           {
             value: "gpt-5.5",
             label: "GPT-5.5",
             source: "catalog",
+            recommended: true,
           },
           {
             value: "gpt-5.4",
             label: "GPT-5.4",
             source: "catalog",
-            recommended: true,
           },
           {
             value: "gpt-5.4-mini",

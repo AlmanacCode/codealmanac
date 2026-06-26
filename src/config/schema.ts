@@ -19,7 +19,7 @@ export interface AutomationConfig {
 export interface GlobalConfig {
   /** When `false`, suppress the pre-command update-nag banner. Default: true. */
   update_notifier: boolean;
-  /** Whether AI lifecycle runs may create git commits for wiki source files. Default: true. */
+  /** Whether AI lifecycle runs may create git commits for wiki source files. Default: false. */
   auto_commit: boolean;
   /** Agent-provider settings for agent-backed lifecycle commands. */
   agent: AgentConfig;
@@ -30,7 +30,7 @@ export interface GlobalConfig {
 export function defaultConfig(): GlobalConfig {
   return {
     update_notifier: true,
-    auto_commit: true,
+    auto_commit: false,
     agent: {
       default: "codex",
       models: {

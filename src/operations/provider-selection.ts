@@ -1,4 +1,5 @@
 import { readConfig } from "../config/index.js";
+import { PROVIDER_DEFINITIONS } from "../agent/provider-id.js";
 import type { HarnessProviderId } from "../harness/types.js";
 import { OperationError } from "./errors.js";
 import type { OperationProviderSelection } from "./types.js";
@@ -28,7 +29,9 @@ export async function resolveOperationProviderSelection(options: {
   if (options.using !== undefined) return parseUsing(options.using);
   const config = await readConfig({ cwd: options.cwd });
   const id = config.agent.default;
-  const model = config.agent.models[id] ?? undefined;
+  const model = config.agent.models[id] ??
+    PROVIDER_DEFINITIONS[id].defaultModel ??
+    undefined;
   return { id, model: model ?? undefined };
 }
 

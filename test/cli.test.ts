@@ -64,10 +64,10 @@ describe("tryParseSetupShortcut", () => {
         agent: "claude",
         model: "opus",
       });
-    expect(tryParseSetupShortcut(["--yes", "--model", "gpt-5.3-codex"]))
+    expect(tryParseSetupShortcut(["--yes", "--model", "gpt-5.5"]))
       .toEqual({
         yes: true,
-        model: "gpt-5.3-codex",
+        model: "gpt-5.5",
       });
   });
 

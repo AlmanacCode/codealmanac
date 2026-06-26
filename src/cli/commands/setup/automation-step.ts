@@ -2,9 +2,7 @@ import { cleanupLegacyHooks, runAutomationInstall } from "../automation.js";
 import {
   BAR,
   DIM,
-  type InstallDecision,
   RST,
-  confirm,
   stepActive,
   stepDone,
   stepSkipped,
@@ -16,16 +14,12 @@ type AutomationExecFn = (
 ) => Promise<{ stdout?: string; stderr?: string }>;
 
 export interface AutomationSetupStepOptions {
-  skipAutomation?: boolean;
   automationEvery?: string;
   automationQuiet?: string;
   gardenEvery?: string;
   gardenOff?: boolean;
-  autoUpdate?: boolean;
-  autoUpdateEvery?: string;
   automationPlistPath?: string;
   gardenPlistPath?: string;
-  updatePlistPath?: string;
   automationExec?: AutomationExecFn;
 }
 
@@ -40,86 +34,38 @@ export async function runAutomationSetupStep(args: {
   ephemeral: boolean;
   durableGlobalInstall: boolean;
 }): Promise<SetupStepResult> {
-  let automationAction: InstallDecision = "install";
-  if (args.options.skipAutomation === true) {
-    automationAction = "skip";
-  } else if (args.interactive) {
-    automationAction = await confirm(
+  if (args.ephemeral && !args.durableGlobalInstall) {
+    stepSkipped(
       args.out,
-	      "Keep your codebase wiki synced automatically?",
-      true,
+      `Sync automation ${DIM}skipped — requires a durable Almanac install${RST}`,
     );
-  }
-
-  if (automationAction === "install") {
-    if (args.ephemeral && !args.durableGlobalInstall) {
-      stepSkipped(
-        args.out,
-        `Sync automation ${DIM}skipped — requires a durable Almanac install${RST}`,
-      );
-    } else {
-      await cleanupLegacyHooks();
-      const res = await runAutomationInstall({
-        tasks: ["sync", "garden"],
-        every: args.options.automationEvery,
-        quiet: args.options.automationQuiet,
-        gardenEvery: args.options.gardenEvery,
-        gardenOff: args.options.gardenOff,
-        cwd: process.cwd(),
-        programArguments: args.ephemeral
-          ? globalAlmanacProgramArguments(args.options.automationQuiet)
-          : undefined,
-        gardenProgramArguments: args.ephemeral
-          ? globalGardenProgramArguments()
-          : undefined,
-        plistPath: args.options.automationPlistPath,
-        gardenPlistPath: args.options.gardenPlistPath,
-        exec: args.options.automationExec,
-      });
-      if (res.exitCode !== 0) {
-        stepActive(args.out, `Sync automation: ${res.stderr.trim()}`);
-        return {
-          ok: false,
-          stderr: res.stderr,
-          exitCode: res.exitCode,
-        };
-      }
-      stepDone(args.out, "Sync automation installed");
-      let autoUpdateAction: InstallDecision = args.options.autoUpdate === true
-        ? "install"
-        : "skip";
-      if (args.options.autoUpdate !== true && args.interactive) {
-        autoUpdateAction = await confirm(
-          args.out,
-          "Keep Almanac automatically updated?",
-          true,
-        );
-      }
-      if (autoUpdateAction === "install") {
-        const update = await runAutomationInstall({
-          tasks: ["update"],
-          every: args.options.autoUpdateEvery,
-          updateProgramArguments: args.ephemeral
-            ? globalUpdateProgramArguments()
-            : undefined,
-          updatePlistPath: args.options.updatePlistPath,
-          exec: args.options.automationExec,
-        });
-        if (update.exitCode !== 0) {
-          stepActive(args.out, `Auto-update automation: ${update.stderr.trim()}`);
-          return {
-            ok: false,
-            stderr: update.stderr,
-            exitCode: update.exitCode,
-          };
-        }
-        stepDone(args.out, "Auto-update automation installed");
-      } else if (args.interactive) {
-        stepSkipped(args.out, `Auto-update automation ${DIM}skipped${RST}`);
-      }
-    }
   } else {
-    stepSkipped(args.out, `Sync automation ${DIM}skipped${RST}`);
+    await cleanupLegacyHooks();
+    const res = await runAutomationInstall({
+      every: args.options.automationEvery,
+      quiet: args.options.automationQuiet,
+      gardenEvery: args.options.gardenEvery,
+      gardenOff: args.options.gardenOff,
+      cwd: process.cwd(),
+      programArguments: args.ephemeral
+        ? globalAlmanacProgramArguments(args.options.automationQuiet)
+        : undefined,
+      gardenProgramArguments: args.ephemeral
+        ? globalGardenProgramArguments()
+        : undefined,
+      plistPath: args.options.automationPlistPath,
+      gardenPlistPath: args.options.gardenPlistPath,
+      exec: args.options.automationExec,
+    });
+    if (res.exitCode !== 0) {
+      stepActive(args.out, `Sync automation: ${res.stderr.trim()}`);
+      return {
+        ok: false,
+        stderr: res.stderr,
+        exitCode: res.exitCode,
+      };
+    }
+    stepDone(args.out, "Sync automation installed");
   }
   args.out.write(BAR + "\n");
   return { ok: true };
@@ -131,8 +77,4 @@ function globalAlmanacProgramArguments(quiet = "45m"): string[] {
 
 function globalGardenProgramArguments(): string[] {
   return ["/usr/bin/env", "almanac", "garden"];
-}
-
-function globalUpdateProgramArguments(): string[] {
-  return ["/usr/bin/env", "almanac", "update"];
 }

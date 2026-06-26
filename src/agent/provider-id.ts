@@ -17,7 +17,7 @@ export const PROVIDER_DEFINITIONS: Record<AgentProviderId, {
   },
   codex: {
     displayName: "Codex",
-    defaultModel: null,
+    defaultModel: "gpt-5.5",
     executable: "codex",
   },
   cursor: {

@@ -111,7 +111,7 @@ Categories: `orphans`, `stale` (90+ days), `dead-refs`, `broken-links`, `broken-
 Search when the task is named: subsystem (checkout, auth, search), external service (Stripe, Supabase), cross-cutting concern (caching, sessions). Grep for mechanical tasks.
 
 ### "The wiki says X. The code does Y. Which is right?"
-The code. Then fix the wiki — small fixes edit the page directly. Substantial changes: mention clearly in your response so the next scheduled sync has context to update the page.
+The code. Then fix the wiki — small fixes edit the page directly. Substantial changes: mention clearly in your response so the next capture or sync run has context to update the page.
 
 ### "Should I create a new page mid-session?"
 Usually no. Absorb writes pages from session transcripts with full context. Exceptions: user explicitly asks, or you're doing deliberate wiki maintenance.
@@ -125,7 +125,7 @@ Almost always existing. Skim `almanac topics` before creating. New topic is just
 Yes — safe, idempotent, preserves body bytes. Use `almanac tag` / `untag` rather than hand-editing frontmatter.
 
 ### "The wiki returned nothing. Now what?"
-Trust the silence. Empty stdout with `# 0 results` on stderr means the query ran cleanly and matched nothing — the wiki doesn't have a page on that yet, or the query needs to be broader. That is the answer, not a bug. Don't fall back to guessing; fall back to the code, and trust that sync will surface the knowledge the next time a session naturally discovers it.
+Trust the silence. Empty stdout with `# 0 results` on stderr means the query ran cleanly and matched nothing — the wiki doesn't have a page on that yet, or the query needs to be broader. That is the answer, not a bug. Don't fall back to guessing; fall back to the code, and trust that the next capture or sync run can surface the knowledge the next time a session naturally discovers it.
 
 If stderr shows a real error (an `almanac:` prefix or a commander parse failure), the invocation is broken — re-read `almanac --help` for the right flags.
 
@@ -159,13 +159,13 @@ $ almanac show sqlite-indexer --backlinks
 
 You now know: the indexer only re-parses pages whose mtime is newer than the stored `content_hash`, runs on every query command, and backing it is a schema you can read at `src/indexer/schema.ts`. The lead alone ruled out two entire hypotheses ("maybe it only indexes on startup", "maybe I need to restart something") before you read any source code.
 
-You don't write anything. After the transcript has been quiet long enough, scheduled sync reads the new session material, starts Absorb when there is eligible material, and writes or updates pages. Next session, a different agent running a related task sees it surface in `--mentions`.
+You don't write anything. If sync automation is installed, after the transcript has been quiet long enough, scheduled sync reads the new session material, starts Absorb when there is eligible material, and writes or updates pages. Next session, a different agent running a related task sees it surface in `--mentions`.
 
 ---
 
 ## What runs automatically (don't invoke these)
 
-- **`almanac sync`** — scans quiet Claude/Codex transcripts and starts background Absorb jobs for new material. The installed scheduler runs this for you.
+- **`almanac sync`** — scans quiet Claude/Codex transcripts and starts background Absorb jobs for new material. Run it manually, or install recurring sync with `almanac automation install`.
 - **`almanac reindex`** — runs implicitly before every query when pages changed.
 
 Run `almanac init` yourself when you are creating the first wiki for a repo.

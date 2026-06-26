@@ -226,15 +226,16 @@ Each jobs subcommand accepts `--json`. `attach` streams the JSONL event log unti
 
 #### `almanac automation install | uninstall | status`
 
-Manage the scheduler that periodically runs `almanac sync`.
+Manage scheduled Almanac tasks: sync, Garden, and CLI update.
 
 | Command | Semantics |
 |---|---|
-| `almanac automation install` | Install the macOS launchd sync job. Default interval: `5h`. |
-| `almanac automation install --every 2h` | Customize the scheduler wakeup interval. |
+| `almanac automation install` | Install macOS launchd sync and Garden jobs. Defaults: sync every `5h`, Garden every `4h`. |
+| `almanac automation install --every 2h` | Customize the sync scheduler wakeup interval. |
 | `almanac automation install --quiet 30m` | Customize the transcript quiet window passed to sync. |
-| `almanac automation status` | Show whether the scheduler is installed and which command it runs. |
-| `almanac automation uninstall` | Remove the scheduled sync job. |
+| `almanac automation install update --every 1d` | Install only scheduled CLI self-update. |
+| `almanac automation status` | Show whether scheduled tasks are installed and which commands they run. |
+| `almanac automation uninstall` | Remove scheduled sync, Garden, and update jobs. |
 
 See §7 for the scheduler and sync contract.
 
@@ -248,24 +249,28 @@ Flag: `--wiki <name>`.
 
 #### `almanac setup`
 
-Install scheduled sync + the two CLAUDE.md guides (`almanac.md`, `almanac-reference.md`) + the `@~/.claude/almanac.md` import line. Idempotent.
+Set up local Almanac access: choose the default agent/model, optionally install scheduled CLI self-update, install the two CLAUDE.md guides (`almanac.md`, `almanac-reference.md`) plus the `@~/.claude/almanac.md` import line, and install the managed Codex instructions. Idempotent.
 
 | Flag | Semantics |
 |---|---|
-| `-y, --yes` | Skip prompts; install everything. |
+| `-y, --yes` | Skip prompts; use setup defaults. |
 | `--agent <agent>` | Set the default provider. Accepts `claude`, `codex`, `cursor`, or optional shorthand like `claude/opus`. |
 | `--model <model>` | Set the provider-local model during setup. Non-interactive equivalent of the model picker. |
-| `--skip-automation` | Opt out of scheduled sync. |
-| `--sync-every <duration>` | Set the scheduler wakeup interval. Default: `5h`. |
-| `--sync-quiet <duration>` | Set the transcript quiet window. Default: `45m`. |
-| `--skip-guides` | Opt out of the CLAUDE.md guides. |
+| `--skip-automation` | Skip scheduled setup tasks, including CLI self-update. |
+| `--sync-every <duration>` | Explicitly install scheduled sync/Garden and set the sync wakeup interval. Default: `5h`. |
+| `--sync-quiet <duration>` | Explicitly install scheduled sync/Garden and set the transcript quiet window. Default: `45m`. |
+| `--garden-every <duration>` | Explicitly install scheduled sync/Garden and set the Garden interval. Default: `4h`. |
+| `--garden-off` | Explicitly install scheduled sync while disabling scheduled Garden. |
+| `--auto-update` | Install scheduled CLI self-update. Default setup already enables this unless `--skip-automation` is present. |
+| `--auto-update-every <duration>` | Set the scheduled CLI self-update interval. Default: `1d`. |
+| `--skip-guides` | Opt out of the agent guides and Codex instructions. |
 | `--auto-commit` | Opt into automatic git commits for wiki source changes. Default: off. |
 
-Bare `almanac`, `almanac setup`, and the compatibility `npx codealmanac` bootstrap route here. Interactive setup chooses provider first, then provider-local model. `almanac --yes`, `almanac --agent codex --model gpt-5.3-codex`, `almanac --skip-automation`, and `almanac --skip-guides` are the typical first-run invocations after install. Passing `--skip-automation --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn. `--yes` and non-interactive setup do not enable auto-commit unless `--auto-commit` is passed explicitly; they preserve an existing opt-in.
+Bare `almanac`, `almanac setup`, and the compatibility `npx codealmanac` bootstrap route here. Interactive setup chooses provider first, then provider-local model, then asks about CLI self-update and agent instructions. Codex with `gpt-5.5` is the built-in default. It does not ask about sync/Garden automation or auto-commit by default. `almanac --yes`, `almanac --agent codex --model gpt-5.5`, `almanac --skip-automation`, and `almanac --skip-guides` are the typical first-run invocations after install. Passing `--skip-automation --skip-guides` together short-circuits with a terse line — nothing was installed, no banner drawn. `--yes` and non-interactive setup install CLI self-update and agent instructions by default, but do not install sync/Garden automation and do not enable auto-commit unless `--auto-commit` is passed explicitly; they preserve an existing auto-commit opt-in.
 
 #### `almanac uninstall`
 
-Remove scheduled sync + guides + import line.
+Remove scheduled automation + guides + import line.
 
 | Flag | Semantics |
 |---|---|
@@ -633,7 +638,7 @@ The scheduler is only a wakeup mechanism. Sync owns transcript eligibility, dedu
 **`status`:**
 - Reports installed / not installed, plist path, schedule, and command. Non-interactive.
 
-`almanac setup` wraps `automation install` alongside the guides. `almanac uninstall` wraps `automation uninstall` alongside guide removal. You usually invoke `automation *` only for debugging or changing cadence.
+`almanac setup` installs CLI self-update and agent instructions by default. It installs sync/Garden automation only when explicit legacy sync/Garden setup flags are present. `almanac automation install` remains the normal manual path for recurring sync and Garden. `almanac uninstall` wraps `automation uninstall` alongside guide removal.
 
 ### Diagnosing "sync didn't run"
 

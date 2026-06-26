@@ -39,23 +39,22 @@ export function printNextSteps(
       ),
     );
     out.write(empty);
-    out.write(row(`  ${BLUE}1.${RST}  Start querying your wiki:`));
+    out.write(row(`  ${BLUE}1.${RST}  Start querying it locally:`));
     out.write(row(`       ${BOLD}almanac search --mentions <file>${RST}`));
-    out.write(
-      row(`  ${BLUE}2.${RST}  Work normally — scheduled sync absorbs new chats`),
-    );
+    out.write(row(`       ${BOLD}almanac search "auth"${RST}`));
+    out.write(row(`  ${BLUE}2.${RST}  Read one of the result pages:`));
+    out.write(row(`       ${BOLD}almanac show <result-slug>${RST}`));
   } else {
     out.write(
-      row(`  ${BLUE}1.${RST}  ${BOLD}cd${RST} into a repo you want to document`),
+      row(`  ${BLUE}1.${RST}  Create this repo's wiki from the dashboard:`),
     );
+    out.write(row(`       ${BOLD}https://codealmanac.com/dashboard${RST}`));
     out.write(
       row(
-        `  ${BLUE}2.${RST}  ${BOLD}almanac init${RST}  ${DIM}# build the wiki${RST}`,
+        `  ${BLUE}2.${RST}  After .almanac/ lands, query locally:`,
       ),
     );
-    out.write(
-      row(`  ${BLUE}3.${RST}  Work normally — scheduled sync absorbs new chats`),
-    );
+    out.write(row(`       ${BOLD}almanac search "auth"${RST}`));
   }
 
   out.write(empty);

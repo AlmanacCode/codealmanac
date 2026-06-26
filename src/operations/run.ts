@@ -8,6 +8,7 @@ import {
   startForegroundJob,
 } from "../jobs/index.js";
 import { readConfig } from "../config/index.js";
+import { PROVIDER_DEFINITIONS } from "../agent/provider-id.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,
@@ -56,7 +57,10 @@ export async function createOperationRunSpec(args: {
   ]);
 
   return {
-    provider: args.provider ?? { id: "codex" },
+    provider: args.provider ?? {
+      id: "codex",
+      model: PROVIDER_DEFINITIONS.codex.defaultModel ?? undefined,
+    },
     cwd: args.repoRoot,
     prompt,
     tools: BASE_OPERATION_TOOLS,
