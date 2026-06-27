@@ -304,6 +304,25 @@ describe("architecture boundaries", () => {
     expect(autoCommitStep).not.toContain("writeConfig");
   });
 
+  it("keeps setup guide UI out of agent instruction install mechanics", async () => {
+    const setupIndex = await readSource("src/cli/commands/setup/index.ts");
+    const guidesStep = await readSource("src/cli/commands/setup/guides-step.ts");
+    const guides = await readSource("src/cli/commands/setup/guides.ts");
+    const targetChoice = await readSource(
+      "src/cli/commands/setup/instruction-target-choice.ts",
+    );
+
+    expect(existsSync(join(ROOT, "src/services/setup/instructions.ts"))).toBe(true);
+    for (const source of [setupIndex, guidesStep, guides, targetChoice]) {
+      expect(source).toContain("services/setup/index.js");
+      expect(source).not.toContain("agent/install-targets");
+      expect(source).not.toContain("agent/instructions/codex");
+      expect(source).not.toContain("installAgentInstructions");
+      expect(source).not.toContain("CLAUDE_IMPORT_LINE");
+      expect(source).not.toContain("hasClaudeImportLine");
+    }
+  });
+
   it("keeps uninstall UI out of setup cleanup mechanics", async () => {
     const uninstallCommand = await readSource("src/cli/commands/uninstall.ts");
 

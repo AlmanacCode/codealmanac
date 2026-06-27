@@ -1,10 +1,10 @@
 import type { SpawnCliFn } from "../../../agent/types.js";
-import type { InstructionTargetId } from "../../../agent/install-targets.js";
+import type { SetupInstructionTargetId } from "../../../services/setup/index.js";
 export {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
   hasCodexInstructions,
-} from "../../../agent/instructions/codex.js";
+} from "../../../services/setup/index.js";
 import { chooseDefaultAgent } from "./agent-choice.js";
 import { runAutoCommitSetupStep } from "./auto-commit-step.js";
 import {
@@ -108,7 +108,7 @@ export interface SetupOptions {
   /** Override `~/.config/opencode/` dir for OpenCode instruction install. */
   opencodeDir?: string;
   /** Override selected global instruction targets (tests/internal callers). */
-  instructionTargets?: InstructionTargetId[];
+  instructionTargets?: SetupInstructionTargetId[];
   /** Override the directory containing `mini.md` / `reference.md`. */
   guidesDir?: string;
   /** Override interactivity; defaults to `process.stdin.isTTY`. */

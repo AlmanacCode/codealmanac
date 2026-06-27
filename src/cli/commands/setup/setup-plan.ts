@@ -1,4 +1,4 @@
-import type { InstructionTargetId } from "../../../agent/install-targets.js";
+import type { SetupInstructionTargetId } from "../../../services/setup/index.js";
 import type { SetupOptions } from "./index.js";
 import { chooseInstructionTargets } from "./instruction-target-choice.js";
 import { confirm } from "./output.js";
@@ -10,7 +10,7 @@ export const SETUP_DEFAULTS = {
 } as const;
 
 export interface SetupPlan {
-  instructionTargets: InstructionTargetId[];
+  instructionTargets: SetupInstructionTargetId[];
   cliAutoUpdate: boolean;
   selfManagedAutomation: boolean;
   autoCommit: boolean;
@@ -42,7 +42,7 @@ export async function buildSetupPlan(
 
 async function resolveInstructionTargets(
   args: SetupPlanOptions,
-): Promise<InstructionTargetId[]> {
+): Promise<SetupInstructionTargetId[]> {
   if (args.options.skipGuides === true) return [];
   return await chooseInstructionTargets({
     out: args.out,

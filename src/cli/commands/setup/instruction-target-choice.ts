@@ -1,8 +1,8 @@
 import {
-  AGENT_INSTRUCTION_TARGETS,
-  DEFAULT_INSTRUCTION_TARGETS,
-  type InstructionTargetId,
-} from "../../../agent/install-targets.js";
+  DEFAULT_SETUP_INSTRUCTION_TARGETS,
+  SETUP_INSTRUCTION_TARGETS,
+  type SetupInstructionTargetId,
+} from "../../../services/setup/index.js";
 import {
   BAR,
   BLUE,
@@ -17,28 +17,28 @@ import {
 export async function chooseInstructionTargets(args: {
   out: NodeJS.WritableStream;
   interactive: boolean;
-  requested?: readonly InstructionTargetId[];
-}): Promise<InstructionTargetId[]> {
+  requested?: readonly SetupInstructionTargetId[];
+}): Promise<SetupInstructionTargetId[]> {
   if (args.requested !== undefined) return [...dedupeTargets(args.requested)];
-  if (!args.interactive) return [...DEFAULT_INSTRUCTION_TARGETS];
+  if (!args.interactive) return [...DEFAULT_SETUP_INSTRUCTION_TARGETS];
   if (canUseRawSelect()) return await chooseInstructionTargetsRaw(args.out);
   return await chooseInstructionTargetsLine(args.out);
 }
 
 async function chooseInstructionTargetsLine(
   out: NodeJS.WritableStream,
-): Promise<InstructionTargetId[]> {
-  renderInstructionTargets(out, new Set(DEFAULT_INSTRUCTION_TARGETS), 0, false);
+): Promise<SetupInstructionTargetId[]> {
+  renderInstructionTargets(out, new Set(DEFAULT_SETUP_INSTRUCTION_TARGETS), 0, false);
   const answer = await promptText(out, "Select targets", "all");
-  if (answer.trim().length === 0) return [...DEFAULT_INSTRUCTION_TARGETS];
+  if (answer.trim().length === 0) return [...DEFAULT_SETUP_INSTRUCTION_TARGETS];
   return parseTargets(answer);
 }
 
 function chooseInstructionTargetsRaw(
   out: NodeJS.WritableStream,
-): Promise<InstructionTargetId[]> {
+): Promise<SetupInstructionTargetId[]> {
   return new Promise((resolve, reject) => {
-    const selected = new Set<InstructionTargetId>(DEFAULT_INSTRUCTION_TARGETS);
+    const selected = new Set<SetupInstructionTargetId>(DEFAULT_SETUP_INSTRUCTION_TARGETS);
     let cursor = 0;
     let renderedLines = 0;
     const input = process.stdin as NodeJS.ReadStream & {
@@ -64,27 +64,27 @@ function chooseInstructionTargetsRaw(
         return;
       }
       if (key === "\u001b[A" || key === "k") {
-        cursor = cursor === 0 ? AGENT_INSTRUCTION_TARGETS.length - 1 : cursor - 1;
+        cursor = cursor === 0 ? SETUP_INSTRUCTION_TARGETS.length - 1 : cursor - 1;
         render();
         return;
       }
       if (key === "\u001b[B" || key === "j") {
-        cursor = cursor === AGENT_INSTRUCTION_TARGETS.length - 1 ? 0 : cursor + 1;
+        cursor = cursor === SETUP_INSTRUCTION_TARGETS.length - 1 ? 0 : cursor + 1;
         render();
         return;
       }
       if (key === " ") {
-        const id = AGENT_INSTRUCTION_TARGETS[cursor]!.id;
+        const id = SETUP_INSTRUCTION_TARGETS[cursor]!.id;
         if (selected.has(id)) selected.delete(id);
         else selected.add(id);
         render();
         return;
       }
       if (key === "a") {
-        const allSelected = selected.size === AGENT_INSTRUCTION_TARGETS.length;
+        const allSelected = selected.size === SETUP_INSTRUCTION_TARGETS.length;
         selected.clear();
         if (!allSelected) {
-          for (const target of AGENT_INSTRUCTION_TARGETS) selected.add(target.id);
+          for (const target of SETUP_INSTRUCTION_TARGETS) selected.add(target.id);
         }
         render();
         return;
@@ -104,7 +104,7 @@ function chooseInstructionTargetsRaw(
 
 function renderInstructionTargets(
   out: NodeJS.WritableStream,
-  selected: Set<InstructionTargetId>,
+  selected: Set<SetupInstructionTargetId>,
   cursor: number,
   raw: boolean,
 ): number {
@@ -114,7 +114,7 @@ function renderInstructionTargets(
   out.write(BAR + "\n");
   lines++;
 
-  AGENT_INSTRUCTION_TARGETS.forEach((target, index) => {
+  SETUP_INSTRUCTION_TARGETS.forEach((target, index) => {
     const arrow = index === cursor ? `${BLUE}\u276f${RST}` : " ";
     const check = selected.has(target.id) ? `${BLUE}\u2713${RST}` : " ";
     const label = index === cursor ? `${BOLD}${target.displayName}${RST}` : target.displayName;
@@ -132,23 +132,23 @@ function renderInstructionTargets(
   return lines;
 }
 
-function parseTargets(value: string): InstructionTargetId[] {
+function parseTargets(value: string): SetupInstructionTargetId[] {
   const normalized = value.trim().toLowerCase();
   if (normalized.length === 0 || normalized === "all") {
-    return [...DEFAULT_INSTRUCTION_TARGETS];
+    return [...DEFAULT_SETUP_INSTRUCTION_TARGETS];
   }
   if (normalized === "none" || normalized === "no" || normalized === "skip") {
     return [];
   }
-  const targets: InstructionTargetId[] = [];
+  const targets: SetupInstructionTargetId[] = [];
   for (const part of normalized.split(",").map((item) => item.trim())) {
     const byNumber = Number.parseInt(part, 10);
     if (Number.isInteger(byNumber)) {
-      const target = AGENT_INSTRUCTION_TARGETS[byNumber - 1];
+      const target = SETUP_INSTRUCTION_TARGETS[byNumber - 1];
       if (target !== undefined) targets.push(target.id);
       continue;
     }
-    const matched = AGENT_INSTRUCTION_TARGETS.find((target) =>
+    const matched = SETUP_INSTRUCTION_TARGETS.find((target) =>
       target.id === part ||
       target.displayName.toLowerCase() === part ||
       target.displayName.toLowerCase().replace(/\s+/g, "-") === part
@@ -159,17 +159,17 @@ function parseTargets(value: string): InstructionTargetId[] {
 }
 
 function orderedTargets(
-  selected: Set<InstructionTargetId>,
-): InstructionTargetId[] {
-  return AGENT_INSTRUCTION_TARGETS
+  selected: Set<SetupInstructionTargetId>,
+): SetupInstructionTargetId[] {
+  return SETUP_INSTRUCTION_TARGETS
     .map((target) => target.id)
     .filter((id) => selected.has(id));
 }
 
 function dedupeTargets(
-  targets: readonly InstructionTargetId[],
-): readonly InstructionTargetId[] {
-  const seen = new Set<InstructionTargetId>();
+  targets: readonly SetupInstructionTargetId[],
+): readonly SetupInstructionTargetId[] {
+  const seen = new Set<SetupInstructionTargetId>();
   for (const target of targets) seen.add(target);
   return orderedTargets(seen);
 }

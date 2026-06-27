@@ -6,7 +6,7 @@ import {
   buildSetupPlan,
   SETUP_DEFAULTS,
 } from "../src/cli/commands/setup/setup-plan.js";
-import { DEFAULT_INSTRUCTION_TARGETS } from "../src/agent/install-targets.js";
+import { DEFAULT_SETUP_INSTRUCTION_TARGETS } from "../src/services/setup/index.js";
 
 function setupOutput(): {
   out: PassThrough;
@@ -30,7 +30,7 @@ describe("setup plan", () => {
       interactive: false,
       options: {},
     })).resolves.toEqual({
-      instructionTargets: [...DEFAULT_INSTRUCTION_TARGETS],
+      instructionTargets: [...DEFAULT_SETUP_INSTRUCTION_TARGETS],
       cliAutoUpdate: SETUP_DEFAULTS.cliAutoUpdate,
       selfManagedAutomation: SETUP_DEFAULTS.selfManagedAutomation,
       autoCommit: SETUP_DEFAULTS.autoCommit,
@@ -67,7 +67,7 @@ describe("setup plan", () => {
         autoCommit: true,
       },
     })).resolves.toMatchObject({
-      instructionTargets: [...DEFAULT_INSTRUCTION_TARGETS],
+      instructionTargets: [...DEFAULT_SETUP_INSTRUCTION_TARGETS],
       selfManagedAutomation: true,
       cliAutoUpdate: true,
       autoCommit: true,
@@ -114,7 +114,7 @@ describe("setup plan", () => {
       interactive: true,
       options: {},
     })).resolves.toMatchObject({
-      instructionTargets: [...DEFAULT_INSTRUCTION_TARGETS],
+      instructionTargets: [...DEFAULT_SETUP_INSTRUCTION_TARGETS],
       cliAutoUpdate: false,
       selfManagedAutomation: false,
       autoCommit: false,
