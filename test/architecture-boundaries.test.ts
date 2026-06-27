@@ -73,12 +73,15 @@ describe("architecture boundaries", () => {
 
   it("keeps health command adapters out of index storage mechanics", async () => {
     const healthCommand = await readSource("src/cli/commands/health/index.ts");
+    const healthService = await readSource("src/services/wiki/health.ts");
 
     expect(healthCommand).toContain("services/wiki/health.js");
     expect(healthCommand).not.toContain("wiki/indexer");
     expect(healthCommand).not.toContain("../../../wiki/health");
     expect(healthCommand).not.toContain("collectHealthReport");
     expect(healthCommand).not.toContain("resolveWikiRoot");
+    expect(healthService).not.toContain("WikiHealthReport = HealthReport");
+    expect(healthService).toContain("wikiHealthReportFromIndexerReport");
   });
 
   it("keeps reindex command adapters out of index storage mechanics", async () => {
@@ -588,6 +591,8 @@ describe("architecture boundaries", () => {
     const diagnosticsTypes = await readSource("src/services/diagnostics/types.ts");
     const diagnosticsIndex = await readSource("src/services/diagnostics/index.ts");
     const doctorService = await readSource("src/services/wiki/doctor.ts");
+    const doctorTypes = await readSource("src/services/wiki/doctor-types.ts");
+    const doctorHealth = await readSource("src/services/wiki/doctor-health.ts");
 
     expect(doctorIndex).toContain("services/diagnostics/index.js");
     expect(doctorIndex).not.toContain("./install.js");
@@ -613,6 +618,9 @@ describe("architecture boundaries", () => {
     );
     expect(diagnosticsIndex).not.toContain("../../agent/");
     expect(diagnosticsIndex).not.toContain("../../config/");
+    expect(doctorTypes).not.toContain("typeof collectHealthReport");
+    expect(doctorHealth).not.toContain("../../wiki/health/index");
+    expect(doctorHealth).toContain("collectWikiHealthReport");
     expect(doctorDiagnostics).toContain("../wiki/doctor.js");
     expect(existsSync(join(ROOT, "src/services/diagnostics/doctor.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/cli/commands/doctor/install.ts"))).toBe(false);

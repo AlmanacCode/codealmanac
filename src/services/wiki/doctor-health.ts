@@ -1,7 +1,7 @@
 import {
-  collectHealthReport,
-  type HealthReport,
-} from "../../wiki/health/index.js";
+  collectWikiHealthReport,
+  type WikiHealthReport,
+} from "./health.js";
 import type {
   WikiDoctorCheck,
   WikiDoctorOptions,
@@ -11,7 +11,7 @@ export async function describeWikiHealth(
   repoRoot: string,
   options: WikiDoctorOptions,
 ): Promise<WikiDoctorCheck> {
-  const healthFn = options.collectHealthReportFn ?? collectHealthReport;
+  const healthFn = options.collectHealthReportFn ?? collectWikiHealthReport;
   try {
     const report = await healthFn({ repoRoot });
     const problems = countHealthProblems(report);
@@ -38,7 +38,7 @@ export async function describeWikiHealth(
   }
 }
 
-const HEALTH_PROBLEM_KEYS: (keyof HealthReport)[] = [
+const HEALTH_PROBLEM_KEYS: (keyof WikiHealthReport)[] = [
   "orphans",
   "stale",
   "dead_refs",
@@ -49,7 +49,7 @@ const HEALTH_PROBLEM_KEYS: (keyof HealthReport)[] = [
   "slug_collisions",
 ];
 
-function countHealthProblems(report: Partial<HealthReport>): number {
+function countHealthProblems(report: Partial<WikiHealthReport>): number {
   let total = 0;
   for (const key of HEALTH_PROBLEM_KEYS) {
     const value = report[key];

@@ -466,3 +466,9 @@ Sixty-fifth production slice:
 - Made update registry-check and npm-install spawn hooks explicit service-owned contracts in `src/services/update/types.ts`.
 - Kept the platform npm installer behind a private update-service adapter instead of exposing `typeof spawn` as service API.
 - Guarded update service types against regressing to platform check/spawn aliases.
+
+Sixty-sixth production slice:
+
+- Made wiki health reports and health collector hooks explicit service-owned contracts in `src/services/wiki/health.ts`.
+- Normalized raw indexer health reports once inside the wiki health service before CLI or doctor rendering sees them.
+- Moved doctor health checks onto the service-owned health collector contract instead of `typeof collectHealthReport`.

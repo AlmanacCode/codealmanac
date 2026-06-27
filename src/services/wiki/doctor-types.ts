@@ -1,8 +1,6 @@
-import {
-  collectHealthReport,
-} from "../../wiki/health/index.js";
+import type { CollectWikiHealthReport } from "./health.js";
 
-export type CollectWikiHealthReport = typeof collectHealthReport;
+export type { CollectWikiHealthReport };
 
 export interface WikiDoctorOptions {
   cwd: string;
