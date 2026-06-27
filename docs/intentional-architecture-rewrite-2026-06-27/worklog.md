@@ -761,3 +761,9 @@ One-hundred-fourteenth production slice:
 - Split update command rendering into `src/cli/commands/update-render.ts`.
 - Moved update workflow result text, registry failure output, deprecated notifier warnings, and install result output mapping out of `src/cli/commands/update.ts`.
 - Kept `src/cli/commands/update.ts` focused on invoking the update service workflow.
+
+One-hundred-fifteenth production slice:
+
+- Split migrate command rendering into `src/cli/commands/migrate-render.ts`.
+- Moved legacy source migration JSON/text output, ambiguous-source warnings, automation migration outcome text, and automation install failure rendering out of `src/cli/commands/migrate.ts`.
+- Kept `src/cli/commands/migrate.ts` focused on shaping migrate command inputs and invoking source/automation migration services.

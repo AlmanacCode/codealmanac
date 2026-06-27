@@ -1100,6 +1100,7 @@ describe("architecture boundaries", () => {
 
   it("keeps migrate legacy-sources adapter out of source migration mechanics", async () => {
     const migrateCommand = await readSource("src/cli/commands/migrate.ts");
+    const migrateRender = await readSource("src/cli/commands/migrate-render.ts");
     const sourceMigrationService = await readSource(
       "src/services/wiki/source-migration.ts",
     );
@@ -1113,8 +1114,12 @@ describe("architecture boundaries", () => {
 
     expect(existsSync(join(ROOT, "src/wiki/sources/frontmatter-fix.ts")))
       .toBe(true);
+    expect(existsSync(join(ROOT, "src/cli/commands/migrate-render.ts"))).toBe(
+      true,
+    );
     expect(migrateCommand).toContain("services/wiki/source-migration.js");
     expect(migrateCommand).toContain("services/automation/index.js");
+    expect(migrateCommand).toContain("./migrate-render.js");
     expect(migrateCommand).not.toContain("wiki/indexer");
     expect(migrateCommand).not.toContain("wiki/sources");
     expect(migrateCommand).not.toContain("platform/automation");
@@ -1124,6 +1129,13 @@ describe("architecture boundaries", () => {
     expect(migrateCommand).not.toContain("detectLegacyCaptureSweepAutomation");
     expect(migrateCommand).not.toContain("removeLaunchdJob");
     expect(migrateCommand).not.toContain("runAutomationInstall");
+    expect(migrateCommand).not.toContain("JSON.stringify");
+    expect(migrateCommand).not.toContain("renderOutcome");
+    expect(migrateCommand).not.toContain("migrated automation to sync");
+    expect(migrateCommand).not.toContain("no migratable legacy source");
+    expect(migrateRender).toContain("renderMigrateLegacySources");
+    expect(migrateRender).toContain("renderMigrateAutomation");
+    expect(migrateRender).toContain("renderAutomationInstallFailure");
     expect(sourceMigrationService).not.toContain(
       "export type MigrateLegacySourcesResult = LegacySourceMigrationResult",
     );
