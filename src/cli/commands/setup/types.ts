@@ -34,8 +34,8 @@ export interface SetupOptions {
   /** Set the default model for the selected provider during setup. */
   model?: string;
 
-  /** Override the current working directory used for repo-local setup state. */
-  cwd?: string;
+  /** Current working directory used for repo-local setup state. */
+  cwd: string;
   /** Override the subprocess spawner for provider login checks. */
   spawnCli?: SetupSpawnCliFn;
   /** Override the launchd plist path. */

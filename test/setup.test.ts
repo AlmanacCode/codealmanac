@@ -8,7 +8,11 @@ import type {
   SpawnCliFn,
   SpawnedProcess,
 } from "../src/agent/readiness/providers/claude/index.js";
-import { hasImportLine, runSetup } from "../src/cli/commands/setup/index.js";
+import {
+  hasImportLine,
+  runSetup as runSetupCommand,
+} from "../src/cli/commands/setup/index.js";
+import type { SetupOptions } from "../src/cli/commands/setup/index.js";
 import { runAutomationSetupStep } from "../src/cli/commands/setup/automation-step.js";
 import { makeSetupTheme } from "../src/cli/commands/setup/output.js";
 import { readConfig, writeConfig } from "../src/config/index.js";
@@ -44,6 +48,13 @@ const LOGGED_IN_STDOUT = JSON.stringify({
 });
 const LOGGED_OUT_STDOUT = JSON.stringify({ loggedIn: false });
 const TEST_SETUP_THEME = makeSetupTheme(false);
+
+function runSetup(options: Omit<SetupOptions, "cwd"> & { cwd?: string }) {
+  return runSetupCommand({
+    ...options,
+    cwd: options.cwd ?? process.cwd(),
+  });
+}
 
 async function scaffoldGuides(dir: string): Promise<void> {
   await mkdir(dir, { recursive: true });

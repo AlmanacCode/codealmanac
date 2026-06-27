@@ -63,9 +63,9 @@ export type {
 // Entry point.
 
 export async function runSetup(
-  options: SetupOptions = {},
+  options: SetupOptions,
 ): Promise<SetupResult> {
-  const cwd = options.cwd ?? process.cwd();
+  const cwd = options.cwd;
   const out = options.stdout ?? process.stdout;
   const theme = makeSetupTheme(options.color !== false);
   const isTTY =

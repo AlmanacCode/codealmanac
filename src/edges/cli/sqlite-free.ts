@@ -33,6 +33,7 @@ export async function tryRunSetupShortcut(args: {
   if (setupInvocation === null) return false;
   const setupOptions = {
     ...setupInvocation,
+    cwd: process.cwd(),
     color: shouldUseStdoutColor(),
   };
 

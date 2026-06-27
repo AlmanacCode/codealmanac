@@ -7,7 +7,14 @@ import {
   SETUP_DEFAULTS,
 } from "../src/cli/commands/setup/setup-plan.js";
 import { makeSetupTheme } from "../src/cli/commands/setup/output.js";
+import type { SetupOptions } from "../src/cli/commands/setup/index.js";
 import { DEFAULT_SETUP_INSTRUCTION_TARGETS } from "../src/services/setup/index.js";
+
+const TEST_CWD = "/tmp/codealmanac-setup-plan";
+
+function setupOptions(options: Omit<SetupOptions, "cwd"> = {}): SetupOptions {
+  return { ...options, cwd: TEST_CWD };
+}
 
 function setupOutput(): {
   out: PassThrough;
@@ -32,7 +39,7 @@ describe("setup plan", () => {
       out,
       theme,
       interactive: false,
-      options: {},
+      options: setupOptions(),
     })).resolves.toEqual({
       instructionTargets: [...DEFAULT_SETUP_INSTRUCTION_TARGETS],
       cliAutoUpdate: SETUP_DEFAULTS.cliAutoUpdate,
@@ -48,10 +55,10 @@ describe("setup plan", () => {
       out,
       theme,
       interactive: false,
-      options: {
+      options: setupOptions({
         skipAutomation: true,
         skipGuides: true,
-      },
+      }),
     })).resolves.toMatchObject({
       instructionTargets: [],
       cliAutoUpdate: false,
@@ -67,11 +74,11 @@ describe("setup plan", () => {
       out,
       theme,
       interactive: false,
-      options: {
+      options: setupOptions({
         automationEvery: "2h",
         autoUpdate: true,
         autoCommit: true,
-      },
+      }),
     })).resolves.toMatchObject({
       instructionTargets: [...DEFAULT_SETUP_INSTRUCTION_TARGETS],
       selfManagedAutomation: true,
@@ -87,9 +94,9 @@ describe("setup plan", () => {
       out,
       theme,
       interactive: false,
-      options: {
+      options: setupOptions({
         autoCommit: false,
-      },
+      }),
     })).resolves.toMatchObject({
       autoCommit: false,
     });
@@ -120,7 +127,7 @@ describe("setup plan", () => {
       out,
       theme,
       interactive: true,
-      options: {},
+      options: setupOptions(),
     })).resolves.toMatchObject({
       instructionTargets: [...DEFAULT_SETUP_INSTRUCTION_TARGETS],
       cliAutoUpdate: false,
@@ -157,7 +164,7 @@ describe("setup plan", () => {
       out,
       theme,
       interactive: true,
-      options: {},
+      options: setupOptions(),
     })).resolves.toMatchObject({
       instructionTargets: [],
       cliAutoUpdate: true,

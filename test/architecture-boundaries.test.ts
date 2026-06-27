@@ -970,6 +970,7 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/cli/commands/setup/types.ts"))).toBe(true);
     expect(setupIndex).not.toContain("interface SetupOptions");
     expect(setupIndex).not.toContain("interface SetupResult");
+    expect(setupIndex).not.toContain("process.cwd()");
     expect(setupIndex).toContain("makeSetupTheme(options.color !== false)");
     expect(setupIndex).toContain("readSetupWikiState");
     expect(setupNextSteps).not.toContain("node:fs");
