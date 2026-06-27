@@ -347,3 +347,10 @@ Forty-seventh production slice:
 - Made `SearchResult` an explicit command JSON/display row instead of an alias over `WikiSearchResult`.
 - Added a command-local mapper from the wiki search service result into the CLI output contract.
 - Guarded the search adapter against regressing to service request/result aliases.
+
+Forty-eighth production slice:
+
+- Made `src/cli/commands/reindex.ts` own `ReindexOptions` instead of aliasing `ReindexWikiRequest`.
+- Made the reindex command output carry an explicit `ReindexResult` instead of exposing `ReindexWikiResult`.
+- Added command-local request/result mappers between the reindex adapter and wiki service.
+- Guarded the reindex adapter against regressing to service request/result aliases.

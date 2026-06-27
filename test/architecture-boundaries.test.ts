@@ -86,6 +86,10 @@ describe("architecture boundaries", () => {
     expect(reindexCommand).not.toContain("wiki/indexer");
     expect(reindexCommand).not.toContain("runIndexer");
     expect(reindexCommand).not.toContain("resolveWikiRoot");
+    expect(reindexCommand).not.toContain(
+      "ReindexOptions = ReindexWikiRequest",
+    );
+    expect(reindexCommand).not.toContain("result: ReindexWikiResult;");
     expect(reindexService).not.toContain("export type ReindexWikiResult = IndexResult");
   });
 
