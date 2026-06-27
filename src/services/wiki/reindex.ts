@@ -6,7 +6,14 @@ export interface ReindexWikiRequest {
   wiki?: string;
 }
 
-export type ReindexWikiResult = IndexResult;
+export interface ReindexWikiResult {
+  changed: number;
+  removed: number;
+  total: number;
+  pagesIndexed: number;
+  filesSeen: number;
+  filesSkipped: number;
+}
 
 export async function reindexWiki(
   request: ReindexWikiRequest,
@@ -15,5 +22,16 @@ export async function reindexWiki(
     cwd: request.cwd,
     wiki: request.wiki,
   });
-  return runIndexer({ repoRoot });
+  return reindexResultFromIndexer(await runIndexer({ repoRoot }));
+}
+
+function reindexResultFromIndexer(result: IndexResult): ReindexWikiResult {
+  return {
+    changed: result.changed,
+    removed: result.removed,
+    total: result.total,
+    pagesIndexed: result.pagesIndexed,
+    filesSeen: result.filesSeen,
+    filesSkipped: result.filesSkipped,
+  };
 }

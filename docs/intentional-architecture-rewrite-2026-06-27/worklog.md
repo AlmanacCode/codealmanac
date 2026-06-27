@@ -309,3 +309,9 @@ Forty-first production slice:
 - Made search and page-view service result types explicit instead of aliases over `src/wiki/query/`.
 - Added service-local mappers so query rows are normalized once before CLI formatters see them.
 - Guarded the search and show service contracts against regressing to query-layer aliases.
+
+Forty-second production slice:
+
+- Made `ReindexWikiResult` a service-owned result instead of an alias over the indexer `IndexResult`.
+- Mapped forced-indexer output at the reindex service boundary before the CLI formats it.
+- Guarded the reindex service contract against regressing to an indexer type alias.
