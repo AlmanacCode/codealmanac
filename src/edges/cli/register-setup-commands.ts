@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { emit } from "./helpers.js";
+import { emit, shouldUseStdoutColor } from "./helpers.js";
 
 export interface SetupCommandDeps {
   runSetup?: typeof import("../../cli/commands/setup/index.js").runSetup;
@@ -81,7 +81,7 @@ export function registerSetupCommands(
           json: opts.json,
           installOnly: opts.installOnly,
           wikiOnly: opts.wikiOnly,
-          color: process.stdout.isTTY === true,
+          color: shouldUseStdoutColor(),
         });
         emit(result);
       },

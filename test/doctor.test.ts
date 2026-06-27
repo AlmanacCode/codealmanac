@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 import type {
   DiagnosticsSpawnCliFn,
   DiagnosticsSpawnedProcess,
+  DoctorReport,
 } from "../src/services/diagnostics/index.js";
+import { formatReport } from "../src/cli/commands/doctor/format.js";
 import { runDoctor } from "../src/cli/commands/doctor/index.js";
 import {
   CODEX_INSTRUCTIONS_END,
@@ -94,6 +96,29 @@ async function scaffoldHealthyInstall(home: string): Promise<{
 }
 
 describe("almanac doctor", () => {
+  it("formatter stays plain by default and colors only when requested", () => {
+    const report: DoctorReport = {
+      version: "0.1.3",
+      install: [
+        {
+          status: "ok",
+          key: "install.path",
+          message: "install path ok",
+          fix: "run: almanac doctor",
+        },
+      ],
+      agents: [],
+      updates: [],
+      wiki: [],
+    };
+
+    const plain = formatReport(report);
+    const colored = formatReport(report, { color: true });
+
+    expect(plain).not.toContain("\x1b[");
+    expect(colored).toContain("\x1b[");
+  });
+
   it("emits stable install keys in JSON mode", async () => {
     await withTempHome(async (home) => {
       const env = await scaffoldHealthyInstall(home);

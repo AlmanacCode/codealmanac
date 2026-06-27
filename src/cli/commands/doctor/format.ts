@@ -1,4 +1,4 @@
-import { BLUE, BOLD, DIM, GREEN, RED, RST } from "../../../ansi.js";
+import { makeAnsiTheme, type AnsiTheme } from "../../../ansi-theme.js";
 import type {
   AgentDoctorCheck,
   Check,
@@ -14,39 +14,43 @@ export function formatReport(
   report: DoctorReport,
   options: DoctorFormatOptions = {},
 ): string {
-  const color = options.color === true;
+  const theme = makeAnsiTheme(options.color === true);
   const lines: string[] = [];
   lines.push(`Almanac v${report.version}`);
   lines.push("");
   if (report.install.length > 0) {
-    lines.push(color ? `${BOLD}## Install${RST}` : "## Install");
+    lines.push(formatHeading("Install", theme));
     for (const c of report.install) {
-      lines.push(formatCheck(c, color));
+      lines.push(formatCheck(c, theme));
     }
     lines.push("");
   }
   if (report.agents.length > 0) {
-    lines.push(color ? `${BOLD}## Agents${RST}` : "## Agents");
+    lines.push(formatHeading("Agents", theme));
     for (const c of report.agents.map(agentToCheck)) {
-      lines.push(formatCheck(c, color));
+      lines.push(formatCheck(c, theme));
     }
     lines.push("");
   }
   if (report.updates.length > 0) {
-    lines.push(color ? `${BOLD}## Updates${RST}` : "## Updates");
+    lines.push(formatHeading("Updates", theme));
     for (const c of report.updates) {
-      lines.push(formatCheck(c, color));
+      lines.push(formatCheck(c, theme));
     }
     lines.push("");
   }
   if (report.wiki.length > 0) {
-    lines.push(color ? `${BOLD}## Current wiki${RST}` : "## Current wiki");
+    lines.push(formatHeading("Current wiki", theme));
     for (const c of report.wiki) {
-      lines.push(formatCheck(c, color));
+      lines.push(formatCheck(c, theme));
     }
     lines.push("");
   }
   return `${lines.join("\n")}\n`;
+}
+
+function formatHeading(label: string, theme: AnsiTheme): string {
+  return `${theme.BOLD}## ${label}${theme.RST}`;
 }
 
 function agentToCheck(agent: AgentDoctorCheck): Check {
@@ -72,26 +76,24 @@ function readinessMessage(agent: AgentDoctorCheck): string {
   return agent.detail;
 }
 
-function formatCheck(c: Check, color: boolean): string {
-  const { icon, tint } = iconFor(c.status, color);
-  const head = `  ${tint}${icon}${color ? RST : ""} ${c.message}`;
+function formatCheck(c: Check, theme: AnsiTheme): string {
+  const { icon, tint } = iconFor(c.status, theme);
+  const head = `  ${tint}${icon}${theme.RST} ${c.message}`;
   if (c.fix === undefined) return head;
-  const fixLine = color
-    ? `    ${DIM}${c.fix}${RST}`
-    : `    ${c.fix}`;
+  const fixLine = `    ${theme.DIM}${c.fix}${theme.RST}`;
   return `${head}\n${fixLine}`;
 }
 
 function iconFor(
   status: CheckStatus,
-  color: boolean,
+  theme: AnsiTheme,
 ): { icon: string; tint: string } {
   switch (status) {
     case "ok":
-      return { icon: "\u2713", tint: color ? GREEN : "" };
+      return { icon: "\u2713", tint: theme.GREEN };
     case "problem":
-      return { icon: "\u2717", tint: color ? RED : "" };
+      return { icon: "\u2717", tint: theme.RED };
     case "info":
-      return { icon: "\u25c7", tint: color ? BLUE : "" };
+      return { icon: "\u25c7", tint: theme.BLUE };
   }
 }

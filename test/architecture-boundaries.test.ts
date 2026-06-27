@@ -1390,9 +1390,13 @@ describe("architecture boundaries", () => {
     expect(doctorRender).toContain("renderDoctorReport");
     expect(doctorRender).toContain("formatReport");
     expect(doctorFormat).not.toContain("process.stdout");
+    expect(doctorFormat).toContain("../../../ansi-theme.js");
+    expect(doctorFormat).not.toContain("../../../ansi.js");
+    expect(doctorFormat).toContain("makeAnsiTheme(options.color === true)");
     expect(doctorFormat).not.toContain("DoctorOptions");
     expect(diagnosticsTypes).not.toContain("stdout?:");
-    expect(setupRegistration).toContain("color: process.stdout.isTTY === true");
+    expect(setupRegistration).toContain("shouldUseStdoutColor()");
+    expect(setupRegistration).not.toContain("color: process.stdout.isTTY === true");
     expect(diagnosticsTypes).not.toContain("agent/readiness/providers/claude");
     expect(diagnosticsTypes).not.toContain("from \"../../agent/types.js\"");
     expect(diagnosticsTypes).not.toContain("from \"../../config/index.js\"");
