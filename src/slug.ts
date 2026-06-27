@@ -2,7 +2,7 @@
  * Canonical kebab-case slugifier used across the codebase.
  *
  * One function, three callers:
- *   - `init/scaffold.ts` and `wiki/registry/autoregister.ts` — wiki name slugs (both auto-derived and
+ *   - `init/scaffold.ts` and `services/wiki/autoregistration.ts` — wiki name slugs (both auto-derived and
  *     user-supplied via `--name`)
  *   - `indexer/index.ts` — page filename → slug and topic → slug
  *   - `indexer/wikilinks.ts` — wikilink target → slug for resolution

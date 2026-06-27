@@ -18,7 +18,7 @@ sources:
     note: Atomic read/write implementation for the machine-local registry.
   - id: autoregister
     type: file
-    path: src/wiki/registry/autoregister.ts
+    path: src/services/wiki/autoregistration.ts
     note: Silent current-repo registration policy.
   - id: paths
     type: file
@@ -49,7 +49,7 @@ sources:
 
 ## Auto-registration
 
-`src/wiki/registry/autoregister.ts` runs before most commands. If the cwd is inside a repo with `.almanac/` that isn't in the registry, it silently registers it — handles the case where someone clones a repo that already has `.almanac/` committed. Two commands skip auto-registration: `init` (registers explicitly) and `list --drop` (intent is to shrink the registry, not grow it).
+`src/services/wiki/autoregistration.ts` runs before most commands. If the cwd is inside a repo with `.almanac/` that isn't in the registry, it silently registers it — handles the case where someone clones a repo that already has `.almanac/` committed. Two commands skip auto-registration: `init` (registers explicitly) and `list --drop` (intent is to shrink the registry, not grow it).
 
 ## Entry lifecycle
 

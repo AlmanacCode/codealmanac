@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { initWiki } from "../src/init/scaffold.js";
 import { getRegistryPath } from "../src/paths.js";
-import { autoRegisterIfNeeded } from "../src/wiki/registry/autoregister.js";
+import { autoRegisterIfNeeded } from "../src/services/wiki/autoregistration.js";
 import { readRegistry, addEntry } from "../src/stores/wiki-registry/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 

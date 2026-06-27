@@ -1,7 +1,7 @@
 import { Command } from "commander";
 
 import type { HarnessEvent } from "../../harness/events.js";
-import { autoRegisterIfNeeded } from "../../wiki/registry/autoregister.js";
+import { autoRegisterIfNeeded } from "../../services/wiki/autoregistration.js";
 import { emit } from "../../cli/helpers.js";
 
 export function registerWikiLifecycleCommands(program: Command): void {

@@ -68,3 +68,9 @@ Fifth production slice:
 - Moved global registry persistence from `src/wiki/registry/store.ts` to `src/stores/wiki-registry/store.ts`.
 - Deleted the old `src/wiki/registry/index.ts` facade and updated callers to use the explicit store boundary.
 - Moved slug tests from `test/registry.test.ts` to `test/slug.test.ts` so registry tests cover registry persistence only.
+
+Sixth production slice:
+
+- Moved current-repo auto-registration from `src/wiki/registry/autoregister.ts` to `src/services/wiki/autoregistration.ts`.
+- Removed the remaining `src/wiki/registry/` product/persistence hybrid directory.
+- Kept CLI edges responsible for choosing when a command should auto-register, while the service owns how the repo is detected and registered.

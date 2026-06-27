@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { autoRegisterIfNeeded } from "../../wiki/registry/autoregister.js";
+import { autoRegisterIfNeeded } from "../../services/wiki/autoregistration.js";
 import { collectOption, emit, readStdin } from "../../cli/helpers.js";
 
 export function registerEditCommands(program: Command): void {

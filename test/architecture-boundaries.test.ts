@@ -83,6 +83,7 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/stores/wiki-registry/store.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/wiki/registry/store.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/wiki/registry/index.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/wiki/registry"))).toBe(false);
   });
 });
 
