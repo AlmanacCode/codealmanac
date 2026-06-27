@@ -803,3 +803,9 @@ One-hundred-twenty-first production slice:
 - Split doctor command rendering into `src/cli/commands/doctor/render.ts`.
 - Moved doctor JSON output, text report selection, and command-result shaping out of `src/cli/commands/doctor/index.ts`.
 - Kept `src/cli/commands/doctor/index.ts` focused on invoking the diagnostics service and preserving the public diagnostic type exports.
+
+One-hundred-twenty-second production slice:
+
+- Split reindex command rendering into `src/cli/commands/reindex-render.ts`.
+- Moved explicit reindex summary wording, page-count pluralization, and skipped-file suffix formatting out of `src/cli/commands/reindex.ts`.
+- Kept `src/cli/commands/reindex.ts` focused on invoking the wiki reindex service and mapping service results into the command contract.

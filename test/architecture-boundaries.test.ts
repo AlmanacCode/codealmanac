@@ -176,16 +176,26 @@ describe("architecture boundaries", () => {
 
   it("keeps reindex command adapters out of index storage mechanics", async () => {
     const reindexCommand = await readSource("src/cli/commands/reindex.ts");
+    const reindexRender = await readSource("src/cli/commands/reindex-render.ts");
     const reindexService = await readSource("src/services/wiki/reindex.ts");
 
+    expect(existsSync(join(ROOT, "src/cli/commands/reindex-render.ts"))).toBe(
+      true,
+    );
     expect(reindexCommand).toContain("services/wiki/reindex.js");
+    expect(reindexCommand).toContain("./reindex-render.js");
     expect(reindexCommand).not.toContain("wiki/indexer");
     expect(reindexCommand).not.toContain("runIndexer");
     expect(reindexCommand).not.toContain("resolveWikiRoot");
+    expect(reindexCommand).not.toContain("reindexed:");
+    expect(reindexCommand).not.toContain("filesSkipped > 0");
     expect(reindexCommand).not.toContain(
       "ReindexOptions = ReindexWikiRequest",
     );
     expect(reindexCommand).not.toContain("result: ReindexWikiResult;");
+    expect(reindexRender).toContain("reindexed:");
+    expect(reindexRender).not.toContain("services/wiki/reindex.js");
+    expect(reindexRender).not.toContain("wiki/indexer");
     expect(reindexService).not.toContain("export type ReindexWikiResult = IndexResult");
   });
 

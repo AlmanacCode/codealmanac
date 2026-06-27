@@ -3,6 +3,12 @@ import {
   type ReindexWikiRequest,
   type ReindexWikiResult,
 } from "../../services/wiki/reindex.js";
+import {
+  renderReindexResult,
+  type ReindexCommandOutput,
+} from "./reindex-render.js";
+
+export type { ReindexCommandOutput } from "./reindex-render.js";
 
 export interface ReindexOptions {
   cwd: string;
@@ -16,12 +22,6 @@ export interface ReindexResult {
   pagesIndexed: number;
   filesSeen: number;
   filesSkipped: number;
-}
-
-export interface ReindexCommandOutput {
-  result: ReindexResult;
-  stdout: string;
-  exitCode: number;
 }
 
 /**
@@ -39,15 +39,7 @@ export async function runReindex(
   const result = reindexResultFromWikiService(
     await reindexWiki(toReindexWikiRequest(options)),
   );
-  // Summary wording: "reindexed: N pages (K updated, R removed)". When
-  // some files were on disk but never made it into the index
-  // (slug collisions, ENOENT races, un-sluggable filenames), tack on a
-  // `; S skipped` suffix so the user notices. The per-file reason was
-  // already written to stderr at indexing time.
-  const skipSuffix =
-    result.filesSkipped > 0 ? `; ${result.filesSkipped} skipped` : "";
-  const stdout = `reindexed: ${result.pagesIndexed} page${result.pagesIndexed === 1 ? "" : "s"} (${result.changed} updated, ${result.removed} removed${skipSuffix})\n`;
-  return { result, stdout, exitCode: 0 };
+  return renderReindexResult(result);
 }
 
 function toReindexWikiRequest(options: ReindexOptions): ReindexWikiRequest {
