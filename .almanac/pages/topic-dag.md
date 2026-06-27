@@ -63,6 +63,14 @@ sources:
     type: file
     path: src/services/wiki/page-topic-mutations.ts
     note: Service workflow for tag/untag page-topic mutations.
+  - id: page-topic-pages-service
+    type: file
+    path: src/services/wiki/page-topic-pages.ts
+    note: Page input parsing and indexed page-file resolution for tag workflows.
+  - id: page-topic-types-service
+    type: file
+    path: src/services/wiki/page-topic-types.ts
+    note: Request and result contracts for page-topic service workflows.
   - id: tag
     type: file
     path: src/cli/commands/tag.ts
@@ -89,7 +97,7 @@ Three layers:
 
 ## Frontmatter rewrite
 
-`almanac topics rename <old> <new>` and `almanac untag <page> <topic>` rewrite affected pages' frontmatter in place. `src/wiki/topics/frontmatter-rewrite.ts` handles this — it parses only the YAML block, patches the `topics:` array, and rewrites the file atomically to avoid corrupting prose. `src/services/wiki/topic-page-mutations.ts` owns the topic rename/delete workflows that coordinate topic metadata with page-frontmatter rewrites.
+`almanac topics rename <old> <new>` and `almanac untag <page> <topic>` rewrite affected pages' frontmatter in place. `src/wiki/topics/frontmatter-rewrite.ts` handles this — it parses only the YAML block, patches the `topics:` array, and rewrites the file atomically to avoid corrupting prose. `src/services/wiki/topic-page-mutations.ts` owns the topic rename/delete workflows that coordinate topic metadata with page-frontmatter rewrites. `src/services/wiki/page-topic-mutations.ts` owns the `tag`/`untag` product workflow, while `src/services/wiki/page-topic-pages.ts` owns input parsing and page slug-to-file resolution through the query layer.
 
 ## CLI surface
 

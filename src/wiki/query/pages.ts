@@ -45,6 +45,18 @@ export function pageSummaryBySlug(
   )[0] ?? null;
 }
 
+export function pageFilePathBySlug(
+  db: Database.Database,
+  slug: string,
+): string | null {
+  const row = db
+    .prepare<[string], { file_path: string }>(
+      "SELECT file_path FROM pages WHERE slug = ?",
+    )
+    .get(slug);
+  return row?.file_path ?? null;
+}
+
 export function pagesBySlug(
   db: Database.Database,
   slugs: string[],

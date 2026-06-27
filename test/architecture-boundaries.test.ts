@@ -121,6 +121,9 @@ describe("architecture boundaries", () => {
 
   it("keeps tag command adapters out of page topic write mechanics", async () => {
     const tagCommand = await readSource("src/cli/commands/tag.ts");
+    const pageTopicService = await readSource(
+      "src/services/wiki/page-topic-mutations.ts",
+    );
 
     expect(tagCommand).toContain("services/wiki/page-topic-mutations.js");
     expect(tagCommand).not.toContain("wiki/indexer");
@@ -131,6 +134,10 @@ describe("architecture boundaries", () => {
     expect(tagCommand).not.toContain("rewritePageTopics");
     expect(tagCommand).not.toContain("loadTopicsFile");
     expect(tagCommand).not.toContain("writeTopicsFile");
+
+    expect(pageTopicService).not.toContain("SELECT file_path FROM pages");
+    expect(pageTopicService).not.toContain("openIndex");
+    expect(pageTopicService).not.toContain("indexDbPath");
   });
 
   it("keeps review command adapters out of review store mechanics", async () => {

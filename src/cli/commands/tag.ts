@@ -1,8 +1,8 @@
 import {
   tagWikiPages,
   untagWikiPage,
-  type TaggedPageResult,
 } from "../../services/wiki/page-topic-mutations.js";
+import type { TaggedPageResult } from "../../services/wiki/page-topic-types.js";
 
 /**
  * `almanac tag <page> <topic>...` and `almanac untag <page> <topic>`.
