@@ -142,3 +142,9 @@ Fifteenth production slice:
 
 - Moved job worker lock path resolution, legacy lock checks, lock owner files, stale-owner detection, and release mechanics into `src/stores/jobs/worker-lock.ts`.
 - Left `src/jobs/queue.ts` responsible only for selecting the oldest queued job from stored records.
+
+Review pass after job-store slices:
+
+- Read `.claude/agents/review.md`, `CLAUDE.md`, and the changed job/store files.
+- Found no correctness regressions in the record/spec/log/worker-lock split.
+- Residual risk to watch: job stores intentionally import job domain schemas and types for validation; that is acceptable while stores only own persistence mechanics, but it should not turn into product workflow ownership.
