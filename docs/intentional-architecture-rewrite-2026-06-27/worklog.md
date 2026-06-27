@@ -653,3 +653,9 @@ Ninety-sixth production slice:
 - Split setup command contracts into `src/cli/commands/setup/types.ts`.
 - Moved `SetupOptions`, `SetupResult`, and the setup `AutomationExecFn` hook type out of `src/cli/commands/setup/index.ts`.
 - Kept `src/cli/commands/setup/index.ts` focused on the setup TUI workflow while preserving its public type re-exports for existing callers.
+
+Ninety-seventh production slice:
+
+- Split sync workflow contracts into `src/services/sync/types.ts`.
+- Moved `SyncWorkflowOptions`, `SyncWorkflowSummary`, item shapes, and result union out of `src/services/sync/sync.ts`.
+- Kept `src/services/sync/sync.ts` focused on source parsing, sweep orchestration, provider selection, and Absorb handoff.

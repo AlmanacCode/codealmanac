@@ -739,12 +739,18 @@ describe("architecture boundaries", () => {
   it("keeps sync command adapters out of transcript and absorb workflow mechanics", async () => {
     const syncServiceIndex = await readSource("src/services/sync/index.ts");
     const syncService = await readSource("src/services/sync/sync.ts");
+    const syncServiceTypes = await readSource("src/services/sync/types.ts");
     const syncSweep = await readSource("src/sync/sweep.ts");
     const syncSweepResults = await readSource("src/sync/sweep-results.ts");
     const syncCommand = await readSource("src/cli/commands/sync.ts");
 
+    expect(existsSync(join(ROOT, "src/services/sync/types.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/sync/sweep-results.ts"))).toBe(true);
     expect(syncServiceIndex).not.toContain("../../sync");
+    expect(syncService).not.toContain("interface SyncWorkflowOptions");
+    expect(syncService).not.toContain("interface SyncWorkflowSummary");
+    expect(syncServiceTypes).toContain("interface SyncWorkflowOptions");
+    expect(syncServiceTypes).toContain("interface SyncWorkflowSummary");
     expect(syncService).not.toContain("export type SyncWorkflowSummary = sync.SyncSummary");
     expect(syncService).not.toContain(
       "SyncWorkflowStartedItem extends SyncWorkflowReadyItem",

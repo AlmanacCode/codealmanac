@@ -1,6 +1,8 @@
 export {
   runSyncWorkflow,
-  type SyncWorkflowSummary,
-  type SyncWorkflowOptions,
-  type SyncWorkflowResult,
 } from "./sync.js";
+export type {
+  SyncWorkflowSummary,
+  SyncWorkflowOptions,
+  SyncWorkflowResult,
+} from "./types.js";

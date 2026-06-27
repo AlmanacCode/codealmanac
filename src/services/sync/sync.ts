@@ -4,62 +4,14 @@ import * as operations from "../../operations/index.js";
 import * as sync from "../../sync/index.js";
 import { readConfig } from "../../config/index.js";
 import { parseDuration } from "../../shared/duration.js";
-
-export interface SyncWorkflowOptions {
-  mode?: "sync" | "status";
-  from?: string;
-  quiet?: string;
-  using?: string;
-  now?: Date;
-  homeDir?: string;
-  configPath?: string;
-  startBackground?: operations.StartBackgroundJob;
-}
-
-export type SyncWorkflowMode = "sync" | "status";
-export type SyncWorkflowApp = "claude" | "codex";
-
-export interface SyncWorkflowReadyItem {
-  app: SyncWorkflowApp;
-  sessionId: string;
-  transcriptPath: string;
-  repoRoot: string;
-  fromLine: number;
-  toLine: number;
-}
-
-export interface SyncWorkflowStartedItem {
-  app: SyncWorkflowApp;
-  sessionId: string;
-  transcriptPath: string;
-  repoRoot: string;
-  fromLine: number;
-  toLine: number;
-  jobId: string;
-}
-
-export interface SyncWorkflowSkippedItem {
-  app?: SyncWorkflowApp;
-  sessionId?: string;
-  transcriptPath: string;
-  repoRoot?: string;
-  reason: string;
-}
-
-export interface SyncWorkflowSummary {
-  mode: SyncWorkflowMode;
-  scanned: number;
-  eligible: number;
-  syncSince: string | null;
-  ready: SyncWorkflowReadyItem[];
-  started: SyncWorkflowStartedItem[];
-  skipped: SyncWorkflowSkippedItem[];
-  needsAttention: SyncWorkflowSkippedItem[];
-}
-
-export type SyncWorkflowResult =
-  | { status: "completed"; summary: SyncWorkflowSummary }
-  | { status: "invalid"; error: Error };
+import type {
+  SyncWorkflowOptions,
+  SyncWorkflowReadyItem,
+  SyncWorkflowResult,
+  SyncWorkflowSkippedItem,
+  SyncWorkflowStartedItem,
+  SyncWorkflowSummary,
+} from "./types.js";
 
 const DEFAULT_QUIET = "45m";
 
