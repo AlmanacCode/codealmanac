@@ -2,7 +2,7 @@ import {
   detectCurrentInstallPath,
   detectEphemeral,
   spawnGlobalInstall,
-} from "./install-path.js";
+} from "../../../platform/install/global-package.js";
 import {
   confirm,
   type InstallDecision,

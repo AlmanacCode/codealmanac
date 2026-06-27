@@ -517,6 +517,27 @@ describe("architecture boundaries", () => {
     }
   });
 
+  it("keeps setup global install mechanics in the platform install layer", async () => {
+    const globalInstallStep = await readSource(
+      "src/cli/commands/setup/global-install-step.ts",
+    );
+    const globalPackage = await readSource(
+      "src/platform/install/global-package.ts",
+    );
+
+    expect(existsSync(join(ROOT, "src/platform/install/global-package.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/cli/commands/setup/install-path.ts"))).toBe(false);
+    expect(globalInstallStep).toContain("platform/install/global-package.js");
+    expect(globalInstallStep).not.toContain("node:child_process");
+    expect(globalInstallStep).not.toContain("node:module");
+    expect(globalInstallStep).not.toContain("node:os");
+    expect(globalInstallStep).not.toContain("fileURLToPath");
+    expect(globalInstallStep).not.toContain("execFile");
+    expect(globalPackage).toContain("detectCurrentInstallPath");
+    expect(globalPackage).toContain("detectEphemeral");
+    expect(globalPackage).toContain("spawnGlobalInstall");
+  });
+
   it("keeps setup auto-commit UI out of config persistence mechanics", async () => {
     const autoCommitStep = await readSource(
       "src/cli/commands/setup/auto-commit-step.ts",

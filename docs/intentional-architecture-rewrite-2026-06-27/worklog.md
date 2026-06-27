@@ -544,3 +544,9 @@ Seventy-eighth production slice:
 - Split setup stdin/input controls out of `src/cli/commands/setup/output.ts`.
 - Added `src/cli/commands/setup/input.ts` for confirm prompts, text prompts, raw choice selection, and setup interruption handling.
 - Kept `output.ts` focused on display constants, banners, step markers, and boxed next-step rendering.
+
+Seventy-ninth production slice:
+
+- Moved setup global-install path detection and npm install spawning into `src/platform/install/global-package.ts`.
+- Deleted the command-local `src/cli/commands/setup/install-path.ts` platform helper.
+- Kept `global-install-step.ts` focused on setup prompting, rendering, and step result orchestration.
