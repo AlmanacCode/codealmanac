@@ -3,6 +3,10 @@ import { Command } from "commander";
 import { currentCliProgramArguments } from "./current-cli.js";
 import { emit, shouldUseStdoutColor } from "./helpers.js";
 import { probeDiagnosticAutomation } from "../../platform/diagnostics/automation.js";
+import {
+  probeDiagnosticGuides,
+  probeDiagnosticInstructionEntries,
+} from "../../platform/diagnostics/instructions.js";
 
 export interface SetupCommandDeps {
   runSetup?: typeof import("../../cli/commands/setup/index.js").runSetup;
@@ -93,6 +97,8 @@ export function registerSetupCommands(
           environment: process.env,
           nodeVersion: process.version,
           automationStatus: await probeDiagnosticAutomation(),
+          guideStatus: probeDiagnosticGuides(),
+          instructionEntriesStatus: await probeDiagnosticInstructionEntries(),
           json: opts.json,
           installOnly: opts.installOnly,
           wikiOnly: opts.wikiOnly,

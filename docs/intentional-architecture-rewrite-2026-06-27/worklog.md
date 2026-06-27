@@ -954,3 +954,10 @@ One-hundred-forty-third production slice:
 - Moved launchd sync plist and legacy capture-sweep detection into `src/platform/diagnostics/automation.ts`.
 - Kept `src/services/diagnostics/install.ts` focused on describing install checks from facts rather than importing platform automation modules.
 - Added platform probe coverage and an architecture guard against install diagnostics re-owning automation platform mechanics.
+
+One-hundred-forty-fourth production slice:
+
+- Added explicit guide and agent-instruction status facts to the doctor diagnostics contract.
+- Moved home-directory guide and agent-instruction probing into `src/platform/diagnostics/instructions.ts`.
+- Kept `src/services/diagnostics/install.ts` focused on describing install checks from typed facts instead of checking filesystem paths.
+- Added platform probe coverage and boundary guards against install diagnostics re-owning guide or instruction filesystem mechanics.

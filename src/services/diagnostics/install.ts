@@ -1,8 +1,3 @@
-import { existsSync } from "node:fs";
-import { homedir } from "node:os";
-import path from "node:path";
-
-import { checkAgentInstructions } from "../../agent/install-targets.js";
 import {
   classifyInstallPath,
   detectInstallPath,
@@ -13,6 +8,8 @@ import type {
   Check,
   DiagnosticsAutomationStatus,
   DiagnosticsAuthStatus,
+  DiagnosticsGuideStatus,
+  DiagnosticsInstructionEntriesStatus,
   DoctorOptions,
 } from "./types.js";
 
@@ -41,20 +38,8 @@ export async function gatherInstallChecks(
   checks.push(describeAuth(auth, options));
 
   checks.push(describeAutomation(options.automationStatus));
-
-  const claudeDir = options.claudeDir ?? path.join(homedir(), ".claude");
-  const codexDir = options.codexDir ?? path.join(homedir(), ".codex");
-  const cursorDir = options.cursorDir ?? path.join(homedir(), ".cursor");
-  const windsurfDir = options.windsurfDir ?? path.join(homedir(), ".codeium", "windsurf");
-  const opencodeDir = options.opencodeDir ?? path.join(homedir(), ".config", "opencode");
-  checks.push(describeGuides(claudeDir));
-  checks.push(await describeInstructionEntries({
-    claudeDir,
-    codexDir,
-    cursorDir,
-    windsurfDir,
-    opencodeDir,
-  }));
+  checks.push(describeGuides(options.guideStatus));
+  checks.push(describeInstructionEntries(options.instructionEntriesStatus));
 
   return checks;
 }
@@ -145,46 +130,31 @@ function describeAutomation(status: DiagnosticsAutomationStatus): Check {
   };
 }
 
-function describeGuides(claudeDir: string): Check {
-  const mini = path.join(claudeDir, "almanac.md");
-  const ref = path.join(claudeDir, "almanac-reference.md");
-  const haveMini = existsSync(mini);
-  const haveRef = existsSync(ref);
-  if (haveMini && haveRef) {
+function describeGuides(status: DiagnosticsGuideStatus): Check {
+  if (status.status === "installed") {
     return {
       status: "ok",
       key: "install.guides",
-      message: `Agent guides installed (${path.basename(mini)}, ${path.basename(ref)})`,
+      message: `Agent guides installed (${status.installedNames.join(", ")})`,
     };
   }
-  const missing = [
-    haveMini ? null : "almanac.md",
-    haveRef ? null : "almanac-reference.md",
-  ].filter((s): s is string => s !== null);
   return {
     status: "problem",
     key: "install.guides",
-    message: `Agent guides missing (${missing.join(", ")})`,
+    message: `Agent guides missing (${status.missingNames.join(", ")})`,
     fix: "run: almanac setup --yes",
   };
 }
 
-async function describeInstructionEntries(dirs: {
-  claudeDir: string;
-  codexDir: string;
-  cursorDir: string;
-  windsurfDir: string;
-  opencodeDir: string;
-}): Promise<Check> {
-  const check = await checkAgentInstructions(dirs);
-  const missing = check.missing;
-  const ok = missing.length === 0;
+function describeInstructionEntries(
+  status: DiagnosticsInstructionEntriesStatus,
+): Check {
   return {
-    status: ok ? "ok" : "problem",
+    status: status.status === "present" ? "ok" : "problem",
     key: "install.import",
-    message: ok
+    message: status.status === "present"
       ? "Agent instruction entries present"
-      : `Agent instruction entries missing (${missing.join(", ")})`,
-    fix: ok ? undefined : "run: almanac setup --yes",
+      : `Agent instruction entries missing (${status.missing.join(", ")})`,
+    fix: status.status === "present" ? undefined : "run: almanac setup --yes",
   };
 }

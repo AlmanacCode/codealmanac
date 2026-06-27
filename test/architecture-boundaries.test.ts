@@ -1561,6 +1561,9 @@ describe("architecture boundaries", () => {
     const platformAutomationDiagnostics = await readSource(
       "src/platform/diagnostics/automation.ts",
     );
+    const platformInstructionDiagnostics = await readSource(
+      "src/platform/diagnostics/instructions.ts",
+    );
     const diagnosticsTypes = await readSource("src/services/diagnostics/types.ts");
     const diagnosticsIndex = await readSource("src/services/diagnostics/index.ts");
     const setupRegistration = await readSource(
@@ -1596,17 +1599,28 @@ describe("architecture boundaries", () => {
     expect(diagnosticsTypes).toContain("claudeApiKeySet: boolean");
     expect(diagnosticsTypes).toContain("nodeVersion: string");
     expect(diagnosticsTypes).toContain("automationStatus: DiagnosticsAutomationStatus");
+    expect(diagnosticsTypes).toContain("guideStatus: DiagnosticsGuideStatus");
+    expect(diagnosticsTypes).toContain(
+      "instructionEntriesStatus: DiagnosticsInstructionEntriesStatus",
+    );
     expect(installDiagnostics).not.toContain("process.env");
     expect(installDiagnostics).not.toContain("process.version");
     expect(installDiagnostics).not.toContain("platform/automation");
+    expect(installDiagnostics).not.toContain("homedir");
+    expect(installDiagnostics).not.toContain("existsSync");
+    expect(installDiagnostics).not.toContain("checkAgentInstructions");
     expect(setupRegistration).toContain("shouldUseStdoutColor()");
     expect(setupRegistration).toContain("nodeVersion: process.version");
     expect(setupRegistration).toContain("probeDiagnosticAutomation()");
+    expect(setupRegistration).toContain("probeDiagnosticGuides()");
+    expect(setupRegistration).toContain("probeDiagnosticInstructionEntries()");
     expect(setupRegistration).not.toContain("color: process.stdout.isTTY === true");
     expect(platformAutomationDiagnostics).toContain(
       "../automation/legacy-capture.js",
     );
     expect(platformAutomationDiagnostics).toContain("../automation/tasks.js");
+    expect(platformInstructionDiagnostics).toContain("checkAgentInstructions");
+    expect(platformInstructionDiagnostics).toContain("homedir()");
     expect(diagnosticsTypes).not.toContain("agent/readiness/providers/claude");
     expect(diagnosticsTypes).not.toContain("from \"../../agent/types.js\"");
     expect(diagnosticsTypes).not.toContain("from \"../../config/index.js\"");

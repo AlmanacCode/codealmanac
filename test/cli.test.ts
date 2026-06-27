@@ -636,7 +636,13 @@ describe("run() — codealmanac-setup shortcut routing", () => {
         process.env.ANTHROPIC_API_KEY.length > 0,
       color: process.stdout.isTTY === true,
       environment: process.env,
+      guideStatus: expect.objectContaining({
+        status: expect.any(String),
+      }),
       installOnly: true,
+      instructionEntriesStatus: expect.objectContaining({
+        status: expect.any(String),
+      }),
       json: undefined,
       nodeVersion: process.version,
       wikiOnly: undefined,

@@ -40,6 +40,14 @@ export type DiagnosticsAutomationStatus =
   | { status: "installed"; plistPath: string }
   | { status: "missing" };
 
+export type DiagnosticsGuideStatus =
+  | { status: "installed"; installedNames: string[] }
+  | { status: "missing"; missingNames: string[] };
+
+export type DiagnosticsInstructionEntriesStatus =
+  | { status: "present" }
+  | { status: "missing"; missing: string[] };
+
 export interface DoctorOptions {
   cwd: string;
   /** Whether ANTHROPIC_API_KEY is present for the current process. */
@@ -50,6 +58,10 @@ export interface DoctorOptions {
   nodeVersion: string;
   /** Platform-owned automation probe result for the current machine. */
   automationStatus: DiagnosticsAutomationStatus;
+  /** Platform-owned guide-file probe result for the current machine. */
+  guideStatus: DiagnosticsGuideStatus;
+  /** Platform-owned agent-instruction probe result for the current machine. */
+  instructionEntriesStatus: DiagnosticsInstructionEntriesStatus;
 
   /** Emit structured JSON instead of the colored report. */
   json?: boolean;
@@ -67,16 +79,6 @@ export interface DoctorOptions {
   settingsPath?: string;
   /** Override `~/.almanac/` directory. */
   almanacDir?: string;
-  /** Override `~/.claude/` directory. */
-  claudeDir?: string;
-  /** Override `~/.codex/` directory. */
-  codexDir?: string;
-  /** Override `~/.cursor/` directory. */
-  cursorDir?: string;
-  /** Override `~/.codeium/windsurf/` directory. */
-  windsurfDir?: string;
-  /** Override `~/.config/opencode/` directory. */
-  opencodeDir?: string;
   /** Override the bundled hooks directory lookup. */
   hookScriptPath?: string;
   /** Override the `codealmanac` install path detector. */
