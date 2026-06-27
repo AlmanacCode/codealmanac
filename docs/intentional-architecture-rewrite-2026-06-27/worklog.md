@@ -617,3 +617,9 @@ Ninetieth production slice:
 - Split structured source-frontmatter coercion into `src/wiki/indexer/frontmatter-sources.ts`.
 - Moved the `FrontmatterSource` union, `sources:` list coercion, source-type switch, source-number/date coercion, and optional-field cleanup out of `frontmatter.ts`.
 - Kept `src/wiki/indexer/frontmatter.ts` focused on frontmatter fence parsing, YAML loading, generic scalar/list fields, archive/supersession fields, body extraction, and H1 fallback.
+
+Ninety-first production slice:
+
+- Split lifecycle operation run-result read models and operation-result mapping into `src/services/lifecycle/operation-results.ts`.
+- Moved job/foreground/background result contracts and `lifecycleOperationRunResultFromOperation()` out of `src/services/lifecycle/operations.ts`.
+- Kept `src/services/lifecycle/operations.ts` focused on init/absorb/garden workflow orchestration, provider resolution, JSON foreground rejection, and init command context construction.

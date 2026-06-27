@@ -15,6 +15,14 @@ export {
   type LifecycleForegroundStartRequest,
   type LifecycleForegroundStartResult,
   type LifecycleOperationKind,
-  type LifecycleOperationRunResult,
   type LifecycleOperationWorkflowResult,
 } from "./operations.js";
+
+export {
+  type LifecycleOperationBackgroundResult,
+  type LifecycleOperationForegroundResult,
+  type LifecycleOperationJobResult,
+  type LifecycleOperationJobStatus,
+  type LifecycleOperationMode,
+  type LifecycleOperationRunResult,
+} from "./operation-results.js";
