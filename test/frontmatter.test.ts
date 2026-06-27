@@ -136,25 +136,20 @@ body
   });
 
   it("recovers from malformed YAML by returning empty fields", () => {
-    // parseFrontmatter writes a warning to stderr on bad YAML. Suppress
-    // it for the duration of this test so the test output stays clean.
-    const origWrite = process.stderr.write.bind(process.stderr);
-    process.stderr.write = ((): boolean => true) as typeof process.stderr.write;
-    try {
-      const fm = parseFrontmatter(
-        `---
+    const warnings: string[] = [];
+    const fm = parseFrontmatter(
+      `---
 title: x
 topics: [unclosed
 ---
 
 body
 `,
-      );
-      // Malformed — we can't extract fields, but the page is still indexable.
-      expect(fm.topics).toEqual([]);
-    } finally {
-      process.stderr.write = origWrite;
-    }
+      { warnings: (message) => warnings.push(message) },
+    );
+    // Malformed — we can't extract fields, but the page is still indexable.
+    expect(fm.topics).toEqual([]);
+    expect(warnings.join("\n")).toMatch(/malformed frontmatter/);
   });
 
   it("coerces archived_at from a YAML date", () => {

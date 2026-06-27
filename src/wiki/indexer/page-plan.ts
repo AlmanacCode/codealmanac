@@ -13,6 +13,10 @@ import {
   type DerivedFileRef,
   type IndexedPageSource,
 } from "./page-sources.js";
+import {
+  indexerWarningSink,
+  type IndexerWarningSink,
+} from "./warnings.js";
 import { extractWikilinks } from "./wikilinks.js";
 
 export interface ExistingIndexedPage {
@@ -48,7 +52,9 @@ export interface IndexedPagesPlan {
 export async function buildIndexedPagesPlan(args: {
   pagesDir: string;
   existingRows: ExistingIndexedPage[];
+  warnings?: IndexerWarningSink;
 }): Promise<IndexedPagesPlan> {
+  const warn = indexerWarningSink(args.warnings);
   const files = await fg(PAGES_GLOB, {
     cwd: args.pagesDir,
     absolute: false,
@@ -67,9 +73,7 @@ export async function buildIndexedPagesPlan(args: {
     const base = basename(rel, ".md");
     const slug = toKebabCase(base);
     if (slug.length === 0) {
-      process.stderr.write(
-        `almanac: skipping "${rel}" — filename has no slug-able characters\n`,
-      );
+      warn(`skipping "${rel}" — filename has no slug-able characters`);
       filesSkipped++;
       continue;
     }
@@ -77,14 +81,12 @@ export async function buildIndexedPagesPlan(args: {
       // Filename isn't already canonical kebab-case. Warn, but still
       // index under the canonical slug. `almanac health` surfaces these
       // as a proper report.
-      process.stderr.write(
-        `almanac: warning — "${rel}" is not canonical; indexed as slug "${slug}"\n`,
-      );
+      warn(`warning — "${rel}" is not canonical; indexed as slug "${slug}"`);
     }
     if (seenSlugs.has(slug)) {
       // Two files slugify to the same slug. Keep the first, skip the rest.
-      process.stderr.write(
-        `almanac: warning — slug "${slug}" collides with an earlier file; skipping "${rel}"\n`,
+      warn(
+        `warning — slug "${slug}" collides with an earlier file; skipping "${rel}"`,
       );
       filesSkipped++;
       continue;
@@ -101,9 +103,7 @@ export async function buildIndexedPagesPlan(args: {
         "code" in err &&
         (err.code === "ENOENT" || err.code === "EACCES")
       ) {
-        process.stderr.write(
-          `almanac: skipping "${rel}" — ${err.message}\n`,
-        );
+        warn(`skipping "${rel}" — ${err.message}`);
         filesSkipped++;
         continue;
       }
@@ -122,7 +122,7 @@ export async function buildIndexedPagesPlan(args: {
       continue;
     }
 
-    const fm = parseFrontmatter(raw);
+    const fm = parseFrontmatter(raw, { warnings: warn });
     const title = fm.title ?? firstH1(fm.body) ?? base;
     const normalizedSources = normalizePageSources({
       sources: fm.sources,

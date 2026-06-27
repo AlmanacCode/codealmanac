@@ -855,3 +855,10 @@ One-hundred-twenty-ninth production slice:
 - Made Claude readiness and Claude auth read `ANTHROPIC_API_KEY` from that context instead of directly reading `process.env`.
 - Threaded environment through agents, setup, doctor, and sqlite-free setup shortcut entrypoints.
 - Added an architecture guard so `src/agent/readiness/view.ts`, Claude readiness, and Claude auth cannot reintroduce direct `process.env` reads.
+
+One-hundred-thirtieth production slice:
+
+- Made indexer warnings an explicit callback instead of direct `process.stderr` writes inside frontmatter parsing, page planning, or topics YAML application.
+- Threaded the warning sink through the force-reindex service and CLI edge so explicit `almanac reindex` still surfaces non-fatal indexing warnings.
+- Replaced stderr monkey-patching tests with direct warning-sink assertions.
+- Added an architecture guard so indexer modules cannot reintroduce terminal output ownership.

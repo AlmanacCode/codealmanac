@@ -15,10 +15,16 @@ import {
 import { applyIndexedPagesPlan } from "./page-writer.js";
 import { isIndexSchemaStale, openIndex } from "./schema.js";
 import { applyTopicsYaml, TOPICS_YAML_FILENAME } from "./topics-yaml.js";
+import {
+  indexerWarningSink,
+  type IndexerWarningSink,
+} from "./warnings.js";
 
 export interface IndexContext {
   /** Absolute path to the repo root (the dir containing `.almanac/`). */
   repoRoot: string;
+  /** Receives non-fatal index warnings such as malformed frontmatter. */
+  warnings?: IndexerWarningSink;
 }
 
 export interface IndexResult {
@@ -46,7 +52,7 @@ export interface IndexResult {
   /**
    * Files dropped before making it into the index — slug collisions,
    * un-sluggable filenames, or filesystem races (deleted/unreadable mid-run).
-   * Covered by stderr warnings when non-zero.
+   * Covered by indexer warnings when callers provide a warning sink.
    */
   filesSkipped: number;
 }
@@ -58,8 +64,9 @@ export interface IndexResult {
  *
  * The spec is explicit: "Reindex is implicit and invisible. If the user
  * didn't didn't explicitly run `reindex`, they shouldn't see reindex
- * output. Silent by default." So this function never writes to stdout;
- * warnings (slug collisions, bad frontmatter) still go to stderr.
+ * output. Silent by default." So this function never writes to stdout or
+ * stderr; callers may pass a warning sink when a CLI command wants to
+ * surface non-fatal indexing issues.
  */
 export async function ensureFreshIndex(ctx: IndexContext): Promise<IndexResult> {
   const almanacDir = join(ctx.repoRoot, ".almanac");
@@ -114,6 +121,7 @@ function emptyResult(): IndexResult {
  * the indexer unconditionally. Exposed for `almanac reindex`.
  */
 export async function runIndexer(ctx: IndexContext): Promise<IndexResult> {
+  const warnings = indexerWarningSink(ctx.warnings);
   const almanacDir = join(ctx.repoRoot, ".almanac");
   const dbPath = join(almanacDir, "index.db");
   const pagesDir = join(almanacDir, "pages");
@@ -121,14 +129,16 @@ export async function runIndexer(ctx: IndexContext): Promise<IndexResult> {
   const db = openIndex(dbPath);
   let result: IndexResult;
   try {
-    result = await indexPagesInto(db, pagesDir);
+    result = await indexPagesInto(db, pagesDir, warnings);
     // After pages are indexed, reconcile the topics table against
     // `.almanac/topics.yaml` (if present). `indexPagesInto` has already
     // lazily inserted rows for every topic slug mentioned in page
     // frontmatter with a title-cased title; `applyTopicsYaml` now
     // promotes the declared title/description and rewrites parent edges
     // for those topics that live in the file.
-    await applyTopicsYaml(db, join(almanacDir, TOPICS_YAML_FILENAME));
+    await applyTopicsYaml(db, join(almanacDir, TOPICS_YAML_FILENAME), {
+      warnings,
+    });
   } finally {
     db.close();
   }
@@ -153,6 +163,7 @@ export async function runIndexer(ctx: IndexContext): Promise<IndexResult> {
 async function indexPagesInto(
   db: Database.Database,
   pagesDir: string,
+  warnings: IndexerWarningSink,
 ): Promise<IndexResult> {
   // Load the current state of the index into memory so we can diff against
   // what's on disk. This is cheap even at 10k pages (one INTEGER + two
@@ -162,7 +173,11 @@ async function indexPagesInto(
       "SELECT slug, content_hash, file_path FROM pages",
     )
     .all();
-  const plan = await buildIndexedPagesPlan({ pagesDir, existingRows });
+  const plan = await buildIndexedPagesPlan({
+    pagesDir,
+    existingRows,
+    warnings,
+  });
   applyIndexedPagesPlan(db, plan);
 
   return {

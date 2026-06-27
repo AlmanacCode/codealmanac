@@ -9,28 +9,22 @@ import {
   runIndexer,
 } from "../src/wiki/indexer/index.js";
 import { openIndex } from "../src/wiki/indexer/schema.js";
+import type { IndexerWarningSink } from "../src/wiki/indexer/warnings.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
 /**
- * Swap `process.stderr.write` for a capturing shim for the duration of
- * `fn`, returning whatever was written. Used by the several warn-path
- * tests in this file; keeps them from each rolling their own shim.
+ * Capture the explicit warning sink that the indexer receives. These tests
+ * care that non-fatal indexing warnings are reported without making indexer
+ * internals own terminal output.
  */
-async function captureStderr<T>(
-  fn: () => Promise<T>,
-): Promise<{ result: T; stderr: string }> {
-  const orig = process.stderr.write.bind(process.stderr);
-  const chunks: string[] = [];
-  process.stderr.write = ((c: string | Uint8Array): boolean => {
-    chunks.push(typeof c === "string" ? c : Buffer.from(c).toString("utf8"));
-    return true;
-  }) as typeof process.stderr.write;
-  try {
-    const result = await fn();
-    return { result, stderr: chunks.join("") };
-  } finally {
-    process.stderr.write = orig;
-  }
+async function captureIndexerWarnings<T>(
+  fn: (warnings: IndexerWarningSink) => Promise<T>,
+): Promise<{ result: T; warnings: string[] }> {
+  const warnings: string[] = [];
+  const result = await fn((message) => {
+    warnings.push(message);
+  });
+  return { result, warnings };
 }
 
 describe("indexer", () => {
@@ -620,23 +614,10 @@ Body.
         "utf8",
       );
 
-      // Capture stderr for the warning assertion. We use a simple pipe
-      // swap rather than a framework — this file is the only one that
-      // relies on it.
-      const origWrite = process.stderr.write.bind(process.stderr);
-      const captured: string[] = [];
-      process.stderr.write = ((
-        chunk: string | Uint8Array,
-      ): boolean => {
-        captured.push(typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"));
-        return true;
-      }) as typeof process.stderr.write;
-      try {
-        await runIndexer({ repoRoot: repo });
-      } finally {
-        process.stderr.write = origWrite;
-      }
-      expect(captured.join("")).toMatch(/not canonical/);
+      const { warnings } = await captureIndexerWarnings((sink) =>
+        runIndexer({ repoRoot: repo, warnings: sink }),
+      );
+      expect(warnings.join("\n")).toMatch(/not canonical/);
 
       const db = openIndex(join(repo, ".almanac", "index.db"));
       try {
@@ -668,10 +649,10 @@ Body.
         "utf8",
       );
 
-      const { result, stderr } = await captureStderr(() =>
-        runIndexer({ repoRoot: repo }),
+      const { result, warnings } = await captureIndexerWarnings((sink) =>
+        runIndexer({ repoRoot: repo, warnings: sink }),
       );
-      expect(stderr).toMatch(/collides with an earlier file/);
+      expect(warnings.join("\n")).toMatch(/collides with an earlier file/);
       expect(result.pagesIndexed).toBe(1);
       expect(result.filesSeen).toBe(2);
       expect(result.filesSkipped).toBe(1);
@@ -732,8 +713,8 @@ Body.
         join(pagesDir, "broken.md"),
       );
 
-      const { result, stderr } = await captureStderr(() =>
-        runIndexer({ repoRoot: repo }),
+      const { result, warnings } = await captureIndexerWarnings((sink) =>
+        runIndexer({ repoRoot: repo, warnings: sink }),
       );
       // Either the symlink gets skipped at stat time (ENOENT surfaced
       // from the stat/read) or fast-glob filters it before we see it.
@@ -741,7 +722,7 @@ Body.
       // throw and the good page still indexes.
       expect(result.pagesIndexed).toBe(1);
       if (result.filesSkipped > 0) {
-        expect(stderr).toMatch(/ENOENT|skipping/);
+        expect(warnings.join("\n")).toMatch(/ENOENT|skipping/);
       }
 
       const db = openIndex(join(repo, ".almanac", "index.db"));

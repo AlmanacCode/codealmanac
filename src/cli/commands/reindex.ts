@@ -2,6 +2,7 @@ import {
   reindexWiki,
   type ReindexWikiRequest,
   type ReindexWikiResult,
+  type ReindexWikiWarningSink,
 } from "../../services/wiki/reindex.js";
 import {
   renderReindexResult,
@@ -13,6 +14,7 @@ export type { ReindexCommandOutput } from "./reindex-render.js";
 export interface ReindexOptions {
   cwd: string;
   wiki?: string;
+  warnings?: ReindexWikiWarningSink;
 }
 
 export interface ReindexResult {
@@ -46,6 +48,7 @@ function toReindexWikiRequest(options: ReindexOptions): ReindexWikiRequest {
   return {
     cwd: options.cwd,
     wiki: options.wiki,
+    warnings: options.warnings,
   };
 }
 

@@ -12,6 +12,10 @@ export function emit(result: EmittableCommandResult): void {
   if (result.exitCode !== 0) process.exitCode = result.exitCode;
 }
 
+export function emitCliWarning(message: string): void {
+  process.stderr.write(`almanac: ${message}\n`);
+}
+
 export function collectOption(value: string, previous: string[]): string[] {
   return [...previous, value];
 }

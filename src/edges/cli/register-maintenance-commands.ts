@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { emit } from "./helpers.js";
+import { emit, emitCliWarning } from "./helpers.js";
 import { autoRegisterIfNeeded } from "../../services/wiki/autoregistration.js";
 
 export function registerMaintenanceCommands(program: Command): void {
@@ -14,6 +14,7 @@ export function registerMaintenanceCommands(program: Command): void {
       const result = await runReindex({
         cwd: process.cwd(),
         wiki: opts.wiki,
+        warnings: emitCliWarning,
       });
       emit(result);
     });

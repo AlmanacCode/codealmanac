@@ -4,6 +4,7 @@ import {
   coerceFrontmatterSources,
   type FrontmatterSource,
 } from "./frontmatter-sources.js";
+import { indexerWarningSink, type IndexerWarningSink } from "./warnings.js";
 
 export type { FrontmatterSource } from "./frontmatter-sources.js";
 
@@ -24,6 +25,10 @@ export interface Frontmatter {
   body: string;
 }
 
+export interface ParseFrontmatterOptions {
+  warnings?: IndexerWarningSink;
+}
+
 /**
  * Pull YAML frontmatter off the top of a markdown file and coerce the
  * relevant fields. Unknown fields are tolerated silently — the wiki should
@@ -33,7 +38,7 @@ export interface Frontmatter {
  * Failure modes:
  *   - No frontmatter at all → `{ topics: [], files: [], ..., body: raw }`.
  *     This is legal; a heading + prose is a valid page.
- *   - Malformed YAML → warning to stderr, treated as "no frontmatter". We
+ *   - Malformed YAML → warning, treated as "no frontmatter". We
  *     choose not to throw so a single bad file doesn't tank a reindex.
  *
  * Note on `archived_at`: authors write this as a YAML date (`2026-04-15`),
@@ -42,7 +47,11 @@ export interface Frontmatter {
  * archived"). Storing epoch seconds keeps `--since`/`--stale`/`archived`
  * arithmetic trivial at query time.
  */
-export function parseFrontmatter(raw: string): Frontmatter {
+export function parseFrontmatter(
+  raw: string,
+  options: ParseFrontmatterOptions = {},
+): Frontmatter {
+  const warn = indexerWarningSink(options.warnings);
   const empty: Frontmatter = {
     topics: [],
     files: [],
@@ -76,7 +85,7 @@ export function parseFrontmatter(raw: string): Frontmatter {
     parsed = yaml.load(yamlBody);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`almanac: malformed frontmatter (${message})\n`);
+    warn(`malformed frontmatter (${message})`);
     return empty;
   }
 

@@ -3,6 +3,10 @@ import { existsSync } from "node:fs";
 import type Database from "better-sqlite3";
 
 import { loadTopicsFile } from "../topics/yaml.js";
+import {
+  indexerWarningSink,
+  type IndexerWarningSink,
+} from "./warnings.js";
 
 export const TOPICS_YAML_FILENAME = "topics.yaml";
 
@@ -24,14 +28,16 @@ export const TOPICS_YAML_FILENAME = "topics.yaml";
 export async function applyTopicsYaml(
   db: Database.Database,
   topicsYamlPath: string,
+  options: { warnings?: IndexerWarningSink } = {},
 ): Promise<void> {
+  const warn = indexerWarningSink(options.warnings);
   if (!existsSync(topicsYamlPath)) return;
   let file;
   try {
     file = await loadTopicsFile(topicsYamlPath);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`almanac: ${message}\n`);
+    warn(message);
     return;
   }
 

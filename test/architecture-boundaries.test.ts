@@ -94,7 +94,8 @@ describe("architecture boundaries", () => {
     expect(outcome).toContain("export interface CommandResult");
     expect(existsSync(join(ROOT, "src/cli/helpers.ts"))).toBe(false);
 
-    expect(registerMaintenance).toContain("import { emit } from \"./helpers.js\"");
+    expect(registerMaintenance).toContain("from \"./helpers.js\"");
+    expect(registerMaintenance).toContain("emitCliWarning");
     expect(registerMaintenance).toContain("emit(result)");
     expect(registerMaintenance).not.toContain("process.stdout.write");
     expect(registerMaintenance).not.toContain("process.exitCode");
@@ -1419,9 +1420,12 @@ describe("architecture boundaries", () => {
     const indexer = await readSource("src/wiki/indexer/index.ts");
     const pagePlan = await readSource("src/wiki/indexer/page-plan.ts");
     const pageWriter = await readSource("src/wiki/indexer/page-writer.ts");
+    const frontmatter = await readSource("src/wiki/indexer/frontmatter.ts");
+    const topicsYaml = await readSource("src/wiki/indexer/topics-yaml.ts");
 
     expect(existsSync(join(ROOT, "src/wiki/indexer/page-plan.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/wiki/indexer/page-writer.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/wiki/indexer/warnings.ts"))).toBe(true);
     expect(indexer).toContain("buildIndexedPagesPlan");
     expect(indexer).toContain("applyIndexedPagesPlan");
     expect(indexer).not.toContain("fast-glob");
@@ -1440,6 +1444,10 @@ describe("architecture boundaries", () => {
     expect(pageWriter).toContain("INSERT INTO pages");
     expect(pageWriter).toContain("DELETE FROM file_refs");
     expect(pageWriter).toContain("normalizePath");
+    expect(indexer).not.toContain("process.stderr");
+    expect(pagePlan).not.toContain("process.stderr");
+    expect(frontmatter).not.toContain("process.stderr");
+    expect(topicsYaml).not.toContain("process.stderr");
   });
 
   it("keeps frontmatter source coercion separate from document parsing", async () => {

@@ -1,9 +1,12 @@
 import { runIndexer, type IndexResult } from "../../wiki/indexer/index.js";
 import { resolveWikiRoot } from "../../wiki/indexer/resolve-wiki.js";
 
+export type ReindexWikiWarningSink = (message: string) => void;
+
 export interface ReindexWikiRequest {
   cwd: string;
   wiki?: string;
+  warnings?: ReindexWikiWarningSink;
 }
 
 export interface ReindexWikiResult {
@@ -22,7 +25,12 @@ export async function reindexWiki(
     cwd: request.cwd,
     wiki: request.wiki,
   });
-  return reindexResultFromIndexer(await runIndexer({ repoRoot }));
+  return reindexResultFromIndexer(
+    await runIndexer({
+      repoRoot,
+      warnings: request.warnings,
+    }),
+  );
 }
 
 function reindexResultFromIndexer(result: IndexResult): ReindexWikiResult {
