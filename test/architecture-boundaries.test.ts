@@ -803,6 +803,7 @@ describe("architecture boundaries", () => {
     expect(automationPlanning).not.toContain("process.env");
     expect(automationPlanning).not.toContain("homedir");
     expect(automationWorkflow).not.toContain("homedir");
+    expect(automationWorkflow).not.toContain("existsSync");
     expect(automationMigration).not.toContain("homedir");
     expect(automationCatalog).not.toContain("homedir");
     expect(automationLegacyHooks).not.toContain("homeDir?: string");

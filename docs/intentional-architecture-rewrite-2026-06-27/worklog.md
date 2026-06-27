@@ -1015,3 +1015,10 @@ One-hundred-fifty-second production slice:
 - Made setup instruction installation consume an explicit `guidesDir` instead of resolving package layout inside the setup service.
 - Threaded the bundled guide directory from `src/edges/cli/register-setup-commands.ts`, while keeping `--skip-guides` lazy so skipped work does not inspect package files.
 - Added boundary guards so setup instruction services cannot re-own `createRequire`, `fileURLToPath`, or guide-file existence probing.
+
+One-hundred-fifty-third production slice:
+
+- Removed direct filesystem existence probing from `src/services/automation/automation.ts`.
+- Let `src/platform/automation/launchd.ts` remain the owner of deciding whether a launchd plist exists before removal.
+- Kept the automation service focused on the install plan decision: if the plan disables Garden, ask platform automation to remove that plist.
+- Added a boundary guard so automation services cannot reintroduce `existsSync`.

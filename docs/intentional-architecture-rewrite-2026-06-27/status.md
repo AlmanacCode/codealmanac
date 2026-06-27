@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 198 committed rewrite commits past `dev`. The worklog records 152 production slices so far.
+The branch has 199 committed rewrite commits past `dev`. The worklog records 153 production slices so far.
 
-The diff is broad: 352 files changed, with 20,589 insertions and 10,672 deletions.
+The diff is broad: 352 files changed, with 20,595 insertions and 10,672 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -36,13 +36,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved bundled setup guide directory discovery out of services. `src/platform/install/guides.ts` now owns package-layout discovery for the bundled `guides/` directory; setup services consume an explicit `guidesDir` fact, and `--skip-guides` stays lazy so skipped work does not inspect package files.
+The latest slice removed filesystem existence probing from automation services. `src/services/automation/automation.ts` now asks platform automation to remove the disabled Garden plist whenever the install plan says Garden should be disabled; `src/platform/automation/launchd.ts` remains the owner of checking whether that plist exists.
 
-Verification passed: `npm run lint`, focused setup/CLI/boundary tests, full `npm test` with 655 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js setup --skip-guides --skip-automation --no-auto-commit`, and `node dist/codealmanac.js doctor --json`.
+Verification passed: `npm run lint`, focused automation/CLI/boundary tests, full `npm test` with 655 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js automation status`, and `node dist/codealmanac.js doctor --json`.
 
 ## Immediate Next Work
 
-Continue checking services that still know too much about platform, provider, or CLI mechanics; command files that still own workflow decisions instead of request shaping and rendering; and large files whose size reflects mixed ownership rather than domain density. The indexer warning, provider enablement, autoregistration registry-matching, harness provider environment, job-record PID paths, serve interrupt handling, setup/uninstall terminal sinks and input streams, setup guide package lookup, doctor Node runtime version, doctor auth/automation/instruction/update probing, doctor option cleanup, jobs PID liveness/signaling paths, lifecycle init request context, and review command result rendering are now explicit. Remaining candidates include provider/platform mechanics, command workflow decisions, and viewer API/read-model boundaries.
+Continue checking services that still know too much about platform, provider, or CLI mechanics; command files that still own workflow decisions instead of request shaping and rendering; and large files whose size reflects mixed ownership rather than domain density. The indexer warning, provider enablement, autoregistration registry-matching, harness provider environment, job-record PID paths, serve interrupt handling, setup/uninstall terminal sinks and input streams, setup guide package lookup, automation disabled-plist existence probing, doctor Node runtime version, doctor auth/automation/instruction/update probing, doctor option cleanup, jobs PID liveness/signaling paths, lifecycle init request context, and review command result rendering are now explicit. Remaining candidates include provider/platform mechanics, command workflow decisions, and viewer API/read-model boundaries.
 
 ## Decision Log
 

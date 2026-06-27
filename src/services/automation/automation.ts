@@ -1,5 +1,3 @@
-import { existsSync } from "node:fs";
-
 import { ensureAutomationSyncSince } from "../../config/index.js";
 import {
   bootstrapLaunchdJob,
@@ -134,7 +132,7 @@ async function activateAutomationJobs(
       };
     }
   }
-  if (plan.disabledGardenPlistPath !== null && existsSync(plan.disabledGardenPlistPath)) {
+  if (plan.disabledGardenPlistPath !== null) {
     await removeLaunchdJob(plan.disabledGardenPlistPath, exec);
   }
   return { status: "activated" };
