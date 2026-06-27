@@ -881,6 +881,23 @@ describe("architecture boundaries", () => {
     expect(pageWriter).toContain("normalizePath");
   });
 
+  it("keeps frontmatter source coercion separate from document parsing", async () => {
+    const frontmatter = await readSource("src/wiki/indexer/frontmatter.ts");
+    const frontmatterSources = await readSource(
+      "src/wiki/indexer/frontmatter-sources.ts",
+    );
+    const pageSources = await readSource("src/wiki/indexer/page-sources.ts");
+
+    expect(existsSync(join(ROOT, "src/wiki/indexer/frontmatter-sources.ts"))).toBe(true);
+    expect(frontmatter).toContain("frontmatter-sources.js");
+    expect(frontmatter).not.toContain("function coerceSource");
+    expect(frontmatter).not.toContain("case \"conversation\"");
+    expect(frontmatter).not.toContain("coerceDateString");
+    expect(frontmatterSources).toContain("export type FrontmatterSource");
+    expect(frontmatterSources).toContain("export function coerceFrontmatterSources");
+    expect(pageSources).toContain("frontmatter-sources.js");
+  });
+
   it("keeps doctor diagnostics out of the CLI command package", async () => {
     const doctorIndex = await readSource("src/cli/commands/doctor/index.ts");
     const doctorDiagnostics = await readSource("src/services/diagnostics/doctor.ts");

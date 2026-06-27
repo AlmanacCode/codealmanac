@@ -1,6 +1,6 @@
 import { basename, dirname } from "node:path/posix";
 
-import type { FrontmatterSource } from "./frontmatter.js";
+import type { FrontmatterSource } from "./frontmatter-sources.js";
 import { looksLikeDir, normalizePath } from "./paths.js";
 
 export interface IndexedPageSource {

@@ -611,3 +611,9 @@ Eighty-ninth production slice:
 - Split Codex app-server JSON-RPC request tracking into `src/harness/providers/codex/app-server-rpc.ts`.
 - Moved request ids, pending request timeout handling, response dispatch, server-request response helpers, and raw JSON-RPC message classification out of `app-server.ts`.
 - Kept `src/harness/providers/codex/app-server.ts` focused on child process lifetime, stdout/stderr line collection, notification-to-harness mapping, root turn completion, failure handling, and cleanup.
+
+Ninetieth production slice:
+
+- Split structured source-frontmatter coercion into `src/wiki/indexer/frontmatter-sources.ts`.
+- Moved the `FrontmatterSource` union, `sources:` list coercion, source-type switch, source-number/date coercion, and optional-field cleanup out of `frontmatter.ts`.
+- Kept `src/wiki/indexer/frontmatter.ts` focused on frontmatter fence parsing, YAML loading, generic scalar/list fields, archive/supersession fields, body extraction, and H1 fallback.
