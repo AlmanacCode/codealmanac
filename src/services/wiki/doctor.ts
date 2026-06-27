@@ -2,6 +2,7 @@ import path from "node:path";
 
 import { findNearestAlmanacDir } from "../../paths.js";
 import { ensureFreshIndex } from "../../wiki/indexer/index.js";
+import { readWikiIndexDiagnostics } from "../../wiki/indexer/diagnostics.js";
 import { describeLastAbsorb } from "./doctor-absorb.js";
 import {
   describeWikiIndexCounts,
@@ -53,8 +54,9 @@ export async function gatherWikiDoctorChecks(
 
   const almanacDir = path.join(repoRoot, ".almanac");
   const dbPath = path.join(almanacDir, "index.db");
-  checks.push(...describeWikiIndexCounts(dbPath));
-  checks.push(describeWikiIndexFreshness(dbPath));
+  const index = readWikiIndexDiagnostics(dbPath);
+  checks.push(...describeWikiIndexCounts(index));
+  checks.push(describeWikiIndexFreshness(index));
   checks.push(describeLastAbsorb(almanacDir, options.now));
   checks.push(await describeWikiHealth(repoRoot, options));
 

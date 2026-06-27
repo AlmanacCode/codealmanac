@@ -1029,3 +1029,10 @@ One-hundred-fifty-fourth production slice:
 - Removed the setup service export for `readSetupWikiState` so setup no longer owns wiki filesystem state.
 - Kept `src/cli/commands/setup/index.ts` as the consumer that renders next steps from the wiki-state read model.
 - Added boundary guards so setup services cannot re-own wiki-state filesystem scanning.
+
+One-hundred-fifty-fifth production slice:
+
+- Moved wiki doctor index count and freshness probing into `src/wiki/indexer/diagnostics.ts`.
+- Kept `src/services/wiki/doctor-index.ts` focused on formatting typed index diagnostics into doctor checks.
+- Kept `src/services/wiki/doctor.ts` as the composer that refreshes the index, asks the indexer for diagnostics, and aggregates wiki doctor checks.
+- Added boundary guards so doctor services cannot re-own SQLite, file-existence, mtime, or `SELECT COUNT` mechanics.

@@ -1623,6 +1623,12 @@ describe("architecture boundaries", () => {
     const doctorService = await readSource("src/services/wiki/doctor.ts");
     const doctorTypes = await readSource("src/services/wiki/doctor-types.ts");
     const doctorHealth = await readSource("src/services/wiki/doctor-health.ts");
+    const doctorIndexService = await readSource(
+      "src/services/wiki/doctor-index.ts",
+    );
+    const indexDiagnostics = await readSource(
+      "src/wiki/indexer/diagnostics.ts",
+    );
 
     expect(existsSync(join(ROOT, "src/cli/commands/doctor/render.ts"))).toBe(
       true,
@@ -1727,8 +1733,10 @@ describe("architecture boundaries", () => {
     expect(doctorTypes).not.toContain("typeof collectHealthReport");
     expect(doctorHealth).not.toContain("../../wiki/health/index");
     expect(doctorHealth).toContain("collectWikiHealthReport");
+    expect(doctorService).toContain("readWikiIndexDiagnostics");
     expect(doctorDiagnostics).toContain("../wiki/doctor.js");
     expect(existsSync(join(ROOT, "src/services/diagnostics/doctor.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/wiki/indexer/diagnostics.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/cli/commands/doctor/install.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/cli/commands/doctor/agents.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/cli/commands/doctor/updates.ts"))).toBe(false);
@@ -1742,6 +1750,15 @@ describe("architecture boundaries", () => {
     expect(doctorService).not.toContain("openIndex");
     expect(doctorService).not.toContain("findEntry");
     expect(doctorService).not.toContain("collectHealthReport");
+    expect(doctorIndexService).not.toContain("existsSync");
+    expect(doctorIndexService).not.toContain("statSync");
+    expect(doctorIndexService).not.toContain("openIndex");
+    expect(doctorIndexService).not.toContain("better-sqlite3");
+    expect(doctorIndexService).not.toContain("SELECT COUNT");
+    expect(indexDiagnostics).toContain("openIndex");
+    expect(indexDiagnostics).toContain("existsSync");
+    expect(indexDiagnostics).toContain("statSync");
+    expect(indexDiagnostics).toContain("WikiIndexDiagnostics");
   });
 
   it("keeps registry persistence in an explicit store", async () => {

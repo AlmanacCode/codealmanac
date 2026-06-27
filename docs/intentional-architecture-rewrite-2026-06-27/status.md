@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 200 committed rewrite commits past `dev`. The worklog records 154 production slices so far.
+The branch has 201 committed rewrite commits past `dev`. The worklog records 155 production slices so far.
 
-The diff is broad: 352 files changed, with 20,599 insertions and 10,672 deletions.
+The diff is broad: 353 files changed, with 20,670 insertions and 10,672 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -36,13 +36,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved setup next-step wiki page counting out of setup services. `src/services/wiki/setup-state.ts` now owns the wiki page-count read model used by setup; `src/services/setup/index.ts` no longer exports `readSetupWikiState`.
+The latest slice moved wiki doctor index probing out of doctor services. `src/wiki/indexer/diagnostics.ts` now owns index page/topic counts and index-db freshness reads; `src/services/wiki/doctor-index.ts` only formats typed diagnostics into doctor checks.
 
-Verification passed: `npm run lint`, focused setup/wiki-state/CLI/boundary tests, full `npm test` with 655 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js setup --skip-guides --skip-automation --no-auto-commit`, and `node dist/codealmanac.js doctor --json`.
+Verification passed: `npm run lint`, focused doctor/health/boundary tests, full `npm test` with 655 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js doctor --json`, and `node dist/codealmanac.js health`. The health smoke still reports existing wiki-content problems unrelated to this code slice.
 
 ## Immediate Next Work
 
-Continue checking services that still know too much about platform, provider, or CLI mechanics; command files that still own workflow decisions instead of request shaping and rendering; and large files whose size reflects mixed ownership rather than domain density. The indexer warning, provider enablement, autoregistration registry-matching, harness provider environment, job-record PID paths, serve interrupt handling, setup/uninstall terminal sinks and input streams, setup guide package lookup, setup next-step wiki-state ownership, automation disabled-plist existence probing, doctor Node runtime version, doctor auth/automation/instruction/update probing, doctor option cleanup, jobs PID liveness/signaling paths, lifecycle init request context, and review command result rendering are now explicit. Remaining candidates include provider/platform mechanics, command workflow decisions, and viewer API/read-model boundaries.
+Continue checking services that still know too much about platform, provider, or CLI mechanics; command files that still own workflow decisions instead of request shaping and rendering; and large files whose size reflects mixed ownership rather than domain density. The indexer warning, provider enablement, autoregistration registry-matching, harness provider environment, job-record PID paths, serve interrupt handling, setup/uninstall terminal sinks and input streams, setup guide package lookup, setup next-step wiki-state ownership, automation disabled-plist existence probing, doctor Node runtime version, doctor auth/automation/instruction/update probing, doctor index-db probing, doctor option cleanup, jobs PID liveness/signaling paths, lifecycle init request context, and review command result rendering are now explicit. Remaining candidates include provider/platform mechanics, command workflow decisions, and viewer API/read-model boundaries.
 
 ## Decision Log
 

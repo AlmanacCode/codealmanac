@@ -1,76 +1,51 @@
-import { existsSync, statSync } from "node:fs";
-
-import type Database from "better-sqlite3";
-
 import { formatDuration } from "../../shared/duration.js";
-import { openIndex } from "../../wiki/indexer/schema.js";
+import type { WikiIndexDiagnostics } from "../../wiki/indexer/diagnostics.js";
 import type { WikiDoctorCheck } from "./doctor-types.js";
 
-export function describeWikiIndexCounts(dbPath: string): WikiDoctorCheck[] {
+export function describeWikiIndexCounts(
+  index: WikiIndexDiagnostics,
+): WikiDoctorCheck[] {
   const checks: WikiDoctorCheck[] = [];
-  let pageCount: number | null = null;
-  let topicCount: number | null = null;
 
-  if (existsSync(dbPath)) {
-    try {
-      const db = openIndex(dbPath);
-      try {
-        pageCount = countRows(db, "pages");
-        topicCount = countRows(db, "topics");
-      } finally {
-        db.close();
-      }
-    } catch {
-      pageCount = null;
-    }
-  }
-
-  if (pageCount !== null) {
+  if (index.pageCount !== null) {
     checks.push({
       status: "info",
       key: "wiki.pages",
-      message: `pages: ${pageCount}`,
+      message: `pages: ${index.pageCount}`,
     });
   }
-  if (topicCount !== null) {
+  if (index.topicCount !== null) {
     checks.push({
       status: "info",
       key: "wiki.topics",
-      message: `topics: ${topicCount}`,
+      message: `topics: ${index.topicCount}`,
     });
   }
 
   return checks;
 }
 
-export function describeWikiIndexFreshness(dbPath: string): WikiDoctorCheck {
-  if (!existsSync(dbPath)) {
-    return {
-      status: "info",
-      key: "wiki.index",
-      message: "index: not built yet (run any query command)",
-    };
+export function describeWikiIndexFreshness(
+  index: WikiIndexDiagnostics,
+): WikiDoctorCheck {
+  switch (index.freshness.status) {
+    case "not-built":
+      return {
+        status: "info",
+        key: "wiki.index",
+        message: "index: not built yet (run any query command)",
+      };
+    case "rebuilt":
+      return {
+        status: "info",
+        key: "wiki.index",
+        message: `index: rebuilt ${formatDuration(index.freshness.ageMs)} ago`,
+      };
+    case "present":
+      return {
+        status: "info",
+        key: "wiki.index",
+        message: "index: present",
+      };
   }
-  try {
-    const dbMtime = statSync(dbPath).mtimeMs;
-    const age = Date.now() - dbMtime;
-    return {
-      status: "info",
-      key: "wiki.index",
-      message: `index: rebuilt ${formatDuration(age)} ago`,
-    };
-  } catch {
-    return {
-      status: "info",
-      key: "wiki.index",
-      message: "index: present",
-    };
-  }
-}
-
-function countRows(db: Database.Database, table: string): number {
-  const row = db
-    .prepare<[], { n: number }>(`SELECT COUNT(*) AS n FROM ${table}`)
-    .get();
-  return row?.n ?? 0;
 }
