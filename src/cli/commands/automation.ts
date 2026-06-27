@@ -1,85 +1,26 @@
-import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import path from "node:path";
 
+import type { CommandResult } from "../helpers.js";
 import {
-  bootstrapLaunchdJob,
-  buildLaunchPath,
-  ensureLaunchdDirs,
-  readProgramArgumentAfter,
-  type ExecFn,
-  type LaunchdJobStatus,
-  readLaunchdJobStatus,
-  removeLaunchdJob,
-  writeLaunchdPlist,
-} from "../../platform/automation/launchd.js";
+  installAutomation,
+  readAutomationStatus,
+  uninstallAutomation,
+  type AutomationInstallOptions,
+  type InstalledAutomationTask,
+  type AutomationStatusOptions,
+  type AutomationStatusSection,
+  type AutomationUninstallOptions,
+} from "../../services/automation/index.js";
 import {
-  detectLegacyCaptureSweepAutomation,
-  type LegacyCaptureSweepAutomation,
-} from "../../platform/automation/legacy-capture.js";
-import type { LaunchdJobDefinition } from "../../platform/automation/launchd.js";
-import {
-  DEFAULT_AUTOMATION_TASK_IDS,
-  DEFAULT_SYNC_INTERVAL,
-  DEFAULT_SYNC_QUIET,
-  DEFAULT_GARDEN_INTERVAL,
-  DEFAULT_UPDATE_INTERVAL,
-  defaultGardenPlistPath,
   defaultSyncPlistPath,
-  defaultUpdatePlistPath,
   isScheduledTaskId,
-  scheduledTaskDefinition,
-  scheduledTaskLogPaths,
-  type ScheduledTaskDefinition,
   type ScheduledTaskId,
 } from "../../platform/automation/tasks.js";
-import type { CommandResult } from "../helpers.js";
-import { ensureAutomationSyncSince } from "../../config/index.js";
-import { parseDuration } from "../../shared/duration.js";
-import { findNearestAlmanacDir } from "../../paths.js";
 
 export { cleanupLegacyHooks } from "../../platform/automation/legacy-hooks.js";
 
-export interface AutomationOptions {
-  tasks?: ScheduledTaskId[];
-  every?: string;
-  quiet?: string;
-  gardenEvery?: string;
-  gardenOff?: boolean;
-  cwd?: string;
-  homeDir?: string;
-  plistPath?: string;
-  gardenPlistPath?: string;
-  updatePlistPath?: string;
-  programArguments?: string[];
-  gardenProgramArguments?: string[];
-  updateProgramArguments?: string[];
-  env?: NodeJS.ProcessEnv;
-  exec?: ExecFn;
-  now?: Date;
-  configPath?: string;
-}
-
-export interface AutomationStatusOptions {
-  tasks?: ScheduledTaskId[];
-  homeDir?: string;
-  plistPath?: string;
-  gardenPlistPath?: string;
-  updatePlistPath?: string;
-  legacyCapturePlistPath?: string;
-  exec?: ExecFn;
-}
-
-interface PlannedAutomationJob {
-  task: ScheduledTaskDefinition;
-  intervalInput: string;
-  job: LaunchdJobDefinition;
-}
-
-interface AutomationInstallPlan {
-  jobs: PlannedAutomationJob[];
-  disabledGardenPlistPath: string | null;
-}
+export type AutomationOptions = AutomationInstallOptions & AutomationUninstallOptions;
+export type { AutomationStatusOptions };
 
 const TASK_LABELS: Record<ScheduledTaskId, string> = {
   sync: "sync automation",
@@ -88,58 +29,46 @@ const TASK_LABELS: Record<ScheduledTaskId, string> = {
 };
 
 export async function runAutomationInstall(
-  options: AutomationOptions = {},
+  options: AutomationInstallOptions = {},
 ): Promise<CommandResult> {
-  const plan = buildAutomationInstallPlan(options);
-  if (!plan.ok) {
-    return { stdout: "", stderr: `almanac: ${plan.error}\n`, exitCode: 1 };
+  const result = await installAutomation(options);
+  if (result.status === "invalid") {
+    return { stdout: "", stderr: `almanac: ${result.error}\n`, exitCode: 1 };
   }
-
-  await writeAutomationPlists(plan.value);
-
-  const syncJob = plan.value.jobs.find((job) => job.task.id === "sync");
-  const syncSince = syncJob === undefined
-    ? null
-    : await ensureAutomationSyncSince(
-      (options.now ?? new Date()).toISOString(),
-      options.configPath,
-    );
-  const activated = await activateAutomationJobs(plan.value, options.exec);
-  if (!activated.ok) {
-    return activated.result;
+  if (result.status === "activation-failed") {
+    return {
+      stdout: "",
+      stderr:
+        `almanac: ${TASK_LABELS[result.taskId]} plist written to ${result.plistPath}, but launchctl bootstrap failed: ${result.message}\n`,
+      exitCode: 1,
+    };
   }
-
   return {
-    stdout: formatAutomationInstall(plan.value, syncSince),
+    stdout: formatAutomationInstall({
+      tasks: result.tasks,
+      gardenDisabled: result.gardenDisabled,
+      syncSince: result.syncSince,
+    }),
     stderr: "",
     exitCode: 0,
   };
 }
 
 export async function runAutomationUninstall(
-  options: AutomationOptions = {},
+  options: AutomationUninstallOptions = {},
 ): Promise<CommandResult> {
-  const home = options.homeDir ?? homedir();
-  const tasks = selectedTaskIds(options.tasks, false);
-  const exec = options.exec;
-  const removed: string[] = [];
-  for (const task of tasks.map((id) => scheduledTaskDefinition(id))) {
-    const plist = plistPathForTask(task, home, options);
-    if (await removeLaunchdJob(plist, exec)) {
-      removed.push(plist);
-    }
-  }
-  if (removed.length > 0) {
+  const result = await uninstallAutomation(options);
+  if (result.status === "not-installed") {
     return {
-      stdout:
-        `almanac: automation removed\n` +
-        removed.map((pathValue) => `  plist: ${pathValue}\n`).join(""),
+      stdout: "almanac: automation not installed\n",
       stderr: "",
       exitCode: 0,
     };
   }
   return {
-    stdout: "almanac: automation not installed\n",
+    stdout:
+      `almanac: automation removed\n` +
+      result.plistPaths.map((pathValue) => `  plist: ${pathValue}\n`).join(""),
     stderr: "",
     exitCode: 0,
   };
@@ -148,28 +77,9 @@ export async function runAutomationUninstall(
 export async function runAutomationStatus(
   options: AutomationStatusOptions = {},
 ): Promise<CommandResult> {
-  const home = options.homeDir ?? homedir();
-  const tasks = selectedTaskIds(options.tasks, false);
-  const sections: string[] = [];
-  const legacy = tasks.includes("sync")
-    ? await detectLegacyCaptureSweepAutomation({
-      homeDir: home,
-      plistPath: options.legacyCapturePlistPath,
-    })
-    : null;
-  for (const task of tasks.map((id) => scheduledTaskDefinition(id))) {
-    const status = await readLaunchdJobStatus({
-      label: task.label,
-      plistPath: plistPathForTask(task, home, options),
-      exec: options.exec,
-    });
-    sections.push(formatAutomationStatus(task, status));
-    if (task.id === "sync" && legacy !== null) {
-      sections.push(formatLegacyCaptureSweepStatus(legacy));
-    }
-  }
+  const result = await readAutomationStatus(options);
   return {
-    stdout: sections.join(""),
+    stdout: result.sections.map(formatAutomationStatusSection).join(""),
     stderr: "",
     exitCode: 0,
   };
@@ -195,243 +105,50 @@ export function parseAutomationTaskIds(
   return { ok: true, tasks };
 }
 
-function buildAutomationInstallPlan(
-  options: AutomationOptions,
-): { ok: true; value: AutomationInstallPlan } | { ok: false; error: string } {
-  const explicitTasks = options.tasks !== undefined && options.tasks.length > 0;
-  if (explicitTasks && options.gardenOff === true) {
-    return {
-      ok: false,
-      error: "--garden-off can only be used with the default automation install",
-    };
-  }
-  if (explicitTasks && options.tasks!.length > 1 && options.every !== undefined) {
-    return {
-      ok: false,
-      error: "--every can only target one explicit automation task at a time",
-    };
-  }
-
-  const taskIds = selectedTaskIds(options.tasks, true)
-    .filter((id) => !(id === "garden" && options.gardenOff === true));
-  const home = options.homeDir ?? homedir();
-  const environmentVariables = {
-    PATH: buildLaunchPath(home, options.env?.PATH ?? process.env.PATH),
-  };
-  const cwd = options.cwd ?? process.cwd();
-  const jobs: PlannedAutomationJob[] = [];
-
-  for (const taskId of taskIds) {
-    const task = scheduledTaskDefinition(taskId);
-    if (taskId === "sync") {
-      const quiet = parseQuiet(options.quiet ?? DEFAULT_SYNC_QUIET);
-      if (!quiet.ok) return quiet;
-    }
-    const intervalInput = intervalInputForTask(taskId, options, explicitTasks);
-    const interval = parseInterval(intervalInput);
-    if (!interval.ok) return interval;
-    const logs = scheduledTaskLogPaths(task, home);
-    jobs.push({
-      task,
-      intervalInput,
-      job: {
-        plistPath: plistPathForTask(task, home, options),
-        label: task.label,
-        programArguments: programArgumentsForTask(task, options),
-        intervalSeconds: interval.seconds,
-        environmentVariables,
-        workingDirectory: resolveTaskWorkingDirectory(task, cwd),
-        stdoutPath: logs.stdoutPath,
-        stderrPath: logs.stderrPath,
-      },
-    });
-  }
-
-  return {
-    ok: true,
-    value: {
-      jobs,
-      disabledGardenPlistPath:
-        options.gardenOff === true && !explicitTasks
-          ? options.gardenPlistPath ?? defaultGardenPlistPath(home)
-          : null,
-    },
-  };
-}
-
-function selectedTaskIds(
-  tasks: ScheduledTaskId[] | undefined,
-  forInstall: boolean,
-): ScheduledTaskId[] {
-  if (tasks !== undefined && tasks.length > 0) return dedupeTaskIds(tasks);
-  return forInstall
-    ? [...DEFAULT_AUTOMATION_TASK_IDS]
-    : ["sync", "garden", "update"];
-}
-
-function dedupeTaskIds(tasks: ScheduledTaskId[]): ScheduledTaskId[] {
-  const result: ScheduledTaskId[] = [];
-  for (const task of tasks) {
-    if (!result.includes(task)) result.push(task);
-  }
-  return result;
-}
-
-function intervalInputForTask(
-  task: ScheduledTaskId,
-  options: AutomationOptions,
-  explicitTasks: boolean,
-): string {
-  if (task === "sync") return options.every ?? DEFAULT_SYNC_INTERVAL;
-  if (task === "garden") {
-    return options.gardenEvery ??
-      (explicitTasks ? options.every ?? DEFAULT_GARDEN_INTERVAL : DEFAULT_GARDEN_INTERVAL);
-  }
-  return options.every ?? DEFAULT_UPDATE_INTERVAL;
-}
-
-function programArgumentsForTask(
-  task: ScheduledTaskDefinition,
-  options: AutomationOptions,
-): string[] {
-  if (task.id === "sync") {
-    return options.programArguments ??
-      task.programArguments({ quiet: options.quiet ?? DEFAULT_SYNC_QUIET });
-  }
-  if (task.id === "garden") {
-    return options.gardenProgramArguments ?? task.programArguments();
-  }
-  return options.updateProgramArguments ?? task.programArguments();
-}
-
-function plistPathForTask(
-  task: ScheduledTaskDefinition,
-  home: string,
-  options: Pick<AutomationOptions, "plistPath" | "gardenPlistPath" | "updatePlistPath">,
-): string {
-  if (task.id === "sync") return options.plistPath ?? defaultSyncPlistPath(home);
-  if (task.id === "garden") return options.gardenPlistPath ?? defaultGardenPlistPath(home);
-  return options.updatePlistPath ?? defaultUpdatePlistPath(home);
-}
-
-function resolveTaskWorkingDirectory(
-  task: ScheduledTaskDefinition,
-  cwd: string,
-): string | undefined {
-  if (task.workingDirectory === "none") return undefined;
-  return findNearestAlmanacDir(cwd) ?? path.resolve(cwd);
-}
-
-async function writeAutomationPlists(plan: AutomationInstallPlan): Promise<void> {
-  const jobs = plan.jobs.map((job) => job.job);
-  await ensureLaunchdDirs(jobs);
-  await Promise.all(jobs.map((job) => writeLaunchdPlist(job)));
-}
-
-async function activateAutomationJobs(
-  plan: AutomationInstallPlan,
-  exec: ExecFn | undefined,
-): Promise<{ ok: true } | { ok: false; result: CommandResult }> {
-  for (const planned of plan.jobs) {
-    try {
-      await bootstrapLaunchdJob(planned.job.plistPath, exec);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return {
-        ok: false,
-        result: {
-          stdout: "",
-          stderr:
-            `almanac: ${TASK_LABELS[planned.task.id]} plist written to ${planned.job.plistPath}, but launchctl bootstrap failed: ${msg}\n`,
-          exitCode: 1,
-        },
-      };
-    }
-  }
-  if (plan.disabledGardenPlistPath !== null && existsSync(plan.disabledGardenPlistPath)) {
-    await removeLaunchdJob(plan.disabledGardenPlistPath, exec);
-  }
-  return { ok: true };
-}
-
-function formatAutomationInstall(
-  plan: AutomationInstallPlan,
-  syncSince: string | null,
-): string {
+function formatAutomationInstall(result: {
+  tasks: InstalledAutomationTask[];
+  gardenDisabled: boolean;
+  syncSince: string | null;
+}): string {
   const lines = ["almanac: automation installed"];
-  for (const planned of plan.jobs) {
-    lines.push(`  ${planned.task.id} interval: ${planned.intervalInput}`);
-    if (planned.task.id === "sync") {
-      lines.push(`  sync quiet: ${readArgument(planned.job.programArguments, "--quiet") ?? DEFAULT_SYNC_QUIET}`);
-      if (syncSince !== null) {
-        lines.push(`  syncing transcripts after: ${syncSince}`);
+  for (const task of result.tasks) {
+    lines.push(`  ${task.taskId} interval: ${task.intervalInput}`);
+    if (task.taskId === "sync") {
+      if (task.quiet !== null) lines.push(`  sync quiet: ${task.quiet}`);
+      if (result.syncSince !== null) {
+        lines.push(`  syncing transcripts after: ${result.syncSince}`);
       }
     }
-    lines.push(`  ${planned.task.id} command: ${planned.job.programArguments.join(" ")}`);
-    lines.push(`  ${planned.task.id} plist: ${planned.job.plistPath}`);
+    lines.push(`  ${task.taskId} command: ${task.command.join(" ")}`);
+    lines.push(`  ${task.taskId} plist: ${task.plistPath}`);
   }
-  if (plan.disabledGardenPlistPath !== null) {
+  if (result.gardenDisabled) {
     lines.push("  garden: disabled");
   }
   return `${lines.join("\n")}\n`;
 }
 
-function readArgument(args: string[], flag: string): string | null {
-  const index = args.indexOf(flag);
-  if (index < 0) return null;
-  return args[index + 1] ?? null;
-}
-
-function parseInterval(value: string): { ok: true; seconds: number } | { ok: false; error: string } {
-  try {
-    const seconds = parseDuration(value);
-    if (seconds <= 0) {
-      return { ok: false, error: "automation interval must be greater than zero" };
-    }
-    return { ok: true, seconds };
-  } catch (err: unknown) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+function formatAutomationStatusSection(section: AutomationStatusSection): string {
+  if (section.status === "legacy-capture") {
+    return formatLegacyCaptureSweepStatus(section.plistPath);
   }
-}
-
-function parseQuiet(value: string): { ok: true } | { ok: false; error: string } {
-  try {
-    const seconds = parseDuration(value);
-    if (seconds < 0) {
-      return { ok: false, error: "quiet window must be zero or greater" };
-    }
-    return { ok: true };
-  } catch (err: unknown) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  if (!section.installed) {
+    return `${TASK_LABELS[section.taskId]}: not installed\n`;
   }
-}
-
-function formatAutomationStatus(
-  task: ScheduledTaskDefinition,
-  status: LaunchdJobStatus,
-): string {
-  if (status.contents === null) return `${TASK_LABELS[task.id]}: not installed\n`;
-  const extra = task.id === "sync"
-    ? (() => {
-      const quiet = readProgramArgumentAfter(status.contents!, "--quiet");
-      return quiet !== null ? `  quiet: ${quiet}\n` : "";
-    })()
-    : "";
+  const extra = section.quiet !== null ? `  quiet: ${section.quiet}\n` : "";
   return (
-    `${TASK_LABELS[task.id]}: installed\n` +
-    `  plist: ${status.plistPath}\n` +
-    `  launchd loaded: ${status.loaded ? "yes" : "no"}\n` +
-    (status.intervalSeconds !== null ? `  interval: ${status.intervalSeconds}s\n` : "") +
+    `${TASK_LABELS[section.taskId]}: installed\n` +
+    `  plist: ${section.plistPath}\n` +
+    `  launchd loaded: ${section.loaded ? "yes" : "no"}\n` +
+    (section.intervalSeconds !== null ? `  interval: ${section.intervalSeconds}s\n` : "") +
     extra
   );
 }
 
-function formatLegacyCaptureSweepStatus(
-  legacy: LegacyCaptureSweepAutomation,
-): string {
+function formatLegacyCaptureSweepStatus(plistPath: string): string {
   return (
     "legacy automation: uses removed command capture sweep\n" +
-    `  plist: ${legacy.plistPath}\n` +
+    `  plist: ${plistPath}\n` +
     "  run: almanac migrate automation\n"
   );
 }

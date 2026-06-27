@@ -28,7 +28,15 @@ sources:
   - id: automation
     type: file
     path: src/cli/commands/automation.ts
-    note: Migrated from legacy files.
+    note: CLI wrapper and renderer for automation install, status, and uninstall.
+  - id: automation-service
+    type: file
+    path: src/services/automation/automation.ts
+    note: Coordinates automation install, status, and uninstall workflows.
+  - id: automation-planning
+    type: file
+    path: src/services/automation/planning.ts
+    note: Turns scheduled task options into launchd job definitions.
   - id: migrate
     type: file
     path: src/cli/commands/migrate.ts
@@ -67,11 +75,11 @@ sources:
     note: Migrated from legacy files.
   - id: register-setup-commands
     type: file
-    path: src/cli/register-setup-commands.ts
+    path: src/edges/cli/register-setup-commands.ts
     note: Migrated from legacy files.
   - id: register-wiki-lifecycle-commands
     type: file
-    path: src/cli/register-wiki-lifecycle-commands.ts
+    path: src/edges/cli/register-wiki-lifecycle-commands.ts
     note: Migrated from legacy files.
   - id: sync
     type: file
@@ -146,7 +154,7 @@ The sync plist path is `~/Library/LaunchAgents/com.codealmanac.sync.plist`. The 
 
 The sync job runs `almanac sync --quiet <duration>`. The default schedule is every `5h`, and the default quiet window is `45m`. The Garden job runs `almanac garden` every `4h` by default. The update job runs bare `almanac update` every `1d` by default and relies on [[self-update]] for no-op behavior when the installed package is current.
 
-The automation code is split by responsibility. `[[src/platform/automation/tasks.ts]]` owns `ScheduledTaskDefinition` records for sync, Garden, and update: labels, default intervals, plist paths, log filenames, working-directory policy, and default command arguments. `[[src/platform/automation/launchd.ts]]` owns plist rendering, PATH construction, bootstrap/removal, and loaded-state checks. `[[src/platform/automation/legacy-hooks.ts]]` owns private migration cleanup for older hook-based installs. `[[src/platform/automation/legacy-capture.ts]]` detects legacy launchd plists that still invoke `capture sweep`, and `[[src/cli/commands/migrate.ts]]` owns `almanac migrate automation`. `[[src/cli/commands/automation.ts]]` remains the command transaction that validates options, writes the activation baseline for sync, turns task definitions into launchd jobs, calls launchd helpers, and formats user output. [@migrate-automation-command]
+The automation code is split by responsibility. `[[src/platform/automation/tasks.ts]]` owns `ScheduledTaskDefinition` records for sync, Garden, and update: labels, default intervals, plist paths, log filenames, working-directory policy, and default command arguments. `[[src/platform/automation/launchd.ts]]` owns plist rendering, PATH construction, bootstrap/removal, and loaded-state checks. `[[src/platform/automation/legacy-hooks.ts]]` owns private migration cleanup for older hook-based installs. `[[src/platform/automation/legacy-capture.ts]]` detects legacy launchd plists that still invoke `capture sweep`, and `[[src/cli/commands/migrate.ts]]` owns `almanac migrate automation`. `[[src/services/automation/planning.ts]]` validates scheduler options and turns scheduled task definitions into launchd job definitions. `[[src/services/automation/automation.ts]]` coordinates install, status, and uninstall workflows: writing plists, recording the sync activation baseline, bootstrapping jobs, disabling Garden when requested, and reading launchd status. `[[src/cli/commands/automation.ts]]` parses task ids and formats command output. [@migrate-automation-command] [@automation-service] [@automation-planning]
 
 Every task gets an explicit `PATH` assembled for launchd from the current environment plus fallback locations such as `/usr/local/bin`, `/opt/homebrew/bin`, and `/usr/bin`. The Garden plist also records a `WorkingDirectory`: `runAutomationInstall()` resolves it to the nearest repo containing `.almanac/`, falling back to the current directory when no wiki root is found.
 
@@ -156,7 +164,7 @@ There are two command-path modes. Direct `almanac automation install` writes abs
 
 The scheduler owns wakeup cadence and command invocation. It does not own transcript eligibility, cursor state, or sync dedupe. Those remain inside Almanac and are described by [[capture-flow]], [[capture-automation]], and [[capture-ledger]].
 
-The first time sync automation is enabled, `runAutomationInstall()` calls `ensureAutomationSyncSince(...)` and records `automation.sync_since` in `~/.almanac/config.toml`. Future sync runs use that timestamp to ignore transcript material older than the activation baseline. Reinstalling automation preserves the existing timestamp, so repairing the scheduler does not silently redefine the historical transcript backlog.
+The first time sync automation is enabled, the automation service calls `ensureAutomationSyncSince(...)` and records `automation.sync_since` in `~/.almanac/config.toml`. Future sync runs use that timestamp to ignore transcript material older than the activation baseline. Reinstalling automation preserves the existing timestamp, so repairing the scheduler does not silently redefine the historical transcript backlog.
 
 `automation.capture_since` is legacy compatibility for users who installed automation before the sync vocabulary replaced capture vocabulary. `[[src/config/store.ts]]` accepts a valid legacy value as the existing activation baseline, writes it back as `automation.sync_since`, and deletes `capture_since`. The compatibility branch prevents a rename from backfilling old transcripts, but new code and docs should treat `sync_since` as the only current key. [@config-store] [@sync-compat-session]
 
@@ -213,11 +221,11 @@ A 2026-05-14 review against `.claude/agents/review.md` did not question the sche
 The review did identify placement and product-scope pressure in the pre-refactor automation shape:
 
 - `runAutomationInstall()` manages both sync scheduling and Garden scheduling, with `--garden-every` and `--garden-off` living under an `automation` command that users may read as sync-specific.
-- `cleanupLegacyHooks()` is justified migration glue, but it lives in [[src/cli/commands/automation.ts]] beside launchd install/status/uninstall; a cleaner boundary would isolate provider-hook cleanup and let setup call it explicitly.
+- `cleanupLegacyHooks()` is justified migration glue, but it used to live in [[src/cli/commands/automation.ts]] beside launchd install/status/uninstall; a cleaner boundary isolates provider-hook cleanup and lets setup call it explicitly.
 - Setup's ephemeral-`npx` handling is justified because launchd must not pin itself to a transient cache path, but the special path should stay named and contained so it does not become general scheduler behavior by accident.
 - `automation status` originally read plist presence and quiet-window text without checking loaded `launchd` state, so a stale or unloaded plist could look healthier than it was.
 
-The merged provider/automation boundary refactor resolved the mechanical parts of that pressure by splitting task definitions, launchd mechanics, and legacy hook cleanup into separate modules, and by making status report loaded state separately from plist presence. The remaining product question is whether Garden scheduling should continue to live under the same `automation install` surface as sync. The current code keeps the shared command because both jobs are recurring local Almanac maintenance tasks, but future scheduled tasks should extend the typed task model rather than adding ad hoc branches inside the command file.
+The merged provider/automation boundary refactors resolved the mechanical parts of that pressure by splitting task definitions, launchd mechanics, automation product workflows, scheduled-task planning, and legacy hook cleanup into separate modules, and by making status report loaded state separately from plist presence. The remaining product question is whether Garden scheduling should continue to live under the same `automation install` surface as sync. The current code keeps the shared command because both jobs are recurring local Almanac maintenance tasks, but future scheduled tasks should extend the typed task model rather than adding ad hoc branches inside the command file.
 
 ## Windows scheduler boundary
 

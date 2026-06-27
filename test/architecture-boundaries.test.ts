@@ -173,6 +173,19 @@ describe("architecture boundaries", () => {
     expect(jobsCommand).not.toContain("process.kill");
   });
 
+  it("keeps automation command adapters out of launchd workflow mechanics", async () => {
+    const automationCommand = await readSource("src/cli/commands/automation.ts");
+
+    expect(automationCommand).toContain("services/automation/index.js");
+    expect(automationCommand).not.toContain("platform/automation/launchd");
+    expect(automationCommand).not.toContain("ensureAutomationSyncSince");
+    expect(automationCommand).not.toContain("findNearestAlmanacDir");
+    expect(automationCommand).not.toContain("writeLaunchdPlist");
+    expect(automationCommand).not.toContain("bootstrapLaunchdJob");
+    expect(automationCommand).not.toContain("removeLaunchdJob");
+    expect(automationCommand).not.toContain("readLaunchdJobStatus");
+  });
+
   it("keeps migrate legacy-sources adapter out of source migration mechanics", async () => {
     const migrateCommand = await readSource("src/cli/commands/migrate.ts");
 
