@@ -285,3 +285,9 @@ Thirty-seventh production slice:
 - Introduced service-owned names for update registry checks, install spawning, and install results.
 - Updated `UpdateOptions` and `UpdateWorkflowResult` to use update service contract names instead of raw platform update types.
 - Guarded the update service facade against direct platform update exports.
+
+Thirty-eighth production slice:
+
+- Moved setup agent-choice config refresh/save ownership into `src/services/setup/agent-choice.ts`.
+- Replaced the CLI's raw global config access with a setup-owned configured-model snapshot.
+- Guarded setup agent-choice UI against reaching into `config.agent`.

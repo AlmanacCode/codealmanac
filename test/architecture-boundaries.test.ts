@@ -316,6 +316,7 @@ describe("architecture boundaries", () => {
     expect(setupAgentChoice).not.toContain("../../../config/index");
     expect(setupAgentChoice).not.toContain("readConfig");
     expect(setupAgentChoice).not.toContain("writeConfig");
+    expect(setupAgentChoice).not.toContain("config.agent");
     expect(setupAgentChoice).not.toContain("parseAgentSelection");
     expect(setupAgentChoice).not.toContain("isAgentProviderId");
   });

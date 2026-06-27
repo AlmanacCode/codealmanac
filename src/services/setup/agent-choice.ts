@@ -13,18 +13,20 @@ import {
   readConfig,
   writeConfig,
   type AgentProviderId,
-  type GlobalConfig,
 } from "../../config/index.js";
 
 export type SetupSpawnCliFn = SpawnCliFn;
 export type SetupProviderView = ProviderSetupView;
 export type SetupProviderModelChoice = ProviderModelChoice;
 export type SetupAgentProviderId = AgentProviderId;
+export type SetupConfiguredModels = Partial<
+  Record<SetupAgentProviderId, string | null>
+>;
 
 export interface SetupAgentChoiceState {
-  config: GlobalConfig;
   selected: string;
   view: SetupProviderView | null;
+  configuredModels: SetupConfiguredModels;
 }
 
 export type SetupAgentSelection =
@@ -38,8 +40,8 @@ export async function readSetupAgentChoiceState(input: {
 }): Promise<SetupAgentChoiceState> {
   const config = await readConfig();
   return {
-    config,
     selected: input.requested ?? config.agent.default,
+    configuredModels: config.agent.models,
     view: input.includeView
       ? await buildProviderSetupView({ config, spawnCli: input.spawnCli })
       : null,
@@ -47,11 +49,11 @@ export async function readSetupAgentChoiceState(input: {
 }
 
 export async function refreshSetupAgentChoiceView(input: {
-  config: GlobalConfig;
   spawnCli?: SetupSpawnCliFn;
 }): Promise<SetupProviderView> {
+  const config = await readConfig();
   return await buildProviderSetupView({
-    config: input.config,
+    config,
     spawnCli: input.spawnCli,
   });
 }
@@ -90,17 +92,17 @@ export async function readSetupProviderModelChoices(input: {
 }
 
 export async function saveSetupAgentChoice(input: {
-  config: GlobalConfig;
   provider: SetupAgentProviderId;
   model: string | null;
 }): Promise<void> {
+  const config = await readConfig();
   await writeConfig({
-    ...input.config,
+    ...config,
     agent: {
-      ...input.config.agent,
+      ...config.agent,
       default: input.provider,
       models: {
-        ...input.config.agent.models,
+        ...config.agent.models,
         [input.provider]: input.model,
       },
     },

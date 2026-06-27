@@ -41,7 +41,6 @@ export async function chooseDefaultAgent(args: {
     includeView: args.interactive || args.requested !== undefined,
     spawnCli: args.spawnCli,
   });
-  const { config } = state;
   let view = state.view;
   let selected = state.selected;
   if (args.interactive && args.requested === undefined && view !== null) {
@@ -81,7 +80,6 @@ export async function chooseDefaultAgent(args: {
             stepActive(args.out, `${choice.label} login failed: ${login.error}`);
           }
           view = await refreshSetupAgentChoiceView({
-            config,
             spawnCli: args.spawnCli,
           });
           const refreshed = view.choices.find((next) => next.id === choice.id);
@@ -116,7 +114,6 @@ export async function chooseDefaultAgent(args: {
       const login = await runLoginCommand(command);
       if (login.ok) {
         view = await refreshSetupAgentChoiceView({
-          config,
           spawnCli: args.spawnCli,
         });
         selectedChoice = view.choices.find((choice) => choice.id === provider);
@@ -139,9 +136,9 @@ export async function chooseDefaultAgent(args: {
     interactive: args.interactive,
     provider,
     choice: selectedChoice,
-    configuredModel: config.agent.models[provider] ?? null,
+    configuredModel: state.configuredModels[provider] ?? null,
   });
-  await saveSetupAgentChoice({ config, provider, model });
+  await saveSetupAgentChoice({ provider, model });
   if ((!args.interactive || args.requested !== undefined) && selectedChoice !== undefined) {
     const detail = selectedChoice?.ready === true
       ? "ready"
