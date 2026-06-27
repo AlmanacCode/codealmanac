@@ -173,3 +173,10 @@ Nineteenth production slice:
 - Moved foreground lifecycle event formatting into `src/edges/cli/lifecycle-events.ts`.
 - Kept lifecycle operation registration, sync registration, jobs registration, automation registration, and reindex registration in separate files so each edge module has one reason to change.
 - Preserved the existing root command order and option surface with focused CLI registration tests.
+
+Twentieth production slice:
+
+- Split deterministic edit command registration by command family under `src/edges/cli/`.
+- Kept `src/edges/cli/register-edit-commands.ts` as a small facade over review, page-topic, migrate, and topic registration.
+- Moved review command wiring to `register-review-commands.ts`, tag/untag wiring to `register-page-topic-commands.ts`, migration wiring to `register-migrate-commands.ts`, and topic DAG wiring to `register-topics-commands.ts`.
+- Preserved existing root and subcommand order with focused CLI, topics, review, and tag tests.
