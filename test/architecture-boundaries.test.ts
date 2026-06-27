@@ -91,14 +91,17 @@ describe("architecture boundaries", () => {
     }
   });
 
-  it("keeps topic describe command adapter out of write mechanics", async () => {
+  it("keeps simple topic mutation adapters out of write mechanics", async () => {
     const describeCommand = await readSource("src/cli/commands/topics/describe.ts");
+    const unlinkCommand = await readSource("src/cli/commands/topics/unlink.ts");
 
-    expect(describeCommand).toContain("services/wiki/topics.js");
-    expect(describeCommand).not.toContain("wiki/indexer");
-    expect(describeCommand).not.toContain("wiki/topics/yaml");
-    expect(describeCommand).not.toContain("runIndexer");
-    expect(describeCommand).not.toContain("openFreshTopicsWorkspace");
+    for (const source of [describeCommand, unlinkCommand]) {
+      expect(source).toContain("services/wiki/topics.js");
+      expect(source).not.toContain("wiki/indexer");
+      expect(source).not.toContain("wiki/topics/yaml");
+      expect(source).not.toContain("runIndexer");
+      expect(source).not.toContain("openFreshTopicsWorkspace");
+    }
   });
 
   it("keeps registry persistence in an explicit store", () => {

@@ -85,3 +85,4 @@ Eighth production slice:
 
 - Moved the `topics describe` mutation workflow into `src/services/wiki/topics.ts`.
 - Kept `src/cli/commands/topics/describe.ts` responsible only for mapping service statuses to CLI stdout/stderr/exit codes.
+- Moved the `topics unlink` mutation workflow into the same service because it only edits `topics.yaml` and reindexes after an actual edge removal.

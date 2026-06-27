@@ -10,6 +10,7 @@ import { descendantsInDb } from "../../wiki/topics/dag.js";
 import { topicsYamlPath } from "../../wiki/topics/paths.js";
 import {
   ensureTopic,
+  findTopic,
   loadTopicsFile,
   writeTopicsFile,
 } from "../../wiki/topics/yaml.js";
@@ -31,6 +32,11 @@ export interface DescribeWikiTopicRequest extends WikiTopicsRequest {
   description: string;
 }
 
+export interface UnlinkWikiTopicsRequest extends WikiTopicsRequest {
+  child: string;
+  parent: string;
+}
+
 export interface WikiTopicRecord {
   slug: string;
   title: string | null;
@@ -50,6 +56,11 @@ export type DescribeWikiTopicResult =
   | { status: "described"; slug: string }
   | { status: "empty-slug" }
   | { status: "missing"; slug: string };
+
+export type UnlinkWikiTopicsResult =
+  | { status: "unlinked"; child: string; parent: string }
+  | { status: "no-edge"; child: string; parent: string }
+  | { status: "empty-slug" };
 
 export async function listWikiTopics(
   request: WikiTopicsRequest,
@@ -118,6 +129,32 @@ export async function describeWikiTopic(
 
   await runIndexer({ repoRoot });
   return { status: "described", slug };
+}
+
+export async function unlinkWikiTopics(
+  request: UnlinkWikiTopicsRequest,
+): Promise<UnlinkWikiTopicsResult> {
+  const repoRoot = await resolveWikiRoot({
+    cwd: request.cwd,
+    wiki: request.wiki,
+  });
+  const child = toKebabCase(request.child);
+  const parent = toKebabCase(request.parent);
+  if (child.length === 0 || parent.length === 0) {
+    return { status: "empty-slug" };
+  }
+
+  const yamlPath = topicsYamlPath(repoRoot);
+  const file = await loadTopicsFile(yamlPath);
+  const childEntry = findTopic(file, child);
+  if (childEntry === null || !childEntry.parents.includes(parent)) {
+    return { status: "no-edge", child, parent };
+  }
+
+  childEntry.parents = childEntry.parents.filter((p) => p !== parent);
+  await writeTopicsFile(yamlPath, file);
+  await runIndexer({ repoRoot });
+  return { status: "unlinked", child, parent };
 }
 
 async function openFreshTopicIndex(
