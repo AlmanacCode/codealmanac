@@ -379,10 +379,18 @@ describe("architecture boundaries", () => {
 
   it("keeps the sync command owning its command contract", async () => {
     const syncCommand = await readSource("src/cli/commands/sync.ts");
+    const syncRender = await readSource("src/cli/commands/sync-render.ts");
 
+    expect(existsSync(join(ROOT, "src/cli/commands/sync-render.ts"))).toBe(true);
     expect(syncCommand).not.toContain("import type { CommandResult }");
     expect(syncCommand).not.toContain("extends SyncWorkflowOptions");
     expect(syncCommand).toContain("toSyncWorkflowOptions");
+    expect(syncCommand).not.toContain("renderOutcome");
+    expect(syncCommand).not.toContain("renderError");
+    expect(syncCommand).not.toContain("function renderSyncSummary");
+    expect(syncCommand).not.toContain("sync status completed");
+    expect(syncRender).toContain("renderSyncResult");
+    expect(syncRender).toContain("function renderSyncSummary");
   });
 
   it("keeps jobs command adapters out of job storage and process mechanics", async () => {
@@ -888,6 +896,7 @@ describe("architecture boundaries", () => {
     expect(syncCommand).not.toContain("parseDuration");
     expect(syncCommand).not.toContain("homedir");
     expect(syncCommand).not.toContain("discoverCandidates");
+    expect(syncCommand).not.toContain("sync completed");
     expect(syncCommand).not.toContain("providerForRepo");
     expect(syncCommand).not.toContain("syncAbsorbContext");
     expect(syncSweep).not.toContain("interface SyncSummary");

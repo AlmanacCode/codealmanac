@@ -725,3 +725,9 @@ One-hundred-eighth production slice:
 - Finished the jobs command rendering split in `src/cli/commands/jobs-render.ts`.
 - Moved jobs list/show JSON output, empty-list text, attach empty-log text, and streaming terminal summary rendering out of `src/cli/commands/jobs.ts`.
 - Kept `src/cli/commands/jobs.ts` focused on converting command options into jobs service requests and invoking jobs service workflows.
+
+One-hundred-ninth production slice:
+
+- Split sync command rendering into `src/cli/commands/sync-render.ts`.
+- Moved sync success/error result rendering, status/live mode labels, ready/started item text, and needs-attention text out of `src/cli/commands/sync.ts`.
+- Kept `src/cli/commands/sync.ts` focused on command option contracts, sync workflow option conversion, and invoking the sync service workflow.
