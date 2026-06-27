@@ -737,3 +737,9 @@ One-hundred-tenth production slice:
 - Split tag and untag command rendering into `src/cli/commands/tag-render.ts`.
 - Moved tagged/no-change/missing-page output, validation error text, and tag/untag exit-code decisions out of `src/cli/commands/tag.ts`.
 - Kept `src/cli/commands/tag.ts` focused on command contracts and invoking page-topic mutation service workflows.
+
+One-hundred-eleventh production slice:
+
+- Split agents command rendering into `src/cli/commands/agents-render.ts`.
+- Moved provider list/doctor formatting, readiness labels, unknown-agent errors, missing-model errors, and model/default-agent success text out of `src/cli/commands/agents.ts`.
+- Kept `src/cli/commands/agents.ts` focused on reading the agents service view and invoking agents configuration service workflows.

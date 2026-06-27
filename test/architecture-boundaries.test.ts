@@ -642,6 +642,7 @@ describe("architecture boundaries", () => {
     const agentsServiceIndex = await readSource("src/services/agents/index.ts");
     const agentsService = await readSource("src/services/agents/agents.ts");
     const agentsCommand = await readSource("src/cli/commands/agents.ts");
+    const agentsRender = await readSource("src/cli/commands/agents-render.ts");
 
     expect(agentsServiceIndex).not.toContain("../../agent/");
     expect(agentsServiceIndex).not.toContain("../../config/");
@@ -656,6 +657,14 @@ describe("architecture boundaries", () => {
     expect(agentsCommand).not.toContain("writeConfig");
     expect(agentsCommand).not.toContain("parseAgentSelection");
     expect(agentsCommand).not.toContain("isAgentProviderId");
+    expect(agentsCommand).not.toContain("formatTextTable");
+    expect(agentsCommand).not.toContain("readinessLabel");
+    expect(agentsCommand).not.toContain("unknown agent");
+    expect(agentsCommand).not.toContain("missing model");
+    expect(agentsRender).toContain("renderAgentsList");
+    expect(agentsRender).toContain("renderAgentsDoctor");
+    expect(agentsRender).toContain("renderSetDefaultAgentResult");
+    expect(agentsRender).toContain("renderSetAgentModelResult");
   });
 
   it("keeps setup agent choice UI out of readiness and config mechanics", async () => {
