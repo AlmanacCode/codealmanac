@@ -370,6 +370,22 @@ describe("architecture boundaries", () => {
     expect(syncSweep).not.toContain("sync.lock");
   });
 
+  it("keeps sync transcript cursor decisions out of the sweep coordinator", async () => {
+    const syncSweep = await readSource("src/sync/sweep.ts");
+    const transcriptCursor = await readSource("src/sync/transcript-cursor.ts");
+
+    expect(existsSync(join(ROOT, "src/sync/transcript-cursor.ts"))).toBe(true);
+    expect(syncSweep).toContain("transcript-cursor.js");
+    expect(syncSweep).not.toContain("from \"node:fs/promises\"");
+    expect(syncSweep).not.toContain("function readTranscriptSnapshot");
+    expect(syncSweep).not.toContain("function evaluateSyncCursor");
+    expect(syncSweep).not.toContain("lastAbsorbedPrefixHash");
+    expect(syncSweep).not.toContain("pendingPrefixHash");
+    expect(transcriptCursor).toContain("export async function readTranscriptSnapshot");
+    expect(transcriptCursor).toContain("export function evaluateSyncCursor");
+    expect(transcriptCursor).toContain("export function pendingLedgerEntry");
+  });
+
   it("keeps local process signaling in the platform layer", async () => {
     const jobsService = await readSource("src/services/jobs/jobs.ts");
     const viewerJobs = await readSource("src/viewer/jobs.ts");

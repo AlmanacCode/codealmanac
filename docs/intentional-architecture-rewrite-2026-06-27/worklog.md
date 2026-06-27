@@ -592,3 +592,9 @@ Eighty-sixth production slice:
 - Split Codex app-server startup into `src/harness/providers/codex/app-server-session.ts`.
 - Moved `initialize`, `thread/start`, `turn/start`, root thread/turn state assignment, provider-session event emission, and prompt/sandbox request construction out of `app-server.ts`.
 - Kept `app-server.ts` focused on process lifetime, JSON-RPC transport, request dispatch, notification handling, timeout failure, and cleanup.
+
+Eighty-seventh production slice:
+
+- Split sync transcript snapshot and cursor decision logic into `src/sync/transcript-cursor.ts`.
+- Moved transcript file reading, line counting, unchanged/pending/prefix-mismatch decisions, pending ledger entry construction, and failed-entry construction out of `src/sync/sweep.ts`.
+- Kept `src/sync/sweep.ts` focused on candidate iteration, eligibility gates, repo locks, ledger loading/reconciliation, Absorb enqueue orchestration, summary recording, and lock cleanup.

@@ -1,15 +1,19 @@
-import { readFile } from "node:fs/promises";
-
 import type { SessionCandidate, SweepApp } from "./discovery/index.js";
 import {
+  type LedgerEntry,
   type SyncLedger,
-  countLines,
-  syncCursor,
   freshLedgerEntry,
   ledgerKey,
   reconcileLedger,
-  sha256,
 } from "./ledger.js";
+import {
+  type SyncCursorDecision,
+  type TranscriptSnapshot,
+  evaluateSyncCursor,
+  failedLedgerEntry,
+  pendingLedgerEntry,
+  readTranscriptSnapshot,
+} from "./transcript-cursor.js";
 import {
   loadLedgerForRepo,
   writeLedger,
@@ -67,21 +71,6 @@ export type StartSyncAbsorbResult =
 export type StartSyncAbsorbFn = (
   args: StartSyncAbsorbArgs,
 ) => Promise<StartSyncAbsorbResult>;
-
-interface TranscriptSnapshot {
-  content: Buffer;
-  currentSize: number;
-  currentLine: number;
-}
-
-type TranscriptReadResult =
-  | { ok: true; snapshot: TranscriptSnapshot }
-  | { ok: false; reason: string };
-
-type SyncCursorDecision =
-  | { kind: "skip"; reason: string }
-  | { kind: "needs_attention"; reason: string; entry: ReturnType<typeof markPrefixMismatch> }
-  | { kind: "ready"; fromLine: number; toLine: number };
 
 export async function executeSyncSweep(args: {
   candidates: SessionCandidate[];
@@ -225,73 +214,16 @@ function candidateEligibility(
   return null;
 }
 
-async function readTranscriptSnapshot(
-  candidate: SessionCandidate,
-): Promise<TranscriptReadResult> {
-  try {
-    const content = await readFile(candidate.transcriptPath);
-    return {
-      ok: true,
-      snapshot: {
-        content,
-        currentSize: content.length,
-        currentLine: countLines(content.toString("utf8")),
-      },
-    };
-  } catch (err: unknown) {
-    const reason = `read-failed: ${err instanceof Error ? err.message : String(err)}`;
-    return { ok: false, reason };
-  }
-}
-
-function evaluateSyncCursor(
-  entry: SyncLedger["sessions"][string],
-  snapshot: TranscriptSnapshot,
-): SyncCursorDecision {
-  if (entry.status === "pending") {
-    return { kind: "skip", reason: "sync-already-pending" };
-  }
-
-  if (snapshot.currentSize <= entry.lastAbsorbedSize) {
-    return { kind: "skip", reason: "unchanged" };
-  }
-
-  const prefixHash = sha256(snapshot.content.subarray(0, entry.lastAbsorbedSize));
-  if (prefixHash !== entry.lastAbsorbedPrefixHash) {
-    return {
-      kind: "needs_attention",
-      reason: "prefix-mismatch",
-      entry: markPrefixMismatch(entry),
-    };
-  }
-
-  return {
-    kind: "ready",
-    fromLine: entry.lastAbsorbedLine + 1,
-    toLine: snapshot.currentLine,
-  };
-}
-
-function markPrefixMismatch(
-  entry: SyncLedger["sessions"][string],
-): SyncLedger["sessions"][string] {
-  return {
-    ...entry,
-    status: "needs_attention",
-    lastError: "transcript prefix no longer matches ledger cursor",
-  };
-}
-
 async function enqueueAbsorb(args: {
   candidate: SessionCandidate;
-  entry: SyncLedger["sessions"][string];
+  entry: LedgerEntry;
   decision: Extract<SyncCursorDecision, { kind: "ready" }>;
   snapshot: TranscriptSnapshot;
   now: Date;
   startAbsorb: StartSyncAbsorbFn;
 }): Promise<
-  | { ok: true; jobId: string; entry: SyncLedger["sessions"][string] }
-  | { ok: false; reason: string; entry: SyncLedger["sessions"][string] }
+  | { ok: true; jobId: string; entry: LedgerEntry }
+  | { ok: false; reason: string; entry: LedgerEntry }
 > {
   const result = await args.startAbsorb({
     candidate: args.candidate,
@@ -306,28 +238,18 @@ async function enqueueAbsorb(args: {
     return {
       ok: false,
       reason: "absorb-start-failed",
-      entry: {
-        ...args.entry,
-        status: "failed",
-        lastError: result.error,
-      },
+      entry: failedLedgerEntry(args.entry, result.error),
     };
   }
-  const pendingCursor = syncCursor(args.snapshot.content, args.snapshot.currentLine);
   return {
     ok: true,
     jobId: result.jobId,
-    entry: {
-      ...args.entry,
-      status: "pending",
-      pendingToSize: pendingCursor.size,
-      pendingToLine: pendingCursor.line,
-      pendingPrefixHash: pendingCursor.prefixHash,
-      pendingJobId: result.jobId,
-      pendingStartedAt: args.now.toISOString(),
-      lastJobId: result.jobId,
-      lastError: undefined,
-    },
+    entry: pendingLedgerEntry({
+      entry: args.entry,
+      snapshot: args.snapshot,
+      jobId: result.jobId,
+      now: args.now,
+    }),
   };
 }
 
