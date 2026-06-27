@@ -749,3 +749,9 @@ One-hundred-twelfth production slice:
 - Split topic command rendering into `src/cli/commands/topics/read-render.ts` and `src/cli/commands/topics/mutation-render.ts`.
 - Moved topic list/show formatting, JSON output, success messages, shared topic errors, DAG edge messages, and page-count text out of individual topic verb adapters.
 - Deleted the old `src/cli/commands/topics/read.ts` helper so topic read presentation has an honest home next to mutation presentation.
+
+One-hundred-thirteenth production slice:
+
+- Split config command rendering into `src/cli/commands/config-render.ts`.
+- Moved config table/JSON output, unknown-key text, missing-value text, rejected mutation output, and set/unset success text out of `src/cli/commands/config.ts`.
+- Kept `src/cli/commands/config.ts` focused on parsing config keys and invoking config service workflows.

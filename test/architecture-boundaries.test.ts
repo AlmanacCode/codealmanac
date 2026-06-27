@@ -649,9 +649,13 @@ describe("architecture boundaries", () => {
 
   it("keeps config command adapters out of config persistence mechanics", async () => {
     const configCommand = await readSource("src/cli/commands/config.ts");
+    const configRender = await readSource("src/cli/commands/config-render.ts");
     const configStore = await readSource("src/config/store.ts");
     const configPatch = await readSource("src/config/stored-patch.ts");
 
+    expect(existsSync(join(ROOT, "src/cli/commands/config-render.ts"))).toBe(
+      true,
+    );
     expect(existsSync(join(ROOT, "src/config/stored-patch.ts"))).toBe(true);
     expect(configCommand).toContain("services/config/index.js");
     expect(configCommand).not.toContain("../../config/index");
@@ -661,6 +665,14 @@ describe("architecture boundaries", () => {
     expect(configCommand).not.toContain("readConfigWithOrigins(");
     expect(configCommand).not.toContain("serializeConfig");
     expect(configCommand).not.toContain("getProjectConfigPath");
+    expect(configCommand).not.toContain("formatTextTable");
+    expect(configCommand).not.toContain("JSON.stringify");
+    expect(configCommand).not.toContain("formatConfigValue");
+    expect(configCommand).not.toContain("unknown config key");
+    expect(configCommand).not.toContain("no .almanac/ found");
+    expect(configRender).toContain("formatTextTable");
+    expect(configRender).toContain("renderConfigList");
+    expect(configRender).toContain("renderConfigSet");
     expect(existsSync(join(ROOT, "src/cli/commands/config-keys.ts"))).toBe(false);
     expect(configStore).not.toContain("function toStoredConfigPatch");
     expect(configStore).not.toContain("function setStoredValue");
