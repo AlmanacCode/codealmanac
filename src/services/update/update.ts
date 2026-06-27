@@ -4,12 +4,19 @@ import {
   type GlobalConfig,
 } from "../../config/index.js";
 import { checkForUpdate } from "../../platform/update/check.js";
-import { installLatestPackage } from "../../platform/update/install.js";
+import {
+  installLatestPackage,
+  type InstallLatestPackageResult,
+} from "../../platform/update/install.js";
 import { acquireUpdateLock } from "../../platform/update/lock.js";
 import { isNewer } from "../../platform/update/semver.js";
 import { readState, writeState } from "../../platform/update/state.js";
 import { readInstalledVersion } from "../../platform/update/version.js";
-import type { UpdateOptions, UpdateWorkflowResult } from "./types.js";
+import type {
+  UpdateInstallResult,
+  UpdateOptions,
+  UpdateWorkflowResult,
+} from "./types.js";
 
 export async function runUpdateWorkflow(
   opts: UpdateOptions = {},
@@ -132,10 +139,12 @@ async function installIfNeeded(
   }
 
   try {
-    const install = await installLatestPackage({
-      spawnFn: opts.spawnFn,
-    });
-    if (install.exitCode !== 0) {
+    const install = updateInstallResultFromPlatform(
+      await installLatestPackage({
+        spawnFn: opts.spawnFn,
+      }),
+    );
+    if (install.code !== 0) {
       return { status: "install-result", result: install };
     }
     await refreshInstalledState(opts, latest);
@@ -143,6 +152,16 @@ async function installIfNeeded(
   } finally {
     await lock.release();
   }
+}
+
+function updateInstallResultFromPlatform(
+  result: InstallLatestPackageResult,
+): UpdateInstallResult {
+  return {
+    output: result.stdout,
+    errorOutput: result.stderr,
+    code: result.exitCode,
+  };
 }
 
 async function refreshInstalledState(

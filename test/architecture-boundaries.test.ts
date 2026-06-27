@@ -287,6 +287,7 @@ describe("architecture boundaries", () => {
     const updateCommand = await readSource("src/cli/commands/update.ts");
     const updateServiceIndex = await readSource("src/services/update/index.ts");
     const updateService = await readSource("src/services/update/update.ts");
+    const updateTypes = await readSource("src/services/update/types.ts");
 
     expect(updateServiceIndex).not.toContain("platform/update");
     expect(updateCommand).toContain("services/update/index.js");
@@ -302,6 +303,10 @@ describe("architecture boundaries", () => {
     expect(updateService).not.toContain("stdout:");
     expect(updateService).not.toContain("stderr:");
     expect(updateService).not.toContain("exitCode:");
+    expect(updateService).toContain("updateInstallResultFromPlatform");
+    expect(updateTypes).not.toContain(
+      "UpdateInstallResult = PlatformInstallLatestPackageResult",
+    );
   });
 
   it("keeps config command adapters out of config persistence mechanics", async () => {

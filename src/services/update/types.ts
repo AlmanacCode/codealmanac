@@ -1,11 +1,15 @@
 import type { spawn as nodeSpawn } from "node:child_process";
 
 import type { checkForUpdate as platformCheckForUpdate } from "../../platform/update/check.js";
-import type { InstallLatestPackageResult as PlatformInstallLatestPackageResult } from "../../platform/update/install.js";
 
 export type UpdateCheckFn = typeof platformCheckForUpdate;
 export type UpdateInstallSpawnFn = typeof nodeSpawn;
-export type UpdateInstallResult = PlatformInstallLatestPackageResult;
+
+export interface UpdateInstallResult {
+  output: string;
+  errorOutput: string;
+  code: number;
+}
 
 export interface UpdateOptions {
   dismiss?: boolean;

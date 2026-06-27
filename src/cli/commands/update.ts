@@ -1,5 +1,6 @@
 import {
   runUpdateWorkflow,
+  type UpdateInstallResult,
   type UpdateOptions,
   type UpdateWorkflowResult,
 } from "../../services/update/index.js";
@@ -84,12 +85,20 @@ function renderUpdateResult(result: UpdateWorkflowResult): UpdateResult {
     case "install-in-progress":
       return ok("almanac: update already in progress; no install attempted.\n");
     case "install-result":
-      return result.result;
+      return renderInstallResult(result.result);
   }
 }
 
 function ok(stdout: string): UpdateResult {
   return { stdout, stderr: "", exitCode: 0 };
+}
+
+function renderInstallResult(result: UpdateInstallResult): UpdateResult {
+  return {
+    stdout: result.output,
+    stderr: result.errorOutput,
+    exitCode: result.code,
+  };
 }
 
 function renderNotifierUpdated(enabled: boolean): UpdateResult {

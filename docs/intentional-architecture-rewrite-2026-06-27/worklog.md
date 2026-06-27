@@ -382,3 +382,10 @@ Fifty-second production slice:
 - Mapped `sync.sweep()` runtime summaries into service-owned workflow summaries before returning from `runSyncWorkflow`.
 - Kept runtime transcript sweep mechanics behind the sync service boundary while preserving the CLI render contract.
 - Guarded the sync service against regressing to a direct `sync.SyncSummary` alias.
+
+Fifty-third production slice:
+
+- Made `UpdateInstallResult` an explicit update-service result instead of an alias over the platform installer result.
+- Mapped `installLatestPackage()` output through `updateInstallResultFromPlatform` before returning an update workflow install result.
+- Used neutral service fields (`output`, `errorOutput`, `code`) and mapped them back to CLI `stdout`, `stderr`, and `exitCode` in `src/cli/commands/update.ts`.
+- Guarded update service types against regressing to a platform install-result alias.
