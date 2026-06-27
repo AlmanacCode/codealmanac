@@ -1421,6 +1421,7 @@ describe("architecture boundaries", () => {
     const doctorRender = await readSource("src/cli/commands/doctor/render.ts");
     const doctorFormat = await readSource("src/cli/commands/doctor/format.ts");
     const doctorDiagnostics = await readSource("src/services/diagnostics/doctor.ts");
+    const installDiagnostics = await readSource("src/services/diagnostics/install.ts");
     const diagnosticsTypes = await readSource("src/services/diagnostics/types.ts");
     const diagnosticsIndex = await readSource("src/services/diagnostics/index.ts");
     const setupRegistration = await readSource(
@@ -1453,6 +1454,8 @@ describe("architecture boundaries", () => {
     expect(doctorFormat).toContain("makeAnsiTheme(options.color === true)");
     expect(doctorFormat).not.toContain("DoctorOptions");
     expect(diagnosticsTypes).not.toContain("stdout?:");
+    expect(diagnosticsTypes).toContain("claudeApiKeySet: boolean");
+    expect(installDiagnostics).not.toContain("process.env");
     expect(setupRegistration).toContain("shouldUseStdoutColor()");
     expect(setupRegistration).not.toContain("color: process.stdout.isTTY === true");
     expect(diagnosticsTypes).not.toContain("agent/readiness/providers/claude");

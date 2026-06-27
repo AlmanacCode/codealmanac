@@ -39,7 +39,7 @@ export async function gatherInstallChecks(
   });
 
   const auth = await safeCheckAuth(options.spawnCli);
-  checks.push(describeAuth(auth));
+  checks.push(describeAuth(auth, options));
 
   const home = homedir();
   const plistPath = options.automationPlistPath ?? defaultSyncPlistPath(home);
@@ -88,7 +88,10 @@ function describeInstallPath(
   };
 }
 
-function describeAuth(auth: DiagnosticsAuthStatus): Check {
+function describeAuth(
+  auth: DiagnosticsAuthStatus,
+  options: Pick<DoctorOptions, "claudeApiKeySet">,
+): Check {
   if (auth.loggedIn) {
     if (auth.authMethod === "apiKey") {
       return {
@@ -108,10 +111,7 @@ function describeAuth(auth: DiagnosticsAuthStatus): Check {
       message: `claude auth: ${who}${plan}`,
     };
   }
-  if (
-    process.env.ANTHROPIC_API_KEY !== undefined &&
-    process.env.ANTHROPIC_API_KEY.length > 0
-  ) {
+  if (options.claudeApiKeySet) {
     return {
       status: "ok",
       key: "install.auth",

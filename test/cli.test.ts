@@ -629,6 +629,8 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     expect(setupMock).not.toHaveBeenCalled();
     expect(doctorMock).toHaveBeenCalledWith({
       cwd: process.cwd(),
+      claudeApiKeySet: process.env.ANTHROPIC_API_KEY !== undefined &&
+        process.env.ANTHROPIC_API_KEY.length > 0,
       color: process.stdout.isTTY === true,
       installOnly: true,
       json: undefined,

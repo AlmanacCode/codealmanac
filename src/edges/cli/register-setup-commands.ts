@@ -81,6 +81,8 @@ export function registerSetupCommands(
           (await import("../../cli/commands/doctor/index.js")).runDoctor;
         const result = await runDoctor({
           cwd: process.cwd(),
+          claudeApiKeySet: process.env.ANTHROPIC_API_KEY !== undefined &&
+            process.env.ANTHROPIC_API_KEY.length > 0,
           json: opts.json,
           installOnly: opts.installOnly,
           wikiOnly: opts.wikiOnly,

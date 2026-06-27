@@ -8,7 +8,10 @@ import type {
   DoctorReport,
 } from "../src/services/diagnostics/index.js";
 import { formatReport } from "../src/cli/commands/doctor/format.js";
-import { runDoctor } from "../src/cli/commands/doctor/index.js";
+import {
+  runDoctor as runDoctorCommand,
+  type DoctorOptions,
+} from "../src/cli/commands/doctor/index.js";
 import {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
@@ -51,6 +54,17 @@ const LOGGED_IN_STDOUT = JSON.stringify({
 });
 const LOGGED_OUT_STDOUT = JSON.stringify({ loggedIn: false });
 const SQLITE_OK = { ok: true, summary: "native binding loads cleanly" };
+
+function runDoctor(
+  options: Omit<DoctorOptions, "claudeApiKeySet"> & {
+    claudeApiKeySet?: boolean;
+  },
+) {
+  return runDoctorCommand({
+    claudeApiKeySet: false,
+    ...options,
+  });
+}
 
 async function scaffoldHealthyInstall(home: string): Promise<{
   claudeDir: string;
@@ -253,6 +267,31 @@ describe("almanac doctor", () => {
       );
       expect(auth.status).toBe("problem");
       expect(automation.status).toBe("ok");
+    });
+  });
+
+  it("accepts ANTHROPIC_API_KEY presence from the caller", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyInstall(home);
+
+      const r = await runDoctor({
+        cwd: home,
+        claudeApiKeySet: true,
+        json: true,
+        automationPlistPath: env.plistPath,
+        claudeDir: env.claudeDir,
+        spawnCli: fakeSpawnCli(LOGGED_OUT_STDOUT),
+        sqliteProbe: SQLITE_OK,
+        installPath: "/fake",
+        versionOverride: "0.1.3",
+      });
+
+      const parsed = JSON.parse(r.stdout);
+      const auth = parsed.install.find(
+        (c: { key: string }) => c.key === "install.auth",
+      );
+      expect(auth.status).toBe("ok");
+      expect(auth.message).toBe("claude auth: ANTHROPIC_API_KEY set");
     });
   });
 });
