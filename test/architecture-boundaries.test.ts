@@ -173,6 +173,7 @@ describe("architecture boundaries", () => {
   it("keeps doctor wiki checks out of the CLI command package", async () => {
     const doctorIndex = await readSource("src/cli/commands/doctor/index.ts");
     const doctorTypes = await readSource("src/cli/commands/doctor/types.ts");
+    const doctorService = await readSource("src/services/wiki/doctor.ts");
 
     expect(doctorIndex).toContain("services/wiki/doctor.js");
     expect(doctorTypes).toContain("services/wiki/doctor.js");
@@ -180,6 +181,12 @@ describe("architecture boundaries", () => {
     expect(doctorTypes).not.toContain("wiki/health");
     expect(existsSync(join(ROOT, "src/cli/commands/doctor/wiki.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/cli/commands/doctor/duration.ts"))).toBe(false);
+
+    expect(doctorService).not.toContain("readdirSync");
+    expect(doctorService).not.toContain("statSync");
+    expect(doctorService).not.toContain("openIndex");
+    expect(doctorService).not.toContain("findEntry");
+    expect(doctorService).not.toContain("collectHealthReport");
   });
 
   it("keeps registry persistence in an explicit store", () => {
