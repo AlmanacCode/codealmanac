@@ -1,6 +1,3 @@
-import { existsSync, readdirSync } from "node:fs";
-import path from "node:path";
-
 import {
   blue,
   bold,
@@ -66,32 +63,4 @@ function existingWikiLine(theme: SetupTheme, existingPageCount: number): string 
     theme,
     `(${existingPageCount} page${plural})`,
   )}`;
-}
-
-/**
- * Count `.md` files in `.almanac/pages/` under the current working
- * directory or any parent. Returns 0 when no wiki is found or the pages
- * directory is empty.
- */
-export function countExistingPages(cwd: string): number {
-  try {
-    let dir = cwd;
-    for (let i = 0; i < 10; i++) {
-      const pagesDir = path.join(dir, ".almanac", "pages");
-      if (existsSync(pagesDir)) {
-        try {
-          const entries = readdirSync(pagesDir);
-          return entries.filter((e) => e.endsWith(".md")).length;
-        } catch {
-          return 0;
-        }
-      }
-      const parent = path.dirname(dir);
-      if (parent === dir) break;
-      dir = parent;
-    }
-  } catch {
-    // Swallow — never crash setup because of this.
-  }
-  return 0;
 }

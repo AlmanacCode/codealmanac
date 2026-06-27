@@ -3,6 +3,7 @@ export {
   CODEX_INSTRUCTIONS_START,
   hasCodexInstructions,
 } from "../../../services/setup/index.js";
+import { readSetupWikiState } from "../../../services/setup/index.js";
 import { chooseDefaultAgent } from "./agent-choice.js";
 import { runAutoCommitSetupStep } from "./auto-commit-step.js";
 import {
@@ -13,10 +14,7 @@ import { runAutomationSetupStep } from "./automation-step.js";
 export { IMPORT_LINE, hasImportLine } from "./guides.js";
 import { runGlobalInstallStep } from "./global-install-step.js";
 import { runGuidesSetupStep } from "./guides-step.js";
-import {
-  countExistingPages,
-  printNextSteps,
-} from "./next-steps.js";
+import { printNextSteps } from "./next-steps.js";
 import { isSetupInterrupted } from "./input.js";
 import {
   blue,
@@ -208,8 +206,8 @@ export async function runSetup(
   // codealmanac-known-bugs.md: Engineer B clones a repo that already has
   // `.almanac/pages/` (committed by Engineer A) and gets told to run
   // `almanac init`, which is wrong — the wiki already exists.
-  const existingPageCount = countExistingPages(process.cwd());
-  printNextSteps(out, theme, existingPageCount, nextStepsMode);
+  const wikiState = readSetupWikiState(process.cwd());
+  printNextSteps(out, theme, wikiState.existingPageCount, nextStepsMode);
 
   return { stdout: "", stderr: "", exitCode: 0 };
 }

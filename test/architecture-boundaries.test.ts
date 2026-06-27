@@ -925,6 +925,12 @@ describe("architecture boundaries", () => {
     const setupOutput = await readSource("src/cli/commands/setup/output.ts");
     const setupInput = await readSource("src/cli/commands/setup/input.ts");
     const setupIndex = await readSource("src/cli/commands/setup/index.ts");
+    const setupNextSteps = await readSource(
+      "src/cli/commands/setup/next-steps.ts",
+    );
+    const setupWikiState = await readSource(
+      "src/services/setup/wiki-state.ts",
+    );
     const setupTypes = await readSource("src/cli/commands/setup/types.ts");
     const setupRegistration = await readSource(
       "src/edges/cli/register-setup-commands.ts",
@@ -957,6 +963,12 @@ describe("architecture boundaries", () => {
     expect(setupIndex).not.toContain("interface SetupOptions");
     expect(setupIndex).not.toContain("interface SetupResult");
     expect(setupIndex).toContain("makeSetupTheme(options.color !== false)");
+    expect(setupIndex).toContain("readSetupWikiState");
+    expect(setupNextSteps).not.toContain("node:fs");
+    expect(setupNextSteps).not.toContain("existsSync");
+    expect(setupNextSteps).not.toContain("readdirSync");
+    expect(setupWikiState).toContain("existingPageCount");
+    expect(setupWikiState).toContain("readdirSync");
     expect(setupTypes).toContain("interface SetupOptions");
     expect(setupTypes).toContain("interface SetupResult");
     expect(setupTypes).toContain("color?: boolean");
