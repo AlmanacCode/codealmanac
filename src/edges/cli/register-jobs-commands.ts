@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { emit } from "../../cli/helpers.js";
+import { emit } from "./helpers.js";
 
 export function registerJobsCommands(program: Command): void {
   const jobs = program

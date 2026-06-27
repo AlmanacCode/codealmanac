@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { emit } from "../../cli/helpers.js";
+import { emit } from "./helpers.js";
 
 export function registerAutomationCommands(program: Command): void {
   const automation = program

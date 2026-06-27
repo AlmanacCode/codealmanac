@@ -4,7 +4,7 @@ import { basename } from "node:path";
 import { Command } from "commander";
 
 import { runSetup } from "../../cli/commands/setup/index.js";
-import { emit } from "../../cli/helpers.js";
+import { emit } from "./helpers.js";
 import { renderError } from "../../cli/outcome.js";
 import { configureGroupedHelp } from "./help.js";
 import {

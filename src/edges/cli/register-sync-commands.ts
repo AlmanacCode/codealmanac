@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { emit } from "../../cli/helpers.js";
+import { emit } from "./helpers.js";
 
 export function registerSyncCommands(program: Command): void {
   const sync = program

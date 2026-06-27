@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { emit } from "../../cli/helpers.js";
+import { emit } from "./helpers.js";
 
 export interface SetupCommandDeps {
   runSetup?: typeof import("../../cli/commands/setup/index.js").runSetup;

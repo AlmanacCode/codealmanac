@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { collectOption, emit } from "../../cli/helpers.js";
+import { collectOption, emit } from "./helpers.js";
 import { autoRegisterIfNeeded } from "../../services/wiki/autoregistration.js";
 
 export function registerTopicsCommands(program: Command): void {

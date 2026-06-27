@@ -1,27 +1,15 @@
-export interface CommandResult {
+export interface EmittableCommandResult {
   stdout: string;
-  stderr: string;
+  stderr?: string;
   exitCode: number;
 }
 
-export function emit(result: CommandResult): void {
-  if (result.stderr.length > 0) process.stderr.write(result.stderr);
+export function emit(result: EmittableCommandResult): void {
+  if (result.stderr !== undefined && result.stderr.length > 0) {
+    process.stderr.write(result.stderr);
+  }
   if (result.stdout.length > 0) process.stdout.write(result.stdout);
   if (result.exitCode !== 0) process.exitCode = result.exitCode;
-}
-
-export function withWarning(
-  result: CommandResult,
-  warning: string,
-): CommandResult {
-  return {
-    ...result,
-    stderr: `${warning}${result.stderr}`,
-  };
-}
-
-export function deprecationWarning(oldUsage: string, newUsage: string): string {
-  return `almanac: warning: \`${oldUsage}\` is deprecated; use \`${newUsage}\`.\n`;
 }
 
 export function collectOption(value: string, previous: string[]): string[] {

@@ -1,5 +1,6 @@
 import { Command } from "commander";
 
+import { emit } from "./helpers.js";
 import { autoRegisterIfNeeded } from "../../services/wiki/autoregistration.js";
 
 export function registerMaintenanceCommands(program: Command): void {
@@ -14,7 +15,6 @@ export function registerMaintenanceCommands(program: Command): void {
         cwd: process.cwd(),
         wiki: opts.wiki,
       });
-      process.stdout.write(result.stdout);
-      if (result.exitCode !== 0) process.exitCode = result.exitCode;
+      emit(result);
     });
 }

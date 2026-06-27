@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { emit, readStdin } from "../../cli/helpers.js";
+import { emit, readStdin } from "./helpers.js";
 import { autoRegisterIfNeeded } from "../../services/wiki/autoregistration.js";
 
 export function registerMigrateCommands(program: Command): void {

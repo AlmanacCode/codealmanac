@@ -6,7 +6,7 @@ import {
   emit,
   parsePositiveInt,
   readStdin,
-} from "../../cli/helpers.js";
+} from "./helpers.js";
 
 export type SearchOutputMode = "slugs" | "summaries" | "json";
 
@@ -207,10 +207,7 @@ export function registerQueryCommands(program: Command): void {
         }
         const { listWikis } = await import("../../cli/commands/list.js");
         const result = await listWikis(opts);
-        process.stdout.write(result.stdout);
-        if (result.exitCode !== 0) {
-          process.exitCode = result.exitCode;
-        }
+        emit(result);
       },
     );
 }

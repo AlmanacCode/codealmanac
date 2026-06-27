@@ -68,6 +68,34 @@ describe("architecture boundaries", () => {
     expect(registerConfig).toContain(".command(\"config\")");
   });
 
+  it("keeps ordinary command-result emission centralized in the CLI edge helper", async () => {
+    const edgeHelpers = await readSource("src/edges/cli/helpers.ts");
+    const outcome = await readSource("src/cli/outcome.ts");
+    const registerMaintenance = await readSource(
+      "src/edges/cli/register-maintenance-commands.ts",
+    );
+    const registerQuery = await readSource(
+      "src/edges/cli/register-query-commands.ts",
+    );
+
+    expect(edgeHelpers).toContain("export function emit");
+    expect(edgeHelpers).toContain("process.stdout.write");
+    expect(edgeHelpers).toContain("process.stderr.write");
+    expect(outcome).toContain("export interface CommandResult");
+    expect(existsSync(join(ROOT, "src/cli/helpers.ts"))).toBe(false);
+
+    expect(registerMaintenance).toContain("import { emit } from \"./helpers.js\"");
+    expect(registerMaintenance).toContain("emit(result)");
+    expect(registerMaintenance).not.toContain("process.stdout.write");
+    expect(registerMaintenance).not.toContain("process.exitCode");
+
+    expect(registerQuery).toContain("from \"./helpers.js\"");
+    expect(registerQuery).toContain("const result = await listWikis(opts)");
+    expect(registerQuery).toContain("emit(result)");
+    expect(registerQuery).not.toContain("process.stdout.write(result.stdout)");
+    expect(registerQuery).not.toContain("process.exitCode = result.exitCode");
+  });
+
   it("keeps lifecycle command rendering out of workflow adapters", async () => {
     const operationsCommand = await readSource("src/cli/commands/operations.ts");
     const operationsRender = await readSource(

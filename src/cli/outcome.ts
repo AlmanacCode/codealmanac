@@ -1,5 +1,10 @@
-import type { CommandResult } from "./helpers.js";
 import { UserFacingError } from "../errors.js";
+
+export interface CommandResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
 
 export type CommandOutcome =
   | {

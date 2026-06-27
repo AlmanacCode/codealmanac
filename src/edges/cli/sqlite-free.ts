@@ -1,5 +1,5 @@
 import { runCodealmanacBootstrap } from "../../platform/install/global.js";
-import { emit } from "../../cli/helpers.js";
+import { emit } from "./helpers.js";
 
 export interface SetupShortcutOptions {
   yes?: boolean;
