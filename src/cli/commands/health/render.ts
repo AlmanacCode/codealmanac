@@ -1,4 +1,4 @@
-import { BLUE, BOLD, DIM, GREEN, RED, RST } from "../../../ansi.js";
+import { makeAnsiTheme, type AnsiTheme } from "../../../ansi-theme.js";
 import type { WikiHealthReport } from "../../../services/wiki/health.js";
 
 export interface HealthCommandOutput {
@@ -9,25 +9,32 @@ export interface HealthCommandOutput {
 
 export function renderHealthReport(
   report: WikiHealthReport,
-  options: { json?: boolean } = {},
+  options: { json?: boolean; color?: boolean } = {},
 ): HealthCommandOutput {
   return {
     stdout: options.json === true
       ? `${JSON.stringify(report, null, 2)}\n`
-      : formatReport(report),
+      : formatReport(report, makeAnsiTheme(options.color === true)),
     stderr: migrationWarning(report),
     exitCode: 0,
   };
 }
 
-function formatReport(report: WikiHealthReport): string {
+function formatReport(report: WikiHealthReport, theme: AnsiTheme): string {
+  const { BLUE, DIM, RST } = theme;
+  const formatSection = (
+    label: string,
+    count: number,
+    lines: string[],
+  ) => section(label, count, lines, theme);
+
   const sections = [
-    section(
+    formatSection(
       "orphans",
       report.orphans.length,
       report.orphans.map((orphan) => `  ${BLUE}${orphan.slug}${RST}`),
     ),
-    section(
+    formatSection(
       "stale",
       report.stale.length,
       report.stale.map(
@@ -35,7 +42,7 @@ function formatReport(report: WikiHealthReport): string {
           `  ${BLUE}${stale.slug}${RST}     ${DIM}(${stale.days_since_update} days)${RST}`,
       ),
     ),
-    section(
+    formatSection(
       "dead-refs",
       report.dead_refs.length,
       report.dead_refs.map(
@@ -43,7 +50,7 @@ function formatReport(report: WikiHealthReport): string {
           `  ${BLUE}${deadRef.slug}${RST}  references ${deadRef.path} ${DIM}(missing)${RST}`,
       ),
     ),
-    section(
+    formatSection(
       "broken-links",
       report.broken_links.length,
       report.broken_links.map(
@@ -51,7 +58,7 @@ function formatReport(report: WikiHealthReport): string {
           `  ${BLUE}${brokenLink.source_slug}${RST} \u2192 ${brokenLink.target_slug} ${DIM}(target does not exist)${RST}`,
       ),
     ),
-    section(
+    formatSection(
       "broken-xwiki",
       report.broken_xwiki.length,
       report.broken_xwiki.map(
@@ -59,7 +66,7 @@ function formatReport(report: WikiHealthReport): string {
           `  ${BLUE}${brokenRef.source_slug}${RST} \u2192 ${brokenRef.target_wiki}:${brokenRef.target_slug} ${DIM}(wiki unregistered or unreachable)${RST}`,
       ),
     ),
-    section(
+    formatSection(
       "missing-sources",
       report.missing_sources.length,
       report.missing_sources.map(
@@ -67,7 +74,7 @@ function formatReport(report: WikiHealthReport): string {
           `  ${BLUE}${source.slug}${RST} cites ${source.source_id} ${DIM}(missing source)${RST}`,
       ),
     ),
-    section(
+    formatSection(
       "unused-sources",
       report.unused_sources.length,
       report.unused_sources.map(
@@ -75,14 +82,14 @@ function formatReport(report: WikiHealthReport): string {
           `  ${BLUE}${source.slug}${RST} lists ${source.source_id} ${DIM}(not cited)${RST}`,
       ),
     ),
-    section(
+    formatSection(
       "legacy-frontmatter",
       report.legacy_frontmatter.length,
       report.legacy_frontmatter.map(
         (source) => `  ${BLUE}${source.slug}${RST} uses ${source.fields.join(", ")}`,
       ),
     ),
-    section(
+    formatSection(
       "unfixable-sources",
       report.unfixable_sources.length,
       report.unfixable_sources.map(
@@ -90,24 +97,24 @@ function formatReport(report: WikiHealthReport): string {
           `  ${BLUE}${source.slug}${RST} has ambiguous legacy source ${source.source}`,
       ),
     ),
-    section(
+    formatSection(
       "duplicate-sources",
       report.duplicate_sources.length,
       report.duplicate_sources.map(
         (source) => `  ${BLUE}${source.slug}${RST} repeats ${source.source_id}`,
       ),
     ),
-    section(
+    formatSection(
       "empty-topics",
       report.empty_topics.length,
       report.empty_topics.map((topic) => `  ${BLUE}${topic.slug}${RST}`),
     ),
-    section(
+    formatSection(
       "empty-pages",
       report.empty_pages.length,
       report.empty_pages.map((page) => `  ${BLUE}${page.slug}${RST}`),
     ),
-    section(
+    formatSection(
       "slug-collisions",
       report.slug_collisions.length,
       report.slug_collisions.map(
@@ -119,7 +126,14 @@ function formatReport(report: WikiHealthReport): string {
   return `${sections.join("\n\n")}\n`;
 }
 
-function section(label: string, count: number, lines: string[]): string {
+function section(
+  label: string,
+  count: number,
+  lines: string[],
+  theme: AnsiTheme,
+): string {
+  const { BOLD, GREEN, RED, RST } = theme;
+
   if (count === 0) return `${BOLD}${label}${RST} ${GREEN}(0): (ok)${RST}`;
   return `${BOLD}${label}${RST} ${RED}(${count})${RST}:\n${lines.join("\n")}`;
 }

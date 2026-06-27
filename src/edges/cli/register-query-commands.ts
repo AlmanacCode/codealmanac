@@ -188,6 +188,7 @@ export function registerQueryCommands(program: Command): void {
           stdinInput: opts.stdin === true ? await readStdin() : undefined,
           json: opts.json,
           wiki: opts.wiki,
+          color: shouldUseStdoutColor(),
         });
         emit(result);
       },

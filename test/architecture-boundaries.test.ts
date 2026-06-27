@@ -187,7 +187,11 @@ describe("architecture boundaries", () => {
     expect(healthCommand).not.toContain("resolveWikiRoot");
     expect(healthCommand).not.toContain("JSON.stringify");
     expect(healthCommand).not.toContain("BLUE");
+    expect(healthCommand).toContain("color?: boolean");
     expect(healthCommand).not.toContain("legacy source frontmatter");
+    expect(healthRender).toContain("../../../ansi-theme.js");
+    expect(healthRender).not.toContain("../../../ansi.js");
+    expect(healthRender).toContain("makeAnsiTheme(options.color === true)");
     expect(healthRender).toContain("renderHealthReport");
     expect(healthRender).toContain("migrationWarning");
     expect(healthService).not.toContain("WikiHealthReport = HealthReport");

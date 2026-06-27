@@ -253,6 +253,22 @@ describe("almanac health", () => {
     });
   });
 
+  it("pretty output stays plain by default and colors only when requested", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "r");
+      await scaffoldWiki(repo);
+      await writePage(repo, "a", "---\ntopics: [x]\n---\n\nbody.\n");
+      await runIndexer({ repoRoot: repo });
+
+      const plain = await runHealth({ cwd: repo });
+      const colored = await runHealth({ cwd: repo, color: true });
+
+      expect(plain.stdout).toContain("orphans");
+      expect(plain.stdout).not.toContain("\x1b[");
+      expect(colored.stdout).toContain("\x1b[");
+    });
+  });
+
   it("reports source citation and legacy frontmatter problems", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");

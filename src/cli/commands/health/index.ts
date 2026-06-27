@@ -16,6 +16,7 @@ export interface HealthOptions {
   stdin?: boolean;
   stdinInput?: string;
   json?: boolean;
+  color?: boolean;
 }
 
 export async function runHealth(
@@ -33,7 +34,10 @@ export async function runHealth(
     stdinSlugs: slugs,
   });
 
-  return renderHealthReport(report, { json: options.json });
+  return renderHealthReport(report, {
+    json: options.json,
+    color: options.color,
+  });
 }
 
 function stdinSlugs(options: HealthOptions): string[] | undefined {
