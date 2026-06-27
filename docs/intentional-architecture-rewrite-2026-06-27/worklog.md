@@ -791,3 +791,9 @@ One-hundred-nineteenth production slice:
 - Split health command rendering into `src/cli/commands/health/render.ts`.
 - Moved health JSON output, text report sections, colorized category rows, and legacy-source migration warnings out of `src/cli/commands/health/index.ts`.
 - Kept `src/cli/commands/health/index.ts` focused on stale-duration parsing, stdin slug parsing, and invoking the wiki health service.
+
+One-hundred-twentieth production slice:
+
+- Split show command result rendering into `src/cli/commands/show/render.ts`.
+- Moved missing-input output, missing-page stderr, exit-code selection, and delegation to show record formatting out of `src/cli/commands/show/index.ts`.
+- Kept `src/cli/commands/show/index.ts` focused on slug collection, wiki page service reads, and service-record normalization into the command record contract.

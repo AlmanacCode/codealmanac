@@ -116,13 +116,23 @@ describe("architecture boundaries", () => {
 
   it("keeps show command adapters out of index storage mechanics", async () => {
     const showCommand = await readSource("src/cli/commands/show/index.ts");
+    const showRender = await readSource("src/cli/commands/show/render.ts");
     const showTypes = await readSource("src/cli/commands/show/types.ts");
     const pageViewService = await readSource("src/services/wiki/page-view.ts");
 
+    expect(existsSync(join(ROOT, "src/cli/commands/show/render.ts"))).toBe(
+      true,
+    );
     expect(showCommand).toContain("services/wiki/page-view.js");
+    expect(showCommand).toContain("./render.js");
     expect(showCommand).not.toContain("wiki/indexer");
     expect(showCommand).not.toContain("openIndex");
     expect(showCommand).not.toContain("resolveWikiRoot");
+    expect(showCommand).not.toContain("show requires a slug");
+    expect(showCommand).not.toContain("no such page");
+    expect(showCommand).not.toContain("formatShowRecords");
+    expect(showRender).toContain("renderShowResult");
+    expect(showRender).toContain("formatShowRecords");
     expect(showTypes).not.toContain("WikiPageView");
     expect(showTypes).not.toContain("ShowRecord =");
     expect(pageViewService).not.toContain("export type WikiPageView = query");
