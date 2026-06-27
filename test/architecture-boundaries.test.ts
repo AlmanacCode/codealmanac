@@ -284,6 +284,8 @@ describe("architecture boundaries", () => {
     const jobsServiceTypes = await readSource("src/services/jobs/types.ts");
     const jobsCommand = await readSource("src/cli/commands/jobs.ts");
 
+    expect(existsSync(join(ROOT, "src/cli/commands/jobs-format.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/cli/commands/jobs-render.ts"))).toBe(true);
     expect(jobsServiceIndex).not.toContain("../../jobs");
     expect(jobsServiceTypes).not.toContain("RuntimeJobView");
     expect(jobsServiceTypes).not.toContain("JobView as");
@@ -307,6 +309,9 @@ describe("architecture boundaries", () => {
     expect(jobsCommand).not.toContain("resolveJobLogPath");
     expect(jobsCommand).not.toContain("finishJobRecord");
     expect(jobsCommand).not.toContain("process.kill");
+    expect(jobsCommand).not.toContain("function formatPageChanges");
+    expect(jobsCommand).not.toContain("function formatMs");
+    expect(jobsCommand).not.toContain("function missingWiki");
   });
 
   it("keeps job record persistence in an explicit store", () => {

@@ -532,3 +532,9 @@ Seventy-sixth production slice:
 - Made setup configured-model state explicit in `src/services/setup/agent-choice.ts`.
 - Replaced the `Partial<Record<SetupAgentProviderId, string | null>>` alias with a service-owned `{ claude, codex, cursor }` contract.
 - Normalized config model overrides once in `setupConfiguredModelsFromConfig` before setup UI reads them.
+
+Seventy-seventh production slice:
+
+- Split jobs command formatting and shared rendering out of `src/cli/commands/jobs.ts`.
+- Added `src/cli/commands/jobs-format.ts` for job tables, detail views, elapsed-time labels, page-change summaries, and attach terminal summaries.
+- Added `src/cli/commands/jobs-render.ts` for missing-wiki, missing-job, log-read, and cancel-result rendering.
