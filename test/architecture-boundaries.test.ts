@@ -318,6 +318,17 @@ describe("architecture boundaries", () => {
     expect(claudeProvider).not.toContain("function mapClaudeUsage");
   });
 
+  it("keeps Codex app-server policy out of the JSON-RPC run loop", async () => {
+    const appServer = await readSource("src/harness/providers/codex/app-server.ts");
+
+    expect(existsSync(join(ROOT, "src/harness/providers/codex/app-server-config.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/harness/providers/codex/server-requests.ts"))).toBe(true);
+    expect(appServer).not.toContain("CODEALMANAC_CODEX_APP_SERVER");
+    expect(appServer).not.toContain("function parsePositiveEnvInt");
+    expect(appServer).not.toContain("case \"item/commandExecution/requestApproval\"");
+    expect(appServer).not.toContain("case \"account/chatgptAuthTokens/refresh\"");
+  });
+
   it("keeps migrate legacy-sources adapter out of source migration mechanics", async () => {
     const migrateCommand = await readSource("src/cli/commands/migrate.ts");
 

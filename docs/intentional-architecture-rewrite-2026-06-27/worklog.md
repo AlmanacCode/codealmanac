@@ -187,3 +187,10 @@ Twenty-first production slice:
 - Kept `src/harness/providers/claude.ts` as the stable provider construction and run-loop entrypoint.
 - Moved SDK option construction, managed Claude process spawning, tool/subagent mapping, event normalization, failure classification, usage parsing, and shared Claude trace types into named files.
 - Added an architecture guard so the Claude provider shell does not re-absorb option construction, event translation, failure parsing, usage parsing, or process spawning.
+
+Twenty-second production slice:
+
+- Split Codex app-server environment/sandbox policy into `src/harness/providers/codex/app-server-config.ts`.
+- Split noninteractive server-request response policy into `src/harness/providers/codex/server-requests.ts`.
+- Kept `src/harness/providers/codex/app-server.ts` focused on process ownership, JSON-RPC request/response tracking, notification routing, turn completion, and cleanup.
+- Added an architecture guard so the JSON-RPC run loop does not re-absorb env parsing or the server-request response table.

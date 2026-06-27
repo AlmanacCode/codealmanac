@@ -8,12 +8,20 @@ import {
   combineCodexPrompt,
 } from "./request.js";
 import { mapCodexAppServerNotification } from "./app-notifications.js";
+import {
+  codexAppServerRpcTimeoutMs,
+  codexAppServerSandboxMode,
+  codexAppServerSandboxPolicy,
+  codexAppServerTurnTimeoutMs,
+  type CodexAppServerSandboxMode,
+} from "./app-server-config.js";
 import { classifyCodexFailure } from "./failures.js";
 import {
   asRecord,
   stringField,
 } from "./fields.js";
 import { toHarnessResult } from "./result.js";
+import { respondToCodexServerRequest } from "./server-requests.js";
 import type { CodexRunState } from "./types.js";
 
 interface JsonRpcResponse {
@@ -35,26 +43,6 @@ interface PendingRequest {
   resolve: (value: unknown) => void;
   reject: (err: Error) => void;
 }
-
-const CODEX_APP_SERVER_RPC_TIMEOUT_MS = 30_000;
-const CODEX_APP_SERVER_RPC_TIMEOUT_ENV =
-  "CODEALMANAC_CODEX_APP_SERVER_RPC_TIMEOUT_MS";
-const CODEX_APP_SERVER_TURN_TIMEOUT_MS = 30 * 60_000;
-const CODEX_APP_SERVER_TURN_TIMEOUT_ENV =
-  "CODEALMANAC_CODEX_APP_SERVER_TURN_TIMEOUT_MS";
-const CODEX_APP_SERVER_SANDBOX_MODE_ENV =
-  "CODEALMANAC_CODEX_APP_SERVER_SANDBOX_MODE";
-
-type CodexAppServerSandboxMode = "workspace-write" | "danger-full-access";
-type CodexAppServerSandboxPolicy =
-  | { type: "dangerFullAccess" }
-  | {
-      type: "workspaceWrite";
-      writableRoots: string[];
-      networkAccess: boolean;
-      excludeTmpdirEnvVar: boolean;
-      excludeSlashTmp: boolean;
-    };
 
 export async function runCodexAppServer(
   spec: OperationSpec,
@@ -258,12 +246,10 @@ export async function runCodexAppServer(
       if (message === null || typeof message !== "object") return;
       const record = message as Record<string, unknown>;
       if ("id" in record && "method" in record) {
-        respondToServerRequest(
+        respondToCodexServerRequest(
           record.id as string | number,
           String(record.method),
-          respond,
-          respondError,
-          respondUnsupported,
+          { respond, respondError, respondUnsupported },
         );
         return;
       }
@@ -376,41 +362,6 @@ export async function runCodexAppServer(
   });
 }
 
-function requiresNetworkAccess(spec: OperationSpec): boolean {
-  return spec.networkAccess === true;
-}
-
-function codexAppServerSandboxPolicy(
-  spec: OperationSpec,
-  mode: CodexAppServerSandboxMode,
-): CodexAppServerSandboxPolicy {
-  if (mode === "danger-full-access") {
-    return { type: "dangerFullAccess" };
-  }
-  return {
-    type: "workspaceWrite",
-    writableRoots: [spec.cwd],
-    networkAccess: requiresNetworkAccess(spec),
-    excludeTmpdirEnvVar: false,
-    excludeSlashTmp: false,
-  };
-}
-
-function codexAppServerSandboxMode(
-  env: NodeJS.ProcessEnv,
-): CodexAppServerSandboxMode {
-  const mode = env[CODEX_APP_SERVER_SANDBOX_MODE_ENV];
-  if (mode === undefined || mode === "" || mode === "workspace-write") {
-    return "workspace-write";
-  }
-  if (mode === "danger-full-access") {
-    return "danger-full-access";
-  }
-  throw new Error(
-    `${CODEX_APP_SERVER_SANDBOX_MODE_ENV} must be workspace-write or danger-full-access`,
-  );
-}
-
 function installSignalHandlers(onSignal: (signal: NodeJS.Signals) => void): () => void {
   const signals: NodeJS.Signals[] = ["SIGINT", "SIGTERM", "SIGHUP"];
   const handlers = signals.map((signal) => {
@@ -464,71 +415,4 @@ function isRootThreadNotification(
     state.rootThreadId !== undefined &&
     completedThreadId === state.rootThreadId
   );
-}
-
-function respondToServerRequest(
-  id: string | number,
-  method: string,
-  respond: (id: string | number, result: unknown) => void,
-  respondError: (id: string | number, code: number, message: string) => void,
-  respondUnsupported: (id: string | number, method: string) => void,
-): void {
-  switch (method) {
-    case "item/commandExecution/requestApproval":
-      respond(id, { decision: "decline" });
-      return;
-    case "item/fileChange/requestApproval":
-      respond(id, { decision: "decline" });
-      return;
-    case "execCommandApproval":
-    case "applyPatchApproval":
-      respond(id, { decision: "denied" });
-      return;
-    case "item/tool/requestUserInput":
-      respond(id, { answers: {} });
-      return;
-    case "mcpServer/elicitation/request":
-      respond(id, { action: "decline", content: null, _meta: null });
-      return;
-    case "item/tool/call":
-      respond(id, { contentItems: [], success: false });
-      return;
-    case "item/permissions/requestApproval":
-      respond(id, {
-        permissions: {},
-        scope: "turn",
-        strictAutoReview: true,
-      });
-      return;
-    case "account/chatgptAuthTokens/refresh":
-      respondError(
-        id,
-        -32001,
-        "Almanac does not manage ChatGPT auth tokens for Codex app-server.",
-      );
-      return;
-    default:
-      respondUnsupported(id, method);
-  }
-}
-
-function codexAppServerRpcTimeoutMs(env: NodeJS.ProcessEnv): number {
-  return parsePositiveEnvInt(
-    env[CODEX_APP_SERVER_RPC_TIMEOUT_ENV],
-    CODEX_APP_SERVER_RPC_TIMEOUT_MS,
-  );
-}
-
-function codexAppServerTurnTimeoutMs(env: NodeJS.ProcessEnv): number {
-  return parsePositiveEnvInt(
-    env[CODEX_APP_SERVER_TURN_TIMEOUT_ENV],
-    CODEX_APP_SERVER_TURN_TIMEOUT_MS,
-  );
-}
-
-function parsePositiveEnvInt(value: string | undefined, fallback: number): number {
-  if (value === undefined) return fallback;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-  return parsed;
 }
