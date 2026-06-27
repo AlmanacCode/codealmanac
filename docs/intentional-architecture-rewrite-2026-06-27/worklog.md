@@ -396,3 +396,10 @@ Fifty-fourth production slice:
 - Made `SyncCommandResult` an explicit sync command output contract instead of importing the generic `CommandResult`.
 - Added `toSyncWorkflowOptions` at the sync command/service boundary.
 - Guarded the sync command against regressing to service option inheritance or generic command output aliases.
+
+Fifty-fifth production slice:
+
+- Made init, absorb, and garden command option shapes explicit instead of extending lifecycle workflow service options.
+- Made lifecycle operation commands return an explicit `OperationCommandResult` instead of the generic `CommandResult` alias.
+- Added command-local mappers from init, absorb, and garden options into their lifecycle workflow service options.
+- Guarded lifecycle command adapters against regressing to service option inheritance or generic command output aliases.

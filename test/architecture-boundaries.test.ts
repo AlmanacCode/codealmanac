@@ -442,6 +442,13 @@ describe("architecture boundaries", () => {
 
     expect(lifecycleServiceIndex).not.toContain("../../operations");
     expect(operationsCommand).toContain("services/lifecycle/index.js");
+    expect(operationsCommand).not.toContain("import type { CommandResult }");
+    expect(operationsCommand).not.toContain("extends InitOperationWorkflowOptions");
+    expect(operationsCommand).not.toContain("extends AbsorbOperationWorkflowOptions");
+    expect(operationsCommand).not.toContain("extends GardenOperationWorkflowOptions");
+    expect(operationsCommand).toContain("toInitOperationWorkflowOptions");
+    expect(operationsCommand).toContain("toAbsorbOperationWorkflowOptions");
+    expect(operationsCommand).toContain("toGardenOperationWorkflowOptions");
     expect(operationsCommand).not.toContain("../../operations/index");
     expect(operationsCommand).not.toContain("../../absorb");
     expect(operationsCommand).not.toContain("resolveProvider");

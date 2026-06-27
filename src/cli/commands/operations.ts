@@ -1,4 +1,3 @@
-import type { CommandResult } from "../helpers.js";
 import { renderError, renderOutcome } from "../outcome.js";
 import {
   runAbsorbOperationWorkflow,
@@ -11,36 +10,62 @@ import {
   type LifecycleOperationRunResult,
 } from "../../services/lifecycle/index.js";
 
-export interface InitCommandOptions extends InitOperationWorkflowOptions {
+export interface InitCommandOptions {
   cwd: string;
   json?: boolean;
+  using?: string;
+  background?: boolean;
+  force?: boolean;
+  yes?: boolean;
+  onEvent?: InitOperationWorkflowOptions["onEvent"];
+  startForeground?: InitOperationWorkflowOptions["startForeground"];
+  startBackground?: InitOperationWorkflowOptions["startBackground"];
 }
 
-export interface AbsorbCommandOptions extends AbsorbOperationWorkflowOptions {
+export interface AbsorbCommandOptions {
   cwd: string;
   inputs: string[];
   json?: boolean;
+  using?: string;
+  foreground?: boolean;
+  yes?: boolean;
+  onEvent?: AbsorbOperationWorkflowOptions["onEvent"];
+  startForeground?: AbsorbOperationWorkflowOptions["startForeground"];
+  startBackground?: AbsorbOperationWorkflowOptions["startBackground"];
+  resolveSource?: AbsorbOperationWorkflowOptions["resolveSource"];
 }
 
-export interface GardenCommandOptions extends GardenOperationWorkflowOptions {
+export interface GardenCommandOptions {
   cwd: string;
   json?: boolean;
+  using?: string;
+  foreground?: boolean;
+  yes?: boolean;
+  onEvent?: GardenOperationWorkflowOptions["onEvent"];
+  startForeground?: GardenOperationWorkflowOptions["startForeground"];
+  startBackground?: GardenOperationWorkflowOptions["startBackground"];
+}
+
+export interface OperationCommandResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
 }
 
 export async function runInitCommand(
   options: InitCommandOptions,
-): Promise<CommandResult> {
+): Promise<OperationCommandResult> {
   return renderWorkflowResult(
-    await runInitOperationWorkflow(options),
+    await runInitOperationWorkflow(toInitOperationWorkflowOptions(options)),
     options.json,
   );
 }
 
 export async function runAbsorbCommand(
   options: AbsorbCommandOptions,
-): Promise<CommandResult> {
+): Promise<OperationCommandResult> {
   return renderWorkflowResult(
-    await runAbsorbOperationWorkflow(options),
+    await runAbsorbOperationWorkflow(toAbsorbOperationWorkflowOptions(options)),
     options.json,
   );
 }
@@ -49,9 +74,9 @@ export const runIngestCommand = runAbsorbCommand;
 
 export async function runGardenCommand(
   options: GardenCommandOptions,
-): Promise<CommandResult> {
+): Promise<OperationCommandResult> {
   return renderWorkflowResult(
-    await runGardenOperationWorkflow(options),
+    await runGardenOperationWorkflow(toGardenOperationWorkflowOptions(options)),
     options.json,
   );
 }
@@ -60,7 +85,7 @@ function renderOperationResult(
   operation: string,
   result: LifecycleOperationRunResult,
   json: boolean | undefined,
-): CommandResult {
+): OperationCommandResult {
   const record = result.background?.record ?? result.foreground?.record;
   const status = record?.status;
   const foregroundResult = result.foreground?.result;
@@ -135,11 +160,11 @@ function renderOperationFailureMessage(args: {
 function renderOperationError(
   err: unknown,
   json: boolean | undefined,
-): CommandResult {
+): OperationCommandResult {
   return renderError(err, { json });
 }
 
-function jsonForegroundError(json: boolean | undefined): CommandResult {
+function jsonForegroundError(json: boolean | undefined): OperationCommandResult {
   return renderOutcome({
     type: "error",
     message: "--json is only supported for background job start responses",
@@ -149,7 +174,7 @@ function jsonForegroundError(json: boolean | undefined): CommandResult {
 function renderWorkflowResult(
   result: LifecycleOperationWorkflowResult,
   json: boolean | undefined,
-): CommandResult {
+): OperationCommandResult {
   switch (result.status) {
     case "completed":
       return renderOperationResult(result.operation, result.result, json);
@@ -158,4 +183,52 @@ function renderWorkflowResult(
     case "failed":
       return renderOperationError(result.error, json);
   }
+}
+
+function toInitOperationWorkflowOptions(
+  options: InitCommandOptions,
+): InitOperationWorkflowOptions {
+  return {
+    cwd: options.cwd,
+    using: options.using,
+    background: options.background,
+    json: options.json,
+    force: options.force,
+    yes: options.yes,
+    onEvent: options.onEvent,
+    startForeground: options.startForeground,
+    startBackground: options.startBackground,
+  };
+}
+
+function toAbsorbOperationWorkflowOptions(
+  options: AbsorbCommandOptions,
+): AbsorbOperationWorkflowOptions {
+  return {
+    cwd: options.cwd,
+    inputs: options.inputs,
+    using: options.using,
+    foreground: options.foreground,
+    json: options.json,
+    yes: options.yes,
+    onEvent: options.onEvent,
+    startForeground: options.startForeground,
+    startBackground: options.startBackground,
+    resolveSource: options.resolveSource,
+  };
+}
+
+function toGardenOperationWorkflowOptions(
+  options: GardenCommandOptions,
+): GardenOperationWorkflowOptions {
+  return {
+    cwd: options.cwd,
+    using: options.using,
+    foreground: options.foreground,
+    json: options.json,
+    yes: options.yes,
+    onEvent: options.onEvent,
+    startForeground: options.startForeground,
+    startBackground: options.startBackground,
+  };
 }
