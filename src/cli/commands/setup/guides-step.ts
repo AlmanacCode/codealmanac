@@ -50,7 +50,7 @@ export async function runGuidesSetupStep(args: {
       cursorDir: args.options.cursorDir,
       windsurfDir: args.options.windsurfDir,
       opencodeDir: args.options.opencodeDir,
-      guidesDir: args.options.guidesDir,
+      guidesDir: requireSetupGuidesDir(args.options.guidesDir),
     });
     const guidesSummary = summary.anyChanges
       ? "Agent instructions added"
@@ -66,4 +66,9 @@ export async function runGuidesSetupStep(args: {
   }
   writeSetupDivider(args.out, args.theme);
   return { ok: true };
+}
+
+function requireSetupGuidesDir(guidesDir: string | undefined): string {
+  if (guidesDir !== undefined) return guidesDir;
+  throw new Error("bundled guides directory was not provided");
 }

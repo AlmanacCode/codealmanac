@@ -13,7 +13,6 @@ export {
   hasCodexInstructions,
   hasSetupImportLine,
   installSetupInstructions,
-  resolveSetupGuidesDir,
 } from "./instructions.js";
 export type {
   InstallSetupInstructionsOptions,

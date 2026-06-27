@@ -1008,3 +1008,10 @@ One-hundred-fifty-first production slice:
 - Added a typed `installStatus` fact to the doctor diagnostics contract so services describe install path, version, and SQLite-binding facts instead of probing the machine directly.
 - Removed the old doctor `installPath`, `versionOverride`, and `sqliteProbe` compatibility knobs in favor of one install-status contract.
 - Added boundary guards so doctor services cannot re-own install-path detection, package-version reads, or native SQLite probing.
+
+One-hundred-fifty-second production slice:
+
+- Moved bundled setup guide directory discovery from `src/services/setup/instructions.ts` to `src/platform/install/guides.ts`.
+- Made setup instruction installation consume an explicit `guidesDir` instead of resolving package layout inside the setup service.
+- Threaded the bundled guide directory from `src/edges/cli/register-setup-commands.ts`, while keeping `--skip-guides` lazy so skipped work does not inspect package files.
+- Added boundary guards so setup instruction services cannot re-own `createRequire`, `fileURLToPath`, or guide-file existence probing.

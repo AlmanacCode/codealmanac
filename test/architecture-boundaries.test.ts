@@ -1161,11 +1161,16 @@ describe("architecture boundaries", () => {
     const setupInstructions = await readSource("src/services/setup/instructions.ts");
     const guidesStep = await readSource("src/cli/commands/setup/guides-step.ts");
     const guides = await readSource("src/cli/commands/setup/guides.ts");
+    const platformGuides = await readSource("src/platform/install/guides.ts");
+    const setupRegistration = await readSource(
+      "src/edges/cli/register-setup-commands.ts",
+    );
     const targetChoice = await readSource(
       "src/cli/commands/setup/instruction-target-choice.ts",
     );
 
     expect(existsSync(join(ROOT, "src/services/setup/instructions.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/platform/install/guides.ts"))).toBe(true);
     expect(setupInstructions).not.toContain(
       "SetupInstructionTargetId = InstructionTargetId",
     );
@@ -1178,9 +1183,19 @@ describe("architecture boundaries", () => {
     expect(setupInstructions).not.toContain("homedir");
     expect(setupInstructions).not.toContain("homeDir?: string");
     expect(setupInstructions).toContain("homeDir: string");
+    expect(setupInstructions).toContain("guidesDir: string");
+    expect(setupInstructions).not.toContain("resolveSetupGuidesDir");
+    expect(setupInstructions).not.toContain("createRequire");
+    expect(setupInstructions).not.toContain("fileURLToPath");
+    expect(setupInstructions).not.toContain("existsSync");
     expect(setupInstructions).toContain(
       "setupInstructionTargetFromAgentTarget",
     );
+    expect(platformGuides).toContain("resolveBundledGuidesDir");
+    expect(platformGuides).toContain("createRequire");
+    expect(platformGuides).toContain("fileURLToPath");
+    expect(platformGuides).toContain("existsSync");
+    expect(setupRegistration).toContain("resolveBundledGuidesDir()");
     expect(setupIndex).not.toContain("../../../agent");
     for (const source of [setupIndex, guidesStep, guides, targetChoice]) {
       expect(source).toContain("services/setup/index.js");

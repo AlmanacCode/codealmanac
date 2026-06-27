@@ -11,6 +11,7 @@ import {
   probeDiagnosticInstructionEntries,
 } from "../../platform/diagnostics/instructions.js";
 import { probeDiagnosticUpdates } from "../../platform/diagnostics/updates.js";
+import { resolveBundledGuidesDir } from "../../platform/install/guides.js";
 
 export interface SetupCommandDeps {
   runSetup?: typeof import("../../cli/commands/setup/index.js").runSetup;
@@ -76,6 +77,9 @@ export function registerSetupCommands(
           stdin: process.stdin,
           stdout: process.stdout,
           color: shouldUseStdoutColor(),
+          guidesDir: opts.skipGuides === true
+            ? undefined
+            : resolveBundledGuidesDir(),
         });
         emit(result);
       },
