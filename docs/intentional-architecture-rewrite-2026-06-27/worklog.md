@@ -695,3 +695,9 @@ One-hundred-third production slice:
 - Split lifecycle command rendering into `src/cli/commands/operations-render.ts`.
 - Moved operation result rendering, JSON foreground rejection output, and foreground failure message formatting out of `src/cli/commands/operations.ts`.
 - Kept `src/cli/commands/operations.ts` focused on converting command options into lifecycle workflow options and rendering the returned workflow result through a named command-private renderer.
+
+One-hundred-fourth production slice:
+
+- Split codealmanac bootstrap process spawning into `src/platform/install/bootstrap-process.ts`.
+- Moved inherited spawn, captured spawn, child event handling, and stdio buffering out of `src/platform/install/global.ts`.
+- Kept `src/platform/install/global.ts` focused on durable global-install bootstrap decisions, package-root resolution, version comparison, and setup rerun flow.

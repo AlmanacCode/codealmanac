@@ -1,10 +1,15 @@
-import { spawn, type SpawnOptions } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { isNewer } from "../update/semver.js";
+import {
+  defaultBootstrapSpawn,
+  spawnCapturedProcess,
+  spawnInheritedProcess,
+  type BootstrapSpawnFn,
+} from "./bootstrap-process.js";
 
 /**
  * Bare `codealmanac` is the npm bootstrap surface. When it is invoked
@@ -22,7 +27,7 @@ export interface CodealmanacBootstrapOptions {
   runLocalSetup: () => Promise<CodealmanacBootstrapResult>;
 
   // Injection points for tests.
-  spawnFn?: typeof spawn;
+  spawnFn?: BootstrapSpawnFn;
   currentPackageRoot?: string;
   globalPackageRoot?: string;
   env?: NodeJS.ProcessEnv;
@@ -49,7 +54,7 @@ export async function runCodealmanacBootstrap(
   const globalRootResult =
     opts.globalPackageRoot !== undefined
       ? { ok: true as const, path: opts.globalPackageRoot }
-      : await resolveGlobalPackageRoot(opts.spawnFn ?? spawn);
+      : await resolveGlobalPackageRoot(opts.spawnFn ?? defaultBootstrapSpawn);
 
   if (!globalRootResult.ok) {
     return {
@@ -65,8 +70,8 @@ export async function runCodealmanacBootstrap(
   }
 
   if (await shouldInstallGlobal(currentRoot, globalRoot)) {
-    const install = await spawnInherited(
-      opts.spawnFn ?? spawn,
+    const install = await spawnInheritedProcess(
+      opts.spawnFn ?? defaultBootstrapSpawn,
       "npm",
       ["i", "-g", "codealmanac@latest"],
       env,
@@ -84,8 +89,8 @@ export async function runCodealmanacBootstrap(
   }
 
   const entry = path.join(globalRoot, "dist", "launcher.js");
-  const rerun = await spawnInherited(
-    opts.spawnFn ?? spawn,
+  const rerun = await spawnInheritedProcess(
+    opts.spawnFn ?? defaultBootstrapSpawn,
     process.execPath,
     [entry, "setup", ...opts.setupArgs],
     {
@@ -157,9 +162,9 @@ function findCurrentPackageRoot(): string {
 }
 
 async function resolveGlobalPackageRoot(
-  spawnFn: typeof spawn,
+  spawnFn: BootstrapSpawnFn,
 ): Promise<{ ok: true; path: string } | { ok: false; stderr: string }> {
-  const result = await spawnCaptured(spawnFn, "npm", ["root", "-g"]);
+  const result = await spawnCapturedProcess(spawnFn, "npm", ["root", "-g"]);
   if (result.exitCode !== 0) {
     return {
       ok: false,
@@ -180,60 +185,4 @@ async function resolveGlobalPackageRoot(
   }
 
   return { ok: true, path: path.join(root, "codealmanac") };
-}
-
-async function spawnInherited(
-  spawnFn: typeof spawn,
-  cmd: string,
-  args: string[],
-  env: NodeJS.ProcessEnv,
-): Promise<{ exitCode: number }> {
-  return await new Promise((resolve) => {
-    const child = spawnFn(cmd, args, {
-      stdio: "inherit",
-      env,
-    });
-
-    child.on("error", () => {
-      resolve({ exitCode: 1 });
-    });
-    child.on("exit", (code) => {
-      resolve({ exitCode: code ?? 1 });
-    });
-  });
-}
-
-async function spawnCaptured(
-  spawnFn: typeof spawn,
-  cmd: string,
-  args: string[],
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  return await new Promise((resolve) => {
-    const child = spawnFn(cmd, args, {
-      stdio: ["ignore", "pipe", "pipe"],
-    } as SpawnOptions);
-    const stdout: Buffer[] = [];
-    const stderr: Buffer[] = [];
-
-    child.stdout?.on("data", (chunk: Buffer | string) => {
-      stdout.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    });
-    child.stderr?.on("data", (chunk: Buffer | string) => {
-      stderr.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    });
-    child.on("error", (err: NodeJS.ErrnoException) => {
-      resolve({
-        stdout: "",
-        stderr: err.message,
-        exitCode: 1,
-      });
-    });
-    child.on("exit", (code) => {
-      resolve({
-        stdout: Buffer.concat(stdout).toString("utf8"),
-        stderr: Buffer.concat(stderr).toString("utf8"),
-        exitCode: code ?? 1,
-      });
-    });
-  });
 }

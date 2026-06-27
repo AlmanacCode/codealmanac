@@ -692,6 +692,24 @@ describe("architecture boundaries", () => {
     expect(globalPackage).toContain("spawnGlobalInstall");
   });
 
+  it("keeps codealmanac bootstrap process spawning in a named helper", async () => {
+    const bootstrap = await readSource("src/platform/install/global.ts");
+    const bootstrapProcess = await readSource(
+      "src/platform/install/bootstrap-process.ts",
+    );
+
+    expect(existsSync(join(ROOT, "src/platform/install/bootstrap-process.ts")))
+      .toBe(true);
+    expect(bootstrap).toContain("bootstrap-process.js");
+    expect(bootstrap).not.toContain("node:child_process");
+    expect(bootstrap).not.toContain("stdio: \"inherit\"");
+    expect(bootstrap).not.toContain("stdio: [\"ignore\", \"pipe\", \"pipe\"]");
+    expect(bootstrap).not.toContain("child.stdout");
+    expect(bootstrapProcess).toContain("node:child_process");
+    expect(bootstrapProcess).toContain("spawnInheritedProcess");
+    expect(bootstrapProcess).toContain("spawnCapturedProcess");
+  });
+
   it("keeps setup provider login process execution in the platform layer", async () => {
     const setupAgentChoice = await readSource(
       "src/cli/commands/setup/agent-choice.ts",
