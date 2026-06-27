@@ -98,3 +98,17 @@ Eighth production slice:
 - Moved `.almanac/review.yaml` persistence from the ambiguous `src/review/store.ts` path to the explicit `src/stores/wiki-review/store.ts` boundary.
 - Split review service contracts, markdown/timestamp helpers, and wiki-root review-file opening out of `src/services/wiki/reviews.ts`; the workflow file now owns only add/list/show/decide/apply/reopen transitions.
 - Split wiki doctor probes into `doctor-registry.ts`, `doctor-index.ts`, `doctor-absorb.ts`, `doctor-health.ts`, and `doctor-types.ts`; `doctor.ts` now only composes the wiki diagnostics report.
+
+Ninth production slice:
+
+- Introduced `src/services/update/` so update checking, dismissal, package installation, and update-lock handling sit behind one product workflow boundary.
+- Kept `src/cli/commands/update.ts` responsible for CLI output and sqlite-free command compatibility only.
+- Introduced `src/services/config/` so config key validation, config persistence, and user/project writes no longer live in the command adapter.
+- Introduced `src/services/agents/` so provider readiness, default-provider writes, and model override writes are owned by an agent service instead of `src/cli/commands/agents.ts`.
+
+Tenth production slice:
+
+- Introduced `src/services/sync/` as the owner of the `almanac sync` workflow.
+- Moved source parsing, quiet-window parsing, `automation.sync_since` loading, transcript discovery, provider selection caching, and background Absorb startup out of `src/cli/commands/sync.ts`.
+- Kept `src/cli/commands/sync.ts` responsible only for mapping service errors through `renderError()` and rendering the `SyncSummary` for text or JSON output.
+- Added an architecture guard so the sync command cannot re-import transcript discovery, operation execution, config loading, duration parsing, or provider-resolution helpers directly.

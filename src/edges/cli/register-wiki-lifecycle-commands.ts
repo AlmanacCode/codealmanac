@@ -147,14 +147,19 @@ export function registerWikiLifecycleCommands(program: Command): void {
       from?: string;
       quiet?: string;
       json?: boolean;
-    }) => {
+    }, command: Command) => {
+      const parentOpts = command.parent?.opts<{
+        from?: string;
+        quiet?: string;
+        json?: boolean;
+      }>() ?? {};
       const { runSyncCommand } = await import("../../cli/commands/sync.js");
       const result = await runSyncCommand({
         cwd: process.cwd(),
         mode: "status",
-        from: opts.from,
-        quiet: opts.quiet,
-        json: opts.json,
+        from: opts.from ?? parentOpts.from,
+        quiet: opts.quiet ?? parentOpts.quiet,
+        json: opts.json ?? parentOpts.json,
       });
       emit(result);
     });

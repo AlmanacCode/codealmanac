@@ -53,7 +53,7 @@ sources:
     note: Loads, validates, normalizes, IDs, and atomically writes .almanac/review.yaml.
   - id: review-cli
     type: file
-    path: src/cli/register-edit-commands.ts
+    path: src/edges/cli/register-edit-commands.ts
     note: Registers the almanac review subcommands and stdin/argument Markdown handling.
   - id: garden-prompt
     type: file

@@ -746,4 +746,61 @@ describe("run() — codealmanac-setup shortcut routing", () => {
       });
     });
   });
+
+  it("honors sync status flags written after the subcommand", async () => {
+    await withTempHome(async (home) => {
+      const previousCwd = process.cwd();
+      const previousExitCode = process.exitCode;
+      const origStdout = process.stdout.write.bind(process.stdout);
+      const origStderr = process.stderr.write.bind(process.stderr);
+      let stdout = "";
+      let stderr = "";
+      process.stdout.write = ((chunk: string | Uint8Array) => {
+        stdout += Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk);
+        return true;
+      }) as typeof process.stdout.write;
+      process.stderr.write = ((chunk: string | Uint8Array) => {
+        stderr += Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk);
+        return true;
+      }) as typeof process.stderr.write;
+      process.chdir(home);
+      try {
+        await run(
+          [
+            "/abs/node",
+            "/abs/path/almanac",
+            "sync",
+            "status",
+            "--from",
+            "codex",
+            "--quiet",
+            "0s",
+            "--json",
+          ],
+          {
+            announceUpdate: () => {},
+            scheduleUpdateCheck: () => {},
+            runInternalUpdateCheck: async () => {},
+          },
+        );
+      } finally {
+        process.chdir(previousCwd);
+        process.exitCode = previousExitCode;
+        process.stdout.write = origStdout;
+        process.stderr.write = origStderr;
+      }
+
+      expect(stderr).toBe("");
+      expect(JSON.parse(stdout)).toMatchObject({
+        type: "success",
+        message: "sync status completed",
+        data: {
+          summary: {
+            mode: "status",
+            scanned: 0,
+          },
+        },
+      });
+    });
+  });
 });

@@ -226,6 +226,20 @@ describe("architecture boundaries", () => {
     expect(agentsCommand).not.toContain("isAgentProviderId");
   });
 
+  it("keeps sync command adapters out of transcript and absorb workflow mechanics", async () => {
+    const syncCommand = await readSource("src/cli/commands/sync.ts");
+
+    expect(syncCommand).toContain("services/sync/index.js");
+    expect(syncCommand).not.toContain("../../sync");
+    expect(syncCommand).not.toContain("../../operations");
+    expect(syncCommand).not.toContain("readConfig");
+    expect(syncCommand).not.toContain("parseDuration");
+    expect(syncCommand).not.toContain("homedir");
+    expect(syncCommand).not.toContain("discoverCandidates");
+    expect(syncCommand).not.toContain("providerForRepo");
+    expect(syncCommand).not.toContain("syncAbsorbContext");
+  });
+
   it("keeps migrate legacy-sources adapter out of source migration mechanics", async () => {
     const migrateCommand = await readSource("src/cli/commands/migrate.ts");
 

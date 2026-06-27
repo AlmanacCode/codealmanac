@@ -51,8 +51,8 @@ sources:
     note: Migrated from legacy files.
   - id: sqlite-free
     type: file
-    path: src/cli/sqlite-free.ts
-    note: Migrated from legacy files.
+    path: src/edges/cli/sqlite-free.ts
+    note: SQLite-free install-management fast path.
   - id: tasks
     type: file
     path: src/platform/automation/tasks.ts

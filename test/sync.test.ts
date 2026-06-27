@@ -9,6 +9,24 @@ import { writeConfig } from "../src/config/index.js";
 import { jobRecordPath, writeJobRecord } from "../src/jobs/index.js";
 
 describe("almanac sync", () => {
+  it("reports invalid source filters before running discovery", async () => {
+    await withTempHome(async (home) => {
+      const repo = await makeRepo(home, "repo");
+      await scaffoldWiki(repo);
+
+      const result = await runSyncCommand({
+        cwd: repo,
+        homeDir: home,
+        from: "claude,unknown",
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain(
+        'invalid --from "claude,unknown" (expected claude,codex)',
+      );
+    });
+  });
+
   it("identifies ready Claude and Codex transcripts mapped to .almanac repos", async () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "repo");

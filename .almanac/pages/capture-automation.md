@@ -110,7 +110,7 @@ sources:
     note: Migrated from legacy files.
   - id: register-edit-commands
     type: file
-    path: src/cli/register-edit-commands.ts
+    path: src/edges/cli/register-edit-commands.ts
     note: Migrated from legacy files.
   - id: index
     type: file
@@ -138,7 +138,7 @@ sources:
     note: Migrated from legacy files.
   - id: register-setup-commands
     type: file
-    path: src/cli/register-setup-commands.ts
+    path: src/edges/cli/register-setup-commands.ts
     note: Migrated from legacy files.
   - id: cli
     type: file

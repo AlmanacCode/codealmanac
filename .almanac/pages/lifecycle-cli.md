@@ -10,20 +10,20 @@ topics:
 sources:
   - id: register-wiki-lifecycle-commands
     type: file
-    path: src/cli/register-wiki-lifecycle-commands.ts
-    note: Migrated from legacy files.
+    path: src/edges/cli/register-wiki-lifecycle-commands.ts
+    note: Commander wiring for lifecycle commands.
   - id: register-edit-commands
     type: file
-    path: src/cli/register-edit-commands.ts
-    note: Migrated from legacy files.
+    path: src/edges/cli/register-edit-commands.ts
+    note: Commander wiring for deterministic edit commands.
   - id: cli
     type: file
     path: src/cli.ts
     note: Migrated from legacy files.
   - id: sqlite-free
     type: file
-    path: src/cli/sqlite-free.ts
-    note: Migrated from legacy files.
+    path: src/edges/cli/sqlite-free.ts
+    note: SQLite-free install-management fast path.
   - id: operations
     type: file
     path: src/cli/commands/operations.ts
@@ -43,11 +43,15 @@ sources:
   - id: sync
     type: file
     path: src/cli/commands/sync.ts
-    note: Migrated from legacy files.
+    note: Sync command adapter for output rendering.
+  - id: sync-service
+    type: file
+    path: src/services/sync/
+    note: Sync product workflow boundary for discovery, provider selection, and Absorb startup.
   - id: sync-2
     type: file
     path: src/sync/
-    note: Migrated from legacy files.
+    note: Transcript discovery and cursor sweep mechanics.
   - id: index
     type: file
     path: src/cli/commands/setup/index.ts
@@ -101,7 +105,7 @@ The remaining quality gap is help shape. Commander help is grouped and clean, bu
 
 `almanac absorb <inputs...>` maps to Absorb with bounded user-provided paths or source refs and defaults background. `almanac ingest <inputs...>` is an alias for the same command path.
 
-`almanac sync` is the scheduler-owned automatic session-memory entry point. It scans Claude and Codex transcript stores, applies the quiet-window rule, maps transcript cwd values to repos with `.almanac/`, reconciles `.almanac/jobs/sync-ledger.json`, and starts ordinary background Absorb jobs for eligible continuations. `almanac sync status` runs the same discovery and cursor evaluation without enqueueing jobs.
+`almanac sync` is the scheduler-owned automatic session-memory entry point. It scans Claude and Codex transcript stores, applies the quiet-window rule, maps transcript cwd values to repos with `.almanac/`, reconciles `.almanac/jobs/sync-ledger.json`, and starts ordinary background Absorb jobs for eligible continuations. `almanac sync status` runs the same discovery and cursor evaluation without enqueueing jobs. `src/services/sync/` owns this workflow: command options become source and quiet-window contracts, `automation.sync_since` becomes a cursor cutoff, provider selection is cached per repo, and each eligible transcript starts an Absorb operation with session context. `src/cli/commands/sync.ts` renders the resulting `SyncSummary`.
 
 [[ingest-operation]] records the absorb/ingest input contract, including local paths, GitHub PR or issue refs, GitHub PR or issue URLs, and generic HTTP(S) URLs.
 
@@ -141,7 +145,7 @@ Setup and uninstall still run private legacy-hook cleanup before touching schedu
 
 One debugging lesson from the 2026-05-12 launchd smoke tests is worth preserving alongside that cleanup contract: if "scheduled automation" appears to be spawning more jobs than the configured sweep cadence should allow, check for multiple capture mechanisms before blaming launchd. The observed duplicate-job burst came from two active sources at once: scheduled sweeps plus still-installed legacy hooks.
 
-There is one implementation wrinkle worth remembering: setup, automation, agents, config, update, doctor, and uninstall are also wired through the sqlite-free fast path in [[src/cli/sqlite-free.ts]], before the full Commander CLI and SQLite-backed query stack are initialized. That is why recovery and install-management commands still work when a local or global install cannot load `better-sqlite3`, but it also means some flag parsing is custom code in that fast path. The 2026-05-11 review originally found that a bare `almanac automation install --every` could silently fall back to the default 5h interval; the implementation now validates that case explicitly and applies the same care to the quiet-window flag path.
+There is one implementation wrinkle worth remembering: setup, automation, agents, config, update, doctor, and uninstall are also wired through the sqlite-free fast path in [[src/edges/cli/sqlite-free.ts]], before the full Commander CLI and SQLite-backed query stack are initialized. That is why recovery and install-management commands still work when a local or global install cannot load `better-sqlite3`, but it also means some flag parsing is custom code in that fast path. The 2026-05-11 review originally found that a bare `almanac automation install --every` could silently fall back to the default 5h interval; the implementation now validates that case explicitly and applies the same care to the quiet-window flag path.
 
 The 2026-05-13 merge of `v1` into `dev` preserved one extra invariant: new setup and automation flags added on `dev` must be carried into the extracted sqlite-free module, not only into Commander registration. That includes `--no-auto-commit`, `--sync-every`, `--sync-quiet`, `--garden-every`, `--garden-off`, `--auto-update`, `--auto-update-every`, positional automation task IDs such as `update`, equals-style values such as `--sync-quiet=1m`, and launcher-preserved invocation behavior for `codealmanac` setup.
 
