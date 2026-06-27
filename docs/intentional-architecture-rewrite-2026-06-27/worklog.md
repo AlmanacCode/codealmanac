@@ -159,3 +159,10 @@ Seventeenth production slice:
 
 - Added `src/platform/process.ts` for local PID liveness checks and process signaling.
 - Replaced duplicated `process.kill(pid, 0)` helpers in job services, viewer jobs, worker-lock storage, and sync-lock storage with the platform helper.
+
+Eighteenth production slice:
+
+- Moved `almanac show` into the multi-file command layout used by other larger commands.
+- Kept `src/cli/commands/show/index.ts` as the thin command entrypoint: collect page slugs, call the wiki page-view service, render missing-page errors, and delegate output formatting.
+- Moved show output rendering into `src/cli/commands/show/format.ts`, slug collection into `src/cli/commands/show/slugs.ts`, and command contracts into `src/cli/commands/show/types.ts`.
+- Preserved the existing `show` behavior with focused `show` and architecture-boundary tests before broader verification.

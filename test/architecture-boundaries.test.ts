@@ -51,7 +51,7 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps show command adapters out of index storage mechanics", async () => {
-    const showCommand = await readSource("src/cli/commands/show.ts");
+    const showCommand = await readSource("src/cli/commands/show/index.ts");
 
     expect(showCommand).toContain("services/wiki/page-view.js");
     expect(showCommand).not.toContain("wiki/indexer");
