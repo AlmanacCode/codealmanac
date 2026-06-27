@@ -526,3 +526,9 @@ Seventy-fifth production slice:
 - Made lifecycle operation hook contracts explicit in `src/services/lifecycle/operations.ts`.
 - Replaced lifecycle aliases to lower-level operation starters and absorb source resolution with service-owned request/result types.
 - Kept the lifecycle service structurally compatible with operation and absorb internals while keeping its exported contract readable at the service boundary.
+
+Seventy-sixth production slice:
+
+- Made setup configured-model state explicit in `src/services/setup/agent-choice.ts`.
+- Replaced the `Partial<Record<SetupAgentProviderId, string | null>>` alias with a service-owned `{ claude, codex, cursor }` contract.
+- Normalized config model overrides once in `setupConfiguredModelsFromConfig` before setup UI reads them.

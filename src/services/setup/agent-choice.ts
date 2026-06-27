@@ -56,9 +56,11 @@ export interface SetupProviderView {
   choices: SetupProviderChoice[];
 }
 
-export type SetupConfiguredModels = Partial<
-  Record<SetupAgentProviderId, string | null>
->;
+export interface SetupConfiguredModels {
+  claude: string | null;
+  codex: string | null;
+  cursor: string | null;
+}
 
 export interface SetupAgentChoiceState {
   selected: string;
@@ -78,7 +80,7 @@ export async function readSetupAgentChoiceState(input: {
   const config = await readConfig();
   return {
     selected: input.requested ?? config.agent.default,
-    configuredModels: config.agent.models,
+    configuredModels: setupConfiguredModelsFromConfig(config.agent.models),
     view: input.includeView
       ? setupProviderViewFromReadinessView(
           await buildProviderSetupView({ config, spawnCli: input.spawnCli }),
@@ -161,6 +163,16 @@ function setupProviderViewFromReadinessView(
     defaultProvider: view.defaultProvider,
     recommendedProvider: view.recommendedProvider,
     choices: view.choices.map(setupProviderChoiceFromReadinessChoice),
+  };
+}
+
+function setupConfiguredModelsFromConfig(
+  models: Partial<Record<SetupAgentProviderId, string | null>>,
+): SetupConfiguredModels {
+  return {
+    claude: models.claude ?? null,
+    codex: models.codex ?? null,
+    cursor: models.cursor ?? null,
   };
 }
 

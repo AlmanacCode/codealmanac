@@ -463,6 +463,12 @@ describe("architecture boundaries", () => {
     expect(setupServiceAgentChoice).not.toContain(
       "SetupAgentProviderId = AgentProviderId",
     );
+    expect(setupServiceAgentChoice).not.toContain(
+      "SetupConfiguredModels = Partial",
+    );
+    expect(setupServiceAgentChoice).toContain(
+      "setupConfiguredModelsFromConfig",
+    );
     expect(setupServiceAgentChoice).toContain(
       "setupProviderViewFromReadinessView",
     );
