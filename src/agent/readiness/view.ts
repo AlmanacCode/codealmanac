@@ -47,6 +47,7 @@ export interface ProviderViewOptions {
   config?: GlobalConfig;
   statuses?: ProviderStatus[];
   spawnCli?: SpawnCliFn;
+  environment: NodeJS.ProcessEnv;
 }
 
 export function getProviderLabel(id: AgentProviderId): string {
@@ -58,14 +59,17 @@ export function getProviderDefaultModel(id: AgentProviderId): string | null {
 }
 
 export async function buildProviderSetupView(
-  opts: ProviderViewOptions = {},
+  opts: ProviderViewOptions,
 ): Promise<ProviderSetupView> {
   const config = opts.config ?? await readConfig();
-  const statuses = opts.statuses ?? await listProviderStatuses(opts.spawnCli);
+  const statuses = opts.statuses ?? await listProviderStatuses({
+    spawnCli: opts.spawnCli,
+    environment: opts.environment,
+  });
   const statusById = new Map(statuses.map((status) => [status.id, status]));
   const recommendedProvider = chooseRecommendedProvider(statuses);
   const choices: ProviderSetupChoice[] = [];
-  for (const id of getEnabledAgentProviderIds()) {
+  for (const id of getEnabledAgentProviderIds(opts.environment)) {
     const status = statusById.get(id) ?? missingStatus(id);
     const readiness = getReadiness(status);
     const configuredModel = normalizeModel(config.agent.models[id]);

@@ -161,20 +161,20 @@ describe("assertClaudeAuth", () => {
         code: 0,
       });
 
-    const status = await assertClaudeAuth(spawnCli);
+    const status = await assertClaudeAuth(spawnCli, process.env);
     expect(status.loggedIn).toBe(true);
     expect(status.authMethod).toBe("claude.ai");
   });
 
   it("resolves when ANTHROPIC_API_KEY is set even if subscription auth is inactive", async () => {
-    process.env.ANTHROPIC_API_KEY = "sk-ant-test-dummy";
+    const environment = { ANTHROPIC_API_KEY: "sk-ant-test-dummy" };
     const spawnCli: SpawnCliFn = () =>
       makeFakeChild({
         stdout: JSON.stringify({ loggedIn: false }),
         code: 0,
       });
 
-    const status = await assertClaudeAuth(spawnCli);
+    const status = await assertClaudeAuth(spawnCli, environment);
     expect(status.loggedIn).toBe(true);
     expect(status.authMethod).toBe("apiKey");
   });
@@ -186,13 +186,13 @@ describe("assertClaudeAuth", () => {
         code: 0,
       });
 
-    await expect(assertClaudeAuth(spawnCli)).rejects.toThrow(
+    await expect(assertClaudeAuth(spawnCli, process.env)).rejects.toThrow(
       /not authenticated to Claude/,
     );
-    await expect(assertClaudeAuth(spawnCli)).rejects.toThrow(
+    await expect(assertClaudeAuth(spawnCli, process.env)).rejects.toThrow(
       /claude auth login --claudeai/,
     );
-    await expect(assertClaudeAuth(spawnCli)).rejects.toThrow(
+    await expect(assertClaudeAuth(spawnCli, process.env)).rejects.toThrow(
       /ANTHROPIC_API_KEY/,
     );
   });
@@ -205,7 +205,7 @@ describe("assertClaudeAuth", () => {
       });
 
     try {
-      await assertClaudeAuth(spawnCli);
+      await assertClaudeAuth(spawnCli, process.env);
       // If we get here the assert didn't throw — fail explicitly.
       expect.fail("assertClaudeAuth should have thrown");
     } catch (err: unknown) {
@@ -215,14 +215,14 @@ describe("assertClaudeAuth", () => {
   });
 
   it("rejects an empty-string ANTHROPIC_API_KEY the same as unset", async () => {
-    process.env.ANTHROPIC_API_KEY = "";
+    const environment = { ANTHROPIC_API_KEY: "" };
     const spawnCli: SpawnCliFn = () =>
       makeFakeChild({
         stdout: JSON.stringify({ loggedIn: false }),
         code: 0,
       });
 
-    await expect(assertClaudeAuth(spawnCli)).rejects.toThrow(
+    await expect(assertClaudeAuth(spawnCli, environment)).rejects.toThrow(
       /not authenticated to Claude/,
     );
   });

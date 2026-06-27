@@ -38,6 +38,8 @@ export interface SetupOptions {
   cwd: string;
   /** PATH value inherited by launchd jobs during setup. */
   pathEnvironment: string | undefined;
+  /** Current process environment used by provider readiness checks. */
+  environment: NodeJS.ProcessEnv;
   /** Base CLI command used by scheduled launchd jobs. */
   cliProgramArguments: string[];
   /** Override the subprocess spawner for provider login checks. */

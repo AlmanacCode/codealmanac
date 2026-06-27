@@ -39,6 +39,8 @@ export interface DoctorOptions {
   cwd: string;
   /** Whether ANTHROPIC_API_KEY is present for the current process. */
   claudeApiKeySet: boolean;
+  /** Environment inherited by agent-readiness probes. */
+  environment: NodeJS.ProcessEnv;
 
   /** Emit structured JSON instead of the colored report. */
   json?: boolean;

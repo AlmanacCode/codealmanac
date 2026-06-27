@@ -1,8 +1,8 @@
 import type {
+  AgentProviderRuntime,
   AgentProvider,
   AgentProviderMetadata,
   ProviderStatus,
-  SpawnCliFn,
 } from "../../types.js";
 import { PROVIDER_DEFINITIONS } from "../../provider-id.js";
 import {
@@ -24,7 +24,10 @@ export const cursorProvider: AgentProvider = {
   assertReady,
 };
 
-async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
+async function checkStatus(
+  runtime: AgentProviderRuntime,
+): Promise<ProviderStatus> {
+  const spawnCli = runtime.spawnCli;
   if (spawnCli === undefined && !commandExists(metadata.executable)) {
     return {
       id: metadata.id,
@@ -52,8 +55,8 @@ async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
   };
 }
 
-async function assertReady(spawnCli?: SpawnCliFn): Promise<void> {
-  const status = await checkStatus(spawnCli);
+async function assertReady(runtime: AgentProviderRuntime): Promise<void> {
+  const status = await checkStatus(runtime);
   if (!status.installed || !status.authenticated) {
     const err = new Error(`${status.id} not ready: ${status.detail}`);
     (err as { code?: string }).code = "AGENT_AUTH_MISSING";

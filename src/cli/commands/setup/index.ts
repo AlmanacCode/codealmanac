@@ -147,6 +147,7 @@ export async function runSetup(
         requested: options.agent,
         requestedModel: options.model,
         spawnCli: options.spawnCli,
+        environment: options.environment,
       });
       if (!agentChoice.ok) {
         return {

@@ -49,7 +49,11 @@ describe("provider setup view", () => {
       },
     };
 
-    const view = await buildProviderSetupView({ config, statuses });
+    const view = await buildProviderSetupView({
+      config,
+      statuses,
+      environment: {},
+    });
 
     expect(view.recommendedProvider).toBe("codex");
     expect(view.choices).toMatchObject([

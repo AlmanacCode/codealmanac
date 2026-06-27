@@ -848,3 +848,10 @@ One-hundred-twenty-eighth production slice:
 - Threaded the explicit environment into Claude SDK option construction and Codex app-server request construction.
 - Added architecture guards so `src/harness/providers/claude/options.ts` and `src/harness/providers/codex/request.ts` cannot reintroduce direct `process.env` reads.
 - Added `decision-log.md` because the rewrite is now long enough that durable architectural decisions need a direct home.
+
+One-hundred-twenty-ninth production slice:
+
+- Replaced the bare readiness `spawnCli` argument with an explicit `AgentProviderRuntime` context containing `spawnCli` and `environment`.
+- Made Claude readiness and Claude auth read `ANTHROPIC_API_KEY` from that context instead of directly reading `process.env`.
+- Threaded environment through agents, setup, doctor, and sqlite-free setup shortcut entrypoints.
+- Added an architecture guard so `src/agent/readiness/view.ts`, Claude readiness, and Claude auth cannot reintroduce direct `process.env` reads.

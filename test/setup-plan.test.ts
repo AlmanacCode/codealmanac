@@ -14,8 +14,9 @@ const TEST_CWD = "/tmp/codealmanac-setup-plan";
 const TEST_CLI_PROGRAM_ARGUMENTS = ["node", "dist/launcher.js"];
 
 function setupOptions(
-  options: Omit<SetupOptions, "cwd" | "pathEnvironment" | "cliProgramArguments"> & {
+  options: Omit<SetupOptions, "cwd" | "pathEnvironment" | "environment" | "cliProgramArguments"> & {
     pathEnvironment?: string;
+    environment?: NodeJS.ProcessEnv;
     cliProgramArguments?: string[];
   } = {},
 ): SetupOptions {
@@ -25,6 +26,7 @@ function setupOptions(
     pathEnvironment: "pathEnvironment" in options
       ? options.pathEnvironment
       : process.env.PATH,
+    environment: options.environment ?? process.env,
     cliProgramArguments: options.cliProgramArguments ?? TEST_CLI_PROGRAM_ARGUMENTS,
   };
 }

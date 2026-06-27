@@ -632,6 +632,7 @@ describe("run() — codealmanac-setup shortcut routing", () => {
       claudeApiKeySet: process.env.ANTHROPIC_API_KEY !== undefined &&
         process.env.ANTHROPIC_API_KEY.length > 0,
       color: process.stdout.isTTY === true,
+      environment: process.env,
       installOnly: true,
       json: undefined,
       wikiOnly: undefined,

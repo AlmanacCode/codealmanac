@@ -60,6 +60,7 @@ export function registerSetupCommands(
           autoCommit: opts.autoCommit,
           cwd: process.cwd(),
           pathEnvironment: process.env.PATH,
+          environment: process.env,
           cliProgramArguments: currentCliProgramArguments(),
           color: shouldUseStdoutColor(),
         });
@@ -85,6 +86,7 @@ export function registerSetupCommands(
           cwd: process.cwd(),
           claudeApiKeySet: process.env.ANTHROPIC_API_KEY !== undefined &&
             process.env.ANTHROPIC_API_KEY.length > 0,
+          environment: process.env,
           json: opts.json,
           installOnly: opts.installOnly,
           wikiOnly: opts.wikiOnly,

@@ -12,7 +12,7 @@ export function registerAgentCommands(program: Command): void {
     .description("show Claude, Codex, and Cursor provider status")
     .action(async () => {
       const { runAgentsList } = await import("../../cli/commands/agents.js");
-      emit(await runAgentsList());
+      emit(await runAgentsList({ environment: process.env }));
     });
 
   agents
@@ -20,7 +20,7 @@ export function registerAgentCommands(program: Command): void {
     .description("diagnose supported AI agent providers")
     .action(async () => {
       const { runAgentsDoctor } = await import("../../cli/commands/agents.js");
-      emit(await runAgentsDoctor());
+      emit(await runAgentsDoctor({ environment: process.env }));
     });
 
   agents

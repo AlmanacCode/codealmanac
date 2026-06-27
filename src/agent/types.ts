@@ -9,6 +9,11 @@ export interface SpawnedProcess {
 
 export type SpawnCliFn = (args: string[]) => SpawnedProcess;
 
+export interface AgentProviderRuntime {
+  spawnCli?: SpawnCliFn;
+  environment: NodeJS.ProcessEnv;
+}
+
 export interface AgentProviderMetadata {
   id: AgentProviderId;
   displayName: string;
@@ -42,8 +47,8 @@ export interface ProviderModelChoice {
 
 export interface AgentProvider {
   metadata: AgentProviderMetadata;
-  checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus>;
-  assertReady(spawnCli?: SpawnCliFn): Promise<void>;
+  checkStatus(runtime: AgentProviderRuntime): Promise<ProviderStatus>;
+  assertReady(runtime: AgentProviderRuntime): Promise<void>;
   modelChoices?(opts: {
     configuredModel: string | null;
     spawnCli?: SpawnCliFn;

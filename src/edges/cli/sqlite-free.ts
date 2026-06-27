@@ -36,6 +36,7 @@ export async function tryRunSetupShortcut(args: {
     ...setupInvocation,
     cwd: process.cwd(),
     pathEnvironment: process.env.PATH,
+    environment: process.env,
     cliProgramArguments: currentCliProgramArguments(),
     color: shouldUseStdoutColor(),
   };

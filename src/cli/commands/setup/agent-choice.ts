@@ -35,11 +35,13 @@ export async function chooseDefaultAgent(args: {
   requested?: string;
   requestedModel?: string;
   spawnCli?: SetupSpawnCliFn;
+  environment: NodeJS.ProcessEnv;
 }): Promise<AgentChoice> {
   const state = await readSetupAgentChoiceState({
     requested: args.requested,
     includeView: args.interactive || args.requested !== undefined,
     spawnCli: args.spawnCli,
+    environment: args.environment,
   });
   let view = state.view;
   let selected = state.selected;
@@ -87,6 +89,7 @@ export async function chooseDefaultAgent(args: {
           }
           view = await refreshSetupAgentChoiceView({
             spawnCli: args.spawnCli,
+            environment: args.environment,
           });
           const refreshed = view.choices.find((next) => next.id === choice.id);
           if (refreshed?.ready === true) {
@@ -126,6 +129,7 @@ export async function chooseDefaultAgent(args: {
       if (login.ok) {
         view = await refreshSetupAgentChoiceView({
           spawnCli: args.spawnCli,
+          environment: args.environment,
         });
         selectedChoice = view.choices.find((choice) => choice.id === provider);
       } else {

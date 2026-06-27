@@ -2,7 +2,7 @@ import {
   readAgentsView,
   setAgentModel,
   setDefaultAgent as setDefaultAgentService,
-  type AgentsProviderView,
+  type AgentViewOptions,
 } from "../../services/agents/index.js";
 import {
   renderAgentsDoctor,
@@ -14,14 +14,18 @@ import {
 
 export type { AgentsResult } from "./agents-render.js";
 
-export async function runAgentsList(opts: {
-  view?: AgentsProviderView;
-} = {}): Promise<AgentsResult> {
+export type AgentsListOptions = AgentViewOptions;
+
+export async function runAgentsList(
+  opts: AgentsListOptions,
+): Promise<AgentsResult> {
   return renderAgentsList(await readAgentsView(opts));
 }
 
-export async function runAgentsDoctor(): Promise<AgentsResult> {
-  return renderAgentsDoctor(await readAgentsView());
+export async function runAgentsDoctor(opts: {
+  environment: NodeJS.ProcessEnv;
+}): Promise<AgentsResult> {
+  return renderAgentsDoctor(await readAgentsView(opts));
 }
 
 export interface SetDefaultAgentOptions {

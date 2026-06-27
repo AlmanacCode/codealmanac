@@ -48,9 +48,9 @@ export interface AgentsProviderView {
   choices: AgentsProviderChoice[];
 }
 
-export interface AgentViewOptions {
-  view?: AgentsProviderView;
-}
+export type AgentViewOptions =
+  | { view: AgentsProviderView; environment?: NodeJS.ProcessEnv }
+  | { view?: undefined; environment: NodeJS.ProcessEnv };
 
 export type AgentUseResult =
   | {
@@ -83,9 +83,12 @@ export type AgentModelResult =
     };
 
 export async function readAgentsView(
-  opts: AgentViewOptions = {},
+  opts: AgentViewOptions,
 ): Promise<AgentsProviderView> {
-  return opts.view ?? agentsProviderViewFromSetupView(await buildProviderSetupView());
+  if (opts.view !== undefined) return opts.view;
+  return agentsProviderViewFromSetupView(
+    await buildProviderSetupView({ environment: opts.environment }),
+  );
 }
 
 export async function setDefaultAgent(

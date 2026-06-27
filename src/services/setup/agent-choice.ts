@@ -76,6 +76,7 @@ export async function readSetupAgentChoiceState(input: {
   requested?: string;
   includeView: boolean;
   spawnCli?: SetupSpawnCliFn;
+  environment: NodeJS.ProcessEnv;
 }): Promise<SetupAgentChoiceState> {
   const config = await readConfig();
   return {
@@ -83,7 +84,11 @@ export async function readSetupAgentChoiceState(input: {
     configuredModels: setupConfiguredModelsFromConfig(config.agent.models),
     view: input.includeView
       ? setupProviderViewFromReadinessView(
-          await buildProviderSetupView({ config, spawnCli: input.spawnCli }),
+          await buildProviderSetupView({
+            config,
+            spawnCli: input.spawnCli,
+            environment: input.environment,
+          }),
         )
       : null,
   };
@@ -91,12 +96,14 @@ export async function readSetupAgentChoiceState(input: {
 
 export async function refreshSetupAgentChoiceView(input: {
   spawnCli?: SetupSpawnCliFn;
+  environment: NodeJS.ProcessEnv;
 }): Promise<SetupProviderView> {
   const config = await readConfig();
   return setupProviderViewFromReadinessView(
     await buildProviderSetupView({
       config,
       spawnCli: input.spawnCli,
+      environment: input.environment,
     }),
   );
 }

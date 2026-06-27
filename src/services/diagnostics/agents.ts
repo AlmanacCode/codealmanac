@@ -7,6 +7,7 @@ export async function gatherAgentChecks(
   const view = await buildProviderSetupView({
     spawnCli: options.spawnCli,
     statuses: options.providerStatuses,
+    environment: options.environment,
   });
   return view.choices.map((choice) => {
     return {

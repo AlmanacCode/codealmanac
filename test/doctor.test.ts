@@ -56,12 +56,14 @@ const LOGGED_OUT_STDOUT = JSON.stringify({ loggedIn: false });
 const SQLITE_OK = { ok: true, summary: "native binding loads cleanly" };
 
 function runDoctor(
-  options: Omit<DoctorOptions, "claudeApiKeySet"> & {
+  options: Omit<DoctorOptions, "claudeApiKeySet" | "environment"> & {
     claudeApiKeySet?: boolean;
+    environment?: NodeJS.ProcessEnv;
   },
 ) {
   return runDoctorCommand({
     claudeApiKeySet: false,
+    environment: process.env,
     ...options,
   });
 }

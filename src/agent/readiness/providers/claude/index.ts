@@ -1,9 +1,9 @@
 import type {
+  AgentProviderRuntime,
   AgentProvider,
   AgentProviderMetadata,
   ProviderModelChoice,
   ProviderStatus,
-  SpawnCliFn,
 } from "../../../types.js";
 import { PROVIDER_DEFINITIONS } from "../../../provider-id.js";
 import {
@@ -69,17 +69,20 @@ function modelChoices(opts: {
   return choices;
 }
 
-async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
+async function checkStatus(
+  runtime: AgentProviderRuntime,
+): Promise<ProviderStatus> {
   let auth: ClaudeAuthStatus = { loggedIn: false };
   try {
-    auth = await checkClaudeAuth(spawnCli);
+    auth = await checkClaudeAuth(runtime.spawnCli);
   } catch {
     auth = { loggedIn: false };
   }
   const hasApiKey =
-    process.env.ANTHROPIC_API_KEY !== undefined &&
-    process.env.ANTHROPIC_API_KEY.length > 0;
-  const installed = spawnCli !== undefined || resolveClaudeExecutable() !== undefined;
+    runtime.environment.ANTHROPIC_API_KEY !== undefined &&
+    runtime.environment.ANTHROPIC_API_KEY.length > 0;
+  const installed =
+    runtime.spawnCli !== undefined || resolveClaudeExecutable() !== undefined;
   const authenticated = auth.loggedIn || hasApiKey;
   const readiness = !installed
     ? "missing_executable"
@@ -103,8 +106,8 @@ async function checkStatus(spawnCli?: SpawnCliFn): Promise<ProviderStatus> {
   };
 }
 
-async function assertReady(spawnCli?: SpawnCliFn): Promise<void> {
-  await assertClaudeAuth(spawnCli);
+async function assertReady(runtime: AgentProviderRuntime): Promise<void> {
+  await assertClaudeAuth(runtime.spawnCli, runtime.environment);
 }
 
 export { assertClaudeAuth, checkClaudeAuth, UNAUTHENTICATED_MESSAGE };

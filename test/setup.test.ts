@@ -51,9 +51,10 @@ const TEST_SETUP_THEME = makeSetupTheme(false);
 const TEST_CLI_PROGRAM_ARGUMENTS = ["node", "dist/launcher.js"];
 
 function runSetup(
-  options: Omit<SetupOptions, "cwd" | "pathEnvironment" | "cliProgramArguments"> & {
+  options: Omit<SetupOptions, "cwd" | "pathEnvironment" | "environment" | "cliProgramArguments"> & {
     cwd?: string;
     pathEnvironment?: string;
+    environment?: NodeJS.ProcessEnv;
     cliProgramArguments?: string[];
   },
 ) {
@@ -63,6 +64,7 @@ function runSetup(
     pathEnvironment: "pathEnvironment" in options
       ? options.pathEnvironment
       : process.env.PATH,
+    environment: options.environment ?? process.env,
     cliProgramArguments: options.cliProgramArguments ?? TEST_CLI_PROGRAM_ARGUMENTS,
   });
 }

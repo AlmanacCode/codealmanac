@@ -201,12 +201,13 @@ export const UNAUTHENTICATED_MESSAGE =
  */
 export async function assertClaudeAuth(
   spawnCli: SpawnCliFn = defaultSpawnCli,
+  environment: NodeJS.ProcessEnv,
 ): Promise<ClaudeAuthStatus> {
   const status = await checkClaudeAuth(spawnCli);
   if (status.loggedIn) {
     return status;
   }
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = environment.ANTHROPIC_API_KEY;
   if (apiKey !== undefined && apiKey.length > 0) {
     // Signal to callers that we're on the API-key path. Not "loggedIn"
     // in the OAuth sense, but the SDK will pick up the env var and

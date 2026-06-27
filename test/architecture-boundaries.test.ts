@@ -1283,6 +1283,28 @@ describe("architecture boundaries", () => {
     expect(claudeOptions).toContain("environment: NodeJS.ProcessEnv");
   });
 
+  it("passes agent readiness runtime facts through an explicit context", async () => {
+    const agentTypes = await readSource("src/agent/types.ts");
+    const readinessView = await readSource("src/agent/readiness/view.ts");
+    const readinessStatus = await readSource(
+      "src/agent/readiness/providers/status.ts",
+    );
+    const claudeReadiness = await readSource(
+      "src/agent/readiness/providers/claude/index.ts",
+    );
+    const claudeAuth = await readSource("src/agent/auth/claude.ts");
+
+    expect(agentTypes).toContain("export interface AgentProviderRuntime");
+    expect(agentTypes).toContain("environment: NodeJS.ProcessEnv");
+    expect(agentTypes).toContain("checkStatus(runtime: AgentProviderRuntime)");
+    expect(readinessStatus).toContain("providerRuntime(args)");
+    expect(readinessView).not.toContain("process.env");
+    expect(claudeReadiness).not.toContain("process.env");
+    expect(claudeAuth).not.toContain("process.env");
+    expect(claudeReadiness).toContain("runtime.environment.ANTHROPIC_API_KEY");
+    expect(claudeAuth).toContain("environment.ANTHROPIC_API_KEY");
+  });
+
   it("keeps Codex app-server policy out of the JSON-RPC run loop", async () => {
     const appServer = await readSource("src/harness/providers/codex/app-server.ts");
     const request = await readSource("src/harness/providers/codex/request.ts");
