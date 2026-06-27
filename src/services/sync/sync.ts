@@ -16,7 +16,40 @@ export interface SyncWorkflowOptions {
   startBackground?: operations.StartBackgroundJob;
 }
 
-export type SyncWorkflowSummary = sync.SyncSummary;
+export type SyncWorkflowMode = "sync" | "status";
+export type SyncWorkflowApp = "claude" | "codex";
+
+export interface SyncWorkflowReadyItem {
+  app: SyncWorkflowApp;
+  sessionId: string;
+  transcriptPath: string;
+  repoRoot: string;
+  fromLine: number;
+  toLine: number;
+}
+
+export interface SyncWorkflowStartedItem extends SyncWorkflowReadyItem {
+  jobId: string;
+}
+
+export interface SyncWorkflowSkippedItem {
+  app?: SyncWorkflowApp;
+  sessionId?: string;
+  transcriptPath: string;
+  repoRoot?: string;
+  reason: string;
+}
+
+export interface SyncWorkflowSummary {
+  mode: SyncWorkflowMode;
+  scanned: number;
+  eligible: number;
+  syncSince: string | null;
+  ready: SyncWorkflowReadyItem[];
+  started: SyncWorkflowStartedItem[];
+  skipped: SyncWorkflowSkippedItem[];
+  needsAttention: SyncWorkflowSkippedItem[];
+}
 
 export type SyncWorkflowResult =
   | { status: "completed"; summary: SyncWorkflowSummary }
@@ -34,47 +67,99 @@ export async function runSyncWorkflow(
   if (!quiet.ok) return { status: "invalid", error: quiet.error };
 
   const providers = new Map<string, operations.OperationProviderSelection>();
-  const summary = await sync.sweep({
-    candidates: await sync.discoverCandidates({
-      apps: sources.value,
-      home: options.homeDir ?? homedir(),
-    }),
-    syncSince: await readSyncSince(options.configPath),
-    quietMs: quiet.ms,
-    mode: options.mode ?? "sync",
-    now: options.now ?? new Date(),
-    startAbsorb: async ({ candidate, contextNote }) => {
-      try {
-        const provider = await providerForRepo({
-          repoRoot: candidate.repoRoot,
-          using: options.using,
-          cache: providers,
-        });
-        const result = await operations.absorb({
-          cwd: candidate.repoRoot,
-          provider,
-          background: true,
-          context: syncAbsorbContext({
-            app: candidate.app,
-            sessionId: candidate.sessionId,
-            transcriptPath: candidate.transcriptPath,
-            contextNote,
-          }),
-          targetKind: "session",
-          targetPaths: [candidate.transcriptPath],
-          startBackground: options.startBackground,
-        });
-        return { ok: true, jobId: result.jobId };
-      } catch (err: unknown) {
-        return {
-          ok: false,
-          error: err instanceof Error ? err.message : String(err),
-        };
-      }
-    },
-  });
+  return {
+    status: "completed",
+    summary: syncWorkflowSummaryFromSweep(
+      await sync.sweep({
+        candidates: await sync.discoverCandidates({
+          apps: sources.value,
+          home: options.homeDir ?? homedir(),
+        }),
+        syncSince: await readSyncSince(options.configPath),
+        quietMs: quiet.ms,
+        mode: options.mode ?? "sync",
+        now: options.now ?? new Date(),
+        startAbsorb: async ({ candidate, contextNote }) => {
+          try {
+            const provider = await providerForRepo({
+              repoRoot: candidate.repoRoot,
+              using: options.using,
+              cache: providers,
+            });
+            const result = await operations.absorb({
+              cwd: candidate.repoRoot,
+              provider,
+              background: true,
+              context: syncAbsorbContext({
+                app: candidate.app,
+                sessionId: candidate.sessionId,
+                transcriptPath: candidate.transcriptPath,
+                contextNote,
+              }),
+              targetKind: "session",
+              targetPaths: [candidate.transcriptPath],
+              startBackground: options.startBackground,
+            });
+            return { ok: true, jobId: result.jobId };
+          } catch (err: unknown) {
+            return {
+              ok: false,
+              error: err instanceof Error ? err.message : String(err),
+            };
+          }
+        },
+      }),
+    ),
+  };
+}
 
-  return { status: "completed", summary };
+function syncWorkflowSummaryFromSweep(
+  summary: sync.SyncSummary,
+): SyncWorkflowSummary {
+  return {
+    mode: summary.mode,
+    scanned: summary.scanned,
+    eligible: summary.eligible,
+    syncSince: summary.syncSince,
+    ready: summary.ready.map(syncWorkflowReadyItemFromSweep),
+    started: summary.started.map(syncWorkflowStartedItemFromSweep),
+    skipped: summary.skipped.map(syncWorkflowSkippedItemFromSweep),
+    needsAttention: summary.needsAttention.map(syncWorkflowSkippedItemFromSweep),
+  };
+}
+
+function syncWorkflowReadyItemFromSweep(
+  item: sync.SyncSummary["ready"][number],
+): SyncWorkflowReadyItem {
+  return {
+    app: item.app,
+    sessionId: item.sessionId,
+    transcriptPath: item.transcriptPath,
+    repoRoot: item.repoRoot,
+    fromLine: item.fromLine,
+    toLine: item.toLine,
+  };
+}
+
+function syncWorkflowStartedItemFromSweep(
+  item: sync.SyncSummary["started"][number],
+): SyncWorkflowStartedItem {
+  return {
+    ...syncWorkflowReadyItemFromSweep(item),
+    jobId: item.jobId,
+  };
+}
+
+function syncWorkflowSkippedItemFromSweep(
+  item: sync.SyncSummary["skipped"][number],
+): SyncWorkflowSkippedItem {
+  return {
+    app: item.app,
+    sessionId: item.sessionId,
+    transcriptPath: item.transcriptPath,
+    repoRoot: item.repoRoot,
+    reason: item.reason,
+  };
 }
 
 async function providerForRepo(args: {

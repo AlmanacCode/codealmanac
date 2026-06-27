@@ -375,3 +375,10 @@ Fifty-first production slice:
 - Removed the exported `AutomationOptions` service-type intersection and `AutomationStatusOptions` re-export from the command adapter.
 - Added command-local mappers into service automation option contracts before calling install, uninstall, or status services.
 - Guarded the automation command against regressing to service-owned option aliases.
+
+Fifty-second production slice:
+
+- Made `SyncWorkflowSummary` and its nested ready/started/skipped records explicit service workflow models.
+- Mapped `sync.sweep()` runtime summaries into service-owned workflow summaries before returning from `runSyncWorkflow`.
+- Kept runtime transcript sweep mechanics behind the sync service boundary while preserving the CLI render contract.
+- Guarded the sync service against regressing to a direct `sync.SyncSummary` alias.
