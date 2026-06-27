@@ -8,11 +8,14 @@ import {
   unsetConfigEntry,
   type ConfigRejectedMutation,
 } from "../../services/config/index.js";
-import type { CommandResult } from "../helpers.js";
 import { renderError, renderOutcome } from "../outcome.js";
 import { formatTextTable } from "./table.js";
 
-export type ConfigResult = CommandResult;
+export interface ConfigResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
 
 export async function runConfigList(opts: {
   json?: boolean;

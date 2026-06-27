@@ -8,10 +8,13 @@ import {
   type WikiReviewItem,
   type WikiReviewStatus,
 } from "../../services/wiki/reviews.js";
-import type { CommandResult } from "../helpers.js";
 import { renderOutcome } from "../outcome.js";
 
-export type ReviewCommandOutput = CommandResult;
+export interface ReviewCommandOutput {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
 
 export interface ReviewOptions {
   cwd: string;

@@ -190,6 +190,7 @@ describe("architecture boundaries", () => {
     expect(reviewCommand).not.toContain("nextReviewId");
     expect(reviewCommand).not.toContain("type ReviewItem");
     expect(reviewCommand).not.toContain("type ReviewStatus");
+    expect(reviewCommand).not.toContain("ReviewCommandOutput = CommandResult");
 
     expect(reviewService).not.toContain("resolveWikiRoot");
     expect(reviewService).not.toContain("reviewYamlPath");

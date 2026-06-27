@@ -361,3 +361,10 @@ Forty-ninth production slice:
 - Added `showRecordFromWikiService` at the show adapter edge before formatting records.
 - Copied nested file/source/cross-wiki link values into command-owned structures before rendering.
 - Guarded show command types against importing or aliasing the service page-view contract.
+
+Fiftieth production slice:
+
+- Made `ConfigResult` an explicit config command output contract instead of an alias over `CommandResult`.
+- Made `ReviewCommandOutput` an explicit review command output contract instead of an alias over `CommandResult`.
+- Removed now-unneeded `CommandResult` imports from config and review command adapters.
+- Guarded the review adapter against regressing to the generic command-result alias.
