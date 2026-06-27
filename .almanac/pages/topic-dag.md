@@ -34,7 +34,19 @@ sources:
   - id: topics-service
     type: file
     path: src/services/wiki/topics.ts
-    note: Read-side topic workflows for command adapters.
+    note: Public service facade for topic command adapters.
+  - id: topic-read-service
+    type: file
+    path: src/services/wiki/topic-read.ts
+    note: Read-side topic workflows for list/show.
+  - id: topic-mutation-service
+    type: file
+    path: src/services/wiki/topic-mutations.ts
+    note: Mutation workflows for create/link/describe/unlink.
+  - id: topic-workspace-service
+    type: file
+    path: src/services/wiki/topic-workspace.ts
+    note: Internal service helper for fresh topic index and YAML workspace.
   - id: tag
     type: file
     path: src/cli/commands/tag.ts

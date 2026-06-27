@@ -77,12 +77,14 @@ Sixth production slice:
 
 Seventh production slice:
 
-- Introduced `src/services/wiki/topics.ts` for read-side topic workflows.
+- Introduced `src/services/wiki/topic-read.ts` for read-side topic workflows, exported through the stable `src/services/wiki/topics.ts` facade.
 - Moved `topics list` and `topics show` index freshness, wiki-root resolution, index opening, and topic page lookup out of CLI command adapters.
 - Left mutating topic commands for a later slice because they coordinate YAML edits, page frontmatter rewrites, cycle checks, and reindexing.
 
 Eighth production slice:
 
-- Moved the `topics describe` mutation workflow into `src/services/wiki/topics.ts`.
+- Moved the `topics describe` mutation workflow into `src/services/wiki/topic-mutations.ts`.
 - Kept `src/cli/commands/topics/describe.ts` responsible only for mapping service statuses to CLI stdout/stderr/exit codes.
 - Moved the `topics unlink` mutation workflow into the same service because it only edits `topics.yaml` and reindexes after an actual edge removal.
+- Moved `topics create` and `topics link` into the topic service so parent validation, ad-hoc topic promotion, cycle checks, YAML writes, and reindexing share one product workflow boundary.
+- Split the topic service implementation into `topic-read.ts`, `topic-mutations.ts`, `topic-types.ts`, and `topic-workspace.ts`; `topics.ts` is now only the stable facade import path.

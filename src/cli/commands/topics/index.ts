@@ -27,12 +27,3 @@ export type {
   TopicsShowOptions,
   TopicsUnlinkOptions,
 } from "./types.js";
-
-export {
-  ensureTopic,
-  findTopic,
-  loadTopicsFile,
-  writeTopicsFile,
-  type TopicEntry,
-  type TopicsFile,
-} from "../../../wiki/topics/yaml.js";
