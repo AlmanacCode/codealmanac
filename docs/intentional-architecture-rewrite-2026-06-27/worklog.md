@@ -689,3 +689,9 @@ One-hundred-second production slice:
 - Split background job start lifecycle into `src/jobs/background-start.ts`.
 - Moved background spec persistence, queued record creation, log initialization, worker process launch, and launch-failure marking out of `src/jobs/start.ts`.
 - Kept `src/jobs/start.ts` focused on foreground execution and claimed queued-job execution.
+
+One-hundred-third production slice:
+
+- Split lifecycle command rendering into `src/cli/commands/operations-render.ts`.
+- Moved operation result rendering, JSON foreground rejection output, and foreground failure message formatting out of `src/cli/commands/operations.ts`.
+- Kept `src/cli/commands/operations.ts` focused on converting command options into lifecycle workflow options and rendering the returned workflow result through a named command-private renderer.

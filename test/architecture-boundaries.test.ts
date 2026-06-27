@@ -68,6 +68,24 @@ describe("architecture boundaries", () => {
     expect(registerConfig).toContain(".command(\"config\")");
   });
 
+  it("keeps lifecycle command rendering out of workflow adapters", async () => {
+    const operationsCommand = await readSource("src/cli/commands/operations.ts");
+    const operationsRender = await readSource(
+      "src/cli/commands/operations-render.ts",
+    );
+
+    expect(existsSync(join(ROOT, "src/cli/commands/operations-render.ts")))
+      .toBe(true);
+    expect(operationsCommand).toContain("runInitOperationWorkflow");
+    expect(operationsCommand).toContain("renderWorkflowResult");
+    expect(operationsCommand).not.toContain("renderOutcome");
+    expect(operationsCommand).not.toContain("renderError");
+    expect(operationsCommand).not.toContain("Reason:");
+    expect(operationsCommand).not.toContain("Browse the wiki");
+    expect(operationsRender).toContain("renderOutcome");
+    expect(operationsRender).toContain("renderOperationFailureMessage");
+  });
+
   it("keeps search command adapters out of index storage mechanics", async () => {
     const searchCommand = await readSource("src/cli/commands/search.ts");
     const searchService = await readSource("src/services/wiki/search.ts");
