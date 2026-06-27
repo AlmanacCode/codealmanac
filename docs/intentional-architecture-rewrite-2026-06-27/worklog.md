@@ -520,3 +520,9 @@ Seventy-fourth production slice:
 - Flattened wiki topic and review workspace result contracts.
 - Made editable topic workspaces list `repoRoot`, `db`, and `file` directly instead of extending the fresh-index shape.
 - Made found review items list `file`, `path`, and `item` directly instead of extending the open-review-file shape.
+
+Seventy-fifth production slice:
+
+- Made lifecycle operation hook contracts explicit in `src/services/lifecycle/operations.ts`.
+- Replaced lifecycle aliases to lower-level operation starters and absorb source resolution with service-owned request/result types.
+- Kept the lifecycle service structurally compatible with operation and absorb internals while keeping its exported contract readable at the service boundary.

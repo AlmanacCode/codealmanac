@@ -588,6 +588,15 @@ describe("architecture boundaries", () => {
     expect(lifecycleService).not.toContain(
       "GardenOperationWorkflowOptions extends LifecycleOperationDeps",
     );
+    expect(lifecycleService).not.toContain(
+      "LifecycleOperationForegroundStarter = operations.StartForegroundJob",
+    );
+    expect(lifecycleService).not.toContain(
+      "LifecycleOperationBackgroundStarter = operations.StartBackgroundJob",
+    );
+    expect(lifecycleService).not.toContain(
+      "LifecycleAbsorbSourceResolver = absorb.ResolveSourceFn",
+    );
     expect(lifecycleService).toContain("lifecycleOperationRunResultFromOperation");
     expect(operationsCommand).toContain("services/lifecycle/index.js");
     expect(operationsCommand).not.toContain("import type { CommandResult }");

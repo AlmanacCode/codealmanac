@@ -1,4 +1,12 @@
-import type { HarnessEvent, HarnessFailure } from "../../harness/events.js";
+import type {
+  HarnessEvent,
+  HarnessFailure,
+  HarnessResult,
+} from "../../harness/events.js";
+import type { JobRecord } from "../../jobs/types.js";
+import type { AbsorbInputSource } from "../../absorb/input-source.js";
+import type { SourceRef } from "../../absorb/source-ref.js";
+import type { OperationSpec } from "../../operations/spec.js";
 import * as absorb from "../../absorb/index.js";
 import * as operations from "../../operations/index.js";
 
@@ -14,9 +22,42 @@ export type LifecycleOperationJobStatus =
 export type LifecycleOperationEventHandler = (
   event: HarnessEvent,
 ) => void | Promise<void>;
-export type LifecycleOperationForegroundStarter = operations.StartForegroundJob;
-export type LifecycleOperationBackgroundStarter = operations.StartBackgroundJob;
-export type LifecycleAbsorbSourceResolver = absorb.ResolveSourceFn;
+
+export interface LifecycleForegroundStartRequest {
+  repoRoot: string;
+  spec: OperationSpec;
+  jobId?: string;
+  onEvent?: LifecycleOperationEventHandler;
+}
+
+export interface LifecycleBackgroundStartRequest {
+  repoRoot: string;
+  spec: OperationSpec;
+  jobId?: string;
+}
+
+export interface LifecycleForegroundStartResult {
+  jobId: string;
+  record: JobRecord;
+  result: HarnessResult;
+}
+
+export interface LifecycleBackgroundStartResult {
+  jobId: string;
+  record: JobRecord;
+  childPid: number;
+}
+
+export type LifecycleOperationForegroundStarter = (
+  options: LifecycleForegroundStartRequest,
+) => Promise<LifecycleForegroundStartResult>;
+export type LifecycleOperationBackgroundStarter = (
+  options: LifecycleBackgroundStartRequest,
+) => Promise<LifecycleBackgroundStartResult>;
+export type LifecycleAbsorbSourceResolver = (
+  ref: SourceRef,
+  cwd: string,
+) => Promise<AbsorbInputSource>;
 
 export interface InitOperationWorkflowOptions {
   cwd: string;
