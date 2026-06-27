@@ -290,6 +290,7 @@ describe("almanac update --enable-notifier / --disable-notifier", () => {
     await withTempHome(async (home) => {
       const configPath = configPathIn(home);
       await expect(runConfigSet({
+        cwd: home,
         key: "agent.models.codex",
         value: "default",
       })).resolves.toMatchObject({ exitCode: 0 });

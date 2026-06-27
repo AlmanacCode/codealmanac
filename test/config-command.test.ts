@@ -4,13 +4,59 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  runConfigGet,
-  runConfigList,
-  runConfigSet,
-  runConfigUnset,
+  runConfigGet as runConfigGetCommand,
+  runConfigList as runConfigListCommand,
+  runConfigSet as runConfigSetCommand,
+  runConfigUnset as runConfigUnsetCommand,
 } from "../src/cli/commands/config.js";
 import { parseConfigText, readConfig } from "../src/config/index.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
+
+function runConfigList(opts: {
+  cwd?: string;
+  json?: boolean;
+  showOrigin?: boolean;
+} = {}) {
+  return runConfigListCommand({
+    ...opts,
+    cwd: opts.cwd ?? process.cwd(),
+  });
+}
+
+function runConfigGet(opts: {
+  cwd?: string;
+  key: string;
+  json?: boolean;
+  showOrigin?: boolean;
+}) {
+  return runConfigGetCommand({
+    ...opts,
+    cwd: opts.cwd ?? process.cwd(),
+  });
+}
+
+function runConfigSet(opts: {
+  cwd?: string;
+  key: string;
+  value?: string;
+  project?: boolean;
+}) {
+  return runConfigSetCommand({
+    ...opts,
+    cwd: opts.cwd ?? process.cwd(),
+  });
+}
+
+function runConfigUnset(opts: {
+  cwd?: string;
+  key: string;
+  project?: boolean;
+}) {
+  return runConfigUnsetCommand({
+    ...opts,
+    cwd: opts.cwd ?? process.cwd(),
+  });
+}
 
 describe("config command", () => {
   it("lists supported keys with default origins", async () => {
@@ -222,28 +268,24 @@ describe("config command", () => {
         '[agent]\ndefault = "cursor"\n\n[agent.models]\ncursor = "cursor-fast"\n',
         "utf8",
       );
-      const originalCwd = process.cwd();
-      process.chdir(repo);
-      try {
-        const rows = JSON.parse((await runConfigList({ json: true })).stdout) as
-          Array<{ key: string; value: string | null; origin: string }>;
-        expect(rows.find((row) => row.key === "agent.default")).toMatchObject({
-          value: "cursor",
+      const rows = JSON.parse((await runConfigList({
+        cwd: repo,
+        json: true,
+      })).stdout) as Array<{ key: string; value: string | null; origin: string }>;
+      expect(rows.find((row) => row.key === "agent.default")).toMatchObject({
+        value: "cursor",
+        origin: "project",
+      });
+      expect(rows.find((row) => row.key === "agent.models.cursor"))
+        .toMatchObject({
+          value: "cursor-fast",
           origin: "project",
         });
-        expect(rows.find((row) => row.key === "agent.models.cursor"))
-          .toMatchObject({
-            value: "cursor-fast",
-            origin: "project",
-          });
-        expect(rows.find((row) => row.key === "agent.models.claude"))
-          .toMatchObject({
-            value: "claude-opus-4-6",
-            origin: "user",
-          });
-      } finally {
-        process.chdir(originalCwd);
-      }
+      expect(rows.find((row) => row.key === "agent.models.claude"))
+        .toMatchObject({
+          value: "claude-opus-4-6",
+          origin: "user",
+        });
     });
   });
 
@@ -251,56 +293,57 @@ describe("config command", () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "project-config-write");
       await scaffoldWiki(repo);
-      const originalCwd = process.cwd();
-      process.chdir(repo);
-      try {
-        await expect(runConfigSet({
-          key: "agent.default",
-          value: "codex",
-          project: true,
-        })).resolves.toMatchObject({ exitCode: 0 });
-        await expect(runConfigSet({
-          key: "update_notifier",
-          value: "false",
-          project: true,
-        })).resolves.toMatchObject({
-          exitCode: 1,
-        });
-        await expect(runConfigSet({
-          key: "auto_commit",
-          value: "true",
-          project: true,
-        })).resolves.toMatchObject({
-          exitCode: 1,
-        });
-        await expect(runConfigSet({
-          key: "automation.sync_since",
-          value: "2026-05-12T05:10:00.000Z",
-          project: true,
-        })).resolves.toMatchObject({
-          exitCode: 1,
-        });
-        await expect(runConfigUnset({
-          key: "update_notifier",
-          project: true,
-        })).resolves.toMatchObject({
-          exitCode: 1,
-        });
-        await expect(runConfigUnset({
-          key: "auto_commit",
-          project: true,
-        })).resolves.toMatchObject({
-          exitCode: 1,
-        });
-        await expect(runConfigUnset({
-          key: "automation.sync_since",
-          project: true,
-        })).resolves.toMatchObject({
-          exitCode: 1,
-        });
-      } finally {
-        process.chdir(originalCwd);
-      }
+      await expect(runConfigSet({
+        cwd: repo,
+        key: "agent.default",
+        value: "codex",
+        project: true,
+      })).resolves.toMatchObject({ exitCode: 0 });
+      await expect(runConfigSet({
+        cwd: repo,
+        key: "update_notifier",
+        value: "false",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
+      await expect(runConfigSet({
+        cwd: repo,
+        key: "auto_commit",
+        value: "true",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
+      await expect(runConfigSet({
+        cwd: repo,
+        key: "automation.sync_since",
+        value: "2026-05-12T05:10:00.000Z",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
+      await expect(runConfigUnset({
+        cwd: repo,
+        key: "update_notifier",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
+      await expect(runConfigUnset({
+        cwd: repo,
+        key: "auto_commit",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
+      await expect(runConfigUnset({
+        cwd: repo,
+        key: "automation.sync_since",
+        project: true,
+      })).resolves.toMatchObject({
+        exitCode: 1,
+      });
 
       const toml = await readFile(join(repo, ".almanac", "config.toml"), "utf8");
       expect(toml).toContain("[agent]");

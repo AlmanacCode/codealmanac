@@ -18,14 +18,20 @@ import {
 
 export type { ConfigResult } from "./config-render.js";
 
+interface ConfigCommandScope {
+  cwd: string;
+}
+
 export async function runConfigList(opts: {
+  cwd: string;
   json?: boolean;
   showOrigin?: boolean;
-} = {}): Promise<ConfigResult> {
-  return renderConfigList(await listConfigEntries({ cwd: process.cwd() }), opts);
+}): Promise<ConfigResult> {
+  return renderConfigList(await listConfigEntries({ cwd: opts.cwd }), opts);
 }
 
 export async function runConfigGet(opts: {
+  cwd: string;
   key: string;
   json?: boolean;
   showOrigin?: boolean;
@@ -33,12 +39,12 @@ export async function runConfigGet(opts: {
   const key = parseConfigKey(opts.key);
   if (key === null) return renderUnknownConfigKey(opts.key);
   return renderConfigGet(
-    await readConfigEntry(key, { cwd: process.cwd() }),
+    await readConfigEntry(key, { cwd: opts.cwd }),
     opts,
   );
 }
 
-export async function runConfigSet(opts: {
+export async function runConfigSet(opts: ConfigCommandScope & {
   key: string;
   value?: string;
   project?: boolean;
@@ -54,7 +60,7 @@ export async function runConfigSet(opts: {
         key,
         value: opts.value,
         project: opts.project === true,
-        cwd: process.cwd(),
+        cwd: opts.cwd,
       }),
     );
   } catch (err: unknown) {
@@ -62,7 +68,7 @@ export async function runConfigSet(opts: {
   }
 }
 
-export async function runConfigUnset(opts: {
+export async function runConfigUnset(opts: ConfigCommandScope & {
   key: string;
   project?: boolean;
 }): Promise<ConfigResult> {
@@ -72,7 +78,7 @@ export async function runConfigUnset(opts: {
     await unsetConfigEntry({
       key,
       project: opts.project === true,
-      cwd: process.cwd(),
+      cwd: opts.cwd,
     }),
   );
 }

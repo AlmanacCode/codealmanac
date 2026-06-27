@@ -65,6 +65,7 @@ describe("build operation", () => {
   it("tells the operation prompt when auto-commit is disabled", async () => {
     await withTempHome(async (home) => {
       await expect(runConfigSet({
+        cwd: home,
         key: "auto_commit",
         value: "false",
       })).resolves.toMatchObject({ exitCode: 0 });

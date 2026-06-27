@@ -834,6 +834,7 @@ describe("architecture boundaries", () => {
     expect(configCommand).not.toContain("readConfigWithOrigins(");
     expect(configCommand).not.toContain("serializeConfig");
     expect(configCommand).not.toContain("getProjectConfigPath");
+    expect(configCommand).not.toContain("process.cwd()");
     expect(configCommand).not.toContain("formatTextTable");
     expect(configCommand).not.toContain("JSON.stringify");
     expect(configCommand).not.toContain("formatConfigValue");

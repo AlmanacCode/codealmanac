@@ -14,7 +14,7 @@ export function registerConfigCommands(program: Command): void {
     .option("--show-origin", "show whether each value came from file or default")
     .action(async (opts: { json?: boolean; showOrigin?: boolean }) => {
       const { runConfigList } = await import("../../cli/commands/config.js");
-      emit(await runConfigList(opts));
+      emit(await runConfigList({ ...opts, cwd: process.cwd() }));
     });
 
   config
@@ -28,7 +28,7 @@ export function registerConfigCommands(program: Command): void {
       opts: { json?: boolean; showOrigin?: boolean },
     ) => {
       const { runConfigGet } = await import("../../cli/commands/config.js");
-      emit(await runConfigGet({ key, ...opts }));
+      emit(await runConfigGet({ key, ...opts, cwd: process.cwd() }));
     });
 
   config
@@ -43,7 +43,12 @@ export function registerConfigCommands(program: Command): void {
       opts: { project?: boolean },
     ) => {
       const { runConfigSet } = await import("../../cli/commands/config.js");
-      emit(await runConfigSet({ key, value, project: opts.project }));
+      emit(await runConfigSet({
+        key,
+        value,
+        project: opts.project,
+        cwd: process.cwd(),
+      }));
     });
 
   config
@@ -53,6 +58,10 @@ export function registerConfigCommands(program: Command): void {
     .option("--project", "remove from .almanac/config.toml for this repo")
     .action(async (key: string, opts: { project?: boolean }) => {
       const { runConfigUnset } = await import("../../cli/commands/config.js");
-      emit(await runConfigUnset({ key, project: opts.project }));
+      emit(await runConfigUnset({
+        key,
+        project: opts.project,
+        cwd: process.cwd(),
+      }));
     });
 }

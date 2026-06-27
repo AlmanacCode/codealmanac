@@ -71,13 +71,15 @@ describe("agents command", () => {
   });
 
   it("does not materialize untouched model origins when changing providers", async () => {
-    await withTempHome(async () => {
+    await withTempHome(async (home) => {
       await expect(runAgentsUse({ provider: "claude" })).resolves.toMatchObject({
         exitCode: 0,
       });
 
-      const rows = JSON.parse((await runConfigList({ json: true })).stdout) as
-        Array<{ key: string; origin: string }>;
+      const rows = JSON.parse((await runConfigList({
+        cwd: home,
+        json: true,
+      })).stdout) as Array<{ key: string; origin: string }>;
       expect(rows.find((row) => row.key === "agent.default")?.origin).toBe(
         "user",
       );
