@@ -144,6 +144,16 @@ describe("architecture boundaries", () => {
     expect(reviewCommand).not.toContain("nextReviewId");
   });
 
+  it("keeps migrate legacy-sources adapter out of source migration mechanics", async () => {
+    const migrateCommand = await readSource("src/cli/commands/migrate.ts");
+
+    expect(migrateCommand).toContain("services/wiki/source-migration.js");
+    expect(migrateCommand).not.toContain("wiki/indexer");
+    expect(migrateCommand).not.toContain("wiki/sources");
+    expect(migrateCommand).not.toContain("resolveWikiRoot");
+    expect(migrateCommand).not.toContain("migrateLegacySourceFrontmatter");
+  });
+
   it("keeps registry persistence in an explicit store", () => {
     expect(existsSync(join(ROOT, "src/stores/wiki-registry/store.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/wiki/registry/store.ts"))).toBe(false);
