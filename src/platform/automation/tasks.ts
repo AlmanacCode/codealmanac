@@ -1,7 +1,5 @@
-import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 export const SYNC_LABEL = "com.codealmanac.sync";
 export const LEGACY_CAPTURE_SWEEP_LABEL = "com.codealmanac.capture-sweep";
@@ -24,7 +22,6 @@ export interface ScheduledTaskDefinition {
   stdoutLogName: string;
   stderrLogName: string;
   workingDirectory: ScheduledTaskWorkingDirectory;
-  programArguments: (options?: { quiet?: string }) => string[];
 }
 
 export const SYNC_TASK: ScheduledTaskDefinition = {
@@ -36,12 +33,6 @@ export const SYNC_TASK: ScheduledTaskDefinition = {
   stdoutLogName: "sync.out.log",
   stderrLogName: "sync.err.log",
   workingDirectory: "none",
-  programArguments: (options) => [
-    ...defaultCliProgramArguments(),
-    "sync",
-    "--quiet",
-    options?.quiet ?? DEFAULT_SYNC_QUIET,
-  ],
 };
 
 export const GARDEN_TASK: ScheduledTaskDefinition = {
@@ -53,7 +44,6 @@ export const GARDEN_TASK: ScheduledTaskDefinition = {
   stdoutLogName: "garden.out.log",
   stderrLogName: "garden.err.log",
   workingDirectory: "nearest-almanac-repo",
-  programArguments: () => [...defaultCliProgramArguments(), "garden"],
 };
 
 export const UPDATE_TASK: ScheduledTaskDefinition = {
@@ -65,7 +55,6 @@ export const UPDATE_TASK: ScheduledTaskDefinition = {
   stdoutLogName: "update.out.log",
   stderrLogName: "update.err.log",
   workingDirectory: "none",
-  programArguments: () => [...defaultCliProgramArguments(), "update"],
 };
 
 export const SCHEDULED_TASKS = {
@@ -98,21 +87,18 @@ export function scheduledTaskLogPaths(
 }
 
 export function syncProgramArguments(
+  cliProgramArguments: string[],
   quiet: string = DEFAULT_SYNC_QUIET,
 ): string[] {
-  return SYNC_TASK.programArguments({ quiet });
+  return [...cliProgramArguments, "sync", "--quiet", quiet];
 }
 
-export function gardenProgramArguments(): string[] {
-  return GARDEN_TASK.programArguments();
+export function gardenProgramArguments(cliProgramArguments: string[]): string[] {
+  return [...cliProgramArguments, "garden"];
 }
 
-export function defaultCliProgramArguments(): string[] {
-  const cliEntry = findPackageCliEntry() ??
-    (process.argv[1] !== undefined
-      ? path.resolve(process.argv[1])
-      : path.resolve(process.cwd(), "dist", "launcher.js"));
-  return [process.execPath, cliEntry];
+export function updateProgramArguments(cliProgramArguments: string[]): string[] {
+  return [...cliProgramArguments, "update"];
 }
 
 export function defaultCapturePlistPath(home: string = homedir()): string {
@@ -129,16 +115,4 @@ export function defaultGardenPlistPath(home: string = homedir()): string {
 
 export function defaultUpdatePlistPath(home: string = homedir()): string {
   return UPDATE_TASK.plistPath(home);
-}
-
-function findPackageCliEntry(): string | null {
-  let dir = path.dirname(fileURLToPath(import.meta.url));
-  for (let i = 0; i < 8; i++) {
-    const pkg = path.join(dir, "package.json");
-    if (existsSync(pkg)) return path.join(dir, "dist", "launcher.js");
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return null;
 }

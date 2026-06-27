@@ -827,3 +827,10 @@ One-hundred-twenty-fifth production slice:
 - Made the doctor command receive terminal color capability from the CLI edge instead of reading `process.stdout.isTTY` inside the formatter.
 - Removed the unused diagnostics `stdout` option that only existed to support render-time color inference.
 - Kept diagnostics options service-facing while `src/cli/commands/doctor/render.ts` owns JSON/text render options.
+
+One-hundred-twenty-sixth production slice:
+
+- Made automation install planning receive the base CLI program arguments explicitly instead of deriving them inside `src/platform/automation/tasks.ts`.
+- Added `src/edges/cli/current-cli.ts` as the only owner of current CLI argv/path discovery for scheduled task commands.
+- Kept setup's ephemeral/global install commands as explicit per-task overrides for `/usr/bin/env almanac ...`.
+- Added architecture guards so the automation task catalog cannot reintroduce `process.argv`, `process.cwd()`, or `process.execPath`.

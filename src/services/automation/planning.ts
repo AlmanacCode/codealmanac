@@ -11,9 +11,12 @@ import {
   defaultGardenPlistPath,
   defaultSyncPlistPath,
   defaultUpdatePlistPath,
+  gardenProgramArguments,
   scheduledTaskDefinition,
   scheduledTaskLogPaths,
+  syncProgramArguments,
   type ScheduledTaskDefinition,
+  updateProgramArguments,
 } from "../../platform/automation/tasks.js";
 import { findNearestAlmanacDir } from "../../paths.js";
 import { parseDuration } from "../../shared/duration.js";
@@ -146,12 +149,17 @@ function programArgumentsForTask(
 ): string[] {
   if (task.id === "sync") {
     return options.programArguments ??
-      task.programArguments({ quiet: options.quiet ?? DEFAULT_SYNC_QUIET });
+      syncProgramArguments(
+        options.cliProgramArguments,
+        options.quiet ?? DEFAULT_SYNC_QUIET,
+      );
   }
   if (task.id === "garden") {
-    return options.gardenProgramArguments ?? task.programArguments();
+    return options.gardenProgramArguments ??
+      gardenProgramArguments(options.cliProgramArguments);
   }
-  return options.updateProgramArguments ?? task.programArguments();
+  return options.updateProgramArguments ??
+    updateProgramArguments(options.cliProgramArguments);
 }
 
 function resolveTaskWorkingDirectory(

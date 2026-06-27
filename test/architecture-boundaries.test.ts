@@ -743,6 +743,7 @@ describe("architecture boundaries", () => {
     const automationServiceIndex = await readSource("src/services/automation/index.ts");
     const automationServiceTypes = await readSource("src/services/automation/types.ts");
     const automationPlanning = await readSource("src/services/automation/planning.ts");
+    const automationTasks = await readSource("src/platform/automation/tasks.ts");
     const automationCommand = await readSource("src/cli/commands/automation.ts");
     const automationRender = await readSource("src/cli/commands/automation-render.ts");
 
@@ -756,6 +757,10 @@ describe("architecture boundaries", () => {
     expect(automationServiceTypes).not.toContain("NodeJS.ProcessEnv");
     expect(automationPlanning).not.toContain("process.cwd()");
     expect(automationPlanning).not.toContain("process.env");
+    expect(automationTasks).not.toContain("process.argv");
+    expect(automationTasks).not.toContain("process.cwd()");
+    expect(automationTasks).not.toContain("process.execPath");
+    expect(automationTasks).not.toContain("task.programArguments");
     expect(automationCommand).toContain("services/automation/index.js");
     expect(automationCommand).not.toContain("import type { CommandResult }");
     expect(automationCommand).toContain("AutomationCommandResult");
@@ -950,6 +955,7 @@ describe("architecture boundaries", () => {
       "src/edges/cli/register-setup-commands.ts",
     );
     const sqliteFree = await readSource("src/edges/cli/sqlite-free.ts");
+    const currentCli = await readSource("src/edges/cli/current-cli.ts");
     const setupCallers = await Promise.all([
       readSource("src/cli/commands/setup/agent-choice.ts"),
       readSource("src/cli/commands/setup/global-install-step.ts"),
@@ -992,6 +998,8 @@ describe("architecture boundaries", () => {
     expect(setupTypes).toContain("color?: boolean");
     expect(setupRegistration).toContain("color: shouldUseStdoutColor()");
     expect(sqliteFree).toContain("color: shouldUseStdoutColor()");
+    expect(currentCli).toContain("process.argv");
+    expect(currentCli).toContain("process.execPath");
     for (const caller of setupCallers) {
       expect(caller).not.toContain("confirm,\n} from \"./output.js\"");
       expect(caller).not.toContain("promptText,\n} from \"./output.js\"");

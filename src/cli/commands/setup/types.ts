@@ -38,6 +38,8 @@ export interface SetupOptions {
   cwd: string;
   /** PATH value inherited by launchd jobs during setup. */
   pathEnvironment: string | undefined;
+  /** Base CLI command used by scheduled launchd jobs. */
+  cliProgramArguments: string[];
   /** Override the subprocess spawner for provider login checks. */
   spawnCli?: SetupSpawnCliFn;
   /** Override the launchd plist path. */

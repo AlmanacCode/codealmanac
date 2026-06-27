@@ -15,6 +15,8 @@ import {
 import { ensureAutomationSyncSince, readConfig } from "../src/config/index.js";
 import { withTempHome } from "./helpers.js";
 
+const TEST_CLI_PROGRAM_ARGUMENTS = ["node", "dist/launcher.js"];
+
 describe("almanac automation", () => {
   it("records sync activation once and preserves it on reinstall", async () => {
     await withTempHome(async (home) => {
@@ -490,29 +492,33 @@ capture_since = "2026-05-12T05:10:00.000Z"
 });
 
 type TestAutomationInstallOptions =
-  Omit<AutomationInstallCommandOptions, "cwd" | "pathEnvironment"> & {
+  Omit<AutomationInstallCommandOptions, "cwd" | "pathEnvironment" | "cliProgramArguments"> & {
     cwd?: string;
     pathEnvironment?: string;
+    cliProgramArguments?: string[];
   };
 
 function runAutomationInstall(options: TestAutomationInstallOptions) {
   return runAutomationInstallCommand({
     cwd: process.cwd(),
     pathEnvironment: testPathEnvironment(options),
+    cliProgramArguments: options.cliProgramArguments ?? TEST_CLI_PROGRAM_ARGUMENTS,
     ...options,
   });
 }
 
 type TestMigrateAutomationOptions =
-  Omit<MigrateAutomationOptions, "cwd" | "pathEnvironment"> & {
+  Omit<MigrateAutomationOptions, "cwd" | "pathEnvironment" | "cliProgramArguments"> & {
     cwd?: string;
     pathEnvironment?: string;
+    cliProgramArguments?: string[];
   };
 
 function runMigrateAutomation(options: TestMigrateAutomationOptions) {
   return runMigrateAutomationCommand({
     cwd: process.cwd(),
     pathEnvironment: testPathEnvironment(options),
+    cliProgramArguments: options.cliProgramArguments ?? TEST_CLI_PROGRAM_ARGUMENTS,
     ...options,
   });
 }

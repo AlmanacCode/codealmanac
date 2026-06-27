@@ -1,4 +1,5 @@
 import { runCodealmanacBootstrap } from "../../platform/install/global.js";
+import { currentCliProgramArguments } from "./current-cli.js";
 import { emit, shouldUseStdoutColor } from "./helpers.js";
 
 export interface SetupShortcutOptions {
@@ -35,6 +36,7 @@ export async function tryRunSetupShortcut(args: {
     ...setupInvocation,
     cwd: process.cwd(),
     pathEnvironment: process.env.PATH,
+    cliProgramArguments: currentCliProgramArguments(),
     color: shouldUseStdoutColor(),
   };
 

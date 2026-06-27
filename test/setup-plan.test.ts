@@ -11,10 +11,12 @@ import type { SetupOptions } from "../src/cli/commands/setup/index.js";
 import { DEFAULT_SETUP_INSTRUCTION_TARGETS } from "../src/services/setup/index.js";
 
 const TEST_CWD = "/tmp/codealmanac-setup-plan";
+const TEST_CLI_PROGRAM_ARGUMENTS = ["node", "dist/launcher.js"];
 
 function setupOptions(
-  options: Omit<SetupOptions, "cwd" | "pathEnvironment"> & {
+  options: Omit<SetupOptions, "cwd" | "pathEnvironment" | "cliProgramArguments"> & {
     pathEnvironment?: string;
+    cliProgramArguments?: string[];
   } = {},
 ): SetupOptions {
   return {
@@ -23,6 +25,7 @@ function setupOptions(
     pathEnvironment: "pathEnvironment" in options
       ? options.pathEnvironment
       : process.env.PATH,
+    cliProgramArguments: options.cliProgramArguments ?? TEST_CLI_PROGRAM_ARGUMENTS,
   };
 }
 

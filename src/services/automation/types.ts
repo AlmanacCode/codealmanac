@@ -13,6 +13,7 @@ export interface AutomationInstallOptions {
   gardenOff?: boolean;
   cwd: string;
   pathEnvironment: string | undefined;
+  cliProgramArguments: string[];
   homeDir?: string;
   plistPath?: string;
   gardenPlistPath?: string;

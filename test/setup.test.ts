@@ -48,11 +48,13 @@ const LOGGED_IN_STDOUT = JSON.stringify({
 });
 const LOGGED_OUT_STDOUT = JSON.stringify({ loggedIn: false });
 const TEST_SETUP_THEME = makeSetupTheme(false);
+const TEST_CLI_PROGRAM_ARGUMENTS = ["node", "dist/launcher.js"];
 
 function runSetup(
-  options: Omit<SetupOptions, "cwd" | "pathEnvironment"> & {
+  options: Omit<SetupOptions, "cwd" | "pathEnvironment" | "cliProgramArguments"> & {
     cwd?: string;
     pathEnvironment?: string;
+    cliProgramArguments?: string[];
   },
 ) {
   return runSetupCommand({
@@ -61,6 +63,7 @@ function runSetup(
     pathEnvironment: "pathEnvironment" in options
       ? options.pathEnvironment
       : process.env.PATH,
+    cliProgramArguments: options.cliProgramArguments ?? TEST_CLI_PROGRAM_ARGUMENTS,
   });
 }
 
@@ -328,6 +331,7 @@ describe("codealmanac setup", () => {
         options: {
           cwd: home,
           pathEnvironment: process.env.PATH,
+          cliProgramArguments: TEST_CLI_PROGRAM_ARGUMENTS,
           automationPlistPath: env.plistPath,
           gardenPlistPath: env.gardenPlistPath,
           automationExec: async () => ({}),

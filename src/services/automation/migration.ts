@@ -16,6 +16,7 @@ import type { AutomationExecFn, AutomationInstallResult } from "./types.js";
 export interface MigrateLegacyAutomationOptions {
   cwd: string;
   pathEnvironment: string | undefined;
+  cliProgramArguments: string[];
   homeDir?: string;
   legacyPlistPath?: string;
   syncPlistPath?: string;
@@ -66,6 +67,7 @@ export async function migrateLegacyAutomation(
     quiet,
     cwd: options.cwd,
     pathEnvironment: options.pathEnvironment,
+    cliProgramArguments: options.cliProgramArguments,
     plistPath: syncPlistPath,
     exec: options.exec,
   });

@@ -1,5 +1,6 @@
 import { Command } from "commander";
 
+import { currentCliProgramArguments } from "./current-cli.js";
 import { emit, readStdin } from "./helpers.js";
 import { autoRegisterIfNeeded } from "../../services/wiki/autoregistration.js";
 
@@ -43,6 +44,7 @@ export function registerMigrateCommands(program: Command): void {
       const result = await runMigrateAutomation({
         cwd: process.cwd(),
         pathEnvironment: process.env.PATH,
+        cliProgramArguments: currentCliProgramArguments(),
         json: opts.json,
       });
       emit(result);

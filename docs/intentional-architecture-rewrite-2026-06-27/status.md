@@ -7,7 +7,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 The branch is clean and pushed.
 
-The rewrite has landed 170 commits past `dev`. The worklog records 125 production slices so far. The diff is broad: 309 files changed, with about 18k insertions and 9.8k deletions.
+The rewrite has landed 172 commits past `dev`. The worklog records 126 production slices so far. The diff is broad: more than 300 files changed, with about 18k insertions and 9.8k deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -27,7 +27,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Remaining
 
-- Finish removing ambient runtime state from non-edge layers.
+- Continue removing ambient runtime state from non-edge layers.
 - Continue checking for service files that still know too much about platform, provider, or CLI mechanics.
 - Continue checking for command files that still own workflow decisions instead of request shaping and rendering.
 - Review large files that remain large because of mixed ownership, not because the domain is naturally dense.
@@ -36,9 +36,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Immediate Next Work
 
-The current next slice is automation launch arguments.
-
-`src/platform/automation/tasks.ts` still derives scheduled-task commands from `process.argv`, `process.cwd()`, and `process.execPath`. That runtime knowledge should come from the CLI edge and be passed explicitly into automation planning.
+The current next slice should inspect the remaining non-edge `process.*` reads and decide which are legitimate platform mechanics versus runtime facts that should be passed from an edge.
 
 ## Decision Log
 

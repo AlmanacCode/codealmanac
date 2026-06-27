@@ -1,5 +1,6 @@
 import { Command } from "commander";
 
+import { currentCliProgramArguments } from "./current-cli.js";
 import { emit, shouldUseStdoutColor } from "./helpers.js";
 
 export interface SetupCommandDeps {
@@ -59,6 +60,7 @@ export function registerSetupCommands(
           autoCommit: opts.autoCommit,
           cwd: process.cwd(),
           pathEnvironment: process.env.PATH,
+          cliProgramArguments: currentCliProgramArguments(),
           color: shouldUseStdoutColor(),
         });
         emit(result);

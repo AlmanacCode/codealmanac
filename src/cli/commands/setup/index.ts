@@ -124,6 +124,7 @@ export async function runSetup(
           options: {
             cwd,
             pathEnvironment: options.pathEnvironment,
+            cliProgramArguments: options.cliProgramArguments,
             autoUpdateEvery: options.autoUpdateEvery,
             updatePlistPath: options.updatePlistPath,
             updateProgramArguments: globalInstall.ephemeral

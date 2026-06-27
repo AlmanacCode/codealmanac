@@ -1,5 +1,6 @@
 import { Command } from "commander";
 
+import { currentCliProgramArguments } from "./current-cli.js";
 import { emit } from "./helpers.js";
 
 export function registerAutomationCommands(program: Command): void {
@@ -39,6 +40,7 @@ export function registerAutomationCommands(program: Command): void {
         gardenOff: opts.gardenOff,
         cwd: process.cwd(),
         pathEnvironment: process.env.PATH,
+        cliProgramArguments: currentCliProgramArguments(),
       });
       emit(result);
     });
