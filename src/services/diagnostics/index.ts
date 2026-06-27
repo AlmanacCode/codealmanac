@@ -10,6 +10,7 @@ export type {
   DiagnosticsAutomationStatus,
   DiagnosticsGuideStatus,
   DiagnosticsInstructionEntriesStatus,
+  DiagnosticsInstallStatus,
   DiagnosticsProviderStatus,
   DiagnosticsSpawnCliFn,
   DiagnosticsSpawnedProcess,

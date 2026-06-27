@@ -1,8 +1,3 @@
-import {
-  classifyInstallPath,
-  detectInstallPath,
-  probeBetterSqlite3,
-} from "./probes.js";
 import type {
   Check,
   DiagnosticsAutomationStatus,
@@ -17,11 +12,10 @@ export async function gatherInstallChecks(
 ): Promise<Check[]> {
   const checks: Check[] = [];
 
-  const rawPath = options.installPath ?? detectInstallPath();
-  const { installPath, isEphemeral } = classifyInstallPath(rawPath);
+  const { installPath, isEphemeral } = options.installStatus;
   checks.push(describeInstallPath(installPath, isEphemeral));
 
-  const sqlite = options.sqliteProbe ?? probeBetterSqlite3();
+  const sqlite = options.installStatus.sqlite;
   checks.push({
     status: sqlite.ok ? "ok" : "problem",
     key: "install.sqlite",

@@ -56,6 +56,13 @@ export interface DiagnosticsUpdateStatus {
   notifierEnabled: boolean;
 }
 
+export interface DiagnosticsInstallStatus {
+  installPath: string | null;
+  isEphemeral: boolean;
+  sqlite: SqliteProbeResult;
+  version: string | null;
+}
+
 export interface DoctorOptions {
   cwd: string;
   /** Whether ANTHROPIC_API_KEY is present for the current process. */
@@ -74,6 +81,8 @@ export interface DoctorOptions {
   instructionEntriesStatus: DiagnosticsInstructionEntriesStatus;
   /** Platform-owned update-state/config probe result for the current machine. */
   updateStatus: DiagnosticsUpdateStatus;
+  /** Platform-owned install path, package version, and native binding probe facts. */
+  installStatus: DiagnosticsInstallStatus;
 
   /** Emit structured JSON instead of the colored report. */
   json?: boolean;
@@ -87,15 +96,6 @@ export interface DoctorOptions {
   spawnCli?: DiagnosticsSpawnCliFn;
   /** Override provider readiness probes. */
   providerStatuses?: DiagnosticsProviderStatus[];
-  /** Override the `codealmanac` install path detector. */
-  installPath?: string;
-  /** Override the reported codealmanac version. */
-  versionOverride?: string;
-  /**
-   * Override the better-sqlite3 probe result. When provided, doctor
-   * skips the real native-binding load and returns this instead.
-   */
-  sqliteProbe?: SqliteProbeResult;
   /** Override the health report collector (tests inject a canned report). */
   collectHealthReportFn?: CollectWikiHealthReport;
   /** Test-only clock for "last absorb: Xh ago" rendering. */

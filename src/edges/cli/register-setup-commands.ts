@@ -5,6 +5,7 @@ import { currentCliProgramArguments } from "./current-cli.js";
 import { emit, shouldUseStdoutColor } from "./helpers.js";
 import { probeDiagnosticClaudeAuth } from "../../platform/diagnostics/auth.js";
 import { probeDiagnosticAutomation } from "../../platform/diagnostics/automation.js";
+import { probeDiagnosticInstall } from "../../platform/diagnostics/install.js";
 import {
   probeDiagnosticGuides,
   probeDiagnosticInstructionEntries,
@@ -105,6 +106,7 @@ export function registerSetupCommands(
           guideStatus: probeDiagnosticGuides(),
           instructionEntriesStatus: await probeDiagnosticInstructionEntries(),
           updateStatus: await probeDiagnosticUpdates(),
+          installStatus: probeDiagnosticInstall({ homeDir: homedir() }),
           json: opts.json,
           installOnly: opts.installOnly,
           wikiOnly: opts.wikiOnly,

@@ -1,14 +1,12 @@
 import { gatherAgentChecks } from "./agents.js";
 import { gatherInstallChecks } from "./install.js";
-import { readPackageVersion } from "./probes.js";
 import type { Check, DoctorOptions, DoctorReport } from "./types.js";
 import { gatherUpdateChecks } from "./updates.js";
 
 export async function gatherDoctorReport(
   options: DoctorOptions,
 ): Promise<DoctorReport> {
-  const version =
-    options.versionOverride ?? readPackageVersion() ?? "unknown";
+  const version = options.installStatus.version ?? "unknown";
 
   const install = options.wikiOnly === true
     ? []

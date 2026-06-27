@@ -74,6 +74,12 @@ const NO_UPDATE_CHECK = {
   notifierEnabled: true,
 };
 const SQLITE_OK = { ok: true, summary: "native binding loads cleanly" };
+const INSTALL_OK = {
+  installPath: "/fake",
+  isEphemeral: false,
+  sqlite: SQLITE_OK,
+  version: "0.1.3",
+};
 
 function runDoctor(
   options: Omit<
@@ -83,6 +89,7 @@ function runDoctor(
     | "claudeApiKeySet"
     | "environment"
     | "guideStatus"
+    | "installStatus"
     | "instructionEntriesStatus"
     | "nodeVersion"
     | "updateStatus"
@@ -92,6 +99,7 @@ function runDoctor(
     claudeApiKeySet?: boolean;
     environment?: NodeJS.ProcessEnv;
     guideStatus?: DoctorOptions["guideStatus"];
+    installStatus?: DoctorOptions["installStatus"];
     instructionEntriesStatus?: DoctorOptions["instructionEntriesStatus"];
     nodeVersion?: string;
     updateStatus?: DoctorOptions["updateStatus"];
@@ -107,6 +115,7 @@ function runDoctor(
       status: "installed",
       installedNames: ["almanac.md", "almanac-reference.md"],
     },
+    installStatus: options.installStatus ?? INSTALL_OK,
     instructionEntriesStatus: options.instructionEntriesStatus ?? {
       status: "present",
     },
@@ -193,9 +202,10 @@ describe("almanac doctor", () => {
         cwd: repo,
         json: true,
         automationStatus: { status: "installed", plistPath: env.plistPath },
-        sqliteProbe: SQLITE_OK,
-        installPath: "/fake/path/codealmanac",
-        versionOverride: "0.1.3",
+        installStatus: {
+          ...INSTALL_OK,
+          installPath: "/fake/path/codealmanac",
+        },
       });
 
       expect(r.exitCode).toBe(0);
@@ -221,9 +231,6 @@ describe("almanac doctor", () => {
         cwd: home,
         json: true,
         automationStatus: { status: "missing" },
-        sqliteProbe: SQLITE_OK,
-        installPath: "/fake",
-        versionOverride: "0.1.3",
       });
 
       const parsed = JSON.parse(r.stdout);
@@ -265,9 +272,6 @@ describe("almanac doctor", () => {
         cwd: home,
         json: true,
         automationStatus: { status: "legacy", plistPath: legacyPlistPath },
-        sqliteProbe: SQLITE_OK,
-        installPath: "/fake",
-        versionOverride: "0.1.3",
       });
 
       const parsed = JSON.parse(r.stdout);
@@ -363,9 +367,6 @@ describe("almanac doctor", () => {
       const r = await runDoctor({
         cwd: home,
         json: true,
-        sqliteProbe: SQLITE_OK,
-        installPath: "/fake",
-        versionOverride: "0.1.3",
         now: () => new Date((1_700_000_000 + 3_600) * 1000),
         updateStatus: {
           latestVersion: "0.1.4",
@@ -409,9 +410,6 @@ describe("almanac doctor", () => {
         json: true,
         automationStatus: { status: "installed", plistPath: env.plistPath },
         authStatus: { loggedIn: false },
-        sqliteProbe: SQLITE_OK,
-        installPath: "/fake",
-        versionOverride: "0.1.3",
       });
 
       const parsed = JSON.parse(r.stdout);
@@ -436,9 +434,6 @@ describe("almanac doctor", () => {
         json: true,
         automationStatus: { status: "installed", plistPath: env.plistPath },
         authStatus: { loggedIn: false },
-        sqliteProbe: SQLITE_OK,
-        installPath: "/fake",
-        versionOverride: "0.1.3",
       });
 
       const parsed = JSON.parse(r.stdout);

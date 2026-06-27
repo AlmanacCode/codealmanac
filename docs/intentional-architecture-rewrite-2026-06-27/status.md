@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 196 committed rewrite commits past `dev`. The worklog records 150 production slices so far.
+The branch has 197 committed rewrite commits past `dev`. The worklog records 151 production slices so far.
 
-The diff is broad: 350 files changed, with about 20.4k insertions and 10.6k deletions.
+The diff is broad: 350 files changed, with about 20.5k insertions and 10.7k deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -36,9 +36,9 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice made sync home-directory ownership explicit. The sync CLI edge now passes `homeDir`; `src/cli/commands/sync.ts` and `src/services/sync/types.ts` require it, and `src/services/sync/sync.ts` no longer defaults to `homedir()`.
+The latest slice moved install diagnostics probing out of services. `src/platform/diagnostics/install.ts` now owns install-path detection, ephemeral-path classification, package-version reads, and the better-sqlite3 native-binding probe; doctor services consume the typed `installStatus` fact.
 
-Verification passed: `npm run lint`, focused sync/CLI/boundary tests, full `npm test` with 655 tests, `npm run build`, `git diff --check`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js sync status --json`, and `node dist/codealmanac.js automation status`.
+Verification passed: `npm run lint`, focused doctor/CLI/boundary tests, full `npm test` with 655 tests, `npm run build`, `git diff --check`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js doctor --json`, and `node dist/codealmanac.js automation status`.
 
 ## Immediate Next Work
 

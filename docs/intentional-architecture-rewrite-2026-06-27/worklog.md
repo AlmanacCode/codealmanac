@@ -1001,3 +1001,10 @@ One-hundred-fiftieth production slice:
 - Made sync workflow options require an explicit `homeDir` instead of defaulting to `homedir()` inside `src/services/sync/sync.ts`.
 - Threaded `homeDir` from `src/edges/cli/register-sync-commands.ts` through `src/cli/commands/sync.ts` into the sync service.
 - Added boundary guards so sync services cannot reintroduce ambient home-directory ownership.
+
+One-hundred-fifty-first production slice:
+
+- Moved install diagnostics probing from `src/services/diagnostics/probes.ts` to `src/platform/diagnostics/install.ts`.
+- Added a typed `installStatus` fact to the doctor diagnostics contract so services describe install path, version, and SQLite-binding facts instead of probing the machine directly.
+- Removed the old doctor `installPath`, `versionOverride`, and `sqliteProbe` compatibility knobs in favor of one install-status contract.
+- Added boundary guards so doctor services cannot re-own install-path detection, package-version reads, or native SQLite probing.

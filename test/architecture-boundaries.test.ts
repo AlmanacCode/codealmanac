@@ -1580,9 +1580,11 @@ describe("architecture boundaries", () => {
     const doctorFormat = await readSource("src/cli/commands/doctor/format.ts");
     const doctorDiagnostics = await readSource("src/services/diagnostics/doctor.ts");
     const installDiagnostics = await readSource("src/services/diagnostics/install.ts");
-    const diagnosticsProbes = await readSource("src/services/diagnostics/probes.ts");
     const platformAuthDiagnostics = await readSource(
       "src/platform/diagnostics/auth.ts",
+    );
+    const platformInstallDiagnostics = await readSource(
+      "src/platform/diagnostics/install.ts",
     );
     const platformAutomationDiagnostics = await readSource(
       "src/platform/diagnostics/automation.ts",
@@ -1604,6 +1606,12 @@ describe("architecture boundaries", () => {
     const doctorHealth = await readSource("src/services/wiki/doctor-health.ts");
 
     expect(existsSync(join(ROOT, "src/cli/commands/doctor/render.ts"))).toBe(
+      true,
+    );
+    expect(existsSync(join(ROOT, "src/services/diagnostics/probes.ts"))).toBe(
+      false,
+    );
+    expect(existsSync(join(ROOT, "src/platform/diagnostics/install.ts"))).toBe(
       true,
     );
     expect(doctorIndex).toContain("services/diagnostics/index.js");
@@ -1635,20 +1643,26 @@ describe("architecture boundaries", () => {
       "instructionEntriesStatus: DiagnosticsInstructionEntriesStatus",
     );
     expect(diagnosticsTypes).toContain("updateStatus: DiagnosticsUpdateStatus");
+    expect(diagnosticsTypes).toContain("installStatus: DiagnosticsInstallStatus");
     expect(diagnosticsTypes).not.toContain("settingsPath?:");
     expect(diagnosticsTypes).not.toContain("almanacDir?:");
     expect(diagnosticsTypes).not.toContain("hookScriptPath?:");
     expect(diagnosticsTypes).not.toContain("updateStatePath?:");
     expect(diagnosticsTypes).not.toContain("updateConfigPath?:");
+    expect(diagnosticsTypes).not.toContain("installPath?:");
+    expect(diagnosticsTypes).not.toContain("versionOverride?:");
+    expect(diagnosticsTypes).not.toContain("sqliteProbe?:");
+    expect(doctorDiagnostics).not.toContain("readPackageVersion");
     expect(installDiagnostics).not.toContain("process.env");
     expect(installDiagnostics).not.toContain("process.version");
     expect(installDiagnostics).not.toContain("platform/automation");
     expect(installDiagnostics).not.toContain("homedir");
     expect(installDiagnostics).not.toContain("existsSync");
+    expect(installDiagnostics).not.toContain("probeBetterSqlite3");
+    expect(installDiagnostics).not.toContain("detectInstallPath");
     expect(installDiagnostics).not.toContain("checkAgentInstructions");
     expect(installDiagnostics).not.toContain("safeCheckAuth");
     expect(installDiagnostics).not.toContain("checkClaudeAuth");
-    expect(diagnosticsProbes).not.toContain("checkClaudeAuth");
     expect(updateDiagnostics).not.toContain("../../config/");
     expect(updateDiagnostics).not.toContain("../../platform/");
     expect(updateDiagnostics).not.toContain("readState");
@@ -1656,6 +1670,7 @@ describe("architecture boundaries", () => {
     expect(updateDiagnostics).not.toContain("readStateForDoctor");
     expect(setupRegistration).toContain("shouldUseStdoutColor()");
     expect(setupRegistration).toContain("nodeVersion: process.version");
+    expect(setupRegistration).toContain("probeDiagnosticInstall({ homeDir: homedir() })");
     expect(setupRegistration).toContain("probeDiagnosticClaudeAuth()");
     expect(setupRegistration).toContain("probeDiagnosticAutomation()");
     expect(setupRegistration).toContain("probeDiagnosticGuides()");
@@ -1663,6 +1678,9 @@ describe("architecture boundaries", () => {
     expect(setupRegistration).toContain("probeDiagnosticUpdates()");
     expect(setupRegistration).not.toContain("color: process.stdout.isTTY === true");
     expect(platformAuthDiagnostics).toContain("checkClaudeAuth");
+    expect(platformInstallDiagnostics).toContain("probeBetterSqlite3");
+    expect(platformInstallDiagnostics).toContain("readPackageVersion");
+    expect(platformInstallDiagnostics).toContain("homedir()");
     expect(platformAutomationDiagnostics).toContain(
       "../automation/legacy-capture.js",
     );
