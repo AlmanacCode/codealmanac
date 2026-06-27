@@ -35,6 +35,11 @@ export interface DiagnosticsAuthStatus {
   authMethod?: string;
 }
 
+export type DiagnosticsAutomationStatus =
+  | { status: "legacy"; plistPath: string }
+  | { status: "installed"; plistPath: string }
+  | { status: "missing" };
+
 export interface DoctorOptions {
   cwd: string;
   /** Whether ANTHROPIC_API_KEY is present for the current process. */
@@ -43,6 +48,8 @@ export interface DoctorOptions {
   environment: NodeJS.ProcessEnv;
   /** Node.js version running the current CLI process. */
   nodeVersion: string;
+  /** Platform-owned automation probe result for the current machine. */
+  automationStatus: DiagnosticsAutomationStatus;
 
   /** Emit structured JSON instead of the colored report. */
   json?: boolean;
@@ -56,10 +63,6 @@ export interface DoctorOptions {
   spawnCli?: DiagnosticsSpawnCliFn;
   /** Override provider readiness probes. */
   providerStatuses?: DiagnosticsProviderStatus[];
-  /** Override sync launchd plist path. */
-  automationPlistPath?: string;
-  /** Override legacy capture-sweep launchd plist path. */
-  legacyAutomationPlistPath?: string;
   /** Override `~/.claude/settings.json` path. */
   settingsPath?: string;
   /** Override `~/.almanac/` directory. */

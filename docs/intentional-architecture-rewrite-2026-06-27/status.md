@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 188 committed rewrite commits past `dev`. The worklog records 142 production slices so far.
+The branch has 189 committed rewrite commits past `dev`. The worklog records 143 production slices so far.
 
 The diff is broad: more than 300 files changed, with about 18.9k insertions and 10k deletions.
 
@@ -36,7 +36,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Immediate Next Work
 
-Continue checking services that still know too much about platform, provider, or CLI mechanics; command files that still own workflow decisions instead of request shaping and rendering; and large files whose size reflects mixed ownership rather than domain density. The indexer warning, provider enablement, autoregistration registry-matching, harness provider environment, job-record PID paths, serve interrupt handling, setup/uninstall terminal sinks and input streams, doctor Node runtime version, jobs PID liveness/signaling paths, lifecycle init request context, and review command result rendering are now explicit. Remaining candidates include provider/platform mechanics, command workflow decisions, and viewer API/read-model boundaries.
+Continue checking services that still know too much about platform, provider, or CLI mechanics; command files that still own workflow decisions instead of request shaping and rendering; and large files whose size reflects mixed ownership rather than domain density. The indexer warning, provider enablement, autoregistration registry-matching, harness provider environment, job-record PID paths, serve interrupt handling, setup/uninstall terminal sinks and input streams, doctor Node runtime version, doctor automation probing, jobs PID liveness/signaling paths, lifecycle init request context, and review command result rendering are now explicit. Remaining candidates include provider/platform mechanics, command workflow decisions, and viewer API/read-model boundaries.
 
 ## Decision Log
 

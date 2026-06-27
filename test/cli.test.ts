@@ -627,7 +627,10 @@ describe("run() — codealmanac-setup shortcut routing", () => {
     }
 
     expect(setupMock).not.toHaveBeenCalled();
-    expect(doctorMock).toHaveBeenCalledWith({
+    expect(doctorMock).toHaveBeenCalledWith(expect.objectContaining({
+      automationStatus: expect.objectContaining({
+        status: expect.any(String),
+      }),
       cwd: process.cwd(),
       claudeApiKeySet: process.env.ANTHROPIC_API_KEY !== undefined &&
         process.env.ANTHROPIC_API_KEY.length > 0,
@@ -637,7 +640,7 @@ describe("run() — codealmanac-setup shortcut routing", () => {
       json: undefined,
       nodeVersion: process.version,
       wikiOnly: undefined,
-    });
+    }));
   });
 
   it("does NOT shortcut for `codealmanac --yes doctor` (subcommand present)", async () => {

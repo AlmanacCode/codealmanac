@@ -2,6 +2,7 @@ import { Command } from "commander";
 
 import { currentCliProgramArguments } from "./current-cli.js";
 import { emit, shouldUseStdoutColor } from "./helpers.js";
+import { probeDiagnosticAutomation } from "../../platform/diagnostics/automation.js";
 
 export interface SetupCommandDeps {
   runSetup?: typeof import("../../cli/commands/setup/index.js").runSetup;
@@ -91,6 +92,7 @@ export function registerSetupCommands(
             process.env.ANTHROPIC_API_KEY.length > 0,
           environment: process.env,
           nodeVersion: process.version,
+          automationStatus: await probeDiagnosticAutomation(),
           json: opts.json,
           installOnly: opts.installOnly,
           wikiOnly: opts.wikiOnly,

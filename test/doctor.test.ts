@@ -12,6 +12,7 @@ import {
   runDoctor as runDoctorCommand,
   type DoctorOptions,
 } from "../src/cli/commands/doctor/index.js";
+import { probeDiagnosticAutomation } from "../src/platform/diagnostics/automation.js";
 import {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
@@ -56,7 +57,11 @@ const LOGGED_OUT_STDOUT = JSON.stringify({ loggedIn: false });
 const SQLITE_OK = { ok: true, summary: "native binding loads cleanly" };
 
 function runDoctor(
-  options: Omit<DoctorOptions, "claudeApiKeySet" | "environment" | "nodeVersion"> & {
+  options: Omit<
+    DoctorOptions,
+    "automationStatus" | "claudeApiKeySet" | "environment" | "nodeVersion"
+  > & {
+    automationStatus?: DoctorOptions["automationStatus"];
     claudeApiKeySet?: boolean;
     environment?: NodeJS.ProcessEnv;
     nodeVersion?: string;
@@ -66,6 +71,7 @@ function runDoctor(
     claudeApiKeySet: false,
     environment: process.env,
     nodeVersion: options.nodeVersion ?? "v20.0.0-test",
+    automationStatus: options.automationStatus ?? { status: "missing" },
     ...options,
   });
 }
@@ -147,7 +153,7 @@ describe("almanac doctor", () => {
       const r = await runDoctor({
         cwd: repo,
         json: true,
-        automationPlistPath: env.plistPath,
+        automationStatus: { status: "installed", plistPath: env.plistPath },
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         sqliteProbe: SQLITE_OK,
@@ -175,12 +181,10 @@ describe("almanac doctor", () => {
   it("reports missing local automation as optional for hosted setup", async () => {
     await withTempHome(async (home) => {
       const env = await scaffoldHealthyInstall(home);
-      const missingPlist = join(home, "missing.plist");
-
       const r = await runDoctor({
         cwd: home,
         json: true,
-        automationPlistPath: missingPlist,
+        automationStatus: { status: "missing" },
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         sqliteProbe: SQLITE_OK,
@@ -227,8 +231,7 @@ describe("almanac doctor", () => {
       const r = await runDoctor({
         cwd: home,
         json: true,
-        automationPlistPath: env.plistPath,
-        legacyAutomationPlistPath: legacyPlistPath,
+        automationStatus: { status: "legacy", plistPath: legacyPlistPath },
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_IN_STDOUT),
         sqliteProbe: SQLITE_OK,
@@ -248,13 +251,51 @@ describe("almanac doctor", () => {
     });
   });
 
+  it("probes launchd automation status in the platform layer", async () => {
+    await withTempHome(async (home) => {
+      const env = await scaffoldHealthyInstall(home);
+      await expect(
+        probeDiagnosticAutomation({
+          homeDir: home,
+          automationPlistPath: env.plistPath,
+          legacyAutomationPlistPath: join(home, "missing-legacy.plist"),
+        }),
+      ).resolves.toEqual({ status: "installed", plistPath: env.plistPath });
+
+      const legacyPlistPath = join(home, "legacy.plist");
+      await writeFile(
+        legacyPlistPath,
+        `<plist version="1.0">
+<dict>
+  <key>ProgramArguments</key>
+  <array>
+    <string>almanac</string>
+    <string>capture</string>
+    <string>sweep</string>
+  </array>
+</dict>
+</plist>
+`,
+        "utf8",
+      );
+
+      await expect(
+        probeDiagnosticAutomation({
+          homeDir: home,
+          automationPlistPath: env.plistPath,
+          legacyAutomationPlistPath: legacyPlistPath,
+        }),
+      ).resolves.toEqual({ status: "legacy", plistPath: legacyPlistPath });
+    });
+  });
+
   it("reports auth problems without hiding other install checks", async () => {
     await withTempHome(async (home) => {
       const env = await scaffoldHealthyInstall(home);
       const r = await runDoctor({
         cwd: home,
         json: true,
-        automationPlistPath: env.plistPath,
+        automationStatus: { status: "installed", plistPath: env.plistPath },
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_OUT_STDOUT),
         sqliteProbe: SQLITE_OK,
@@ -282,7 +323,7 @@ describe("almanac doctor", () => {
         cwd: home,
         claudeApiKeySet: true,
         json: true,
-        automationPlistPath: env.plistPath,
+        automationStatus: { status: "installed", plistPath: env.plistPath },
         claudeDir: env.claudeDir,
         spawnCli: fakeSpawnCli(LOGGED_OUT_STDOUT),
         sqliteProbe: SQLITE_OK,

@@ -1558,6 +1558,9 @@ describe("architecture boundaries", () => {
     const doctorFormat = await readSource("src/cli/commands/doctor/format.ts");
     const doctorDiagnostics = await readSource("src/services/diagnostics/doctor.ts");
     const installDiagnostics = await readSource("src/services/diagnostics/install.ts");
+    const platformAutomationDiagnostics = await readSource(
+      "src/platform/diagnostics/automation.ts",
+    );
     const diagnosticsTypes = await readSource("src/services/diagnostics/types.ts");
     const diagnosticsIndex = await readSource("src/services/diagnostics/index.ts");
     const setupRegistration = await readSource(
@@ -1592,11 +1595,18 @@ describe("architecture boundaries", () => {
     expect(diagnosticsTypes).not.toContain("stdout?:");
     expect(diagnosticsTypes).toContain("claudeApiKeySet: boolean");
     expect(diagnosticsTypes).toContain("nodeVersion: string");
+    expect(diagnosticsTypes).toContain("automationStatus: DiagnosticsAutomationStatus");
     expect(installDiagnostics).not.toContain("process.env");
     expect(installDiagnostics).not.toContain("process.version");
+    expect(installDiagnostics).not.toContain("platform/automation");
     expect(setupRegistration).toContain("shouldUseStdoutColor()");
     expect(setupRegistration).toContain("nodeVersion: process.version");
+    expect(setupRegistration).toContain("probeDiagnosticAutomation()");
     expect(setupRegistration).not.toContain("color: process.stdout.isTTY === true");
+    expect(platformAutomationDiagnostics).toContain(
+      "../automation/legacy-capture.js",
+    );
+    expect(platformAutomationDiagnostics).toContain("../automation/tasks.js");
     expect(diagnosticsTypes).not.toContain("agent/readiness/providers/claude");
     expect(diagnosticsTypes).not.toContain("from \"../../agent/types.js\"");
     expect(diagnosticsTypes).not.toContain("from \"../../config/index.js\"");

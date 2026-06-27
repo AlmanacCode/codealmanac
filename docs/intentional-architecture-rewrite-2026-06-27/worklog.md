@@ -947,3 +947,10 @@ One-hundred-forty-second production slice:
 - Moved init command-context prose from `src/services/lifecycle/operations.ts` into `src/cli/commands/operations.ts`.
 - Kept the lifecycle service focused on provider resolution and operation execution, not command request wording.
 - Added a behavior assertion for the generated init context and a boundary guard against lifecycle services owning command-context prose.
+
+One-hundred-forty-third production slice:
+
+- Added an explicit `automationStatus` fact to the doctor diagnostics contract.
+- Moved launchd sync plist and legacy capture-sweep detection into `src/platform/diagnostics/automation.ts`.
+- Kept `src/services/diagnostics/install.ts` focused on describing install checks from facts rather than importing platform automation modules.
+- Added platform probe coverage and an architecture guard against install diagnostics re-owning automation platform mechanics.
