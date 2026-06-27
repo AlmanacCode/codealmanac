@@ -1,10 +1,10 @@
 import type { HarnessFailure } from "../harness/events.js";
+import { finishJobRecord } from "./record-factory.js";
 import {
-  finishJobRecord,
   isJobCancellationRequested,
   readJobRecord,
   writeJobRecord,
-} from "./records.js";
+} from "../stores/jobs/records.js";
 import type {
   JobOperationOutput,
   JobPageChanges,

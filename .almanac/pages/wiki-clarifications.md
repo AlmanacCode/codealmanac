@@ -13,7 +13,7 @@ sources:
     note: Runs Garden operations that may review unresolved wiki maintenance items.
   - id: process-manager
     type: file
-    path: src/jobs/records.ts
+    path: src/stores/jobs/records.ts
     note: Records operation jobs that can expose questions or review items.
   - id: viewer-jobs
     type: file

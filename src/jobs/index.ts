@@ -10,8 +10,11 @@ export {
   buildQueuedJobRecord,
   buildStartedJobRecord,
   finishJobRecord,
+} from "./record-factory.js";
+export { isJobRecord } from "./record-schema.js";
+export { toJobView } from "./record-view.js";
+export {
   isJobCancellationRequested,
-  isJobRecord,
   listJobRecords,
   markJobCancelled,
   readJobRecord,
@@ -23,9 +26,8 @@ export {
   resolveJobCancelPath,
   resolveJobLogPath,
   resolveJobRecordPath,
-  toJobView,
   writeJobRecord,
-} from "./records.js";
+} from "../stores/jobs/records.js";
 export {
   acquireJobWorkerLock,
   oldestQueuedJob,

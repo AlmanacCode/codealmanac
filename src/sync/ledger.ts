@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import type { SessionCandidate, SweepApp } from "./discovery/index.js";
 import { objectField, parseJsonObject, stringField } from "./discovery/jsonl.js";
 import { getRepoAlmanacDir } from "../paths.js";
-import { readJobRecord, resolveJobRecordPath } from "../jobs/records.js";
+import { readJobRecord, resolveJobRecordPath } from "../stores/jobs/records.js";
 import type { JobRecord } from "../jobs/types.js";
 
 export type LedgerStatus = "done" | "pending" | "failed" | "needs_attention";

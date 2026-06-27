@@ -78,7 +78,7 @@ sources:
     note: Migrated from legacy files.
   - id: records
     type: file
-    path: src/jobs/records.ts
+    path: src/stores/jobs/records.ts
     note: Migrated from legacy files.
   - id: paths
     type: file

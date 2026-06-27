@@ -7,7 +7,7 @@ import type {
   ProviderSessionPersistence,
 } from "../operations/spec.js";
 import { isAgentProviderId, type AgentProviderId } from "../agent/provider-id.js";
-import { jobsDir, legacyRunsDir } from "./records.js";
+import { jobsDir, legacyRunsDir } from "../stores/jobs/records.js";
 import { existsSync } from "node:fs";
 
 export function jobSpecPath(repoRoot: string, jobId: string): string {

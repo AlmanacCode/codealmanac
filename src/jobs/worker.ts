@@ -3,10 +3,12 @@ import type { HarnessRunHooks } from "../harness/types.js";
 import type { OperationSpec } from "../operations/spec.js";
 import {
   finishJobRecord,
+} from "./record-factory.js";
+import {
   readJobRecord,
   resolveJobRecordPath,
   writeJobRecord,
-} from "./records.js";
+} from "../stores/jobs/records.js";
 import { acquireJobWorkerLock, oldestQueuedJob } from "./queue.js";
 import { readJobSpec } from "./spec.js";
 import { startQueuedJob } from "./start.js";

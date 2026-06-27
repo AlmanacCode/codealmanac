@@ -173,6 +173,11 @@ describe("architecture boundaries", () => {
     expect(jobsCommand).not.toContain("process.kill");
   });
 
+  it("keeps job record persistence in an explicit store", () => {
+    expect(existsSync(join(ROOT, "src/stores/jobs/records.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/jobs/records.ts"))).toBe(false);
+  });
+
   it("keeps automation command adapters out of launchd workflow mechanics", async () => {
     const automationCommand = await readSource("src/cli/commands/automation.ts");
 

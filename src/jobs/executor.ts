@@ -12,7 +12,7 @@ import {
 import {
   resolveJobLogPath,
   resolveJobRecordPath,
-} from "./records.js";
+} from "../stores/jobs/records.js";
 import type {
   JobOperationOutput,
   JobPageChanges,

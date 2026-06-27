@@ -1,6 +1,6 @@
 import type { HarnessEvent } from "../harness/events.js";
 import { appendJobEvent } from "./logs.js";
-import { readJobRecord, writeJobRecord } from "./records.js";
+import { readJobRecord, writeJobRecord } from "../stores/jobs/records.js";
 import type { JobRecord } from "./types.js";
 
 export interface JobEventLogger {

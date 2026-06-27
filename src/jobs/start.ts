@@ -11,12 +11,14 @@ import {
   buildQueuedJobRecord,
   buildStartedJobRecord,
   finishJobRecord,
+} from "./record-factory.js";
+import {
   jobRecordPath,
   readJobRecord,
   resolveJobLogPath,
   resolveJobRecordPath,
   writeJobRecord,
-} from "./records.js";
+} from "../stores/jobs/records.js";
 import { acquireJobWorkerLock } from "./queue.js";
 import { writeJobSpec } from "./spec.js";
 import { cancelledRecordIfRequested } from "./finalization.js";

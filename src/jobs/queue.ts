@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { jobsDir, legacyRunsDir, listJobRecords } from "./records.js";
+import { jobsDir, legacyRunsDir, listJobRecords } from "../stores/jobs/records.js";
 import type { JobRecord } from "./types.js";
 
 const OWNERLESS_LOCK_GRACE_MS = 30_000;

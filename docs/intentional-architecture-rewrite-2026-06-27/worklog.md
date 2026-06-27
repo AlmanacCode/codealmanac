@@ -125,3 +125,9 @@ Twelfth production slice:
 - Changed `src/services/update/update.ts` to return typed workflow states instead of final CLI stdout/stderr/exit objects.
 - Moved update command text rendering into `src/cli/commands/update.ts`, while keeping platform npm install output as the update integration boundary.
 - Added an architecture guard so update workflow code does not reintroduce `stdout:`, `stderr:`, or `exitCode:` command rendering.
+
+Thirteenth production slice:
+
+- Moved durable job record path resolution, legacy `.almanac/runs/` fallback reads, cancel markers, atomic JSON writes, and record listing into `src/stores/jobs/records.ts`.
+- Split the old catch-all `src/jobs/records.ts` into `record-factory.ts`, `record-schema.ts`, `record-view.ts`, and the explicit store file.
+- Kept `src/jobs/index.ts` as the public jobs facade while removing the ambiguous `src/jobs/records.ts` module.

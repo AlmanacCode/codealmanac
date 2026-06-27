@@ -56,7 +56,7 @@ sources:
     note: Collects page snapshot deltas, structured operation output, and post-success reindexing.
   - id: records
     type: file
-    path: src/jobs/records.ts
+    path: src/stores/jobs/records.ts
     note: Migrated from legacy files.
   - id: logs
     type: file
@@ -114,7 +114,7 @@ The `src/jobs/` layer owns Almanac job lifecycle for every write-capable AI oper
 
 ## Storage
 
-Current job records are per wiki under `.almanac/jobs/`; `src/jobs/records.ts` still reads legacy `.almanac/runs/` records when an older wiki has them:
+Current job records are per wiki under `.almanac/jobs/`; `src/stores/jobs/records.ts` still reads legacy `.almanac/runs/` records when an older wiki has them:
 
 ```text
 .almanac/jobs/<job-id>.json
@@ -127,7 +127,7 @@ The JSON record stores status, operation, provider, model, PID, target metadata,
 
 These job records are CodeAlmanac's canonical job transcript and audit record. Provider-owned Claude or Codex session history is secondary debug material and may be non-persistent for Almanac maintenance jobs. The user-visible transcript feature belongs to `.almanac/jobs/<job-id>.jsonl`, `almanac jobs logs <job-id>`, and the `almanac serve` jobs UI, not to the provider's own session store.
 
-The jobs rename deliberately did not add a read-time storage migration. `[[src/jobs/records.ts]]` resolves current `.almanac/jobs/` records, logs, and cancel markers first, then falls back to legacy `.almanac/runs/` paths when the current artifact is absent. It lists legacy records without moving `.almanac/runs/`, and callers that need a log path use `resolveJobLogPath()` instead of trusting an old `record.logPath` field. That compatibility keeps old job history readable without making read-only commands mutate runtime state. [@records] [@jobs-refactor-session]
+The jobs rename deliberately did not add a read-time storage migration. `[[src/stores/jobs/records.ts]]` resolves current `.almanac/jobs/` records, logs, and cancel markers first, then falls back to legacy `.almanac/runs/` paths when the current artifact is absent. It lists legacy records without moving `.almanac/runs/`, and callers that need a log path use `resolveJobLogPath()` instead of trusting an old `record.logPath` field. That compatibility keeps old job history readable without making read-only commands mutate runtime state. [@records] [@jobs-refactor-session]
 
 ## Status lifecycle
 
