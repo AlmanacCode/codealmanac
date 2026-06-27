@@ -1,15 +1,12 @@
 import {
-  buildProviderSetupView,
-  parseAgentSelection,
   type ProviderReadiness,
   type ProviderSetupView,
-} from "../../agent/readiness/view.js";
+} from "../../services/agents/index.js";
 import {
-  isAgentProviderId,
-  readConfig,
-  writeConfig,
-  type AgentProviderId,
-} from "../../config/index.js";
+  readAgentsView,
+  setAgentModel,
+  setDefaultAgent as setDefaultAgentService,
+} from "../../services/agents/index.js";
 import { formatTextTable } from "./table.js";
 
 export interface AgentsResult {
@@ -21,7 +18,7 @@ export interface AgentsResult {
 export async function runAgentsList(opts: {
   view?: ProviderSetupView;
 } = {}): Promise<AgentsResult> {
-  const view = opts.view ?? await buildProviderSetupView();
+  const view = await readAgentsView(opts);
   const lines = ["Almanac agents\n"];
   lines.push(
     ...formatTextTable({
@@ -44,7 +41,7 @@ export async function runAgentsList(opts: {
 }
 
 export async function runAgentsDoctor(): Promise<AgentsResult> {
-  const view = await buildProviderSetupView();
+  const view = await readAgentsView();
   const lines = ["Almanac agent doctor\n"];
   for (const choice of view.choices) {
     lines.push(`${choice.ready ? "✓" : "✗"} ${choice.label}`);
@@ -78,8 +75,11 @@ export async function runAgentsUse(opts: SetDefaultAgentOptions): Promise<Agents
 async function setDefaultAgent(
   opts: SetDefaultAgentOptions,
 ): Promise<AgentsResult> {
-  const parsed = parseAgentSelection(opts.provider);
-  if (parsed.provider === null) {
+  const result = await setDefaultAgentService({
+    cwd: process.cwd(),
+    provider: opts.provider,
+  });
+  if (result.status === "unknown-agent") {
     return {
       stdout: "",
       stderr:
@@ -88,28 +88,10 @@ async function setDefaultAgent(
       exitCode: 1,
     };
   }
-  const provider = parsed.provider;
-  const config = await readConfig();
-  const next = {
-    ...config,
-    agent: {
-      ...config.agent,
-      default: provider,
-      models:
-        parsed.model === undefined
-          ? config.agent.models
-          : {
-              ...config.agent.models,
-              [provider]: parsed.model,
-            },
-    },
-  };
-  await writeConfig(next);
   return {
-    stdout:
-      parsed.model === undefined
-        ? `almanac: default agent set to ${provider}.\n`
-        : `almanac: default agent set to ${provider}; ${provider} model set to ${parsed.model}.\n`,
+    stdout: result.model === undefined
+      ? `almanac: default agent set to ${result.provider}.\n`
+      : `almanac: default agent set to ${result.provider}; ${result.provider} model set to ${result.model}.\n`,
     stderr: "",
     exitCode: 0,
   };
@@ -136,7 +118,13 @@ async function setProviderModel(opts: {
   model?: string;
   defaultModel?: boolean;
 }): Promise<AgentsResult> {
-  if (!isAgentProviderId(opts.provider)) {
+  const result = await setAgentModel({
+    cwd: process.cwd(),
+    provider: opts.provider,
+    model: opts.model,
+    defaultModel: opts.defaultModel,
+  });
+  if (result.status === "unknown-agent") {
     return {
       stdout: "",
       stderr:
@@ -145,10 +133,7 @@ async function setProviderModel(opts: {
       exitCode: 1,
     };
   }
-  if (
-    opts.defaultModel !== true &&
-    (opts.model === undefined || opts.model.length === 0)
-  ) {
+  if (result.status === "missing-model") {
     return {
       stdout: "",
       stderr:
@@ -157,38 +142,13 @@ async function setProviderModel(opts: {
       exitCode: 1,
     };
   }
-  const provider = opts.provider as AgentProviderId;
-  const config = await readConfig();
-  const model = normalizeRequestedModel(opts);
-  await writeConfig({
-    ...config,
-    agent: {
-      ...config.agent,
-      models: {
-        ...config.agent.models,
-        [provider]: model,
-      },
-    },
-  });
   return {
-    stdout:
-      model === null
-        ? `almanac: ${provider} model reset to provider default.\n`
-        : `almanac: ${provider} model set to ${model}.\n`,
+    stdout: result.status === "model-reset"
+      ? `almanac: ${result.provider} model reset to provider default.\n`
+      : `almanac: ${result.provider} model set to ${result.model}.\n`,
     stderr: "",
     exitCode: 0,
   };
-}
-
-function normalizeRequestedModel(opts: {
-  provider: string;
-  model?: string;
-  defaultModel?: boolean;
-}): string | null {
-  if (opts.defaultModel === true) return null;
-  if (opts.model === undefined || opts.model.length === 0) return null;
-  if (opts.model === "default" || opts.model === "null") return null;
-  return opts.model;
 }
 
 function readinessLabel(readiness: ProviderReadiness): string {

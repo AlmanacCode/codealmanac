@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { runAgentsList, runAgentsModel, runAgentsUse } from "../src/cli/commands/agents.js";
 import { runConfigList } from "../src/cli/commands/config.js";
+import { readConfig } from "../src/config/index.js";
 import { withTempHome } from "./helpers.js";
 
 describe("agents command", () => {
@@ -86,6 +87,48 @@ describe("agents command", () => {
       expect(rows.find((row) => row.key === "agent.models.codex")?.origin).toBe(
         "default",
       );
+    });
+  });
+
+  it("sets provider and model from provider/model shorthand", async () => {
+    await withTempHome(async () => {
+      const result = await runAgentsUse({ provider: "claude/claude-opus-4-6" });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("default agent set to claude");
+      expect(result.stdout).toContain("claude model set to claude-opus-4-6");
+      await expect(readConfig()).resolves.toMatchObject({
+        agent: {
+          default: "claude",
+          models: {
+            claude: "claude-opus-4-6",
+          },
+        },
+      });
+    });
+  });
+
+  it("resets a provider model to default", async () => {
+    await withTempHome(async () => {
+      await expect(runAgentsModel({
+        provider: "codex",
+        model: "gpt-5.4",
+      })).resolves.toMatchObject({ exitCode: 0 });
+
+      const result = await runAgentsModel({
+        provider: "codex",
+        defaultModel: true,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("codex model reset");
+      await expect(readConfig()).resolves.toMatchObject({
+        agent: {
+          models: {
+            codex: null,
+          },
+        },
+      });
     });
   });
 });

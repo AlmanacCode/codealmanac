@@ -214,6 +214,18 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/cli/commands/config-keys.ts"))).toBe(false);
   });
 
+  it("keeps agents command adapters out of readiness and config mechanics", async () => {
+    const agentsCommand = await readSource("src/cli/commands/agents.ts");
+
+    expect(agentsCommand).toContain("services/agents/index.js");
+    expect(agentsCommand).not.toContain("agent/readiness");
+    expect(agentsCommand).not.toContain("../../config/index");
+    expect(agentsCommand).not.toContain("readConfig");
+    expect(agentsCommand).not.toContain("writeConfig");
+    expect(agentsCommand).not.toContain("parseAgentSelection");
+    expect(agentsCommand).not.toContain("isAgentProviderId");
+  });
+
   it("keeps migrate legacy-sources adapter out of source migration mechanics", async () => {
     const migrateCommand = await readSource("src/cli/commands/migrate.ts");
 
