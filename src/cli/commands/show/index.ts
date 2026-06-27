@@ -1,8 +1,11 @@
-import { readWikiPages } from "../../../services/wiki/page-view.js";
+import {
+  readWikiPages,
+  type WikiPageView,
+} from "../../../services/wiki/page-view.js";
 
 import { formatShowRecords } from "./format.js";
 import { collectShowSlugs } from "./slugs.js";
-import type { ShowCommandOutput, ShowOptions } from "./types.js";
+import type { ShowCommandOutput, ShowOptions, ShowRecord } from "./types.js";
 
 export type {
   FieldName,
@@ -34,8 +37,42 @@ export async function runShow(
     .join("");
 
   return {
-    stdout: formatShowRecords(records, options),
+    stdout: formatShowRecords(records.map(showRecordFromWikiService), options),
     stderr,
     exitCode: missing.length > 0 ? 1 : 0,
+  };
+}
+
+function showRecordFromWikiService(record: WikiPageView): ShowRecord {
+  return {
+    slug: record.slug,
+    title: record.title,
+    summary: record.summary,
+    file_path: record.file_path,
+    updated_at: record.updated_at,
+    archived_at: record.archived_at,
+    superseded_by: record.superseded_by,
+    supersedes: record.supersedes,
+    topics: record.topics,
+    file_refs: record.file_refs.map((file) => ({
+      path: file.path,
+      is_dir: file.is_dir,
+    })),
+    sources: record.sources.map((source) => ({
+      id: source.id,
+      type: source.type,
+      target: source.target,
+      title: source.title,
+      retrieved_at: source.retrieved_at,
+      note: source.note,
+      legacy: source.legacy,
+    })),
+    wikilinks_out: record.wikilinks_out,
+    wikilinks_in: record.wikilinks_in,
+    cross_wiki_links: record.cross_wiki_links.map((link) => ({
+      wiki: link.wiki,
+      target: link.target,
+    })),
+    body: record.body,
   };
 }

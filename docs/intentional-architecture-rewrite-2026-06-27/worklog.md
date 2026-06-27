@@ -354,3 +354,10 @@ Forty-eighth production slice:
 - Made the reindex command output carry an explicit `ReindexResult` instead of exposing `ReindexWikiResult`.
 - Added command-local request/result mappers between the reindex adapter and wiki service.
 - Guarded the reindex adapter against regressing to service request/result aliases.
+
+Forty-ninth production slice:
+
+- Made `src/cli/commands/show/types.ts` own the `ShowRecord` shape instead of aliasing `WikiPageView`.
+- Added `showRecordFromWikiService` at the show adapter edge before formatting records.
+- Copied nested file/source/cross-wiki link values into command-owned structures before rendering.
+- Guarded show command types against importing or aliasing the service page-view contract.

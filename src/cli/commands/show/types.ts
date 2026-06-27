@@ -1,5 +1,3 @@
-import type { WikiPageView } from "../../../services/wiki/page-view.js";
-
 export interface ShowOptions {
   cwd: string;
   slug?: string;
@@ -30,7 +28,43 @@ export interface ShowCommandOutput {
   exitCode: number;
 }
 
-export type ShowRecord = WikiPageView;
+export interface ShowFileRef {
+  path: string;
+  is_dir: boolean;
+}
+
+export interface ShowSource {
+  id: string;
+  type: string;
+  target: string;
+  title: string | null;
+  retrieved_at: string | null;
+  note: string | null;
+  legacy: boolean;
+}
+
+export interface ShowCrossWikiLink {
+  wiki: string;
+  target: string;
+}
+
+export interface ShowRecord {
+  slug: string;
+  title: string | null;
+  summary: string | null;
+  file_path: string;
+  updated_at: number;
+  archived_at: number | null;
+  superseded_by: string | null;
+  supersedes: string[];
+  topics: string[];
+  file_refs: ShowFileRef[];
+  sources: ShowSource[];
+  wikilinks_out: string[];
+  wikilinks_in: string[];
+  cross_wiki_links: ShowCrossWikiLink[];
+  body: string;
+}
 
 export type FieldName =
   | "title"
