@@ -5,16 +5,24 @@ import {
   getWikiReviewItem,
   listWikiReviewItems,
   reopenWikiReviewItem,
-  type WikiReviewItem,
   type WikiReviewStatus,
 } from "../../services/wiki/reviews.js";
-import { renderOutcome } from "../outcome.js";
+import {
+  renderReviewAdded,
+  renderReviewAlreadyApplied,
+  renderReviewApplied,
+  renderReviewDecided,
+  renderReviewInvalidStatus,
+  renderReviewList,
+  renderReviewMissingItem,
+  renderReviewMissingMarkdown,
+  renderReviewNotDecided,
+  renderReviewReopened,
+  renderReviewShow,
+  type ReviewCommandOutput,
+} from "./review-render.js";
 
-export interface ReviewCommandOutput {
-  stdout: string;
-  stderr: string;
-  exitCode: number;
-}
+export type { ReviewCommandOutput } from "./review-render.js";
 
 export interface ReviewAddOptions {
   cwd: string;
@@ -45,7 +53,7 @@ export interface ReviewItemOptions {
 export interface ReviewListOptions {
   cwd: string;
   wiki?: string;
-  status?: WikiReviewStatus | "all";
+  status?: WikiReviewStatus | "all" | string;
   json?: boolean;
 }
 
@@ -60,12 +68,9 @@ export async function runReviewAdd(
   });
   switch (result.status) {
     case "added":
-      if (options.json === true) {
-        return ok(`${JSON.stringify(result.item, null, 2)}\n`);
-      }
-      return ok(`added review item: ${result.item.id}\n`);
+      return renderReviewAdded(result.item, options.json);
     case "missing-markdown":
-      return missingMarkdown("review add");
+      return renderReviewMissingMarkdown("review add");
   }
 }
 
@@ -73,30 +78,15 @@ export async function runReviewList(
   options: ReviewListOptions,
 ): Promise<ReviewCommandOutput> {
   const status = options.status ?? "open";
-  if (!isStatusFilter(status)) {
-    return errorResult("review list --status must be open, decided, applied, or all", options.json);
-  }
-
   const result = await listWikiReviewItems({
     cwd: options.cwd,
     wiki: options.wiki,
     status,
   });
   if (result.status === "invalid-status") {
-    return errorResult("review list --status must be open, decided, applied, or all", options.json);
+    return renderReviewInvalidStatus(options.json);
   }
-  const { items } = result;
-
-  if (options.json === true) {
-    return ok(`${JSON.stringify(items, null, 2)}\n`);
-  }
-  if (items.length === 0) return ok("");
-
-  return ok(
-    items
-      .map((item) => `${item.status.padEnd(7)} ${item.id}  ${item.summary}`)
-      .join("\n") + "\n",
-  );
+  return renderReviewList(result.items, options.json);
 }
 
 export async function runReviewShow(
@@ -104,14 +94,9 @@ export async function runReviewShow(
 ): Promise<ReviewCommandOutput> {
   const result = await getWikiReviewItem(options);
   if (result.status === "missing") {
-    return errorResult(`no review item "${result.id}"`);
+    return renderReviewMissingItem(result.id);
   }
-  const item = result.item;
-
-  if (options.json === true) {
-    return ok(`${JSON.stringify(item, null, 2)}\n`);
-  }
-  return ok(renderReviewItem(item));
+  return renderReviewShow(result.item, options.json);
 }
 
 export async function runReviewDecide(
@@ -126,16 +111,13 @@ export async function runReviewDecide(
   });
   switch (result.status) {
     case "decided":
-      return ok(`decided review item: ${result.item.id}\n`);
+      return renderReviewDecided(result.item);
     case "missing-markdown":
-      return missingMarkdown("review decide");
+      return renderReviewMissingMarkdown("review decide");
     case "missing":
-      return errorResult(`no review item "${result.id}"`);
+      return renderReviewMissingItem(result.id);
     case "already-applied":
-      return errorResult(
-        `review decide cannot change an applied item; reopen ${result.id} first`,
-        options.json,
-      );
+      return renderReviewAlreadyApplied(result.id, options.json);
   }
 }
 
@@ -151,14 +133,15 @@ export async function runReviewApply(
   });
   switch (result.status) {
     case "applied":
-      return ok(`applied review item: ${result.item.id}\n`);
+      return renderReviewApplied(result.item);
     case "missing-markdown":
-      return missingMarkdown("review apply");
+      return renderReviewMissingMarkdown("review apply");
     case "missing":
-      return errorResult(`no review item "${result.id}"`);
+      return renderReviewMissingItem(result.id);
     case "not-decided":
-      return errorResult(
-        `review apply requires a decided item (${result.id} is ${result.currentStatus})`,
+      return renderReviewNotDecided(
+        result.id,
+        result.currentStatus,
         options.json,
       );
   }
@@ -176,35 +159,10 @@ export async function runReviewReopen(
   });
   switch (result.status) {
     case "reopened":
-      return ok(`reopened review item: ${result.item.id}\n`);
+      return renderReviewReopened(result.item);
     case "missing":
-      return errorResult(`no review item "${result.id}"`);
+      return renderReviewMissingItem(result.id);
   }
-}
-
-function renderReviewItem(item: WikiReviewItem): string {
-  const lines = [
-    `id: ${item.id}`,
-    `status: ${item.status}`,
-    `summary: ${item.summary}`,
-    `created: ${item.created_at}`,
-  ];
-  if (item.decided_at !== null) lines.push(`decided: ${item.decided_at}`);
-  if (item.applied_at !== null) lines.push(`applied: ${item.applied_at}`);
-  if (item.reopened_at !== undefined && item.reopened_at !== null) {
-    lines.push(`reopened: ${item.reopened_at}`);
-  }
-  lines.push("", item.body.trimEnd(), "");
-  if (item.decision !== null) {
-    lines.push("Decision:", item.decision.trimEnd(), "");
-  }
-  if (item.application !== null) {
-    lines.push("Application:", item.application.trimEnd(), "");
-  }
-  if (item.reopen_note !== undefined && item.reopen_note !== null && item.reopen_note.length > 0) {
-    lines.push("Reopen note:", item.reopen_note.trimEnd(), "");
-  }
-  return lines.join("\n");
 }
 
 interface ReviewMarkdownInput {
@@ -217,20 +175,4 @@ function readMarkdown(options: ReviewMarkdownInput): string | undefined {
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
   return input.replace(/\s+$/g, "");
-}
-
-function missingMarkdown(commandName: string): ReviewCommandOutput {
-  return errorResult(`${commandName} requires markdown text or piped stdin`);
-}
-
-function ok(stdout: string): ReviewCommandOutput {
-  return { stdout, stderr: "", exitCode: 0 };
-}
-
-function errorResult(message: string, json?: boolean): ReviewCommandOutput {
-  return renderOutcome({ type: "error", message }, { json });
-}
-
-function isStatusFilter(value: string): value is WikiReviewStatus | "all" {
-  return value === "open" || value === "decided" || value === "applied" || value === "all";
 }

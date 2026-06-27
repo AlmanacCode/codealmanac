@@ -701,3 +701,9 @@ One-hundred-fourth production slice:
 - Split codealmanac bootstrap process spawning into `src/platform/install/bootstrap-process.ts`.
 - Moved inherited spawn, captured spawn, child event handling, and stdio buffering out of `src/platform/install/global.ts`.
 - Kept `src/platform/install/global.ts` focused on durable global-install bootstrap decisions, package-root resolution, version comparison, and setup rerun flow.
+
+One-hundred-fifth production slice:
+
+- Split wiki review command rendering into `src/cli/commands/review-render.ts`.
+- Moved review-item formatting, list formatting, success messages, JSON output, and review command error rendering out of `src/cli/commands/review.ts`.
+- Kept `src/cli/commands/review.ts` focused on reading CLI markdown input, calling wiki review services, and routing service result variants to the command-private renderer.

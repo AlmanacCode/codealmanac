@@ -301,13 +301,16 @@ describe("architecture boundaries", () => {
 
   it("keeps review command adapters out of review store mechanics", async () => {
     const reviewCommand = await readSource("src/cli/commands/review.ts");
+    const reviewRender = await readSource("src/cli/commands/review-render.ts");
     const reviewService = await readSource("src/services/wiki/reviews.ts");
     const reviewTypes = await readSource("src/services/wiki/review-types.ts");
     const reviewWorkspace = await readSource(
       "src/services/wiki/review-workspace.ts",
     );
 
+    expect(existsSync(join(ROOT, "src/cli/commands/review-render.ts"))).toBe(true);
     expect(reviewCommand).toContain("services/wiki/reviews.js");
+    expect(reviewCommand).toContain("review-render.js");
     expect(reviewCommand).not.toContain("review/store");
     expect(reviewCommand).not.toContain("stores/wiki-review");
     expect(reviewCommand).not.toContain("resolveWikiRoot");
@@ -320,10 +323,17 @@ describe("architecture boundaries", () => {
     expect(reviewCommand).not.toContain("ReviewCommandOutput = CommandResult");
     expect(reviewCommand).not.toContain("interface ReviewOptions");
     expect(reviewCommand).not.toContain("ReviewItemOptions extends ReviewOptions");
+    expect(reviewCommand).not.toContain("renderOutcome");
+    expect(reviewCommand).not.toContain("JSON.stringify");
+    expect(reviewCommand).not.toContain("added review item:");
+    expect(reviewCommand).not.toContain("Decision:");
     expect(reviewCommand).not.toContain(
       "options: { cwd: string; wiki?: string; id: string; json?: boolean }",
     );
     expect(reviewCommand).toContain("interface ReviewShowOptions");
+    expect(reviewRender).toContain("renderOutcome");
+    expect(reviewRender).toContain("added review item:");
+    expect(reviewRender).toContain("Decision:");
 
     expect(reviewService).not.toContain("resolveWikiRoot");
     expect(reviewService).not.toContain("reviewYamlPath");
