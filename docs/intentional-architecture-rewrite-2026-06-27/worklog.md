@@ -496,3 +496,9 @@ Seventieth production slice:
 - Flattened topic command option contracts in `src/cli/commands/topics/types.ts`.
 - Removed the broad `TopicsBaseOptions` command surface and the `TopicsUnlinkOptions` inheritance from link options.
 - Guarded topic command types against reintroducing inherited base option contracts.
+
+Seventy-first production slice:
+
+- Flattened review command option contracts in `src/cli/commands/review.ts`.
+- Replaced the broad `ReviewOptions` base with explicit add, show, list, and item option contracts.
+- Kept markdown extraction behind a tiny private helper input type rather than a public command inheritance chain.

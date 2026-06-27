@@ -229,6 +229,12 @@ describe("architecture boundaries", () => {
     expect(reviewCommand).not.toContain("type ReviewItem");
     expect(reviewCommand).not.toContain("type ReviewStatus");
     expect(reviewCommand).not.toContain("ReviewCommandOutput = CommandResult");
+    expect(reviewCommand).not.toContain("interface ReviewOptions");
+    expect(reviewCommand).not.toContain("ReviewItemOptions extends ReviewOptions");
+    expect(reviewCommand).not.toContain(
+      "options: { cwd: string; wiki?: string; id: string; json?: boolean }",
+    );
+    expect(reviewCommand).toContain("interface ReviewShowOptions");
 
     expect(reviewService).not.toContain("resolveWikiRoot");
     expect(reviewService).not.toContain("reviewYamlPath");

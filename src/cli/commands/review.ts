@@ -16,7 +16,7 @@ export interface ReviewCommandOutput {
   exitCode: number;
 }
 
-export interface ReviewOptions {
+export interface ReviewAddOptions {
   cwd: string;
   wiki?: string;
   markdown?: string;
@@ -25,8 +25,21 @@ export interface ReviewOptions {
   json?: boolean;
 }
 
-export interface ReviewItemOptions extends ReviewOptions {
+export interface ReviewShowOptions {
+  cwd: string;
+  wiki?: string;
   id: string;
+  json?: boolean;
+}
+
+export interface ReviewItemOptions {
+  cwd: string;
+  wiki?: string;
+  id: string;
+  markdown?: string;
+  stdinInput?: string;
+  now?: Date;
+  json?: boolean;
 }
 
 export interface ReviewListOptions {
@@ -37,7 +50,7 @@ export interface ReviewListOptions {
 }
 
 export async function runReviewAdd(
-  options: ReviewOptions,
+  options: ReviewAddOptions,
 ): Promise<ReviewCommandOutput> {
   const result = await addWikiReviewItem({
     cwd: options.cwd,
@@ -87,7 +100,7 @@ export async function runReviewList(
 }
 
 export async function runReviewShow(
-  options: { cwd: string; wiki?: string; id: string; json?: boolean },
+  options: ReviewShowOptions,
 ): Promise<ReviewCommandOutput> {
   const result = await getWikiReviewItem(options);
   if (result.status === "missing") {
@@ -194,7 +207,12 @@ function renderReviewItem(item: WikiReviewItem): string {
   return lines.join("\n");
 }
 
-function readMarkdown(options: ReviewOptions): string | undefined {
+interface ReviewMarkdownInput {
+  markdown?: string;
+  stdinInput?: string;
+}
+
+function readMarkdown(options: ReviewMarkdownInput): string | undefined {
   const input = options.markdown ?? options.stdinInput ?? "";
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
