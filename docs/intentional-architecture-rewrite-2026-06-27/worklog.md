@@ -409,3 +409,10 @@ Fifty-sixth production slice:
 - Made automation install, uninstall, and status commands return an explicit `AutomationCommandResult`.
 - Removed the generic `CommandResult` import from the automation command adapter.
 - Guarded the automation command against regressing to the generic command output alias.
+
+Fifty-seventh production slice:
+
+- Made jobs list, show/logs, attach, and cancel command option shapes explicit instead of inheriting from a broad `JobsOptions` base.
+- Made jobs commands return an explicit `JobsCommandResult` instead of the generic `CommandResult` alias.
+- Added command-local mappers into jobs service request contracts for list, by-id reads, streaming logs, and cancellation.
+- Guarded the jobs command against regressing to generic output aliases or broad option inheritance.

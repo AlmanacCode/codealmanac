@@ -1,4 +1,3 @@
-import type { CommandResult } from "../helpers.js";
 import { renderError, renderOutcome } from "../outcome.js";
 import { UserFacingError } from "../../errors.js";
 import { formatTextTable } from "./table.js";
@@ -11,32 +10,59 @@ import {
 } from "../../services/jobs/index.js";
 import type {
   CancelJobServiceResult,
+  CancelJobRequest,
+  JobRequest,
   JobServiceView,
+  JobsRequest,
   MissingJobResult,
   MissingWikiResult,
   ReadJobLogServiceResult,
+  StreamJobLogRequest,
 } from "../../services/jobs/index.js";
 
-export interface JobsOptions {
+export interface JobsListCommandOptions {
   cwd: string;
   json?: boolean;
   now?: () => Date;
   isPidAlive?: (pid: number) => boolean;
 }
 
-export interface JobByIdOptions extends JobsOptions {
+export interface JobByIdCommandOptions {
+  cwd: string;
   jobId: string;
+  json?: boolean;
+  now?: () => Date;
+  isPidAlive?: (pid: number) => boolean;
 }
 
-export interface JobAttachStreamOptions extends JobByIdOptions {
+export interface JobCancelCommandOptions {
+  cwd: string;
+  jobId: string;
+  json?: boolean;
+  now?: () => Date;
+  signalProcess?: (pid: number, signal: NodeJS.Signals) => void;
+}
+
+export interface JobAttachStreamCommandOptions {
+  cwd: string;
+  jobId: string;
+  json?: boolean;
+  now?: () => Date;
+  isPidAlive?: (pid: number) => boolean;
   write?: (chunk: string) => void;
   pollMs?: number;
 }
 
+export interface JobsCommandResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
+
 export async function runJobsList(
-  options: JobsOptions,
-): Promise<CommandResult> {
-  const result = await listJobs(options);
+  options: JobsListCommandOptions,
+): Promise<JobsCommandResult> {
+  const result = await listJobs(toJobsRequest(options));
   if (result.status === "missing-wiki") return missingWiki(options.json);
 
   if (options.json === true) {
@@ -55,9 +81,9 @@ export async function runJobsList(
 }
 
 export async function runJobsShow(
-  options: JobByIdOptions,
-): Promise<CommandResult> {
-  const result = await readJob(options);
+  options: JobByIdCommandOptions,
+): Promise<JobsCommandResult> {
+  const result = await readJob(toJobRequest(options));
   if (result.status !== "found") {
     return renderSharedIssue(result, options.json);
   }
@@ -120,15 +146,15 @@ function formatPageChanges(view: JobServiceView): string[] {
 }
 
 export async function runJobsLogs(
-  options: JobByIdOptions,
-): Promise<CommandResult> {
-  const result = await readJobLog(options);
+  options: JobByIdCommandOptions,
+): Promise<JobsCommandResult> {
+  const result = await readJobLog(toJobRequest(options));
   return renderJobLog(result, options.json);
 }
 
 export async function runJobsAttach(
-  options: JobByIdOptions,
-): Promise<CommandResult> {
+  options: JobByIdCommandOptions,
+): Promise<JobsCommandResult> {
   const logs = await runJobsLogs(options);
   if (logs.exitCode !== 0 || options.json === true) return logs;
   return {
@@ -141,10 +167,10 @@ export async function runJobsAttach(
 }
 
 export async function streamJobsAttach(
-  options: JobAttachStreamOptions,
-): Promise<CommandResult> {
+  options: JobAttachStreamCommandOptions,
+): Promise<JobsCommandResult> {
   const write = options.write ?? ((chunk: string) => process.stdout.write(chunk));
-  const result = await streamJobLog({ ...options, write });
+  const result = await streamJobLog(toStreamJobLogRequest({ ...options, write }));
   if (result.status !== "streamed") {
     return renderSharedIssue(result, options.json);
   }
@@ -154,9 +180,9 @@ export async function streamJobsAttach(
 }
 
 export async function runJobsCancel(
-  options: JobByIdOptions,
-): Promise<CommandResult> {
-  const result = await cancelJob(options);
+  options: JobCancelCommandOptions,
+): Promise<JobsCommandResult> {
+  const result = await cancelJob(toCancelJobRequest(options));
   if (result.status !== "cancelled") {
     return renderCancelJobIssue(result, options.json);
   }
@@ -173,7 +199,7 @@ export async function runJobsCancel(
 function renderCancelJobIssue(
   result: Exclude<CancelJobServiceResult, { status: "cancelled" }>,
   json: boolean | undefined,
-): CommandResult {
+): JobsCommandResult {
   if (result.status === "missing-wiki") return missingWiki(json);
   if (result.status === "missing-job") return missingJob(result.jobId, json);
   return renderOutcome(
@@ -189,7 +215,7 @@ function renderCancelJobIssue(
 function renderJobLog(
   result: ReadJobLogServiceResult,
   json: boolean | undefined,
-): CommandResult {
+): JobsCommandResult {
   if (result.status === "found") {
     return { stdout: result.contents, stderr: "", exitCode: 0 };
   }
@@ -205,12 +231,12 @@ function renderJobLog(
 function renderSharedIssue(
   result: MissingWikiResult | MissingJobResult,
   json: boolean | undefined,
-): CommandResult {
+): JobsCommandResult {
   if (result.status === "missing-job") return missingJob(result.jobId, json);
   return missingWiki(json);
 }
 
-function missingWiki(json: boolean | undefined): CommandResult {
+function missingWiki(json: boolean | undefined): JobsCommandResult {
   return renderError(
     new UserFacingError(
       "no .almanac/ found in this directory or any parent",
@@ -223,7 +249,10 @@ function missingWiki(json: boolean | undefined): CommandResult {
   );
 }
 
-function missingJob(jobId: string, json: boolean | undefined): CommandResult {
+function missingJob(
+  jobId: string,
+  json: boolean | undefined,
+): JobsCommandResult {
   return renderOutcome(
     { type: "error", message: `job not found: ${jobId}` },
     { json },
@@ -263,4 +292,45 @@ function terminalAttachSummary(view: JobServiceView): string {
     lines.push(`Error: ${view.error}`);
   }
   return `${lines.join("\n")}\n`;
+}
+
+function toJobsRequest(options: JobsListCommandOptions): JobsRequest {
+  return {
+    cwd: options.cwd,
+    now: options.now,
+    isPidAlive: options.isPidAlive,
+  };
+}
+
+function toJobRequest(options: JobByIdCommandOptions): JobRequest {
+  return {
+    cwd: options.cwd,
+    jobId: options.jobId,
+    now: options.now,
+    isPidAlive: options.isPidAlive,
+  };
+}
+
+function toStreamJobLogRequest(
+  options: JobAttachStreamCommandOptions & { write: (chunk: string) => void },
+): StreamJobLogRequest {
+  return {
+    cwd: options.cwd,
+    jobId: options.jobId,
+    write: options.write,
+    pollMs: options.pollMs,
+    now: options.now,
+    isPidAlive: options.isPidAlive,
+  };
+}
+
+function toCancelJobRequest(
+  options: JobCancelCommandOptions,
+): CancelJobRequest {
+  return {
+    cwd: options.cwd,
+    jobId: options.jobId,
+    now: options.now,
+    signalProcess: options.signalProcess,
+  };
 }
