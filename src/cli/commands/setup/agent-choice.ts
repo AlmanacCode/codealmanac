@@ -1,11 +1,10 @@
-import { spawn } from "node:child_process";
-
 import type {
   SetupAgentProviderId,
   SetupProviderModelChoice,
   SetupProviderView,
   SetupSpawnCliFn,
 } from "../../../services/setup/index.js";
+import { runInheritedShellCommand } from "../../../platform/shell.js";
 import {
   readSetupAgentChoiceState,
   readSetupProviderModelChoices,
@@ -77,7 +76,7 @@ export async function chooseDefaultAgent(args: {
           true,
         );
         if (runLogin === "install") {
-          const login = await runLoginCommand(command);
+          const login = await runInheritedShellCommand(command);
           if (!login.ok) {
             stepActive(args.out, `${choice.label} login failed: ${login.error}`);
           }
@@ -113,7 +112,7 @@ export async function chooseDefaultAgent(args: {
       true,
     );
     if (runLogin === "install") {
-      const login = await runLoginCommand(command);
+      const login = await runInheritedShellCommand(command);
       if (login.ok) {
         view = await refreshSetupAgentChoiceView({
           spawnCli: args.spawnCli,
@@ -269,26 +268,4 @@ function providerDisplayName(provider: SetupAgentProviderId): string {
   if (provider === "claude") return "Claude";
   if (provider === "codex") return "Codex";
   return "Cursor";
-}
-
-async function runLoginCommand(command: string): Promise<
-  | { ok: true }
-  | { ok: false; error: string }
-> {
-  return new Promise((resolve) => {
-    const child = spawn(command, {
-      shell: true,
-      stdio: "inherit",
-    });
-    child.on("error", (err) => {
-      resolve({ ok: false, error: err.message });
-    });
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve({ ok: true });
-        return;
-      }
-      resolve({ ok: false, error: `exited ${code ?? 1}` });
-    });
-  });
 }

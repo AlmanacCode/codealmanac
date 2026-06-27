@@ -550,3 +550,9 @@ Seventy-ninth production slice:
 - Moved setup global-install path detection and npm install spawning into `src/platform/install/global-package.ts`.
 - Deleted the command-local `src/cli/commands/setup/install-path.ts` platform helper.
 - Kept `global-install-step.ts` focused on setup prompting, rendering, and step result orchestration.
+
+Eightieth production slice:
+
+- Added `src/platform/shell.ts` for inherited shell command execution.
+- Moved provider login command spawning out of `src/cli/commands/setup/agent-choice.ts`.
+- Kept setup agent choice focused on prompting, provider selection, readiness refresh, and model selection.

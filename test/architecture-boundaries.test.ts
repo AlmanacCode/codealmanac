@@ -538,6 +538,21 @@ describe("architecture boundaries", () => {
     expect(globalPackage).toContain("spawnGlobalInstall");
   });
 
+  it("keeps setup provider login process execution in the platform layer", async () => {
+    const setupAgentChoice = await readSource(
+      "src/cli/commands/setup/agent-choice.ts",
+    );
+    const platformShell = await readSource("src/platform/shell.ts");
+
+    expect(existsSync(join(ROOT, "src/platform/shell.ts"))).toBe(true);
+    expect(setupAgentChoice).toContain("platform/shell.js");
+    expect(setupAgentChoice).not.toContain("node:child_process");
+    expect(setupAgentChoice).not.toContain("spawn(command");
+    expect(setupAgentChoice).not.toContain("shell: true");
+    expect(setupAgentChoice).not.toContain("stdio: \"inherit\"");
+    expect(platformShell).toContain("runInheritedShellCommand");
+  });
+
   it("keeps setup auto-commit UI out of config persistence mechanics", async () => {
     const autoCommitStep = await readSource(
       "src/cli/commands/setup/auto-commit-step.ts",
