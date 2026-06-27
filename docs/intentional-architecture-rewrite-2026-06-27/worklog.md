@@ -442,3 +442,9 @@ Sixty-first production slice:
 - Made setup agent-choice provider ids, readiness, model choices, provider choices, provider view, and spawn contracts explicit in `src/services/setup/agent-choice.ts`.
 - Added a mapper from the provider readiness view into the setup service read model.
 - Guarded setup agent-choice service types against regressing to lower-level provider/config aliases.
+
+Sixty-second production slice:
+
+- Made diagnostics provider ids, provider probe statuses, spawn functions, and spawned process contracts explicit in `src/services/diagnostics/types.ts`.
+- Removed diagnostics service public aliases to agent provider/process types and config provider ids.
+- Guarded diagnostics types against re-exposing agent/config contracts.

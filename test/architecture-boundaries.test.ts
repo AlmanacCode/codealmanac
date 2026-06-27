@@ -578,6 +578,18 @@ describe("architecture boundaries", () => {
     expect(doctorIndex).not.toContain("readConfig");
     expect(doctorIndex).not.toContain("readStateForDoctor");
     expect(diagnosticsTypes).not.toContain("agent/readiness/providers/claude");
+    expect(diagnosticsTypes).not.toContain("from \"../../agent/types.js\"");
+    expect(diagnosticsTypes).not.toContain("from \"../../config/index.js\"");
+    expect(diagnosticsTypes).not.toContain("DiagnosticsSpawnCliFn = SpawnCliFn");
+    expect(diagnosticsTypes).not.toContain(
+      "DiagnosticsSpawnedProcess = SpawnedProcess",
+    );
+    expect(diagnosticsTypes).not.toContain(
+      "DiagnosticsProviderStatus = ProviderStatus",
+    );
+    expect(diagnosticsTypes).not.toContain(
+      "DiagnosticsAgentProviderId = AgentProviderId",
+    );
     expect(diagnosticsIndex).not.toContain("../../agent/");
     expect(diagnosticsIndex).not.toContain("../../config/");
     expect(doctorDiagnostics).toContain("../wiki/doctor.js");

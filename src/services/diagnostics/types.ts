@@ -1,15 +1,32 @@
-import type {
-  ProviderStatus,
-  SpawnCliFn,
-  SpawnedProcess,
-} from "../../agent/types.js";
-import type { AgentProviderId } from "../../config/index.js";
 import type { CollectWikiHealthReport } from "../wiki/doctor.js";
 
-export type DiagnosticsSpawnCliFn = SpawnCliFn;
-export type DiagnosticsSpawnedProcess = SpawnedProcess;
-export type DiagnosticsProviderStatus = ProviderStatus;
-export type DiagnosticsAgentProviderId = AgentProviderId;
+export interface DiagnosticsSpawnedProcess {
+  stdout: { on: (event: "data", cb: (data: Buffer | string) => void) => void };
+  stderr: { on: (event: "data", cb: (data: Buffer | string) => void) => void };
+  on: (event: "close" | "error", cb: (arg: number | null | Error) => void) => void;
+  kill: (signal?: string) => void;
+}
+
+export type DiagnosticsSpawnCliFn = (args: string[]) => DiagnosticsSpawnedProcess;
+
+export type DiagnosticsAgentProviderId = "claude" | "codex" | "cursor";
+
+export type DiagnosticsProviderProbeReadiness =
+  | "ready"
+  | "missing_executable"
+  | "not_authenticated"
+  | "unknown";
+
+export interface DiagnosticsProviderStatus {
+  id: DiagnosticsAgentProviderId;
+  installed: boolean;
+  authenticated: boolean;
+  readiness: DiagnosticsProviderProbeReadiness;
+  detail: string;
+  accountLabel?: string;
+  installFix?: string;
+  loginFix?: string;
+}
 
 export interface DiagnosticsAuthStatus {
   loggedIn: boolean;
