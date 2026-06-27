@@ -210,3 +210,8 @@ Twenty-fourth production slice:
 - Introduced `src/services/diagnostics/` for the `almanac doctor` diagnostic read model.
 - Moved install probes, agent readiness checks, update checks, package/version probes, and doctor report contracts out of `src/cli/commands/doctor/`.
 - Kept `src/cli/commands/doctor/index.ts` responsible for JSON/text response selection and `src/cli/commands/doctor/format.ts` responsible for terminal rendering.
+
+Twenty-fifth production slice:
+
+- Moved legacy capture-sweep automation migration into `src/services/automation/migration.ts`.
+- Kept `src/cli/commands/migrate.ts` responsible for migration command rendering while the automation service owns legacy plist detection, sync install, and legacy plist removal.

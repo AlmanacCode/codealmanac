@@ -46,7 +46,7 @@ There is no prize for preserving awkward code. Prefer the structure a new mainta
 | `src/wiki/indexer/` | SQLite indexer — schema, frontmatter parse, `[[...]]` classifier, freshness | `schema.ts`, `index.ts`, `frontmatter.ts`, `wikilinks.ts`, `paths.ts` (normalization), `resolve-wiki.ts` |
 | `src/shared/` | Small cross-cutting helpers with no product ownership | `duration.ts` |
 | `src/services/agents/` | Agent-facing provider view and provider/model config workflows over readiness and config services | `agents.ts`, `index.ts` |
-| `src/services/automation/` | Automation product workflows and scheduled-task planning over platform scheduler mechanics | `automation.ts`, `planning.ts`, `types.ts`, `index.ts` |
+| `src/services/automation/` | Automation product workflows, scheduled-task planning, and legacy automation migration over platform scheduler mechanics | `automation.ts`, `migration.ts`, `planning.ts`, `types.ts`, `index.ts` |
 | `src/services/config/` | User-facing config verbs and config-key catalog over persisted config mechanics | `config.ts`, `keys.ts`, `index.ts` |
 | `src/services/diagnostics/` | Install, agent, update, and wiki diagnostic read models for `almanac doctor` | `doctor.ts`, `install.ts`, `agents.ts`, `updates.ts`, `probes.ts`, `types.ts`, `index.ts` |
 | `src/services/jobs/` | Job product workflows for CLI/viewer-facing list, read, log, stream, and cancel operations | `jobs.ts`, `types.ts`, `index.ts` |

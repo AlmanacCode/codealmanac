@@ -391,10 +391,16 @@ describe("architecture boundaries", () => {
     const migrateCommand = await readSource("src/cli/commands/migrate.ts");
 
     expect(migrateCommand).toContain("services/wiki/source-migration.js");
+    expect(migrateCommand).toContain("services/automation/index.js");
     expect(migrateCommand).not.toContain("wiki/indexer");
     expect(migrateCommand).not.toContain("wiki/sources");
+    expect(migrateCommand).not.toContain("platform/automation");
+    expect(migrateCommand).not.toContain("./automation.js");
     expect(migrateCommand).not.toContain("resolveWikiRoot");
     expect(migrateCommand).not.toContain("migrateLegacySourceFrontmatter");
+    expect(migrateCommand).not.toContain("detectLegacyCaptureSweepAutomation");
+    expect(migrateCommand).not.toContain("removeLaunchdJob");
+    expect(migrateCommand).not.toContain("runAutomationInstall");
   });
 
   it("keeps doctor diagnostics out of the CLI command package", async () => {
