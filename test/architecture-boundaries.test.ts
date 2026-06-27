@@ -328,6 +328,9 @@ describe("architecture boundaries", () => {
     expect(updateTypes).not.toContain(
       "UpdateInstallResult = PlatformInstallLatestPackageResult",
     );
+    expect(updateTypes).not.toContain("typeof platformCheckForUpdate");
+    expect(updateTypes).not.toContain("typeof nodeSpawn");
+    expect(updateTypes).not.toContain("platform/update/check");
   });
 
   it("keeps config command adapters out of config persistence mechanics", async () => {

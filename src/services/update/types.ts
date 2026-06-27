@@ -1,9 +1,43 @@
-import type { spawn as nodeSpawn } from "node:child_process";
+import type { SpawnOptions } from "node:child_process";
 
-import type { checkForUpdate as platformCheckForUpdate } from "../../platform/update/check.js";
+export interface UpdateCheckRequest {
+  installedVersion?: string;
+  cacheSeconds?: number;
+  timeoutMs?: number;
+  now?: () => number;
+  fetchFn?: typeof fetch;
+  statePath?: string;
+  force?: boolean;
+}
 
-export type UpdateCheckFn = typeof platformCheckForUpdate;
-export type UpdateInstallSpawnFn = typeof nodeSpawn;
+export interface UpdateCheckState {
+  last_check_at: number;
+  installed_version: string;
+  latest_version: string;
+  dismissed_versions: string[];
+  last_fetch_failed_at?: number;
+}
+
+export interface UpdateCheckResult {
+  state: UpdateCheckState;
+  fetched: boolean;
+  fetchFailed: boolean;
+}
+
+export type UpdateCheckFn = (
+  request?: UpdateCheckRequest,
+) => Promise<UpdateCheckResult>;
+
+export interface UpdateInstallChildProcess {
+  on(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+  on(event: "exit", listener: (code: number | null) => void): this;
+}
+
+export type UpdateInstallSpawnFn = (
+  command: string,
+  args: readonly string[],
+  options?: SpawnOptions,
+) => UpdateInstallChildProcess;
 
 export interface UpdateInstallResult {
   output: string;

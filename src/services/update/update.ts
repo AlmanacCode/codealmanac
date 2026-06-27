@@ -8,12 +8,14 @@ import {
   installLatestPackage,
   type InstallLatestPackageResult,
 } from "../../platform/update/install.js";
+import type { spawn as nodeSpawn } from "node:child_process";
 import { acquireUpdateLock } from "../../platform/update/lock.js";
 import { isNewer } from "../../platform/update/semver.js";
 import { readState, writeState } from "../../platform/update/state.js";
 import { readInstalledVersion } from "../../platform/update/version.js";
 import type {
   UpdateInstallResult,
+  UpdateInstallSpawnFn,
   UpdateOptions,
   UpdateWorkflowResult,
 } from "./types.js";
@@ -140,9 +142,7 @@ async function installIfNeeded(
 
   try {
     const install = updateInstallResultFromPlatform(
-      await installLatestPackage({
-        spawnFn: opts.spawnFn,
-      }),
+      await installLatestPackageForUpdate(opts.spawnFn),
     );
     if (install.code !== 0) {
       return { status: "install-result", result: install };
@@ -152,6 +152,17 @@ async function installIfNeeded(
   } finally {
     await lock.release();
   }
+}
+
+async function installLatestPackageForUpdate(
+  spawnFn?: UpdateInstallSpawnFn,
+): Promise<InstallLatestPackageResult> {
+  return await installLatestPackage({
+    spawnFn: spawnFn === undefined
+      ? undefined
+      : ((command, args, options) =>
+          spawnFn(command, args ?? [], options)) as typeof nodeSpawn,
+  });
 }
 
 function updateInstallResultFromPlatform(

@@ -8,6 +8,7 @@ import { runUpdate } from "../src/cli/commands/update.js";
 import { runConfigSet } from "../src/cli/commands/config.js";
 import { parseConfigText, readConfig, writeConfig } from "../src/config/index.js";
 import { readState, writeState } from "../src/platform/update/state.js";
+import type { UpdateInstallSpawnFn } from "../src/services/update/index.js";
 import { withTempHome } from "./helpers.js";
 
 /**
@@ -28,7 +29,7 @@ function configPathIn(home: string): string {
 
 /** Minimal stand-in for `ChildProcess` that our code's `spawn` handling accepts. */
 function fakeSpawn(exitCode: number | null): {
-  spawnFn: typeof import("node:child_process").spawn;
+  spawnFn: UpdateInstallSpawnFn;
   emitter: EventEmitter;
 } {
   const emitter = new EventEmitter();
@@ -38,12 +39,12 @@ function fakeSpawn(exitCode: number | null): {
       emitter.emit("exit", exitCode, null);
     });
     return emitter as never;
-  }) as typeof import("node:child_process").spawn;
+  }) as UpdateInstallSpawnFn;
   return { spawnFn, emitter };
 }
 
 /** `spawn` that immediately emits an `error` event (npm not on PATH). */
-function fakeSpawnError(code: string): typeof import("node:child_process").spawn {
+function fakeSpawnError(code: string): UpdateInstallSpawnFn {
   return (() => {
     const emitter = new EventEmitter();
     queueMicrotask(() => {
@@ -52,7 +53,7 @@ function fakeSpawnError(code: string): typeof import("node:child_process").spawn
       emitter.emit("error", err);
     });
     return emitter as never;
-  }) as typeof import("node:child_process").spawn;
+  }) as UpdateInstallSpawnFn;
 }
 
 describe("almanac update --dismiss", () => {
@@ -323,7 +324,7 @@ describe("almanac update (default install path)", () => {
       const wrapped = ((cmd: string, args: readonly string[]) => {
         calls.push({ cmd, args: [...args] });
         return fakeSpawn(0).spawnFn(cmd, args);
-      }) as unknown as typeof import("node:child_process").spawn;
+      }) as UpdateInstallSpawnFn;
       const checkFn = vi.fn().mockResolvedValue({
         state: {
           last_check_at: 1_700_000_000,
@@ -355,7 +356,7 @@ describe("almanac update (default install path)", () => {
       const wrapped = ((cmd: string, args: readonly string[]) => {
         calls.push({ cmd, args: [...args] });
         return fakeSpawn(0).spawnFn(cmd, args);
-      }) as unknown as typeof import("node:child_process").spawn;
+      }) as UpdateInstallSpawnFn;
       const checkFn = vi.fn().mockResolvedValue({
         state: {
           last_check_at: 1_700_000_000,
@@ -401,7 +402,7 @@ describe("almanac update (default install path)", () => {
           cmd,
           args,
         );
-      }) as unknown as typeof import("node:child_process").spawn;
+      }) as UpdateInstallSpawnFn;
 
       const result = await runUpdate({
         statePath,
@@ -513,7 +514,7 @@ describe("almanac update (default install path)", () => {
       const wrapped = ((cmd: string, args: readonly string[]) => {
         calls.push({ cmd, args: [...args] });
         return fakeSpawn(0).spawnFn(cmd, args);
-      }) as unknown as typeof import("node:child_process").spawn;
+      }) as UpdateInstallSpawnFn;
       const checkFn = vi.fn().mockResolvedValue({
         state: {
           last_check_at: 1_700_000_000,

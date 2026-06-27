@@ -460,3 +460,9 @@ Sixty-fourth production slice:
 - Made setup uninstall options list setup guide directories directly instead of extending `AgentInstructionDirs`.
 - Normalized agent instruction removal summaries into the setup uninstall result shape.
 - Guarded setup uninstall against regressing to inherited agent instruction directory contracts.
+
+Sixty-fifth production slice:
+
+- Made update registry-check and npm-install spawn hooks explicit service-owned contracts in `src/services/update/types.ts`.
+- Kept the platform npm installer behind a private update-service adapter instead of exposing `typeof spawn` as service API.
+- Guarded update service types against regressing to platform check/spawn aliases.
