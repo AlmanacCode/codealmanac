@@ -344,10 +344,13 @@ describe("architecture boundaries", () => {
   it("keeps jobs command adapters out of job storage and process mechanics", async () => {
     const jobsServiceIndex = await readSource("src/services/jobs/index.ts");
     const jobsServiceTypes = await readSource("src/services/jobs/types.ts");
+    const jobsService = await readSource("src/services/jobs/jobs.ts");
+    const jobsServiceView = await readSource("src/services/jobs/view.ts");
     const jobsCommand = await readSource("src/cli/commands/jobs.ts");
 
     expect(existsSync(join(ROOT, "src/cli/commands/jobs-format.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/cli/commands/jobs-render.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/services/jobs/view.ts"))).toBe(true);
     expect(jobsServiceIndex).not.toContain("../../jobs");
     expect(jobsServiceTypes).not.toContain("RuntimeJobView");
     expect(jobsServiceTypes).not.toContain("JobView as");
@@ -374,6 +377,11 @@ describe("architecture boundaries", () => {
     expect(jobsCommand).not.toContain("function formatPageChanges");
     expect(jobsCommand).not.toContain("function formatMs");
     expect(jobsCommand).not.toContain("function missingWiki");
+    expect(jobsService).not.toContain("JobView as RuntimeJobView");
+    expect(jobsService).not.toContain("function jobServiceViewFromRuntime");
+    expect(jobsService).not.toContain("toJobView");
+    expect(jobsServiceView).toContain("function jobServiceViewFromRuntime");
+    expect(jobsServiceView).toContain("toJobView");
   });
 
   it("keeps job run projection concerns in named modules", async () => {

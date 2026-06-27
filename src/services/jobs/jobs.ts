@@ -7,13 +7,10 @@ import {
   readJobRecord,
   resolveJobLogPath,
   resolveJobRecordPath,
-  toJobView,
   writeJobRecord,
-  type JobRecord,
-  type JobView as RuntimeJobView,
 } from "../../jobs/index.js";
 import { findNearestAlmanacDir } from "../../paths.js";
-import { isLocalPidAlive, signalLocalPid } from "../../platform/process.js";
+import { signalLocalPid } from "../../platform/process.js";
 import type {
   CancelJobRequest,
   CancelJobServiceResult,
@@ -26,6 +23,10 @@ import type {
   StreamJobLogRequest,
   StreamJobLogServiceResult,
 } from "./types.js";
+import {
+  buildJobServiceView,
+  isTerminalJobServiceView,
+} from "./view.js";
 
 export async function listJobs(
   request: JobsRequest,
@@ -64,7 +65,9 @@ export async function readJobLog(
   const repoRoot = resolveRepoRoot(request.cwd);
   if (repoRoot === null) return { status: "missing-wiki" };
 
-  const record = await readJobRecord(await resolveJobRecordPath(repoRoot, request.jobId));
+  const record = await readJobRecord(
+    await resolveJobRecordPath(repoRoot, request.jobId),
+  );
   if (record === null) {
     return { status: "missing-job", jobId: request.jobId };
   }
@@ -72,7 +75,10 @@ export async function readJobLog(
   try {
     return {
       status: "found",
-      contents: await readFile(await resolveJobLogPath(repoRoot, record.id), "utf8"),
+      contents: await readFile(
+        await resolveJobLogPath(repoRoot, record.id),
+        "utf8",
+      ),
     };
   } catch (err: unknown) {
     return {
@@ -129,14 +135,18 @@ export async function streamJobLog(
   const repoRoot = resolveRepoRoot(request.cwd);
   if (repoRoot === null) return { status: "missing-wiki" };
 
-  const initial = await readJobRecord(await resolveJobRecordPath(repoRoot, request.jobId));
+  const initial = await readJobRecord(
+    await resolveJobRecordPath(repoRoot, request.jobId),
+  );
   if (initial === null) {
     return { status: "missing-job", jobId: request.jobId };
   }
 
   let offset = 0;
   while (true) {
-    const record = await readJobRecord(await resolveJobRecordPath(repoRoot, request.jobId));
+    const record = await readJobRecord(
+      await resolveJobRecordPath(repoRoot, request.jobId),
+    );
     if (record === null) {
       return { status: "missing-job", jobId: request.jobId };
     }
@@ -146,7 +156,7 @@ export async function streamJobLog(
       request.write,
     );
     const view = buildJobServiceView({ record, request });
-    if (isTerminalDisplayStatus(view)) {
+    if (isTerminalJobServiceView(view)) {
       return { status: "streamed", terminalJob: view };
     }
     await sleep(request.pollMs ?? 500);
@@ -157,7 +167,9 @@ async function readJobView(
   repoRoot: string,
   request: JobRequest,
 ): Promise<JobServiceView | null> {
-  const record = await readJobRecord(await resolveJobRecordPath(repoRoot, request.jobId));
+  const record = await readJobRecord(
+    await resolveJobRecordPath(repoRoot, request.jobId),
+  );
   if (record === null) return null;
   return buildJobServiceView({ record, request });
 }
@@ -184,57 +196,4 @@ async function writeLogChunk(
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isTerminalDisplayStatus(view: JobServiceView): boolean {
-  return (
-    view.displayStatus === "done" ||
-    view.displayStatus === "failed" ||
-    view.displayStatus === "cancelled" ||
-    view.displayStatus === "stale"
-  );
-}
-
-function buildJobServiceView(args: {
-  record: JobRecord;
-  request: JobsRequest;
-}): JobServiceView {
-  return jobServiceViewFromRuntime(
-    toJobView({
-      record: args.record,
-      now: args.request.now?.() ?? new Date(),
-      isPidAlive: args.request.isPidAlive ?? isLocalPidAlive,
-    }),
-  );
-}
-
-function jobServiceViewFromRuntime(view: RuntimeJobView): JobServiceView {
-  return {
-    version: view.version,
-    id: view.id,
-    operation: view.operation,
-    status: view.status,
-    repoRoot: view.repoRoot,
-    pid: view.pid,
-    provider: view.provider,
-    ...(view.model !== undefined ? { model: view.model } : {}),
-    ...(view.providerSessionId !== undefined
-      ? { providerSessionId: view.providerSessionId }
-      : {}),
-    startedAt: view.startedAt,
-    ...(view.finishedAt !== undefined ? { finishedAt: view.finishedAt } : {}),
-    ...(view.durationMs !== undefined ? { durationMs: view.durationMs } : {}),
-    logPath: view.logPath,
-    ...(view.targetKind !== undefined ? { targetKind: view.targetKind } : {}),
-    ...(view.targetPaths !== undefined ? { targetPaths: view.targetPaths } : {}),
-    ...(view.summary !== undefined ? { summary: view.summary } : {}),
-    ...(view.pageChanges !== undefined ? { pageChanges: view.pageChanges } : {}),
-    ...(view.operationOutput !== undefined
-      ? { operationOutput: view.operationOutput }
-      : {}),
-    ...(view.error !== undefined ? { error: view.error } : {}),
-    ...(view.failure !== undefined ? { failure: view.failure } : {}),
-    displayStatus: view.displayStatus,
-    elapsedMs: view.elapsedMs,
-  };
 }

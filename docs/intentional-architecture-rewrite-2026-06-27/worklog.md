@@ -677,3 +677,9 @@ One-hundredth production slice:
 - Split agent and config CLI registration into `src/edges/cli/register-agent-commands.ts` and `src/edges/cli/register-config-commands.ts`.
 - Moved `agents` and `config` command-family wiring out of `src/edges/cli/register-setup-commands.ts`.
 - Kept setup registration focused on setup, doctor, update, and uninstall command wiring.
+
+One-hundred-first production slice:
+
+- Split jobs service view normalization into `src/services/jobs/view.ts`.
+- Moved runtime `JobView` to service `JobServiceView` mapping and terminal display-status detection out of `src/services/jobs/jobs.ts`.
+- Kept `src/services/jobs/jobs.ts` focused on list/read/log/cancel/stream service verbs over job records and logs.
