@@ -2,6 +2,7 @@ import {
   nextReviewId,
   summaryFromMarkdown,
   writeReviewFile,
+  type ReviewItem,
 } from "../../stores/wiki-review/store.js";
 import {
   cleanReviewMarkdown,
@@ -41,7 +42,7 @@ export async function addWikiReviewItem(
   const summary = summaryFromMarkdown(markdown);
   if (summary.length === 0) return { status: "missing-markdown" };
 
-  const item: WikiReviewItem = {
+  const item: ReviewItem = {
     id: nextReviewId(summary, file.items),
     status: "open",
     summary,
@@ -54,7 +55,7 @@ export async function addWikiReviewItem(
   };
   file.items.push(item);
   await writeReviewFile(path, file);
-  return { status: "added", item };
+  return { status: "added", item: wikiReviewItemFromStore(item) };
 }
 
 export async function listWikiReviewItems(
@@ -67,7 +68,7 @@ export async function listWikiReviewItems(
   const items = status === "all"
     ? file.items
     : file.items.filter((item) => item.status === status);
-  return { status: "listed", items };
+  return { status: "listed", items: items.map(wikiReviewItemFromStore) };
 }
 
 export async function getWikiReviewItem(
@@ -75,7 +76,7 @@ export async function getWikiReviewItem(
 ): Promise<GetWikiReviewItemResult> {
   const found = await findWikiReviewItem(request);
   if (found === null) return { status: "missing", id: request.id };
-  return { status: "found", item: found.item };
+  return { status: "found", item: wikiReviewItemFromStore(found.item) };
 }
 
 export async function decideWikiReviewItem(
@@ -97,7 +98,7 @@ export async function decideWikiReviewItem(
   item.applied_at = null;
   item.application = null;
   await writeReviewFile(found.path, found.file);
-  return { status: "decided", item };
+  return { status: "decided", item: wikiReviewItemFromStore(item) };
 }
 
 export async function applyWikiReviewItem(
@@ -121,7 +122,7 @@ export async function applyWikiReviewItem(
   item.application = markdown;
   item.applied_at = reviewTimestamp(request.now);
   await writeReviewFile(found.path, found.file);
-  return { status: "applied", item };
+  return { status: "applied", item: wikiReviewItemFromStore(item) };
 }
 
 export async function reopenWikiReviewItem(
@@ -139,5 +140,21 @@ export async function reopenWikiReviewItem(
   item.applied_at = null;
   item.application = null;
   await writeReviewFile(found.path, found.file);
-  return { status: "reopened", item };
+  return { status: "reopened", item: wikiReviewItemFromStore(item) };
+}
+
+function wikiReviewItemFromStore(item: ReviewItem): WikiReviewItem {
+  return {
+    id: item.id,
+    status: item.status,
+    summary: item.summary,
+    created_at: item.created_at,
+    body: item.body,
+    decided_at: item.decided_at,
+    decision: item.decision,
+    applied_at: item.applied_at,
+    application: item.application,
+    ...(item.reopened_at !== undefined ? { reopened_at: item.reopened_at } : {}),
+    ...(item.reopen_note !== undefined ? { reopen_note: item.reopen_note } : {}),
+  };
 }

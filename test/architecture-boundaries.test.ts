@@ -185,6 +185,8 @@ describe("architecture boundaries", () => {
     expect(reviewService).not.toContain("loadReviewFile");
     expect(reviewService).not.toContain("function clean");
     expect(reviewService).not.toContain("function isReviewStatusFilter");
+    expect(reviewTypes).not.toContain("stores/wiki-review");
+    expect(reviewTypes).not.toContain("StoredReview");
     expect(reviewTypes).not.toContain("export type {");
   });
 

@@ -1,10 +1,18 @@
-import type {
-  ReviewItem as StoredReviewItem,
-  ReviewStatus as StoredReviewStatus,
-} from "../../stores/wiki-review/store.js";
+export type WikiReviewStatus = "open" | "decided" | "applied";
 
-export type WikiReviewItem = StoredReviewItem;
-export type WikiReviewStatus = StoredReviewStatus;
+export interface WikiReviewItem {
+  id: string;
+  status: WikiReviewStatus;
+  summary: string;
+  created_at: string;
+  body: string;
+  decided_at: string | null;
+  decision: string | null;
+  applied_at: string | null;
+  application: string | null;
+  reopened_at?: string | null;
+  reopen_note?: string | null;
+}
 
 export interface WikiReviewRequest {
   cwd: string;

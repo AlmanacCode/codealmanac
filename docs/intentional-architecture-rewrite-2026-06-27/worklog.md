@@ -321,3 +321,9 @@ Forty-third production slice:
 - Made `RegisteredWiki` a service-owned registry read model instead of an alias over the registry store entry.
 - Mapped registry store rows at `src/services/wiki/registry.ts` before list command formatting.
 - Guarded the list service contract against regressing to a store type alias.
+
+Forty-fourth production slice:
+
+- Made review command-facing item and status types explicit service contracts instead of aliases over the review store.
+- Mapped review store items inside `src/services/wiki/reviews.ts` before returning service results.
+- Guarded review service types against importing the store's persisted item/status contracts.
