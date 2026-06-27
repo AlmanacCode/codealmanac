@@ -171,13 +171,24 @@ describe("architecture boundaries", () => {
 
   it("keeps list command adapters out of registry storage mechanics", async () => {
     const listCommand = await readSource("src/cli/commands/list.ts");
+    const listRender = await readSource("src/cli/commands/list-render.ts");
     const registryService = await readSource("src/services/wiki/registry.ts");
 
+    expect(existsSync(join(ROOT, "src/cli/commands/list-render.ts"))).toBe(true);
     expect(listCommand).toContain("services/wiki/registry.js");
+    expect(listCommand).toContain("./list-render.js");
     expect(listCommand).not.toContain("../../wiki/registry");
     expect(listCommand).not.toContain("readRegistry");
     expect(listCommand).not.toContain("dropEntry");
     expect(listCommand).not.toContain("existsSync");
+    expect(listCommand).not.toContain("JSON.stringify");
+    expect(listCommand).not.toContain("BLUE");
+    expect(listCommand).not.toContain("BOLD");
+    expect(listCommand).not.toContain("no wikis registered");
+    expect(listCommand).not.toContain("removed \\\"");
+    expect(listRender).toContain("renderListWikis");
+    expect(listRender).toContain("renderListDropResult");
+    expect(listRender).toContain("formatPretty");
     expect(registryService).not.toContain("export type RegisteredWiki = RegistryEntry");
   });
 

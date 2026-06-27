@@ -773,3 +773,9 @@ One-hundred-sixteenth production slice:
 - Split search command rendering into `src/cli/commands/search-render.ts`.
 - Moved search JSON output, colored slug output, summary output, empty-result stderr breadcrumbs, and large-result warnings out of `src/cli/commands/search.ts`.
 - Kept `src/cli/commands/search.ts` focused on building wiki search service requests, applying command-level limits, and normalizing service rows into command result rows.
+
+One-hundred-seventeenth production slice:
+
+- Split list command rendering into `src/cli/commands/list-render.ts`.
+- Moved registry list JSON output, human-readable wiki list formatting, empty verbose hints, and drop result text out of `src/cli/commands/list.ts`.
+- Kept `src/cli/commands/list.ts` focused on selecting the registry service workflow for normal list versus explicit drop.
