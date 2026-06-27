@@ -1,21 +1,21 @@
-import { readFile } from "node:fs/promises";
-
 import type { CommandResult } from "../helpers.js";
 import { renderError, renderOutcome } from "../outcome.js";
 import { UserFacingError } from "../../errors.js";
-import { findNearestAlmanacDir } from "../../paths.js";
 import { formatTextTable } from "./table.js";
 import {
-  finishJobRecord,
-  markJobCancelled,
-  listJobRecords,
-  readJobRecord,
-  resolveJobLogPath,
-  resolveJobRecordPath,
-  toJobView,
-  writeJobRecord,
-} from "../../jobs/index.js";
-import type { JobView } from "../../jobs/index.js";
+  cancelJob,
+  listJobs,
+  readJob,
+  readJobLog,
+  streamJobLog,
+} from "../../services/jobs/index.js";
+import type {
+  CancelJobServiceResult,
+  JobView,
+  MissingJobResult,
+  MissingWikiResult,
+  ReadJobLogServiceResult,
+} from "../../services/jobs/index.js";
 
 export interface JobsOptions {
   cwd: string;
@@ -36,32 +36,32 @@ export interface JobAttachStreamOptions extends JobByIdOptions {
 export async function runJobsList(
   options: JobsOptions,
 ): Promise<CommandResult> {
-  const repoRoot = resolveWikiOrResult(options.cwd, options.json);
-  if (typeof repoRoot !== "string") return repoRoot;
+  const result = await listJobs(options);
+  if (result.status === "missing-wiki") return missingWiki(options.json);
 
-  const views = await listJobViews(repoRoot, options);
   if (options.json === true) {
     return {
-      stdout: `${JSON.stringify({ jobs: views }, null, 2)}\n`,
+      stdout: `${JSON.stringify({ jobs: result.jobs }, null, 2)}\n`,
       stderr: "",
       exitCode: 0,
     };
   }
 
-  if (views.length === 0) {
+  if (result.jobs.length === 0) {
     return { stdout: "Jobs\n\nNo jobs found.\n", stderr: "", exitCode: 0 };
   }
-  const lines = ["Jobs", "", ...formatJobRows(views)];
+  const lines = ["Jobs", "", ...formatJobRows(result.jobs)];
   return { stdout: `${lines.join("\n")}\n`, stderr: "", exitCode: 0 };
 }
 
 export async function runJobsShow(
   options: JobByIdOptions,
 ): Promise<CommandResult> {
-  const repoRoot = resolveWikiOrResult(options.cwd, options.json);
-  if (typeof repoRoot !== "string") return repoRoot;
-  const view = await readJobView(repoRoot, options);
-  if (view === null) return missingJob(options.jobId, options.json);
+  const result = await readJob(options);
+  if (result.status !== "found") {
+    return renderSharedIssue(result, options.json);
+  }
+  const view = result.job;
 
   if (options.json === true) {
     return {
@@ -122,26 +122,8 @@ function formatPageChanges(view: JobView): string[] {
 export async function runJobsLogs(
   options: JobByIdOptions,
 ): Promise<CommandResult> {
-  const repoRoot = resolveWikiOrResult(options.cwd, options.json);
-  if (typeof repoRoot !== "string") return repoRoot;
-  const record = await readJobRecord(await resolveJobRecordPath(repoRoot, options.jobId));
-  if (record === null) return missingJob(options.jobId, options.json);
-  try {
-    const logPath = await resolveJobLogPath(repoRoot, record.id);
-    return {
-      stdout: await readFile(logPath, "utf8"),
-      stderr: "",
-      exitCode: 0,
-    };
-  } catch (err: unknown) {
-    return renderOutcome(
-      {
-        type: "error",
-        message: err instanceof Error ? err.message : String(err),
-      },
-      { json: options.json },
-    );
-  }
+  const result = await readJobLog(options);
+  return renderJobLog(result, options.json);
 }
 
 export async function runJobsAttach(
@@ -161,119 +143,74 @@ export async function runJobsAttach(
 export async function streamJobsAttach(
   options: JobAttachStreamOptions,
 ): Promise<CommandResult> {
-  const repoRoot = resolveWikiOrResult(options.cwd, options.json);
-  if (typeof repoRoot !== "string") return repoRoot;
-  const initial = await readJobRecord(await resolveJobRecordPath(repoRoot, options.jobId));
-  if (initial === null) return missingJob(options.jobId, options.json);
-
   const write = options.write ?? ((chunk: string) => process.stdout.write(chunk));
-  let offset = 0;
-  while (true) {
-    const record = await readJobRecord(await resolveJobRecordPath(repoRoot, options.jobId));
-    if (record === null) return missingJob(options.jobId, options.json);
-    offset = await writeLogChunk(
-      await resolveJobLogPath(repoRoot, record.id),
-      offset,
-      write,
-    );
-    const view = toJobView({
-      record,
-      now: options.now?.() ?? new Date(),
-      isPidAlive: options.isPidAlive ?? isPidAlive,
-    });
-    if (
-      view.displayStatus === "done" ||
-      view.displayStatus === "failed" ||
-      view.displayStatus === "cancelled" ||
-      view.displayStatus === "stale"
-    ) {
-      const summary = terminalAttachSummary(view);
-      if (summary.length > 0) write(summary);
-      return { stdout: "", stderr: "", exitCode: 0 };
-    }
-    await sleep(options.pollMs ?? 500);
+  const result = await streamJobLog({ ...options, write });
+  if (result.status !== "streamed") {
+    return renderSharedIssue(result, options.json);
   }
+  const summary = terminalAttachSummary(result.terminalJob);
+  if (summary.length > 0) write(summary);
+  return { stdout: "", stderr: "", exitCode: 0 };
 }
 
 export async function runJobsCancel(
   options: JobByIdOptions,
 ): Promise<CommandResult> {
-  const repoRoot = resolveWikiOrResult(options.cwd, options.json);
-  if (typeof repoRoot !== "string") return repoRoot;
-  const path = await resolveJobRecordPath(repoRoot, options.jobId);
-  const record = await readJobRecord(path);
-  if (record === null) return missingJob(options.jobId, options.json);
-  if (record.status === "done" || record.status === "failed" || record.status === "cancelled") {
-    return renderOutcome(
-      {
-        type: "noop",
-        message: `job already ${record.status}: ${record.id}`,
-        data: { jobId: record.id, status: record.status },
-      },
-      { json: options.json },
-    );
+  const result = await cancelJob(options);
+  if (result.status !== "cancelled") {
+    return renderCancelJobIssue(result, options.json);
   }
-
-  await markJobCancelled(repoRoot, record.id);
-
-  if (record.pid > 0) {
-    try {
-      process.kill(record.pid, "SIGTERM");
-    } catch {
-      // The final record still becomes cancelled; stale detection covers
-      // processes that already exited.
-    }
-  }
-
-  const cancelled = finishJobRecord({
-    record,
-    status: "cancelled",
-    finishedAt: options.now?.() ?? new Date(),
-  });
-  await writeJobRecord(path, cancelled);
   return renderOutcome(
     {
       type: "success",
-      message: `cancelled job: ${record.id}`,
-      data: { jobId: record.id, status: "cancelled" },
+      message: `cancelled job: ${result.jobId}`,
+      data: { jobId: result.jobId, status: "cancelled" },
     },
     { json: options.json },
   );
 }
 
-async function listJobViews(
-  repoRoot: string,
-  options: JobsOptions,
-): Promise<JobView[]> {
-  const records = await listJobRecords(repoRoot);
-  return records.map((record) =>
-    toJobView({
-      record,
-      now: options.now?.() ?? new Date(),
-      isPidAlive: options.isPidAlive ?? isPidAlive,
-    }),
+function renderCancelJobIssue(
+  result: Exclude<CancelJobServiceResult, { status: "cancelled" }>,
+  json: boolean | undefined,
+): CommandResult {
+  if (result.status === "missing-wiki") return missingWiki(json);
+  if (result.status === "missing-job") return missingJob(result.jobId, json);
+  return renderOutcome(
+    {
+      type: "noop",
+      message: `job already ${result.jobStatus}: ${result.jobId}`,
+      data: { jobId: result.jobId, status: result.jobStatus },
+    },
+    { json },
   );
 }
 
-async function readJobView(
-  repoRoot: string,
-  options: JobByIdOptions,
-): Promise<JobView | null> {
-  const record = await readJobRecord(await resolveJobRecordPath(repoRoot, options.jobId));
-  if (record === null) return null;
-  return toJobView({
-    record,
-    now: options.now?.() ?? new Date(),
-    isPidAlive: options.isPidAlive ?? isPidAlive,
-  });
+function renderJobLog(
+  result: ReadJobLogServiceResult,
+  json: boolean | undefined,
+): CommandResult {
+  if (result.status === "found") {
+    return { stdout: result.contents, stderr: "", exitCode: 0 };
+  }
+  if (result.status === "read-error") {
+    return renderOutcome(
+      { type: "error", message: result.message },
+      { json },
+    );
+  }
+  return renderSharedIssue(result, json);
 }
 
-function resolveWikiOrResult(
-  cwd: string,
+function renderSharedIssue(
+  result: MissingWikiResult | MissingJobResult,
   json: boolean | undefined,
-): string | CommandResult {
-  const repoRoot = findNearestAlmanacDir(cwd);
-  if (repoRoot !== null) return repoRoot;
+): CommandResult {
+  if (result.status === "missing-job") return missingJob(result.jobId, json);
+  return missingWiki(json);
+}
+
+function missingWiki(json: boolean | undefined): CommandResult {
   return renderError(
     new UserFacingError(
       "no .almanac/ found in this directory or any parent",
@@ -291,37 +228,6 @@ function missingJob(jobId: string, json: boolean | undefined): CommandResult {
     { type: "error", message: `job not found: ${jobId}` },
     { json },
   );
-}
-
-async function writeLogChunk(
-  path: string,
-  offset: number,
-  write: (chunk: string) => void,
-): Promise<number> {
-  let text = "";
-  try {
-    text = await readFile(path, "utf8");
-  } catch {
-    return offset;
-  }
-  if (text.length <= offset) return offset;
-  const chunk = text.slice(offset);
-  write(chunk);
-  return text.length;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isPidAlive(pid: number): boolean {
-  if (pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function formatMs(ms: number): string {

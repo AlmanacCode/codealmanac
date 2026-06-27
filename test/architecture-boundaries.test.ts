@@ -160,6 +160,19 @@ describe("architecture boundaries", () => {
     expect(reviewService).not.toContain("function isReviewStatusFilter");
   });
 
+  it("keeps jobs command adapters out of job storage and process mechanics", async () => {
+    const jobsCommand = await readSource("src/cli/commands/jobs.ts");
+
+    expect(jobsCommand).toContain("services/jobs/index.js");
+    expect(jobsCommand).not.toContain("../../jobs/index");
+    expect(jobsCommand).not.toContain("readJobRecord");
+    expect(jobsCommand).not.toContain("writeJobRecord");
+    expect(jobsCommand).not.toContain("resolveJobRecordPath");
+    expect(jobsCommand).not.toContain("resolveJobLogPath");
+    expect(jobsCommand).not.toContain("finishJobRecord");
+    expect(jobsCommand).not.toContain("process.kill");
+  });
+
   it("keeps migrate legacy-sources adapter out of source migration mechanics", async () => {
     const migrateCommand = await readSource("src/cli/commands/migrate.ts");
 
