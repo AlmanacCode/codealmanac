@@ -876,3 +876,10 @@ One-hundred-thirty-second production slice:
 - Removed the duplicated `samePath` helper and `process.platform` read from autoregistration.
 - Kept autoregistration on a single registry snapshot while letting the store own case-insensitive path matching.
 - Added an architecture guard so autoregistration cannot reintroduce platform-specific path equality.
+
+One-hundred-thirty-third production slice:
+
+- Replaced the singleton harness provider registry with `createHarnessProviderRegistry({ environment })`.
+- Removed the remaining `process.env` defaults from the Claude and Codex harness provider factories.
+- Threaded `workerEnvironment` through foreground jobs, queued workers, and the job executor so default harness runs receive edge-owned runtime facts.
+- Updated harness/job tests and added an architecture guard so harness providers and the registry cannot reintroduce ambient environment ownership.

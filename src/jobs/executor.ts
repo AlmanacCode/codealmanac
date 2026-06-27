@@ -1,7 +1,7 @@
 import type { HarnessEvent, HarnessResult } from "../harness/events.js";
 import type { HarnessRunHooks } from "../harness/types.js";
 import type { OperationSpec } from "../operations/spec.js";
-import { getHarnessProvider } from "../harness/providers/index.js";
+import { createHarnessProviderRegistry } from "../harness/providers/index.js";
 import { createJobEventLogger } from "./events.js";
 import { finishUnlessCancelled } from "./finalization.js";
 import {
@@ -30,6 +30,7 @@ export interface ExecuteStartedJobOptions {
   repoRoot: string;
   spec: OperationSpec;
   record: JobRecord;
+  workerEnvironment: NodeJS.ProcessEnv;
   now: () => Date;
   onEvent?: (event: HarnessEvent) => void | Promise<void>;
   harnessRun?: (
@@ -46,9 +47,13 @@ export async function executeStartedJob(
   const logPath = await resolveJobLogPath(options.repoRoot, jobId);
   const started = options.record;
   const now = options.now;
+  const harnessProviderRegistry = createHarnessProviderRegistry({
+    environment: options.workerEnvironment,
+  });
   const harnessRun =
     options.harnessRun ??
-    ((spec, hooks) => getHarnessProvider(spec.provider.id).run(spec, hooks));
+    ((spec, hooks) =>
+      harnessProviderRegistry.getProvider(spec.provider.id).run(spec, hooks));
 
   const events = createJobEventLogger({
     logPath,

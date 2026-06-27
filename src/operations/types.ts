@@ -28,6 +28,7 @@ export type StartForegroundJob = (options: {
   repoRoot: string;
   spec: OperationSpec;
   jobId?: string;
+  workerEnvironment: NodeJS.ProcessEnv;
   onEvent?: (event: HarnessEvent) => void | Promise<void>;
 }) => Promise<StartJobResult>;
 

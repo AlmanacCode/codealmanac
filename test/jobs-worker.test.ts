@@ -143,6 +143,7 @@ describe("job worker background execution", () => {
       const seenPrompts: string[] = [];
       await runJobWorker({
         repoRoot: repo,
+        workerEnvironment: {},
         pid: 789,
         now: fixedClock([
           "2026-05-09T19:57:01.000Z",
@@ -257,6 +258,7 @@ describe("job worker background execution", () => {
 
       await runJobWorker({
         repoRoot: repo,
+        workerEnvironment: {},
         harnessRun: async () => {
           throw new Error("should not run");
         },
@@ -288,6 +290,7 @@ describe("job worker background execution", () => {
 
       await runJobWorker({
         repoRoot: repo,
+        workerEnvironment: {},
         pid: 222,
         harnessRun: async () => {
           throw new Error("should not run");
@@ -324,6 +327,7 @@ describe("job worker background execution", () => {
 
       await runJobWorker({
         repoRoot: repo,
+        workerEnvironment: {},
         harnessRun: async () => {
           throw new Error("should not run");
         },
@@ -378,11 +382,13 @@ describe("job worker background execution", () => {
       await Promise.all([
         runJobWorker({
           repoRoot: repo,
+          workerEnvironment: {},
           pid: 444,
           harnessRun,
         }),
         runJobWorker({
           repoRoot: repo,
+          workerEnvironment: {},
           pid: 445,
           harnessRun,
         }),

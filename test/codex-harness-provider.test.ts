@@ -175,6 +175,7 @@ rl.on("line", (line) => {
 
   it("builds app-server requests and rejects unsupported fields", async () => {
     const provider = createCodexHarnessProvider({
+      environment: {},
       runAppServer: async () => ({ success: true, result: "unused" }),
     });
 
@@ -965,6 +966,7 @@ rl.on("line", (line) => {
 
   it("checks Codex CLI readiness", async () => {
     const ready = createCodexHarnessProvider({
+      environment: {},
       commandExists: () => true,
       runStatus: async () => ({ ok: true, detail: "logged in" }),
     });
@@ -976,6 +978,7 @@ rl.on("line", (line) => {
     });
 
     const missing = createCodexHarnessProvider({
+      environment: {},
       commandExists: () => false,
     });
     await expect(missing.checkStatus()).resolves.toEqual({

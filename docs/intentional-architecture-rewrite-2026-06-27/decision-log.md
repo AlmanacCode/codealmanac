@@ -19,6 +19,10 @@ Large files are reviewed for mixed ownership. Files are split when they have mul
 
 CLI and process edges own facts such as argv, cwd, stdout capability, worker entrypoints, and process environment. Lower layers receive those facts through explicit contracts when they need them.
 
+### Harness provider registries are runtime-scoped
+
+Claude and Codex harness providers are created from an explicit runtime environment. Jobs and workers pass environment through the executor instead of importing singleton providers that close over `process.env`.
+
 ### Services own product decisions
 
 Command adapters shape requests and render results. Services own workflow decisions, validation, coordination, and user-visible product semantics.

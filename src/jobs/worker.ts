@@ -19,6 +19,7 @@ export interface RunJobWorkerOptions {
   repoRoot: string;
   now?: () => Date;
   pid?: number;
+  workerEnvironment: NodeJS.ProcessEnv;
   onEvent?: (event: HarnessEvent) => void | Promise<void>;
   harnessRun?: (
     spec: OperationSpec,
@@ -45,6 +46,7 @@ export async function runJobWorker(
             jobId: record.id,
             now,
             pid: options.pid,
+            workerEnvironment: options.workerEnvironment,
             onEvent: options.onEvent,
             harnessRun: options.harnessRun,
           });

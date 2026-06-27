@@ -36,17 +36,17 @@ export interface CodexHarnessProviderDeps {
     detail: string;
   }>;
   runAppServer?: CodexAppServerRunFn;
-  environment?: NodeJS.ProcessEnv;
+  environment: NodeJS.ProcessEnv;
 }
 
 export function createCodexHarnessProvider(
-  deps: CodexHarnessProviderDeps = {},
+  deps: CodexHarnessProviderDeps,
 ): HarnessProvider {
   const metadata = HARNESS_PROVIDER_METADATA.codex;
   const commandExists = deps.commandExists ?? defaultCommandExists;
   const runStatus = deps.runStatus ?? defaultJobStatus;
   const runAppServer = deps.runAppServer ?? runCodexAppServer;
-  const environment = deps.environment ?? process.env;
+  const environment = deps.environment;
 
   return {
     metadata,
@@ -94,5 +94,3 @@ export function createCodexHarnessProvider(
     },
   };
 }
-
-export const codexHarnessProvider = createCodexHarnessProvider();

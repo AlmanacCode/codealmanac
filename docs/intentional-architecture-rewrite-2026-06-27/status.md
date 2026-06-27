@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 178 committed rewrite commits past `dev`. The worklog records 132 production slices so far.
+The branch has 179 committed rewrite commits past `dev`. The worklog records 133 production slices so far.
 
 The diff is broad: more than 300 files changed, with about 18.9k insertions and 10k deletions.
 
@@ -19,7 +19,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Split wiki workflows into clearer service boundaries: search, show, health, registry, topics, review, reindex, source migration, and doctor wiki checks.
 - Moved durable job persistence into explicit stores for records, specs, logs, and worker locks.
 - Moved sync ledger and lock persistence into explicit stores.
-- Split provider harness files, especially Claude and Codex app-server mechanics.
+- Split provider harness files, especially Claude and Codex app-server mechanics, and made provider runtime environment flow through explicit job/registry contracts.
 - Moved setup, diagnostics, update, automation, jobs, sync, lifecycle, config, and agents workflows behind service-owned contracts.
 - Split most command rendering into command-private render files.
 - Added architecture-boundary tests to stop old dependency leaks from returning.
@@ -36,7 +36,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Immediate Next Work
 
-Continue inspecting remaining non-edge `process.*` reads and decide which are legitimate platform mechanics versus runtime facts that should be passed from an edge. The indexer warning, provider enablement, and autoregistration registry-matching paths are now explicit; remaining candidates are mostly provider/platform mechanics and viewer/server boundaries.
+Continue inspecting remaining non-edge `process.*` reads and decide which are legitimate platform mechanics versus runtime facts that should be passed from an edge. The indexer warning, provider enablement, autoregistration registry-matching, and harness provider environment paths are now explicit; remaining candidates are mostly provider/platform mechanics and viewer/server boundaries.
 
 ## Decision Log
 

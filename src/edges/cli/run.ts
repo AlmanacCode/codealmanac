@@ -109,6 +109,7 @@ async function tryRunInternalJob(args: string[]): Promise<boolean> {
   const { runJobWorker } = await import("../../jobs/index.js");
   await runJobWorker({
     repoRoot: process.cwd(),
+    workerEnvironment: process.env,
   });
   return true;
 }

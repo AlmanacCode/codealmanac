@@ -22,6 +22,7 @@ export interface StartJobOptions {
   jobId?: string;
   now?: () => Date;
   pid?: number;
+  workerEnvironment: NodeJS.ProcessEnv;
   onEvent?: (event: HarnessEvent) => void | Promise<void>;
   harnessRun?: (
     spec: OperationSpec,
@@ -81,6 +82,7 @@ export async function startForegroundJob(
       repoRoot: options.repoRoot,
       spec: options.spec,
       record: started,
+      workerEnvironment: options.workerEnvironment,
       now,
       onEvent: options.onEvent,
       harnessRun: options.harnessRun,
@@ -138,6 +140,7 @@ export async function startQueuedJob(
     repoRoot: options.repoRoot,
     spec: options.spec,
     record: running,
+    workerEnvironment: options.workerEnvironment,
     now,
     onEvent: options.onEvent,
     harnessRun: options.harnessRun,

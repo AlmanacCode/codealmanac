@@ -107,6 +107,7 @@ export async function runOperationProcess(args: {
     repoRoot: args.repoRoot,
     spec: args.spec,
     jobId: args.jobId,
+    workerEnvironment: args.workerEnvironment,
     onEvent: args.onEvent,
   });
   return { mode: "foreground", jobId: foreground.jobId, foreground };

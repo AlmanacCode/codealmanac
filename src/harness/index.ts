@@ -22,7 +22,8 @@ export type {
 export type { ShellPolicy, ToolId, ToolRequest } from "./tools.js";
 export { isToolId, uniqueToolRequests } from "./tools.js";
 export {
-  getHarnessProvider,
+  createHarnessProviderRegistry,
   HARNESS_PROVIDER_METADATA,
-  listHarnessProviders,
+  type HarnessProviderRegistry,
+  type HarnessProviderRegistryRuntime,
 } from "./providers/index.js";

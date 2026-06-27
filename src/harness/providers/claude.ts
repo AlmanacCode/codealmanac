@@ -32,16 +32,16 @@ export interface ClaudeHarnessProviderDeps {
   query?: ClaudeQueryFn;
   checkAuth?: () => Promise<ClaudeAuthStatus>;
   resolveExecutable?: () => string | undefined;
-  environment?: NodeJS.ProcessEnv;
+  environment: NodeJS.ProcessEnv;
 }
 
 export function createClaudeHarnessProvider(
-  deps: ClaudeHarnessProviderDeps = {},
+  deps: ClaudeHarnessProviderDeps,
 ): HarnessProvider {
   const queryFn = deps.query ?? query;
   const checkAuthFn = deps.checkAuth ?? (() => checkClaudeAuth());
   const resolveExecutable = deps.resolveExecutable ?? resolveClaudeExecutable;
-  const environment = deps.environment ?? process.env;
+  const environment = deps.environment;
   const metadata = HARNESS_PROVIDER_METADATA.claude;
 
   return {
@@ -69,8 +69,6 @@ export function createClaudeHarnessProvider(
       runClaudeHarness(spec, hooks, queryFn, resolveExecutable, environment),
   };
 }
-
-export const claudeHarnessProvider = createClaudeHarnessProvider();
 
 async function runClaudeHarness(
   spec: OperationSpec,

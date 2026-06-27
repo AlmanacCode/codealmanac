@@ -25,6 +25,7 @@ export interface LifecycleForegroundStartRequest {
   repoRoot: string;
   spec: OperationSpec;
   jobId?: string;
+  workerEnvironment: NodeJS.ProcessEnv;
   onEvent?: LifecycleOperationEventHandler;
 }
 

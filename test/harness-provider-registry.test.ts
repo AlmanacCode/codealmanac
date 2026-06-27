@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  getHarnessProvider,
+  createHarnessProviderRegistry,
   HARNESS_PROVIDER_METADATA,
-  listHarnessProviders,
 } from "../src/harness/index.js";
 
 describe("harness provider registry", () => {
   it("lists the supported provider ids", () => {
-    expect(listHarnessProviders().map((provider) => provider.metadata.id)).toEqual([
+    const registry = createHarnessProviderRegistry({ environment: {} });
+
+    expect(registry.listProviders().map((provider) => provider.metadata.id)).toEqual([
       "claude",
       "codex",
       "cursor",
@@ -16,11 +17,13 @@ describe("harness provider registry", () => {
   });
 
   it("returns provider metadata by id", () => {
-    expect(getHarnessProvider("claude").metadata).toBe(
+    const registry = createHarnessProviderRegistry({ environment: {} });
+
+    expect(registry.getProvider("claude").metadata).toBe(
       HARNESS_PROVIDER_METADATA.claude,
     );
-    expect(getHarnessProvider("codex").metadata.displayName).toBe("Codex");
-    expect(getHarnessProvider("cursor").metadata.displayName).toBe("Cursor");
+    expect(registry.getProvider("codex").metadata.displayName).toBe("Codex");
+    expect(registry.getProvider("cursor").metadata.displayName).toBe("Cursor");
   });
 
   it("keeps capability differences explicit", () => {
@@ -40,8 +43,10 @@ describe("harness provider registry", () => {
   });
 
   it("keeps unported adapters explicit", async () => {
+    const registry = createHarnessProviderRegistry({ environment: {} });
+
     await expect(
-      getHarnessProvider("cursor").run({
+      registry.getProvider("cursor").run({
         provider: { id: "cursor" },
         cwd: "/repo",
         prompt: "hello",

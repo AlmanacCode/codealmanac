@@ -1284,6 +1284,31 @@ describe("architecture boundaries", () => {
     expect(claudeOptions).toContain("environment: NodeJS.ProcessEnv");
   });
 
+  it("keeps harness provider runtime environment explicit", async () => {
+    const registry = await readSource("src/harness/providers/index.ts");
+    const harnessIndex = await readSource("src/harness/index.ts");
+    const claudeProvider = await readSource("src/harness/providers/claude.ts");
+    const codexProvider = await readSource("src/harness/providers/codex.ts");
+    const jobExecutor = await readSource("src/jobs/executor.ts");
+    const jobStart = await readSource("src/jobs/start.ts");
+    const jobWorker = await readSource("src/jobs/worker.ts");
+
+    expect(registry).toContain("createHarnessProviderRegistry");
+    expect(registry).toContain("environment: NodeJS.ProcessEnv");
+    expect(registry).not.toContain("process.env");
+    expect(harnessIndex).toContain("createHarnessProviderRegistry");
+    expect(harnessIndex).not.toContain("getHarnessProvider");
+    expect(harnessIndex).not.toContain("listHarnessProviders");
+    expect(claudeProvider).not.toContain("process.env");
+    expect(codexProvider).not.toContain("process.env");
+    expect(claudeProvider).not.toContain("claudeHarnessProvider");
+    expect(codexProvider).not.toContain("codexHarnessProvider");
+    expect(jobExecutor).toContain("createHarnessProviderRegistry");
+    expect(jobExecutor).toContain("workerEnvironment: NodeJS.ProcessEnv");
+    expect(jobStart).toContain("workerEnvironment: NodeJS.ProcessEnv");
+    expect(jobWorker).toContain("workerEnvironment: NodeJS.ProcessEnv");
+  });
+
   it("passes agent readiness runtime facts through an explicit context", async () => {
     const agentTypes = await readSource("src/agent/types.ts");
     const configProviders = await readSource("src/config/providers.ts");

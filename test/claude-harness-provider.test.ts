@@ -165,6 +165,7 @@ describe("Claude harness provider", () => {
     let seenOptions: unknown;
     const provider = createClaudeHarnessProvider({
       resolveExecutable: () => "/bin/claude",
+      environment: {},
       query: ({ options }) => {
         seenOptions = options;
         return messages([
@@ -249,6 +250,7 @@ describe("Claude harness provider", () => {
     const calls: Array<{ options?: Record<string, unknown> }> = [];
     const provider = createClaudeHarnessProvider({
       resolveExecutable: () => undefined,
+      environment: {},
       query: (params) => {
         calls.push(params as { options?: Record<string, unknown> });
         return messages([
@@ -300,6 +302,7 @@ describe("Claude harness provider", () => {
     let spawnedPids: number[] = [];
     const provider = createClaudeHarnessProvider({
       resolveExecutable: () => undefined,
+      environment: {},
       query: (params) =>
         messagesFrom(async function* () {
           const options = params.options;
@@ -366,6 +369,7 @@ describe("Claude harness provider", () => {
     let spawnedPids: number[] = [];
     const provider = createClaudeHarnessProvider({
       resolveExecutable: () => undefined,
+      environment: {},
       query: (params) =>
         messagesFrom(async function* () {
           const options = params.options;
@@ -427,6 +431,7 @@ describe("Claude harness provider", () => {
     const events: unknown[] = [];
     const provider = createClaudeHarnessProvider({
       resolveExecutable: () => undefined,
+      environment: {},
       query: () =>
         messages([
           sdk({
@@ -573,6 +578,7 @@ describe("Claude harness provider", () => {
     const events: unknown[] = [];
     const provider = createClaudeHarnessProvider({
       resolveExecutable: () => undefined,
+      environment: {},
       query: () =>
         messages([
           sdk({
