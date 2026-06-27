@@ -1,24 +1,18 @@
 import { spawn } from "node:child_process";
 
-import type { SpawnCliFn } from "../../../agent/readiness/providers/claude/index.js";
-import {
-  buildProviderModelChoices,
-  buildProviderSetupView,
-  parseAgentSelection,
-} from "../../../agent/readiness/view.js";
+import type { SpawnCliFn } from "../../../agent/types.js";
 import type {
   ProviderSetupView,
-} from "../../../agent/readiness/view.js";
-import type { ProviderModelChoice } from "../../../agent/types.js";
+  ProviderModelChoice,
+  AgentProviderId,
+} from "../../../services/setup/index.js";
 import {
-  disabledAgentProviderMessage,
-  formatEnabledAgentProviderList,
-  isAgentProviderId,
-  isEnabledAgentProviderId,
-  readConfig,
-  writeConfig,
-  type AgentProviderId,
-} from "../../../config/index.js";
+  readSetupAgentChoiceState,
+  readSetupProviderModelChoices,
+  refreshSetupAgentChoiceView,
+  resolveSetupAgentSelection,
+  saveSetupAgentChoice,
+} from "../../../services/setup/index.js";
 import {
   DIM,
   RST,
@@ -42,12 +36,14 @@ export async function chooseDefaultAgent(args: {
   requestedModel?: string;
   spawnCli?: SpawnCliFn;
 }): Promise<AgentChoice> {
-  const config = await readConfig();
-  let view: ProviderSetupView | null = null;
-  let selected = args.requested ?? config.agent.default;
-  if (args.interactive || args.requested !== undefined) {
-    view = await buildProviderSetupView({ config, spawnCli: args.spawnCli });
-  }
+  const state = await readSetupAgentChoiceState({
+    requested: args.requested,
+    includeView: args.interactive || args.requested !== undefined,
+    spawnCli: args.spawnCli,
+  });
+  const { config } = state;
+  let view = state.view;
+  let selected = state.selected;
   if (args.interactive && args.requested === undefined && view !== null) {
     while (true) {
       const choice = await selectChoice({
@@ -84,7 +80,10 @@ export async function chooseDefaultAgent(args: {
           if (!login.ok) {
             stepActive(args.out, `${choice.label} login failed: ${login.error}`);
           }
-          view = await buildProviderSetupView({ config, spawnCli: args.spawnCli });
+          view = await refreshSetupAgentChoiceView({
+            config,
+            spawnCli: args.spawnCli,
+          });
           const refreshed = view.choices.find((next) => next.id === choice.id);
           if (refreshed?.ready === true) {
             selected = refreshed.id;
@@ -97,21 +96,9 @@ export async function chooseDefaultAgent(args: {
       await waitForEnter(args.out, "Press Enter to choose a different agent.");
     }
   }
-  const parsed = parseAgentSelection(selected);
-  if (parsed.provider === null || !isAgentProviderId(parsed.provider)) {
-    return {
-      ok: false,
-      error:
-        `unknown agent '${selected}'. Expected one of: ${formatEnabledAgentProviderList()}.`,
-    };
-  }
-  const provider = parsed.provider;
-  if (!isEnabledAgentProviderId(provider)) {
-    return {
-      ok: false,
-      error: disabledAgentProviderMessage(provider),
-    };
-  }
+  const selection = resolveSetupAgentSelection(selected);
+  if (!selection.ok) return selection;
+  const provider = selection.provider;
   let selectedChoice = view?.choices.find((choice) => choice.id === provider);
   if (
     args.interactive &&
@@ -128,7 +115,10 @@ export async function chooseDefaultAgent(args: {
     if (runLogin === "install") {
       const login = await runLoginCommand(command);
       if (login.ok) {
-        view = await buildProviderSetupView({ config, spawnCli: args.spawnCli });
+        view = await refreshSetupAgentChoiceView({
+          config,
+          spawnCli: args.spawnCli,
+        });
         selectedChoice = view.choices.find((choice) => choice.id === provider);
       } else {
         stepActive(args.out, `${selectedChoice.label} login failed: ${login.error}`);
@@ -143,7 +133,7 @@ export async function chooseDefaultAgent(args: {
       }`,
     };
   }
-  const requestedModel = args.requestedModel ?? parsed.model;
+  const requestedModel = args.requestedModel ?? selection.parsedModel;
   const model = requestedModel ?? await chooseProviderModel({
     out: args.out,
     interactive: args.interactive,
@@ -151,17 +141,7 @@ export async function chooseDefaultAgent(args: {
     choice: selectedChoice,
     configuredModel: config.agent.models[provider] ?? null,
   });
-  await writeConfig({
-    ...config,
-    agent: {
-      ...config.agent,
-      default: provider,
-      models: {
-        ...config.agent.models,
-        [provider]: model,
-      },
-    },
-  });
+  await saveSetupAgentChoice({ config, provider, model });
   if ((!args.interactive || args.requested !== undefined) && selectedChoice !== undefined) {
     const detail = selectedChoice?.ready === true
       ? "ready"
@@ -178,9 +158,11 @@ async function chooseProviderModel(args: {
   choice?: ProviderSetupView["choices"][number];
   configuredModel: string | null;
 }): Promise<string | null> {
-  const choices =
-    args.choice?.modelChoices ??
-    await buildProviderModelChoices(args.provider, args.configuredModel);
+  const choices = await readSetupProviderModelChoices({
+    provider: args.provider,
+    configuredModel: args.configuredModel,
+    choice: args.choice,
+  });
   const recommended =
     choices.find((choice) => choice.recommended) ??
     choices.find((choice) => choice.source === "provider-default");

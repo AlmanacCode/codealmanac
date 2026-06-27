@@ -1,6 +1,4 @@
-import {
-  type SpawnCliFn,
-} from "../../../agent/readiness/providers/claude/index.js";
+import type { SpawnCliFn } from "../../../agent/types.js";
 import type { InstructionTargetId } from "../../../agent/install-targets.js";
 export {
   CODEX_INSTRUCTIONS_END,

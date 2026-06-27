@@ -277,6 +277,21 @@ describe("architecture boundaries", () => {
     expect(agentsCommand).not.toContain("isAgentProviderId");
   });
 
+  it("keeps setup agent choice UI out of readiness and config mechanics", async () => {
+    const setupAgentChoice = await readSource(
+      "src/cli/commands/setup/agent-choice.ts",
+    );
+
+    expect(existsSync(join(ROOT, "src/services/setup/agent-choice.ts"))).toBe(true);
+    expect(setupAgentChoice).toContain("services/setup/index.js");
+    expect(setupAgentChoice).not.toContain("agent/readiness/view");
+    expect(setupAgentChoice).not.toContain("../../../config/index");
+    expect(setupAgentChoice).not.toContain("readConfig");
+    expect(setupAgentChoice).not.toContain("writeConfig");
+    expect(setupAgentChoice).not.toContain("parseAgentSelection");
+    expect(setupAgentChoice).not.toContain("isAgentProviderId");
+  });
+
   it("keeps sync command adapters out of transcript and absorb workflow mechanics", async () => {
     const syncCommand = await readSource("src/cli/commands/sync.ts");
 

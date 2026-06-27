@@ -194,3 +194,10 @@ Twenty-second production slice:
 - Split noninteractive server-request response policy into `src/harness/providers/codex/server-requests.ts`.
 - Kept `src/harness/providers/codex/app-server.ts` focused on process ownership, JSON-RPC request/response tracking, notification routing, turn completion, and cleanup.
 - Added an architecture guard so the JSON-RPC run loop does not re-absorb env parsing or the server-request response table.
+
+Twenty-third production slice:
+
+- Introduced `src/services/setup/` for setup product workflows that need agent readiness and persisted config state.
+- Moved setup agent-choice state loading, provider selection validation, model-choice lookup, readiness refresh, and final config persistence behind `src/services/setup/agent-choice.ts`.
+- Kept `src/cli/commands/setup/agent-choice.ts` responsible for terminal prompting, choice formatting, login command prompting, and step output.
+- Added an architecture guard so setup's agent-choice UI does not re-import config or readiness mechanics directly.
