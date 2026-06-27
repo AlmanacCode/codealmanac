@@ -40,8 +40,10 @@ There is no prize for preserving awkward code. Prefer the structure a new mainta
 | `src/platform/` | Local machine integration for install, self-update, and scheduler automation | `install/`, `update/`, `automation/` |
 | `src/init/` | Repo initialization and wiki scaffolding shared by CLI and Build | `scaffold.ts` |
 | `src/agent/` | Agent facade, provider registry, provider adapters, prompt loading | `sdk.ts`, `types.ts`, `providers/` |
-| `src/wiki/indexer/` | SQLite indexer — schema, frontmatter parse, `[[...]]` classifier, freshness | `schema.ts`, `index.ts`, `frontmatter.ts`, `wikilinks.ts`, `paths.ts` (normalization), `resolve-wiki.ts`, `duration.ts` |
-| `src/wiki/registry/` | Global registry at `~/.almanac/registry.json` — atomic read/write + auto-register | `store.ts` (read/write), `index.ts` (facade), `autoregister.ts` |
+| `src/wiki/indexer/` | SQLite indexer — schema, frontmatter parse, `[[...]]` classifier, freshness | `schema.ts`, `index.ts`, `frontmatter.ts`, `wikilinks.ts`, `paths.ts` (normalization), `resolve-wiki.ts` |
+| `src/shared/` | Small cross-cutting helpers with no product ownership | `duration.ts` |
+| `src/stores/wiki-registry/` | Global registry persistence at `~/.almanac/registry.json` — atomic read/write | `store.ts`, `index.ts` |
+| `src/wiki/registry/` | Registry-related wiki behavior that is not pure persistence | `autoregister.ts` |
 | `src/wiki/topics/` | Topic DAG serialized to `.almanac/topics.yaml` + page frontmatter rewrites (slice 3) | `yaml.ts`, `frontmatter-rewrite.ts` |
 | `test/` | Vitest suites, one per feature area | `helpers.ts` (`withTempHome`, `makeRepo`, `writePage`), `*.test.ts` |
 | `prompts/` | Agent prompts bundled in the npm package | `bootstrap.md`, `writer.md`, `reviewer.md` |
@@ -126,6 +128,6 @@ Things we do not do. If a plan proposes one, push back.
 - **Prompts:** `prompts/bootstrap.md`, `prompts/writer.md`, `prompts/reviewer.md`
 - **SQLite schema DDL:** `src/wiki/indexer/schema.ts` (single-source, applied idempotently on open)
 - **Init scaffolding:** `src/init/scaffold.ts` (creates `.almanac/`, starter README, runtime `.gitignore` entries, and registry entry)
-- **Registry I/O:** `src/wiki/registry/store.ts` (atomic read/write), `src/wiki/registry/index.ts` (facade), and `src/wiki/registry/autoregister.ts` (silent-on-command policy)
+- **Registry I/O:** `src/stores/wiki-registry/store.ts` (atomic read/write) and `src/wiki/registry/autoregister.ts` (silent-on-command policy)
 - **Walk-up resolver:** `src/paths.ts` — nearest `.almanac/` from a `cwd`, like git's nearest `.git/`
 - **Test sandbox helpers:** `test/helpers.ts`

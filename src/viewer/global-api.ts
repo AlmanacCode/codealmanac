@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-import { readRegistry, type RegistryEntry } from "../wiki/registry/index.js";
+import { readRegistry, type RegistryEntry } from "../stores/wiki-registry/index.js";
 import { createViewerApi, type ViewerApi } from "./api.js";
 
 export interface ViewerWikiSummary {

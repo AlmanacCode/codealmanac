@@ -8,9 +8,8 @@ import {
   dropEntry,
   findEntry,
   readRegistry,
-  toKebabCase,
   writeRegistry,
-} from "../src/wiki/registry/index.js";
+} from "../src/stores/wiki-registry/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
 describe("registry", () => {
@@ -200,18 +199,5 @@ describe("registry", () => {
       const tmp = `${getRegistryPath()}.tmp`;
       expect(existsSync(tmp)).toBe(false);
     });
-  });
-});
-
-describe("toKebabCase", () => {
-  it("lowercases and hyphenates", () => {
-    expect(toKebabCase("MyRepo")).toBe("myrepo");
-    expect(toKebabCase("My Repo")).toBe("my-repo");
-    expect(toKebabCase("My_Repo_Name")).toBe("my-repo-name");
-    expect(toKebabCase("my.repo.name")).toBe("my-repo-name");
-    expect(toKebabCase("  leading-trailing  ")).toBe("leading-trailing");
-    expect(toKebabCase("---weird---")).toBe("weird");
-    expect(toKebabCase("a__b--c")).toBe("a-b-c");
-    expect(toKebabCase("")).toBe("");
   });
 });

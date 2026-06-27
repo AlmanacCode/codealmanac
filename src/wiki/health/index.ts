@@ -8,7 +8,7 @@ import type Database from "better-sqlite3";
 import { parseFrontmatter } from "../indexer/frontmatter.js";
 import { ensureFreshIndex } from "../indexer/index.js";
 import { openIndex } from "../indexer/schema.js";
-import { findEntry } from "../registry/index.js";
+import { findEntry } from "../../stores/wiki-registry/index.js";
 import { toKebabCase } from "../../slug.js";
 import * as sources from "../sources/index.js";
 import {

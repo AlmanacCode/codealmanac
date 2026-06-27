@@ -8,7 +8,7 @@ import {
   addEntry,
   ensureGlobalDir,
   type RegistryEntry,
-} from "../wiki/registry/index.js";
+} from "../stores/wiki-registry/index.js";
 
 export interface InitOptions {
   cwd: string;

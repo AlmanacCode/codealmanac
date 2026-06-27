@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { addEntry, readRegistry } from "../src/wiki/registry/index.js";
+import { addEntry, readRegistry } from "../src/stores/wiki-registry/index.js";
 import { createGlobalViewerApi } from "../src/viewer/global-api.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 

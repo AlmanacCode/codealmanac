@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { initWiki } from "../src/init/scaffold.js";
-import { readRegistry } from "../src/wiki/registry/index.js";
+import { readRegistry } from "../src/stores/wiki-registry/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
 describe("initWiki (internal helper)", () => {

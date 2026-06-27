@@ -4,7 +4,7 @@ import {
   dropEntry,
   readRegistry,
   type RegistryEntry,
-} from "../../wiki/registry/index.js";
+} from "../../stores/wiki-registry/index.js";
 
 export type RegisteredWiki = RegistryEntry;
 

@@ -5,7 +5,7 @@ import {
   jobRecordPath,
   writeJobRecord,
 } from "../src/jobs/index.js";
-import { addEntry } from "../src/wiki/registry/index.js";
+import { addEntry } from "../src/stores/wiki-registry/index.js";
 import { startViewerServer } from "../src/viewer/server.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 

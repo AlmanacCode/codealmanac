@@ -62,3 +62,9 @@ Fourth production slice:
 - Kept `src/cli/commands/health/index.ts` responsible for CLI flag normalization, stdin slug parsing, report rendering, and warnings.
 - Introduced `src/services/wiki/registry.ts` so `almanac list` no longer reads registry storage or filesystem reachability directly.
 - Kept `src/cli/commands/list.ts` responsible for JSON/name/table output and exit text.
+
+Fifth production slice:
+
+- Moved global registry persistence from `src/wiki/registry/store.ts` to `src/stores/wiki-registry/store.ts`.
+- Deleted the old `src/wiki/registry/index.ts` facade and updated callers to use the explicit store boundary.
+- Moved slug tests from `test/registry.test.ts` to `test/slug.test.ts` so registry tests cover registry persistence only.

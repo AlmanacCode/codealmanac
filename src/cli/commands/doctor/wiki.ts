@@ -6,7 +6,7 @@ import type Database from "better-sqlite3";
 import { ensureFreshIndex } from "../../../wiki/indexer/index.js";
 import { openIndex } from "../../../wiki/indexer/schema.js";
 import { findNearestAlmanacDir } from "../../../paths.js";
-import { findEntry } from "../../../wiki/registry/index.js";
+import { findEntry } from "../../../stores/wiki-registry/index.js";
 import { collectHealthReport, type HealthReport } from "../../../wiki/health/index.js";
 import { formatDuration } from "./duration.js";
 import type { Check, DoctorOptions } from "./types.js";
