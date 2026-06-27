@@ -4,14 +4,16 @@ import {
   type SetupInstructionTargetId,
 } from "../../../services/setup/index.js";
 import {
+  SetupInterruptedError,
+  promptText,
+} from "./input.js";
+import {
   BAR,
   BLUE,
   BOLD,
   DIM,
   RST,
-  SetupInterruptedError,
   WHITE_BOLD,
-  promptText,
 } from "./output.js";
 
 export async function chooseInstructionTargets(args: {

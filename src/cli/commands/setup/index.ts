@@ -21,12 +21,12 @@ import {
   countExistingPages,
   printNextSteps,
 } from "./next-steps.js";
+import { isSetupInterrupted } from "./input.js";
 import {
   BAR,
   BLUE,
   RST,
   WHITE_BOLD,
-  isSetupInterrupted,
   printBadge,
   printBanner,
   stepDone,

@@ -488,6 +488,35 @@ describe("architecture boundaries", () => {
     expect(setupAgentChoice).not.toContain("isAgentProviderId");
   });
 
+  it("keeps setup input controls out of display rendering", async () => {
+    const setupOutput = await readSource("src/cli/commands/setup/output.ts");
+    const setupInput = await readSource("src/cli/commands/setup/input.ts");
+    const setupCallers = await Promise.all([
+      readSource("src/cli/commands/setup/agent-choice.ts"),
+      readSource("src/cli/commands/setup/global-install-step.ts"),
+      readSource("src/cli/commands/setup/index.ts"),
+      readSource("src/cli/commands/setup/instruction-target-choice.ts"),
+      readSource("src/cli/commands/setup/setup-plan.ts"),
+    ]);
+
+    expect(existsSync(join(ROOT, "src/cli/commands/setup/input.ts"))).toBe(true);
+    expect(setupInput).toContain("process.stdin");
+    expect(setupInput).toContain("from \"./output.js\"");
+    expect(setupOutput).not.toContain("process.stdin");
+    expect(setupOutput).not.toContain("setRawMode");
+    expect(setupOutput).not.toContain("export function confirm");
+    expect(setupOutput).not.toContain("export function promptText");
+    expect(setupOutput).not.toContain("export async function selectChoice");
+    expect(setupOutput).not.toContain("SetupInterruptedError");
+    for (const caller of setupCallers) {
+      expect(caller).not.toContain("confirm,\n} from \"./output.js\"");
+      expect(caller).not.toContain("promptText,\n} from \"./output.js\"");
+      expect(caller).not.toContain("selectChoice,\n} from \"./output.js\"");
+      expect(caller).not.toContain("isSetupInterrupted,\n} from \"./output.js\"");
+      expect(caller).not.toContain("SetupInterruptedError,\n} from \"./output.js\"");
+    }
+  });
+
   it("keeps setup auto-commit UI out of config persistence mechanics", async () => {
     const autoCommitStep = await readSource(
       "src/cli/commands/setup/auto-commit-step.ts",

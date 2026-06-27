@@ -1,7 +1,7 @@
 import type { SetupInstructionTargetId } from "../../../services/setup/index.js";
 import type { SetupOptions } from "./index.js";
 import { chooseInstructionTargets } from "./instruction-target-choice.js";
-import { confirm } from "./output.js";
+import { confirm } from "./input.js";
 
 export const SETUP_DEFAULTS = {
   cliAutoUpdate: true,

@@ -4,11 +4,13 @@ import {
   spawnGlobalInstall,
 } from "./install-path.js";
 import {
+  confirm,
+  type InstallDecision,
+} from "./input.js";
+import {
   BAR,
   DIM,
-  type InstallDecision,
   RST,
-  confirm,
   stepActive,
   stepDone,
   stepSkipped,

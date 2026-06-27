@@ -14,15 +14,17 @@ import {
   saveSetupAgentChoice,
 } from "../../../services/setup/index.js";
 import {
-  DIM,
-  RST,
-  WHITE_BOLD,
   confirm,
   promptText,
   selectChoice,
+  waitForEnter,
+} from "./input.js";
+import {
+  DIM,
+  RST,
+  WHITE_BOLD,
   stepActive,
   stepDone,
-  waitForEnter,
 } from "./output.js";
 
 export type AgentChoice =

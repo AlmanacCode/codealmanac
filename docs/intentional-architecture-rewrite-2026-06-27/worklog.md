@@ -538,3 +538,9 @@ Seventy-seventh production slice:
 - Split jobs command formatting and shared rendering out of `src/cli/commands/jobs.ts`.
 - Added `src/cli/commands/jobs-format.ts` for job tables, detail views, elapsed-time labels, page-change summaries, and attach terminal summaries.
 - Added `src/cli/commands/jobs-render.ts` for missing-wiki, missing-job, log-read, and cancel-result rendering.
+
+Seventy-eighth production slice:
+
+- Split setup stdin/input controls out of `src/cli/commands/setup/output.ts`.
+- Added `src/cli/commands/setup/input.ts` for confirm prompts, text prompts, raw choice selection, and setup interruption handling.
+- Kept `output.ts` focused on display constants, banners, step markers, and boxed next-step rendering.
