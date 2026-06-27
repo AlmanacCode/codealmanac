@@ -51,10 +51,14 @@ sources:
     type: file
     path: src/services/wiki/topic-page-rewrite.ts
     note: Service helper for rewriting page frontmatter during topic mutations.
+  - id: page-topic-mutations-service
+    type: file
+    path: src/services/wiki/page-topic-mutations.ts
+    note: Service workflow for tag/untag page-topic mutations.
   - id: tag
     type: file
     path: src/cli/commands/tag.ts
-    note: Migrated from legacy files.
+    note: CLI adapter for tag/untag rendering.
 
 ---
 

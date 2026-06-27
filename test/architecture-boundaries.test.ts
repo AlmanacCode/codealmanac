@@ -118,6 +118,20 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/cli/commands/topics/page-rewrite.ts"))).toBe(false);
   });
 
+  it("keeps tag command adapters out of page topic write mechanics", async () => {
+    const tagCommand = await readSource("src/cli/commands/tag.ts");
+
+    expect(tagCommand).toContain("services/wiki/page-topic-mutations.js");
+    expect(tagCommand).not.toContain("wiki/indexer");
+    expect(tagCommand).not.toContain("wiki/topics");
+    expect(tagCommand).not.toContain("resolveWikiRoot");
+    expect(tagCommand).not.toContain("openIndex");
+    expect(tagCommand).not.toContain("runIndexer");
+    expect(tagCommand).not.toContain("rewritePageTopics");
+    expect(tagCommand).not.toContain("loadTopicsFile");
+    expect(tagCommand).not.toContain("writeTopicsFile");
+  });
+
   it("keeps registry persistence in an explicit store", () => {
     expect(existsSync(join(ROOT, "src/stores/wiki-registry/store.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/wiki/registry/store.ts"))).toBe(false);

@@ -42,7 +42,7 @@ There is no prize for preserving awkward code. Prefer the structure a new mainta
 | `src/agent/` | Agent facade, provider registry, provider adapters, prompt loading | `sdk.ts`, `types.ts`, `providers/` |
 | `src/wiki/indexer/` | SQLite indexer — schema, frontmatter parse, `[[...]]` classifier, freshness | `schema.ts`, `index.ts`, `frontmatter.ts`, `wikilinks.ts`, `paths.ts` (normalization), `resolve-wiki.ts` |
 | `src/shared/` | Small cross-cutting helpers with no product ownership | `duration.ts` |
-| `src/services/wiki/` | Wiki product workflows that coordinate stores/indexes/filesystem mechanics | `search.ts`, `page-view.ts`, `health.ts`, `registry.ts`, `autoregistration.ts`, `topic-read.ts`, `topic-mutations.ts`, `topic-page-rewrite.ts` |
+| `src/services/wiki/` | Wiki product workflows that coordinate stores/indexes/filesystem mechanics | `search.ts`, `page-view.ts`, `health.ts`, `registry.ts`, `autoregistration.ts`, `topic-read.ts`, `topic-mutations.ts`, `topic-page-rewrite.ts`, `page-topic-mutations.ts` |
 | `src/stores/wiki-registry/` | Global registry persistence at `~/.almanac/registry.json` — atomic read/write | `store.ts`, `index.ts` |
 | `src/wiki/topics/` | Topic DAG serialized to `.almanac/topics.yaml` + page frontmatter rewrites (slice 3) | `yaml.ts`, `frontmatter-rewrite.ts` |
 | `test/` | Vitest suites, one per feature area | `helpers.ts` (`withTempHome`, `makeRepo`, `writePage`), `*.test.ts` |
