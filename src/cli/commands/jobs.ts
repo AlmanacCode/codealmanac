@@ -1,4 +1,3 @@
-import { renderOutcome } from "../outcome.js";
 import {
   cancelJob,
   listJobs,
@@ -13,14 +12,12 @@ import type {
   StreamJobLogRequest,
 } from "../../services/jobs/index.js";
 import {
-  formatJobDetails,
-  formatJobRows,
-  terminalAttachSummary,
-} from "./jobs-format.js";
-import {
-  renderCancelJobIssue,
+  renderCancelJobResult,
+  renderJobsAttachResult,
+  renderJobsListResult,
+  renderJobsShowResult,
   renderJobLog,
-  renderSharedIssue,
+  renderStreamJobLogResult,
 } from "./jobs-render.js";
 
 export interface JobsListCommandOptions {
@@ -65,48 +62,16 @@ export interface JobsCommandResult {
 export async function runJobsList(
   options: JobsListCommandOptions,
 ): Promise<JobsCommandResult> {
-  const result = await listJobs(toJobsRequest(options));
-  if (result.status === "missing-wiki") {
-    return renderSharedIssue(result, options.json);
-  }
-
-  if (options.json === true) {
-    return {
-      stdout: `${JSON.stringify({ jobs: result.jobs }, null, 2)}\n`,
-      stderr: "",
-      exitCode: 0,
-    };
-  }
-
-  if (result.jobs.length === 0) {
-    return { stdout: "Jobs\n\nNo jobs found.\n", stderr: "", exitCode: 0 };
-  }
-  const lines = ["Jobs", "", ...formatJobRows(result.jobs)];
-  return { stdout: `${lines.join("\n")}\n`, stderr: "", exitCode: 0 };
+  return renderJobsListResult(
+    await listJobs(toJobsRequest(options)),
+    options.json,
+  );
 }
 
 export async function runJobsShow(
   options: JobByIdCommandOptions,
 ): Promise<JobsCommandResult> {
-  const result = await readJob(toJobRequest(options));
-  if (result.status !== "found") {
-    return renderSharedIssue(result, options.json);
-  }
-  const view = result.job;
-
-  if (options.json === true) {
-    return {
-      stdout: `${JSON.stringify(view, null, 2)}\n`,
-      stderr: "",
-      exitCode: 0,
-    };
-  }
-
-  return {
-    stdout: formatJobDetails(view),
-    stderr: "",
-    exitCode: 0,
-  };
+  return renderJobsShowResult(await readJob(toJobRequest(options)), options.json);
 }
 
 export async function runJobsLogs(
@@ -119,15 +84,7 @@ export async function runJobsLogs(
 export async function runJobsAttach(
   options: JobByIdCommandOptions,
 ): Promise<JobsCommandResult> {
-  const logs = await runJobsLogs(options);
-  if (logs.exitCode !== 0 || options.json === true) return logs;
-  return {
-    ...logs,
-    stdout:
-      logs.stdout.length > 0
-        ? logs.stdout
-        : "No log events have been written yet.\n",
-  };
+  return renderJobsAttachResult(await runJobsLogs(options), options.json);
 }
 
 export async function streamJobsAttach(
@@ -135,28 +92,15 @@ export async function streamJobsAttach(
 ): Promise<JobsCommandResult> {
   const write = options.write ?? ((chunk: string) => process.stdout.write(chunk));
   const result = await streamJobLog(toStreamJobLogRequest({ ...options, write }));
-  if (result.status !== "streamed") {
-    return renderSharedIssue(result, options.json);
-  }
-  const summary = terminalAttachSummary(result.terminalJob);
-  if (summary.length > 0) write(summary);
-  return { stdout: "", stderr: "", exitCode: 0 };
+  return renderStreamJobLogResult(result, options.json, write);
 }
 
 export async function runJobsCancel(
   options: JobCancelCommandOptions,
 ): Promise<JobsCommandResult> {
-  const result = await cancelJob(toCancelJobRequest(options));
-  if (result.status !== "cancelled") {
-    return renderCancelJobIssue(result, options.json);
-  }
-  return renderOutcome(
-    {
-      type: "success",
-      message: `cancelled job: ${result.jobId}`,
-      data: { jobId: result.jobId, status: "cancelled" },
-    },
-    { json: options.json },
+  return renderCancelJobResult(
+    await cancelJob(toCancelJobRequest(options)),
+    options.json,
   );
 }
 

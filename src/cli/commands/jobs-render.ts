@@ -1,12 +1,88 @@
 import { UserFacingError } from "../../errors.js";
 import type {
   CancelJobServiceResult,
+  ListJobsServiceResult,
   MissingJobResult,
   MissingWikiResult,
   ReadJobLogServiceResult,
+  ReadJobServiceResult,
+  StreamJobLogServiceResult,
 } from "../../services/jobs/index.js";
 import { renderError, renderOutcome } from "../outcome.js";
 import type { JobsCommandResult } from "./jobs.js";
+import {
+  formatJobDetails,
+  formatJobRows,
+  terminalAttachSummary,
+} from "./jobs-format.js";
+
+export function renderJobsListResult(
+  result: ListJobsServiceResult,
+  json: boolean | undefined,
+): JobsCommandResult {
+  if (result.status === "missing-wiki") {
+    return renderSharedIssue(result, json);
+  }
+  if (json === true) {
+    return ok(`${JSON.stringify({ jobs: result.jobs }, null, 2)}\n`);
+  }
+  if (result.jobs.length === 0) {
+    return ok("Jobs\n\nNo jobs found.\n");
+  }
+  return ok(["Jobs", "", ...formatJobRows(result.jobs)].join("\n") + "\n");
+}
+
+export function renderJobsShowResult(
+  result: ReadJobServiceResult,
+  json: boolean | undefined,
+): JobsCommandResult {
+  if (result.status !== "found") {
+    return renderSharedIssue(result, json);
+  }
+  if (json === true) {
+    return ok(`${JSON.stringify(result.job, null, 2)}\n`);
+  }
+  return ok(formatJobDetails(result.job));
+}
+
+export function renderJobsAttachResult(
+  logs: JobsCommandResult,
+  json: boolean | undefined,
+): JobsCommandResult {
+  if (logs.exitCode !== 0 || json === true) return logs;
+  if (logs.stdout.length > 0) return logs;
+  return { ...logs, stdout: "No log events have been written yet.\n" };
+}
+
+export function renderStreamJobLogResult(
+  result: StreamJobLogServiceResult,
+  json: boolean | undefined,
+  write: (chunk: string) => void,
+): JobsCommandResult {
+  if (result.status !== "streamed") {
+    return renderSharedIssue(result, json);
+  }
+  const summary = terminalAttachSummary(result.terminalJob);
+  if (summary.length > 0) write(summary);
+  return ok("");
+}
+
+export function renderCancelJobResult(
+  result: CancelJobServiceResult,
+  json: boolean | undefined,
+): JobsCommandResult {
+  if (result.status !== "cancelled") {
+    return renderCancelJobIssue(result, json);
+  }
+  return renderOutcome(
+    {
+      type: "success",
+      message: `cancelled job: ${result.jobId}`,
+      data: { jobId: result.jobId, status: "cancelled" },
+    },
+    { json },
+  );
+}
 
 export function renderCancelJobIssue(
   result: Exclude<CancelJobServiceResult, { status: "cancelled" }>,
@@ -29,7 +105,7 @@ export function renderJobLog(
   json: boolean | undefined,
 ): JobsCommandResult {
   if (result.status === "found") {
-    return { stdout: result.contents, stderr: "", exitCode: 0 };
+    return ok(result.contents);
   }
   if (result.status === "read-error") {
     return renderOutcome(
@@ -38,6 +114,10 @@ export function renderJobLog(
     );
   }
   return renderSharedIssue(result, json);
+}
+
+function ok(stdout: string): JobsCommandResult {
+  return { stdout, stderr: "", exitCode: 0 };
 }
 
 export function renderSharedIssue(

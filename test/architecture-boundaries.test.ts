@@ -391,6 +391,7 @@ describe("architecture boundaries", () => {
     const jobsService = await readSource("src/services/jobs/jobs.ts");
     const jobsServiceView = await readSource("src/services/jobs/view.ts");
     const jobsCommand = await readSource("src/cli/commands/jobs.ts");
+    const jobsRender = await readSource("src/cli/commands/jobs-render.ts");
 
     expect(existsSync(join(ROOT, "src/cli/commands/jobs-format.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/cli/commands/jobs-render.ts"))).toBe(true);
@@ -418,9 +419,20 @@ describe("architecture boundaries", () => {
     expect(jobsCommand).not.toContain("resolveJobLogPath");
     expect(jobsCommand).not.toContain("finishJobRecord");
     expect(jobsCommand).not.toContain("process.kill");
+    expect(jobsCommand).not.toContain("JSON.stringify");
+    expect(jobsCommand).not.toContain("formatJobRows");
+    expect(jobsCommand).not.toContain("formatJobDetails");
+    expect(jobsCommand).not.toContain("terminalAttachSummary");
+    expect(jobsCommand).not.toContain("No jobs found");
+    expect(jobsCommand).not.toContain("No log events");
+    expect(jobsCommand).not.toContain("cancelled job");
     expect(jobsCommand).not.toContain("function formatPageChanges");
     expect(jobsCommand).not.toContain("function formatMs");
     expect(jobsCommand).not.toContain("function missingWiki");
+    expect(jobsRender).toContain("renderJobsListResult");
+    expect(jobsRender).toContain("renderJobsShowResult");
+    expect(jobsRender).toContain("renderStreamJobLogResult");
+    expect(jobsRender).toContain("renderCancelJobResult");
     expect(jobsService).not.toContain("JobView as RuntimeJobView");
     expect(jobsService).not.toContain("function jobServiceViewFromRuntime");
     expect(jobsService).not.toContain("toJobView");

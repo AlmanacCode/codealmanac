@@ -719,3 +719,9 @@ One-hundred-seventh production slice:
 - Split automation command rendering into `src/cli/commands/automation-render.ts`.
 - Moved automation install/status/uninstall output strings, task labels, legacy capture status rendering, and activation failure formatting out of `src/cli/commands/automation.ts`.
 - Kept `src/cli/commands/automation.ts` focused on command option contracts, service option conversion, and invoking automation service workflows.
+
+One-hundred-eighth production slice:
+
+- Finished the jobs command rendering split in `src/cli/commands/jobs-render.ts`.
+- Moved jobs list/show JSON output, empty-list text, attach empty-log text, and streaming terminal summary rendering out of `src/cli/commands/jobs.ts`.
+- Kept `src/cli/commands/jobs.ts` focused on converting command options into jobs service requests and invoking jobs service workflows.
