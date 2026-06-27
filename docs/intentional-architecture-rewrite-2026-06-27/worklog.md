@@ -586,3 +586,9 @@ Eighty-fifth production slice:
 - Split topic-list frontmatter scanning and formatting into `src/wiki/topics/frontmatter-topic-list.ts`.
 - Moved flow/scalar/block topic parsing, comment stripping, scalar formatting, dedupe, and array comparison out of `frontmatter-rewrite.ts`.
 - Kept `frontmatter-rewrite.ts` focused on applying caller transforms and replacing the exact `topics:` field span.
+
+Eighty-sixth production slice:
+
+- Split Codex app-server startup into `src/harness/providers/codex/app-server-session.ts`.
+- Moved `initialize`, `thread/start`, `turn/start`, root thread/turn state assignment, provider-session event emission, and prompt/sandbox request construction out of `app-server.ts`.
+- Kept `app-server.ts` focused on process lifetime, JSON-RPC transport, request dispatch, notification handling, timeout failure, and cleanup.

@@ -2,19 +2,15 @@ import type { HarnessResult } from "../../events.js";
 import type { HarnessRunHooks } from "../../types.js";
 import type { OperationSpec } from "../../../operations/spec.js";
 import { spawnManagedChildProcess } from "../../process/managed-child.js";
-import {
-  buildCodexAppServerRequest,
-  codexClientVersion,
-  combineCodexPrompt,
-} from "./request.js";
+import { buildCodexAppServerRequest } from "./request.js";
 import { mapCodexAppServerNotification } from "./app-notifications.js";
 import {
   codexAppServerRpcTimeoutMs,
   codexAppServerSandboxMode,
-  codexAppServerSandboxPolicy,
   codexAppServerTurnTimeoutMs,
   type CodexAppServerSandboxMode,
 } from "./app-server-config.js";
+import { startCodexAppServerTurn } from "./app-server-session.js";
 import { classifyCodexFailure } from "./failures.js";
 import {
   asRecord,
@@ -302,58 +298,16 @@ export async function runCodexAppServer(
 
     void (async () => {
       try {
-        await requestRpc("initialize", {
-          clientInfo: {
-            name: "codealmanac",
-            title: "Almanac",
-            version: codexClientVersion(),
-          },
-          capabilities: {
-            experimentalApi: true,
+        const started = await startCodexAppServerTurn({
+          spec,
+          sandboxMode,
+          requestRpc,
+          state,
+          emitEvent: (event) => {
+            eventWrites.push(hooks?.onEvent?.(event) ?? Promise.resolve());
           },
         });
-        const thread = asRecord(
-          await requestRpc("thread/start", {
-            cwd: spec.cwd,
-            model: spec.provider.model ?? null,
-            approvalPolicy: "never",
-            sandbox: sandboxMode,
-            developerInstructions: spec.systemPrompt ?? null,
-            ephemeral: spec.providerSession?.persistence === "ephemeral",
-          }),
-        );
-        const threadObj = asRecord(thread.thread);
-        const threadId = stringField(threadObj, "id");
-        if (threadId === undefined) {
-          throw new Error("Codex app-server thread/start did not return a thread id");
-        }
-        state.providerSessionId = threadId;
-        state.rootThreadId = threadId;
-        eventWrites.push(
-          hooks?.onEvent?.({ type: "provider_session", providerSessionId: threadId }) ??
-            Promise.resolve(),
-        );
-        const turn = asRecord(
-          await requestRpc("turn/start", {
-            threadId,
-            cwd: spec.cwd,
-            input: [
-              {
-                type: "text",
-                text: combineCodexPrompt({ ...spec, systemPrompt: undefined }),
-                text_elements: [],
-              },
-            ],
-            approvalPolicy: "never",
-            sandboxPolicy: codexAppServerSandboxPolicy(spec, sandboxMode),
-            model: spec.provider.model ?? null,
-            effort: spec.provider.effort ?? null,
-            outputSchema:
-              spec.output?.kind === "json_schema" ? spec.output.schema : null,
-          }),
-        );
-        activeTurnId = stringField(asRecord(turn.turn), "id");
-        state.rootTurnId = activeTurnId;
+        activeTurnId = started.activeTurnId;
         startTurnWatchdog();
       } catch (err: unknown) {
         fail(err instanceof Error ? err.message : String(err));

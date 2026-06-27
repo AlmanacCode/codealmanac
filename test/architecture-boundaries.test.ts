@@ -752,13 +752,27 @@ describe("architecture boundaries", () => {
 
   it("keeps Codex app-server policy out of the JSON-RPC run loop", async () => {
     const appServer = await readSource("src/harness/providers/codex/app-server.ts");
+    const appServerSession = await readSource(
+      "src/harness/providers/codex/app-server-session.ts",
+    );
 
     expect(existsSync(join(ROOT, "src/harness/providers/codex/app-server-config.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/harness/providers/codex/server-requests.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/harness/providers/codex/app-server-session.ts"))).toBe(true);
     expect(appServer).not.toContain("CODEALMANAC_CODEX_APP_SERVER");
     expect(appServer).not.toContain("function parsePositiveEnvInt");
     expect(appServer).not.toContain("case \"item/commandExecution/requestApproval\"");
     expect(appServer).not.toContain("case \"account/chatgptAuthTokens/refresh\"");
+    expect(appServer).not.toContain("codexClientVersion");
+    expect(appServer).not.toContain("combineCodexPrompt");
+    expect(appServer).not.toContain("codexAppServerSandboxPolicy");
+    expect(appServer).not.toContain("requestRpc(\"initialize\"");
+    expect(appServer).not.toContain("requestRpc(\"thread/start\"");
+    expect(appServer).not.toContain("requestRpc(\"turn/start\"");
+    expect(appServerSession).toContain("startCodexAppServerTurn");
+    expect(appServerSession).toContain("requestRpc(\"initialize\"");
+    expect(appServerSession).toContain("requestRpc(\"thread/start\"");
+    expect(appServerSession).toContain("requestRpc(\"turn/start\"");
   });
 
   it("keeps migrate legacy-sources adapter out of source migration mechanics", async () => {
