@@ -651,6 +651,14 @@ describe("architecture boundaries", () => {
     expect(jobsService).not.toContain("JobView as RuntimeJobView");
     expect(jobsService).not.toContain("function jobServiceViewFromRuntime");
     expect(jobsService).not.toContain("toJobView");
+    expect(jobsService).not.toContain("platform/process");
+    expect(jobsServiceView).not.toContain("platform/process");
+    expect(jobsServiceTypes).toContain("isPidAlive: (pid: number) => boolean");
+    expect(jobsServiceTypes).toContain(
+      "signalProcess: (pid: number, signal: NodeJS.Signals) => void",
+    );
+    expect(jobsRegistration).toContain("isLocalPidAlive");
+    expect(jobsRegistration).toContain("signalLocalPid");
     expect(jobsServiceView).toContain("function jobServiceViewFromRuntime");
     expect(jobsServiceView).toContain("toJobView");
   });

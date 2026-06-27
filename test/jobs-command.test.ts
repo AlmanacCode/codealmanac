@@ -197,7 +197,12 @@ describe("jobs command", () => {
         "Fix: Upgrade Codex, or run with --using codex/<supported-model>.",
       );
 
-      const json = await runJobsShow({ cwd: repo, jobId: record.id, json: true });
+      const json = await runJobsShow({
+        cwd: repo,
+        jobId: record.id,
+        json: true,
+        isPidAlive: () => false,
+      });
       expect(JSON.parse(json.stdout)).toMatchObject({
         failure: {
           code: "codex.model_requires_newer_cli",
@@ -229,6 +234,7 @@ describe("jobs command", () => {
         jobId: record.id,
         json: true,
         now: () => new Date("2026-05-09T20:23:30.000Z"),
+        signalProcess: () => {},
       });
       expect(JSON.parse(cancelled.stdout)).toMatchObject({
         type: "success",
@@ -239,6 +245,7 @@ describe("jobs command", () => {
         cwd: repo,
         jobId: record.id,
         json: true,
+        isPidAlive: () => false,
       });
       expect(JSON.parse(show.stdout)).toMatchObject({
         status: "cancelled",
@@ -276,6 +283,7 @@ describe("jobs command", () => {
       const result = await streamJobsAttach({
         cwd: repo,
         jobId: record.id,
+        isPidAlive: () => false,
         write: (chunk) => {
           streamed += chunk;
         },
@@ -321,6 +329,7 @@ describe("jobs command", () => {
       const result = await streamJobsAttach({
         cwd: repo,
         jobId: record.id,
+        isPidAlive: () => false,
         write: (chunk) => {
           streamed += chunk;
         },

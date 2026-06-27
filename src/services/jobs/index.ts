@@ -10,6 +10,7 @@ export type {
   CancelJobRequest,
   CancelJobServiceResult,
   CancelledJobResult,
+  JobLogRequest,
   JobRequest,
   JobServiceView,
   JobsRequest,

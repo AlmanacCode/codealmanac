@@ -21,6 +21,8 @@ CLI and process edges own facts such as argv, cwd, stdout capability, terminal s
 
 CLI edges also own process lifetime signals. Viewer/server code serves HTTP and exposes `close()`, while CLI command wiring waits for SIGINT/SIGTERM through an injected stop boundary.
 
+Services do not own local process mechanics by default. When a service needs PID liveness or process signaling, the command or edge contract passes an explicit function so platform behavior stays at the boundary.
+
 ### Harness provider registries are runtime-scoped
 
 Claude and Codex harness providers are created from an explicit runtime environment. Jobs and workers pass environment through the executor instead of importing singleton providers that close over `process.env`.

@@ -3,7 +3,6 @@ import {
   type JobRecord,
   type JobView as RuntimeJobView,
 } from "../../jobs/index.js";
-import { isLocalPidAlive } from "../../platform/process.js";
 import type {
   JobServiceView,
   JobsRequest,
@@ -17,7 +16,7 @@ export function buildJobServiceView(args: {
     toJobView({
       record: args.record,
       now: args.request.now?.() ?? new Date(),
-      isPidAlive: args.request.isPidAlive ?? isLocalPidAlive,
+      isPidAlive: args.request.isPidAlive,
     }),
   );
 }

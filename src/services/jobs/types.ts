@@ -88,21 +88,26 @@ export interface JobServiceView {
 export interface JobsRequest {
   cwd: string;
   now?: () => Date;
-  isPidAlive?: (pid: number) => boolean;
+  isPidAlive: (pid: number) => boolean;
 }
 
 export interface JobRequest {
   cwd: string;
   jobId: string;
   now?: () => Date;
-  isPidAlive?: (pid: number) => boolean;
+  isPidAlive: (pid: number) => boolean;
+}
+
+export interface JobLogRequest {
+  cwd: string;
+  jobId: string;
 }
 
 export interface StreamJobLogRequest {
   cwd: string;
   jobId: string;
   now?: () => Date;
-  isPidAlive?: (pid: number) => boolean;
+  isPidAlive: (pid: number) => boolean;
   write: (chunk: string) => void;
   pollMs?: number;
 }
@@ -111,8 +116,7 @@ export interface CancelJobRequest {
   cwd: string;
   jobId: string;
   now?: () => Date;
-  isPidAlive?: (pid: number) => boolean;
-  signalProcess?: (pid: number, signal: NodeJS.Signals) => void;
+  signalProcess: (pid: number, signal: NodeJS.Signals) => void;
 }
 
 export interface MissingWikiResult {

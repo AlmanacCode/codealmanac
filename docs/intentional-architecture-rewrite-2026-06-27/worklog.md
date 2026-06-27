@@ -904,3 +904,11 @@ One-hundred-thirty-sixth production slice:
 - Moved the remaining setup/uninstall `process.stdout` and `process.stdin.isTTY` defaults into CLI edge callers, including the sqlite-free setup shortcut.
 - Kept setup prompt-input internals unchanged for this slice; deeper prompt input ownership remains separate work.
 - Added architecture guards so setup and uninstall command modules cannot reintroduce terminal sink or TTY ownership.
+
+One-hundred-thirty-seventh production slice:
+
+- Removed platform process imports from `src/services/jobs/jobs.ts` and `src/services/jobs/view.ts`.
+- Made job liveness and cancellation signaling explicit service contract inputs instead of optional hooks with platform defaults.
+- Split job-log command requests away from job-view requests so log reads do not need PID liveness.
+- Moved CLI jobs registration to provide `isLocalPidAlive` and `signalLocalPid` from the platform layer.
+- Added architecture guards so jobs services cannot reintroduce platform process ownership.

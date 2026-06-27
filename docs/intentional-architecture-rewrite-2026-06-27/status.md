@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 182 committed rewrite commits past `dev`. The worklog records 136 production slices so far.
+The branch has 183 committed rewrite commits past `dev`. The worklog records 137 production slices so far.
 
 The diff is broad: more than 300 files changed, with about 18.9k insertions and 10k deletions.
 
@@ -36,7 +36,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Immediate Next Work
 
-Continue inspecting remaining non-edge `process.*` reads and decide which are legitimate platform mechanics versus runtime facts that should be passed from an edge. The indexer warning, provider enablement, autoregistration registry-matching, harness provider environment, job-record PID paths, serve interrupt handling, and setup/uninstall terminal sinks are now explicit; remaining candidates are mostly provider/platform mechanics, deeper setup prompt-input ownership, and viewer API/read-model boundaries.
+Continue checking services that still know too much about platform, provider, or CLI mechanics; command files that still own workflow decisions instead of request shaping and rendering; and large files whose size reflects mixed ownership rather than domain density. The indexer warning, provider enablement, autoregistration registry-matching, harness provider environment, job-record PID paths, serve interrupt handling, setup/uninstall terminal sinks, and jobs PID liveness/signaling paths are now explicit. Remaining candidates include provider/platform mechanics, deeper setup prompt-input ownership, command workflow decisions, and viewer API/read-model boundaries.
 
 ## Decision Log
 

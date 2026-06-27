@@ -10,10 +10,10 @@ import {
   writeJobRecord,
 } from "../../jobs/index.js";
 import { findNearestAlmanacDir } from "../../paths.js";
-import { signalLocalPid } from "../../platform/process.js";
 import type {
   CancelJobRequest,
   CancelJobServiceResult,
+  JobLogRequest,
   JobServiceView,
   JobRequest,
   JobsRequest,
@@ -60,7 +60,7 @@ export async function readJob(
 }
 
 export async function readJobLog(
-  request: JobRequest,
+  request: JobLogRequest,
 ): Promise<ReadJobLogServiceResult> {
   const repoRoot = resolveRepoRoot(request.cwd);
   if (repoRoot === null) return { status: "missing-wiki" };
@@ -114,7 +114,7 @@ export async function cancelJob(
   await markJobCancelled(repoRoot, record.id);
   if (record.pid > 0) {
     try {
-      (request.signalProcess ?? signalLocalPid)(record.pid, "SIGTERM");
+      request.signalProcess(record.pid, "SIGTERM");
     } catch {
       // Cancellation is still durable; stale detection covers exited processes.
     }

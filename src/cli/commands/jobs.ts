@@ -7,6 +7,7 @@ import {
 } from "../../services/jobs/index.js";
 import type {
   CancelJobRequest,
+  JobLogRequest,
   JobRequest,
   JobsRequest,
   StreamJobLogRequest,
@@ -24,7 +25,7 @@ export interface JobsListCommandOptions {
   cwd: string;
   json?: boolean;
   now?: () => Date;
-  isPidAlive?: (pid: number) => boolean;
+  isPidAlive: (pid: number) => boolean;
 }
 
 export interface JobByIdCommandOptions {
@@ -32,7 +33,13 @@ export interface JobByIdCommandOptions {
   jobId: string;
   json?: boolean;
   now?: () => Date;
-  isPidAlive?: (pid: number) => boolean;
+  isPidAlive: (pid: number) => boolean;
+}
+
+export interface JobLogCommandOptions {
+  cwd: string;
+  jobId: string;
+  json?: boolean;
 }
 
 export interface JobCancelCommandOptions {
@@ -40,7 +47,7 @@ export interface JobCancelCommandOptions {
   jobId: string;
   json?: boolean;
   now?: () => Date;
-  signalProcess?: (pid: number, signal: NodeJS.Signals) => void;
+  signalProcess: (pid: number, signal: NodeJS.Signals) => void;
 }
 
 export interface JobAttachStreamCommandOptions {
@@ -48,7 +55,7 @@ export interface JobAttachStreamCommandOptions {
   jobId: string;
   json?: boolean;
   now?: () => Date;
-  isPidAlive?: (pid: number) => boolean;
+  isPidAlive: (pid: number) => boolean;
   write: (chunk: string) => void;
   pollMs?: number;
 }
@@ -75,14 +82,14 @@ export async function runJobsShow(
 }
 
 export async function runJobsLogs(
-  options: JobByIdCommandOptions,
+  options: JobLogCommandOptions,
 ): Promise<JobsCommandResult> {
-  const result = await readJobLog(toJobRequest(options));
+  const result = await readJobLog(toJobLogRequest(options));
   return renderJobLog(result, options.json);
 }
 
 export async function runJobsAttach(
-  options: JobByIdCommandOptions,
+  options: JobLogCommandOptions,
 ): Promise<JobsCommandResult> {
   return renderJobsAttachResult(await runJobsLogs(options), options.json);
 }
@@ -117,6 +124,13 @@ function toJobRequest(options: JobByIdCommandOptions): JobRequest {
     jobId: options.jobId,
     now: options.now,
     isPidAlive: options.isPidAlive,
+  };
+}
+
+function toJobLogRequest(options: JobLogCommandOptions): JobLogRequest {
+  return {
+    cwd: options.cwd,
+    jobId: options.jobId,
   };
 }
 

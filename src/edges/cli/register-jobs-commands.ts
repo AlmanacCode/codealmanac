@@ -1,5 +1,9 @@
 import { Command } from "commander";
 
+import {
+  isLocalPidAlive,
+  signalLocalPid,
+} from "../../platform/process.js";
 import { emit } from "./helpers.js";
 
 export function registerJobsCommands(program: Command): void {
@@ -16,6 +20,7 @@ export function registerJobsCommands(program: Command): void {
       const result = await runJobsList({
         cwd: process.cwd(),
         json: opts.json,
+        isPidAlive: isLocalPidAlive,
       });
       emit(result);
     });
@@ -30,6 +35,7 @@ export function registerJobsCommands(program: Command): void {
         cwd: process.cwd(),
         jobId,
         json: opts.json,
+        isPidAlive: isLocalPidAlive,
       });
       emit(result);
     });
@@ -58,6 +64,7 @@ export function registerJobsCommands(program: Command): void {
         cwd: process.cwd(),
         jobId,
         json: opts.json,
+        isPidAlive: isLocalPidAlive,
         write: (chunk) => {
           process.stdout.write(chunk);
         },
@@ -75,6 +82,7 @@ export function registerJobsCommands(program: Command): void {
         cwd: process.cwd(),
         jobId,
         json: opts.json,
+        signalProcess: signalLocalPid,
       });
       emit(result);
     });
