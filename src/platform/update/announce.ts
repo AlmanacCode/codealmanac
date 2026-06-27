@@ -5,6 +5,7 @@ import {
   getLegacyConfigPath,
   parseConfigText,
 } from "../../config/index.js";
+import { makeAnsiTheme } from "../../ansi-theme.js";
 import { isNewer } from "./semver.js";
 import { getStatePath, type UpdateState } from "./state.js";
 import { readInstalledVersion } from "./version.js";
@@ -36,13 +37,9 @@ export interface AnnounceOptions {
   configPath?: string;
   /** Override for tests — normally reads from package.json at import time. */
   installedVersion?: string;
-  /** Enable ANSI coloring regardless of isTTY. Tests pass `false`. */
+  /** Override the destination stream's ANSI color decision. */
   color?: boolean;
 }
-
-const RST = "\x1b[0m";
-const BOLD = "\x1b[1m";
-const YELLOW = "\x1b[33m";
 
 export function announceUpdateIfAvailable(
   stderr: NodeJS.WritableStream,
@@ -62,14 +59,22 @@ export function announceUpdateIfAvailable(
   if (!isNewer(state.latest_version, installed)) return;
   if (state.dismissed_versions.includes(state.latest_version)) return;
 
-  const useColor =
-    opts.color ?? (process.stderr.isTTY === true && !("NO_COLOR" in process.env));
-  const warn = useColor ? `${YELLOW}${BOLD}\u26a0${RST}` : "!";
-  const cmd = useColor ? `${BOLD}almanac update${RST}` : "almanac update";
+  const useColor = opts.color ?? shouldUseStreamColor(stderr);
+  const theme = makeAnsiTheme(useColor);
+  const warn = useColor ? `${theme.YELLOW}${theme.BOLD}\u26a0${theme.RST}` : "!";
+  const cmd = `${theme.BOLD}almanac update${theme.RST}`;
   stderr.write(
     `${warn} Almanac ${state.latest_version} available ` +
       `(you're on ${installed}) — run: ${cmd}\n`,
   );
+}
+
+function shouldUseStreamColor(stream: NodeJS.WritableStream): boolean {
+  return streamIsTTY(stream) && !("NO_COLOR" in process.env);
+}
+
+function streamIsTTY(stream: NodeJS.WritableStream): boolean {
+  return (stream as NodeJS.WritableStream & { isTTY?: boolean }).isTTY === true;
 }
 
 /**

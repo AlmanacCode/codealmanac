@@ -20,6 +20,7 @@ describe("architecture boundaries", () => {
   it("keeps process-level CLI machinery inside the CLI edge", async () => {
     const runner = await readSource("src/edges/cli/run.ts");
     const help = await readSource("src/edges/cli/help.ts");
+    const updateAnnounce = await readSource("src/platform/update/announce.ts");
 
     expect(existsSync(join(ROOT, "src/ansi.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/ansi-theme.ts"))).toBe(true);
@@ -29,6 +30,9 @@ describe("architecture boundaries", () => {
     expect(help).toContain("../../ansi-theme.js");
     expect(help).not.toContain("../../ansi.js");
     expect(help).toContain("shouldUseStdoutColor()");
+    expect(updateAnnounce).toContain("../../ansi-theme.js");
+    expect(updateAnnounce).not.toContain("process.stderr.isTTY");
+    expect(updateAnnounce).not.toContain("\\x1b[");
   });
 
   it("keeps CLI registration and shortcut parsing in the CLI edge", () => {

@@ -11,9 +11,7 @@ import { withTempHome } from "./helpers.js";
 
 /**
  * Pre-command nag banner. We drive it with a `PassThrough` stream so we
- * can record the output deterministically without touching the real
- * stderr. Every test forces `color: false` to keep assertions free of
- * ANSI escape sequences.
+ * can record the output deterministically without touching the real stderr.
  */
 
 function captureStderr(): { stream: PassThrough; output: () => string } {
@@ -34,6 +32,32 @@ function statePathIn(home: string): string {
 
 function configPathIn(home: string): string {
   return join(home, ".almanac", "config.toml");
+}
+
+function makeTty(stream: PassThrough): void {
+  (stream as PassThrough & { isTTY?: boolean }).isTTY = true;
+}
+
+function withoutNoColor<T>(run: () => T): T {
+  return withNoColor(undefined, run);
+}
+
+function withNoColor<T>(value: string | undefined, run: () => T): T {
+  const previous = process.env.NO_COLOR;
+  if (value === undefined) {
+    delete process.env.NO_COLOR;
+  } else {
+    process.env.NO_COLOR = value;
+  }
+  try {
+    return run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.NO_COLOR;
+    } else {
+      process.env.NO_COLOR = previous;
+    }
+  }
 }
 
 describe("announceUpdateIfAvailable", () => {
@@ -253,6 +277,64 @@ describe("announceUpdateIfAvailable", () => {
         color: false,
       });
       expect(output()).toMatch(/0\.1\.6 available/);
+    });
+  });
+
+  it("colors the banner from the destination stream when it is a TTY", async () => {
+    await withTempHome(async (home) => {
+      const statePath = statePathIn(home);
+      const configPath = configPathIn(home);
+      await writeState(
+        {
+          last_check_at: 1_700_000_000,
+          installed_version: "0.1.5",
+          latest_version: "0.1.6",
+          dismissed_versions: [],
+        },
+        statePath,
+      );
+
+      const { stream, output } = captureStderr();
+      makeTty(stream);
+      withoutNoColor(() => {
+        announceUpdateIfAvailable(stream, {
+          statePath,
+          configPath,
+          installedVersion: "0.1.5",
+        });
+      });
+
+      expect(output()).toContain("\x1b[33m\x1b[1m\u26a0\x1b[0m");
+      expect(output()).toContain("\x1b[1malmanac update\x1b[0m");
+    });
+  });
+
+  it("honors NO_COLOR even when the destination stream is a TTY", async () => {
+    await withTempHome(async (home) => {
+      const statePath = statePathIn(home);
+      const configPath = configPathIn(home);
+      await writeState(
+        {
+          last_check_at: 1_700_000_000,
+          installed_version: "0.1.5",
+          latest_version: "0.1.6",
+          dismissed_versions: [],
+        },
+        statePath,
+      );
+
+      const { stream, output } = captureStderr();
+      makeTty(stream);
+      withNoColor("1", () => {
+        announceUpdateIfAvailable(stream, {
+          statePath,
+          configPath,
+          installedVersion: "0.1.5",
+        });
+      });
+
+      expect(output()).not.toContain("\x1b[");
+      expect(output()).toContain("! Almanac 0.1.6 available");
     });
   });
 });
