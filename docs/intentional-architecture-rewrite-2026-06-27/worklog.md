@@ -472,3 +472,9 @@ Sixty-sixth production slice:
 - Made wiki health reports and health collector hooks explicit service-owned contracts in `src/services/wiki/health.ts`.
 - Normalized raw indexer health reports once inside the wiki health service before CLI or doctor rendering sees them.
 - Moved doctor health checks onto the service-owned health collector contract instead of `typeof collectHealthReport`.
+
+Sixty-seventh production slice:
+
+- Flattened jobs read, stream, and cancel request contracts so each service verb lists its own required fields.
+- Removed request-interface inheritance from `src/services/jobs/types.ts`.
+- Guarded jobs service request types against reintroducing inherited base request contracts.

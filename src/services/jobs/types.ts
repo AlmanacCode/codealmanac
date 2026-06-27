@@ -91,16 +91,27 @@ export interface JobsRequest {
   isPidAlive?: (pid: number) => boolean;
 }
 
-export interface JobRequest extends JobsRequest {
+export interface JobRequest {
+  cwd: string;
   jobId: string;
+  now?: () => Date;
+  isPidAlive?: (pid: number) => boolean;
 }
 
-export interface StreamJobLogRequest extends JobRequest {
+export interface StreamJobLogRequest {
+  cwd: string;
+  jobId: string;
+  now?: () => Date;
+  isPidAlive?: (pid: number) => boolean;
   write: (chunk: string) => void;
   pollMs?: number;
 }
 
-export interface CancelJobRequest extends JobRequest {
+export interface CancelJobRequest {
+  cwd: string;
+  jobId: string;
+  now?: () => Date;
+  isPidAlive?: (pid: number) => boolean;
   signalProcess?: (pid: number, signal: NodeJS.Signals) => void;
 }
 

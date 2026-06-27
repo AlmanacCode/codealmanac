@@ -221,6 +221,11 @@ describe("architecture boundaries", () => {
     expect(jobsServiceIndex).not.toContain("../../jobs");
     expect(jobsServiceTypes).not.toContain("RuntimeJobView");
     expect(jobsServiceTypes).not.toContain("JobView as");
+    expect(jobsServiceTypes).not.toContain("JobRequest extends JobsRequest");
+    expect(jobsServiceTypes).not.toContain(
+      "StreamJobLogRequest extends JobRequest",
+    );
+    expect(jobsServiceTypes).not.toContain("CancelJobRequest extends JobRequest");
     expect(jobsCommand).toContain("services/jobs/index.js");
     expect(jobsCommand).not.toContain("../../jobs/index");
     expect(jobsCommand).not.toContain("import type { CommandResult }");
