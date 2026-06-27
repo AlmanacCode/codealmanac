@@ -70,6 +70,15 @@ describe("architecture boundaries", () => {
     expect(healthCommand).not.toContain("resolveWikiRoot");
   });
 
+  it("keeps reindex command adapters out of index storage mechanics", async () => {
+    const reindexCommand = await readSource("src/cli/commands/reindex.ts");
+
+    expect(reindexCommand).toContain("services/wiki/reindex.js");
+    expect(reindexCommand).not.toContain("wiki/indexer");
+    expect(reindexCommand).not.toContain("runIndexer");
+    expect(reindexCommand).not.toContain("resolveWikiRoot");
+  });
+
   it("keeps list command adapters out of registry storage mechanics", async () => {
     const listCommand = await readSource("src/cli/commands/list.ts");
 

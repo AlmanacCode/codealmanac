@@ -215,3 +215,8 @@ Twenty-fifth production slice:
 
 - Moved legacy capture-sweep automation migration into `src/services/automation/migration.ts`.
 - Kept `src/cli/commands/migrate.ts` responsible for migration command rendering while the automation service owns legacy plist detection, sync install, and legacy plist removal.
+
+Twenty-sixth production slice:
+
+- Introduced `src/services/wiki/reindex.ts` for the explicit wiki reindex workflow.
+- Kept `src/cli/commands/reindex.ts` responsible for the one-line CLI summary while the wiki service owns wiki-root resolution and forced index rebuild execution.

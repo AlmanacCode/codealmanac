@@ -1,13 +1,13 @@
-import { runIndexer, type IndexResult } from "../../wiki/indexer/index.js";
-import { resolveWikiRoot } from "../../wiki/indexer/resolve-wiki.js";
+import {
+  reindexWiki,
+  type ReindexWikiRequest,
+  type ReindexWikiResult,
+} from "../../services/wiki/reindex.js";
 
-export interface ReindexOptions {
-  cwd: string;
-  wiki?: string;
-}
+export type ReindexOptions = ReindexWikiRequest;
 
 export interface ReindexCommandOutput {
-  result: IndexResult;
+  result: ReindexWikiResult;
   stdout: string;
   exitCode: number;
 }
@@ -24,11 +24,7 @@ export interface ReindexCommandOutput {
 export async function runReindex(
   options: ReindexOptions,
 ): Promise<ReindexCommandOutput> {
-  const repoRoot = await resolveWikiRoot({
-    cwd: options.cwd,
-    wiki: options.wiki,
-  });
-  const result = await runIndexer({ repoRoot });
+  const result = await reindexWiki(options);
   // Summary wording: "reindexed: N pages (K updated, R removed)". When
   // some files were on disk but never made it into the index
   // (slug collisions, ENOENT races, un-sluggable filenames), tack on a
