@@ -4,10 +4,12 @@ export {
 } from "./health.js";
 export {
   applySourceFrontmatterFix,
+  type SourceFrontmatterFixResult,
+} from "./frontmatter-fix.js";
+export {
   migrateLegacySourceFrontmatter,
   migrateLegacySourceFrontmatterInDb,
   writeSourceFrontmatterFix,
   type LegacySourceMigrationOptions,
   type LegacySourceMigrationResult,
-  type SourceFrontmatterFixResult,
 } from "./maintenance.js";

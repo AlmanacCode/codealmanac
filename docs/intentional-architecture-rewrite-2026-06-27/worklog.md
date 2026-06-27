@@ -665,3 +665,9 @@ Ninety-eighth production slice:
 - Split Codex app-server root turn detection into `src/harness/providers/codex/app-server-root-turn.ts`.
 - Moved root turn/thread completion checks and notification turn ID extraction out of the app-server process run loop.
 - Kept `src/harness/providers/codex/app-server.ts` focused on process lifecycle, RPC wiring, notification mapping, timeout handling, and result finalization.
+
+Ninety-ninth production slice:
+
+- Split source frontmatter rewrite mechanics into `src/wiki/sources/frontmatter-fix.ts`.
+- Moved YAML parsing, legacy source classification, deterministic source ID generation, and frontmatter byte reconstruction out of `src/wiki/sources/maintenance.ts`.
+- Kept `src/wiki/sources/maintenance.ts` focused on indexed page selection, scoped migration traversal, atomic page writes, and reindexing.

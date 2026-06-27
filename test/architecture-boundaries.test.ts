@@ -894,10 +894,15 @@ describe("architecture boundaries", () => {
       "src/services/wiki/source-migration.ts",
     );
     const wikiSources = await readSource("src/wiki/sources/index.ts");
+    const wikiSourcesFrontmatterFix = await readSource(
+      "src/wiki/sources/frontmatter-fix.ts",
+    );
     const wikiSourcesMaintenance = await readSource(
       "src/wiki/sources/maintenance.ts",
     );
 
+    expect(existsSync(join(ROOT, "src/wiki/sources/frontmatter-fix.ts")))
+      .toBe(true);
     expect(migrateCommand).toContain("services/wiki/source-migration.js");
     expect(migrateCommand).toContain("services/automation/index.js");
     expect(migrateCommand).not.toContain("wiki/indexer");
@@ -914,6 +919,11 @@ describe("architecture boundaries", () => {
     );
     expect(wikiSources).not.toContain("MigrateLegacySources");
     expect(wikiSourcesMaintenance).not.toContain("MigrateLegacySources");
+    expect(wikiSourcesMaintenance).not.toContain("yaml.load");
+    expect(wikiSourcesMaintenance).not.toContain("function splitFrontmatter");
+    expect(wikiSourcesMaintenance).not.toContain("function idFromPath");
+    expect(wikiSourcesFrontmatterFix).toContain("applySourceFrontmatterFix");
+    expect(wikiSourcesFrontmatterFix).toContain("function splitFrontmatter");
   });
 
   it("keeps automation command options owned by the command adapter", async () => {
