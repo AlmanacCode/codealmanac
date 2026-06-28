@@ -9,7 +9,7 @@ import {
 } from "../src/cli/commands/sync.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 import { writeConfig } from "../src/stores/config/index.js";
-import { jobRecordPath, writeJobRecord } from "../src/services/jobs/runtime/index.js";
+import { jobRecordPath, writeJobRecord } from "../src/stores/jobs/index.js";
 
 const TEST_WORKER_PROGRAM = {
   command: "node",

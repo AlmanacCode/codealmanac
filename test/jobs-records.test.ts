@@ -4,19 +4,23 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  buildStartedJobRecord,
   createJobId,
+} from "../src/services/jobs/runtime/ids.js";
+import {
+  buildStartedJobRecord,
   finishJobRecord,
-  isJobRecord,
+} from "../src/services/jobs/record-lifecycle.js";
+import { toJobView } from "../src/services/jobs/record-view.js";
+import { isJobRecord } from "../src/stores/jobs/record-schema.js";
+import {
   listJobRecords,
   readJobRecord,
   jobLogPath,
   jobRecordPath,
   jobsDir,
   legacyRunsDir,
-  toJobView,
   writeJobRecord,
-} from "../src/services/jobs/runtime/index.js";
+} from "../src/stores/jobs/index.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 
 describe("job records", () => {

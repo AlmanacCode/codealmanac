@@ -6,11 +6,13 @@ import { describe, expect, it } from "vitest";
 import {
   buildStartedJobRecord,
   finishJobRecord,
+} from "../src/services/jobs/record-lifecycle.js";
+import {
   jobLogPath,
   jobRecordPath,
   writeJobRecord,
   writeJobSpec,
-} from "../src/services/jobs/runtime/index.js";
+} from "../src/stores/jobs/index.js";
 import { createViewerApi } from "../src/edges/viewer/read-model/api.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 

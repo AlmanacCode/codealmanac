@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 219 committed rewrite commits past `dev`. The worklog records 171 production slices so far.
+The branch has 220 committed rewrite commits past `dev`. The worklog records 172 production slices so far.
 
-The diff is broad: 461 files changed, with 23,012 insertions and 12,324 deletions.
+The diff is broad: 461 files changed, with 22,996 insertions and 12,366 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -20,6 +20,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved durable job persistence into explicit stores for records, specs, logs, and worker locks.
 - Removed the old top-level `src/jobs/` source bucket; job runtime and projections now live under `src/services/jobs/`, durable job schemas live under `src/stores/jobs/`, and detached worker spawning lives under `src/platform/jobs/`.
 - Moved job record lifecycle and display-status read-model helpers out of the job runtime folder, and put public job record/log reads behind the `src/stores/jobs/` store API.
+- Removed the mixed `src/services/jobs/runtime/index.ts` compatibility barrel; callers now import concrete runtime, store, platform, or record-lifecycle modules.
 - Removed the old top-level `src/init/` source bucket; wiki initialization now lives under `src/services/wiki/`, and mechanical `.almanac/` file scaffolding lives under `src/stores/wiki-files/`.
 - Removed the old top-level `src/config/` source bucket; persisted config mechanics now live under `src/stores/config/`, service verbs live under `src/services/config/`, and provider enablement policy lives under `src/agent/`.
 - Removed the old top-level `src/wiki/` source bucket; local wiki index, query, health, topic-file, and source-frontmatter mechanics now live under `src/stores/wiki/`.
@@ -50,9 +51,9 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved raw transcript snapshot reads, line counting, and JSONL timestamp cursor boundaries into `src/platform/transcripts/snapshot.ts`. Sync services now consume typed transcript snapshots and keep product decisions around quiet windows, ledger cursor state, and Absorb enqueueing.
+The latest slice deleted the mixed `src/services/jobs/runtime/index.ts` compatibility barrel. Lifecycle, sync, and job tests now import concrete runtime, store, platform, or record-lifecycle modules from their owning homes.
 
-Verification passed: `npm run lint`, focused sync/boundary tests with 69 tests, full `npm test` with 656 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js sync --help`, and `node dist/codealmanac.js doctor --help`.
+Verification passed: `npm run lint`, focused jobs/lifecycle/sync/boundary tests with 150 tests, full `npm test` with 656 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js jobs --help`, and `node dist/codealmanac.js doctor --help`.
 
 ## Immediate Next Work
 

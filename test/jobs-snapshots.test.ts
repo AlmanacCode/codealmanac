@@ -6,7 +6,7 @@ import {
   diffPageSnapshots,
   isNoopPageDelta,
   snapshotPages,
-} from "../src/services/jobs/runtime/index.js";
+} from "../src/services/jobs/runtime/snapshots.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
 describe("process page snapshots", () => {

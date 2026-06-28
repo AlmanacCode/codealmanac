@@ -30,7 +30,7 @@ import {
   writeLedger,
 } from "../../stores/sync/ledger.js";
 import { acquireRepoSyncLock, releaseRepoSyncLock } from "../../stores/sync/lock.js";
-import { listJobRecords } from "../jobs/runtime/index.js";
+import { listJobRecords } from "../../stores/jobs/index.js";
 
 export interface StartSyncAbsorbArgs {
   candidate: TranscriptCandidate;

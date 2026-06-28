@@ -4,15 +4,19 @@ import { describe, expect, it } from "vitest";
 
 import {
   finishJobRecord,
+} from "../src/services/jobs/record-lifecycle.js";
+import {
   markJobCancelled,
   readJobRecord,
-  readJobSpec,
   jobRecordPath,
-  jobWorkerLockPath,
+  writeJobRecord,
+} from "../src/stores/jobs/index.js";
+import { readJobSpec } from "../src/stores/jobs/specs.js";
+import { jobWorkerLockPath } from "../src/stores/jobs/worker-lock.js";
+import {
   startBackgroundJob as startBackgroundJobCommand,
   type StartBackgroundJobOptions,
-  writeJobRecord,
-} from "../src/services/jobs/runtime/index.js";
+} from "../src/services/jobs/runtime/background-start.js";
 import { runJobWorker } from "../src/edges/worker/job-worker.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 

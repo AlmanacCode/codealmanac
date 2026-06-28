@@ -13,10 +13,12 @@ import {
 import {
   buildQueuedJobRecord,
   buildStartedJobRecord,
+} from "../src/services/jobs/record-lifecycle.js";
+import {
   jobLogPath,
   jobRecordPath,
   writeJobRecord,
-} from "../src/services/jobs/runtime/index.js";
+} from "../src/stores/jobs/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
 describe("jobs command", () => {

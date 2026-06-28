@@ -2,7 +2,7 @@ import type {
   AgentRuntimeEvent,
   AgentRuntimeResult,
 } from "../../agent/runtime/events.js";
-import type { JobWorkerProgram } from "../jobs/runtime/index.js";
+import type { JobWorkerProgram } from "../../platform/jobs/worker-process.js";
 import type { JobRecord } from "../../stores/jobs/types.js";
 import type { AbsorbInputSource } from "./absorb/input-source.js";
 import type { SourceRef } from "./absorb/source-ref.js";

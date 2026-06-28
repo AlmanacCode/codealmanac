@@ -5,15 +5,19 @@ import { describe, expect, it } from "vitest";
 
 import {
   acquireJobWorkerLock,
+  jobWorkerLockPath,
+} from "../src/stores/jobs/worker-lock.js";
+import {
   buildQueuedJobRecord,
   buildStartedJobRecord,
   finishJobRecord,
+} from "../src/services/jobs/record-lifecycle.js";
+import {
   legacyRunsDir,
-  oldestQueuedJob,
   jobRecordPath,
-  jobWorkerLockPath,
   writeJobRecord,
-} from "../src/services/jobs/runtime/index.js";
+} from "../src/stores/jobs/index.js";
+import { oldestQueuedJob } from "../src/services/jobs/runtime/queue.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 
 describe("process operation queue", () => {

@@ -3,11 +3,9 @@ import type { AgentRuntimeEvent } from "../../../agent/runtime/events.js";
 import type { FinalOutputSpec } from "../../../agent/runtime/final-output.js";
 import type { OperationKind, OperationSpec } from "./spec.js";
 import type { ToolRequest } from "../../../agent/runtime/tools.js";
-import {
-  startBackgroundJob,
-  startForegroundJob,
-  type JobWorkerProgram,
-} from "../../jobs/runtime/index.js";
+import { startBackgroundJob } from "../../jobs/runtime/background-start.js";
+import { startForegroundJob } from "../../jobs/runtime/start.js";
+import type { JobWorkerProgram } from "../../../platform/jobs/worker-process.js";
 import { readConfig } from "../../../stores/config/index.js";
 import { PROVIDER_DEFINITIONS } from "../../../agent/provider-id.js";
 import type {

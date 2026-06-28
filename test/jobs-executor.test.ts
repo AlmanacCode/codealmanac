@@ -5,10 +5,10 @@ import { describe, expect, it } from "vitest";
 import {
   readJobRecord,
   jobRecordPath,
-  finishJobRecord,
-  startForegroundJob,
   writeJobRecord,
-} from "../src/services/jobs/runtime/index.js";
+} from "../src/stores/jobs/index.js";
+import { finishJobRecord } from "../src/services/jobs/record-lifecycle.js";
+import { startForegroundJob } from "../src/services/jobs/runtime/start.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
 describe("job foreground execution", () => {

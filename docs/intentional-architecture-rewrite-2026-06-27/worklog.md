@@ -1163,3 +1163,11 @@ One-hundred-seventy-first production slice:
 - Updated sync ledger/cursor services so they consume typed transcript snapshots and timestamp boundaries instead of parsing raw transcript files directly.
 - Kept sync services responsible for product decisions: quiet-window eligibility, ledger cursor status, prefix mismatch handling, and Absorb enqueueing.
 - Strengthened boundary coverage so transcript file mechanics stay in platform transcripts while sync cursor decisions stay in services.
+
+One-hundred-seventy-second production slice:
+
+- Deleted the `src/services/jobs/runtime/index.ts` compatibility barrel after moving all callers to owned modules.
+- Updated lifecycle operation callers to import job start functions from concrete runtime files and `JobWorkerProgram` from `src/platform/jobs/worker-process.ts`.
+- Updated sync to read job records through `src/stores/jobs/index.ts` instead of the job runtime facade.
+- Updated job-related tests to import record lifecycle, store persistence, worker lock, logs, snapshots, and runtime execution helpers from their owning modules.
+- Strengthened boundary coverage so the mixed job runtime barrel stays deleted.

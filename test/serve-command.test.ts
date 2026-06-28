@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildQueuedJobRecord,
+} from "../src/services/jobs/record-lifecycle.js";
+import {
   jobRecordPath,
   writeJobRecord,
-} from "../src/services/jobs/runtime/index.js";
+} from "../src/stores/jobs/index.js";
 import { runServe } from "../src/cli/commands/serve.js";
 import { renderServeStartup } from "../src/cli/commands/serve-render.js";
 import { startViewerServer } from "../src/edges/viewer/server.js";

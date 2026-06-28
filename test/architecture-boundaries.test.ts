@@ -766,6 +766,7 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/services/jobs/runtime/queue-drain.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/jobs/runtime/worker.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/services/jobs/runtime/record-factory.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/services/jobs/runtime/index.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/services/jobs/record-lifecycle.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/jobs/runtime/background-start.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/platform/jobs/worker-process.ts"))).toBe(true);
