@@ -1082,6 +1082,9 @@ describe("architecture boundaries", () => {
     const syncRegistration = await readSource(
       "src/edges/cli/register-sync-commands.ts",
     );
+    const syncRuntimeInput = await readSource(
+      "src/edges/cli/sync-runtime-input.ts",
+    );
 
     expect(existsSync(join(ROOT, "src/platform/process.ts"))).toBe(true);
     for (const source of [jobsService, viewerJobs, jobWorkerLockStore, syncLockStore]) {
@@ -1106,8 +1109,12 @@ describe("architecture boundaries", () => {
       expect(source).toContain("createCliRuntime");
     }
     expect(lifecycleRegistration).not.toContain("platform/process");
-    expect(syncRegistration).toContain("createCliRuntime");
+    expect(syncRegistration).toContain("registerSyncRunCommand(sync)");
+    expect(syncRegistration).toContain("registerSyncStatusCommand(sync)");
+    expect(syncRegistration).not.toContain("createCliRuntime");
+    expect(syncRuntimeInput).toContain("createCliRuntime");
     expect(syncRegistration).not.toContain("platform/process");
+    expect(syncRuntimeInput).not.toContain("platform/process");
   });
 
   it("keeps store atomic writes off process identity", async () => {
@@ -1909,6 +1916,15 @@ describe("architecture boundaries", () => {
     const syncRegistration = await readSource(
       "src/edges/cli/register-sync-commands.ts",
     );
+    const syncRuntimeInput = await readSource(
+      "src/edges/cli/sync-runtime-input.ts",
+    );
+    const syncRunRegistration = await readSource(
+      "src/edges/cli/register-sync-run-command.ts",
+    );
+    const syncStatusRegistration = await readSource(
+      "src/edges/cli/register-sync-status-command.ts",
+    );
 
     expect(existsSync(join(ROOT, "src/services/sync/types.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/sync/sweep-results.ts"))).toBe(true);
@@ -1939,7 +1955,16 @@ describe("architecture boundaries", () => {
     expect(jobsProviderSessions).toContain("listJobRecords");
     expect(syncCommand).not.toContain("platform/transcripts");
     expect(syncRegistration).not.toContain("platform/transcripts");
-    expect(syncRegistration).toContain("createCliRuntime");
+    expect(syncRegistration).toContain("registerSyncRunCommand(sync)");
+    expect(syncRegistration).toContain("registerSyncStatusCommand(sync)");
+    expect(syncRegistration).not.toContain("createCliRuntime");
+    expect(syncRuntimeInput).not.toContain("platform/transcripts");
+    expect(syncRuntimeInput).toContain("createCliRuntime");
+    expect(syncRunRegistration).toContain("syncRuntimeInput()");
+    expect(syncRunRegistration).toContain("using: opts.using");
+    expect(syncStatusRegistration).toContain("syncStatusRuntimeInput()");
+    expect(syncStatusRegistration).toContain('mode: "status"');
+    expect(syncStatusRegistration).not.toContain("startBackground");
     expect(appCliRuntime).toContain("createPlatformSyncTranscriptRuntime");
     expect(appCliRuntime).toContain("shared/transcripts.js");
     expect(transcriptRuntime).toContain("discoverTranscriptCandidates");

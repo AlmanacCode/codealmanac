@@ -1,9 +1,7 @@
 import { Command } from "commander";
-import { homedir } from "node:os";
 
-import { createCliRuntime } from "../../app/cli-runtime.js";
-import { currentCliNodeProgram } from "./current-cli.js";
-import { emit } from "./helpers.js";
+import { registerSyncRunCommand } from "./register-sync-run-command.js";
+import { registerSyncStatusCommand } from "./register-sync-status-command.js";
 
 export function registerSyncCommands(program: Command): void {
   const sync = program
@@ -12,67 +10,8 @@ export function registerSyncCommands(program: Command): void {
     .option("--from <apps>", "comma-separated sources to scan (default: claude,codex)")
     .option("--quiet <duration>", "minimum quiet time before sync (default: 45m)")
     .option("--using <provider[/model]>", "provider and optional model")
-    .option("--json", "emit structured JSON")
-    .action(async (opts: {
-      from?: string;
-      quiet?: string;
-      using?: string;
-      json?: boolean;
-    }) => {
-      const { runSyncCommand } = await import("../../cli/commands/sync.js");
-      const runtime = createCliRuntime({ environment: process.env });
-      const result = await runSyncCommand({
-        cwd: process.cwd(),
-        from: opts.from,
-        quiet: opts.quiet,
-        using: opts.using,
-        json: opts.json,
-        homeDir: homedir(),
-        workerProgram: currentCliNodeProgram(),
-        workerEnvironment: runtime.workerEnvironment,
-        pid: process.pid,
-        isPidAlive: runtime.isPidAlive,
-        agentRunner: runtime.agentRunner,
-        loadPrompt: runtime.loadPrompt,
-        transcriptRuntime: runtime.transcriptRuntime,
-        startBackground: runtime.startBackground,
-      });
-      emit(result);
-    });
+    .option("--json", "emit structured JSON");
 
-  sync
-    .command("status")
-    .description("show sync candidates without starting absorb jobs")
-    .option("--from <apps>", "comma-separated sources to scan (default: claude,codex)")
-    .option("--quiet <duration>", "minimum quiet time before sync (default: 45m)")
-    .option("--json", "emit structured JSON")
-    .action(async (opts: {
-      from?: string;
-      quiet?: string;
-      json?: boolean;
-    }, command: Command) => {
-      const parentOpts = command.parent?.opts<{
-        from?: string;
-        quiet?: string;
-        json?: boolean;
-      }>() ?? {};
-      const { runSyncCommand } = await import("../../cli/commands/sync.js");
-      const runtime = createCliRuntime({ environment: process.env });
-      const result = await runSyncCommand({
-        cwd: process.cwd(),
-        mode: "status",
-        from: opts.from ?? parentOpts.from,
-        quiet: opts.quiet ?? parentOpts.quiet,
-        json: opts.json ?? parentOpts.json,
-        homeDir: homedir(),
-        workerProgram: currentCliNodeProgram(),
-        workerEnvironment: runtime.workerEnvironment,
-        pid: process.pid,
-        isPidAlive: runtime.isPidAlive,
-        agentRunner: runtime.agentRunner,
-        loadPrompt: runtime.loadPrompt,
-        transcriptRuntime: runtime.transcriptRuntime,
-      });
-      emit(result);
-    });
+  registerSyncRunCommand(sync);
+  registerSyncStatusCommand(sync);
 }

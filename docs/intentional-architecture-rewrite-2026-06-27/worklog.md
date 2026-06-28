@@ -1560,3 +1560,10 @@ Two-hundred-twenty-third production slice:
 - Kept process-liveness injection with list/show and attach, stdout streaming with attach, and process-signal wiring with cancel.
 - Preserved the existing jobs command surface while making each command group readable at the file level.
 - Strengthened architecture-boundary tests so jobs registration keeps process and stdout mechanics in concrete edge files instead of the root aggregator.
+
+Two-hundred-twenty-fourth production slice:
+
+- Split `src/edges/cli/register-sync-commands.ts` into a thin root-command aggregator plus sync run, sync status, and sync runtime-input edge files.
+- Kept app runtime construction, process facts, home directory, worker program, prompt loader, agent runner, and transcript runtime wiring in a CLI-edge helper.
+- Kept default sync execution and sync status option fallback in separate command registration files, with status receiving a runtime input that does not include background-start capability.
+- Strengthened architecture-boundary tests so sync registration stays split while transcript mechanics still flow through app/platform runtime composition.
