@@ -383,10 +383,21 @@ describe("architecture boundaries: lifecycle and providers", () => {
     const claudeOptions = await readSource(
       "src/agent/runtime/providers/claude/options.ts",
     );
+    const claudeRun = await readSource("src/agent/runtime/providers/claude/run.ts");
+    const claudeResult = await readSource(
+      "src/agent/runtime/providers/claude/result.ts",
+    );
+    const claudeStatus = await readSource(
+      "src/agent/runtime/providers/claude/status.ts",
+    );
     const claudeProcess = await readSource(
       "src/agent/runtime/providers/claude/process.ts",
     );
 
+    expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/run.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/result.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/status.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/options.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/events.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/failures.ts"))).toBe(true);
@@ -396,11 +407,24 @@ describe("architecture boundaries: lifecycle and providers", () => {
     expect(claudeProvider).not.toContain("process.once");
     expect(claudeProvider).not.toContain("process.off");
     expect(claudeProvider).not.toContain("function installAbortSignalHandlers");
-    expect(claudeProvider).toContain("installClaudeAbortSignalHandlers");
+    expect(claudeProvider).not.toContain("installClaudeAbortSignalHandlers");
+    expect(claudeProvider).not.toContain("for await");
+    expect(claudeProvider).not.toContain("ANTHROPIC_API_KEY");
     expect(claudeProvider).not.toContain("function buildClaudeOptions");
     expect(claudeProvider).not.toContain("function toClaudeAgentRuntimeEvents");
     expect(claudeProvider).not.toContain("function classifyClaudeFailure");
     expect(claudeProvider).not.toContain("function mapClaudeUsage");
+    expect(claudeProvider).toContain("runClaudeAgentRuntime");
+    expect(claudeProvider).toContain("checkClaudeProviderStatus");
+    expect(claudeRun).toContain("installClaudeAbortSignalHandlers");
+    expect(claudeRun).toContain("toClaudeAgentRuntimeEvents");
+    expect(claudeRun).toContain("classifyClaudeFailure");
+    expect(claudeRun).not.toContain("mapClaudeUsage");
+    expect(claudeRun).toContain("claudeResultUpdate");
+    expect(claudeResult).toContain("mapClaudeUsage");
+    expect(claudeResult).toContain("finalJsonSchemaOutput");
+    expect(claudeStatus).toContain("ANTHROPIC_API_KEY");
+    expect(claudeStatus).toContain("checkClaudeProviderStatus");
     expect(claudeOptions).not.toContain("spawnManagedChildProcess");
     expect(claudeOptions).not.toContain("managed.attachAbort");
     expect(claudeOptions).not.toContain("process.env");
