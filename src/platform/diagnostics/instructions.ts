@@ -5,7 +5,7 @@ import path from "node:path";
 import {
   checkAgentInstructions,
   type AgentInstructionDirs,
-} from "../../agent/install-targets.js";
+} from "../setup/instructions.js";
 import type {
   DiagnosticsGuideStatus,
   DiagnosticsInstructionEntriesStatus,

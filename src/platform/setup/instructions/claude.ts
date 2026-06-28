@@ -2,8 +2,15 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export const CLAUDE_IMPORT_LINE = "@~/.claude/almanac.md";
-export const LEGACY_CLAUDE_IMPORT_LINE = "@~/.claude/codealmanac.md";
+import {
+  LEGACY_SETUP_IMPORT_LINE,
+  SETUP_IMPORT_LINE,
+  hasSetupImportLine,
+  removeSetupImportLine,
+} from "../../../shared/setup-instructions.js";
+
+export const CLAUDE_IMPORT_LINE = SETUP_IMPORT_LINE;
+export const LEGACY_CLAUDE_IMPORT_LINE = LEGACY_SETUP_IMPORT_LINE;
 
 export async function ensureClaudeInstructions(args: {
   claudeDir: string;
@@ -118,40 +125,12 @@ async function ensureClaudeImport(claudeMdPath: string): Promise<boolean> {
 }
 
 export function hasClaudeImportLine(contents: string): boolean {
-  const lines = contents.split(/\r?\n/).map((line) => line.trim());
-  return lines.some((line) => isImportLineFor(line, CLAUDE_IMPORT_LINE));
+  return hasSetupImportLine(contents);
 }
 
 export function removeClaudeImportLine(contents: string): {
   changed: boolean;
   body: string;
 } {
-  const eol = contents.includes("\r\n") ? "\r\n" : "\n";
-  const lines = contents.split(/\r?\n/);
-  const indices: number[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!.trim();
-    if (
-      isImportLineFor(line, CLAUDE_IMPORT_LINE) ||
-      isImportLineFor(line, LEGACY_CLAUDE_IMPORT_LINE)
-    ) {
-      indices.push(i);
-    }
-  }
-  if (indices.length === 0) return { changed: false, body: contents };
-
-  for (let i = indices.length - 1; i >= 0; i--) {
-    lines.splice(indices[i]!, 1);
-  }
-
-  return {
-    changed: true,
-    body: lines.join(eol).replace(/\n\n\n+/g, "\n\n"),
-  };
-}
-
-function isImportLineFor(line: string, importLine: string): boolean {
-  if (line === importLine) return true;
-  const rest = line.slice(importLine.length);
-  return line.startsWith(importLine) && /^[\t ]/.test(rest);
+  return removeSetupImportLine(contents);
 }

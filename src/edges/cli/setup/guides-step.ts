@@ -2,6 +2,7 @@ import {
   installSetupInstructions,
   type SetupInstructionTargetId,
 } from "../../../services/setup/index.js";
+import { createSetupInstructionRuntime } from "../../../app/setup-runtime.js";
 import {
   type SetupTheme,
   dim,
@@ -51,6 +52,7 @@ export async function runGuidesSetupStep(args: {
       windsurfDir: args.options.windsurfDir,
       opencodeDir: args.options.opencodeDir,
       guidesDir: requireSetupGuidesDir(args.options.guidesDir),
+      instructionsRuntime: createSetupInstructionRuntime(),
     });
     const guidesSummary = summary.anyChanges
       ? "Agent instructions added"

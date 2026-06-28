@@ -1536,6 +1536,12 @@ describe("architecture boundaries", () => {
   it("keeps setup guide UI out of agent instruction install mechanics", async () => {
     const setupIndex = await readSource("src/edges/cli/setup/index.ts");
     const setupInstructions = await readSource("src/services/setup/instructions.ts");
+    const setupUninstall = await readSource("src/services/setup/uninstall.ts");
+    const sharedSetupInstructions = await readSource("src/shared/setup-instructions.ts");
+    const appSetupRuntime = await readSource("src/app/setup-runtime.ts");
+    const platformSetupInstructions = await readSource(
+      "src/platform/setup/instructions.ts",
+    );
     const guidesStep = await readSource("src/edges/cli/setup/guides-step.ts");
     const guides = await readSource("src/edges/cli/setup/guides.ts");
     const platformGuides = await readSource("src/platform/install/guides.ts");
@@ -1548,6 +1554,11 @@ describe("architecture boundaries", () => {
 
     expect(existsSync(join(ROOT, "src/services/setup/instructions.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/platform/install/guides.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/platform/setup/instructions.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/app/setup-runtime.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/shared/setup-instructions.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/agent/install-targets.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/agent/instructions"))).toBe(false);
     expect(setupInstructions).not.toContain(
       "SetupInstructionTargetId = InstructionTargetId",
     );
@@ -1565,9 +1576,22 @@ describe("architecture boundaries", () => {
     expect(setupInstructions).not.toContain("createRequire");
     expect(setupInstructions).not.toContain("fileURLToPath");
     expect(setupInstructions).not.toContain("existsSync");
-    expect(setupInstructions).toContain(
-      "setupInstructionTargetFromAgentTarget",
-    );
+    expect(setupInstructions).not.toContain("agent/install-targets");
+    expect(setupInstructions).not.toContain("agent/instructions");
+    expect(setupInstructions).not.toContain("platform/setup");
+    expect(setupInstructions).not.toContain("installAgentInstructions");
+    expect(setupInstructions).toContain("SetupInstructionRuntime");
+    expect(setupUninstall).not.toContain("agent/install-targets");
+    expect(setupUninstall).not.toContain("platform/setup");
+    expect(setupUninstall).not.toContain("removeAgentInstructions");
+    expect(setupUninstall).toContain("SetupInstructionRuntime");
+    expect(sharedSetupInstructions).toContain("interface SetupInstructionRuntime");
+    expect(sharedSetupInstructions).toContain("SETUP_INSTRUCTION_TARGETS");
+    expect(sharedSetupInstructions).toContain("SETUP_IMPORT_LINE");
+    expect(platformSetupInstructions).toContain("installAgentInstructions");
+    expect(platformSetupInstructions).toContain("removeAgentInstructions");
+    expect(platformSetupInstructions).toContain("createPlatformSetupInstructionRuntime");
+    expect(appSetupRuntime).toContain("createPlatformSetupInstructionRuntime");
     expect(platformGuides).toContain("resolveBundledGuidesDir");
     expect(platformGuides).toContain("createRequire");
     expect(platformGuides).toContain("fileURLToPath");
@@ -1582,6 +1606,7 @@ describe("architecture boundaries", () => {
       expect(source).not.toContain("CLAUDE_IMPORT_LINE");
       expect(source).not.toContain("hasClaudeImportLine");
     }
+    expect(guidesStep).toContain("createSetupInstructionRuntime");
   });
 
   it("keeps uninstall UI out of setup cleanup mechanics", async () => {
@@ -1602,11 +1627,15 @@ describe("architecture boundaries", () => {
       true,
     );
     expect(setupUninstall).not.toContain("type AgentInstructionDirs");
+    expect(setupUninstall).not.toContain("agent/install-targets");
+    expect(setupUninstall).not.toContain("platform/setup");
+    expect(setupUninstall).toContain("SetupInstructionRuntime");
     expect(setupUninstall).not.toContain(
       "SetupUninstallOptions extends AgentInstructionDirs",
     );
     expect(uninstallCommand).toContain("services/setup/index.js");
     expect(uninstallCommand).toContain("./uninstall-render.js");
+    expect(uninstallCommand).toContain("createSetupInstructionRuntime");
     expect(uninstallCommand).not.toContain("agent/install-targets");
     expect(uninstallCommand).not.toContain("platform/automation/legacy-hooks");
     expect(uninstallCommand).not.toContain("runAutomationUninstall");

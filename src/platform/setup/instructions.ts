@@ -22,7 +22,6 @@ import {
   ensureCursorInstructions,
   removeCursorInstructions,
 } from "./instructions/cursor.js";
-import { removeManagedBlock } from "./instructions/managed-block.js";
 import {
   ensureOpenCodeInstructions,
   openCodeInstructionsPresent,
@@ -33,14 +32,16 @@ import {
   removeWindsurfInstructions,
   windsurfInstructionsPresent,
 } from "./instructions/windsurf.js";
-
+import type {
+  SetupInstructionInstallRequest,
+  SetupInstructionRuntime,
+} from "../../shared/setup-instructions.js";
 export { CLAUDE_IMPORT_LINE, hasClaudeImportLine, removeClaudeImportLine };
 export {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
   codexInstructionBlockPresent,
 };
-export { removeManagedBlock };
 
 export type InstructionTargetId =
   | "claude"
@@ -87,6 +88,13 @@ export interface AgentInstructionCheck {
   ok: boolean;
   message: string;
   missing: string[];
+}
+
+export function createPlatformSetupInstructionRuntime(): SetupInstructionRuntime {
+  return {
+    install: (request) => installAgentInstructions(platformInstallOptions(request)),
+    remove: removeAgentInstructions,
+  };
 }
 
 export async function installAgentInstructions(
@@ -186,4 +194,20 @@ async function installInstructionTarget(
 async function codexInstructionsMissing(codexDir: string): Promise<string[]> {
   if (await codexInstructionBlockPresent(codexDir)) return [];
   return ["Codex AGENTS.md instructions"];
+}
+
+function platformInstallOptions(
+  request: SetupInstructionInstallRequest,
+): InstallAgentInstructionsOptions {
+  return {
+    targets: request.targets,
+    claudeDir: request.claudeDir ?? path.join(request.homeDir, ".claude"),
+    codexDir: request.codexDir ?? path.join(request.homeDir, ".codex"),
+    cursorDir: request.cursorDir ?? path.join(request.homeDir, ".cursor"),
+    windsurfDir: request.windsurfDir ??
+      path.join(request.homeDir, ".codeium", "windsurf"),
+    opencodeDir: request.opencodeDir ??
+      path.join(request.homeDir, ".config", "opencode"),
+    guidesDir: request.guidesDir,
+  };
 }

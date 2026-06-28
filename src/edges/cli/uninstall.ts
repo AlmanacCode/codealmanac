@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { createAutomationScheduler } from "../../app/automation-runtime.js";
+import { createSetupInstructionRuntime } from "../../app/setup-runtime.js";
 import {
   removeSetupImportLine,
   removeSetupManagedBlock,
@@ -132,6 +133,7 @@ export async function runUninstall(
     automationScheduler: createAutomationScheduler({
       exec: options.automationExec,
     }),
+    instructionsRuntime: createSetupInstructionRuntime(),
     claudeDir,
     codexDir,
     cursorDir,

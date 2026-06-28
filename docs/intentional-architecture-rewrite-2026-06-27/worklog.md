@@ -1438,3 +1438,12 @@ Two-hundred-seventh production slice:
 - Threaded an injected prompt loader through lifecycle operation specs, lifecycle workflows, prepared Absorb from sync, CLI operation commands, sync commands, and `src/app/cli-runtime.ts`.
 - Kept lifecycle services responsible for operation prompt composition while app composition wires the concrete bundled prompt loader.
 - Strengthened architecture-boundary tests so lifecycle services cannot reintroduce direct bundled prompt file mechanics.
+
+Two-hundred-eighth production slice:
+
+- Moved concrete agent instruction install/remove/check mechanics out of `src/agent/` and into `src/platform/setup/instructions.ts` plus provider-specific files under `src/platform/setup/instructions/`.
+- Added `src/shared/setup-instructions.ts` for setup instruction target ids, target labels, import markers, Codex managed-block markers, pure text helpers, and the `SetupInstructionRuntime` contract.
+- Added `src/app/setup-runtime.ts` as the app composition point for the concrete setup instruction runtime.
+- Changed setup guide installation and uninstall cleanup so setup services receive an injected instruction runtime instead of importing agent/platform file mechanics directly.
+- Deleted the now-unearned `src/platform/setup/instructions/managed-block.ts` shim after callers moved to the shared pure helper.
+- Strengthened architecture-boundary tests so setup services cannot reintroduce direct agent instruction or platform setup-instruction mechanics.

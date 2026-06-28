@@ -2,12 +2,15 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { removeManagedBlock, upsertManagedBlock } from "./managed-block.js";
-
-export const CODEX_INSTRUCTIONS_START = "<!-- almanac:start -->";
-export const CODEX_INSTRUCTIONS_END = "<!-- almanac:end -->";
-export const LEGACY_CODEX_INSTRUCTIONS_START = "<!-- codealmanac:start -->";
-export const LEGACY_CODEX_INSTRUCTIONS_END = "<!-- codealmanac:end -->";
+import {
+  CODEX_INSTRUCTIONS_END,
+  CODEX_INSTRUCTIONS_START,
+  LEGACY_CODEX_INSTRUCTIONS_END,
+  LEGACY_CODEX_INSTRUCTIONS_START,
+  hasCodexInstructions as hasSharedCodexInstructions,
+  removeManagedBlock,
+  upsertManagedBlock,
+} from "../../../shared/setup-instructions.js";
 
 // Codex treats @file references inside AGENTS.md as plain text rather than
 // expanding them like Claude does in CLAUDE.md. Keep the managed instructions
@@ -99,8 +102,12 @@ export async function resolveCodexAgentsPath(
 }
 
 export function hasCodexInstructions(contents: string): boolean {
-  return (
-    contents.includes(CODEX_INSTRUCTIONS_START) &&
-    contents.includes(CODEX_INSTRUCTIONS_END)
-  );
+  return hasSharedCodexInstructions(contents);
 }
+
+export {
+  CODEX_INSTRUCTIONS_END,
+  CODEX_INSTRUCTIONS_START,
+  LEGACY_CODEX_INSTRUCTIONS_END,
+  LEGACY_CODEX_INSTRUCTIONS_START,
+};

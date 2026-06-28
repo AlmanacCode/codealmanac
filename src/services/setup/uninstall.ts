@@ -1,8 +1,8 @@
 import {
-  removeAgentInstructions,
-  removeClaudeImportLine,
-  removeManagedBlock,
-} from "../../agent/install-targets.js";
+  removeManagedBlock as removeSetupManagedBlockText,
+  removeSetupImportLine as removeSetupImportLineText,
+  type SetupInstructionRuntime,
+} from "../../shared/setup-instructions.js";
 import {
   cleanupLegacyAutomationHooks,
   uninstallAutomation,
@@ -22,6 +22,7 @@ export interface SetupUninstallOptions {
   automationPlistPath?: string;
   gardenPlistPath?: string;
   automationScheduler: AutomationScheduler;
+  instructionsRuntime: SetupInstructionRuntime;
 }
 
 export interface SetupUninstallResult {
@@ -54,7 +55,7 @@ export function removeSetupImportLine(contents: string): {
   changed: boolean;
   body: string;
 } {
-  return removeClaudeImportLine(contents);
+  return removeSetupImportLineText(contents);
 }
 
 export function removeSetupManagedBlock(
@@ -62,7 +63,7 @@ export function removeSetupManagedBlock(
   start: string,
   end: string,
 ): { changed: boolean; body: string } {
-  return removeManagedBlock(contents, start, end);
+  return removeSetupManagedBlockText(contents, start, end);
 }
 
 async function removeSetupAutomation(
@@ -84,7 +85,7 @@ async function removeSetupAutomation(
 async function removeSetupGuides(
   options: SetupUninstallOptions,
 ): Promise<SetupUninstallResult["guides"]> {
-  const summary = await removeAgentInstructions({
+  const summary = await options.instructionsRuntime.remove({
     claudeDir: options.claudeDir,
     codexDir: options.codexDir,
     cursorDir: options.cursorDir,

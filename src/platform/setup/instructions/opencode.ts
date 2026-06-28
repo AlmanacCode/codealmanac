@@ -2,7 +2,10 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { removeManagedBlock, upsertManagedBlock } from "./managed-block.js";
+import {
+  removeManagedBlock,
+  upsertManagedBlock,
+} from "../../../shared/setup-instructions.js";
 
 export const OPENCODE_INSTRUCTIONS_START = "<!-- almanac:start -->";
 export const OPENCODE_INSTRUCTIONS_END = "<!-- almanac:end -->";
