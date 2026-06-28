@@ -5,7 +5,7 @@ import {
 import type {
   DiagnosticsAuthStatus,
   DiagnosticsSpawnCliFn,
-} from "../../services/diagnostics/types.js";
+} from "./types.js";
 
 export async function probeDiagnosticClaudeAuth(
   spawnCli?: DiagnosticsSpawnCliFn,

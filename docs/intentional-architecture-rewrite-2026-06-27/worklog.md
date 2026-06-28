@@ -1135,3 +1135,10 @@ One-hundred-sixty-seventh production slice:
 - Added `src/platform/automation/paths.ts` for launchd plist paths, legacy capture plist paths, and automation log paths.
 - Updated automation planning, install/status/uninstall workflows, migration, diagnostics, and task parsing to use the new service/platform split.
 - Added boundary coverage that service task definitions do not own `LaunchAgents` path mechanics and platform path helpers do.
+
+One-hundred-sixty-eighth production slice:
+
+- Added `src/platform/diagnostics/types.ts` for doctor probe result contracts: spawn callbacks, auth facts, automation facts, guide/instruction facts, update facts, install facts, and SQLite probe facts.
+- Updated platform diagnostic probes to import their typed results from the platform diagnostics package instead of depending upward on `src/services/diagnostics/`.
+- Kept `src/services/diagnostics/types.ts` focused on doctor options, reports, checks, and agent read models while re-exporting platform probe facts for stable service and command callers.
+- Added boundary coverage that platform diagnostics do not import `services/diagnostics` and that services intentionally depend on the platform diagnostic fact contracts.

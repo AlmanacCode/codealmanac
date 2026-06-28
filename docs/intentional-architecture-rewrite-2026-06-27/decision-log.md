@@ -41,6 +41,10 @@ Stores own persistence mechanics. Provider adapters, process spawning, app-serve
 
 Automation task definitions are product policy, not launchd mechanics. `src/services/automation/tasks.ts` owns the sync, Garden, and update task ids, labels, default cadences, command arguments, and working-directory policy. `src/platform/automation/paths.ts` owns launchd plist/log path construction, and `src/platform/automation/launchd.ts` owns plist rendering, bootstrap/removal, and loaded-state checks.
 
+### Diagnostic probe facts are platform-owned
+
+Doctor probe result contracts that describe local machine facts belong under `src/platform/diagnostics/types.ts`. Platform probes own install path, SQLite binding, auth probe, automation plist, guide-file, instruction-entry, update-state, and subprocess-spawn facts. `src/services/diagnostics/` owns the doctor product read model: options, checks, reports, update/install/agent sections, and stable service-facing re-exports.
+
 ### Transcript discovery is platform, sync eligibility is service
 
 Claude and Codex transcript-store scanning reads local provider files and normalizes raw JSONL shapes into typed transcript candidates. That belongs under `src/platform/transcripts/`. The sync service owns quiet-window eligibility, ledger reconciliation, cursor decisions, and Absorb handoff over those normalized candidates.

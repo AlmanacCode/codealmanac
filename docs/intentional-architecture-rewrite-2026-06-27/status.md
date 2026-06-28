@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 215 committed rewrite commits past `dev`. The worklog records 167 production slices so far.
+The branch has 216 committed rewrite commits past `dev`. The worklog records 168 production slices so far.
 
-The diff is broad: 456 files changed, with 22,729 insertions and 12,276 deletions.
+The diff is broad: 457 files changed, with 22,794 insertions and 12,287 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -31,6 +31,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved GitHub source resolution mechanics into `src/platform/github/`.
 - Moved provider execution runtime into `src/agent/runtime/`, especially Claude and Codex app-server mechanics, and made provider runtime environment flow through explicit job/registry contracts.
 - Moved setup, diagnostics, update, automation, jobs, sync, lifecycle, config, and agents workflows behind service-owned contracts.
+- Moved diagnostic probe result contracts into `src/platform/diagnostics/types.ts`, while `src/services/diagnostics/` now owns only doctor read models and service-facing re-exports.
 - Split the automation task catalog out of platform launchd mechanics: task meaning/defaults live under `src/services/automation/tasks.ts`, while plist/log paths live under `src/platform/automation/paths.ts`.
 - Split most command rendering into command-private render files.
 - Added architecture-boundary tests to stop old dependency leaks from returning.
@@ -47,13 +48,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice split automation task policy from launchd mechanics: `src/services/automation/tasks.ts` owns sync/Garden/update task definitions, default cadences, and command arguments, while `src/platform/automation/paths.ts` owns launch agent plist and log paths.
+The latest slice moved diagnostic probe result contracts into `src/platform/diagnostics/types.ts`. Platform probes now depend on their own typed machine-fact contracts, while `src/services/diagnostics/types.ts` keeps doctor report/read-model contracts and re-exports platform facts for existing service and command callers.
 
-Verification passed: focused automation/setup/uninstall/doctor/boundary tests with 112 tests, `npm run lint`, full `npm test` with 656 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js automation --help`, `node dist/codealmanac.js doctor --help`, and `node dist/codealmanac.js setup --help`.
+Verification passed: `npm run lint`, focused diagnostics/boundary tests with 65 tests, full `npm test` with 656 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js doctor --help`, and `node dist/codealmanac.js setup --help`.
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, and worker entrypoints have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, automation scheduling policy cleanup, and any lifecycle/job boundary duplication that remains after the big moves.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, and worker entrypoints have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
 
 ## Decision Log
 

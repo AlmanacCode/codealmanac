@@ -1,6 +1,6 @@
 import { readConfig } from "../../stores/config/index.js";
-import type { DiagnosticsUpdateStatus } from "../../services/diagnostics/types.js";
 import { readState } from "../update/state.js";
+import type { DiagnosticsUpdateStatus } from "./types.js";
 
 export interface UpdateDiagnosticsProbeOptions {
   statePath?: string;

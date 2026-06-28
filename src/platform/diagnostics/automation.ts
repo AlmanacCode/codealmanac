@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 
-import type { DiagnosticsAutomationStatus } from "../../services/diagnostics/types.js";
 import { detectLegacyCaptureSweepAutomation } from "../automation/legacy-capture.js";
 import {
   defaultCapturePlistPath,
   defaultSyncPlistPath,
 } from "../automation/paths.js";
+import type { DiagnosticsAutomationStatus } from "./types.js";
 
 export interface AutomationDiagnosticsProbeOptions {
   homeDir?: string;

@@ -17,20 +17,20 @@ sources:
     note: Migrated from legacy files.
   - id: install
     type: file
-    path: src/cli/commands/doctor/install.ts
-    note: Migrated from legacy files.
+    path: src/services/diagnostics/install.ts
+    note: Install diagnostic read model and repair hints.
   - id: wiki
     type: file
     path: src/services/wiki/doctor.ts
     note: Wiki doctor checks for repo, registry, index, absorb, and health state.
   - id: updates
     type: file
-    path: src/cli/commands/doctor/updates.ts
-    note: Migrated from legacy files.
+    path: src/services/diagnostics/updates.ts
+    note: Update diagnostic read model and repair hints.
   - id: probes
     type: file
-    path: src/cli/commands/doctor/probes.ts
-    note: Migrated from legacy files.
+    path: src/platform/diagnostics/types.ts
+    note: Platform-owned doctor probe result contracts.
   - id: index-2
     type: file
     path: src/cli/commands/setup/index.ts
@@ -58,14 +58,16 @@ status: active
 
 ## Current command shape
 
-[[src/cli/commands/doctor/index.ts]] is the composition root. It gathers four check groups and returns either formatted text or a stable JSON object:
+[[src/cli/commands/doctor/index.ts]] is the command adapter for the stable doctor surface. It receives already-probed machine facts from the CLI edge, calls [[src/services/diagnostics/doctor.ts]], and renders either formatted text or a stable JSON object.
 
-- install checks from [[src/cli/commands/doctor/install.ts]]
-- agent readiness checks
-- update-notifier checks from [[src/cli/commands/doctor/updates.ts]]
+The diagnostics service gathers four check groups:
+
+- install checks from [[src/services/diagnostics/install.ts]]
+- agent readiness checks from [[src/services/diagnostics/agents.ts]]
+- update-notifier checks from [[src/services/diagnostics/updates.ts]]
 - repo wiki checks from [[src/services/wiki/doctor.ts]]
 
-The 2026-05-30 command-folder refactor kept the entrypoint thin and moved the old `doctor-checks/` modules into `src/cli/commands/doctor/`. The later intentional-architecture rewrite moved wiki-specific doctor checks into `src/services/wiki/doctor.ts`, so `src/cli/commands/doctor/index.ts` composes report sections while the wiki service owns repo detection. `src/services/wiki/doctor-registry.ts`, `src/services/wiki/doctor-index.ts`, `src/services/wiki/doctor-absorb.ts`, and `src/services/wiki/doctor-health.ts` own the registry, index, absorb-log, and health-summary probes.
+The 2026-05-30 command-folder refactor kept the entrypoint thin and moved the old `doctor-checks/` modules into `src/cli/commands/doctor/`. The later intentional-architecture rewrite moved install, agent, and update read models into [[src/services/diagnostics/]], moved local machine probes into [[src/platform/diagnostics/]], and moved wiki-specific doctor checks into `src/services/wiki/doctor.ts`. `src/services/wiki/doctor-registry.ts`, `src/services/wiki/doctor-index.ts`, `src/services/wiki/doctor-absorb.ts`, and `src/services/wiki/doctor-health.ts` own the registry, index, absorb-log, and health-summary probes.
 
 ## What install checks cover
 
@@ -78,7 +80,7 @@ The install section currently reports:
 - whether Claude guide files exist under `~/.claude/`
 - whether the global agent instruction entries are installed for Claude and Codex
 
-[[src/cli/commands/doctor/install.ts]] expresses repairs as `fix: "run: ..."` strings. The command prints those hints, but it does not execute them.
+[[src/services/diagnostics/install.ts]] expresses repairs as `fix: "run: ..."` strings. The command prints those hints, but it does not execute them.
 
 The `install.import` JSON key is intentionally stable even though the meaning expanded in the 2026-05-13 provider refactor. It now checks the Claude `CLAUDE.md` import and the Codex managed AGENTS block via [[src/agent/install-targets.ts]], and the human message says "Agent instruction entries" rather than naming only Claude imports.
 

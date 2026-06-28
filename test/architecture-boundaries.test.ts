@@ -1727,6 +1727,9 @@ describe("architecture boundaries", () => {
     const platformUpdateDiagnostics = await readSource(
       "src/platform/diagnostics/updates.ts",
     );
+    const platformDiagnosticTypes = await readSource(
+      "src/platform/diagnostics/types.ts",
+    );
     const updateDiagnostics = await readSource("src/services/diagnostics/updates.ts");
     const diagnosticsTypes = await readSource("src/services/diagnostics/types.ts");
     const diagnosticsIndex = await readSource("src/services/diagnostics/index.ts");
@@ -1750,6 +1753,9 @@ describe("architecture boundaries", () => {
       false,
     );
     expect(existsSync(join(ROOT, "src/platform/diagnostics/install.ts"))).toBe(
+      true,
+    );
+    expect(existsSync(join(ROOT, "src/platform/diagnostics/types.ts"))).toBe(
       true,
     );
     expect(doctorIndex).toContain("services/diagnostics/index.js");
@@ -1827,6 +1833,20 @@ describe("architecture boundaries", () => {
     expect(platformInstructionDiagnostics).toContain("homedir()");
     expect(platformUpdateDiagnostics).toContain("readState");
     expect(platformUpdateDiagnostics).toContain("readConfig");
+    for (const platformDiagnostics of [
+      platformAuthDiagnostics,
+      platformInstallDiagnostics,
+      platformAutomationDiagnostics,
+      platformInstructionDiagnostics,
+      platformUpdateDiagnostics,
+      platformDiagnosticTypes,
+    ]) {
+      expect(platformDiagnostics).not.toContain("services/diagnostics");
+    }
+    expect(platformDiagnosticTypes).toContain("DiagnosticsInstallStatus");
+    expect(platformDiagnosticTypes).toContain("SqliteProbeResult");
+    expect(platformDiagnosticTypes).toContain("DiagnosticsSpawnCliFn");
+    expect(diagnosticsTypes).toContain("../../platform/diagnostics/types.js");
     expect(existsSync(join(ROOT, "src/platform/update/semver.ts"))).toBe(false);
     expect(diagnosticsTypes).not.toContain("agent/readiness/providers/claude");
     expect(diagnosticsTypes).not.toContain("from \"../../agent/types.js\"");
