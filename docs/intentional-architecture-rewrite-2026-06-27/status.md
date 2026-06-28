@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 232 committed rewrite commits past `dev`. The worklog records 184 production slices so far.
+The branch has more than 230 committed rewrite commits past `dev`. The worklog records 184 production slices so far.
 
 The diff is broad: 474 files changed, with 23,845 insertions and 12,888 deletions.
 
