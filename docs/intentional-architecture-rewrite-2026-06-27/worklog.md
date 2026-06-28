@@ -1539,3 +1539,10 @@ Two-hundred-twentieth production slice:
 - Kept topic list/show color handling in read registration, parent option collection in create registration, graph link/unlink wiring in edge registration, and rename/delete/describe wiring in mutation registration.
 - Preserved the existing `topics` command surface while making each topic command group readable at the file level.
 - Strengthened architecture-boundary tests so topic registration stays grouped by command responsibility.
+
+Two-hundred-twenty-first production slice:
+
+- Split `src/edges/cli/register-review-commands.ts` into a thin root-command aggregator plus review add, read, decision, and markdown-input edge files.
+- Kept raw markdown argument joining and stdin fallback in the CLI edge, beside the commands that consume review markdown.
+- Replaced the inline decide/apply/reopen registration switch with a small command-definition list in the decision registration file.
+- Strengthened architecture-boundary tests so review registration stays split by command responsibility and raw markdown intake does not move into the root aggregator.

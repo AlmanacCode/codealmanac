@@ -654,8 +654,40 @@ describe("architecture boundaries", () => {
     const reviewWorkspace = await readSource(
       "src/services/wiki/review-workspace.ts",
     );
+    const reviewRegistration = await readSource(
+      "src/edges/cli/register-review-commands.ts",
+    );
+    const reviewAddRegistration = await readSource(
+      "src/edges/cli/register-review-add-command.ts",
+    );
+    const reviewReadRegistration = await readSource(
+      "src/edges/cli/register-review-read-commands.ts",
+    );
+    const reviewDecisionRegistration = await readSource(
+      "src/edges/cli/register-review-decision-commands.ts",
+    );
+    const reviewMarkdownInput = await readSource(
+      "src/edges/cli/review-markdown-input.ts",
+    );
 
     expect(existsSync(join(ROOT, "src/cli/commands/review-render.ts"))).toBe(true);
+    expect(reviewRegistration).toContain("registerReviewAddCommand(review)");
+    expect(reviewRegistration).toContain("registerReviewReadCommands(review)");
+    expect(reviewRegistration).toContain("registerReviewDecisionCommands(review)");
+    expect(reviewRegistration).not.toContain("readStdin");
+    expect(reviewRegistration).not.toContain("markdownFromArgs");
+    expect(reviewRegistration).not.toContain("runReviewAdd");
+    expect(reviewRegistration).not.toContain("runReviewList");
+    expect(reviewAddRegistration).toContain(".command(\"add [markdown...]\")");
+    expect(reviewAddRegistration).toContain("reviewMarkdownInput(markdownArg)");
+    expect(reviewReadRegistration).toContain('.command("list"');
+    expect(reviewReadRegistration).toContain(".command(\"show <id>\")");
+    expect(reviewDecisionRegistration).toContain("REVIEW_DECISION_COMMANDS");
+    expect(reviewDecisionRegistration).toContain("runReviewDecide");
+    expect(reviewDecisionRegistration).toContain("runReviewApply");
+    expect(reviewDecisionRegistration).toContain("runReviewReopen");
+    expect(reviewMarkdownInput).toContain("readStdin");
+    expect(reviewMarkdownInput).toContain("markdownFromArgs");
     expect(reviewCommand).toContain("services/wiki/reviews.js");
     expect(reviewCommand).toContain("review-render.js");
     expect(reviewCommand).not.toContain("review/store");
