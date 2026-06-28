@@ -1614,3 +1614,11 @@ Two-hundred-thirtieth production slice:
 - Kept process facts in the CLI edge: current working directory, environment, Node version, home directory, and color-capable stdout.
 - Left diagnostics services focused on doctor read models over typed facts, while platform diagnostics still own the individual probe mechanics.
 - Strengthened architecture-boundary tests so doctor command registration stays thin and diagnostic probe composition remains visible in app composition.
+
+Two-hundred-thirty-first production slice:
+
+- Split raw transcript discovery from sync repo eligibility by adding `DiscoveredTranscript` in `src/shared/transcripts.ts`.
+- Changed `src/platform/transcripts/` to return discovered transcript facts without importing wiki-file stores or resolving nearest `.almanac` roots.
+- Moved repo-root enrichment into `src/services/sync/sync.ts`, where sync product workflow decides whether a discovered transcript belongs to an Almanac repo.
+- Renamed the platform JSONL helper to `discoveredTranscriptFromMeta` so the platform layer no longer claims it creates sync candidates.
+- Strengthened architecture-boundary tests so platform transcript discovery stays store-free and sync owns transcript-to-repo candidate shaping.

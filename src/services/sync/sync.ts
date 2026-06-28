@@ -1,7 +1,12 @@
 import { readConfig } from "../../stores/config/index.js";
+import { findNearestAlmanacDir } from "../../stores/wiki-files/repo-location.js";
 import { runPreparedAbsorbOperationWorkflow } from "../lifecycle/index.js";
 import { parseDuration } from "../../shared/duration.js";
-import type { TranscriptSourceApp } from "../../shared/transcripts.js";
+import type {
+  DiscoveredTranscript,
+  TranscriptCandidate,
+  TranscriptSourceApp,
+} from "../../shared/transcripts.js";
 import { executeSyncSweep } from "./sweep.js";
 import type { SyncSummary } from "./sweep-results.js";
 import type {
@@ -24,14 +29,16 @@ export async function runSyncWorkflow(
   const quiet = parseQuiet(options.quiet ?? DEFAULT_QUIET);
   if (!quiet.ok) return { status: "invalid", error: quiet.error };
 
+  const discovered = await options.transcriptRuntime.discoverCandidates({
+    apps: sources.value,
+    homeDir: options.homeDir,
+  });
+
   return {
     status: "completed",
     summary: syncWorkflowSummaryFromSweep(
       await executeSyncSweep({
-        candidates: await options.transcriptRuntime.discoverCandidates({
-          apps: sources.value,
-          homeDir: options.homeDir,
-        }),
+        candidates: repoTranscriptCandidates(discovered),
         syncSince: await readSyncSince(options.configPath),
         quietMs: quiet.ms,
         mode: options.mode ?? "sync",
@@ -75,6 +82,17 @@ export async function runSyncWorkflow(
       }),
     ),
   };
+}
+
+function repoTranscriptCandidates(
+  discovered: DiscoveredTranscript[],
+): TranscriptCandidate[] {
+  const candidates: TranscriptCandidate[] = [];
+  for (const item of discovered) {
+    const repoRoot = findNearestAlmanacDir(item.cwd);
+    if (repoRoot !== null) candidates.push({ ...item, repoRoot });
+  }
+  return candidates;
 }
 
 function syncWorkflowSummaryFromSweep(

@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 230 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 231 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -52,6 +52,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved local Claude/Codex transcript discovery, transcript snapshot reads, and timestamp boundary parsing into `src/platform/transcripts/` and removed the old top-level `src/sync/` source bucket.
 - Moved sync-facing transcript contracts and cursor boundary calculation into `src/shared/transcripts.ts`, leaving platform transcript modules focused on discovery and file reads.
 - Moved the sync transcript runtime port into `src/shared/transcripts.ts`, so platform transcript runtime no longer imports sync service types.
+- Moved transcript-to-repo enrichment into sync services, so platform transcript discovery returns raw discovered transcript facts without importing wiki-file stores.
 - Moved concrete transcript discovery/snapshot composition behind an injected sync transcript runtime contract, with `src/platform/transcripts/runtime.ts` wired by the CLI sync edge.
 - Moved sync's internal-Almanac-session lookup behind a jobs-service provider-session helper, so sync no longer reads job record storage shape directly.
 - Moved lifecycle operation construction and Absorb input/source handling into `src/services/lifecycle/` and removed the old top-level `src/operations/` and `src/absorb/` source buckets.
@@ -106,18 +107,18 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved concrete doctor diagnostic probe wiring into `src/app/diagnostics-runtime.ts`, leaving doctor command registration as request shaping over process facts and rendering options.
+The latest slice moved transcript-to-repo enrichment into sync services, leaving platform transcript discovery focused on raw transcript file metadata.
 
 Verification passed:
 
 - `git diff --check`
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/doctor.test.ts test/cli.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/sync.test.ts`
 - `npm test`
 - `npm run build`
-- `node dist/launcher.js doctor --wiki-only --json`
-- `node dist/launcher.js doctor --install-only --json`
-- `node dist/launcher.js search provider --limit 1`
+- `node dist/launcher.js sync status --json --quiet 1m`
+- `node dist/launcher.js sync status --help`
+- `node dist/launcher.js search transcript --limit 1`
 
 ## Immediate Next Work
 

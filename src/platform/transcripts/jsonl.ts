@@ -2,8 +2,7 @@ import { existsSync, type Dirent } from "node:fs";
 import { open, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 
-import { findNearestAlmanacDir } from "../../stores/wiki-files/repo-location.js";
-import type { TranscriptCandidate, TranscriptSourceApp } from "../../shared/transcripts.js";
+import type { DiscoveredTranscript, TranscriptSourceApp } from "../../shared/transcripts.js";
 import {
   objectField,
   parseJsonObject,
@@ -29,14 +28,12 @@ export async function readFirstLines(file: string, maxLines: number): Promise<st
   }
 }
 
-export async function transcriptCandidateFromMeta(
+export async function discoveredTranscriptFromMeta(
   app: TranscriptSourceApp,
   transcriptPath: string,
   sessionId: string,
   cwd: string,
-): Promise<TranscriptCandidate | null> {
-  const repoRoot = findNearestAlmanacDir(cwd);
-  if (repoRoot === null) return null;
+): Promise<DiscoveredTranscript | null> {
   try {
     const st = await stat(transcriptPath);
     if (!st.isFile()) return null;
@@ -45,7 +42,6 @@ export async function transcriptCandidateFromMeta(
       sessionId,
       transcriptPath,
       cwd,
-      repoRoot,
       mtimeMs: st.mtimeMs,
       sizeBytes: st.size,
     };

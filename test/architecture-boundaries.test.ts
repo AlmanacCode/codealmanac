@@ -1073,7 +1073,9 @@ describe("architecture boundaries", () => {
     expect(transcriptSnapshot).not.toContain("transcriptCursorForSince");
     expect(transcriptSnapshot).not.toContain("parseJsonObject");
     expect(transcriptDiscovery).toContain("shared/transcripts.js");
+    expect(transcriptDiscovery).not.toContain("stores/");
     expect(sharedTranscripts).toContain("export interface TranscriptCandidate");
+    expect(sharedTranscripts).toContain("export interface DiscoveredTranscript");
     expect(sharedTranscripts).toContain("export interface TranscriptSnapshot");
     expect(sharedTranscripts).toContain("transcriptCursorForSince");
   });
@@ -1970,6 +1972,8 @@ describe("architecture boundaries", () => {
     expect(syncService).not.toContain("...syncWorkflowReadyItemFromSweep(item)");
     expect(syncService).toContain("syncWorkflowSummaryFromSweep");
     expect(syncService).not.toContain("platform/transcripts");
+    expect(syncService).toContain("repoTranscriptCandidates");
+    expect(syncService).toContain("findNearestAlmanacDir");
     expect(syncServiceTypes).not.toContain("interface SyncTranscriptRuntime");
     expect(syncSweep).not.toContain("platform/transcripts");
     expect(syncSweep).not.toContain("stores/jobs");
@@ -1997,6 +2001,7 @@ describe("architecture boundaries", () => {
     expect(transcriptRuntime).not.toContain("services/sync");
     expect(transcriptDiscovery).toContain("discoverTranscriptCandidates");
     expect(transcriptDiscovery).toContain("shared/transcripts.js");
+    expect(transcriptDiscovery).not.toContain("stores/");
     expect(transcriptDiscovery).not.toContain("operations");
     expect(transcriptDiscovery).not.toContain("stores/sync");
     expect(transcriptDiscovery).not.toContain("services/sync");

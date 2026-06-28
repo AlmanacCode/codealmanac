@@ -1,26 +1,26 @@
 import { join } from "node:path";
 
 import {
-  transcriptCandidateFromMeta,
+  discoveredTranscriptFromMeta,
   collectJsonl,
   objectField,
   parseJsonObject,
   readFirstLines,
   stringField,
 } from "./jsonl.js";
-import type { TranscriptCandidate } from "../../shared/transcripts.js";
+import type { DiscoveredTranscript } from "../../shared/transcripts.js";
 
 export async function discoverCodex(
   home: string,
   sessionsDir?: string,
-): Promise<TranscriptCandidate[]> {
+): Promise<DiscoveredTranscript[]> {
   const root = sessionsDir ?? join(home, ".codex", "sessions");
   const files = await collectJsonl(root);
-  const out: TranscriptCandidate[] = [];
+  const out: DiscoveredTranscript[] = [];
   for (const file of files) {
     const meta = await readCodexMeta(file);
     if (meta === null || meta.threadSource === "subagent") continue;
-    const candidate = await transcriptCandidateFromMeta("codex", file, meta.sessionId, meta.cwd);
+    const candidate = await discoveredTranscriptFromMeta("codex", file, meta.sessionId, meta.cwd);
     if (candidate !== null) out.push(candidate);
   }
   return out;

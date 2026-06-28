@@ -1,8 +1,8 @@
 import { discoverClaude } from "./claude.js";
 import { discoverCodex } from "./codex.js";
-import type { TranscriptCandidate, TranscriptSourceApp } from "../../shared/transcripts.js";
+import type { DiscoveredTranscript, TranscriptSourceApp } from "../../shared/transcripts.js";
 
-export type { TranscriptCandidate, TranscriptSourceApp } from "../../shared/transcripts.js";
+export type { DiscoveredTranscript, TranscriptSourceApp } from "../../shared/transcripts.js";
 export {
   readTranscriptSnapshot,
 } from "./snapshot.js";
@@ -16,8 +16,8 @@ export async function discoverTranscriptCandidates(args: {
   home: string;
   claudeProjectsDir?: string;
   codexSessionsDir?: string;
-}): Promise<TranscriptCandidate[]> {
-  const out: TranscriptCandidate[] = [];
+}): Promise<DiscoveredTranscript[]> {
+  const out: DiscoveredTranscript[] = [];
   if (args.apps.includes("claude")) {
     out.push(...await discoverClaude(args.home, args.claudeProjectsDir));
   }

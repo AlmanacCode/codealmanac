@@ -2,14 +2,17 @@ import { objectField, parseJsonObject, stringField } from "./json.js";
 
 export type TranscriptSourceApp = "claude" | "codex";
 
-export interface TranscriptCandidate {
+export interface DiscoveredTranscript {
   app: TranscriptSourceApp;
   sessionId: string;
   transcriptPath: string;
   cwd: string;
-  repoRoot: string;
   mtimeMs: number;
   sizeBytes: number;
+}
+
+export interface TranscriptCandidate extends DiscoveredTranscript {
+  repoRoot: string;
 }
 
 export interface TranscriptSnapshot {
@@ -31,7 +34,7 @@ export interface SyncTranscriptRuntime {
   discoverCandidates(args: {
     apps: TranscriptSourceApp[];
     homeDir: string;
-  }): Promise<TranscriptCandidate[]>;
+  }): Promise<DiscoveredTranscript[]>;
   readSnapshot(transcriptPath: string): Promise<TranscriptReadResult>;
 }
 
