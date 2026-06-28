@@ -1,14 +1,24 @@
 export {
   readAgentsView,
-  setAgentModel,
+} from "./agents-view.js";
+export {
   setDefaultAgent,
-} from "./agents.js";
+} from "./agent-default.js";
+export {
+  setAgentModel,
+} from "./agent-model.js";
+export type {
+  AgentsAgentProviderId,
+  AgentServiceOptions,
+} from "./agent-types.js";
 export type {
   AgentModelResult,
-  AgentsAgentProviderId,
+} from "./agent-model.js";
+export type {
+  AgentUseResult,
+} from "./agent-default.js";
+export type {
   AgentsProviderReadiness,
   AgentsProviderView,
-  AgentServiceOptions,
-  AgentUseResult,
   AgentViewOptions,
-} from "./agents.js";
+} from "./agents-view.js";

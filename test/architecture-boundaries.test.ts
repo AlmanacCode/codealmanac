@@ -1508,16 +1508,43 @@ describe("architecture boundaries", () => {
 
   it("keeps agents command adapters out of readiness and config mechanics", async () => {
     const agentsServiceIndex = await readSource("src/services/agents/index.ts");
-    const agentsService = await readSource("src/services/agents/agents.ts");
+    const agentsViewService = await readSource("src/services/agents/agents-view.ts");
+    const agentDefaultService = await readSource("src/services/agents/agent-default.ts");
+    const agentModelService = await readSource("src/services/agents/agent-model.ts");
+    const agentConfigWrite = await readSource(
+      "src/services/agents/agent-config-write.ts",
+    );
     const agentsCommand = await readSource("src/edges/cli/commands/agents.ts");
     const agentsRender = await readSource("src/edges/cli/commands/agents-render.ts");
 
+    expect(existsSync(join(ROOT, "src/services/agents/agents.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/services/agents/agents-view.ts"))).toBe(
+      true,
+    );
+    expect(existsSync(join(ROOT, "src/services/agents/agent-default.ts"))).toBe(
+      true,
+    );
+    expect(existsSync(join(ROOT, "src/services/agents/agent-model.ts"))).toBe(
+      true,
+    );
     expect(agentsServiceIndex).not.toContain("../../agent/");
     expect(agentsServiceIndex).not.toContain("../../config/");
-    expect(agentsService).not.toContain("AgentsProviderReadiness = ProviderReadiness");
-    expect(agentsService).not.toContain("AgentsProviderView = ProviderSetupView");
-    expect(agentsService).not.toContain("AgentsAgentProviderId = AgentProviderId");
-    expect(agentsService).toContain("agentsProviderViewFromSetupView");
+    expect(agentsServiceIndex).not.toContain("./agents.js");
+    expect(agentsViewService).not.toContain("AgentsProviderReadiness = ProviderReadiness");
+    expect(agentsViewService).not.toContain("AgentsProviderView = ProviderSetupView");
+    expect(agentsViewService).not.toContain("AgentsAgentProviderId = AgentProviderId");
+    expect(agentsViewService).toContain("agentsProviderViewFromSetupView");
+    expect(agentsViewService).not.toContain("setConfigEntry");
+    expect(agentsViewService).not.toContain("parseAgentSelection");
+    expect(agentDefaultService).toContain("parseAgentSelection");
+    expect(agentDefaultService).not.toContain("buildProviderSetupView");
+    expect(agentDefaultService).not.toContain("isAgentProviderId");
+    expect(agentModelService).toContain("isAgentProviderId");
+    expect(agentModelService).not.toContain("buildProviderSetupView");
+    expect(agentModelService).not.toContain("parseAgentSelection");
+    expect(agentConfigWrite).toContain("setConfigEntry");
+    expect(agentConfigWrite).not.toContain("parseAgentSelection");
+    expect(agentConfigWrite).not.toContain("isAgentProviderId");
     expect(agentsCommand).toContain("services/agents/index.js");
     expect(agentsCommand).not.toContain("agent/readiness");
     expect(agentsCommand).not.toContain("../../config/index");

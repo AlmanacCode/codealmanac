@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 243 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 244 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -101,6 +101,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved provider enablement policy into `src/shared/agent-provider-enablement.ts` and provider setup/readiness view construction into `src/services/agents/`, leaving `src/agent/readiness/providers/` focused on provider status probing.
 - Moved provider readiness/model-choice contracts into `src/shared/agent-readiness.ts` and concrete readiness wiring into `src/app/agent-readiness-runtime.ts`, so provider setup views consume an injected runtime instead of importing provider internals.
 - Split the former provider setup-view bucket into provider setup-view, model-choice, recommendation, selection, readiness, catalog, and type files under `src/services/agents/`.
+- Split the old `src/services/agents/agents.ts` bucket into owned service files for agents read views, default-provider writes, provider-model writes, and config-write mechanics.
 - Moved the provider-neutral operation spec contract into `src/shared/operation-spec.ts`, so lifecycle services build specs, job stores persist them, and provider adapters execute them without stores or providers importing lifecycle service internals.
 - Moved worker-lock and sync-lock process ownership/liveness facts out of stores; stores now persist lock files over injected owner PID and liveness contracts while CLI/worker edges provide platform process probes.
 - Moved repeated store atomic-write temp-file mechanics into `src/stores/atomic-write.ts`, removing process-PID temp names from job and sync stores.
@@ -119,12 +120,12 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved generic provider CLI status process mechanics into `src/platform/agent-cli-status.ts`. Codex/Cursor readiness and Codex runtime status now import platform-owned status helpers instead of owning child-process execution themselves.
+The latest slice split the old `src/services/agents/agents.ts` mixed service bucket. Agents list/doctor read-model assembly now lives in `agents-view.ts`, default-provider writes live in `agent-default.ts`, provider-model writes live in `agent-model.ts`, and config write mechanics live in `agent-config-write.ts`.
 
 Verification passed:
 
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/agents-command.test.ts test/provider-view.test.ts test/setup.test.ts test/codex-agent-runtime-provider.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/agents-command.test.ts test/provider-view.test.ts`
 - `git diff --check`
 - `npm test`
 - `npm run build`
@@ -134,9 +135,9 @@ Verification passed:
 
 Previous full-slice verification also passed:
 
-- `git diff --check`
 - `npm run lint`
-- `npx vitest run test/auth.test.ts test/doctor.test.ts test/claude-agent-runtime-provider.test.ts test/architecture-boundaries.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/agents-command.test.ts test/provider-view.test.ts test/setup.test.ts test/codex-agent-runtime-provider.test.ts`
+- `git diff --check`
 - `npm test`
 - `npm run build`
 - `node dist/launcher.js doctor --help`

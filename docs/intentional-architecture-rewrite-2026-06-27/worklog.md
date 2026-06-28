@@ -1717,3 +1717,12 @@ Two-hundred-forty-third production slice:
 - Updated Codex runtime status to reuse the same platform-owned command runner while preserving the runtime's untimed status behavior.
 - Kept provider modules responsible for choosing provider-specific status commands and interpreting results.
 - Strengthened architecture-boundary tests so provider readiness/runtime files do not regain `node:child_process` status execution.
+
+Two-hundred-forty-fourth production slice:
+
+- Split `src/services/agents/agents.ts` into owned agents service files and deleted the old mixed bucket.
+- Added `src/services/agents/agents-view.ts` for agents list/doctor read-model assembly over provider setup views.
+- Added `src/services/agents/agent-default.ts` for default-provider writes and provider/model shorthand handling.
+- Added `src/services/agents/agent-model.ts` for provider-model set/reset validation and writes.
+- Added `src/services/agents/agent-config-write.ts` for the small shared config-write mechanic used by the agents write verbs.
+- Strengthened architecture-boundary tests so agents service view, default, model, and config-write responsibilities stay separated.

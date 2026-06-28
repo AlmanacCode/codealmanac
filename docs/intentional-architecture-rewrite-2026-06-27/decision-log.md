@@ -171,6 +171,8 @@ Provider readiness status and provider-specific model catalogs are concrete prov
 
 Provider setup-view assembly, provider model-choice fallback behavior, provider recommendation policy, provider/model shorthand parsing, readiness normalization, static provider labels, and shared setup-view types have different reasons to change. They live as separate `src/services/agents/provider-*.ts` files instead of one provider-view file. Callers import the specific concept they need so future changes do not turn the provider setup surface back into a mixed service bucket.
 
+Agents command services are split by user-facing verb. `src/services/agents/agents-view.ts` owns agents list/doctor read-model assembly, `agent-default.ts` owns default-provider writes and provider/model shorthand handling, `agent-model.ts` owns provider-model set/reset validation, and `agent-config-write.ts` owns the small shared config-write helper. The deleted `src/services/agents/agents.ts` file should not return as a catchall.
+
 ### Lock stores receive process facts
 
 Job worker locks and sync locks are persistence mechanics, but process ownership and liveness are runtime facts. `src/stores/jobs/worker-lock.ts` and `src/stores/sync/lock.ts` own lock paths, owner-file persistence, stale-lock grace policy, and legacy lock cleanup. CLI and worker edges provide the current owner PID and `isLocalPidAlive` from `src/platform/process.ts` through service workflows. The neutral liveness function type lives in `src/shared/pid-liveness.ts`.
