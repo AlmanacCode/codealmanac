@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 228 committed rewrite commits past `dev`. The worklog records 180 production slices so far.
+The branch has 229 committed rewrite commits past `dev`. The worklog records 181 production slices so far.
 
-The diff is broad: 473 files changed, with 23,696 insertions and 12,875 deletions.
+The diff is broad: 473 files changed, with 23,752 insertions and 12,883 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -21,6 +21,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Removed the old top-level `src/jobs/` source bucket; job runtime and projections now live under `src/services/jobs/`, durable job schemas live under `src/stores/jobs/`, and detached worker spawning lives under `src/platform/jobs/`.
 - Moved job record lifecycle and display-status read-model helpers out of the job runtime folder, and put public job record/log reads behind the `src/stores/jobs/` store API.
 - Removed raw log-file reads from job projections; stores own job log contents while projections parse contents into viewer/job read models.
+- Moved job page snapshot file reads and page hashing into `src/stores/wiki-files/`.
 - Removed the mixed `src/services/jobs/runtime/index.ts` compatibility barrel; callers now import concrete runtime, store, platform, or record-lifecycle modules.
 - Removed the old top-level `src/init/` source bucket; wiki initialization now lives under `src/services/wiki/`, and mechanical `.almanac/` file scaffolding, page-file counting, and absorb-log scanning live under `src/stores/wiki-files/`.
 - Removed the old top-level `src/config/` source bucket; persisted config mechanics now live under `src/stores/config/`, service verbs live under `src/services/config/`, and provider enablement policy lives under `src/agent/`.
@@ -56,9 +57,9 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice normalized lifecycle operation failures into `src/services/lifecycle/operation-results.ts`. Operation command rendering now depends on lifecycle-owned failure contracts instead of importing agent runtime failure types directly.
+The latest slice moved job page snapshot reads and hashing from `src/services/jobs/runtime/` to `src/stores/wiki-files/page-snapshots.ts`. Job runtime now asks the wiki-file store for before/after page snapshots and keeps only job-effect summary behavior.
 
-Verification passed: focused operation-command/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js init --help`, `node dist/codealmanac.js absorb --help`, and `node dist/codealmanac.js garden --help`.
+Verification passed: focused job-snapshot/job-executor/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js init --help`, `node dist/codealmanac.js absorb --help`, and `node dist/codealmanac.js jobs --help`.
 
 ## Immediate Next Work
 

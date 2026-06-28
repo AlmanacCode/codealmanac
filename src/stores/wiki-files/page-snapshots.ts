@@ -3,7 +3,8 @@ import { existsSync, statSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
-import { parseFrontmatter } from "../../../stores/wiki/indexer/frontmatter.js";
+import { getRepoAlmanacDir } from "../../paths.js";
+import { parseFrontmatter } from "../wiki/indexer/frontmatter.js";
 
 export interface PageSnapshotEntry {
   slug: string;
@@ -18,6 +19,10 @@ export interface PageSnapshotDelta {
   updated: string[];
   archived: string[];
   deleted: string[];
+}
+
+export async function snapshotWikiPages(repoRoot: string): Promise<PageSnapshot> {
+  return snapshotPages(join(getRepoAlmanacDir(repoRoot), "pages"));
 }
 
 export async function snapshotPages(pagesDir: string): Promise<PageSnapshot> {

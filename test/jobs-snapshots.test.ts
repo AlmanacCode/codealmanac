@@ -6,7 +6,8 @@ import {
   diffPageSnapshots,
   isNoopPageDelta,
   snapshotPages,
-} from "../src/services/jobs/runtime/snapshots.js";
+  snapshotWikiPages,
+} from "../src/stores/wiki-files/page-snapshots.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
 describe("process page snapshots", () => {
@@ -32,8 +33,10 @@ describe("process page snapshots", () => {
       await writeFile(join(repo, ".almanac", "pages", "ignore.txt"), "x", "utf8");
 
       const snapshot = await snapshotPages(join(repo, ".almanac", "pages"));
+      const repoSnapshot = await snapshotWikiPages(repo);
 
       expect([...snapshot.keys()].sort()).toEqual(["active", "archived"]);
+      expect([...repoSnapshot.keys()].sort()).toEqual(["active", "archived"]);
       expect(snapshot.get("active")?.archived).toBe(false);
       expect(snapshot.get("archived")?.archived).toBe(true);
       expect(snapshot.get("active")?.hash).toMatch(/^[0-9a-f]{64}$/);

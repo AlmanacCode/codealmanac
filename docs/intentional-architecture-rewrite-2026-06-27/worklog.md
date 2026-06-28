@@ -1228,3 +1228,10 @@ One-hundred-eightieth production slice:
 - Normalized agent runtime failure objects into lifecycle failures before operation command rendering reads them.
 - Removed the direct `AgentRuntimeFailure` import from `src/cli/commands/operations-render.ts`.
 - Strengthened boundary coverage so lifecycle command rendering cannot re-import agent runtime failure types directly.
+
+One-hundred-eighty-first production slice:
+
+- Moved page snapshot reads, page hashing, archive detection, and snapshot diffing from `src/services/jobs/runtime/snapshots.ts` to `src/stores/wiki-files/page-snapshots.ts`.
+- Added `snapshotWikiPages(repoRoot)` so job runtime no longer constructs `.almanac/pages` paths directly.
+- Kept `src/services/jobs/runtime/wiki-effects.ts` responsible for turning before/after page snapshots into job summaries and page-change records.
+- Strengthened boundary coverage so job runtime cannot reintroduce direct page-file reads or the old snapshots module.

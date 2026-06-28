@@ -11,6 +11,9 @@ describe("architecture boundaries", () => {
     const initialization = await readSource("src/services/wiki/initialization.ts");
     const fileScaffold = await readSource("src/stores/wiki-files/scaffold.ts");
     const filePages = await readSource("src/stores/wiki-files/pages.ts");
+    const pageSnapshots = await readSource(
+      "src/stores/wiki-files/page-snapshots.ts",
+    );
     const buildOperation = await readSource(
       "src/services/lifecycle/operations/build.ts",
     );
@@ -23,6 +26,9 @@ describe("architecture boundaries", () => {
       true,
     );
     expect(existsSync(join(ROOT, "src/stores/wiki-files/pages.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/stores/wiki-files/page-snapshots.ts"))).toBe(
+      true,
+    );
     expect(initialization).toContain("scaffoldWikiFiles");
     expect(initialization).toContain("addEntry");
     expect(initialization).not.toContain("writeFile");
@@ -32,6 +38,8 @@ describe("architecture boundaries", () => {
     expect(fileScaffold).not.toContain("addEntry");
     expect(filePages).toContain("readdir");
     expect(filePages).toContain("countWikiPageFiles");
+    expect(pageSnapshots).toContain("readFile");
+    expect(pageSnapshots).toContain("snapshotWikiPages");
     expect(buildOperation).toContain("from \"../../wiki/initialization.js\"");
     expect(buildOperation).toContain("countWikiPageFiles");
     expect(buildOperation).not.toContain("node:fs");
@@ -1592,6 +1600,30 @@ describe("architecture boundaries", () => {
     expect(jobStart).toContain("workerEnvironment: NodeJS.ProcessEnv");
     expect(jobWorker).toContain("workerEnvironment: NodeJS.ProcessEnv");
     expect(queueDrain).toContain("workerEnvironment: NodeJS.ProcessEnv");
+  });
+
+  it("keeps job runtime page snapshots behind wiki file stores", async () => {
+    const wikiEffects = await readSource("src/services/jobs/runtime/wiki-effects.ts");
+    const pageSnapshots = await readSource(
+      "src/stores/wiki-files/page-snapshots.ts",
+    );
+
+    expect(existsSync(join(ROOT, "src/services/jobs/runtime/snapshots.ts"))).toBe(
+      false,
+    );
+    expect(existsSync(join(ROOT, "src/stores/wiki-files/page-snapshots.ts"))).toBe(
+      true,
+    );
+    expect(wikiEffects).toContain("snapshotWikiPages");
+    expect(wikiEffects).toContain("diffPageSnapshots");
+    expect(wikiEffects).not.toContain("node:fs");
+    expect(wikiEffects).not.toContain("\"node:path\"");
+    expect(wikiEffects).not.toContain(".almanac");
+    expect(wikiEffects).not.toContain("readFile");
+    expect(wikiEffects).not.toContain("readdir");
+    expect(pageSnapshots).toContain("node:fs");
+    expect(pageSnapshots).toContain("readFile");
+    expect(pageSnapshots).toContain("parseFrontmatter");
   });
 
   it("passes agent readiness runtime facts through an explicit context", async () => {
