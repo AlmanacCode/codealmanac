@@ -7,6 +7,7 @@ import {
   runSyncCommand as runSyncCommandHandler,
   type SyncCommandOptions,
 } from "../src/cli/commands/sync.js";
+import type { JobAgentRunner } from "../src/services/jobs/runtime/agent-runner.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 import { writeConfig } from "../src/stores/config/index.js";
 import { jobRecordPath, writeJobRecord } from "../src/stores/jobs/index.js";
@@ -16,8 +17,14 @@ const TEST_WORKER_PROGRAM = {
   entrypoint: "/tmp/codealmanac.js",
 };
 
+const TEST_AGENT_RUNNER: JobAgentRunner = async () => ({
+  success: true,
+  result: "done",
+});
+
 function runSyncCommand(
-  options: Omit<SyncCommandOptions, "workerEnvironment" | "workerProgram" | "pid"> & {
+  options: Omit<SyncCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
+    agentRunner?: JobAgentRunner;
     workerEnvironment?: NodeJS.ProcessEnv;
     workerProgram?: SyncCommandOptions["workerProgram"];
     pid?: number;
@@ -28,6 +35,7 @@ function runSyncCommand(
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
   });
 }
 

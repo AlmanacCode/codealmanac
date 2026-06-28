@@ -11,6 +11,7 @@ import {
   type InitCommandOptions,
 } from "../src/cli/commands/operations.js";
 import { parseLifecycleProviderSelection } from "../src/services/lifecycle/index.js";
+import type { JobAgentRunner } from "../src/services/jobs/runtime/agent-runner.js";
 import { writeConfig } from "../src/stores/config/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
@@ -19,8 +20,14 @@ const TEST_WORKER_PROGRAM = {
   entrypoint: "/tmp/codealmanac.js",
 };
 
+const TEST_AGENT_RUNNER: JobAgentRunner = async () => ({
+  success: true,
+  result: "done",
+});
+
 function runInitCommand(
-  options: Omit<InitCommandOptions, "workerEnvironment" | "workerProgram" | "pid"> & {
+  options: Omit<InitCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
+    agentRunner?: JobAgentRunner;
     workerEnvironment?: NodeJS.ProcessEnv;
     workerProgram?: InitCommandOptions["workerProgram"];
     pid?: number;
@@ -31,11 +38,13 @@ function runInitCommand(
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
   });
 }
 
 function runAbsorbCommand(
-  options: Omit<AbsorbCommandOptions, "workerEnvironment" | "workerProgram" | "pid"> & {
+  options: Omit<AbsorbCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
+    agentRunner?: JobAgentRunner;
     workerEnvironment?: NodeJS.ProcessEnv;
     workerProgram?: AbsorbCommandOptions["workerProgram"];
     pid?: number;
@@ -46,11 +55,13 @@ function runAbsorbCommand(
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
   });
 }
 
 function runGardenCommand(
-  options: Omit<GardenCommandOptions, "workerEnvironment" | "workerProgram" | "pid"> & {
+  options: Omit<GardenCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
+    agentRunner?: JobAgentRunner;
     workerEnvironment?: NodeJS.ProcessEnv;
     workerProgram?: GardenCommandOptions["workerProgram"];
     pid?: number;
@@ -61,6 +72,7 @@ function runGardenCommand(
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
   });
 }
 

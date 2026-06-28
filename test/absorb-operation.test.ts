@@ -6,6 +6,7 @@ import {
   runAbsorbOperation as runAbsorbOperationCommand,
   type AbsorbOperationOptions,
 } from "../src/services/lifecycle/operations/absorb.js";
+import type { JobAgentRunner } from "../src/services/jobs/runtime/agent-runner.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 
 const TEST_WORKER_PROGRAM = {
@@ -13,8 +14,14 @@ const TEST_WORKER_PROGRAM = {
   entrypoint: "/tmp/codealmanac.js",
 };
 
+const TEST_AGENT_RUNNER: JobAgentRunner = async () => ({
+  success: true,
+  result: "done",
+});
+
 function runAbsorbOperation(
-  options: Omit<AbsorbOperationOptions, "workerEnvironment" | "workerProgram" | "pid"> & {
+  options: Omit<AbsorbOperationOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
+    agentRunner?: JobAgentRunner;
     workerEnvironment?: NodeJS.ProcessEnv;
     workerProgram?: AbsorbOperationOptions["workerProgram"];
     pid?: number;
@@ -25,6 +32,7 @@ function runAbsorbOperation(
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
   });
 }
 

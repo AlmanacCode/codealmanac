@@ -2,6 +2,7 @@ import type {
   LifecycleJobWorkerProgram,
   LifecycleOperationBackgroundStarter,
 } from "../lifecycle/index.js";
+import type { JobAgentRunner } from "../jobs/runtime/agent-runner.js";
 import type { TranscriptSourceApp } from "../../shared/transcripts.js";
 
 export interface SyncWorkflowOptions {
@@ -16,6 +17,7 @@ export interface SyncWorkflowOptions {
   workerProgram: LifecycleJobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
 }
 
 export type SyncWorkflowMode = "sync" | "status";

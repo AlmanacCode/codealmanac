@@ -13,6 +13,7 @@ import type {
   StartBackgroundJob,
   StartForegroundJob,
 } from "../operations/types.js";
+import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
 import { renderAbsorbInputContext } from "./context.js";
 import {
   resolveAbsorbInput,
@@ -38,6 +39,7 @@ export interface StartAbsorbRunOptions {
   workerProgram: JobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
 }
 
 export interface AbsorbRunStart {
@@ -75,6 +77,7 @@ export async function startAbsorbRun(
     workerProgram: options.workerProgram,
     workerEnvironment: options.workerEnvironment,
     pid: options.pid,
+    agentRunner: options.agentRunner,
   });
   return {
     jobId: result.jobId,

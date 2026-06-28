@@ -20,7 +20,6 @@ describe("job foreground execution", () => {
 
       const result = await startForegroundJob({
         repoRoot: repo,
-        workerEnvironment: {},
         pid: 123,
         jobId: "run_20260509195500_success",
         now: fixedClock([
@@ -35,7 +34,7 @@ describe("job foreground execution", () => {
           prompt: "build",
           metadata: { operation: "build", targetKind: "repo" },
         },
-        harnessRun: async (_spec, hooks) => {
+        agentRunner: async (_spec, hooks) => {
           await hooks?.onEvent?.({ type: "text", content: "starting" });
           await writeFile(join(pagesDir, "new-page.md"), "# New\n", "utf8");
           await hooks?.onEvent?.({
@@ -116,7 +115,6 @@ describe("job foreground execution", () => {
 
       const result = await startForegroundJob({
         repoRoot: repo,
-        workerEnvironment: {},
         pid: 123,
         jobId: "run_20260509195500_unrelated_output",
         now: fixedClock([
@@ -130,7 +128,7 @@ describe("job foreground execution", () => {
           prompt: "absorb",
           metadata: { operation: "absorb", targetKind: "session" },
         },
-        harnessRun: async () => {
+        agentRunner: async () => {
           await writeFile(join(pagesDir, "other.md"), "# Other\n", "utf8");
           return {
             success: true,
@@ -166,7 +164,6 @@ describe("job foreground execution", () => {
 
       const result = await startForegroundJob({
         repoRoot: repo,
-        workerEnvironment: {},
         pid: 123,
         jobId: "run_20260509195500_session_id",
         now: fixedClock([
@@ -180,7 +177,7 @@ describe("job foreground execution", () => {
           prompt: "absorb",
           metadata: { operation: "absorb", targetKind: "session" },
         },
-        harnessRun: async (_spec, hooks) => {
+        agentRunner: async (_spec, hooks) => {
           await hooks?.onEvent?.({
             type: "provider_session",
             providerSessionId: "provider-early",
@@ -216,7 +213,6 @@ describe("job foreground execution", () => {
 
       const result = await startForegroundJob({
         repoRoot: repo,
-        workerEnvironment: {},
         pid: 123,
         jobId: "run_20260509195500_failure",
         now: fixedClock([
@@ -230,7 +226,7 @@ describe("job foreground execution", () => {
           prompt: "garden",
           metadata: { operation: "garden", targetKind: "wiki" },
         },
-        harnessRun: async (_spec, hooks) => {
+        agentRunner: async (_spec, hooks) => {
           await hooks?.onEvent?.({ type: "text", content: "before fail" });
           throw new Error("provider exploded");
         },
@@ -268,7 +264,6 @@ describe("job foreground execution", () => {
 
       const result = await startForegroundJob({
         repoRoot: repo,
-        workerEnvironment: {},
         pid: 123,
         jobId: "run_20260509195600_structured_failure",
         now: fixedClock([
@@ -282,7 +277,7 @@ describe("job foreground execution", () => {
           prompt: "garden",
           metadata: { operation: "garden", targetKind: "wiki" },
         },
-        harnessRun: async () => ({
+        agentRunner: async () => ({
           success: false,
           result: "",
           error: "Codex model gpt-5.5 requires a newer Codex CLI.",
@@ -324,7 +319,6 @@ describe("job foreground execution", () => {
 
       const result = await startForegroundJob({
         repoRoot: repo,
-        workerEnvironment: {},
         pid: 123,
         jobId: "run_20260509203000_observer",
         now: fixedClock([
@@ -341,7 +335,7 @@ describe("job foreground execution", () => {
         onEvent: (event) => {
           events.push(event);
         },
-        harnessRun: async (_spec, hooks) => {
+        agentRunner: async (_spec, hooks) => {
           await hooks?.onEvent?.({ type: "text", content: "observed" });
           return { success: true, result: "done" };
         },
@@ -363,7 +357,6 @@ describe("job foreground execution", () => {
 
       const result = await startForegroundJob({
         repoRoot: repo,
-        workerEnvironment: {},
         pid: 123,
         jobId,
         now: fixedClock([
@@ -377,7 +370,7 @@ describe("job foreground execution", () => {
           prompt: "garden",
           metadata: { operation: "garden" },
         },
-        harnessRun: async () => {
+        agentRunner: async () => {
           const path = jobRecordPath(repo, jobId);
           const current = await readJobRecord(path);
           if (current === null) throw new Error("missing job record");
@@ -409,7 +402,6 @@ describe("job foreground execution", () => {
 
       const result = await startForegroundJob({
         repoRoot: repo,
-        workerEnvironment: {},
         pid: 123,
         jobId: "run_20260509204100_finalization",
         now: fixedClock([
@@ -423,7 +415,7 @@ describe("job foreground execution", () => {
           prompt: "garden",
           metadata: { operation: "garden" },
         },
-        harnessRun: async () => {
+        agentRunner: async () => {
           await writeFile(join(pagesDir, "new-page.md"), "# New\n", "utf8");
           return { success: true, result: "done" };
         },

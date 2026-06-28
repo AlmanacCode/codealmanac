@@ -1,6 +1,3 @@
-import type { AgentRuntimeEvent, AgentRuntimeResult } from "../../../agent/runtime/events.js";
-import type { AgentRuntimeRunHooks } from "../../../agent/runtime/types.js";
-import type { OperationSpec } from "../../lifecycle/operations/spec.js";
 import {
   finishJobRecord,
 } from "../record-lifecycle.js";
@@ -14,17 +11,14 @@ import { acquireJobWorkerLock } from "../../../stores/jobs/worker-lock.js";
 import { oldestQueuedJob } from "./queue.js";
 import { startQueuedJob } from "./start.js";
 import type { JobRecord } from "../../../stores/jobs/index.js";
+import type { JobAgentEventHandler, JobAgentRunner } from "./agent-runner.js";
 
 export interface DrainQueuedJobsOptions {
   repoRoot: string;
   now?: () => Date;
   pid: number;
-  workerEnvironment: NodeJS.ProcessEnv;
-  onEvent?: (event: AgentRuntimeEvent) => void | Promise<void>;
-  harnessRun?: (
-    spec: OperationSpec,
-    hooks?: AgentRuntimeRunHooks,
-  ) => Promise<AgentRuntimeResult>;
+  onEvent?: JobAgentEventHandler;
+  agentRunner: JobAgentRunner;
 }
 
 export async function drainQueuedJobs(
@@ -46,9 +40,8 @@ export async function drainQueuedJobs(
             jobId: record.id,
             now,
             pid: options.pid,
-            workerEnvironment: options.workerEnvironment,
             onEvent: options.onEvent,
-            harnessRun: options.harnessRun,
+            agentRunner: options.agentRunner,
           });
         } catch (err: unknown) {
           await markQueuedJobFailed({

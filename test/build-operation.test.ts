@@ -8,6 +8,7 @@ import {
   type BuildOperationOptions,
 } from "../src/services/lifecycle/operations/build.js";
 import { runConfigSet } from "../src/cli/commands/config.js";
+import type { JobAgentRunner } from "../src/services/jobs/runtime/agent-runner.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
 const TEST_WORKER_PROGRAM = {
@@ -15,8 +16,14 @@ const TEST_WORKER_PROGRAM = {
   entrypoint: "/tmp/codealmanac.js",
 };
 
+const TEST_AGENT_RUNNER: JobAgentRunner = async () => ({
+  success: true,
+  result: "done",
+});
+
 function runBuildOperation(
-  options: Omit<BuildOperationOptions, "workerEnvironment" | "workerProgram" | "pid"> & {
+  options: Omit<BuildOperationOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
+    agentRunner?: JobAgentRunner;
     workerEnvironment?: NodeJS.ProcessEnv;
     workerProgram?: BuildOperationOptions["workerProgram"];
     pid?: number;
@@ -27,6 +34,7 @@ function runBuildOperation(
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
   });
 }
 

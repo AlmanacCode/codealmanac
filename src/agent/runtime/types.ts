@@ -53,8 +53,13 @@ export interface AgentRuntimeRunHooks {
   onEvent?: (event: AgentRuntimeEvent) => void | Promise<void>;
 }
 
+export type AgentRuntimeRunner = (
+  spec: OperationSpec,
+  hooks?: AgentRuntimeRunHooks,
+) => Promise<AgentRuntimeResult>;
+
 export interface AgentRuntimeProvider {
   metadata: ProviderMetadata;
   checkStatus(): Promise<ProviderStatus>;
-  run(spec: OperationSpec, hooks?: AgentRuntimeRunHooks): Promise<AgentRuntimeResult>;
+  run: AgentRuntimeRunner;
 }

@@ -1,6 +1,7 @@
 import type { AgentRuntimeProviderId } from "../../../agent/runtime/types.js";
 import type { OperationSpec } from "./spec.js";
 import type { AgentRuntimeEvent } from "../../../agent/runtime/events.js";
+import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
 import type { StartBackgroundJobResult } from "../../jobs/runtime/background-start.js";
 import type { StartJobResult } from "../../jobs/runtime/executor.js";
 import type { JobWorkerProgram } from "../../../shared/worker-program.js";
@@ -27,8 +28,8 @@ export type StartForegroundJob = (options: {
   spec: OperationSpec;
   jobId?: string;
   pid: number;
-  workerEnvironment: NodeJS.ProcessEnv;
   onEvent?: (event: AgentRuntimeEvent) => void | Promise<void>;
+  agentRunner: JobAgentRunner;
 }) => Promise<StartJobResult>;
 
 export type StartBackgroundJob = (options: {

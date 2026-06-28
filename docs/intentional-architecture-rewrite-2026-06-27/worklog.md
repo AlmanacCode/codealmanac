@@ -1302,3 +1302,11 @@ One-hundred-eighty-ninth production slice:
 - Updated the update CLI edge to pass `createPlatformUpdateRuntime()` into `almanac update`.
 - Updated update workflow tests to inject a fake runtime instead of passing service-level `installedVersion`, `checkFn`, and `installFn` knobs.
 - Strengthened boundary coverage so update services stay platform-free while platform update modules own npm, registry, and package-version mechanics.
+
+One-hundred-ninetieth production slice:
+
+- Added `AgentRuntimeRunner` in `src/agent/runtime/types.ts` and `src/services/jobs/runtime/agent-runner.ts` as the job-runtime alias for executing an operation through an agent runner and forwarding runtime events.
+- Added `src/agent/runtime/job-runner.ts` as the concrete provider-backed runner that creates the agent runtime provider registry from an explicit environment.
+- Removed provider-registry construction, `workerEnvironment`, and `harnessRun` fallback wiring from `src/services/jobs/runtime/executor.ts`, `start.ts`, and `queue-drain.ts`.
+- Updated lifecycle, sync, operation command wrappers, and worker edges to pass an explicit `JobAgentRunner` into foreground and queued job execution.
+- Updated job/lifecycle/sync tests to inject fake runners, and strengthened boundary coverage so job runtime services cannot reintroduce provider registry composition or worker environment ownership.

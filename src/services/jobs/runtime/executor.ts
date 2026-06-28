@@ -1,7 +1,5 @@
-import type { AgentRuntimeEvent, AgentRuntimeResult } from "../../../agent/runtime/events.js";
-import type { AgentRuntimeRunHooks } from "../../../agent/runtime/types.js";
+import type { AgentRuntimeResult } from "../../../agent/runtime/events.js";
 import type { OperationSpec } from "../../lifecycle/operations/spec.js";
-import { createAgentRuntimeProviderRegistry } from "../../../agent/runtime/providers/index.js";
 import { createJobEventLogger } from "./events.js";
 import { finishUnlessCancelled } from "./finalization.js";
 import {
@@ -19,6 +17,7 @@ import type {
   JobRecord,
   JobSummary,
 } from "../../../stores/jobs/types.js";
+import type { JobAgentEventHandler, JobAgentRunner } from "./agent-runner.js";
 
 export interface StartJobResult {
   jobId: string;
@@ -30,13 +29,9 @@ export interface ExecuteStartedJobOptions {
   repoRoot: string;
   spec: OperationSpec;
   record: JobRecord;
-  workerEnvironment: NodeJS.ProcessEnv;
   now: () => Date;
-  onEvent?: (event: AgentRuntimeEvent) => void | Promise<void>;
-  harnessRun?: (
-    spec: OperationSpec,
-    hooks?: AgentRuntimeRunHooks,
-  ) => Promise<AgentRuntimeResult>;
+  onEvent?: JobAgentEventHandler;
+  agentRunner: JobAgentRunner;
 }
 
 export async function executeStartedJob(
@@ -47,13 +42,6 @@ export async function executeStartedJob(
   const logPath = await resolveJobLogPath(options.repoRoot, jobId);
   const started = options.record;
   const now = options.now;
-  const agentRuntimeProviderRegistry = createAgentRuntimeProviderRegistry({
-    environment: options.workerEnvironment,
-  });
-  const harnessRun =
-    options.harnessRun ??
-    ((spec, hooks) =>
-      agentRuntimeProviderRegistry.getProvider(spec.provider.id).run(spec, hooks));
 
   const events = createJobEventLogger({
     logPath,
@@ -72,7 +60,7 @@ export async function executeStartedJob(
   try {
     const wikiSnapshot = await snapshotJobWiki(options.repoRoot);
     try {
-      result = await harnessRun(options.spec, { onEvent: events.onEvent });
+      result = await options.agentRunner(options.spec, { onEvent: events.onEvent });
     } catch (err: unknown) {
       result = {
         success: false,

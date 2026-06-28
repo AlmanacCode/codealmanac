@@ -1,5 +1,6 @@
 import { Command } from "commander";
 
+import { createAgentRuntimeJobRunner } from "../../agent/runtime/job-runner.js";
 import { currentCliNodeProgram } from "./current-cli.js";
 import { emit } from "./helpers.js";
 import { autoRegisterIfNeeded } from "../../services/wiki/autoregistration.js";
@@ -42,6 +43,7 @@ export function registerLifecycleRunCommands(program: Command): void {
           workerProgram: currentCliNodeProgram(),
           workerEnvironment: process.env,
           pid: process.pid,
+          agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
           onEvent: opts.background === true
             ? undefined
             : lifecycleForegroundEventHandler(opts),
@@ -86,6 +88,7 @@ function registerAbsorbCommand(program: Command): void {
           workerProgram: currentCliNodeProgram(),
           workerEnvironment: process.env,
           pid: process.pid,
+          agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
           onEvent: opts.foreground === true
             ? lifecycleForegroundEventHandler(opts)
             : undefined,
@@ -127,6 +130,7 @@ function registerIngestCommand(program: Command): void {
           workerProgram: currentCliNodeProgram(),
           workerEnvironment: process.env,
           pid: process.pid,
+          agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
           onEvent: opts.foreground === true
             ? lifecycleForegroundEventHandler(opts)
             : undefined,
@@ -164,6 +168,7 @@ export function registerGardenCommand(program: Command): void {
           workerProgram: currentCliNodeProgram(),
           workerEnvironment: process.env,
           pid: process.pid,
+          agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
           onEvent: opts.foreground === true
             ? lifecycleForegroundEventHandler(opts)
             : undefined,

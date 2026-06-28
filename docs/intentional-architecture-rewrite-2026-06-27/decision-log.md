@@ -121,6 +121,10 @@ The update service owns update workflow policy: check latest, honor dismissals, 
 
 `src/services/automation/` owns automation product workflows: task selection, interval validation, install/status/uninstall results, legacy migration semantics, and setup cleanup verbs. It talks to an injected `AutomationScheduler` contract from `src/services/automation/scheduler.ts`. `src/platform/automation/scheduler.ts` implements that contract with launchd/plist mechanics: default plist paths, log paths, launch PATH construction, plist writes, launchctl activation/removal/status, legacy capture detection, and XML-to-command-array normalization. CLI/setup/uninstall edges create the launchd scheduler because they are the concrete runtime composition points.
 
+### Jobs execute through an injected agent runner
+
+Foreground and queued job execution services own job records, logs, locks, wiki snapshots, finalization, and event persistence. They do not create provider registries or read `process.env`. `src/agent/runtime/types.ts` defines the provider-neutral `AgentRuntimeRunner`; `src/services/jobs/runtime/agent-runner.ts` gives jobs the `JobAgentRunner` alias; `src/agent/runtime/job-runner.ts` creates the concrete provider-backed runner from an explicit environment; CLI and worker edges inject that runner into lifecycle and sync workflows. Background job spawning still carries `workerEnvironment` because detached process launch is worker-process mechanics, not provider execution.
+
 ### Guard boundaries with tests
 
 Architecture-boundary tests are part of the rewrite, not decoration. When a smell is removed, add or update a test that makes the old leak harder to reintroduce.

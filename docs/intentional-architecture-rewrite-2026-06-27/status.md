@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 230 committed rewrite commits past `dev`. The worklog records 189 production slices so far.
+The branch has more than 230 committed rewrite commits past `dev`. The worklog records 190 production slices so far.
 
-The diff is broad: 485 files changed, with 24,473 insertions and 13,097 deletions.
+The diff is broad: 486 files changed, with 24,603 insertions and 13,124 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -49,6 +49,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved setup global-install state/execution into `src/services/setup/global-install.ts`, so setup TUI files no longer import platform package-manager mechanics.
 - Split the automation task catalog out of platform launchd mechanics: task meaning/defaults live under `src/services/automation/tasks.ts`, while plist/log paths live under `src/platform/automation/paths.ts`.
 - Moved automation scheduler mechanics behind `src/services/automation/scheduler.ts`, with launchd implementation in `src/platform/automation/scheduler.ts`; automation services no longer import `src/platform/automation/`.
+- Moved concrete agent runtime provider registry creation out of job runtime services; CLI and worker edges now inject a `JobAgentRunner`, while `src/agent/runtime/job-runner.ts` owns provider-registry composition.
 - Split most command rendering into command-private render files.
 - Added architecture-boundary tests to stop old dependency leaks from returning.
 - Ran repeated lint, focused tests, full test suites, builds, CLI smokes, and review passes across the branch.
@@ -64,13 +65,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved update registry/version/install mechanics behind a service-owned `UpdateRuntime` contract. `src/services/update/update.ts` now owns update policy over an injected runtime, while `src/platform/update/runtime.ts` composes package-version reads, npm registry checks, and `npm i -g codealmanac@latest` installation.
+The latest slice moved foreground and queued job execution to an injected `JobAgentRunner` contract, backed by the provider-neutral `AgentRuntimeRunner` type. `src/services/jobs/runtime/` now owns job records, logs, locking, wiki snapshots, and finalization over that runner, while `src/agent/runtime/job-runner.ts` creates the concrete provider-backed runner and CLI/worker edges wire it from `process.env`.
 
-Verification passed so far: `npx tsc --noEmit --pretty false` and focused update/boundary tests.
+Verification passed so far: `npx tsc --noEmit --pretty false` and focused job/lifecycle/sync/boundary tests.
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, and automation scheduler mechanics have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, and job provider-runner composition have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
 
 ## Decision Log
 

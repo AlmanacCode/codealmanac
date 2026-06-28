@@ -1,5 +1,3 @@
-import type { AgentRuntimeEvent, AgentRuntimeResult } from "../../../agent/runtime/events.js";
-import type { AgentRuntimeRunHooks } from "../../../agent/runtime/types.js";
 import type { OperationSpec } from "../../lifecycle/operations/spec.js";
 import { createJobId } from "./ids.js";
 import { initializeJobLog } from "../../../stores/jobs/index.js";
@@ -15,6 +13,7 @@ import {
 import { acquireJobWorkerLock } from "../../../stores/jobs/worker-lock.js";
 import { cancelledRecordIfRequested } from "./finalization.js";
 import type { JobRecord } from "../../../stores/jobs/index.js";
+import type { JobAgentEventHandler, JobAgentRunner } from "./agent-runner.js";
 
 export interface StartJobOptions {
   repoRoot: string;
@@ -22,12 +21,8 @@ export interface StartJobOptions {
   jobId?: string;
   now?: () => Date;
   pid: number;
-  workerEnvironment: NodeJS.ProcessEnv;
-  onEvent?: (event: AgentRuntimeEvent) => void | Promise<void>;
-  harnessRun?: (
-    spec: OperationSpec,
-    hooks?: AgentRuntimeRunHooks,
-  ) => Promise<AgentRuntimeResult>;
+  onEvent?: JobAgentEventHandler;
+  agentRunner: JobAgentRunner;
 }
 
 export async function startForegroundJob(
@@ -82,10 +77,9 @@ export async function startForegroundJob(
       repoRoot: options.repoRoot,
       spec: options.spec,
       record: started,
-      workerEnvironment: options.workerEnvironment,
       now,
       onEvent: options.onEvent,
-      harnessRun: options.harnessRun,
+      agentRunner: options.agentRunner,
     });
   } finally {
     await lock.release();
@@ -140,10 +134,9 @@ export async function startQueuedJob(
     repoRoot: options.repoRoot,
     spec: options.spec,
     record: running,
-    workerEnvironment: options.workerEnvironment,
     now,
     onEvent: options.onEvent,
-    harnessRun: options.harnessRun,
+    agentRunner: options.agentRunner,
   });
 }
 

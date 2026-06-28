@@ -3,6 +3,7 @@ import type { AgentRuntimeEvent } from "../../../agent/runtime/events.js";
 import type { FinalOutputSpec } from "../../../agent/runtime/final-output.js";
 import type { OperationKind, OperationSpec } from "./spec.js";
 import type { ToolRequest } from "../../../agent/runtime/tools.js";
+import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
 import { startBackgroundJob } from "../../jobs/runtime/background-start.js";
 import { startForegroundJob } from "../../jobs/runtime/start.js";
 import type { JobWorkerProgram } from "../../../shared/worker-program.js";
@@ -90,6 +91,7 @@ export async function runOperationProcess(args: {
   workerProgram: JobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
 }): Promise<OperationRunResult> {
   if (args.background) {
     const background = await (args.startBackground ?? startBackgroundJob)({
@@ -107,8 +109,8 @@ export async function runOperationProcess(args: {
     spec: args.spec,
     jobId: args.jobId,
     pid: args.pid,
-    workerEnvironment: args.workerEnvironment,
     onEvent: args.onEvent,
+    agentRunner: args.agentRunner,
   });
   return { mode: "foreground", jobId: foreground.jobId, foreground };
 }

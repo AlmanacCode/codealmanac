@@ -8,6 +8,7 @@ import type {
   StartBackgroundJob,
   StartForegroundJob,
 } from "./types.js";
+import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
 import { createOperationRunSpec, runOperationProcess } from "./run.js";
 
 export interface GardenOperationOptions {
@@ -22,6 +23,7 @@ export interface GardenOperationOptions {
   workerProgram: JobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
 }
 
 export async function createGardenRunSpec(args: {
@@ -62,5 +64,6 @@ export async function runGardenOperation(
     workerProgram: options.workerProgram,
     workerEnvironment: options.workerEnvironment,
     pid: options.pid,
+    agentRunner: options.agentRunner,
   });
 }

@@ -9,6 +9,7 @@ import type {
   StartBackgroundJob,
   StartForegroundJob,
 } from "./types.js";
+import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
 import { createOperationRunSpec, runOperationProcess } from "./run.js";
 
 export interface AbsorbOperationOptions {
@@ -27,6 +28,7 @@ export interface AbsorbOperationOptions {
   workerProgram: JobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
 }
 
 export async function createAbsorbRunSpec(args: {
@@ -77,5 +79,6 @@ export async function runAbsorbOperation(
     workerProgram: options.workerProgram,
     workerEnvironment: options.workerEnvironment,
     pid: options.pid,
+    agentRunner: options.agentRunner,
   });
 }

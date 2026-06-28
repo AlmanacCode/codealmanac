@@ -11,6 +11,7 @@ import {
   type LifecycleOperationEventHandler,
   type LifecycleOperationForegroundStarter,
 } from "../../services/lifecycle/index.js";
+import type { JobAgentRunner } from "../../services/jobs/runtime/agent-runner.js";
 import {
   renderWorkflowResult,
   type OperationCommandResult,
@@ -31,6 +32,7 @@ export interface InitCommandOptions {
   workerProgram: LifecycleJobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
 }
 
 export interface AbsorbCommandOptions {
@@ -46,6 +48,7 @@ export interface AbsorbCommandOptions {
   workerProgram: LifecycleJobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
   resolveSource?: LifecycleAbsorbSourceResolver;
 }
 
@@ -61,6 +64,7 @@ export interface GardenCommandOptions {
   workerProgram: LifecycleJobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
 }
 
 export async function runInitCommand(
@@ -109,6 +113,7 @@ function toInitOperationWorkflowOptions(
     workerProgram: options.workerProgram,
     workerEnvironment: options.workerEnvironment,
     pid: options.pid,
+    agentRunner: options.agentRunner,
   };
 }
 
@@ -137,6 +142,7 @@ function toAbsorbOperationWorkflowOptions(
     workerProgram: options.workerProgram,
     workerEnvironment: options.workerEnvironment,
     pid: options.pid,
+    agentRunner: options.agentRunner,
     resolveSource: options.resolveSource,
   };
 }
@@ -156,5 +162,6 @@ function toGardenOperationWorkflowOptions(
     workerProgram: options.workerProgram,
     workerEnvironment: options.workerEnvironment,
     pid: options.pid,
+    agentRunner: options.agentRunner,
   };
 }

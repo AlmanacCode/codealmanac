@@ -1687,8 +1687,10 @@ describe("architecture boundaries", () => {
   it("keeps agent runtime provider runtime environment explicit", async () => {
     const registry = await readSource("src/agent/runtime/providers/index.ts");
     const runtimeIndex = await readSource("src/agent/runtime/index.ts");
+    const runtimeJobRunner = await readSource("src/agent/runtime/job-runner.ts");
     const claudeProvider = await readSource("src/agent/runtime/providers/claude.ts");
     const codexProvider = await readSource("src/agent/runtime/providers/codex.ts");
+    const jobAgentRunner = await readSource("src/services/jobs/runtime/agent-runner.ts");
     const jobExecutor = await readSource("src/services/jobs/runtime/executor.ts");
     const jobStart = await readSource("src/services/jobs/runtime/start.ts");
     const jobWorker = await readSource("src/edges/worker/job-worker.ts");
@@ -1700,15 +1702,29 @@ describe("architecture boundaries", () => {
     expect(runtimeIndex).toContain("createAgentRuntimeProviderRegistry");
     expect(runtimeIndex).not.toContain("getAgentRuntimeProvider");
     expect(runtimeIndex).not.toContain("listAgentRuntimeProviders");
+    expect(runtimeJobRunner).toContain("createAgentRuntimeJobRunner");
+    expect(runtimeJobRunner).toContain("createAgentRuntimeProviderRegistry");
+    expect(runtimeJobRunner).toContain("environment: NodeJS.ProcessEnv");
+    expect(runtimeJobRunner).not.toContain("services/jobs");
+    expect(jobAgentRunner).toContain("export type JobAgentRunner");
+    expect(jobAgentRunner).toContain("AgentRuntimeRunner");
     expect(claudeProvider).not.toContain("process.env");
     expect(codexProvider).not.toContain("process.env");
     expect(claudeProvider).not.toContain("claudeAgentRuntimeProvider");
     expect(codexProvider).not.toContain("codexAgentRuntimeProvider");
-    expect(jobExecutor).toContain("createAgentRuntimeProviderRegistry");
-    expect(jobExecutor).toContain("workerEnvironment: NodeJS.ProcessEnv");
-    expect(jobStart).toContain("workerEnvironment: NodeJS.ProcessEnv");
+    expect(jobExecutor).not.toContain("createAgentRuntimeProviderRegistry");
+    expect(jobExecutor).not.toContain("workerEnvironment");
+    expect(jobExecutor).not.toContain("harnessRun");
+    expect(jobExecutor).toContain("agentRunner");
+    expect(jobStart).not.toContain("workerEnvironment");
+    expect(jobStart).not.toContain("harnessRun");
+    expect(jobStart).toContain("agentRunner");
+    expect(queueDrain).not.toContain("workerEnvironment");
+    expect(queueDrain).not.toContain("harnessRun");
+    expect(queueDrain).toContain("agentRunner");
+    expect(jobWorker).toContain("createAgentRuntimeJobRunner");
     expect(jobWorker).toContain("workerEnvironment: NodeJS.ProcessEnv");
-    expect(queueDrain).toContain("workerEnvironment: NodeJS.ProcessEnv");
+    expect(jobWorker).toContain("agentRunner?: JobAgentRunner");
   });
 
   it("keeps job runtime page snapshots behind wiki file stores", async () => {

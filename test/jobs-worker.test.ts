@@ -157,7 +157,7 @@ describe("job worker background execution", () => {
           "2026-05-09T19:57:05.000Z",
           "2026-05-09T19:57:06.000Z",
         ]),
-        harnessRun: async (spec, hooks) => {
+        agentRunner: async (spec, hooks) => {
           seenPrompts.push(spec.prompt);
           await hooks?.onEvent?.({ type: "text", content: `${spec.prompt} started` });
           if (spec.prompt === "garden") {
@@ -264,7 +264,7 @@ describe("job worker background execution", () => {
         repoRoot: repo,
         workerEnvironment: {},
         pid: 123,
-        harnessRun: async () => {
+        agentRunner: async () => {
           throw new Error("should not run");
         },
       });
@@ -297,7 +297,7 @@ describe("job worker background execution", () => {
         repoRoot: repo,
         workerEnvironment: {},
         pid: 222,
-        harnessRun: async () => {
+        agentRunner: async () => {
           throw new Error("should not run");
         },
       });
@@ -334,7 +334,7 @@ describe("job worker background execution", () => {
         repoRoot: repo,
         workerEnvironment: {},
         pid: 123,
-        harnessRun: async () => {
+        agentRunner: async () => {
           throw new Error("should not run");
         },
       });
@@ -377,7 +377,7 @@ describe("job worker background execution", () => {
       let activeRuns = 0;
       let maxActiveRuns = 0;
       const seenPrompts: string[] = [];
-      const harnessRun = async (spec: { prompt: string }) => {
+      const agentRunner = async (spec: { prompt: string }) => {
         activeRuns += 1;
         maxActiveRuns = Math.max(maxActiveRuns, activeRuns);
         seenPrompts.push(spec.prompt);
@@ -390,13 +390,13 @@ describe("job worker background execution", () => {
           repoRoot: repo,
           workerEnvironment: {},
           pid: 444,
-          harnessRun,
+          agentRunner,
         }),
         runJobWorker({
           repoRoot: repo,
           workerEnvironment: {},
           pid: 445,
-          harnessRun,
+          agentRunner,
         }),
       ]);
 

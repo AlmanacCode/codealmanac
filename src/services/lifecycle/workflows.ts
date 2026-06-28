@@ -4,6 +4,7 @@ import type {
 } from "../../agent/runtime/events.js";
 import type { JobRecord } from "../../stores/jobs/types.js";
 import type { JobWorkerProgram } from "../../shared/worker-program.js";
+import type { JobAgentRunner } from "../jobs/runtime/agent-runner.js";
 import type { AbsorbInputSource } from "./absorb/input-source.js";
 import type { SourceRef } from "./absorb/source-ref.js";
 import type { OperationSpec } from "./operations/spec.js";
@@ -26,8 +27,8 @@ export interface LifecycleForegroundStartRequest {
   spec: OperationSpec;
   jobId?: string;
   pid: number;
-  workerEnvironment: NodeJS.ProcessEnv;
   onEvent?: LifecycleOperationEventHandler;
+  agentRunner: JobAgentRunner;
 }
 
 export interface LifecycleBackgroundStartRequest {
@@ -75,6 +76,7 @@ export interface InitOperationWorkflowOptions {
   workerProgram: LifecycleJobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
 }
 
 export interface AbsorbOperationWorkflowOptions {
@@ -90,6 +92,7 @@ export interface AbsorbOperationWorkflowOptions {
   workerProgram: LifecycleJobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
   resolveSource?: LifecycleAbsorbSourceResolver;
 }
 
@@ -105,6 +108,7 @@ export interface GardenOperationWorkflowOptions {
   workerProgram: LifecycleJobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
 }
 
 export interface PreparedAbsorbOperationWorkflowOptions {
@@ -118,6 +122,7 @@ export interface PreparedAbsorbOperationWorkflowOptions {
   workerProgram: LifecycleJobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  agentRunner: JobAgentRunner;
 }
 
 export type LifecycleOperationWorkflowResult =
@@ -161,6 +166,7 @@ export async function runInitOperationWorkflow(
           workerProgram: options.workerProgram,
           workerEnvironment: options.workerEnvironment,
           pid: options.pid,
+          agentRunner: options.agentRunner,
         }),
       ),
     };
@@ -216,6 +222,7 @@ export async function runPreparedAbsorbOperationWorkflow(
           workerProgram: options.workerProgram,
           workerEnvironment: options.workerEnvironment,
           pid: options.pid,
+          agentRunner: options.agentRunner,
         }),
       ),
     };
@@ -248,6 +255,7 @@ export async function runGardenOperationWorkflow(
           workerProgram: options.workerProgram,
           workerEnvironment: options.workerEnvironment,
           pid: options.pid,
+          agentRunner: options.agentRunner,
         }),
       ),
     };
