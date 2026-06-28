@@ -3,7 +3,12 @@ import { open, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 
 import { findNearestAlmanacDir } from "../../paths.js";
-import type { TranscriptCandidate, TranscriptSourceApp } from "./types.js";
+import type { TranscriptCandidate, TranscriptSourceApp } from "../../shared/transcripts.js";
+import {
+  objectField,
+  parseJsonObject,
+  stringField,
+} from "../../shared/json.js";
 
 export async function collectJsonl(root: string): Promise<string[]> {
   if (!existsSync(root)) return [];
@@ -49,32 +54,7 @@ export async function transcriptCandidateFromMeta(
   }
 }
 
-export function parseJsonObject(line: string): Record<string, unknown> | null {
-  if (line.trim().length === 0) return null;
-  try {
-    const parsed = JSON.parse(line) as unknown;
-    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
-      ? parsed as Record<string, unknown>
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-export function objectField(
-  obj: Record<string, unknown>,
-  key: string,
-): Record<string, unknown> | undefined {
-  const value = obj[key];
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined;
-}
-
-export function stringField(obj: Record<string, unknown>, key: string): string | undefined {
-  const value = obj[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
+export { objectField, parseJsonObject, stringField };
 
 async function collectJsonlInto(dir: string, out: string[]): Promise<void> {
   let entries: Dirent[];

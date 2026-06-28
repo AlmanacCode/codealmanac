@@ -2,6 +2,7 @@ import type {
   LifecycleJobWorkerProgram,
   LifecycleOperationBackgroundStarter,
 } from "../lifecycle/index.js";
+import type { TranscriptSourceApp } from "../../shared/transcripts.js";
 
 export interface SyncWorkflowOptions {
   mode?: "sync" | "status";
@@ -18,7 +19,7 @@ export interface SyncWorkflowOptions {
 }
 
 export type SyncWorkflowMode = "sync" | "status";
-export type SyncWorkflowApp = "claude" | "codex";
+export type SyncWorkflowApp = TranscriptSourceApp;
 
 export interface SyncWorkflowReadyItem {
   app: SyncWorkflowApp;

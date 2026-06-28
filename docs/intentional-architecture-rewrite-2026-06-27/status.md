@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 230 committed rewrite commits past `dev`. The worklog records 186 production slices so far.
+The branch has more than 230 committed rewrite commits past `dev`. The worklog records 187 production slices so far.
 
-The diff is broad: 481 files changed, with 24,118 insertions and 13,045 deletions.
+The diff is broad: 483 files changed, with 24,201 insertions and 13,079 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -34,6 +34,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved the hidden internal job worker entrypoint into `src/edges/worker/`; queued job draining remains a job service runtime workflow.
 - Moved sync ledger and lock persistence into explicit stores.
 - Moved local Claude/Codex transcript discovery, transcript snapshot reads, and timestamp boundary parsing into `src/platform/transcripts/` and removed the old top-level `src/sync/` source bucket.
+- Moved sync-facing transcript contracts and cursor boundary calculation into `src/shared/transcripts.ts`, leaving platform transcript modules focused on discovery and file reads.
 - Moved lifecycle operation construction and Absorb input/source handling into `src/services/lifecycle/` and removed the old top-level `src/operations/` and `src/absorb/` source buckets.
 - Normalized lifecycle operation failures into lifecycle-owned result contracts before command rendering sees them.
 - Moved worker-program shape into `src/shared/worker-program.ts` so lifecycle services no longer import platform worker-process mechanics.
@@ -62,9 +63,9 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved `~/.almanac/update-state.json` and `.update-install.lock` mechanics from `src/platform/update/` into `src/stores/update/`. The update store now owns tolerant async/sync state reads, atomic state writes, lock acquisition, stale-lock cleanup, and explicit lock owner PIDs. The CLI edge passes `process.pid` into the update command; the lock store no longer reads ambient process state.
+The latest slice moved sync-facing transcript contracts into `src/shared/transcripts.ts` and injected transcript snapshot reads into `executeSyncSweep()`. Platform transcript modules still discover Claude/Codex transcripts and read raw transcript files, while sync sweep, ledger, cursor, and summary modules no longer import `src/platform/transcripts/`.
 
-Verification passed: focused update/update-check/update-announce/update-install/update-store/doctor/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js update --help`, and `node dist/codealmanac.js doctor --help`.
+Verification passed: focused sync/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js sync --help`, and `node dist/codealmanac.js sync status --help`.
 
 ## Immediate Next Work
 

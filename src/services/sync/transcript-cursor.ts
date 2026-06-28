@@ -1,6 +1,6 @@
 import type {
   TranscriptSnapshot,
-} from "../../platform/transcripts/index.js";
+} from "../../shared/transcripts.js";
 import {
   type LedgerEntry,
   sha256,

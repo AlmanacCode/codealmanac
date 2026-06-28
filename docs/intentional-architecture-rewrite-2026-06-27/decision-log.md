@@ -113,6 +113,10 @@ The update service owns update workflow policy: check latest, honor dismissals, 
 
 `~/.almanac/update-state.json` and `.update-install.lock` are local persistence mechanics, so they live under `src/stores/update/`. Platform update modules still own registry fetches, npm installation, version lookup, notifier spawning, and pre-command announcement behavior, but they call the update store for state and lock mechanics. The update lock store accepts an explicit `pid` because edges own process facts.
 
+### Transcript contracts are shared; transcript file mechanics are platform
+
+`src/platform/transcripts/` owns Claude/Codex transcript discovery and raw transcript file reads. `src/shared/transcripts.ts` owns the sync-facing transcript candidate, snapshot, read-result, app, and cursor-boundary contracts. `src/services/sync/` owns eligibility, ledger reconciliation, cursor decisions, summaries, and Absorb handoff over those contracts. `executeSyncSweep()` accepts a transcript snapshot reader so lower sync modules do not import platform transcript mechanics directly.
+
 ### Guard boundaries with tests
 
 Architecture-boundary tests are part of the rewrite, not decoration. When a smell is removed, add or update a test that makes the old leak harder to reintroduce.

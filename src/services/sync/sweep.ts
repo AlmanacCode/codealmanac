@@ -1,8 +1,8 @@
 import {
-  readTranscriptSnapshot,
   type TranscriptCandidate,
+  type TranscriptReadResult,
   type TranscriptSnapshot,
-} from "../../platform/transcripts/index.js";
+} from "../../shared/transcripts.js";
 import {
   type LedgerEntry,
   type SyncLedger,
@@ -44,6 +44,9 @@ export type StartSyncAbsorbResult =
 export type StartSyncAbsorbFn = (
   args: StartSyncAbsorbArgs,
 ) => Promise<StartSyncAbsorbResult>;
+export type ReadSyncTranscriptSnapshotFn = (
+  transcriptPath: string,
+) => Promise<TranscriptReadResult>;
 
 export async function executeSyncSweep(args: {
   candidates: TranscriptCandidate[];
@@ -51,6 +54,7 @@ export async function executeSyncSweep(args: {
   quietMs: number;
   mode: "sync" | "status";
   now: Date;
+  readTranscriptSnapshot: ReadSyncTranscriptSnapshotFn;
   startAbsorb: StartSyncAbsorbFn;
 }): Promise<SyncSummary> {
   const summary = emptySyncSummary({
@@ -92,7 +96,7 @@ export async function executeSyncSweep(args: {
       await reconcileLedger(candidate.repoRoot, ledger, args.now);
       const key = ledgerKey(candidate);
 
-      const transcript = await readTranscriptSnapshot(candidate.transcriptPath);
+      const transcript = await args.readTranscriptSnapshot(candidate.transcriptPath);
       if (!transcript.ok) {
         summary.needsAttention.push(syncSkippedSummary(candidate, transcript.reason));
         continue;

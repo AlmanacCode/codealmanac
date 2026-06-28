@@ -8,7 +8,7 @@ import {
   readFirstLines,
   stringField,
 } from "./jsonl.js";
-import type { TranscriptCandidate } from "./types.js";
+import type { TranscriptCandidate } from "../../shared/transcripts.js";
 
 export async function discoverCodex(
   home: string,

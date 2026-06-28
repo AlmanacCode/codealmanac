@@ -1,10 +1,11 @@
 import { readConfig } from "../../stores/config/index.js";
 import {
   discoverTranscriptCandidates,
-  type TranscriptSourceApp,
+  readTranscriptSnapshot,
 } from "../../platform/transcripts/index.js";
 import { runPreparedAbsorbOperationWorkflow } from "../lifecycle/index.js";
 import { parseDuration } from "../../shared/duration.js";
+import type { TranscriptSourceApp } from "../../shared/transcripts.js";
 import { executeSyncSweep } from "./sweep.js";
 import type { SyncSummary } from "./sweep-results.js";
 import type {
@@ -39,6 +40,7 @@ export async function runSyncWorkflow(
         quietMs: quiet.ms,
         mode: options.mode ?? "sync",
         now: options.now ?? new Date(),
+        readTranscriptSnapshot,
         startAbsorb: async ({ candidate, contextNote }) => {
           try {
             const result = await runPreparedAbsorbOperationWorkflow({

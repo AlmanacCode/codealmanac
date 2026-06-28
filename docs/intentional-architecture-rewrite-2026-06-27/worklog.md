@@ -1159,7 +1159,7 @@ One-hundred-seventieth production slice:
 
 One-hundred-seventy-first production slice:
 
-- Added `src/platform/transcripts/snapshot.ts` for raw transcript file reads, line counting, and JSONL timestamp cursor boundaries.
+- Added `src/platform/transcripts/snapshot.ts` for raw transcript file reads and line counting.
 - Updated sync ledger/cursor services so they consume typed transcript snapshots and timestamp boundaries instead of parsing raw transcript files directly.
 - Kept sync services responsible for product decisions: quiet-window eligibility, ledger cursor status, prefix mismatch handling, and Absorb enqueueing.
 - Strengthened boundary coverage so transcript file mechanics stay in platform transcripts while sync cursor decisions stay in services.
@@ -1275,3 +1275,12 @@ One-hundred-eighty-sixth production slice:
 - Changed update lock acquisition to accept an explicit `pid`, and updated the CLI edge to pass `process.pid` into `almanac update`.
 - Added `test/update-store.test.ts` for explicit lock owner PIDs and synchronous state reads.
 - Strengthened boundary coverage so the old platform state/lock files stay deleted and update service imports the store API.
+
+One-hundred-eighty-seventh production slice:
+
+- Added `src/shared/transcripts.ts` for sync-facing transcript candidates, snapshots, read results, app IDs, and timestamp cursor boundaries.
+- Added `src/shared/json.ts` for small structured JSON object helpers shared by transcript discovery and cursor parsing.
+- Deleted `src/platform/transcripts/types.ts`; platform transcript modules now import the shared transcript contracts.
+- Moved `transcriptCursorForSince()` out of `src/platform/transcripts/snapshot.ts`, leaving that platform file focused on raw transcript reads and line counting.
+- Changed `executeSyncSweep()` to accept a transcript snapshot reader, so sweep, ledger, cursor, and summary modules no longer import `src/platform/transcripts/`.
+- Strengthened boundary coverage so only the top sync workflow calls platform transcript discovery/read mechanics while lower sync modules consume shared contracts.

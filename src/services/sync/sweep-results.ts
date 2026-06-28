@@ -1,4 +1,4 @@
-import type { TranscriptCandidate, TranscriptSourceApp } from "../../platform/transcripts/index.js";
+import type { TranscriptCandidate, TranscriptSourceApp } from "../../shared/transcripts.js";
 import type { SyncCursorDecision } from "./transcript-cursor.js";
 
 export interface SyncStarted {

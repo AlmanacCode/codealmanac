@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import {
   transcriptCursorForSince,
   type TranscriptCandidate,
-} from "../../platform/transcripts/index.js";
+} from "../../shared/transcripts.js";
 import { readJobRecord, resolveJobRecordPath } from "../../stores/jobs/records.js";
 import type { JobRecord } from "../../stores/jobs/types.js";
 import type {

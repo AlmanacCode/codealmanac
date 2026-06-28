@@ -1,17 +1,15 @@
 import { discoverClaude } from "./claude.js";
 import { discoverCodex } from "./codex.js";
-import type { TranscriptCandidate, TranscriptSourceApp } from "./types.js";
+import type { TranscriptCandidate, TranscriptSourceApp } from "../../shared/transcripts.js";
 
-export type { TranscriptCandidate, TranscriptSourceApp } from "./types.js";
+export type { TranscriptCandidate, TranscriptSourceApp } from "../../shared/transcripts.js";
 export {
   readTranscriptSnapshot,
-  transcriptCursorForSince,
 } from "./snapshot.js";
 export type {
-  TranscriptCursorBoundary,
   TranscriptReadResult,
   TranscriptSnapshot,
-} from "./snapshot.js";
+} from "../../shared/transcripts.js";
 
 export async function discoverTranscriptCandidates(args: {
   apps: TranscriptSourceApp[];

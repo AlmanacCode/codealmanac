@@ -886,19 +886,28 @@ describe("architecture boundaries", () => {
   it("keeps sync transcript file mechanics in platform transcripts", async () => {
     const syncSweep = await readSource("src/services/sync/sweep.ts");
     const syncLedger = await readSource("src/services/sync/ledger.ts");
+    const syncResults = await readSource("src/services/sync/sweep-results.ts");
     const transcriptCursor = await readSource("src/services/sync/transcript-cursor.ts");
     const transcriptSnapshot = await readSource("src/platform/transcripts/snapshot.ts");
+    const transcriptDiscovery = await readSource("src/platform/transcripts/index.ts");
+    const sharedTranscripts = await readSource("src/shared/transcripts.ts");
 
     expect(existsSync(join(ROOT, "src/services/sync/transcript-cursor.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/platform/transcripts/snapshot.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/platform/transcripts/types.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/shared/transcripts.ts"))).toBe(true);
     expect(syncSweep).toContain("transcript-cursor.js");
-    expect(syncSweep).toContain("platform/transcripts/index.js");
+    expect(syncSweep).toContain("shared/transcripts.js");
+    expect(syncSweep).not.toContain("platform/transcripts");
     expect(syncSweep).not.toContain("from \"node:fs/promises\"");
     expect(syncSweep).not.toContain("function readTranscriptSnapshot");
+    expect(syncSweep).toContain("ReadSyncTranscriptSnapshotFn");
     expect(syncSweep).not.toContain("function evaluateSyncCursor");
     expect(syncSweep).not.toContain("lastAbsorbedPrefixHash");
     expect(syncSweep).not.toContain("pendingPrefixHash");
-    expect(syncLedger).not.toContain("platform/transcripts/jsonl.js");
+    expect(syncLedger).not.toContain("platform/transcripts");
+    expect(syncResults).not.toContain("platform/transcripts");
+    expect(transcriptCursor).not.toContain("platform/transcripts");
     expect(syncLedger).toContain("transcriptCursorForSince");
     expect(transcriptCursor).not.toContain("from \"node:fs/promises\"");
     expect(transcriptCursor).not.toContain("readTranscriptSnapshot");
@@ -906,8 +915,12 @@ describe("architecture boundaries", () => {
     expect(transcriptCursor).toContain("export function pendingLedgerEntry");
     expect(transcriptSnapshot).toContain("from \"node:fs/promises\"");
     expect(transcriptSnapshot).toContain("export async function readTranscriptSnapshot");
-    expect(transcriptSnapshot).toContain("export function transcriptCursorForSince");
-    expect(transcriptSnapshot).toContain("parseJsonObject");
+    expect(transcriptSnapshot).not.toContain("transcriptCursorForSince");
+    expect(transcriptSnapshot).not.toContain("parseJsonObject");
+    expect(transcriptDiscovery).toContain("shared/transcripts.js");
+    expect(sharedTranscripts).toContain("export interface TranscriptCandidate");
+    expect(sharedTranscripts).toContain("export interface TranscriptSnapshot");
+    expect(sharedTranscripts).toContain("transcriptCursorForSince");
   });
 
   it("keeps local process signaling in the platform layer", async () => {
@@ -1504,6 +1517,7 @@ describe("architecture boundaries", () => {
     const syncSweep = await readSource("src/services/sync/sweep.ts");
     const syncSweepResults = await readSource("src/services/sync/sweep-results.ts");
     const transcriptDiscovery = await readSource("src/platform/transcripts/index.ts");
+    const sharedTranscripts = await readSource("src/shared/transcripts.ts");
     const syncCommand = await readSource("src/cli/commands/sync.ts");
 
     expect(existsSync(join(ROOT, "src/services/sync/types.ts"))).toBe(true);
@@ -1518,6 +1532,7 @@ describe("architecture boundaries", () => {
     expect(syncServiceTypes).toContain("homeDir: string");
     expect(syncServiceTypes).not.toContain("homeDir?: string");
     expect(syncServiceTypes).toContain("interface SyncWorkflowSummary");
+    expect(syncServiceTypes).toContain("shared/transcripts.js");
     expect(syncService).not.toContain("export type SyncWorkflowSummary = sync.SyncSummary");
     expect(syncService).not.toContain(
       "SyncWorkflowStartedItem extends SyncWorkflowReadyItem",
@@ -1525,10 +1540,14 @@ describe("architecture boundaries", () => {
     expect(syncService).not.toContain("...syncWorkflowReadyItemFromSweep(item)");
     expect(syncService).toContain("syncWorkflowSummaryFromSweep");
     expect(syncService).toContain("platform/transcripts/index.js");
+    expect(syncSweep).not.toContain("platform/transcripts");
+    expect(syncSweepResults).not.toContain("platform/transcripts");
     expect(transcriptDiscovery).toContain("discoverTranscriptCandidates");
+    expect(transcriptDiscovery).toContain("shared/transcripts.js");
     expect(transcriptDiscovery).not.toContain("operations");
     expect(transcriptDiscovery).not.toContain("stores/sync");
     expect(transcriptDiscovery).not.toContain("services/sync");
+    expect(sharedTranscripts).toContain("TranscriptSourceApp");
     expect(syncCommand).toContain("services/sync/index.js");
     expect(syncCommand).not.toContain("../../sync");
     expect(syncCommand).not.toContain("../../operations");
