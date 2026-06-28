@@ -1415,3 +1415,11 @@ Two-hundred-fourth production slice:
 - Changed `src/services/sync/sweep.ts` to ask the jobs service for internal provider session ids instead of importing job stores and mapping over job record persistence shape.
 - Kept the sync service responsible for the product decision to skip internal Almanac sessions while leaving job-record storage shape inside the jobs boundary.
 - Strengthened architecture-boundary tests so sync sweep does not reintroduce direct `stores/jobs` imports.
+
+Two-hundred-fifth production slice:
+
+- Added `src/app/cli-runtime.ts` as the explicit CLI composition point for concrete lifecycle and sync dependencies.
+- Moved agent job-runner creation, detached background-job starter composition, Absorb source resolver creation, sync transcript runtime creation, and PID liveness wiring for lifecycle/sync commands out of CLI command registration files.
+- Deleted `src/edges/cli/background-jobs.ts`; background job process composition now lives with the rest of CLI app runtime wiring instead of as an edge-local helper.
+- Kept CLI registration files responsible for argv/options/cwd/pid/event rendering while `src/app/cli-runtime.ts` owns concrete runtime wiring over services, platform modules, and agent runtime.
+- Strengthened architecture-boundary tests so lifecycle and sync registration import the app runtime rather than platform/provider runtime modules directly.

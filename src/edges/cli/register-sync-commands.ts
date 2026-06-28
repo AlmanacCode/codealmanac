@@ -1,10 +1,7 @@
 import { Command } from "commander";
 import { homedir } from "node:os";
 
-import { createAgentRuntimeJobRunner } from "../../agent/runtime/job-runner.js";
-import { isLocalPidAlive } from "../../platform/process.js";
-import { createPlatformSyncTranscriptRuntime } from "../../platform/transcripts/runtime.js";
-import { startCliBackgroundJob } from "./background-jobs.js";
+import { createCliRuntime } from "../../app/cli-runtime.js";
 import { currentCliNodeProgram } from "./current-cli.js";
 import { emit } from "./helpers.js";
 
@@ -23,6 +20,7 @@ export function registerSyncCommands(program: Command): void {
       json?: boolean;
     }) => {
       const { runSyncCommand } = await import("../../cli/commands/sync.js");
+      const runtime = createCliRuntime({ environment: process.env });
       const result = await runSyncCommand({
         cwd: process.cwd(),
         from: opts.from,
@@ -31,12 +29,12 @@ export function registerSyncCommands(program: Command): void {
         json: opts.json,
         homeDir: homedir(),
         workerProgram: currentCliNodeProgram(),
-        workerEnvironment: process.env,
+        workerEnvironment: runtime.workerEnvironment,
         pid: process.pid,
-        isPidAlive: isLocalPidAlive,
-        agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
-        transcriptRuntime: createPlatformSyncTranscriptRuntime(),
-        startBackground: startCliBackgroundJob,
+        isPidAlive: runtime.isPidAlive,
+        agentRunner: runtime.agentRunner,
+        transcriptRuntime: runtime.transcriptRuntime,
+        startBackground: runtime.startBackground,
       });
       emit(result);
     });
@@ -58,6 +56,7 @@ export function registerSyncCommands(program: Command): void {
         json?: boolean;
       }>() ?? {};
       const { runSyncCommand } = await import("../../cli/commands/sync.js");
+      const runtime = createCliRuntime({ environment: process.env });
       const result = await runSyncCommand({
         cwd: process.cwd(),
         mode: "status",
@@ -66,11 +65,11 @@ export function registerSyncCommands(program: Command): void {
         json: opts.json ?? parentOpts.json,
         homeDir: homedir(),
         workerProgram: currentCliNodeProgram(),
-        workerEnvironment: process.env,
+        workerEnvironment: runtime.workerEnvironment,
         pid: process.pid,
-        isPidAlive: isLocalPidAlive,
-        agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
-        transcriptRuntime: createPlatformSyncTranscriptRuntime(),
+        isPidAlive: runtime.isPidAlive,
+        agentRunner: runtime.agentRunner,
+        transcriptRuntime: runtime.transcriptRuntime,
       });
       emit(result);
     });

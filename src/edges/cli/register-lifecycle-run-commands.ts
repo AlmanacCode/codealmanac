@@ -1,9 +1,6 @@
 import { Command } from "commander";
 
-import { createAgentRuntimeJobRunner } from "../../agent/runtime/job-runner.js";
-import { isLocalPidAlive } from "../../platform/process.js";
-import { createPlatformAbsorbSourceResolver } from "../../platform/sources/absorb.js";
-import { startCliBackgroundJob } from "./background-jobs.js";
+import { createCliRuntime } from "../../app/cli-runtime.js";
 import { currentCliNodeProgram } from "./current-cli.js";
 import { emit } from "./helpers.js";
 import { autoRegisterIfNeeded } from "../../services/wiki/autoregistration.js";
@@ -34,6 +31,7 @@ export function registerLifecycleRunCommands(program: Command): void {
       }) => {
         const start = initStartMessage(opts);
         if (start !== null) process.stdout.write(start);
+        const runtime = createCliRuntime({ environment: process.env });
 
         const { runInitCommand } = await import("../../cli/commands/operations.js");
         const result = await runInitCommand({
@@ -44,11 +42,11 @@ export function registerLifecycleRunCommands(program: Command): void {
           force: opts.force,
           yes: opts.yes,
           workerProgram: currentCliNodeProgram(),
-          workerEnvironment: process.env,
+          workerEnvironment: runtime.workerEnvironment,
           pid: process.pid,
-          isPidAlive: isLocalPidAlive,
-          agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
-          startBackground: startCliBackgroundJob,
+          isPidAlive: runtime.isPidAlive,
+          agentRunner: runtime.agentRunner,
+          startBackground: runtime.startBackground,
           onEvent: opts.background === true
             ? undefined
             : lifecycleForegroundEventHandler(opts),
@@ -82,6 +80,7 @@ function registerAbsorbCommand(program: Command): void {
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
+        const runtime = createCliRuntime({ environment: process.env });
         const { runAbsorbCommand } = await import("../../cli/commands/operations.js");
         const result = await runAbsorbCommand({
           cwd: process.cwd(),
@@ -91,12 +90,12 @@ function registerAbsorbCommand(program: Command): void {
           json: opts.json,
           yes: opts.yes,
           workerProgram: currentCliNodeProgram(),
-          workerEnvironment: process.env,
+          workerEnvironment: runtime.workerEnvironment,
           pid: process.pid,
-          isPidAlive: isLocalPidAlive,
-          agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
-          startBackground: startCliBackgroundJob,
-          resolveSource: createPlatformAbsorbSourceResolver(),
+          isPidAlive: runtime.isPidAlive,
+          agentRunner: runtime.agentRunner,
+          startBackground: runtime.startBackground,
+          resolveSource: runtime.resolveAbsorbSource,
           onEvent: opts.foreground === true
             ? lifecycleForegroundEventHandler(opts)
             : undefined,
@@ -127,6 +126,7 @@ function registerIngestCommand(program: Command): void {
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
+        const runtime = createCliRuntime({ environment: process.env });
         const { runAbsorbCommand } = await import("../../cli/commands/operations.js");
         const result = await runAbsorbCommand({
           cwd: process.cwd(),
@@ -136,12 +136,12 @@ function registerIngestCommand(program: Command): void {
           json: opts.json,
           yes: opts.yes,
           workerProgram: currentCliNodeProgram(),
-          workerEnvironment: process.env,
+          workerEnvironment: runtime.workerEnvironment,
           pid: process.pid,
-          isPidAlive: isLocalPidAlive,
-          agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
-          startBackground: startCliBackgroundJob,
-          resolveSource: createPlatformAbsorbSourceResolver(),
+          isPidAlive: runtime.isPidAlive,
+          agentRunner: runtime.agentRunner,
+          startBackground: runtime.startBackground,
+          resolveSource: runtime.resolveAbsorbSource,
           onEvent: opts.foreground === true
             ? lifecycleForegroundEventHandler(opts)
             : undefined,
@@ -169,6 +169,7 @@ export function registerGardenCommand(program: Command): void {
         verbose?: boolean;
       }) => {
         await autoRegisterIfNeeded(process.cwd());
+        const runtime = createCliRuntime({ environment: process.env });
         const { runGardenCommand } = await import("../../cli/commands/operations.js");
         const result = await runGardenCommand({
           cwd: process.cwd(),
@@ -177,11 +178,11 @@ export function registerGardenCommand(program: Command): void {
           json: opts.json,
           yes: opts.yes,
           workerProgram: currentCliNodeProgram(),
-          workerEnvironment: process.env,
+          workerEnvironment: runtime.workerEnvironment,
           pid: process.pid,
-          isPidAlive: isLocalPidAlive,
-          agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
-          startBackground: startCliBackgroundJob,
+          isPidAlive: runtime.isPidAlive,
+          agentRunner: runtime.agentRunner,
+          startBackground: runtime.startBackground,
           onEvent: opts.foreground === true
             ? lifecycleForegroundEventHandler(opts)
             : undefined,

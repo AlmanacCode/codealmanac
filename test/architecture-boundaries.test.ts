@@ -804,7 +804,7 @@ describe("architecture boundaries", () => {
       "src/services/jobs/runtime/background-start.ts",
     );
     const backgroundProcess = await readSource("src/platform/jobs/worker-process.ts");
-    const cliBackgroundJobs = await readSource("src/edges/cli/background-jobs.ts");
+    const appCliRuntime = await readSource("src/app/cli-runtime.ts");
     const lifecycleOperations = await readSource(
       "src/services/lifecycle/operations/types.ts",
     );
@@ -823,7 +823,8 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/services/jobs/record-lifecycle.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/jobs/runtime/background-start.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/platform/jobs/worker-process.ts"))).toBe(true);
-    expect(existsSync(join(ROOT, "src/edges/cli/background-jobs.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/app/cli-runtime.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/background-jobs.ts"))).toBe(false);
     expect(workerProgram).toContain("export interface JobWorkerProgram");
     expect(jobStart).not.toContain("node:child_process");
     expect(jobStart).not.toContain("startJobWorkerProcess");
@@ -837,8 +838,9 @@ describe("architecture boundaries", () => {
     expect(backgroundProcess).toContain("node:child_process");
     expect(backgroundProcess).toContain("export function startJobWorkerProcess");
     expect(backgroundProcess).toContain("startDetachedJobWorkerProcess");
-    expect(cliBackgroundJobs).toContain("startDetachedJobWorkerProcess");
-    expect(cliBackgroundJobs).toContain("startBackgroundJob");
+    expect(appCliRuntime).toContain("startDetachedJobWorkerProcess");
+    expect(appCliRuntime).toContain("startBackgroundJob");
+    expect(appCliRuntime).toContain("createAgentRuntimeJobRunner");
     expect(backgroundProcess).not.toContain("process.env");
     expect(backgroundProcess).not.toContain("process.execPath");
     expect(jobStart).not.toContain("process.pid");
@@ -941,6 +943,7 @@ describe("architecture boundaries", () => {
     const syncLockStore = await readSource("src/stores/sync/lock.ts");
     const syncSweep = await readSource("src/services/sync/sweep.ts");
     const jobWorker = await readSource("src/edges/worker/job-worker.ts");
+    const appCliRuntime = await readSource("src/app/cli-runtime.ts");
     const cliRunner = await readSource("src/edges/cli/run.ts");
     const lifecycleRegistration = await readSource(
       "src/edges/cli/register-lifecycle-run-commands.ts",
@@ -964,9 +967,12 @@ describe("architecture boundaries", () => {
     expect(syncSweep).not.toContain("platform/process");
     expect(jobWorker).toContain("isPidAlive");
     expect(jobWorker).not.toContain("platform/process");
+    expect(appCliRuntime).toContain("isLocalPidAlive");
     expect(cliRunner).toContain("isLocalPidAlive");
-    expect(lifecycleRegistration).toContain("isLocalPidAlive");
-    expect(syncRegistration).toContain("isLocalPidAlive");
+    expect(lifecycleRegistration).toContain("createCliRuntime");
+    expect(lifecycleRegistration).not.toContain("platform/process");
+    expect(syncRegistration).toContain("createCliRuntime");
+    expect(syncRegistration).not.toContain("platform/process");
   });
 
   it("keeps store atomic writes off process identity", async () => {
@@ -1621,6 +1627,7 @@ describe("architecture boundaries", () => {
     const jobsProviderSessions = await readSource(
       "src/services/jobs/provider-sessions.ts",
     );
+    const appCliRuntime = await readSource("src/app/cli-runtime.ts");
     const transcriptDiscovery = await readSource("src/platform/transcripts/index.ts");
     const transcriptRuntime = await readSource("src/platform/transcripts/runtime.ts");
     const sharedTranscripts = await readSource("src/shared/transcripts.ts");
@@ -1657,7 +1664,9 @@ describe("architecture boundaries", () => {
     expect(syncSweepResults).not.toContain("platform/transcripts");
     expect(jobsProviderSessions).toContain("listJobRecords");
     expect(syncCommand).not.toContain("platform/transcripts");
-    expect(syncRegistration).toContain("platform/transcripts/runtime.js");
+    expect(syncRegistration).not.toContain("platform/transcripts");
+    expect(syncRegistration).toContain("createCliRuntime");
+    expect(appCliRuntime).toContain("createPlatformSyncTranscriptRuntime");
     expect(transcriptRuntime).toContain("discoverTranscriptCandidates");
     expect(transcriptRuntime).toContain("readTranscriptSnapshot");
     expect(transcriptRuntime).toContain("SyncTranscriptRuntime");
@@ -1697,6 +1706,7 @@ describe("architecture boundaries", () => {
     const lifecycleAbsorbInput = await readSource("src/services/lifecycle/absorb/input.ts");
     const platformGithubSource = await readSource("src/platform/github/source.ts");
     const platformAbsorbSourceResolver = await readSource("src/platform/sources/absorb.ts");
+    const appCliRuntime = await readSource("src/app/cli-runtime.ts");
     const lifecycleCliEdge = await readSource(
       "src/edges/cli/register-lifecycle-run-commands.ts",
     );
@@ -1754,8 +1764,10 @@ describe("architecture boundaries", () => {
     expect(lifecycleAbsorbInput).not.toContain("resolveGitHubSource");
     expect(platformAbsorbSourceResolver).toContain("resolveGitHubSource");
     expect(platformAbsorbSourceResolver).toContain("ResolveSourceFn");
-    expect(lifecycleCliEdge).toContain("createPlatformAbsorbSourceResolver");
-    expect(lifecycleCliEdge).toContain("resolveSource: createPlatformAbsorbSourceResolver()");
+    expect(lifecycleCliEdge).toContain("createCliRuntime");
+    expect(lifecycleCliEdge).toContain("resolveSource: runtime.resolveAbsorbSource");
+    expect(lifecycleCliEdge).not.toContain("platform/sources");
+    expect(appCliRuntime).toContain("createPlatformAbsorbSourceResolver");
     expect(platformGithubSource).not.toContain("services/lifecycle");
     expect(syncService).toContain("runPreparedAbsorbOperationWorkflow");
     expect(syncService).not.toContain("services/lifecycle/operations");
