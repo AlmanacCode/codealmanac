@@ -310,17 +310,44 @@ describe("architecture boundaries: setup and uninstall", () => {
     const bootstrapProcess = await readSource(
       "src/platform/install/bootstrap-process.ts",
     );
+    const bootstrapPackage = await readSource(
+      "src/platform/install/bootstrap-package.ts",
+    );
+    const bootstrapNpm = await readSource("src/platform/install/bootstrap-npm.ts");
 
     expect(existsSync(join(ROOT, "src/platform/install/bootstrap-process.ts")))
       .toBe(true);
+    expect(existsSync(join(ROOT, "src/platform/install/bootstrap-package.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/platform/install/bootstrap-npm.ts"))).toBe(
+      true,
+    );
     expect(bootstrap).toContain("bootstrap-process.js");
+    expect(bootstrap).toContain("bootstrap-package.js");
+    expect(bootstrap).toContain("bootstrap-npm.js");
     expect(bootstrap).not.toContain("node:child_process");
+    expect(bootstrap).not.toContain("node:fs");
+    expect(bootstrap).not.toContain("node:module");
+    expect(bootstrap).not.toContain("fileURLToPath");
+    expect(bootstrap).not.toContain("npm root -g");
+    expect(bootstrap).not.toContain("npm install failed");
+    expect(bootstrap).not.toContain("readPackageVersion");
+    expect(bootstrap).not.toContain("isNewerVersion");
     expect(bootstrap).not.toContain("stdio: \"inherit\"");
     expect(bootstrap).not.toContain("stdio: [\"ignore\", \"pipe\", \"pipe\"]");
     expect(bootstrap).not.toContain("child.stdout");
     expect(bootstrapProcess).toContain("node:child_process");
     expect(bootstrapProcess).toContain("spawnInheritedProcess");
     expect(bootstrapProcess).toContain("spawnCapturedProcess");
+    expect(bootstrapPackage).toContain("findCurrentPackageRoot");
+    expect(bootstrapPackage).toContain("readPackageVersion");
+    expect(bootstrapPackage).toContain("shouldInstallGlobalPackage");
+    expect(bootstrapPackage).toContain("isNewerVersion");
+    expect(bootstrapNpm).toContain("resolveGlobalPackageRoot");
+    expect(bootstrapNpm).toContain("installGlobalCodealmanacPackage");
+    expect(bootstrapNpm).toContain("npm");
+    expect(bootstrapNpm).toContain("spawnInheritedProcess");
+    expect(bootstrapNpm).toContain("spawnCapturedProcess");
   });
 
   it("keeps setup provider login process execution in the platform layer", async () => {

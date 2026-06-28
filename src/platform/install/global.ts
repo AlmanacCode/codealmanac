@@ -1,15 +1,19 @@
-import { readFile } from "node:fs/promises";
-import { createRequire } from "node:module";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-import { isNewerVersion } from "../../shared/version.js";
 import {
   defaultBootstrapSpawn,
-  spawnCapturedProcess,
   spawnInheritedProcess,
   type BootstrapSpawnFn,
 } from "./bootstrap-process.js";
+import {
+  findCurrentPackageRoot,
+  samePackageRoot,
+  shouldInstallGlobalPackage,
+} from "./bootstrap-package.js";
+import {
+  installGlobalCodealmanacPackage,
+  resolveGlobalPackageRoot,
+} from "./bootstrap-npm.js";
 
 /**
  * Bare `codealmanac` is the npm bootstrap surface. When it is invoked
@@ -65,24 +69,19 @@ export async function runCodealmanacBootstrap(
   }
 
   const globalRoot = globalRootResult.path;
-  if (samePath(currentRoot, globalRoot)) {
+  if (samePackageRoot(currentRoot, globalRoot)) {
     return await opts.runLocalSetup();
   }
 
-  if (await shouldInstallGlobal(currentRoot, globalRoot)) {
-    const install = await spawnInheritedProcess(
-      opts.spawnFn ?? defaultBootstrapSpawn,
-      "npm",
-      ["i", "-g", "codealmanac@latest"],
+  if (await shouldInstallGlobalPackage({ currentRoot, globalRoot })) {
+    const install = await installGlobalCodealmanacPackage({
+      spawnFn: opts.spawnFn,
       env,
-    );
-    if (install.exitCode !== 0) {
+    });
+    if (!install.ok) {
       return {
         stdout: "",
-        stderr:
-          `almanac: npm install failed (exit ${install.exitCode}).\n` +
-          `If you see "EACCES" above, try: sudo npm i -g codealmanac@latest\n` +
-          `Or install with a version manager (nvm, volta, fnm) to avoid sudo.\n`,
+        stderr: install.stderr,
         exitCode: install.exitCode,
       };
     }
@@ -104,85 +103,4 @@ export async function runCodealmanacBootstrap(
     stderr: "",
     exitCode: rerun.exitCode,
   };
-}
-
-async function shouldInstallGlobal(
-  currentRoot: string,
-  globalRoot: string,
-): Promise<boolean> {
-  const globalVersion = await readPackageVersion(globalRoot);
-  if (globalVersion === null) return true;
-
-  const currentVersion = await readPackageVersion(currentRoot);
-  if (currentVersion === null) return false;
-
-  return isNewerVersion(currentVersion, globalVersion);
-}
-
-function samePath(a: string, b: string): boolean {
-  return path.resolve(a) === path.resolve(b);
-}
-
-async function readPackageVersion(root: string): Promise<string | null> {
-  try {
-    const raw = await readFile(path.join(root, "package.json"), "utf8");
-    const parsed = JSON.parse(raw) as { version?: unknown };
-    return typeof parsed.version === "string" && parsed.version.length > 0
-      ? parsed.version
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function findCurrentPackageRoot(): string {
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  const candidates = [
-    // Bundled: `.../codealmanac/dist/launcher.js` -> package root.
-    path.resolve(here, ".."),
-    // Old source/dist layout: `.../codealmanac/src/install/global.ts` -> package root.
-    path.resolve(here, "..", ".."),
-    // Source/dist platform layout: `.../codealmanac/src/platform/install/global.ts`.
-    path.resolve(here, "..", "..", ".."),
-  ];
-
-  for (const candidate of candidates) {
-    try {
-      const require = createRequire(import.meta.url);
-      const pkg = require(path.join(candidate, "package.json")) as {
-        name?: unknown;
-      };
-      if (pkg.name === "codealmanac") return candidate;
-    } catch {
-      // Try the next layout.
-    }
-  }
-
-  return path.resolve(here, "..", "..", "..");
-}
-
-async function resolveGlobalPackageRoot(
-  spawnFn: BootstrapSpawnFn,
-): Promise<{ ok: true; path: string } | { ok: false; stderr: string }> {
-  const result = await spawnCapturedProcess(spawnFn, "npm", ["root", "-g"]);
-  if (result.exitCode !== 0) {
-    return {
-      ok: false,
-      stderr:
-        "almanac: could not find npm's global install directory.\n" +
-        "Install Node.js + npm, or install the codealmanac package via your package manager.\n",
-    };
-  }
-
-  const root = result.stdout.trim();
-  if (root.length === 0) {
-    return {
-      ok: false,
-      stderr:
-        "almanac: npm returned an empty global install directory.\n" +
-        "Try: npm root -g\n",
-    };
-  }
-
-  return { ok: true, path: path.join(root, "codealmanac") };
 }

@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 340 committed rewrite commits past `dev`. The worklog records 288 production slices so far.
+The branch has more than 340 committed rewrite commits past `dev`. The worklog records 289 production slices so far.
 
 The diff is broad: more than 680 files changed, with tens of thousands of lines reshaped.
 
@@ -147,6 +147,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Split indexer page-source normalization into coordination, structured projection, legacy projection, source-id generation, and type contracts.
 - Split setup input controls into line prompts, single-choice select, raw input capability, multi-select, and interruption handling.
 - Split viewer read-model route payloads into overview, page, topic, search/file, DB freshness, and type owners.
+- Split bare-`codealmanac` install bootstrap into flow coordination, package-root/version, npm global install, and process-spawn owners.
 - Moved repeated store atomic-write temp-file mechanics into `src/stores/atomic-write.ts`, removing process-PID temp names from job and sync stores.
 - Split most command rendering into command-private render files.
 - Added architecture-boundary tests to stop old dependency leaks from returning.
@@ -163,12 +164,12 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice split the viewer read-model API bucket. `api.ts` now composes the route-facing viewer API, while `db.ts`, `overview.ts`, `page.ts`, `topic.ts`, `search.ts`, and `types.ts` own the individual read-model responsibilities.
+The latest slice split the bare-`codealmanac` install bootstrap bucket. `global.ts` now coordinates the bootstrap flow, while `bootstrap-package.ts`, `bootstrap-npm.ts`, and `bootstrap-process.ts` own package-root/version mechanics, npm mechanics, and child-process mechanics.
 
 Verification passed:
 
 - `npm run lint`
-- `npx vitest run test/viewer-api.test.ts test/viewer-global-api.test.ts test/architecture-wiki-command-boundaries.test.ts`
+- `npx vitest run test/global-bootstrap.test.ts test/architecture-setup-boundaries.test.ts`
 - `npx vitest run test/architecture-*-boundaries.test.ts`
 - `git diff --check`
 - `npm test`

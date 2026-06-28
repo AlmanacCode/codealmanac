@@ -2068,3 +2068,11 @@ Two-hundred-eighty-eighth production slice:
 - Added owner-named viewer read-model files for overview, page detail, topic detail, search/suggest/file mentions, and shared route-facing types.
 - Kept `api.ts` focused on composing the public viewer API over the owner-named route payload builders.
 - Strengthened viewer boundary tests so overview/page/search/topic payload logic and DB freshness mechanics do not collapse back into one API bucket.
+
+Two-hundred-eighty-ninth production slice:
+
+- Split install bootstrap package mechanics out of `src/platform/install/global.ts`.
+- Added `src/platform/install/bootstrap-package.ts` for current package-root detection, package version reads, package-root equality, and version-comparison install decisions.
+- Added `src/platform/install/bootstrap-npm.ts` for npm global-root discovery, global package install execution, and npm-install failure text.
+- Kept `global.ts` focused on the bare-`codealmanac` bootstrap flow: local setup bypass, global-root resolution, global install decision, and rerun through the global launcher.
+- Strengthened setup architecture tests so process spawning, package-root/version probing, and npm install mechanics stay in separate install-platform owners.
