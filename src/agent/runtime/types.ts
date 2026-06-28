@@ -1,8 +1,14 @@
-import type { AgentRuntimeEvent, AgentRuntimeResult } from "./events.js";
-import type { AgentProviderId } from "../provider-id.js";
+import type {
+  AgentRuntimeProviderId,
+  AgentRuntimeResult,
+  AgentRuntimeRunHooks,
+} from "../../shared/agent-runtime/events.js";
 import type { OperationSpec } from "../../services/lifecycle/operations/spec.js";
 
-export type AgentRuntimeProviderId = AgentProviderId;
+export type {
+  AgentRuntimeProviderId,
+  AgentRuntimeRunHooks,
+} from "../../shared/agent-runtime/events.js";
 
 export interface AgentRuntimeCapabilities {
   nonInteractive: boolean;
@@ -47,10 +53,6 @@ export interface ProviderStatus {
   installed: boolean;
   authenticated: boolean;
   detail: string;
-}
-
-export interface AgentRuntimeRunHooks {
-  onEvent?: (event: AgentRuntimeEvent) => void | Promise<void>;
 }
 
 export type AgentRuntimeRunner = (

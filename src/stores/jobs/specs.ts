@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { isAgentProviderId, type AgentProviderId } from "../../agent/provider-id.js";
+import { isAgentProviderId, type AgentProviderId } from "../../shared/agent-provider.js";
 import type {
   OperationKind,
   OperationSpec,

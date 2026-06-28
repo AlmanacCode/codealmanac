@@ -1,6 +1,6 @@
 import {
   AGENT_PROVIDER_IDS,
-} from "../../agent/provider-id.js";
+} from "../../shared/agent-provider.js";
 import {
   defaultConfig,
   normalizeConfig,

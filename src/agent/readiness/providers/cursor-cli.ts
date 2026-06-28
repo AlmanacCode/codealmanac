@@ -4,7 +4,7 @@ import type {
   AgentProviderMetadata,
   ProviderStatus,
 } from "../../types.js";
-import { PROVIDER_DEFINITIONS } from "../../provider-id.js";
+import { PROVIDER_DEFINITIONS } from "../../../shared/agent-provider.js";
 import {
   commandExists,
   runInjectedStatusCommand,

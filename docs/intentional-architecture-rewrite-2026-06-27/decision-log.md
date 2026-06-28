@@ -127,7 +127,11 @@ The update service owns update workflow policy: check latest, honor dismissals, 
 
 ### Jobs execute through an injected agent runner
 
-Foreground and queued job execution services own job records, logs, locks, wiki snapshots, finalization, and event persistence. They do not create provider registries or read `process.env`. `src/agent/runtime/types.ts` defines the provider-neutral `AgentRuntimeRunner`; `src/services/jobs/runtime/agent-runner.ts` gives jobs the `JobAgentRunner` alias; `src/agent/runtime/job-runner.ts` creates the concrete provider-backed runner from an explicit environment; CLI and worker edges inject that runner into lifecycle and sync workflows. Background job spawning still carries `workerEnvironment` because detached process launch is worker-process mechanics, not provider execution.
+Foreground and queued job execution services own job records, logs, locks, wiki snapshots, finalization, and event persistence. They do not create provider registries or read `process.env`. `src/services/jobs/runtime/agent-runner.ts` defines the injected `JobAgentRunner` contract over lifecycle `OperationSpec` and shared agent-runtime result/hooks. `src/agent/runtime/job-runner.ts` creates the concrete provider-backed runner from an explicit environment; CLI and worker edges inject that runner into lifecycle and sync workflows. Background job spawning still carries `workerEnvironment` because detached process launch is worker-process mechanics, not provider execution.
+
+### Provider identity and runtime contracts are shared
+
+Provider ids and static provider definitions live in `src/shared/agent-provider.ts` because config stores, job stores, lifecycle operations, readiness, and provider adapters all need the same id vocabulary. Provider-neutral runtime facts live in `src/shared/agent-runtime/`: normalized events, usage, failures, final-output specs/results, runtime hooks, and tool requests. Concrete provider execution remains under `src/agent/runtime/`, where provider adapters translate `OperationSpec` into Claude/Codex mechanics and emit the shared contracts.
 
 ### Absorb source resolution is an injected platform resolver
 

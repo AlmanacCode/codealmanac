@@ -1,4 +1,4 @@
-import type { AgentRuntimeResult } from "../../events.js";
+import type { AgentRuntimeResult } from "../../../../shared/agent-runtime/events.js";
 import type { AgentRuntimeRunHooks } from "../../types.js";
 import type { OperationSpec } from "../../../../services/lifecycle/operations/spec.js";
 import { spawnManagedChildProcess } from "../../../../platform/managed-child.js";

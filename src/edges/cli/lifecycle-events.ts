@@ -1,4 +1,4 @@
-import type { AgentRuntimeEvent, AgentRuntimeToolDisplay } from "../../agent/runtime/events.js";
+import type { AgentRuntimeEvent, AgentRuntimeToolDisplay } from "../../shared/agent-runtime/events.js";
 
 function writeForegroundEvent(event: AgentRuntimeEvent): void {
   const line = formatForegroundEvent(event);

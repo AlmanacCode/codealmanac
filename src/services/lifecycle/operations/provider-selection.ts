@@ -1,6 +1,6 @@
 import { readConfig } from "../../../stores/config/index.js";
-import { PROVIDER_DEFINITIONS } from "../../../agent/provider-id.js";
-import type { AgentRuntimeProviderId } from "../../../agent/runtime/types.js";
+import { PROVIDER_DEFINITIONS } from "../../../shared/agent-provider.js";
+import type { AgentRuntimeProviderId } from "../../../shared/agent-runtime/events.js";
 import { OperationError } from "./errors.js";
 import type { OperationProviderSelection } from "./types.js";
 

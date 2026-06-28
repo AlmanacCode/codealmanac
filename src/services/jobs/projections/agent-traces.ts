@@ -1,4 +1,4 @@
-import type { RunActor } from "../../../agent/runtime/events.js";
+import type { RunActor } from "../../../shared/agent-runtime/events.js";
 import type { JobAgentTrace, JobLogEvent } from "./types.js";
 import { firstMeaningfulLine } from "./text.js";
 

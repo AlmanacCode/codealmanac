@@ -1,5 +1,7 @@
-import type { AgentRuntimeProviderId } from "./types.js";
+import type { AgentProviderId } from "../agent-provider.js";
 import type { FinalOutputResult } from "./final-output.js";
+
+export type AgentRuntimeProviderId = AgentProviderId;
 
 export interface AgentUsage {
   inputTokens?: number;
@@ -130,4 +132,8 @@ export interface AgentRuntimeResult {
   output?: FinalOutputResult;
   error?: string;
   failure?: AgentRuntimeFailure;
+}
+
+export interface AgentRuntimeRunHooks {
+  onEvent?: (event: AgentRuntimeEvent) => void | Promise<void>;
 }

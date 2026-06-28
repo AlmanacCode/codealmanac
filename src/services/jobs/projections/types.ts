@@ -1,4 +1,4 @@
-import type { AgentRuntimeEvent, RunActor } from "../../../agent/runtime/events.js";
+import type { AgentRuntimeEvent, RunActor } from "../../../shared/agent-runtime/events.js";
 import type { JobView } from "../../../stores/jobs/types.js";
 
 export type JobLogEvent =

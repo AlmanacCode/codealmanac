@@ -1,13 +1,13 @@
 import { joinPrompts, loadPrompt } from "../../../agent/prompts.js";
-import type { AgentRuntimeEvent } from "../../../agent/runtime/events.js";
-import type { FinalOutputSpec } from "../../../agent/runtime/final-output.js";
+import type { AgentRuntimeEvent } from "../../../shared/agent-runtime/events.js";
+import type { FinalOutputSpec } from "../../../shared/agent-runtime/final-output.js";
 import type { OperationKind, OperationSpec } from "./spec.js";
-import type { ToolRequest } from "../../../agent/runtime/tools.js";
+import type { ToolRequest } from "../../../shared/agent-runtime/tools.js";
 import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
 import { startForegroundJob } from "../../jobs/runtime/start.js";
 import type { JobWorkerProgram } from "../../../shared/worker-program.js";
 import { readConfig } from "../../../stores/config/index.js";
-import { PROVIDER_DEFINITIONS } from "../../../agent/provider-id.js";
+import { PROVIDER_DEFINITIONS } from "../../../shared/agent-provider.js";
 import type {
   OperationProviderSelection,
   OperationRunResult,

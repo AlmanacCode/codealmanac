@@ -7,7 +7,7 @@ import {
 import {
   isAgentProviderId,
   type AgentProviderId,
-} from "../../agent/provider-id.js";
+} from "../../shared/agent-provider.js";
 import { setConfigEntry } from "../config/index.js";
 
 export interface AgentServiceOptions {

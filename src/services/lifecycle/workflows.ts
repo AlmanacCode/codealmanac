@@ -1,7 +1,7 @@
 import type {
   AgentRuntimeEvent,
   AgentRuntimeResult,
-} from "../../agent/runtime/events.js";
+} from "../../shared/agent-runtime/events.js";
 import type { JobRecord } from "../../stores/jobs/types.js";
 import type { JobWorkerProgram } from "../../shared/worker-program.js";
 import type { JobAgentRunner } from "../jobs/runtime/agent-runner.js";

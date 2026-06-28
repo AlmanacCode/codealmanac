@@ -17,7 +17,7 @@ export interface GardenOperationOptions {
   background?: boolean;
   context?: string;
   jobId?: string;
-  onEvent?: (event: import("../../../agent/runtime/events.js").AgentRuntimeEvent) => void | Promise<void>;
+  onEvent?: (event: import("../../../shared/agent-runtime/events.js").AgentRuntimeEvent) => void | Promise<void>;
   startForeground?: StartForegroundJob;
   startBackground?: StartBackgroundJob;
   workerProgram: JobWorkerProgram;

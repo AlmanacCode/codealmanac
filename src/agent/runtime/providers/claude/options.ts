@@ -4,9 +4,9 @@ import type {
 } from "@anthropic-ai/claude-agent-sdk";
 
 import type { OperationAgentSpec, OperationSpec } from "../../../../services/lifecycle/operations/spec.js";
-import type { FinalOutputSpec } from "../../final-output.js";
+import type { FinalOutputSpec } from "../../../../shared/agent-runtime/final-output.js";
 import { spawnManagedChildProcess } from "../../../../platform/managed-child.js";
-import type { ToolRequest } from "../../tools.js";
+import type { ToolRequest } from "../../../../shared/agent-runtime/tools.js";
 import { AGENT_RUNTIME_PROVIDER_METADATA } from "../metadata.js";
 
 export function buildClaudeOptions(

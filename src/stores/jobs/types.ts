@@ -1,6 +1,6 @@
-import type { AgentUsage, AgentRuntimeFailure } from "../../agent/runtime/events.js";
-import type { JsonValue } from "../../agent/runtime/final-output.js";
-import type { AgentRuntimeProviderId } from "../../agent/runtime/types.js";
+import type { AgentUsage, AgentRuntimeFailure } from "../../shared/agent-runtime/events.js";
+import type { JsonValue } from "../../shared/agent-runtime/final-output.js";
+import type { AgentRuntimeProviderId } from "../../shared/agent-runtime/events.js";
 import type { OperationKind } from "../../services/lifecycle/operations/spec.js";
 
 export type JobStatus = "queued" | "running" | "done" | "failed" | "cancelled";

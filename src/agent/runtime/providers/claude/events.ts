@@ -1,7 +1,7 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
-import type { AgentRuntimeEvent } from "../../events.js";
-import type { RunActor } from "../../events.js";
+import type { AgentRuntimeEvent } from "../../../../shared/agent-runtime/events.js";
+import type { RunActor } from "../../../../shared/agent-runtime/events.js";
 import type { ClaudeTraceState } from "./types.js";
 
 export function toClaudeAgentRuntimeEvents(

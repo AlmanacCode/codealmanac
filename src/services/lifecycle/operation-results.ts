@@ -1,4 +1,4 @@
-import type { AgentRuntimeFailure } from "../../agent/runtime/events.js";
+import type { AgentRuntimeFailure } from "../../shared/agent-runtime/events.js";
 import * as operations from "./operations/index.js";
 
 export type LifecycleOperationMode = "foreground" | "background";

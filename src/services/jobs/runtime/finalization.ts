@@ -1,4 +1,4 @@
-import type { AgentRuntimeFailure } from "../../../agent/runtime/events.js";
+import type { AgentRuntimeFailure } from "../../../shared/agent-runtime/events.js";
 import { finishJobRecord } from "../record-lifecycle.js";
 import {
   isJobCancellationRequested,

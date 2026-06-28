@@ -1,4 +1,4 @@
-import type { AgentRuntimeFailure } from "../../agent/runtime/events.js";
+import type { AgentRuntimeFailure } from "../../shared/agent-runtime/events.js";
 import type { OperationSpec } from "../lifecycle/operations/spec.js";
 import { jobLogPath } from "../../stores/jobs/index.js";
 import type {

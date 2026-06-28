@@ -3,7 +3,7 @@ import type {
   AgentRuntimeProviderId,
   ProviderMetadata,
 } from "../types.js";
-import { PROVIDER_DEFINITIONS } from "../../provider-id.js";
+import { PROVIDER_DEFINITIONS } from "../../../shared/agent-provider.js";
 
 const BASE_CAPABILITIES: Omit<
   AgentRuntimeCapabilities,

@@ -1,5 +1,5 @@
-import type { AgentRuntimeEvent } from "../../events.js";
-import { parseJsonSchemaFinalOutputText } from "../../final-output.js";
+import type { AgentRuntimeEvent } from "../../../../shared/agent-runtime/events.js";
+import { parseJsonSchemaFinalOutputText } from "../../../../shared/agent-runtime/final-output.js";
 import {
   actorForCodexThread,
   codexLifecycleEvents,

@@ -1,4 +1,4 @@
-import type { AgentRuntimeEvent } from "../../../agent/runtime/events.js";
+import type { AgentRuntimeEvent } from "../../../shared/agent-runtime/events.js";
 import {
   buildJobLogEntry,
   type AppendJobEventOptions,

@@ -1,7 +1,7 @@
 import type {
   AgentRuntimeEvent,
   RunActor,
-} from "../../events.js";
+} from "../../../../shared/agent-runtime/events.js";
 import {
   asRecord,
   stringArrayField,

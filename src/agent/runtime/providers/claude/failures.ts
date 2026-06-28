@@ -1,4 +1,4 @@
-import type { AgentRuntimeFailure } from "../../events.js";
+import type { AgentRuntimeFailure } from "../../../../shared/agent-runtime/events.js";
 
 export function classifyClaudeFailure(
   raw: string,

@@ -1349,3 +1349,12 @@ One-hundred-ninety-fifth production slice:
 - Removed `src/platform/diagnostics/types.ts`; platform diagnostics modules now import shared diagnostic contracts instead of owning cross-layer types.
 - Updated `src/services/diagnostics/types.ts` to consume/re-export shared diagnostic facts instead of importing platform diagnostics types.
 - Strengthened doctor boundary coverage so diagnostics services cannot reintroduce `platform/diagnostics/types.js`.
+
+One-hundred-ninety-sixth production slice:
+
+- Added `src/shared/agent-provider.ts` as the shared provider identity catalog for provider ids, defaults, definitions, and id guards.
+- Added `src/shared/agent-runtime/events.ts`, `final-output.ts`, and `tools.ts` as provider-neutral contracts for normalized runtime events, final output, runtime hooks, usage/failure facts, and tool requests.
+- Removed the old `src/agent/provider-id.ts`, `src/agent/runtime/events.ts`, `src/agent/runtime/final-output.ts`, and `src/agent/runtime/tools.ts` contract buckets after callers moved.
+- Kept concrete provider execution under `src/agent/runtime/`; provider adapters now import shared runtime contracts while `src/agent/runtime/types.ts` remains the provider implementation contract over `OperationSpec`.
+- Changed `src/services/jobs/runtime/agent-runner.ts` to define the injected `JobAgentRunner` contract directly over lifecycle `OperationSpec` and shared runtime result/hooks instead of importing `AgentRuntimeRunner` from provider runtime types.
+- Strengthened architecture-boundary tests so jobs, lifecycle operations, and stores consume shared runtime contracts rather than `src/agent/runtime/` contract files.

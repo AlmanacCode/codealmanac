@@ -1,5 +1,5 @@
-import type { AgentRuntimeResult } from "../../../agent/runtime/events.js";
-import type { FinalOutputResult } from "../../../agent/runtime/final-output.js";
+import type { AgentRuntimeResult } from "../../../shared/agent-runtime/events.js";
+import type { FinalOutputResult } from "../../../shared/agent-runtime/final-output.js";
 import { summarizeOperationOutput } from "../../lifecycle/operations/output.js";
 import { runIndexer } from "../../../stores/wiki/indexer/index.js";
 import {

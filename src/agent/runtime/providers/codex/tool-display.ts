@@ -2,7 +2,7 @@ import type {
   AgentRuntimeEvent,
   AgentRuntimeToolDisplay,
   RunActor,
-} from "../../events.js";
+} from "../../../../shared/agent-runtime/events.js";
 import {
   asRecord,
   numberField,

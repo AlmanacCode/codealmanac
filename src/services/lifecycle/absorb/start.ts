@@ -1,5 +1,5 @@
-import type { AgentRuntimeEvent } from "../../../agent/runtime/events.js";
-import type { FinalOutputSpec } from "../../../agent/runtime/final-output.js";
+import type { AgentRuntimeEvent } from "../../../shared/agent-runtime/events.js";
+import type { FinalOutputSpec } from "../../../shared/agent-runtime/final-output.js";
 import { runAbsorbOperation } from "../operations/absorb.js";
 import { OperationError } from "../operations/errors.js";
 import {

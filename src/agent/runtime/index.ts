@@ -1,8 +1,6 @@
 export type {
   AgentRuntimeCapabilities,
   AgentRuntimeProvider,
-  AgentRuntimeProviderId,
-  AgentRuntimeRunHooks,
   ProviderMetadata,
   ProviderStatus,
 } from "./types.js";
@@ -16,15 +14,21 @@ export type {
   AgentRuntimeEvent,
   AgentRuntimeEventType,
   AgentRuntimeResult,
-} from "./events.js";
+  AgentRuntimeProviderId,
+  AgentRuntimeRunHooks,
+} from "../../shared/agent-runtime/events.js";
 export type {
   JsonObject,
   JsonValue,
   FinalOutputResult,
   FinalOutputSpec,
-} from "./final-output.js";
-export type { ShellPolicy, ToolId, ToolRequest } from "./tools.js";
-export { isToolId, uniqueToolRequests } from "./tools.js";
+} from "../../shared/agent-runtime/final-output.js";
+export type {
+  ShellPolicy,
+  ToolId,
+  ToolRequest,
+} from "../../shared/agent-runtime/tools.js";
+export { isToolId, uniqueToolRequests } from "../../shared/agent-runtime/tools.js";
 export {
   createAgentRuntimeProviderRegistry,
   AGENT_RUNTIME_PROVIDER_METADATA,

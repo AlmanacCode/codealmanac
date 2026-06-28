@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 230 committed rewrite commits past `dev`. The worklog records 195 production slices so far.
+The branch has more than 230 committed rewrite commits past `dev`. The worklog records 196 production slices so far.
 
-The diff is broad: 492 files changed, with 24,977 insertions and 13,155 deletions.
+The diff is broad: 493 files changed, with 25,053 insertions and 13,438 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -55,6 +55,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Split the automation task catalog out of platform launchd mechanics: task meaning/defaults live under `src/services/automation/tasks.ts`, while plist/log paths live under `src/platform/automation/paths.ts`.
 - Moved automation scheduler mechanics behind `src/services/automation/scheduler.ts`, with launchd implementation in `src/platform/automation/scheduler.ts`; automation services no longer import `src/platform/automation/`.
 - Moved concrete agent runtime provider registry creation out of job runtime services; CLI and worker edges now inject a `JobAgentRunner`, while `src/agent/runtime/job-runner.ts` owns provider-registry composition.
+- Moved provider identity and provider-neutral runtime event/final-output/tool contracts into `src/shared/`, so services and stores no longer import provider runtime contract files from `src/agent/runtime/`.
 - Split most command rendering into command-private render files.
 - Added architecture-boundary tests to stop old dependency leaks from returning.
 - Ran repeated lint, focused tests, full test suites, builds, CLI smokes, and review passes across the branch.
@@ -70,13 +71,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved diagnostic fact contracts out of the platform diagnostics folder. `src/shared/diagnostics.ts` now owns probe result shapes, platform diagnostics modules produce those facts, and `src/services/diagnostics/types.ts` consumes/re-exports the shared contracts for doctor read models.
+The latest slice moved provider identity and provider-neutral agent runtime contracts out of `src/agent/runtime/`. `src/shared/agent-provider.ts` now owns provider ids and provider definitions, `src/shared/agent-runtime/` owns normalized runtime events, final-output shapes, and tool requests, and concrete provider execution remains under `src/agent/runtime/providers/`.
 
-Verification passed so far: `npx tsc --noEmit --pretty false` and focused doctor/boundary tests.
+Verification passed so far: `npx tsc --noEmit --pretty false`.
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, setup runtime composition, sync transcript runtime composition, and diagnostic fact contracts have now been removed or assigned. Remaining candidates include service files that still know provider runtime mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, setup runtime composition, sync transcript runtime composition, diagnostic fact contracts, and provider-neutral agent runtime contracts have now been removed or assigned. Remaining candidates include process/PID mechanics still visible in some stores, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
 
 ## Decision Log
 

@@ -1,4 +1,4 @@
-import { isJsonValue } from "../../agent/runtime/final-output.js";
+import { isJsonValue } from "../../shared/agent-runtime/final-output.js";
 import type {
   JobOperationOutput,
   JobPageChanges,

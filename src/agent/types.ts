@@ -1,4 +1,4 @@
-import type { AgentProviderId } from "./provider-id.js";
+import type { AgentProviderId } from "../shared/agent-provider.js";
 
 export interface SpawnedProcess {
   stdout: { on: (event: "data", cb: (data: Buffer | string) => void) => void };

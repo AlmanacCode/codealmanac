@@ -2,7 +2,7 @@ import {
   AGENT_PROVIDER_IDS,
   isAgentProviderId,
   type AgentProviderId,
-} from "../../agent/provider-id.js";
+} from "../../shared/agent-provider.js";
 
 export interface AgentConfig {
   /** Default provider for agent-backed lifecycle commands. Default: "codex". */

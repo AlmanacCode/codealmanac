@@ -1,4 +1,4 @@
-import type { AgentRuntimeResult } from "../../events.js";
+import type { AgentRuntimeResult } from "../../../../shared/agent-runtime/events.js";
 
 export function mapClaudeUsage(value: unknown): AgentRuntimeResult["usage"] {
   if (value === null || typeof value !== "object") return undefined;

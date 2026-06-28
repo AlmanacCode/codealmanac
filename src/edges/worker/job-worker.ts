@@ -1,4 +1,4 @@
-import type { AgentRuntimeEvent } from "../../agent/runtime/events.js";
+import type { AgentRuntimeEvent } from "../../shared/agent-runtime/events.js";
 import { createAgentRuntimeJobRunner } from "../../agent/runtime/job-runner.js";
 import { drainQueuedJobs } from "../../services/jobs/runtime/queue-drain.js";
 import type { JobAgentRunner } from "../../services/jobs/runtime/agent-runner.js";

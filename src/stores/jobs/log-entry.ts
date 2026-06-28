@@ -1,4 +1,4 @@
-import type { AgentRuntimeEvent, RunActor } from "../../agent/runtime/events.js";
+import type { AgentRuntimeEvent, RunActor } from "../../shared/agent-runtime/events.js";
 
 export interface JobLogEntryV1 {
   timestamp: string;

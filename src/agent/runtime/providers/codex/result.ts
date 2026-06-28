@@ -1,4 +1,4 @@
-import type { AgentRuntimeResult } from "../../events.js";
+import type { AgentRuntimeResult } from "../../../../shared/agent-runtime/events.js";
 import type { CodexRunState } from "./types.js";
 
 export function toAgentRuntimeResult(state: CodexRunState): AgentRuntimeResult {

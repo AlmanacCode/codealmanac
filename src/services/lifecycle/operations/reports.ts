@@ -1,4 +1,4 @@
-import type { JsonObject, FinalOutputSpec } from "../../../agent/runtime/final-output.js";
+import type { JsonObject, FinalOutputSpec } from "../../../shared/agent-runtime/final-output.js";
 
 export interface AlmanacOperationReport {
   version: 1;

@@ -1,9 +1,14 @@
 import type {
   AgentRuntimeEvent,
-} from "../../../agent/runtime/events.js";
-import type { AgentRuntimeRunner } from "../../../agent/runtime/types.js";
+  AgentRuntimeResult,
+  AgentRuntimeRunHooks,
+} from "../../../shared/agent-runtime/events.js";
+import type { OperationSpec } from "../../lifecycle/operations/spec.js";
 
-export type JobAgentRunner = AgentRuntimeRunner;
+export type JobAgentRunner = (
+  spec: OperationSpec,
+  hooks?: AgentRuntimeRunHooks,
+) => Promise<AgentRuntimeResult>;
 
 export type JobAgentEventHandler = (
   event: AgentRuntimeEvent,

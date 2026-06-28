@@ -2,7 +2,7 @@ import {
   AGENT_PROVIDER_IDS,
   isAgentProviderId,
   type AgentProviderId,
-} from "../../agent/provider-id.js";
+} from "../../shared/agent-provider.js";
 import {
   type GlobalConfig,
 } from "../../stores/config/index.js";

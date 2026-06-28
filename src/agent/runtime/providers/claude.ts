@@ -1,17 +1,17 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 
-import type { AgentRuntimeFailure, AgentRuntimeResult } from "../events.js";
+import type { AgentRuntimeFailure, AgentRuntimeResult } from "../../../shared/agent-runtime/events.js";
 import {
   parseJsonSchemaFinalOutputText,
   finalJsonSchemaOutput,
-} from "../final-output.js";
+} from "../../../shared/agent-runtime/final-output.js";
 import type {
   AgentRuntimeProvider,
   AgentRuntimeRunHooks,
   ProviderStatus,
 } from "../types.js";
 import type { OperationSpec } from "../../../services/lifecycle/operations/spec.js";
-import type { FinalOutputResult } from "../final-output.js";
+import type { FinalOutputResult } from "../../../shared/agent-runtime/final-output.js";
 import { AGENT_RUNTIME_PROVIDER_METADATA } from "./metadata.js";
 import {
   checkClaudeAuth,

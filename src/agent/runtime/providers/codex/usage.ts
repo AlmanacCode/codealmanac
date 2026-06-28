@@ -1,4 +1,4 @@
-import type { AgentUsage } from "../../events.js";
+import type { AgentUsage } from "../../../../shared/agent-runtime/events.js";
 import {
   asRecord,
   numberField,

@@ -1,6 +1,6 @@
-import type { AgentProviderId } from "../../../agent/provider-id.js";
-import type { FinalOutputSpec } from "../../../agent/runtime/final-output.js";
-import type { ToolRequest } from "../../../agent/runtime/tools.js";
+import type { AgentProviderId } from "../../../shared/agent-provider.js";
+import type { FinalOutputSpec } from "../../../shared/agent-runtime/final-output.js";
+import type { ToolRequest } from "../../../shared/agent-runtime/tools.js";
 
 export type OperationKind = "build" | "absorb" | "garden";
 export type ProviderSessionPersistence = "ephemeral" | "persistent";

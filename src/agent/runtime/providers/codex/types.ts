@@ -1,11 +1,11 @@
 import type {
   AgentUsage,
   AgentRuntimeFailure,
-} from "../../events.js";
+} from "../../../../shared/agent-runtime/events.js";
 import type {
   FinalOutputResult,
   FinalOutputSpec,
-} from "../../final-output.js";
+} from "../../../../shared/agent-runtime/final-output.js";
 
 export interface CodexRunState {
   success: boolean;
