@@ -1774,3 +1774,11 @@ Two-hundred-fiftieth production slice:
 - Added `src/services/automation/job-planning.ts` for scheduler job construction, plist-path choice, command arguments, and Garden working-directory resolution.
 - Kept `src/services/automation/planning.ts` as top-level install-plan orchestration over the new helpers.
 - Updated automation workflow imports and architecture-boundary tests so planning cannot regain schedule parsing, command-argument, or working-directory mechanics.
+
+Two-hundred-fifty-first production slice:
+
+- Deleted the mixed `src/services/wiki/topic-graph-mutations.ts` service bucket.
+- Added `src/services/wiki/topic-create.ts` for topic creation, parent slug normalization, parent promotion, create-time cycle checks, and title promotion.
+- Added `src/services/wiki/topic-edge-mutations.ts` for topic link/unlink edge workflows, endpoint promotion from ad-hoc indexed topics, duplicate-edge checks, and cycle prevention.
+- Kept `src/services/wiki/topics.ts` as the stable public topic-service facade for CLI command callers.
+- Strengthened architecture-boundary tests so topic create, edge mutation, and page mutation responsibilities stay separated.

@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 250 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 251 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -23,6 +23,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Split lifecycle run command registration into per-operation edge files for init, absorb/ingest, and Garden.
 - Split setup-family command registration into per-command edge files for setup, doctor, update, and uninstall.
 - Split topic command registration into read, create, graph-edge, and page-mutation edge files.
+- Split wiki topic graph mutations into create-topic and edge-mutation service files.
 - Split review command registration into add, read, decision, and markdown-input edge files.
 - Split automation command registration into install, uninstall, status, and task-input edge files.
 - Split jobs command registration into read, log/attach, and cancel edge files.
@@ -126,12 +127,12 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice split automation install planning into owned service files. `src/services/automation/planning.ts` now only coordinates the install plan; `task-selection.ts` owns explicit/default task selection rules, `task-schedule.ts` owns interval and quiet-window validation, and `job-planning.ts` owns scheduler-job shaping, plist-path choice, command arguments, and Garden working-directory resolution.
+The latest slice deleted the mixed `src/services/wiki/topic-graph-mutations.ts` bucket. Topic creation and parent-promotion policy now live in `src/services/wiki/topic-create.ts`, while graph edge link/unlink policy lives in `src/services/wiki/topic-edge-mutations.ts`; `src/services/wiki/topics.ts` remains the stable public facade for command callers.
 
 Verification passed:
 
 - `npm run lint`
-- `npx vitest run test/automation.test.ts test/architecture-boundaries.test.ts`
+- `npx vitest run test/topics.test.ts test/architecture-boundaries.test.ts`
 - `git diff --check`
 - `npm test`
 - `npm run build`

@@ -9,7 +9,6 @@ import { topicTitleFromSlug } from "../../stores/wiki/topics/title.js";
 import {
   ensureTopic,
   findTopic,
-  loadTopicsFile,
   type TopicEntry,
   type TopicsFile,
   writeTopicsFile,
@@ -17,10 +16,6 @@ import {
 import type {
   CreateWikiTopicRequest,
   CreateWikiTopicResult,
-  LinkWikiTopicsRequest,
-  LinkWikiTopicsResult,
-  UnlinkWikiTopicsRequest,
-  UnlinkWikiTopicsResult,
 } from "./topic-types.js";
 import {
   openEditableTopicWorkspace,
@@ -50,19 +45,16 @@ export async function createWikiTopic(
     });
     if (validation !== null) return validation;
 
-    const title = request.name.trim().length > 0
-      ? request.name.trim()
-      : topicTitleFromSlug(slug);
+    const title = requestedTopicTitle(request.name, slug);
     const existing = findTopic(file, slug);
 
     if (existing === null) {
-      const entry: TopicEntry = {
+      file.topics.push({
         slug,
         title,
         description: null,
         parents: requestedParents,
-      };
-      file.topics.push(entry);
+      });
     } else {
       const addParents = addParentsToTopic(file, existing, requestedParents);
       if (addParents !== null) return addParents;
@@ -77,84 +69,16 @@ export async function createWikiTopic(
   }
 }
 
-export async function linkWikiTopics(
-  request: LinkWikiTopicsRequest,
-): Promise<LinkWikiTopicsResult> {
-  const repoRoot = await resolveWikiRoot({
-    cwd: request.cwd,
-    wiki: request.wiki,
-  });
-  const child = toKebabCase(request.child);
-  const parent = toKebabCase(request.parent);
-  if (child.length === 0 || parent.length === 0) {
-    return { status: "empty-slug" };
-  }
-  if (child === parent) return { status: "self-parent" };
-
-  const { file, db } = await openEditableTopicWorkspace(repoRoot);
-  try {
-    for (const slug of [child, parent]) {
-      if (!topicExists(file, db, slug)) {
-        return { status: "missing-topic", slug };
-      }
-      if (findTopic(file, slug) === null) {
-        ensureTopic(file, slug);
-      }
-    }
-
-    const childEntry = findTopic(file, child);
-    if (childEntry === null) {
-      return { status: "missing-topic", slug: child };
-    }
-
-    if (childEntry.parents.includes(parent)) {
-      return { status: "already-exists", child, parent };
-    }
-
-    const parentAncestors = ancestorsInFile(file, parent);
-    if (parentAncestors.has(child)) {
-      return { status: "cycle", child, parent };
-    }
-
-    childEntry.parents.push(parent);
-    await writeTopicsFile(topicsYamlPath(repoRoot), file);
-    await runIndexer({ repoRoot });
-    return { status: "linked", child, parent };
-  } finally {
-    db.close();
-  }
-}
-
-export async function unlinkWikiTopics(
-  request: UnlinkWikiTopicsRequest,
-): Promise<UnlinkWikiTopicsResult> {
-  const repoRoot = await resolveWikiRoot({
-    cwd: request.cwd,
-    wiki: request.wiki,
-  });
-  const child = toKebabCase(request.child);
-  const parent = toKebabCase(request.parent);
-  if (child.length === 0 || parent.length === 0) {
-    return { status: "empty-slug" };
-  }
-
-  const yamlPath = topicsYamlPath(repoRoot);
-  const file = await loadTopicsFile(yamlPath);
-  const childEntry = findTopic(file, child);
-  if (childEntry === null || !childEntry.parents.includes(parent)) {
-    return { status: "no-edge", child, parent };
-  }
-
-  childEntry.parents = childEntry.parents.filter((p) => p !== parent);
-  await writeTopicsFile(yamlPath, file);
-  await runIndexer({ repoRoot });
-  return { status: "unlinked", child, parent };
-}
-
 function normalizeTopicSlugs(values: string[]): string[] {
   return values
     .map((value) => toKebabCase(value))
     .filter((slug) => slug.length > 0);
+}
+
+function requestedTopicTitle(name: string, slug: string): string {
+  return name.trim().length > 0
+    ? name.trim()
+    : topicTitleFromSlug(slug);
 }
 
 function promoteAndValidateTopicParents(params: {

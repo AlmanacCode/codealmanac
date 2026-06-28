@@ -575,6 +575,10 @@ describe("architecture boundaries", () => {
     const topicPageMutations = await readSource(
       "src/services/wiki/topic-page-mutations.ts",
     );
+    const topicCreate = await readSource("src/services/wiki/topic-create.ts");
+    const topicEdgeMutations = await readSource(
+      "src/services/wiki/topic-edge-mutations.ts",
+    );
     const topicPageRewrite = await readSource(
       "src/stores/wiki/topics/page-rewrite.ts",
     );
@@ -617,7 +621,14 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/edges/cli/commands/topics/workspace.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/edges/cli/commands/topics/page-rewrite.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/services/wiki/topic-page-rewrite.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/services/wiki/topic-graph-mutations.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/stores/wiki/topics/page-rewrite.ts"))).toBe(true);
+    expect(topicCreate).toContain("export async function createWikiTopic");
+    expect(topicCreate).not.toContain("export async function linkWikiTopics");
+    expect(topicCreate).not.toContain("export async function unlinkWikiTopics");
+    expect(topicEdgeMutations).toContain("export async function linkWikiTopics");
+    expect(topicEdgeMutations).toContain("export async function unlinkWikiTopics");
+    expect(topicEdgeMutations).not.toContain("export async function createWikiTopic");
     expect(topicPageMutations).toContain("stores/wiki/topics/page-rewrite.js");
     expect(topicPageMutations).not.toContain("fast-glob");
     expect(topicPageMutations).not.toContain("readFile");

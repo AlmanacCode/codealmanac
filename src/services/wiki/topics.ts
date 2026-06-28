@@ -7,9 +7,11 @@ export {
 } from "./topic-description.js";
 export {
   createWikiTopic,
+} from "./topic-create.js";
+export {
   linkWikiTopics,
   unlinkWikiTopics,
-} from "./topic-graph-mutations.js";
+} from "./topic-edge-mutations.js";
 export {
   deleteWikiTopic,
   renameWikiTopic,
