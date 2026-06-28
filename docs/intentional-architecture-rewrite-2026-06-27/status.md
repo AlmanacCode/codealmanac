@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 251 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 252 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -31,6 +31,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Made CLI command files much thinner by moving product workflows into `src/services/`.
 - Moved remaining command adapters, renderers, and command output helpers from the old top-level `src/cli/` directory into `src/edges/cli/commands/`.
 - Split wiki workflows into clearer service boundaries: search, show, health, registry, topics, review, reindex, source migration, and doctor wiki checks.
+- Moved topic-read page lookup SQL into the wiki query store so topic services no longer own query mechanics.
 - Moved durable job persistence into explicit stores for records, specs, logs, and worker locks.
 - Removed the old top-level `src/jobs/` source bucket; job runtime and projections now live under `src/services/jobs/`, durable job schemas live under `src/stores/jobs/`, and detached worker spawning lives under `src/platform/jobs/`.
 - Split the old public `src/services/jobs/jobs.ts` bucket into owned read, log, cancel, and repo-root service files.
@@ -127,7 +128,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice deleted the mixed `src/services/wiki/topic-graph-mutations.ts` bucket. Topic creation and parent-promotion policy now live in `src/services/wiki/topic-create.ts`, while graph edge link/unlink policy lives in `src/services/wiki/topic-edge-mutations.ts`; `src/services/wiki/topics.ts` remains the stable public facade for command callers.
+The latest slice moved topic page lookup SQL out of `src/services/wiki/topic-read.ts` and into `src/stores/wiki/query/topics.ts`. Topic services now choose direct vs descendant-inclusive page mode, while the query store owns `page_topics` joins, archive filtering, ordering, and descendant expansion.
 
 Verification passed:
 

@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 
 import { toKebabCase } from "../../../shared/slug.js";
+import { descendantsInDb } from "../topics/dag.js";
 import { pageSummaries, type PageSummary } from "./pages.js";
 
 export interface TopicSummary {
@@ -109,4 +110,50 @@ export function topicDetail(
   );
 
   return { ...row, parents, children, pages };
+}
+
+export function topicPageSlugs(
+  db: Database.Database,
+  rawSlug: string,
+  options: { includeDescendants?: boolean } = {},
+): string[] {
+  const slug = toKebabCase(rawSlug);
+  if (options.includeDescendants === true) {
+    return pageSlugsForTopicSubtree(db, slug);
+  }
+  return pageSlugsForTopic(db, slug);
+}
+
+function pageSlugsForTopic(
+  db: Database.Database,
+  slug: string,
+): string[] {
+  return db
+    .prepare<[string], { page_slug: string }>(
+      `SELECT pt.page_slug
+       FROM page_topics pt
+       JOIN pages p ON p.slug = pt.page_slug
+       WHERE pt.topic_slug = ? AND p.archived_at IS NULL
+       ORDER BY pt.page_slug`,
+    )
+    .all(slug)
+    .map((row) => row.page_slug);
+}
+
+function pageSlugsForTopicSubtree(
+  db: Database.Database,
+  slug: string,
+): string[] {
+  const slugs = [slug, ...descendantsInDb(db, slug)];
+  const placeholders = slugs.map(() => "?").join(", ");
+  const rows = db
+    .prepare<unknown[], { page_slug: string }>(
+      `SELECT DISTINCT pt.page_slug
+       FROM page_topics pt
+       JOIN pages p ON p.slug = pt.page_slug
+       WHERE pt.topic_slug IN (${placeholders}) AND p.archived_at IS NULL
+       ORDER BY pt.page_slug`,
+    )
+    .all(...slugs);
+  return rows.map((row) => row.page_slug);
 }

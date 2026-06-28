@@ -109,6 +109,8 @@ Local wiki indexing, query SQL, health checks over indexed data, topic YAML pers
 
 Wiki topic mutation services are split by mutation shape. `src/services/wiki/topic-create.ts` owns topic creation, parent promotion, and create-time parent validation. `src/services/wiki/topic-edge-mutations.ts` owns link/unlink edge workflows. `src/services/wiki/topic-page-mutations.ts` owns rename/delete workflows that coordinate topic metadata with page frontmatter rewrites. The public `src/services/wiki/topics.ts` facade can re-export all topic verbs, but the deleted `topic-graph-mutations.ts` bucket should not return.
 
+Topic read services select product mode and shape result contracts. Raw topic page lookup SQL belongs in `src/stores/wiki/query/topics.ts`, including direct `page_topics` reads, archived-page filtering, descendant expansion, and slug ordering.
+
 Topic rename/delete services decide which topic mutation to perform. The store owns the page-file scan and frontmatter read/rewrite mechanics through `src/stores/wiki/topics/page-rewrite.ts` and `frontmatter-rewrite.ts`.
 
 ### Viewer read models are viewer-edge code

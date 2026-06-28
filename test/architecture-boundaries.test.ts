@@ -482,6 +482,8 @@ describe("architecture boundaries", () => {
       "src/edges/cli/register-topic-mutation-commands.ts",
     );
     const topicTypes = await readSource("src/services/wiki/topic-types.ts");
+    const topicReadService = await readSource("src/services/wiki/topic-read.ts");
+    const topicQueryStore = await readSource("src/stores/wiki/query/topics.ts");
     const topicWorkspace = await readSource(
       "src/services/wiki/topic-workspace.ts",
     );
@@ -522,6 +524,13 @@ describe("architecture boundaries", () => {
     expect(topicsCommandTypes).toContain("color?: boolean");
     expect(topicTypes).not.toContain("stores/wiki/query");
     expect(topicTypes).not.toContain("query.");
+    expect(topicReadService).toContain("topicPageSlugs");
+    expect(topicReadService).not.toContain("db.prepare");
+    expect(topicReadService).not.toContain("SELECT pt.page_slug");
+    expect(topicReadService).not.toContain("descendantsInDb");
+    expect(topicQueryStore).toContain("export function topicPageSlugs");
+    expect(topicQueryStore).toContain("SELECT pt.page_slug");
+    expect(topicQueryStore).toContain("descendantsInDb");
     expect(topicTypes).not.toContain("WikiTopicRequest extends WikiTopicsRequest");
     expect(topicTypes).not.toContain(
       "DescribeWikiTopicRequest extends WikiTopicsRequest",

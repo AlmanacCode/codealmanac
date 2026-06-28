@@ -1,8 +1,5 @@
-import type Database from "better-sqlite3";
-
 import { toKebabCase } from "../../shared/slug.js";
 import * as query from "../../stores/wiki/query/index.js";
-import { descendantsInDb } from "../../stores/wiki/topics/dag.js";
 import { topicTitleFromSlug } from "../../stores/wiki/topics/title.js";
 import type {
   WikiTopicRecord,
@@ -37,9 +34,9 @@ export async function readWikiTopic(
     const detail = query.topics.topicDetail(db, slug);
     if (detail === null) return { status: "missing", slug };
 
-    const pageSlugs = request.descendants === true
-      ? pagesForTopicSubtree(db, slug)
-      : pagesDirectlyTaggedWithTopic(db, slug);
+    const pageSlugs = query.topics.topicPageSlugs(db, slug, {
+      includeDescendants: request.descendants === true,
+    });
 
     return {
       status: "found",
@@ -80,38 +77,4 @@ function topicSummaryFromQuery(
     page_count: summary.page_count,
     parents: summary.parents,
   };
-}
-
-function pagesDirectlyTaggedWithTopic(
-  db: Database.Database,
-  slug: string,
-): string[] {
-  return db
-    .prepare<[string], { page_slug: string }>(
-      `SELECT pt.page_slug
-       FROM page_topics pt
-       JOIN pages p ON p.slug = pt.page_slug
-       WHERE pt.topic_slug = ? AND p.archived_at IS NULL
-       ORDER BY pt.page_slug`,
-    )
-    .all(slug)
-    .map((r) => r.page_slug);
-}
-
-function pagesForTopicSubtree(
-  db: Database.Database,
-  slug: string,
-): string[] {
-  const slugs = [slug, ...descendantsInDb(db, slug)];
-  const placeholders = slugs.map(() => "?").join(", ");
-  const rows = db
-    .prepare<unknown[], { page_slug: string }>(
-      `SELECT DISTINCT pt.page_slug
-       FROM page_topics pt
-       JOIN pages p ON p.slug = pt.page_slug
-       WHERE pt.topic_slug IN (${placeholders}) AND p.archived_at IS NULL
-       ORDER BY pt.page_slug`,
-    )
-    .all(...slugs);
-  return rows.map((r) => r.page_slug);
 }

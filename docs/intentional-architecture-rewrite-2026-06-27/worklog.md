@@ -1782,3 +1782,10 @@ Two-hundred-fifty-first production slice:
 - Added `src/services/wiki/topic-edge-mutations.ts` for topic link/unlink edge workflows, endpoint promotion from ad-hoc indexed topics, duplicate-edge checks, and cycle prevention.
 - Kept `src/services/wiki/topics.ts` as the stable public topic-service facade for CLI command callers.
 - Strengthened architecture-boundary tests so topic create, edge mutation, and page mutation responsibilities stay separated.
+
+Two-hundred-fifty-second production slice:
+
+- Moved direct and descendant-inclusive topic page lookup SQL from `src/services/wiki/topic-read.ts` into `src/stores/wiki/query/topics.ts`.
+- Added `topicPageSlugs()` as the store-owned query helper for topic page slug reads.
+- Kept topic read services responsible for product mode selection and result shaping, not raw `page_topics` SQL.
+- Strengthened architecture-boundary tests so topic read services cannot regain `db.prepare`, topic page SQL, or DAG-recursive query mechanics.
