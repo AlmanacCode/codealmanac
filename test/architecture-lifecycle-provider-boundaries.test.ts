@@ -578,6 +578,12 @@ describe("architecture boundaries: lifecycle and providers", () => {
       "src/agent/readiness/providers/cursor-cli.ts",
     );
     const claudeAuth = await readSource("src/agent/providers/claude/auth.ts");
+    const claudeAuthCli = await readSource(
+      "src/agent/providers/claude/auth-cli.ts",
+    );
+    const claudeAuthStatus = await readSource(
+      "src/agent/providers/claude/auth-status.ts",
+    );
     const platformAgentCliStatus = await readSource(
       "src/platform/agent-cli-status.ts",
     );
@@ -589,6 +595,10 @@ describe("architecture boundaries: lifecycle and providers", () => {
     expect(existsSync(join(ROOT, "src/agent/providers/claude/auth.ts"))).toBe(
       true,
     );
+    expect(existsSync(join(ROOT, "src/agent/providers/claude/auth-cli.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/agent/providers/claude/auth-status.ts")))
+      .toBe(true);
     expect(existsSync(join(ROOT, "src/agent/readiness/providers/cli-status.ts")))
       .toBe(false);
     expect(existsSync(join(ROOT, "src/platform/agent-cli-status.ts"))).toBe(
@@ -624,6 +634,16 @@ describe("architecture boundaries: lifecycle and providers", () => {
     expect(claudeReadiness).toContain("providers/claude/auth.js");
     expect(claudeReadiness).not.toContain("process.env");
     expect(claudeAuth).not.toContain("process.env");
+    expect(claudeAuth).not.toContain("node:child_process");
+    expect(claudeAuth).not.toContain("createRequire");
+    expect(claudeAuth).not.toContain("JSON.parse");
+    expect(claudeAuth).toContain("auth-cli.js");
+    expect(claudeAuth).toContain("auth-status.js");
+    expect(claudeAuthCli).toContain("node:child_process");
+    expect(claudeAuthCli).toContain("createRequire");
+    expect(claudeAuthCli).toContain("parseClaudeAuthStatus");
+    expect(claudeAuthStatus).toContain("parseClaudeAuthStatus");
+    expect(claudeAuthStatus).toContain("JSON.parse");
     expect(claudeReadiness).toContain("runtime.environment.ANTHROPIC_API_KEY");
     expect(claudeAuth).toContain("environment.ANTHROPIC_API_KEY");
     expect(codexReadiness).toContain("platform/agent-cli-status.js");

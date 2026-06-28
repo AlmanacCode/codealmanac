@@ -2012,3 +2012,11 @@ Two-hundred-eighty-second production slice:
 - Added `src/edges/cli/setup/setup-flow.ts` for sequencing setup plan resolution, guides, global install, auto-update, agent choice, automation, and auto-commit steps.
 - Kept `index.ts` focused on the public setup entrypoint: theme creation, no-op fast path, banner/badge, cancellation handling, completion marker, and next-step rendering.
 - Strengthened setup boundary tests so concrete setup step imports stay in `setup-flow.ts` instead of drifting back into the public entrypoint.
+
+Two-hundred-eighty-third production slice:
+
+- Split Claude auth internals out of `src/agent/providers/claude/auth.ts`.
+- Added `src/agent/providers/claude/auth-cli.ts` for Claude executable discovery, public CLI spawning, legacy SDK CLI spawning, timeout handling, and stdout/stderr collection.
+- Added `src/agent/providers/claude/auth-status.ts` for the parsed Claude auth JSON contract.
+- Kept `auth.ts` as the provider-owned auth policy surface: public auth check, subscription/API-key acceptance, unauthenticated message, and public re-exports.
+- Strengthened provider boundary tests so auth policy does not regain child-process mechanics or raw JSON parsing.

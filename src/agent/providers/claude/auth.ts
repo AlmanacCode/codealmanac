@@ -1,8 +1,11 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
-
-import type { SpawnCliFn, SpawnedProcess } from "../../types.js";
+import type { SpawnCliFn } from "../../types.js";
+import type { ClaudeAuthStatus } from "./auth-status.js";
+import {
+  defaultSpawnCli,
+  legacySdkSpawnCli,
+  readClaudeAuthStatus,
+  resolveClaudeExecutable,
+} from "./auth-cli.js";
 
 /**
  * Claude auth gate — accepts either an active Claude subscription login
@@ -18,60 +21,6 @@ import type { SpawnCliFn, SpawnedProcess } from "../../types.js";
  * `claude auth status --json`. We keep the SDK `cli.js` probe as a legacy
  * fallback for older SDK layouts.
  */
-
-export interface ClaudeAuthStatus {
-  loggedIn: boolean;
-  email?: string;
-  subscriptionType?: string;
-  authMethod?: string;
-}
-
-const AUTH_TIMEOUT_MS = 10_000;
-
-/**
- * Resolve the installed Claude Code executable from PATH. The Agent SDK can
- * accept this path via `pathToClaudeCodeExecutable`, and the auth probe uses
- * the same binary so Almanac agrees with `claude auth status`.
- */
-export function resolveClaudeExecutable(): string | undefined {
-  const result = spawnSync("sh", ["-lc", "command -v claude"], {
-    encoding: "utf8",
-  });
-  if (result.status !== 0) return undefined;
-  const found = result.stdout.trim().split("\n")[0]?.trim();
-  return found !== undefined && found.length > 0 ? found : undefined;
-}
-
-/**
- * Resolve legacy `cli.js` from older `@anthropic-ai/claude-agent-sdk`
- * installs. SDK 0.2.129+ no longer ships this file; callers must treat
- * failure as expected and fall back to the public `claude` binary.
- */
-function resolveCliJsPath(): string {
-  const require = createRequire(import.meta.url);
-  const entry = require.resolve("@anthropic-ai/claude-agent-sdk");
-  return join(dirname(entry), "cli.js");
-}
-
-/**
- * Default subprocess spawner for production use — invokes the installed
- * Claude Code CLI.
- */
-export const defaultSpawnCli: SpawnCliFn = (args: string[]) => {
-  const command = resolveClaudeExecutable() ?? "claude";
-  const child = spawn(command, args, {
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  return child as unknown as SpawnedProcess;
-};
-
-export const legacySdkSpawnCli: SpawnCliFn = (args: string[]) => {
-  const cliPath = resolveCliJsPath();
-  const child = spawn(process.execPath, [cliPath, ...args], {
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  return child as unknown as SpawnedProcess;
-};
 
 /**
  * Check whether the user is authenticated via Claude subscription OAuth.
@@ -90,89 +39,11 @@ export async function checkClaudeAuth(
   spawnCli: SpawnCliFn = defaultSpawnCli,
 ): Promise<ClaudeAuthStatus> {
   if (spawnCli === defaultSpawnCli) {
-    const status = await checkClaudeAuthWith(defaultSpawnCli);
+    const status = await readClaudeAuthStatus(defaultSpawnCli);
     if (status.loggedIn) return status;
-    return await checkClaudeAuthWith(legacySdkSpawnCli);
+    return await readClaudeAuthStatus(legacySdkSpawnCli);
   }
-  return await checkClaudeAuthWith(spawnCli);
-}
-
-async function checkClaudeAuthWith(
-  spawnCli: SpawnCliFn,
-): Promise<ClaudeAuthStatus> {
-  let child: SpawnedProcess;
-  try {
-    child = spawnCli(["auth", "status", "--json"]);
-  } catch {
-    return { loggedIn: false };
-  }
-
-  return new Promise<ClaudeAuthStatus>((resolve) => {
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
-
-    const settle = (value: ClaudeAuthStatus): void => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      resolve(value);
-    };
-
-    const timer = setTimeout(() => {
-      try {
-        child.kill("SIGTERM");
-      } catch {
-        // Kill can fail if the process already exited; nothing we can do.
-      }
-      settle({ loggedIn: false });
-    }, AUTH_TIMEOUT_MS);
-
-    child.stdout.on("data", (data) => {
-      stdout += data.toString();
-    });
-    child.stderr.on("data", (data) => {
-      stderr += data.toString();
-    });
-
-    child.on("error", () => {
-      settle({ loggedIn: false });
-    });
-
-    child.on("close", (code) => {
-      // The SDK writes `{"loggedIn": false, ...}` to stdout with a zero
-      // exit code when the user isn't signed in, so we only reject on
-      // non-zero + empty stdout. An empty stdout with zero exit (shouldn't
-      // happen in practice) also fails safely to `loggedIn: false`.
-      if (code !== 0 && stdout.trim().length === 0) {
-        // `stderr` isn't surfaced to the user here — the caller's error
-        // message covers both auth paths — but it would be captured by
-        // `stderr` if we ever wanted to log it for debugging.
-        void stderr;
-        settle({ loggedIn: false });
-        return;
-      }
-      try {
-        settle(parseClaudeAuthStatus(stdout.trim()));
-      } catch {
-        settle({ loggedIn: false });
-      }
-    });
-  });
-}
-
-function parseClaudeAuthStatus(raw: string): ClaudeAuthStatus {
-  const parsed = JSON.parse(raw) as Record<string, unknown>;
-  const loggedIn = parsed.loggedIn === true;
-  const out: ClaudeAuthStatus = { loggedIn };
-  if (typeof parsed.email === "string") out.email = parsed.email;
-  if (typeof parsed.subscriptionType === "string") {
-    out.subscriptionType = parsed.subscriptionType;
-  }
-  if (typeof parsed.authMethod === "string") {
-    out.authMethod = parsed.authMethod;
-  }
-  return out;
+  return await readClaudeAuthStatus(spawnCli);
 }
 
 /**
@@ -220,7 +91,6 @@ export async function assertClaudeAuth(
   throw err;
 }
 
-// Internal re-export — helps keep the public type surface minimal while
-// still letting tests import the `ChildProcess` shape when needed.
-export type { ChildProcess };
-export type { SpawnCliFn, SpawnedProcess };
+export { resolveClaudeExecutable };
+export type { ClaudeAuthStatus };
+export type { ChildProcess, SpawnCliFn, SpawnedProcess } from "./auth-cli.js";
