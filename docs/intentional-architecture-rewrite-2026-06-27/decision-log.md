@@ -75,6 +75,8 @@ Wiki review command adapters are split by user-facing verb group. `src/edges/cli
 
 Migrate command adapters are split by migration family. `src/edges/cli/commands/migrate/legacy-sources.ts` owns legacy source-frontmatter request shaping, and `automation.ts` owns legacy automation migration request shaping. Migrate rendering lives in `render.ts` under the same folder. The deleted `migrate.ts` and `migrate-render.ts` catchalls should not return.
 
+Agents command adapters are split by user-facing ownership. `src/edges/cli/commands/agents/read.ts` owns list/doctor read request shaping, `default.ts` owns default-provider writes, and `model.ts` owns provider model writes. Agents rendering lives in `render.ts` under the same folder. The deleted `agents.ts` and `agents-render.ts` catchalls should not return; the old `runSetDefaultAgent` and `runSetAgentModel` aliases were removed because callers use the command-named `runAgentsUse` and `runAgentsModel` functions.
+
 ### Transcript file mechanics are platform, sync eligibility is service
 
 Claude and Codex transcript-store scanning, raw transcript snapshot reads, line counting, and JSONL timestamp extraction belong under `src/platform/transcripts/`. The sync service owns quiet-window eligibility, ledger reconciliation, cursor decisions, and Absorb handoff over typed transcript candidates and snapshots.

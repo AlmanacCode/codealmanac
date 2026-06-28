@@ -415,9 +415,28 @@ describe("architecture boundaries: automation, update, config, and agents", () =
     const agentConfigWrite = await readSource(
       "src/services/agents/agent-config-write.ts",
     );
-    const agentsCommand = await readSource("src/edges/cli/commands/agents.ts");
-    const agentsRender = await readSource("src/edges/cli/commands/agents-render.ts");
+    const agentsReadCommand = await readSource(
+      "src/edges/cli/commands/agents/read.ts",
+    );
+    const agentsDefaultCommand = await readSource(
+      "src/edges/cli/commands/agents/default.ts",
+    );
+    const agentsModelCommand = await readSource(
+      "src/edges/cli/commands/agents/model.ts",
+    );
+    const agentsRender = await readSource("src/edges/cli/commands/agents/render.ts");
 
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/agents.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/agents-render.ts")))
+      .toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/agents/read.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/agents/default.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/agents/model.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/agents/render.ts")))
+      .toBe(true);
     expect(existsSync(join(ROOT, "src/services/agents/agents.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/services/agents/agents-view.ts"))).toBe(
       true,
@@ -446,18 +465,30 @@ describe("architecture boundaries: automation, update, config, and agents", () =
     expect(agentConfigWrite).toContain("setConfigEntry");
     expect(agentConfigWrite).not.toContain("parseAgentSelection");
     expect(agentConfigWrite).not.toContain("isAgentProviderId");
-    expect(agentsCommand).toContain("services/agents/index.js");
-    expect(agentsCommand).not.toContain("agent/readiness");
-    expect(agentsCommand).not.toContain("../../config/index");
-    expect(agentsCommand).not.toContain("process.cwd()");
-    expect(agentsCommand).not.toContain("readConfig");
-    expect(agentsCommand).not.toContain("writeConfig");
-    expect(agentsCommand).not.toContain("parseAgentSelection");
-    expect(agentsCommand).not.toContain("isAgentProviderId");
-    expect(agentsCommand).not.toContain("formatTextTable");
-    expect(agentsCommand).not.toContain("readinessLabel");
-    expect(agentsCommand).not.toContain("unknown agent");
-    expect(agentsCommand).not.toContain("missing model");
+    for (const agentsCommand of [
+      agentsReadCommand,
+      agentsDefaultCommand,
+      agentsModelCommand,
+    ]) {
+      expect(agentsCommand).toContain("services/agents/index.js");
+      expect(agentsCommand).not.toContain("agent/readiness");
+      expect(agentsCommand).not.toContain("../../config/index");
+      expect(agentsCommand).not.toContain("process.cwd()");
+      expect(agentsCommand).not.toContain("readConfig");
+      expect(agentsCommand).not.toContain("writeConfig");
+      expect(agentsCommand).not.toContain("parseAgentSelection");
+      expect(agentsCommand).not.toContain("isAgentProviderId");
+      expect(agentsCommand).not.toContain("formatTextTable");
+      expect(agentsCommand).not.toContain("readinessLabel");
+      expect(agentsCommand).not.toContain("unknown agent");
+      expect(agentsCommand).not.toContain("missing model");
+      expect(agentsCommand).not.toContain("runSetDefaultAgent");
+      expect(agentsCommand).not.toContain("runSetAgentModel");
+    }
+    expect(agentsReadCommand).toContain("runAgentsList");
+    expect(agentsReadCommand).toContain("runAgentsDoctor");
+    expect(agentsDefaultCommand).toContain("runAgentsUse");
+    expect(agentsModelCommand).toContain("runAgentsModel");
     expect(agentsRender).toContain("renderAgentsList");
     expect(agentsRender).toContain("renderAgentsDoctor");
     expect(agentsRender).toContain("renderSetDefaultAgentResult");

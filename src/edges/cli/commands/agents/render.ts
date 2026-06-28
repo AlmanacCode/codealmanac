@@ -3,8 +3,8 @@ import type {
   AgentsProviderReadiness,
   AgentsProviderView,
   AgentUseResult,
-} from "../../../services/agents/index.js";
-import { formatTextTable } from "./table.js";
+} from "../../../../services/agents/index.js";
+import { formatTextTable } from "../table.js";
 
 export interface AgentsResult {
   stdout: string;

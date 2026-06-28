@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 273 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 274 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -130,6 +130,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Split jobs CLI command adapters into read, logs, cancel, render, and format owner files, deleting the old jobs command/render/format catchalls.
 - Split wiki review CLI command adapters into add, read, decision, markdown, and render owner files, deleting the old review command/render catchalls.
 - Split migrate CLI command adapters into legacy-sources, automation, and render owner files, deleting the old migrate command/render catchalls.
+- Split agents CLI command adapters into read, default-provider, model, and render owner files, deleting the old agents command/render catchalls and unused alias exports.
 - Moved the provider-neutral operation spec contract into `src/shared/operation-spec.ts`, so lifecycle services build specs, job stores persist them, and provider adapters execute them without stores or providers importing lifecycle service internals.
 - Moved worker-lock and sync-lock process ownership/liveness facts out of stores; stores now persist lock files over injected owner PID and liveness contracts while CLI/worker edges provide platform process probes.
 - Moved repeated store atomic-write temp-file mechanics into `src/stores/atomic-write.ts`, removing process-PID temp names from job and sync stores.
@@ -148,12 +149,12 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice split migrate CLI command adapters by migration family. Legacy source-frontmatter migration, automation migration, and migrate rendering now live under `src/edges/cli/commands/migrate/`; the old `src/edges/cli/commands/migrate.ts` and `migrate-render.ts` catchalls are gone.
+The latest slice split agents CLI command adapters by user-facing ownership. Provider list/doctor reads, default-provider writes, model writes, and agents rendering now live under `src/edges/cli/commands/agents/`; the old `src/edges/cli/commands/agents.ts` and `agents-render.ts` catchalls are gone.
 
 Verification passed:
 
 - `npm run lint`
-- `npx vitest run test/architecture-lifecycle-provider-boundaries.test.ts test/automation.test.ts test/health.test.ts`
+- `npx vitest run test/architecture-automation-update-boundaries.test.ts test/agents-command.test.ts`
 - `npx vitest run test/architecture-*-boundaries.test.ts`
 - `git diff --check`
 - `npm test`
@@ -178,7 +179,7 @@ Previous full-slice verification also passed:
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, automation scheduler app composition, automation command adapter ownership, jobs command adapter ownership, review command adapter ownership, migrate command adapter ownership, setup instruction runtime composition, provider setup-view ownership, setup provider-fix runtime composition, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, Absorb source contract ownership, prompt loader mechanics, update runtime composition, update notifier ownership, setup runtime composition, sync transcript runtime composition, sync-to-job session lookup, CLI app composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, operation-output type ownership, path-equality contract ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, review command markdown ownership, lifecycle workflow type ownership, lifecycle workflow verb ownership, lifecycle command adapter verb ownership, path construction ownership, shared helper-contract ownership, wiki command target resolution, cross-wiki health coordination, job service view ownership, and lifecycle/job starter result ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, remaining platform modules that read config/store state directly, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, automation scheduler app composition, automation command adapter ownership, jobs command adapter ownership, review command adapter ownership, migrate command adapter ownership, agents command adapter ownership, setup instruction runtime composition, provider setup-view ownership, setup provider-fix runtime composition, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, Absorb source contract ownership, prompt loader mechanics, update runtime composition, update notifier ownership, setup runtime composition, sync transcript runtime composition, sync-to-job session lookup, CLI app composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, operation-output type ownership, path-equality contract ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, review command markdown ownership, lifecycle workflow type ownership, lifecycle workflow verb ownership, lifecycle command adapter verb ownership, path construction ownership, shared helper-contract ownership, wiki command target resolution, cross-wiki health coordination, job service view ownership, and lifecycle/job starter result ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, remaining platform modules that read config/store state directly, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
 
 ## Decision Log
 

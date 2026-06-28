@@ -1944,3 +1944,12 @@ Two-hundred-seventy-third production slice:
 - Added owner-named migrate command files for legacy-sources, automation, and rendering under `src/edges/cli/commands/migrate/`.
 - Updated migrate command registration and tests to import the migration-family adapters directly.
 - Strengthened lifecycle/provider boundary tests so the old migrate command and render catchalls cannot return.
+
+Two-hundred-seventy-fourth production slice:
+
+- Deleted the catchall `src/edges/cli/commands/agents.ts` command adapter.
+- Deleted the catchall `src/edges/cli/commands/agents-render.ts` renderer.
+- Added owner-named agents command files for read, default-provider writes, model writes, and rendering under `src/edges/cli/commands/agents/`.
+- Removed the unused `runSetDefaultAgent` and `runSetAgentModel` alias exports.
+- Updated agent command registration and tests to import the owned adapters directly.
+- Strengthened automation/update/agents boundary tests so the old agents command and render catchalls cannot return.
