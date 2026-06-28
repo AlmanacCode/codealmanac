@@ -1694,7 +1694,8 @@ describe("architecture boundaries", () => {
     expect(lifecycleWorkflows).not.toContain(
       "function lifecycleOperationRunResultFromOperation",
     );
-    expect(lifecycleWorkflows).not.toContain("Command context:");
+    expect(lifecycleWorkflows).toContain("initOperationContext");
+    expect(lifecycleWorkflows).toContain("Command context:");
     expect(lifecycleWorkflows).toContain("runPreparedAbsorbOperationWorkflow");
     expect(lifecycleResults).toContain("lifecycleOperationRunResultFromOperation");
     expect(lifecycleResults).toContain("interface LifecycleOperationFailure");
@@ -1729,7 +1730,9 @@ describe("architecture boundaries", () => {
     expect(operationsCommand).not.toContain("operations.garden");
     expect(operationsCommand).not.toContain("absorb.startRun");
     expect(operationsCommand).not.toContain("initContext");
-    expect(operationsCommand).toContain("formatInitRequestContext");
+    expect(operationsCommand).not.toContain("formatInitRequestContext");
+    expect(operationsCommand).not.toContain("Command context:");
+    expect(operationsCommand).not.toContain("Force requested");
   });
 
   it("keeps Claude provider protocol mechanics in provider-local modules", async () => {

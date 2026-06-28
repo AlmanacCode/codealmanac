@@ -141,6 +141,10 @@ Job worker locks and sync locks are persistence mechanics, but process ownership
 
 `OperationSpec` is the provider-neutral execution and persistence contract for Build, Absorb, and Garden jobs. Lifecycle operations build specs, job stores persist and validate specs, job runtime services execute specs, and provider adapters translate specs into concrete Claude/Codex mechanics. The contract lives in `src/shared/operation-spec.ts` so stores and provider adapters do not import lifecycle service internals just to understand persisted job files or executable run shape.
 
+### Lifecycle workflows own operation prompt context
+
+Command adapters shape argv/options into typed service requests and render service results. They do not compose text that becomes part of an operation prompt. Init-specific prompt context such as force and non-interactive confirmation lives in `src/services/lifecycle/workflows.ts`, next to provider selection and run-mode workflow policy, because it is lifecycle product context rather than CLI rendering.
+
 ### Absorb source resolution is an injected platform resolver
 
 Lifecycle Absorb services own input parsing, target classification, prompt context facts, and the source-resolver contract. They do not import GitHub platform mechanics. `src/platform/sources/absorb.ts` implements the concrete resolver by using `src/platform/github/source.ts` for GitHub refs and normalizing web URLs into service-owned source facts. CLI lifecycle edges inject this resolver for `absorb` and `ingest`, while tests can inject fake resolvers directly.

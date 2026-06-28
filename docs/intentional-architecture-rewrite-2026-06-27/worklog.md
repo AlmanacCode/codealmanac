@@ -1374,3 +1374,9 @@ One-hundred-ninety-eighth production slice:
 - Deleted `src/services/lifecycle/operations/spec.ts` after moving `OperationSpec`, `OperationKind`, `OperationAgentSpec`, and provider session persistence to the shared contract boundary.
 - Updated lifecycle operations, job runtime services, job stores, and provider adapters to import operation specs from `src/shared/operation-spec.ts`.
 - Strengthened architecture-boundary tests so `src/stores/jobs/` cannot import lifecycle service internals for persisted job specs or record operation types.
+
+One-hundred-ninety-ninth production slice:
+
+- Removed init prompt-context formatting from `src/cli/commands/operations.ts`.
+- Added lifecycle-owned init context construction in `src/services/lifecycle/workflows.ts`.
+- Strengthened architecture-boundary tests so operation command adapters cannot reintroduce prompt-context wording while lifecycle workflows own the Build/init command context.
