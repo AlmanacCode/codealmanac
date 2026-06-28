@@ -4,12 +4,12 @@ import {
   parseAgentSelection,
   type ProviderSetupChoice,
   type ProviderSetupView,
-} from "../../agent/readiness/view.js";
+} from "../agents/provider-view.js";
 import {
   disabledAgentProviderMessage,
   formatEnabledAgentProviderList,
   isEnabledAgentProviderId,
-} from "../../agent/provider-enablement.js";
+} from "../../shared/agent-provider-enablement.js";
 import {
   readConfig,
   writeConfig,

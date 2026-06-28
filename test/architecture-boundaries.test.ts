@@ -1208,7 +1208,12 @@ describe("architecture boundaries", () => {
       true,
     );
     expect(existsSync(join(ROOT, "src/stores/config/stored-patch.ts"))).toBe(true);
-    expect(existsSync(join(ROOT, "src/agent/provider-enablement.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/shared/agent-provider-enablement.ts"))).toBe(
+      true,
+    );
+    expect(existsSync(join(ROOT, "src/agent/provider-enablement.ts"))).toBe(
+      false,
+    );
     expect(configCommand).toContain("services/config/index.js");
     expect(configCommand).not.toContain("../../config/index");
     expect(configCommand).not.toContain("node:fs");
@@ -2006,8 +2011,10 @@ describe("architecture boundaries", () => {
 
   it("passes agent readiness runtime facts through an explicit context", async () => {
     const agentTypes = await readSource("src/agent/types.ts");
-    const configProviders = await readSource("src/agent/provider-enablement.ts");
-    const readinessView = await readSource("src/agent/readiness/view.ts");
+    const configProviders = await readSource(
+      "src/shared/agent-provider-enablement.ts",
+    );
+    const providerView = await readSource("src/services/agents/provider-view.ts");
     const readinessStatus = await readSource(
       "src/agent/readiness/providers/status.ts",
     );
@@ -2019,11 +2026,17 @@ describe("architecture boundaries", () => {
     expect(agentTypes).toContain("export interface AgentProviderRuntime");
     expect(agentTypes).toContain("environment: NodeJS.ProcessEnv");
     expect(agentTypes).toContain("checkStatus(runtime: AgentProviderRuntime)");
+    expect(existsSync(join(ROOT, "src/agent/readiness/view.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/services/agents/provider-view.ts"))).toBe(
+      true,
+    );
     expect(configProviders).not.toContain("process.env");
     expect(configProviders).toContain("isCursorEnabled(env: NodeJS.ProcessEnv)");
     expect(configProviders).toContain("getEnabledAgentProviderIds(\n  env: NodeJS.ProcessEnv");
     expect(readinessStatus).toContain("providerRuntime(args)");
-    expect(readinessView).not.toContain("process.env");
+    expect(readinessStatus).toContain("shared/agent-provider-enablement");
+    expect(providerView).not.toContain("process.env");
+    expect(providerView).toContain("buildProviderSetupView");
     expect(claudeReadiness).not.toContain("process.env");
     expect(claudeAuth).not.toContain("process.env");
     expect(claudeReadiness).toContain("runtime.environment.ANTHROPIC_API_KEY");

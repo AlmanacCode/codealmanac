@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 250 committed rewrite commits past `dev`. The worklog records 208 production slices so far.
+The branch has more than 250 committed rewrite commits past `dev`. The worklog records 209 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -30,7 +30,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved registry path reachability checks into `src/stores/wiki-registry/`.
 - Removed the mixed `src/services/jobs/runtime/index.ts` compatibility barrel; callers now import concrete runtime, store, platform, or record-lifecycle modules.
 - Removed the old top-level `src/init/` source bucket; wiki initialization now lives under `src/services/wiki/`, and mechanical `.almanac/` file scaffolding, page-file counting, and absorb-log scanning live under `src/stores/wiki-files/`.
-- Removed the old top-level `src/config/` source bucket; persisted config mechanics now live under `src/stores/config/`, service verbs live under `src/services/config/`, and provider enablement policy lives under `src/agent/`.
+- Removed the old top-level `src/config/` source bucket; persisted config mechanics now live under `src/stores/config/`, service verbs live under `src/services/config/`, and provider enablement policy lives under `src/shared/`.
 - Removed the old top-level `src/wiki/` source bucket; local wiki index, query, health, topic-file, and source-frontmatter mechanics now live under `src/stores/wiki/`.
 - Moved topic page rewrite scanning and frontmatter read mechanics into `src/stores/wiki/topics/`.
 - Removed the `src/services/viewer/` service bucket; viewer-only route read models now live under `src/edges/viewer/read-model/`.
@@ -65,6 +65,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved automation scheduler mechanics behind `src/services/automation/scheduler.ts`, with launchd implementation in `src/platform/automation/scheduler.ts`; automation services no longer import `src/platform/automation/`.
 - Moved concrete agent runtime provider registry creation out of job runtime services; CLI and worker edges now inject a `JobAgentRunner`, while `src/agent/runtime/job-runner.ts` owns provider-registry composition.
 - Moved provider identity and provider-neutral runtime event/final-output/tool contracts into `src/shared/`, so services and stores no longer import provider runtime contract files from `src/agent/runtime/`.
+- Moved provider enablement policy into `src/shared/agent-provider-enablement.ts` and provider setup/readiness view construction into `src/services/agents/provider-view.ts`, leaving `src/agent/readiness/providers/` focused on provider status probing.
 - Moved the provider-neutral operation spec contract into `src/shared/operation-spec.ts`, so lifecycle services build specs, job stores persist them, and provider adapters execute them without stores or providers importing lifecycle service internals.
 - Moved worker-lock and sync-lock process ownership/liveness facts out of stores; stores now persist lock files over injected owner PID and liveness contracts while CLI/worker edges provide platform process probes.
 - Moved repeated store atomic-write temp-file mechanics into `src/stores/atomic-write.ts`, removing process-PID temp names from job and sync stores.
@@ -83,23 +84,24 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved concrete agent instruction install/remove/check mechanics out of `src/agent/` and into `src/platform/setup/instructions.ts`, added `src/shared/setup-instructions.ts` for the setup instruction contract and pure text helpers, and added `src/app/setup-runtime.ts` for concrete runtime composition. Setup services now own setup instruction product verbs over an injected runtime instead of importing agent/platform file mechanics directly.
+The latest slice moved provider enablement policy out of `src/agent/provider-enablement.ts` and into `src/shared/agent-provider-enablement.ts`, then moved the provider setup/readiness read model out of `src/agent/readiness/view.ts` and into `src/services/agents/provider-view.ts`. Provider status probing remains under `src/agent/readiness/providers/`, while setup, diagnostics, and agents services now consume the service-owned provider view.
 
 Verification passed:
 
-- `npx vitest run test/architecture-boundaries.test.ts test/setup.test.ts test/uninstall.test.ts test/doctor.test.ts`
 - `git diff --check`
 - `npm run lint`
+- `npx vitest run test/architecture-boundaries.test.ts test/provider-view.test.ts test/setup.test.ts test/doctor.test.ts test/agents.test.ts`
 - `npm test`
 - `npm run build`
 - `node dist/launcher.js --help | head -30`
+- `node dist/launcher.js agents --help | head -40`
 - `node dist/launcher.js doctor --json --install-only`
 - `HOME=$(mktemp -d) node dist/launcher.js setup --help | head -40`
-- `HOME=$(mktemp -d) node dist/launcher.js uninstall --help | head -40`
+- `node dist/launcher.js agents list`
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, automation scheduler app composition, setup instruction runtime composition, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, prompt loader mechanics, setup runtime composition, sync transcript runtime composition, sync-to-job session lookup, CLI app composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, review command markdown ownership, and lifecycle workflow type ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, automation scheduler app composition, setup instruction runtime composition, provider setup-view ownership, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, prompt loader mechanics, setup runtime composition, sync transcript runtime composition, sync-to-job session lookup, CLI app composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, review command markdown ownership, and lifecycle workflow type ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
 
 ## Decision Log
 

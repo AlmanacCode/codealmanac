@@ -3,7 +3,7 @@ import {
   parseAgentSelection,
   type ProviderSetupChoice,
   type ProviderSetupView,
-} from "../../agent/readiness/view.js";
+} from "./provider-view.js";
 import {
   isAgentProviderId,
   type AgentProviderId,

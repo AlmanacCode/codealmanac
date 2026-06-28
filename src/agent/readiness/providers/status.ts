@@ -1,7 +1,7 @@
 import {
   getEnabledAgentProviderIds,
   type AgentProviderId,
-} from "../../provider-enablement.js";
+} from "../../../shared/agent-provider-enablement.js";
 import type {
   AgentProviderRuntime,
   ProviderStatus,

@@ -4,7 +4,7 @@ import {
   buildProviderSetupView,
   chooseRecommendedProvider,
   parseAgentSelection,
-} from "../src/agent/readiness/view.js";
+} from "../src/services/agents/provider-view.js";
 import type { ProviderStatus } from "../src/agent/types.js";
 import { defaultConfig } from "../src/stores/config/index.js";
 

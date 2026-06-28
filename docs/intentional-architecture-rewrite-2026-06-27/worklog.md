@@ -1447,3 +1447,11 @@ Two-hundred-eighth production slice:
 - Changed setup guide installation and uninstall cleanup so setup services receive an injected instruction runtime instead of importing agent/platform file mechanics directly.
 - Deleted the now-unearned `src/platform/setup/instructions/managed-block.ts` shim after callers moved to the shared pure helper.
 - Strengthened architecture-boundary tests so setup services cannot reintroduce direct agent instruction or platform setup-instruction mechanics.
+
+Two-hundred-ninth production slice:
+
+- Moved provider enablement policy out of `src/agent/provider-enablement.ts` and into `src/shared/agent-provider-enablement.ts`.
+- Moved the provider setup/readiness read model out of `src/agent/readiness/view.ts` and into `src/services/agents/provider-view.ts`.
+- Kept provider status probing under `src/agent/readiness/providers/`, while setup, diagnostics, and agents services now consume the service-owned provider view.
+- Deleted the old agent-level provider enablement and readiness-view paths instead of keeping compatibility shims.
+- Strengthened architecture-boundary tests so provider enablement is shared, provider setup views are service-owned, and the old agent read-model files stay gone.

@@ -2,17 +2,17 @@ import {
   AGENT_PROVIDER_METADATA,
   getAgentProvider,
   listProviderStatuses,
-} from "./providers/index.js";
+} from "../../agent/readiness/providers/index.js";
 import type {
   ProviderModelChoice,
   ProviderStatus,
   SpawnCliFn,
-} from "../types.js";
+} from "../../agent/types.js";
 import {
   getEnabledAgentProviderIds,
   isAgentProviderId,
   type AgentProviderId,
-} from "../provider-enablement.js";
+} from "../../shared/agent-provider-enablement.js";
 import {
   readConfig,
   type GlobalConfig,
