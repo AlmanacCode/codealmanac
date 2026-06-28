@@ -24,8 +24,8 @@ import { writeState } from "../src/platform/update/state.js";
 import {
   CODEX_INSTRUCTIONS_END,
   CODEX_INSTRUCTIONS_START,
-} from "../src/cli/commands/setup/index.js";
-import { IMPORT_LINE } from "../src/cli/commands/setup/index.js";
+} from "../src/edges/cli/setup/index.js";
+import { IMPORT_LINE } from "../src/edges/cli/setup/index.js";
 import {
   makeRepo,
   scaffoldWiki,

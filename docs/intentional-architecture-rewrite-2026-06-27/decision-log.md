@@ -47,7 +47,7 @@ Doctor probe result contracts that describe local machine facts belong under `sr
 
 ### Setup TUI owns interaction, setup services own install workflows
 
-Setup command files may own terminal prompts and display text. Provider fix-command normalization/execution and global-install state/execution are setup product workflow, so they live under `src/services/setup/` and call platform shell or package-manager mechanics there. CLI setup files should not import `src/platform/shell.ts` or `src/platform/install/global-package.ts` directly.
+Setup terminal prompts, display text, and setup step rendering belong under `src/edges/cli/setup/` because they are CLI interaction surfaces. Provider fix-command normalization/execution and global-install state/execution are setup product workflow, so they live under `src/services/setup/` and call platform shell or package-manager mechanics there. CLI setup edge files should not import `src/platform/shell.ts` or `src/platform/install/global-package.ts` directly.
 
 ### Transcript file mechanics are platform, sync eligibility is service
 

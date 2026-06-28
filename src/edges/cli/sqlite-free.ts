@@ -20,7 +20,7 @@ export interface SetupShortcutOptions {
 }
 
 export interface SqliteFreeDeps {
-  runSetup?: typeof import("../../cli/commands/setup/index.js").runSetup;
+  runSetup?: typeof import("./setup/index.js").runSetup;
   runCodealmanacBootstrap?: typeof runCodealmanacBootstrap;
 }
 
@@ -48,7 +48,7 @@ export async function tryRunSetupShortcut(args: {
   };
 
   const runSetupFn = args.deps.runSetup ??
-    (await import("../../cli/commands/setup/index.js")).runSetup;
+    (await import("./setup/index.js")).runSetup;
   const runCodealmanacBootstrapFn =
     args.deps.runCodealmanacBootstrap ?? runCodealmanacBootstrap;
 

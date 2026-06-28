@@ -14,7 +14,7 @@ import { probeDiagnosticUpdates } from "../../platform/diagnostics/updates.js";
 import { resolveBundledGuidesDir } from "../../platform/install/guides.js";
 
 export interface SetupCommandDeps {
-  runSetup?: typeof import("../../cli/commands/setup/index.js").runSetup;
+  runSetup?: typeof import("./setup/index.js").runSetup;
   runDoctor?: typeof import("../../cli/commands/doctor/index.js").runDoctor;
 }
 
@@ -54,7 +54,7 @@ export function registerSetupCommands(
         autoCommit?: boolean;
       }) => {
         const runSetup = deps.runSetup ??
-          (await import("../../cli/commands/setup/index.js")).runSetup;
+          (await import("./setup/index.js")).runSetup;
         const result = await runSetup({
           yes: opts.yes,
           agent: opts.agent,

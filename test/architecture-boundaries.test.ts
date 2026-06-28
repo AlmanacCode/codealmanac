@@ -1078,7 +1078,7 @@ describe("architecture boundaries", () => {
       "src/services/setup/agent-choice.ts",
     );
     const setupAgentChoice = await readSource(
-      "src/cli/commands/setup/agent-choice.ts",
+      "src/edges/cli/setup/agent-choice.ts",
     );
 
     expect(existsSync(join(ROOT, "src/services/setup/agent-choice.ts"))).toBe(true);
@@ -1115,36 +1115,38 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps setup input controls out of display rendering", async () => {
-    const setupOutput = await readSource("src/cli/commands/setup/output.ts");
-    const setupInput = await readSource("src/cli/commands/setup/input.ts");
-    const setupIndex = await readSource("src/cli/commands/setup/index.ts");
+    const setupOutput = await readSource("src/edges/cli/setup/output.ts");
+    const setupInput = await readSource("src/edges/cli/setup/input.ts");
+    const setupIndex = await readSource("src/edges/cli/setup/index.ts");
     const setupNextSteps = await readSource(
-      "src/cli/commands/setup/next-steps.ts",
+      "src/edges/cli/setup/next-steps.ts",
     );
     const setupAutomationStep = await readSource(
-      "src/cli/commands/setup/automation-step.ts",
+      "src/edges/cli/setup/automation-step.ts",
     );
     const setupAutoUpdateStep = await readSource(
-      "src/cli/commands/setup/auto-update-step.ts",
+      "src/edges/cli/setup/auto-update-step.ts",
     );
     const setupServiceIndex = await readSource("src/services/setup/index.ts");
     const setupWikiState = await readSource("src/services/wiki/setup-state.ts");
-    const setupTypes = await readSource("src/cli/commands/setup/types.ts");
+    const setupTypes = await readSource("src/edges/cli/setup/types.ts");
     const setupRegistration = await readSource(
       "src/edges/cli/register-setup-commands.ts",
     );
     const sqliteFree = await readSource("src/edges/cli/sqlite-free.ts");
     const currentCli = await readSource("src/edges/cli/current-cli.ts");
     const setupCallers = await Promise.all([
-      readSource("src/cli/commands/setup/agent-model-choice.ts"),
-      readSource("src/cli/commands/setup/agent-choice.ts"),
-      readSource("src/cli/commands/setup/global-install-step.ts"),
-      readSource("src/cli/commands/setup/index.ts"),
-      readSource("src/cli/commands/setup/instruction-target-choice.ts"),
-      readSource("src/cli/commands/setup/setup-plan.ts"),
+      readSource("src/edges/cli/setup/agent-model-choice.ts"),
+      readSource("src/edges/cli/setup/agent-choice.ts"),
+      readSource("src/edges/cli/setup/global-install-step.ts"),
+      readSource("src/edges/cli/setup/index.ts"),
+      readSource("src/edges/cli/setup/instruction-target-choice.ts"),
+      readSource("src/edges/cli/setup/setup-plan.ts"),
     ]);
 
-    expect(existsSync(join(ROOT, "src/cli/commands/setup/input.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/cli/commands/setup"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/setup"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/setup/input.ts"))).toBe(true);
     expect(setupInput).not.toContain("process.stdin");
     expect(setupInput).toContain("SetupInputStream");
     expect(setupInput).toContain("from \"./output.js\"");
@@ -1160,7 +1162,7 @@ describe("architecture boundaries", () => {
     expect(setupOutput).not.toContain("export function promptText");
     expect(setupOutput).not.toContain("export async function selectChoice");
     expect(setupOutput).not.toContain("SetupInterruptedError");
-    expect(existsSync(join(ROOT, "src/cli/commands/setup/types.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/setup/types.ts"))).toBe(true);
     expect(setupIndex).not.toContain("interface SetupOptions");
     expect(setupIndex).not.toContain("interface SetupResult");
     expect(setupIndex).not.toContain("process.cwd()");
@@ -1208,7 +1210,7 @@ describe("architecture boundaries", () => {
 
   it("keeps setup global install mechanics in the platform install layer", async () => {
     const globalInstallStep = await readSource(
-      "src/cli/commands/setup/global-install-step.ts",
+      "src/edges/cli/setup/global-install-step.ts",
     );
     const setupGlobalInstall = await readSource(
       "src/services/setup/global-install.ts",
@@ -1220,7 +1222,7 @@ describe("architecture boundaries", () => {
 
     expect(existsSync(join(ROOT, "src/platform/install/global-package.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/setup/global-install.ts"))).toBe(true);
-    expect(existsSync(join(ROOT, "src/cli/commands/setup/install-path.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/setup/install-path.ts"))).toBe(false);
     expect(globalInstallStep).not.toContain("platform/install/global-package.js");
     expect(globalInstallStep).toContain("services/setup/index.js");
     expect(globalInstallStep).not.toContain("node:child_process");
@@ -1259,7 +1261,7 @@ describe("architecture boundaries", () => {
 
   it("keeps setup provider login process execution in the platform layer", async () => {
     const setupAgentChoice = await readSource(
-      "src/cli/commands/setup/agent-choice.ts",
+      "src/edges/cli/setup/agent-choice.ts",
     );
     const setupProviderFixCommand = await readSource(
       "src/services/setup/provider-fix-command.ts",
@@ -1289,13 +1291,13 @@ describe("architecture boundaries", () => {
 
   it("keeps setup provider and model choice UI separate", async () => {
     const setupAgentChoice = await readSource(
-      "src/cli/commands/setup/agent-choice.ts",
+      "src/edges/cli/setup/agent-choice.ts",
     );
     const setupModelChoice = await readSource(
-      "src/cli/commands/setup/agent-model-choice.ts",
+      "src/edges/cli/setup/agent-model-choice.ts",
     );
 
-    expect(existsSync(join(ROOT, "src/cli/commands/setup/agent-model-choice.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/setup/agent-model-choice.ts"))).toBe(true);
     expect(setupAgentChoice).toContain("agent-model-choice.js");
     expect(setupAgentChoice).not.toContain("readSetupProviderModelChoices");
     expect(setupAgentChoice).not.toContain("formatModelChoice");
@@ -1307,7 +1309,7 @@ describe("architecture boundaries", () => {
 
   it("keeps setup auto-commit UI out of config persistence mechanics", async () => {
     const autoCommitStep = await readSource(
-      "src/cli/commands/setup/auto-commit-step.ts",
+      "src/edges/cli/setup/auto-commit-step.ts",
     );
 
     expect(existsSync(join(ROOT, "src/services/setup/auto-commit.ts"))).toBe(true);
@@ -1318,16 +1320,16 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps setup guide UI out of agent instruction install mechanics", async () => {
-    const setupIndex = await readSource("src/cli/commands/setup/index.ts");
+    const setupIndex = await readSource("src/edges/cli/setup/index.ts");
     const setupInstructions = await readSource("src/services/setup/instructions.ts");
-    const guidesStep = await readSource("src/cli/commands/setup/guides-step.ts");
-    const guides = await readSource("src/cli/commands/setup/guides.ts");
+    const guidesStep = await readSource("src/edges/cli/setup/guides-step.ts");
+    const guides = await readSource("src/edges/cli/setup/guides.ts");
     const platformGuides = await readSource("src/platform/install/guides.ts");
     const setupRegistration = await readSource(
       "src/edges/cli/register-setup-commands.ts",
     );
     const targetChoice = await readSource(
-      "src/cli/commands/setup/instruction-target-choice.ts",
+      "src/edges/cli/setup/instruction-target-choice.ts",
     );
 
     expect(existsSync(join(ROOT, "src/services/setup/instructions.ts"))).toBe(true);

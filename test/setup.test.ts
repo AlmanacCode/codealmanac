@@ -11,10 +11,10 @@ import type {
 import {
   hasImportLine,
   runSetup as runSetupCommand,
-} from "../src/cli/commands/setup/index.js";
-import type { SetupOptions } from "../src/cli/commands/setup/index.js";
-import { runAutomationSetupStep } from "../src/cli/commands/setup/automation-step.js";
-import { makeSetupTheme } from "../src/cli/commands/setup/output.js";
+} from "../src/edges/cli/setup/index.js";
+import type { SetupOptions } from "../src/edges/cli/setup/index.js";
+import { runAutomationSetupStep } from "../src/edges/cli/setup/automation-step.js";
+import { makeSetupTheme } from "../src/edges/cli/setup/output.js";
 import { readConfig, writeConfig } from "../src/stores/config/index.js";
 import { withTempHome } from "./helpers.js";
 

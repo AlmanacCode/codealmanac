@@ -1207,3 +1207,10 @@ One-hundred-seventy-seventh production slice:
 - Removed direct filesystem scanning from `src/services/wiki/doctor-absorb.ts`.
 - Kept the wiki doctor service responsible for formatting the `wiki.absorb` check from a store-owned latest-log fact.
 - Strengthened boundary coverage so absorb-log file mechanics stay in `src/stores/wiki-files/`.
+
+One-hundred-seventy-eighth production slice:
+
+- Moved the interactive setup TUI folder from `src/cli/commands/setup/` to `src/edges/cli/setup/`.
+- Updated setup registration, sqlite-free setup shortcut routing, bare CLI setup routing, and setup-focused tests to import the edge-owned setup runner.
+- Kept `src/services/setup/` responsible for setup product workflows: provider choice state, provider fix commands, global install, auto-commit, instruction installation, and cleanup.
+- Strengthened boundary coverage so setup terminal UI lives under the CLI edge instead of the command-adapter package.

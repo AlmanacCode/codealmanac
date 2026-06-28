@@ -10,7 +10,7 @@ import {
   initStartMessage,
   lifecycleForegroundEventHandler,
 } from "../src/edges/cli/lifecycle-events.js";
-import type { SetupResult } from "../src/cli/commands/setup/index.js";
+import type { SetupResult } from "../src/edges/cli/setup/index.js";
 import { withTempHome } from "./helpers.js";
 
 /**

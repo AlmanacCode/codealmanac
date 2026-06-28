@@ -5,9 +5,9 @@ import { describe, expect, it } from "vitest";
 import {
   buildSetupPlan,
   SETUP_DEFAULTS,
-} from "../src/cli/commands/setup/setup-plan.js";
-import { makeSetupTheme } from "../src/cli/commands/setup/output.js";
-import type { SetupOptions } from "../src/cli/commands/setup/index.js";
+} from "../src/edges/cli/setup/setup-plan.js";
+import { makeSetupTheme } from "../src/edges/cli/setup/output.js";
+import type { SetupOptions } from "../src/edges/cli/setup/index.js";
 import { DEFAULT_SETUP_INSTRUCTION_TARGETS } from "../src/services/setup/index.js";
 
 const TEST_CWD = "/tmp/codealmanac-setup-plan";
