@@ -33,6 +33,8 @@ Command adapters shape requests and render results. Services own workflow decisi
 
 Command-private render modules own service-result-to-output branching. When a command receives a discriminated service result, the command should call the service and delegate the status-specific JSON/text/exit-code mapping to its render module instead of becoming a workflow decision layer.
 
+Command adapters can choose between transport-equivalent input sources such as explicit flags and stdin. They should not normalize or classify the user-provided content when the service already owns that product rule. Review commands pass raw markdown text to wiki review services; review services clean trailing whitespace and decide whether markdown is missing.
+
 ### Stores and integrations stay mechanical
 
 Stores own persistence mechanics. Provider adapters, process spawning, app-server protocols, launchd, npm, and OS behavior stay in integration-shaped modules unless they are product service contracts.

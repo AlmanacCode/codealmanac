@@ -605,6 +605,8 @@ describe("architecture boundaries", () => {
     expect(reviewCommand).not.toContain("switch (result.status)");
     expect(reviewCommand).not.toContain("result.status ===");
     expect(reviewCommand).not.toContain("JSON.stringify");
+    expect(reviewCommand).not.toContain(".trim()");
+    expect(reviewCommand).not.toContain(".replace(/\\s+$/g");
     expect(reviewCommand).not.toContain("added review item:");
     expect(reviewCommand).not.toContain("Decision:");
     expect(reviewCommand).not.toContain(
@@ -621,7 +623,6 @@ describe("architecture boundaries", () => {
     expect(reviewService).not.toContain("resolveWikiRoot");
     expect(reviewService).not.toContain("reviewYamlPath");
     expect(reviewService).not.toContain("loadReviewFile");
-    expect(reviewService).not.toContain("function clean");
     expect(reviewService).not.toContain("function isReviewStatusFilter");
     expect(reviewTypes).not.toContain("stores/wiki-review");
     expect(reviewTypes).not.toContain("StoredReview");

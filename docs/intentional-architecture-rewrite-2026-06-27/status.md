@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 230 committed rewrite commits past `dev`. The worklog records 201 production slices so far.
+The branch has more than 230 committed rewrite commits past `dev`. The worklog records 202 production slices so far.
 
-The diff is broad: 496 files changed, with 25,649 insertions and 13,395 deletions.
+The diff is broad: 496 files changed, with 25,659 insertions and 13,398 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -41,6 +41,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Normalized lifecycle operation failures into lifecycle-owned result contracts before command rendering sees them.
 - Moved init prompt context construction out of the operation command adapter and into lifecycle workflows, so command code only shapes flags into service requests and renders service results.
 - Moved raw config-key validation for config get/set/unset into config services, so config command code only passes raw input and renders service result statuses.
+- Moved review markdown cleanup and missing-markdown classification fully into wiki review services, so review commands only choose the raw input source.
 - Moved worker-program shape into `src/shared/worker-program.ts` so lifecycle services no longer import platform worker-process mechanics.
 - Reshaped update install injection so update services accept typed install results while platform update modules own npm child-process mechanics.
 - Moved update state and install-lock persistence into `src/stores/update/`; platform update modules now own registry/npm/version behavior, not JSON state-file mechanics.
@@ -76,23 +77,22 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice added `src/stores/atomic-write.ts` as the store-owned helper for same-directory atomic text writes. Config, update, registry, review, topics, source-maintenance, job record/spec, and sync ledger stores now use the shared helper; job and sync stores no longer read `process.pid` for temp filenames.
+The latest slice removed review markdown normalization from `src/cli/commands/review.ts`. Review command adapters now choose explicit markdown over stdin input and pass the raw text to wiki review services, while `src/services/wiki/review-text.ts` owns markdown cleanup and missing-markdown classification.
 
 Verification passed:
 
-- `npx vitest run test/architecture-boundaries.test.ts test/jobs-records.test.ts test/jobs-queue.test.ts test/sync.test.ts test/update-store.test.ts test/registry.test.ts test/topics.test.ts test/tag.test.ts test/review-command.test.ts test/config-command.test.ts`
+- `npx vitest run test/review-command.test.ts test/architecture-boundaries.test.ts`
 - `git diff --check`
 - `npm run lint`
 - `npm test`
 - `npm run build`
 - `node dist/launcher.js --help | head -40`
 - `node dist/launcher.js doctor --json --install-only`
-- `HOME=$(mktemp -d) node dist/launcher.js config set agent.default codex`
-- `HOME=$(mktemp -d) node dist/launcher.js config get agent.default`
+- `HOME=$(mktemp -d) node dist/launcher.js review add --help`
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, setup runtime composition, sync transcript runtime composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, init prompt-context ownership, config command validation ownership, and store atomic-write ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, setup runtime composition, sync transcript runtime composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, and review command markdown ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
 
 ## Decision Log
 

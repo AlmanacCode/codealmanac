@@ -1394,3 +1394,10 @@ Two-hundred-first production slice:
 - Replaced repeated temp-file-and-rename snippets in config, update state, registry, review, topics, source-maintenance, job record/spec, and sync ledger stores.
 - Removed `process.pid` from job record/spec and sync ledger stores, so process identity remains out of persistence mechanics.
 - Strengthened architecture-boundary tests so store writers use the helper and do not reintroduce process-PID temp paths.
+
+Two-hundred-second production slice:
+
+- Removed review markdown trimming and empty-input classification from `src/cli/commands/review.ts`.
+- Kept review command adapters responsible only for choosing explicit markdown over stdin input and passing that raw text to wiki review services.
+- Left markdown cleanup and missing-markdown classification in `src/services/wiki/review-text.ts` and `src/services/wiki/reviews.ts`.
+- Strengthened architecture-boundary tests so review commands do not reintroduce markdown normalization.

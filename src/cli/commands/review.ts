@@ -59,7 +59,7 @@ export async function runReviewAdd(
     await addWikiReviewItem({
       cwd: options.cwd,
       wiki: options.wiki,
-      markdown: readMarkdown(options),
+      markdown: reviewMarkdownInput(options),
       now: options.now,
     }),
     options.json,
@@ -92,7 +92,7 @@ export async function runReviewDecide(
       cwd: options.cwd,
       wiki: options.wiki,
       id: options.id,
-      markdown: readMarkdown(options),
+      markdown: reviewMarkdownInput(options),
       now: options.now,
     }),
     options.json,
@@ -107,7 +107,7 @@ export async function runReviewApply(
       cwd: options.cwd,
       wiki: options.wiki,
       id: options.id,
-      markdown: readMarkdown(options),
+      markdown: reviewMarkdownInput(options),
       now: options.now,
     }),
     options.json,
@@ -122,7 +122,7 @@ export async function runReviewReopen(
       cwd: options.cwd,
       wiki: options.wiki,
       id: options.id,
-      markdown: readMarkdown(options),
+      markdown: reviewMarkdownInput(options),
       now: options.now,
     }),
   );
@@ -133,9 +133,6 @@ interface ReviewMarkdownInput {
   stdinInput?: string;
 }
 
-function readMarkdown(options: ReviewMarkdownInput): string | undefined {
-  const input = options.markdown ?? options.stdinInput ?? "";
-  const trimmed = input.trim();
-  if (trimmed.length === 0) return undefined;
-  return input.replace(/\s+$/g, "");
+function reviewMarkdownInput(options: ReviewMarkdownInput): string | undefined {
+  return options.markdown ?? options.stdinInput;
 }
