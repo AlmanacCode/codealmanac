@@ -1,7 +1,12 @@
 import { resolve } from "node:path";
 
-import type { AbsorbInputSource } from "./input-source.js";
-import { parseSourceRef, type SourceRef, type WebSourceRef } from "./source-ref.js";
+import {
+  parseSourceRef,
+  webAbsorbInputSource,
+  type AbsorbInputSource,
+  type ResolveSourceFn,
+  type SourceRef,
+} from "../../../shared/absorb-sources.js";
 
 export type AbsorbInputKind = "path" | "source" | "mixed";
 
@@ -12,11 +17,6 @@ export interface ResolvedAbsorbInput {
   sources: AbsorbInputSource[];
   networkAccess: boolean;
 }
-
-export type ResolveSourceFn = (
-  ref: SourceRef,
-  cwd: string,
-) => Promise<AbsorbInputSource>;
 
 export interface ResolveAbsorbInputOptions {
   cwd: string;
@@ -104,19 +104,11 @@ async function resolveSourceRef(args: {
   if (args.ref.provider === "web") {
     return {
       ok: true,
-      value: webInputSource(args.ref),
+      value: webAbsorbInputSource(args.ref),
     };
   }
   return {
     ok: false,
     message: "GitHub source refs require a source resolver.",
-  };
-}
-
-function webInputSource(ref: WebSourceRef): AbsorbInputSource {
-  return {
-    kind: "web.url",
-    raw: ref.raw,
-    url: ref.url,
   };
 }

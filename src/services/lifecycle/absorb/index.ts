@@ -3,20 +3,18 @@ export {
   type AbsorbInputKind,
   type ResolvedAbsorbInput,
   type ResolveAbsorbInputOptions,
-  type ResolveSourceFn,
 } from "./input.js";
 export {
   parseSourceRef,
+  type AbsorbInputSource,
   type GitHubSourceRef,
+  type GitHubAbsorbInputSource,
   type ParseSourceRefResult,
+  type ResolveSourceFn,
   type SourceRef,
+  type WebAbsorbInputSource,
   type WebSourceRef,
-} from "./source-ref.js";
-export type {
-  AbsorbInputSource,
-  GitHubAbsorbInputSource,
-  WebAbsorbInputSource,
-} from "./input-source.js";
+} from "../../../shared/absorb-sources.js";
 export {
   startAbsorbRun as startRun,
   AbsorbInputError,

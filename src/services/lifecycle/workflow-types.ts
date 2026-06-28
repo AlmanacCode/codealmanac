@@ -6,10 +6,12 @@ import type { OperationSpec } from "../../shared/operation-spec.js";
 import type { OperationPromptLoader } from "../../shared/operation-prompts.js";
 import type { IsPidAlive } from "../../shared/pid-liveness.js";
 import type { JobWorkerProgram } from "../../shared/worker-program.js";
+import type {
+  AbsorbInputSource,
+  SourceRef,
+} from "../../shared/absorb-sources.js";
 import type { JobRecord } from "../../stores/jobs/types.js";
 import type { JobAgentRunner } from "../jobs/runtime/agent-runner.js";
-import type { AbsorbInputSource } from "./absorb/input-source.js";
-import type { SourceRef } from "./absorb/source-ref.js";
 import type { LifecycleOperationRunResult } from "./operation-results.js";
 
 export type LifecycleOperationKind = "init" | "absorb" | "garden";

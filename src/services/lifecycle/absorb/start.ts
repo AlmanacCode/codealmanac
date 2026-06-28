@@ -16,11 +16,11 @@ import type {
 } from "../operations/types.js";
 import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
 import type { IsPidAlive } from "../../../shared/pid-liveness.js";
+import type { ResolveSourceFn } from "../../../shared/absorb-sources.js";
 import { renderAbsorbInputContext } from "./context.js";
 import {
   resolveAbsorbInput,
   type ResolvedAbsorbInput,
-  type ResolveSourceFn,
 } from "./input.js";
 
 export class AbsorbInputError extends OperationError {

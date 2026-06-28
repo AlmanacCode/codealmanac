@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseSourceRef } from "../src/services/lifecycle/absorb/source-ref.js";
+import { parseSourceRef } from "../src/shared/absorb-sources.js";
 
 describe("parseSourceRef", () => {
   it("parses GitHub pull request refs", () => {

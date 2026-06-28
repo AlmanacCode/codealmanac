@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 250 committed rewrite commits past `dev`. The worklog records 209 production slices so far.
+The branch has more than 250 committed rewrite commits past `dev`. The worklog records 210 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -54,6 +54,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved update registry/version/install mechanics behind a service-owned `UpdateRuntime` contract, with the real runtime composed in the CLI edge.
 - Moved GitHub source resolution mechanics into `src/platform/github/`.
 - Moved Absorb source resolver composition into `src/platform/sources/absorb.ts` and the CLI edge, so lifecycle Absorb services no longer import platform GitHub mechanics.
+- Moved Absorb source-ref and resolved-source contracts into `src/shared/absorb-sources.ts`, so platform source resolvers no longer import lifecycle service-internal Absorb files.
 - Moved provider execution runtime into `src/agent/runtime/`, especially Claude and Codex app-server mechanics, and made provider runtime environment flow through explicit job/registry contracts.
 - Moved setup, diagnostics, update, automation, jobs, sync, lifecycle, config, and agents workflows behind service-owned contracts.
 - Moved diagnostic probe mechanics into `src/platform/diagnostics/`, while `src/services/diagnostics/` now owns only doctor read models and service-facing re-exports.
@@ -84,24 +85,23 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved provider enablement policy out of `src/agent/provider-enablement.ts` and into `src/shared/agent-provider-enablement.ts`, then moved the provider setup/readiness read model out of `src/agent/readiness/view.ts` and into `src/services/agents/provider-view.ts`. Provider status probing remains under `src/agent/readiness/providers/`, while setup, diagnostics, and agents services now consume the service-owned provider view.
+The latest slice moved Absorb source-ref parsing, parsed-source result types, resolved source input shapes, and the source resolver function contract into `src/shared/absorb-sources.ts`. Lifecycle Absorb input resolution, workflow types, platform source resolution, and GitHub source resolution now meet through that shared contract instead of platform modules importing lifecycle service internals.
 
 Verification passed:
 
 - `git diff --check`
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/provider-view.test.ts test/setup.test.ts test/doctor.test.ts test/agents.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/source-ref.test.ts test/absorb-input.test.ts test/github-source-resolver.test.ts test/absorb-operation.test.ts test/operation-commands.test.ts test/sync.test.ts`
 - `npm test`
 - `npm run build`
-- `node dist/launcher.js --help | head -30`
-- `node dist/launcher.js agents --help | head -40`
+- `node dist/launcher.js --help | head -25`
+- `node dist/launcher.js absorb --help | head -45`
 - `node dist/launcher.js doctor --json --install-only`
-- `HOME=$(mktemp -d) node dist/launcher.js setup --help | head -40`
-- `node dist/launcher.js agents list`
+- `node dist/launcher.js sync --help | head -40`
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, automation scheduler app composition, setup instruction runtime composition, provider setup-view ownership, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, prompt loader mechanics, setup runtime composition, sync transcript runtime composition, sync-to-job session lookup, CLI app composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, review command markdown ownership, and lifecycle workflow type ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, automation scheduler app composition, setup instruction runtime composition, provider setup-view ownership, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, Absorb source contract ownership, prompt loader mechanics, setup runtime composition, sync transcript runtime composition, sync-to-job session lookup, CLI app composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, review command markdown ownership, and lifecycle workflow type ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
 
 ## Decision Log
 

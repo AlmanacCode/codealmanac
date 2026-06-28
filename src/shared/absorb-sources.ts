@@ -1,14 +1,32 @@
+export type AbsorbInputSource = GitHubAbsorbInputSource | WebAbsorbInputSource;
+
+export interface GitHubAbsorbInputSource {
+  kind: "github.pr" | "github.issue";
+  raw: string;
+  repo: string;
+  url: string;
+  number: string;
+}
+
+export interface WebAbsorbInputSource {
+  kind: "web.url";
+  raw: string;
+  url: string;
+}
+
 export type SourceRef = GitHubSourceRef | WebSourceRef;
+
+export interface GitHubRepoRef {
+  owner: string;
+  repo: string;
+}
 
 export type GitHubSourceRef = {
   raw: string;
   provider: "github";
   kind: "pr" | "issue";
   id: string;
-  repo?: {
-    owner: string;
-    repo: string;
-  };
+  repo?: GitHubRepoRef;
 };
 
 export type WebSourceRef = {
@@ -26,6 +44,11 @@ export type ParseSourceRefResult =
       reason: "invalid-source-ref" | "unsupported-source-ref";
       message: string;
     };
+
+export type ResolveSourceFn = (
+  ref: SourceRef,
+  cwd: string,
+) => Promise<AbsorbInputSource>;
 
 export function parseSourceRef(input: string): ParseSourceRefResult {
   const githubUrl = parseGitHubUrl(input);
@@ -61,6 +84,14 @@ export function parseSourceRef(input: string): ParseSourceRefResult {
       kind,
       id,
     },
+  };
+}
+
+export function webAbsorbInputSource(ref: WebSourceRef): WebAbsorbInputSource {
+  return {
+    kind: "web.url",
+    raw: ref.raw,
+    url: ref.url,
   };
 }
 

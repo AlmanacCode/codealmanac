@@ -1,5 +1,5 @@
 import type { ResolvedAbsorbInput } from "./input.js";
-import type { AbsorbInputSource } from "./input-source.js";
+import type { AbsorbInputSource } from "../../../shared/absorb-sources.js";
 
 export function renderAbsorbInputContext(input: ResolvedAbsorbInput): string {
   const lines = [

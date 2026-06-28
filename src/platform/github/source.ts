@@ -2,29 +2,16 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import { UserFacingError } from "../../errors.js";
+import type {
+  GitHubAbsorbInputSource,
+  GitHubRepoRef,
+  GitHubSourceRef,
+} from "../../shared/absorb-sources.js";
 
 const execFileAsync = promisify(execFile);
 
-export interface GitHubRepo {
-  owner: string;
-  repo: string;
-}
-
-export interface GitHubSourceRef {
-  raw: string;
-  provider: "github";
-  kind: "pr" | "issue";
-  id: string;
-  repo?: GitHubRepo;
-}
-
-export interface ResolvedGitHubSource {
-  kind: "github.pr" | "github.issue";
-  raw: string;
-  repo: string;
-  url: string;
-  number: string;
-}
+export type GitHubRepo = GitHubRepoRef;
+export type ResolvedGitHubSource = GitHubAbsorbInputSource;
 
 export type CommandRunner = (
   command: string,

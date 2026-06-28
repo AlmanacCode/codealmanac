@@ -1762,6 +1762,7 @@ describe("architecture boundaries", () => {
     const sharedOperationPrompts = await readSource(
       "src/shared/operation-prompts.ts",
     );
+    const sharedAbsorbSources = await readSource("src/shared/absorb-sources.ts");
     const lifecycleAbsorbIndex = await readSource("src/services/lifecycle/absorb/index.ts");
     const lifecycleAbsorbInput = await readSource("src/services/lifecycle/absorb/input.ts");
     const platformGithubSource = await readSource("src/platform/github/source.ts");
@@ -1782,6 +1783,11 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/platform/prompts.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/agent/prompts.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/shared/operation-prompts.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/shared/absorb-sources.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/services/lifecycle/absorb/input-source.ts")))
+      .toBe(false);
+    expect(existsSync(join(ROOT, "src/services/lifecycle/absorb/source-ref.ts")))
+      .toBe(false);
     expect(existsSync(join(ROOT, "src/platform/github/source.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/platform/sources/absorb.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/operations"))).toBe(false);
@@ -1829,6 +1835,9 @@ describe("architecture boundaries", () => {
     expect(platformPrompts).toContain("resolvePromptsDir");
     expect(sharedOperationPrompts).toContain("OPERATION_PROMPT_NAMES");
     expect(sharedOperationPrompts).toContain("OperationPromptLoader");
+    expect(sharedAbsorbSources).toContain("parseSourceRef");
+    expect(sharedAbsorbSources).toContain("ResolveSourceFn");
+    expect(sharedAbsorbSources).toContain("AbsorbInputSource");
     expect(lifecycleResults).toContain("lifecycleOperationRunResultFromOperation");
     expect(lifecycleResults).toContain("interface LifecycleOperationFailure");
     expect(lifecycleAbsorbIndex).not.toContain("platform/github");
@@ -1836,6 +1845,9 @@ describe("architecture boundaries", () => {
     expect(lifecycleAbsorbInput).not.toContain("resolveGitHubSource");
     expect(platformAbsorbSourceResolver).toContain("resolveGitHubSource");
     expect(platformAbsorbSourceResolver).toContain("ResolveSourceFn");
+    expect(platformAbsorbSourceResolver).toContain("shared/absorb-sources");
+    expect(platformAbsorbSourceResolver).not.toContain("services/lifecycle/absorb");
+    expect(platformGithubSource).toContain("shared/absorb-sources");
     expect(lifecycleCliEdge).toContain("createCliRuntime");
     expect(lifecycleCliEdge).toContain("resolveSource: runtime.resolveAbsorbSource");
     expect(lifecycleCliEdge).toContain("loadPrompt: runtime.loadPrompt");

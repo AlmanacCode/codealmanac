@@ -1455,3 +1455,11 @@ Two-hundred-ninth production slice:
 - Kept provider status probing under `src/agent/readiness/providers/`, while setup, diagnostics, and agents services now consume the service-owned provider view.
 - Deleted the old agent-level provider enablement and readiness-view paths instead of keeping compatibility shims.
 - Strengthened architecture-boundary tests so provider enablement is shared, provider setup views are service-owned, and the old agent read-model files stay gone.
+
+Two-hundred-tenth production slice:
+
+- Added `src/shared/absorb-sources.ts` as the shared contract for Absorb source refs, parsed source-ref results, resolved source input shapes, and the source resolver function.
+- Deleted `src/services/lifecycle/absorb/source-ref.ts` and `src/services/lifecycle/absorb/input-source.ts` after moving their contracts into the shared boundary.
+- Changed lifecycle Absorb input resolution, workflow types, platform source resolution, and GitHub source resolution to meet through the shared source contract.
+- Removed duplicate GitHub source-ref/result interfaces from `src/platform/github/source.ts`.
+- Strengthened architecture-boundary tests so platform source resolution imports `src/shared/absorb-sources.ts` instead of service-internal lifecycle Absorb files.
