@@ -12,7 +12,7 @@ import { BLUE, BOLD, DIM, RST, renderNextStepsBox } from "./output.js";
 export function printNextSteps(
   out: NodeJS.WritableStream,
   existingPageCount: number,
-  mode: "hosted" | "self-managed" = "hosted",
+  mode: "hosted" | "hosted-cloud" | "self-managed" = "hosted",
 ): void {
   if (mode === "self-managed") {
     renderNextStepsBox(out, [
@@ -20,6 +20,15 @@ export function printNextSteps(
       `       ${BOLD}almanac sync --quiet 45m${RST}`,
       `       ${BOLD}almanac garden${RST}`,
       `  ${BLUE}2.${RST}  Query locally:`,
+      `       ${BOLD}almanac search "auth"${RST}`,
+      `       ${BOLD}almanac search --mentions <file>${RST}`,
+    ]);
+    return;
+  } else if (mode === "hosted-cloud") {
+    renderNextStepsBox(out, [
+      `  ${BLUE}1.${RST}  Check hosted capture:`,
+      `       ${BOLD}almanac cloud status${RST}`,
+      `  ${BLUE}2.${RST}  Query locally after .almanac updates land:`,
       `       ${BOLD}almanac search "auth"${RST}`,
       `       ${BOLD}almanac search --mentions <file>${RST}`,
     ]);

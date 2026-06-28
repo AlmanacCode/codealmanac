@@ -32,6 +32,7 @@ describe("setup plan", () => {
     })).resolves.toEqual({
       instructionTargets: [...DEFAULT_INSTRUCTION_TARGETS],
       cliAutoUpdate: SETUP_DEFAULTS.cliAutoUpdate,
+      cloudCapture: SETUP_DEFAULTS.cloudCapture,
       selfManagedAutomation: SETUP_DEFAULTS.selfManagedAutomation,
       autoCommit: SETUP_DEFAULTS.autoCommit,
     });
@@ -50,6 +51,7 @@ describe("setup plan", () => {
     })).resolves.toMatchObject({
       instructionTargets: [],
       cliAutoUpdate: false,
+      cloudCapture: false,
       selfManagedAutomation: false,
       autoCommit: false,
     });
@@ -65,9 +67,11 @@ describe("setup plan", () => {
         automationEvery: "2h",
         autoUpdate: true,
         autoCommit: true,
+        cloudCapture: true,
       },
     })).resolves.toMatchObject({
       instructionTargets: [...DEFAULT_INSTRUCTION_TARGETS],
+      cloudCapture: true,
       selfManagedAutomation: true,
       cliAutoUpdate: true,
       autoCommit: true,
@@ -92,6 +96,7 @@ describe("setup plan", () => {
     const { out, stdout } = setupOutput();
     let answeredTargets = false;
     let answeredUpdate = false;
+    let answeredCloud = false;
     let answeredAutomation = false;
     out.on("data", () => {
       const text = stdout();
@@ -107,6 +112,10 @@ describe("setup plan", () => {
         answeredAutomation = true;
         queueMicrotask(() => process.stdin.emit("data", Buffer.from("\n")));
       }
+      if (!answeredCloud && text.includes("Send Claude/Codex turns to Almanac Cloud?")) {
+        answeredCloud = true;
+        queueMicrotask(() => process.stdin.emit("data", Buffer.from("y\n")));
+      }
     });
 
     await expect(buildSetupPlan({
@@ -116,11 +125,13 @@ describe("setup plan", () => {
     })).resolves.toMatchObject({
       instructionTargets: [...DEFAULT_INSTRUCTION_TARGETS],
       cliAutoUpdate: false,
+      cloudCapture: true,
       selfManagedAutomation: false,
       autoCommit: false,
     });
     expect(answeredTargets).toBe(true);
     expect(answeredUpdate).toBe(true);
+    expect(answeredCloud).toBe(true);
     expect(answeredAutomation).toBe(true);
   });
 
@@ -128,6 +139,7 @@ describe("setup plan", () => {
     const { out, stdout } = setupOutput();
     let answeredTargets = false;
     let answeredUpdate = false;
+    let answeredCloud = false;
     let answeredAutomation = false;
     out.on("data", () => {
       const text = stdout();
@@ -143,6 +155,10 @@ describe("setup plan", () => {
         answeredAutomation = true;
         queueMicrotask(() => process.stdin.emit("data", Buffer.from("\n")));
       }
+      if (!answeredCloud && text.includes("Send Claude/Codex turns to Almanac Cloud?")) {
+        answeredCloud = true;
+        queueMicrotask(() => process.stdin.emit("data", Buffer.from("\n")));
+      }
     });
 
     await expect(buildSetupPlan({
@@ -152,6 +168,7 @@ describe("setup plan", () => {
     })).resolves.toMatchObject({
       instructionTargets: [],
       cliAutoUpdate: true,
+      cloudCapture: false,
       selfManagedAutomation: false,
       autoCommit: false,
     });

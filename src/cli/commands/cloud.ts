@@ -3,6 +3,7 @@ import { renderError } from "../outcome.js";
 import { login, logout, authenticatedClient, readCredentials } from "../../cloud/auth.js";
 import { captureHook } from "../../cloud/capture/hooks.js";
 import type { CloudHookEvent, CloudProvider } from "../../cloud/types.js";
+import { readCloudHooksStatus } from "../../platform/cloud-hooks/status.js";
 
 export async function runCloudLogin(): Promise<CommandResult> {
   const lines: string[] = [];
@@ -47,11 +48,13 @@ export async function runCloudStatus(options: {
   json?: boolean;
 } = {}): Promise<CommandResult> {
   const cwd = options.cwd ?? process.cwd();
+  const hooks = await readCloudHooksStatus();
   const credentials = await readCredentials();
   if (credentials === null) {
     const status = {
       loggedIn: false,
       baseUrl: null,
+      hooks,
       repo: await currentRepoStatus(cwd),
     };
     return formatStatus(status, options.json);
@@ -64,6 +67,7 @@ export async function runCloudStatus(options: {
       loggedIn: true,
       baseUrl: credentials.baseUrl,
       githubLogin: me.githubLogin,
+      hooks,
       repo: await currentRepoStatus(cwd),
     };
     return formatStatus(status, options.json);
@@ -108,6 +112,7 @@ function formatStatus(
     loggedIn: boolean;
     baseUrl: string | null;
     githubLogin?: string;
+    hooks: Awaited<ReturnType<typeof readCloudHooksStatus>>;
     repo: { branch: string | null; headSha: string | null; repoFullName: string | null };
   },
   json?: boolean,
@@ -124,6 +129,8 @@ function formatStatus(
       ? `Cloud: logged in as ${status.githubLogin ?? "your account"}`
       : "Cloud: logged out",
     status.baseUrl === null ? null : `Endpoint: ${status.baseUrl}`,
+    `Codex hooks: ${status.hooks.codex.installed ? "installed" : "missing"}`,
+    `Claude hooks: ${status.hooks.claude.installed ? "installed" : "missing"}`,
     status.repo.repoFullName === null ? "Repository: not detected" : `Repository: ${status.repo.repoFullName}`,
     status.repo.branch === null ? "Branch: missing" : `Branch: ${status.repo.branch}`,
     status.repo.headSha === null ? null : `HEAD: ${status.repo.headSha}`,

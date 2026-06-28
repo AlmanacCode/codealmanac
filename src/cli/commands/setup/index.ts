@@ -14,6 +14,10 @@ import {
   skipAutoUpdateSetupStep,
 } from "./auto-update-step.js";
 import { runAutomationSetupStep } from "./automation-step.js";
+import {
+  runCloudCaptureSetupStep,
+  type CloudCaptureSetupOptions,
+} from "./cloud-capture-step.js";
 export { IMPORT_LINE, hasImportLine } from "./guides.js";
 import { runGlobalInstallStep } from "./global-install-step.js";
 import { runGuidesSetupStep } from "./guides-step.js";
@@ -87,6 +91,8 @@ export interface SetupOptions {
   agent?: string;
   /** Set the default model for the selected provider during setup. */
   model?: string;
+  /** Opt into hosted Claude/Codex turn capture during setup. */
+  cloudCapture?: boolean;
 
   // ─── Injection points (tests only) ────────────────────────────────
   /** Override the subprocess spawner for `claude auth status`. */
@@ -128,6 +134,8 @@ export interface SetupOptions {
    * avoid actually spawning npm during CI).
    */
   spawnGlobalInstall?: () => Promise<void>;
+  /** Override hosted capture setup behavior (tests/internal callers). */
+  cloudCaptureSetup?: CloudCaptureSetupOptions;
 }
 
 export interface SetupResult {
@@ -155,6 +163,7 @@ export async function runSetup(
   if (
     options.skipAutomation === true &&
     options.skipGuides === true &&
+    options.cloudCapture !== true &&
     options.autoCommit === undefined
   ) {
     out.write(
@@ -166,10 +175,12 @@ export async function runSetup(
   printBanner(out);
   printBadge(out);
 
-  let nextStepsMode: "hosted" | "self-managed" = "hosted";
+  let nextStepsMode: "hosted" | "hosted-cloud" | "self-managed" = "hosted";
   try {
     const plan = await buildSetupPlan({ out, interactive, options });
-    nextStepsMode = plan.selfManagedAutomation ? "self-managed" : "hosted";
+    nextStepsMode = plan.selfManagedAutomation
+      ? "self-managed"
+      : plan.cloudCapture ? "hosted-cloud" : "hosted";
 
     const guides = await runGuidesSetupStep({
       out,
@@ -235,6 +246,13 @@ export async function runSetup(
       if (!automation.ok) {
         return { stdout: "", stderr: automation.stderr, exitCode: automation.exitCode };
       }
+    }
+
+    if (plan.cloudCapture) {
+      await runCloudCaptureSetupStep({
+        out,
+        options: options.cloudCaptureSetup ?? {},
+      });
     }
 
     if (plan.selfManagedAutomation || plan.autoCommit || options.autoCommit === false) {

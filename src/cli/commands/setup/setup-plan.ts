@@ -5,6 +5,7 @@ import { confirm } from "./output.js";
 
 export const SETUP_DEFAULTS = {
   cliAutoUpdate: true,
+  cloudCapture: false,
   selfManagedAutomation: false,
   autoCommit: false,
 } as const;
@@ -12,6 +13,7 @@ export const SETUP_DEFAULTS = {
 export interface SetupPlan {
   instructionTargets: InstructionTargetId[];
   cliAutoUpdate: boolean;
+  cloudCapture: boolean;
   selfManagedAutomation: boolean;
   autoCommit: boolean;
 }
@@ -27,6 +29,7 @@ export async function buildSetupPlan(
 ): Promise<SetupPlan> {
   const instructionTargets = await resolveInstructionTargets(args);
   const cliAutoUpdate = await resolveCliAutoUpdate(args);
+  const cloudCapture = await resolveCloudCapture(args);
   const selfManagedAutomation = await resolveSelfManagedAutomation(args);
   const autoCommit = selfManagedAutomation
     ? await resolveAutoCommit(args)
@@ -35,6 +38,7 @@ export async function buildSetupPlan(
   return {
     instructionTargets,
     cliAutoUpdate,
+    cloudCapture,
     selfManagedAutomation,
     autoCommit,
   };
@@ -71,6 +75,18 @@ function hasExplicitLocalAutomationOptions(options: SetupOptions): boolean {
   if (options.gardenEvery !== undefined) return true;
   if (options.gardenOff === true) return true;
   return false;
+}
+
+async function resolveCloudCapture(
+  args: SetupPlanOptions,
+): Promise<boolean> {
+  if (args.options.cloudCapture !== undefined) return args.options.cloudCapture;
+  if (!args.interactive) return SETUP_DEFAULTS.cloudCapture;
+  return await confirmBoolean(
+    args.out,
+    "Send Claude/Codex turns to Almanac Cloud?",
+    SETUP_DEFAULTS.cloudCapture,
+  );
 }
 
 async function resolveAutoCommit(
