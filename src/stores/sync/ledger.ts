@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import { getRepoAlmanacDir } from "../../paths.js";
+import { writeTextFileAtomically } from "../atomic-write.js";
 
 export type LedgerApp = "claude" | "codex";
 
@@ -62,10 +63,7 @@ export async function writeLedger(
 ): Promise<void> {
   ledger.updatedAt = now.toISOString();
   const file = syncLedgerPath(repoRoot);
-  await mkdir(dirname(file), { recursive: true });
-  const tmp = `${file}.tmp-${process.pid}`;
-  await writeFile(tmp, `${JSON.stringify(ledger, null, 2)}\n`, "utf8");
-  await rename(tmp, file);
+  await writeTextFileAtomically(file, `${JSON.stringify(ledger, null, 2)}\n`);
 }
 
 export function syncLedgerPath(repoRoot: string): string {

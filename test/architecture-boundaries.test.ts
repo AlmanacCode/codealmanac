@@ -965,6 +965,31 @@ describe("architecture boundaries", () => {
     expect(syncRegistration).toContain("isLocalPidAlive");
   });
 
+  it("keeps store atomic writes off process identity", async () => {
+    const atomicWrite = await readSource("src/stores/atomic-write.ts");
+    const storeWriters = await Promise.all([
+      readSource("src/stores/jobs/records.ts"),
+      readSource("src/stores/jobs/specs.ts"),
+      readSource("src/stores/sync/ledger.ts"),
+      readSource("src/stores/config/store.ts"),
+      readSource("src/stores/config/editor.ts"),
+      readSource("src/stores/update/state.ts"),
+      readSource("src/stores/wiki-registry/store.ts"),
+      readSource("src/stores/wiki-review/store.ts"),
+      readSource("src/stores/wiki/topics/yaml.ts"),
+      readSource("src/stores/wiki/topics/frontmatter-rewrite.ts"),
+      readSource("src/stores/wiki/sources/maintenance.ts"),
+    ]);
+
+    expect(atomicWrite).toContain("randomUUID");
+    expect(atomicWrite).toContain("writeTextFileAtomically");
+    for (const source of storeWriters) {
+      expect(source).toContain("writeTextFileAtomically");
+      expect(source).not.toContain("process.pid");
+      expect(source).not.toContain(".tmp-${process.pid}");
+    }
+  });
+
   it("keeps automation command adapters out of launchd workflow mechanics", async () => {
     const automationServiceIndex = await readSource("src/services/automation/index.ts");
     const automationServiceTypes = await readSource("src/services/automation/types.ts");

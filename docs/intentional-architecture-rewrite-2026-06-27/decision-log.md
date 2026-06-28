@@ -139,6 +139,8 @@ Provider ids and static provider definitions live in `src/shared/agent-provider.
 
 Job worker locks and sync locks are persistence mechanics, but process ownership and liveness are runtime facts. `src/stores/jobs/worker-lock.ts` and `src/stores/sync/lock.ts` own lock paths, owner-file persistence, stale-lock grace policy, and legacy lock cleanup. CLI and worker edges provide the current owner PID and `isLocalPidAlive` from `src/platform/process.ts` through service workflows. The neutral liveness function type lives in `src/shared/pid-liveness.ts`.
 
+Atomic store writes use a store-owned helper. Stores can own same-directory temp-file creation and rename mechanics, but they should not read process identity to name those temp files. `src/stores/atomic-write.ts` uses UUID temp paths and cleanup-on-failure so config, update, registry, review, topic, job, and sync stores share one persistence mechanism.
+
 ### Operation specs are shared contracts
 
 `OperationSpec` is the provider-neutral execution and persistence contract for Build, Absorb, and Garden jobs. Lifecycle operations build specs, job stores persist and validate specs, job runtime services execute specs, and provider adapters translate specs into concrete Claude/Codex mechanics. The contract lives in `src/shared/operation-spec.ts` so stores and provider adapters do not import lifecycle service internals just to understand persisted job files or executable run shape.

@@ -1,8 +1,9 @@
-import { readFile, rename, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import type Database from "better-sqlite3";
 
+import { writeTextFileAtomically } from "../../atomic-write.js";
 import { ensureFreshIndex } from "../indexer/index.js";
 import { openIndex } from "../indexer/schema.js";
 import {
@@ -31,9 +32,7 @@ export async function writeSourceFrontmatterFix(
   fixed: SourceFrontmatterFixResult,
 ): Promise<void> {
   if (!fixed.changed) return;
-  const tmp = `${filePath}.tmp`;
-  await writeFile(tmp, fixed.output, "utf8");
-  await rename(tmp, filePath);
+  await writeTextFileAtomically(filePath, fixed.output);
 }
 
 export async function migrateLegacySourceFrontmatter(

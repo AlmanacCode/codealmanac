@@ -1,10 +1,10 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { readFile } from "node:fs/promises";
 
 import yaml from "js-yaml";
 
 import { UserFacingError } from "../../../errors.js";
+import { writeTextFileAtomically } from "../../atomic-write.js";
 import { toKebabCase } from "../../../slug.js";
 import { topicTitleFromSlug } from "./title.js";
 
@@ -179,14 +179,7 @@ export async function writeTopicsFile(
     sortKeys: false,
   });
   const content = `${header}${body}`;
-  const tmpPath = `${path}.tmp`;
-  // mkdir parent in case `.almanac/` vanished (shouldn't, but cheap insurance)
-  const parent = dirname(path);
-  if (!existsSync(parent)) {
-    await mkdir(parent, { recursive: true });
-  }
-  await writeFile(tmpPath, content, "utf8");
-  await rename(tmpPath, path);
+  await writeTextFileAtomically(path, content);
 }
 
 /**

@@ -1387,3 +1387,10 @@ Two-hundredth production slice:
 - Added service-owned raw-key entrypoints for config reads and mutations while keeping typed entrypoints for internal callers that already hold a `ConfigKey`.
 - Changed `src/cli/commands/config-render.ts` to render config invalid-request statuses from service results instead of exposing command-side unknown-key and missing-value helpers.
 - Strengthened architecture-boundary tests so config command adapters cannot reintroduce `parseConfigKey` or config validation wording.
+
+Two-hundred-first production slice:
+
+- Added `src/stores/atomic-write.ts` as the store-owned helper for same-directory atomic text writes with unique UUID temp filenames.
+- Replaced repeated temp-file-and-rename snippets in config, update state, registry, review, topics, source-maintenance, job record/spec, and sync ledger stores.
+- Removed `process.pid` from job record/spec and sync ledger stores, so process identity remains out of persistence mechanics.
+- Strengthened architecture-boundary tests so store writers use the helper and do not reintroduce process-PID temp paths.

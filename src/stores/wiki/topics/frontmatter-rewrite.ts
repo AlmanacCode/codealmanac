@@ -1,5 +1,6 @@
-import { readFile, rename, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 
+import { writeTextFileAtomically } from "../../atomic-write.js";
 import { splitFrontmatter } from "./frontmatter-block.js";
 import {
   arraysEqual,
@@ -58,8 +59,8 @@ export interface RewriteResult {
  * Read `filePath`, compute the new topics via `transform`, and
  * atomically rewrite if the result differs.
  *
- * Atomic per file: write to `<path>.tmp` then rename, same pattern as
- * the registry and topics.yaml writers. A half-written page would
+ * Atomic per file: write to a same-directory temp file then rename, same
+ * pattern as the registry and topics.yaml writers. A half-written page would
  * corrupt committed user content, so this is non-negotiable.
  */
 export async function rewritePageTopics(
@@ -72,9 +73,7 @@ export async function rewritePageTopics(
     transform,
   );
   if (changed) {
-    const tmp = `${filePath}.tmp`;
-    await writeFile(tmp, output, "utf8");
-    await rename(tmp, filePath);
+    await writeTextFileAtomically(filePath, output);
   }
   return { before, after, changed };
 }

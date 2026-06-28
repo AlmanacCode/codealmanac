@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import { isAgentProviderId, type AgentProviderId } from "../../shared/agent-provider.js";
+import { writeTextFileAtomically } from "../atomic-write.js";
 import type {
   OperationKind,
   OperationSpec,
@@ -31,10 +32,7 @@ export async function writeJobSpec(
   spec: OperationSpec,
 ): Promise<void> {
   const path = jobSpecPath(repoRoot, jobId);
-  await mkdir(dirname(path), { recursive: true });
-  const tmp = `${path}.tmp-${process.pid}`;
-  await writeFile(tmp, `${JSON.stringify(spec, null, 2)}\n`, "utf8");
-  await rename(tmp, path);
+  await writeTextFileAtomically(path, `${JSON.stringify(spec, null, 2)}\n`);
 }
 
 export async function readJobSpec(

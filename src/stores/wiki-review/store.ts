@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import { toKebabCase } from "../../slug.js";
+import { writeTextFileAtomically } from "../atomic-write.js";
 import {
   emptyReviewFile,
   parseReviewFile,
@@ -41,13 +42,7 @@ export async function writeReviewFile(
   path: string,
   file: ReviewFile,
 ): Promise<void> {
-  const parent = dirname(path);
-  if (!existsSync(parent)) {
-    await mkdir(parent, { recursive: true });
-  }
-  const tmpPath = `${path}.tmp`;
-  await writeFile(tmpPath, serializeReviewFile(file), "utf8");
-  await rename(tmpPath, path);
+  await writeTextFileAtomically(path, serializeReviewFile(file));
 }
 
 export function summaryFromMarkdown(markdown: string): string {

@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import { getRepoAlmanacDir } from "../../paths.js";
+import { writeTextFileAtomically } from "../atomic-write.js";
 import { isJobRecord } from "./record-schema.js";
 import type { JobRecord } from "./types.js";
 
@@ -80,10 +81,7 @@ export async function writeJobRecord(
   path: string,
   record: JobRecord,
 ): Promise<void> {
-  await mkdir(dirname(path), { recursive: true });
-  const tmp = `${path}.tmp-${process.pid}`;
-  await writeFile(tmp, `${JSON.stringify(record, null, 2)}\n`, "utf8");
-  await rename(tmp, path);
+  await writeTextFileAtomically(path, `${JSON.stringify(record, null, 2)}\n`);
 }
 
 export async function readJobRecord(path: string): Promise<JobRecord | null> {

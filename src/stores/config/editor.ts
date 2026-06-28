@@ -1,6 +1,6 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { readFile } from "node:fs/promises";
 
+import { writeTextFileAtomically } from "../atomic-write.js";
 import { parseConfigText, serializeConfig } from "./codec.js";
 import { getConfigPath } from "./paths.js";
 
@@ -18,10 +18,7 @@ export async function writeConfigObject(
   raw: Record<string, unknown>,
   file = getConfigPath(),
 ): Promise<void> {
-  await mkdir(dirname(file), { recursive: true });
-  const tmp = `${file}.tmp`;
-  await writeFile(tmp, serializeConfig(raw, file), "utf8");
-  await rename(tmp, file);
+  await writeTextFileAtomically(file, serializeConfig(raw, file));
 }
 
 export function setNestedConfigValue(

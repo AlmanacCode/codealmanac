@@ -1,9 +1,9 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { dirname } from "node:path";
+import { mkdir, readFile } from "node:fs/promises";
 
 import { getGlobalAlmanacDir, getRegistryPath } from "../../paths.js";
 import { UserFacingError } from "../../errors.js";
+import { writeTextFileAtomically } from "../atomic-write.js";
 
 /**
  * One entry in `~/.almanac/registry.json`.
@@ -105,8 +105,8 @@ export async function readRegistry(): Promise<RegistryEntry[]> {
  * We write with a trailing newline and 2-space indentation so the file is
  * diff-friendly if someone ever commits or inspects it manually.
  *
- * The write is atomic: we write to `registry.json.tmp` and then rename,
- * which is an atomic operation on every mainstream filesystem. This
+ * The write is atomic: we write to a same-directory temp file and then
+ * rename, which is an atomic operation on every mainstream filesystem. This
  * matters because two concurrent `almanac init` (or autoregister) calls
  * from different shells would otherwise race on a partial write and
  * corrupt the file — a single `rename` means one wins cleanly and the
@@ -114,11 +114,8 @@ export async function readRegistry(): Promise<RegistryEntry[]> {
  */
 export async function writeRegistry(entries: RegistryEntry[]): Promise<void> {
   const path = getRegistryPath();
-  await mkdir(dirname(path), { recursive: true });
   const body = `${JSON.stringify(entries, null, 2)}\n`;
-  const tmpPath = `${path}.tmp`;
-  await writeFile(tmpPath, body, "utf8");
-  await rename(tmpPath, path);
+  await writeTextFileAtomically(path, body);
 }
 
 /**

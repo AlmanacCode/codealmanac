@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { readFile } from "node:fs/promises";
 
+import { writeTextFileAtomically } from "../atomic-write.js";
 import { parseConfigText, serializeConfig } from "./codec.js";
 import {
   applyProjectConfig,
@@ -76,14 +76,11 @@ export async function writeConfig(
   path?: string,
 ): Promise<void> {
   const file = path ?? getConfigPath();
-  await mkdir(dirname(file), { recursive: true });
   const current = await readSingleConfig(file);
   const existingRaw = await readRawConfigObject(file);
   const stored = toStoredConfigPatch(config, current, existingRaw);
   const body = serializeConfig(stored, file);
-  const tmp = `${file}.tmp`;
-  await writeFile(tmp, body, "utf8");
-  await rename(tmp, file);
+  await writeTextFileAtomically(file, body);
 }
 
 export async function ensureAutomationSyncSince(
@@ -120,10 +117,7 @@ export async function ensureAutomationSyncSince(
   automation.sync_since = canonical;
   delete automation.capture_since;
   raw.automation = automation;
-  await mkdir(dirname(file), { recursive: true });
-  const tmp = `${file}.tmp`;
-  await writeFile(tmp, serializeConfig(raw, file), "utf8");
-  await rename(tmp, file);
+  await writeTextFileAtomically(file, serializeConfig(raw, file));
   return canonical;
 }
 

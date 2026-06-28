@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import { getGlobalAlmanacDir } from "../../paths.js";
+import { writeTextFileAtomically } from "../atomic-write.js";
 
 /**
  * `~/.almanac/update-state.json` is regenerable cache state for the update
@@ -62,11 +63,8 @@ export async function writeState(
   path?: string,
 ): Promise<void> {
   const file = path ?? getStatePath();
-  await mkdir(dirname(file), { recursive: true });
   const body = `${JSON.stringify(state, null, 2)}\n`;
-  const tmp = `${file}.tmp`;
-  await writeFile(tmp, body, "utf8");
-  await rename(tmp, file);
+  await writeTextFileAtomically(file, body);
 }
 
 function parseUpdateState(raw: string): UpdateState | null {
