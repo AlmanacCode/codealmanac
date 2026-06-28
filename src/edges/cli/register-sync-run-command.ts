@@ -10,8 +10,8 @@ export function registerSyncRunCommand(sync: Command): void {
     using?: string;
     json?: boolean;
   }) => {
-    const { runSyncCommand } = await import("./commands/sync.js");
-    const result = await runSyncCommand({
+    const { runSyncRunCommand } = await import("./commands/sync/run.js");
+    const result = await runSyncRunCommand({
       ...syncRuntimeInput(),
       from: opts.from,
       quiet: opts.quiet,

@@ -1,18 +1,9 @@
-import {
-  runSyncWorkflow,
-  type SyncWorkflowOptions,
-} from "../../../services/sync/index.js";
-import type { AgentRuntimeRunner } from "../../../shared/agent-runtime/runner.js";
-import type { IsPidAlive } from "../../../shared/pid-liveness.js";
-import { renderSyncResult } from "./sync-render.js";
+import type { AgentRuntimeRunner } from "../../../../shared/agent-runtime/runner.js";
+import type { IsPidAlive } from "../../../../shared/pid-liveness.js";
+import type { SyncWorkflowOptions } from "../../../../services/sync/index.js";
 
-export interface SyncCommandOptions {
+export interface SyncCommandRuntimeOptions {
   cwd: string;
-  mode?: "sync" | "status";
-  from?: string;
-  quiet?: string;
-  using?: string;
-  json?: boolean;
   now?: Date;
   homeDir: string;
   configPath?: string;
@@ -26,23 +17,21 @@ export interface SyncCommandOptions {
   transcriptRuntime: SyncWorkflowOptions["transcriptRuntime"];
 }
 
-export interface SyncCommandResult {
+export interface SyncCommandOutput {
   stdout: string;
   stderr: string;
   exitCode: number;
 }
 
-export async function runSyncCommand(
-  options: SyncCommandOptions,
-): Promise<SyncCommandResult> {
-  return renderSyncResult(
-    await runSyncWorkflow(toSyncWorkflowOptions(options)),
-    options.json,
-  );
+export interface SyncWorkflowCommandOptions extends SyncCommandRuntimeOptions {
+  mode?: "sync" | "status";
+  from?: string;
+  quiet?: string;
+  using?: string;
 }
 
-function toSyncWorkflowOptions(
-  options: SyncCommandOptions,
+export function toSyncWorkflowOptions(
+  options: SyncWorkflowCommandOptions,
 ): SyncWorkflowOptions {
   return {
     mode: options.mode,

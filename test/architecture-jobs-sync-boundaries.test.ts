@@ -8,18 +8,43 @@ const ROOT = process.cwd();
 
 describe("architecture boundaries: jobs and sync", () => {
   it("keeps the sync command owning its command contract", async () => {
-    const syncCommand = await readSource("src/edges/cli/commands/sync.ts");
-    const syncRender = await readSource("src/edges/cli/commands/sync-render.ts");
+    const syncRunCommand = await readSource(
+      "src/edges/cli/commands/sync/run.ts",
+    );
+    const syncStatusCommand = await readSource(
+      "src/edges/cli/commands/sync/status.ts",
+    );
+    const syncOptions = await readSource(
+      "src/edges/cli/commands/sync/options.ts",
+    );
+    const syncRender = await readSource("src/edges/cli/commands/sync/render.ts");
 
-    expect(existsSync(join(ROOT, "src/edges/cli/commands/sync-render.ts"))).toBe(true);
-    expect(syncCommand).not.toContain("import type { CommandResult }");
-    expect(syncCommand).not.toContain("extends SyncWorkflowOptions");
-    expect(syncCommand).toContain("homeDir: string");
-    expect(syncCommand).toContain("toSyncWorkflowOptions");
-    expect(syncCommand).not.toContain("renderOutcome");
-    expect(syncCommand).not.toContain("renderError");
-    expect(syncCommand).not.toContain("function renderSyncSummary");
-    expect(syncCommand).not.toContain("sync status completed");
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/sync.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/sync-render.ts"))).toBe(
+      false,
+    );
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/sync/run.ts"))).toBe(
+      true,
+    );
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/sync/status.ts"))).toBe(
+      true,
+    );
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/sync/options.ts"))).toBe(
+      true,
+    );
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/sync/render.ts"))).toBe(
+      true,
+    );
+    for (const syncCommand of [syncRunCommand, syncStatusCommand]) {
+      expect(syncCommand).not.toContain("import type { CommandResult }");
+      expect(syncCommand).not.toContain("extends SyncWorkflowOptions");
+      expect(syncCommand).not.toContain("renderOutcome");
+      expect(syncCommand).not.toContain("renderError");
+      expect(syncCommand).not.toContain("function renderSyncSummary");
+      expect(syncCommand).not.toContain("sync status completed");
+    }
+    expect(syncOptions).toContain("homeDir: string");
+    expect(syncOptions).toContain("toSyncWorkflowOptions");
     expect(syncRender).toContain("renderSyncResult");
     expect(syncRender).toContain("function renderSyncSummary");
   });

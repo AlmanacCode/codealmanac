@@ -37,7 +37,15 @@ describe("architecture boundaries: lifecycle and providers", () => {
     const transcriptDiscovery = await readSource("src/platform/transcripts/index.ts");
     const transcriptRuntime = await readSource("src/platform/transcripts/runtime.ts");
     const sharedTranscripts = await readSource("src/shared/transcripts.ts");
-    const syncCommand = await readSource("src/edges/cli/commands/sync.ts");
+    const syncRunCommand = await readSource(
+      "src/edges/cli/commands/sync/run.ts",
+    );
+    const syncStatusCommand = await readSource(
+      "src/edges/cli/commands/sync/status.ts",
+    );
+    const syncOptions = await readSource(
+      "src/edges/cli/commands/sync/options.ts",
+    );
     const syncRegistration = await readSource(
       "src/edges/cli/register-sync-commands.ts",
     );
@@ -105,7 +113,9 @@ describe("architecture boundaries: lifecycle and providers", () => {
     expect(syncSweepResults).not.toContain("platform/transcripts");
     expect(syncSweepResults).not.toContain("syncCursorContext");
     expect(jobsProviderSessions).toContain("listJobRecords");
-    expect(syncCommand).not.toContain("platform/transcripts");
+    for (const syncCommand of [syncRunCommand, syncStatusCommand, syncOptions]) {
+      expect(syncCommand).not.toContain("platform/transcripts");
+    }
     expect(syncRegistration).not.toContain("platform/transcripts");
     expect(syncRegistration).toContain("registerSyncRunCommand(sync)");
     expect(syncRegistration).toContain("registerSyncStatusCommand(sync)");
@@ -115,7 +125,7 @@ describe("architecture boundaries: lifecycle and providers", () => {
     expect(syncRunRegistration).toContain("syncRuntimeInput()");
     expect(syncRunRegistration).toContain("using: opts.using");
     expect(syncStatusRegistration).toContain("syncStatusRuntimeInput()");
-    expect(syncStatusRegistration).toContain('mode: "status"');
+    expect(syncStatusRegistration).toContain("runSyncStatusCommand");
     expect(syncStatusRegistration).not.toContain("startBackground");
     expect(appCliRuntime).toContain("createPlatformSyncTranscriptRuntime");
     expect(appCliRuntime).toContain("shared/transcripts.js");
@@ -132,16 +142,20 @@ describe("architecture boundaries: lifecycle and providers", () => {
     expect(transcriptDiscovery).not.toContain("services/sync");
     expect(sharedTranscripts).toContain("TranscriptSourceApp");
     expect(sharedTranscripts).toContain("interface SyncTranscriptRuntime");
-    expect(syncCommand).toContain("services/sync/index.js");
-    expect(syncCommand).not.toContain("../../sync");
-    expect(syncCommand).not.toContain("../../operations");
-    expect(syncCommand).not.toContain("readConfig");
-    expect(syncCommand).not.toContain("parseDuration");
-    expect(syncCommand).not.toContain("homedir");
-    expect(syncCommand).not.toContain("discoverTranscriptCandidates");
-    expect(syncCommand).not.toContain("sync completed");
-    expect(syncCommand).not.toContain("providerForRepo");
-    expect(syncCommand).not.toContain("syncAbsorbContext");
+    expect(syncRunCommand).toContain("services/sync/index.js");
+    expect(syncStatusCommand).toContain("services/sync/index.js");
+    expect(syncOptions).toContain("services/sync/index.js");
+    for (const syncCommand of [syncRunCommand, syncStatusCommand, syncOptions]) {
+      expect(syncCommand).not.toContain("../../sync");
+      expect(syncCommand).not.toContain("../../operations");
+      expect(syncCommand).not.toContain("readConfig");
+      expect(syncCommand).not.toContain("parseDuration");
+      expect(syncCommand).not.toContain("homedir");
+      expect(syncCommand).not.toContain("discoverTranscriptCandidates");
+      expect(syncCommand).not.toContain("sync completed");
+      expect(syncCommand).not.toContain("providerForRepo");
+      expect(syncCommand).not.toContain("syncAbsorbContext");
+    }
     expect(syncSweep).not.toContain("interface SyncSummary");
     expect(syncSweep).not.toContain("function cursorContext");
     expect(syncSweep).not.toContain("syncCursorContext");

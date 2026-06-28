@@ -1969,3 +1969,11 @@ Two-hundred-seventy-sixth production slice:
 - Added owner-named tag command files for apply, remove, and rendering under `src/edges/cli/commands/tag/`.
 - Updated page-topic command registration and tag tests to import apply/remove adapters directly.
 - Strengthened wiki command boundary tests so the old tag command and render catchalls cannot return.
+
+Two-hundred-seventy-seventh production slice:
+
+- Deleted the catchall `src/edges/cli/commands/sync.ts` command adapter.
+- Deleted the catchall `src/edges/cli/commands/sync-render.ts` renderer.
+- Added owner-named sync command files for run, status, shared option mapping, and rendering under `src/edges/cli/commands/sync/`.
+- Updated sync command registration and sync tests to import run/status adapters directly.
+- Strengthened jobs/sync and lifecycle/provider boundary tests so the old sync command and render catchalls cannot return.

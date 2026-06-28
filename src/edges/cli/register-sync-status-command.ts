@@ -18,10 +18,9 @@ export function registerSyncStatusCommand(sync: Command): void {
     .option("--json", "emit structured JSON")
     .action(async (opts: SyncStatusOptions, command: Command) => {
       const parentOpts = command.parent?.opts<SyncStatusOptions>() ?? {};
-      const { runSyncCommand } = await import("./commands/sync.js");
-      const result = await runSyncCommand({
+      const { runSyncStatusCommand } = await import("./commands/sync/status.js");
+      const result = await runSyncStatusCommand({
         ...syncStatusRuntimeInput(),
-        mode: "status",
         from: opts.from ?? parentOpts.from,
         quiet: opts.quiet ?? parentOpts.quiet,
         json: opts.json ?? parentOpts.json,

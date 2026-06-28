@@ -1,14 +1,14 @@
-import { renderError, renderOutcome } from "./outcome.js";
+import { renderError, renderOutcome } from "../outcome.js";
 import type {
   SyncWorkflowResult,
   SyncWorkflowSummary,
-} from "../../../services/sync/index.js";
-import type { SyncCommandResult } from "./sync.js";
+} from "../../../../services/sync/index.js";
+import type { SyncCommandOutput } from "./options.js";
 
 export function renderSyncResult(
   result: SyncWorkflowResult,
   json: boolean | undefined,
-): SyncCommandResult {
+): SyncCommandOutput {
   if (result.status === "invalid") {
     return renderError(result.error, { json });
   }
@@ -18,7 +18,7 @@ export function renderSyncResult(
 function renderSyncSummary(
   summary: SyncWorkflowSummary,
   json: boolean | undefined,
-): SyncCommandResult {
+): SyncCommandOutput {
   const statusMode = summary.mode === "status";
   const action = statusMode ? "ready" : "started";
   const actionCount = statusMode ? summary.ready.length : summary.started.length;

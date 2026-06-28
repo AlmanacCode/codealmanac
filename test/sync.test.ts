@@ -4,9 +4,10 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  runSyncCommand as runSyncCommandHandler,
-  type SyncCommandOptions,
-} from "../src/edges/cli/commands/sync.js";
+  type SyncCommandRuntimeOptions,
+} from "../src/edges/cli/commands/sync/options.js";
+import { runSyncRunCommand } from "../src/edges/cli/commands/sync/run.js";
+import { runSyncStatusCommand } from "../src/edges/cli/commands/sync/status.js";
 import { createPlatformSyncTranscriptRuntime } from "../src/platform/transcripts/runtime.js";
 import type { AgentRuntimeRunner } from "../src/shared/agent-runtime/runner.js";
 import type { OperationPromptLoader } from "../src/shared/operation-prompts.js";
@@ -27,7 +28,7 @@ const TEST_AGENT_RUNNER: AgentRuntimeRunner = async () => ({
 const TEST_PROMPT_LOADER: OperationPromptLoader = async (name) => `${name} prompt`;
 
 type SyncCommandTestOptions = Omit<
-  SyncCommandOptions,
+  SyncCommandRuntimeOptions,
   | "agentRunner"
   | "workerEnvironment"
   | "workerProgram"
@@ -36,17 +37,22 @@ type SyncCommandTestOptions = Omit<
   | "loadPrompt"
   | "transcriptRuntime"
 > & {
+  mode?: "sync" | "status";
+  from?: string;
+  quiet?: string;
+  using?: string;
+  json?: boolean;
   agentRunner?: AgentRuntimeRunner;
   workerEnvironment?: NodeJS.ProcessEnv;
-  workerProgram?: SyncCommandOptions["workerProgram"];
+  workerProgram?: SyncCommandRuntimeOptions["workerProgram"];
   pid?: number;
-  isPidAlive?: SyncCommandOptions["isPidAlive"];
+  isPidAlive?: SyncCommandRuntimeOptions["isPidAlive"];
   loadPrompt?: OperationPromptLoader;
-  transcriptRuntime?: SyncCommandOptions["transcriptRuntime"];
+  transcriptRuntime?: SyncCommandRuntimeOptions["transcriptRuntime"];
 };
 
 function runSyncCommand(options: SyncCommandTestOptions) {
-  return runSyncCommandHandler({
+  const commandOptions = {
     ...options,
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
@@ -56,7 +62,12 @@ function runSyncCommand(options: SyncCommandTestOptions) {
     loadPrompt: options.loadPrompt ?? TEST_PROMPT_LOADER,
     transcriptRuntime: options.transcriptRuntime ??
       createPlatformSyncTranscriptRuntime(),
-  });
+  };
+
+  if (options.mode === "status") {
+    return runSyncStatusCommand(commandOptions);
+  }
+  return runSyncRunCommand(commandOptions);
 }
 
 describe("almanac sync", () => {
