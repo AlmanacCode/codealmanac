@@ -281,8 +281,8 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps serve startup rendering out of server lifetime control", async () => {
-    const serveCommand = await readSource("src/cli/commands/serve.ts");
-    const serveRender = await readSource("src/cli/commands/serve-render.ts");
+    const serveEdge = await readSource("src/edges/cli/serve.ts");
+    const serveRender = await readSource("src/edges/cli/serve-render.ts");
     const viewerServer = await readSource("src/edges/viewer/server.ts");
     const viewerReadModel = await readSource("src/edges/viewer/read-model/api.ts");
     const viewerJobs = await readSource("src/edges/viewer/read-model/jobs.ts");
@@ -291,23 +291,24 @@ describe("architecture boundaries", () => {
       "src/edges/cli/register-query-commands.ts",
     );
 
-    expect(existsSync(join(ROOT, "src/cli/commands/serve-render.ts"))).toBe(
-      true,
-    );
+    expect(existsSync(join(ROOT, "src/cli/commands/serve.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/cli/commands/serve-render.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/serve.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/serve-render.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/cli/interrupt.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/viewer/server.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/viewer/read-model/api.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/viewer"))).toBe(false);
     expect(existsSync(join(ROOT, "src/viewer/server.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/viewer/api.ts"))).toBe(false);
-    expect(serveCommand).toContain("edges/viewer/server.js");
-    expect(serveCommand).toContain("./serve-render.js");
-    expect(serveCommand).toContain("waitForStop");
-    expect(serveCommand).not.toContain("process.stdout");
-    expect(serveCommand).not.toContain("process.once");
-    expect(serveCommand).not.toContain("SIGINT");
-    expect(serveCommand).not.toContain("almanac console:");
-    expect(serveCommand).not.toContain("Press Ctrl+C");
+    expect(serveEdge).toContain("../viewer/server.js");
+    expect(serveEdge).toContain("./serve-render.js");
+    expect(serveEdge).toContain("waitForStop");
+    expect(serveEdge).not.toContain("process.stdout");
+    expect(serveEdge).not.toContain("process.once");
+    expect(serveEdge).not.toContain("SIGINT");
+    expect(serveEdge).not.toContain("almanac console:");
+    expect(serveEdge).not.toContain("Press Ctrl+C");
     expect(serveRender).toContain("almanac console:");
     expect(serveRender).toContain("Press Ctrl+C");
     expect(viewerServer).not.toContain("process.once");
@@ -323,6 +324,7 @@ describe("architecture boundaries", () => {
     expect(cliInterrupt).toContain("process.once");
     expect(cliInterrupt).toContain("SIGINT");
     expect(registerQueryCommands).toContain("waitForCliInterrupt");
+    expect(registerQueryCommands).toContain("./serve.js");
     expect(registerQueryCommands).toContain("write: (chunk)");
   });
 

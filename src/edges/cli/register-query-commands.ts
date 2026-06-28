@@ -20,9 +20,8 @@ export function registerQueryCommands(program: Command): void {
     .option("--port <n>", "port to bind", parsePositiveInt, 3927)
     .action(async (opts: { host?: string; port?: number }) => {
       await autoRegisterIfNeeded(process.cwd());
-      const { runServe } = await import("../../cli/commands/serve.js");
+      const { runServe } = await import("./serve.js");
       await runServe({
-        cwd: process.cwd(),
         host: opts.host,
         port: opts.port,
         waitForStop: waitForCliInterrupt,

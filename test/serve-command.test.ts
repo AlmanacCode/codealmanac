@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildQueuedJobRecord,
-} from "../src/services/jobs/record-lifecycle.js";
+import { buildQueuedJobRecord } from "../src/services/jobs/record-lifecycle.js";
 import {
   jobRecordPath,
   writeJobRecord,
 } from "../src/stores/jobs/index.js";
-import { runServe } from "../src/cli/commands/serve.js";
-import { renderServeStartup } from "../src/cli/commands/serve-render.js";
+import { runServe } from "../src/edges/cli/serve.js";
+import { renderServeStartup } from "../src/edges/cli/serve-render.js";
 import { startViewerServer } from "../src/edges/viewer/server.js";
 import { addEntry } from "../src/stores/wiki-registry/index.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
@@ -25,7 +23,6 @@ describe("serve command rendering", () => {
     let stopped = false;
 
     await runServe({
-      cwd: "/repo",
       port: 0,
       write: (chunk) => {
         chunks.push(chunk);
@@ -99,7 +96,7 @@ describe("viewer server", () => {
         };
         expect(suggest.pages.map((p) => p.slug)).toEqual(["sync-flow"]);
 
-      const jobs = await fetch(`${server.url}/api/wikis/alpha/jobs`).then((r) => r.json()) as {
+        const jobs = await fetch(`${server.url}/api/wikis/alpha/jobs`).then((r) => r.json()) as {
           runs: Array<{ id: string }>;
         };
         expect(jobs.runs.map((run) => run.id)).toEqual([record.id]);

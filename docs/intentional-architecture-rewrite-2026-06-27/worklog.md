@@ -1171,3 +1171,11 @@ One-hundred-seventy-second production slice:
 - Updated sync to read job records through `src/stores/jobs/index.ts` instead of the job runtime facade.
 - Updated job-related tests to import record lifecycle, store persistence, worker lock, logs, snapshots, and runtime execution helpers from their owning modules.
 - Strengthened boundary coverage so the mixed job runtime barrel stays deleted.
+
+One-hundred-seventy-third production slice:
+
+- Moved `almanac serve` server-lifetime orchestration from `src/cli/commands/serve.ts` to `src/edges/cli/serve.ts`.
+- Moved serve startup rendering from `src/cli/commands/serve-render.ts` to `src/edges/cli/serve-render.ts`.
+- Deleted the old command files instead of leaving compatibility paths.
+- Updated command registration so `serve` imports the CLI-edge runner directly.
+- Strengthened boundary coverage so `src/cli/commands/serve.ts` and `src/cli/commands/serve-render.ts` stay deleted while viewer HTTP serving remains under `src/edges/viewer/`.

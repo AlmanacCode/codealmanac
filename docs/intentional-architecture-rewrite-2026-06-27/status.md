@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 220 committed rewrite commits past `dev`. The worklog records 172 production slices so far.
+The branch has 221 committed rewrite commits past `dev`. The worklog records 173 production slices so far.
 
-The diff is broad: 461 files changed, with 22,996 insertions and 12,366 deletions.
+The diff is broad: 462 files changed, with 23,019 insertions and 12,383 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -25,6 +25,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Removed the old top-level `src/config/` source bucket; persisted config mechanics now live under `src/stores/config/`, service verbs live under `src/services/config/`, and provider enablement policy lives under `src/agent/`.
 - Removed the old top-level `src/wiki/` source bucket; local wiki index, query, health, topic-file, and source-frontmatter mechanics now live under `src/stores/wiki/`.
 - Removed the `src/services/viewer/` service bucket; viewer-only route read models now live under `src/edges/viewer/read-model/`.
+- Moved `almanac serve` process lifetime and startup rendering into `src/edges/cli/`, leaving viewer server code as the HTTP/static route owner.
 - Moved the hidden internal job worker entrypoint into `src/edges/worker/`; queued job draining remains a job service runtime workflow.
 - Moved sync ledger and lock persistence into explicit stores.
 - Moved local Claude/Codex transcript discovery, transcript snapshot reads, and timestamp boundary parsing into `src/platform/transcripts/` and removed the old top-level `src/sync/` source bucket.
@@ -51,13 +52,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice deleted the mixed `src/services/jobs/runtime/index.ts` compatibility barrel. Lifecycle, sync, and job tests now import concrete runtime, store, platform, or record-lifecycle modules from their owning homes.
+The latest slice moved `almanac serve` process lifetime and startup rendering from `src/cli/commands/` into `src/edges/cli/`. The old command files were deleted, and command registration now imports the edge runner directly.
 
-Verification passed: `npm run lint`, focused jobs/lifecycle/sync/boundary tests with 150 tests, full `npm test` with 656 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js jobs --help`, and `node dist/codealmanac.js doctor --help`.
+Verification passed: `npm run lint`, focused serve/viewer/boundary tests, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js serve --help`, and `node dist/codealmanac.js doctor --help`.
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, and worker entrypoints have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, and serve process lifetime have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
 
 ## Decision Log
 

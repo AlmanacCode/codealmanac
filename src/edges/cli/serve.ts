@@ -1,4 +1,4 @@
-import { startViewerServer } from "../../edges/viewer/server.js";
+import { startViewerServer } from "../viewer/server.js";
 import { renderServeStartup, type ServeStartup } from "./serve-render.js";
 
 export type { ServeStartup } from "./serve-render.js";
@@ -7,7 +7,6 @@ export type ServeWriter = (chunk: string) => void | Promise<void>;
 export type ServeWaitForStop = () => Promise<void>;
 
 export interface ServeOptions {
-  cwd: string;
   host?: string;
   port?: number;
   write?: ServeWriter;
