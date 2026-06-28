@@ -1,4 +1,16 @@
 export {
+  SETUP_DEFAULTS,
+  resolveSetupPlan,
+  shouldPromptForAutoCommit,
+  shouldPromptForCliAutoUpdate,
+  shouldPromptForSelfManagedAutomation,
+} from "./setup-plan.js";
+export type {
+  SetupPlan,
+  SetupPlanPromptInput,
+  SetupPlanRequest,
+} from "./setup-plan.js";
+export {
   applySetupAutoCommit,
 } from "./auto-commit.js";
 export type {

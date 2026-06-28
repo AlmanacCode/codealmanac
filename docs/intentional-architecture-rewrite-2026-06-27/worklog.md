@@ -1744,3 +1744,11 @@ Two-hundred-forty-sixth production slice:
 - Added `src/services/jobs/cancel.ts` for durable cancellation, process-signal invocation through the injected request callback, and cancelled record finalization.
 - Added `src/services/jobs/repo-root.ts` for shared nearest-wiki-root resolution used by public jobs service verbs.
 - Strengthened architecture-boundary tests so public jobs read, log, cancel, and repo-root responsibilities stay separated.
+
+Two-hundred-forty-seventh production slice:
+
+- Moved setup plan defaults and gate-selection policy from `src/edges/cli/setup/setup-plan.ts` into `src/services/setup/setup-plan.ts`.
+- Kept the CLI setup plan file responsible for collecting instruction-target choices and terminal yes/no answers.
+- Added service-owned prompt eligibility helpers for CLI auto-update, self-managed automation, and auto-commit setup prompts.
+- Added service-owned setup plan resolution so skip flags, explicit automation flags, agent/model flags, and interactive answers become one typed plan outside the edge.
+- Strengthened setup plan tests and architecture-boundary tests so setup policy stays in services while terminal prompting stays in the CLI edge.

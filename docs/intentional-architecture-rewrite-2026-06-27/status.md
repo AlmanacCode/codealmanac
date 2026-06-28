@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 246 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 247 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -94,6 +94,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved setup runtime ports into `src/shared/setup-runtime.ts`, so platform setup mechanics no longer import setup service files for contract types.
 - Moved setup shell/global-install mechanics behind `src/platform/setup/runtime.ts`, so setup services own contracts/results while the CLI setup edge owns concrete runtime composition.
 - Split setup agent-choice services into state persistence, setup-specific contracts, provider-view mapping, and selection validation files.
+- Moved setup plan defaults and gate-selection policy into `src/services/setup/setup-plan.ts`, leaving the CLI setup edge to collect terminal answers and render steps.
 - Split the automation task catalog out of platform launchd mechanics: task meaning/defaults live under `src/services/automation/tasks.ts`, while plist/log paths live under `src/platform/automation/paths.ts`.
 - Moved the automation scheduler port into `src/shared/automation-scheduler.ts`, so launchd platform mechanics no longer import automation services.
 - Moved automation scheduler mechanics behind the shared scheduler port, with launchd implementation in `src/platform/automation/scheduler.ts`; automation services no longer import `src/platform/automation/`.
@@ -122,12 +123,12 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice split the old public `src/services/jobs/jobs.ts` mixed service bucket. Job list/show reads now live in `read.ts`, log read/attach streaming lives in `log-read.ts`, cancellation lives in `cancel.ts`, and nearest-wiki-root resolution lives in `repo-root.ts`.
+The latest slice moved setup plan policy out of the CLI edge. `src/services/setup/setup-plan.ts` now owns setup defaults, prompt eligibility, and flag/answer-to-plan resolution, while `src/edges/cli/setup/setup-plan.ts` only collects instruction targets and terminal answers before calling the service policy.
 
 Verification passed:
 
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/jobs-command.test.ts test/jobs-records.test.ts test/jobs-worker.test.ts`
+- `npx vitest run test/setup-plan.test.ts test/setup.test.ts test/architecture-boundaries.test.ts`
 - `git diff --check`
 - `npm test`
 - `npm run build`
@@ -138,7 +139,7 @@ Verification passed:
 Previous full-slice verification also passed:
 
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/config-command.test.ts test/agents-command.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/jobs-command.test.ts test/jobs-records.test.ts test/jobs-worker.test.ts`
 - `git diff --check`
 - `npm test`
 - `npm run build`

@@ -1,21 +1,19 @@
+import {
+  resolveSetupPlan,
+  SETUP_DEFAULTS,
+  shouldPromptForAutoCommit,
+  shouldPromptForCliAutoUpdate,
+  shouldPromptForSelfManagedAutomation,
+  type SetupPlan,
+} from "../../../services/setup/setup-plan.js";
 import type { SetupInstructionTargetId } from "../../../services/setup/index.js";
 import type { SetupOptions } from "./types.js";
 import { chooseInstructionTargets } from "./instruction-target-choice.js";
 import { confirm } from "./input.js";
 import type { SetupTheme } from "./output.js";
 
-export const SETUP_DEFAULTS = {
-  cliAutoUpdate: true,
-  selfManagedAutomation: false,
-  autoCommit: false,
-} as const;
-
-export interface SetupPlan {
-  instructionTargets: SetupInstructionTargetId[];
-  cliAutoUpdate: boolean;
-  selfManagedAutomation: boolean;
-  autoCommit: boolean;
-}
+export { SETUP_DEFAULTS };
+export type { SetupPlan };
 
 export interface SetupPlanOptions {
   out: NodeJS.WritableStream;
@@ -28,18 +26,26 @@ export async function buildSetupPlan(
   args: SetupPlanOptions,
 ): Promise<SetupPlan> {
   const instructionTargets = await resolveInstructionTargets(args);
-  const cliAutoUpdate = await resolveCliAutoUpdate(args);
-  const selfManagedAutomation = await resolveSelfManagedAutomation(args);
-  const autoCommit = selfManagedAutomation
-    ? await resolveAutoCommit(args)
-    : resolveExplicitAutoCommit(args.options);
-
-  return {
+  const cliAutoUpdateAnswer = await readCliAutoUpdateAnswer(args);
+  const selfManagedAutomationAnswer = await readSelfManagedAutomationAnswer(args);
+  const selfManagedAutomation = resolveSetupPlan({
+    ...setupPlanInput(args),
     instructionTargets,
-    cliAutoUpdate,
+    cliAutoUpdateAnswer,
+    selfManagedAutomationAnswer,
+  }).selfManagedAutomation;
+  const autoCommitAnswer = await readAutoCommitAnswer(
+    args,
     selfManagedAutomation,
-    autoCommit,
-  };
+  );
+
+  return resolveSetupPlan({
+    ...setupPlanInput(args),
+    instructionTargets,
+    cliAutoUpdateAnswer,
+    selfManagedAutomationAnswer,
+    autoCommitAnswer,
+  });
 }
 
 async function resolveInstructionTargets(
@@ -55,13 +61,12 @@ async function resolveInstructionTargets(
   });
 }
 
-async function resolveSelfManagedAutomation(
+async function readSelfManagedAutomationAnswer(
   args: SetupPlanOptions,
-): Promise<boolean> {
-  if (args.options.skipAutomation === true) return false;
-  if (hasExplicitLocalAutomationOptions(args.options)) return true;
-  if (args.options.agent !== undefined || args.options.model !== undefined) return true;
-  if (!args.interactive) return SETUP_DEFAULTS.selfManagedAutomation;
+): Promise<boolean | undefined> {
+  if (!shouldPromptForSelfManagedAutomation(setupPlanInput(args))) {
+    return undefined;
+  }
   return await confirmBoolean(
     args.options.stdin,
     args.out,
@@ -71,20 +76,19 @@ async function resolveSelfManagedAutomation(
   );
 }
 
-function hasExplicitLocalAutomationOptions(options: SetupOptions): boolean {
-  if (options.automationEvery !== undefined) return true;
-  if (options.automationQuiet !== undefined) return true;
-  if (options.gardenEvery !== undefined) return true;
-  if (options.gardenOff === true) return true;
-  return false;
-}
-
-async function resolveAutoCommit(
+async function readAutoCommitAnswer(
   args: SetupPlanOptions,
-): Promise<boolean> {
-  if (args.options.autoCommit === true) return true;
-  if (args.options.autoCommit === false) return false;
-  if (!args.interactive) return SETUP_DEFAULTS.autoCommit;
+  selfManagedAutomation: boolean,
+): Promise<boolean | undefined> {
+  if (
+    !shouldPromptForAutoCommit({
+      interactive: args.interactive,
+      selfManagedAutomation,
+      autoCommit: args.options.autoCommit,
+    })
+  ) {
+    return undefined;
+  }
   return await confirmBoolean(
     args.options.stdin,
     args.out,
@@ -94,17 +98,12 @@ async function resolveAutoCommit(
   );
 }
 
-function resolveExplicitAutoCommit(options: SetupOptions): boolean {
-  if (options.autoCommit === true) return true;
-  return false;
-}
-
-async function resolveCliAutoUpdate(
+async function readCliAutoUpdateAnswer(
   args: SetupPlanOptions,
-): Promise<boolean> {
-  if (args.options.skipAutomation === true) return false;
-  if (args.options.autoUpdate === true) return true;
-  if (!args.interactive) return SETUP_DEFAULTS.cliAutoUpdate;
+): Promise<boolean | undefined> {
+  if (!shouldPromptForCliAutoUpdate(setupPlanInput(args))) {
+    return undefined;
+  }
   return await confirmBoolean(
     args.options.stdin,
     args.out,
@@ -122,4 +121,32 @@ async function confirmBoolean(
   defaultYes: boolean,
 ): Promise<boolean> {
   return await confirm(input, out, theme, question, defaultYes) === "install";
+}
+
+function setupPlanInput(args: SetupPlanOptions): {
+  interactive: boolean;
+  skipGuides?: boolean;
+  skipAutomation?: boolean;
+  automationEvery?: string;
+  automationQuiet?: string;
+  gardenEvery?: string;
+  gardenOff?: boolean;
+  autoUpdate?: boolean;
+  autoCommit?: boolean;
+  agent?: string;
+  model?: string;
+} {
+  return {
+    interactive: args.interactive,
+    skipGuides: args.options.skipGuides,
+    skipAutomation: args.options.skipAutomation,
+    automationEvery: args.options.automationEvery,
+    automationQuiet: args.options.automationQuiet,
+    gardenEvery: args.options.gardenEvery,
+    gardenOff: args.options.gardenOff,
+    autoUpdate: args.options.autoUpdate,
+    autoCommit: args.options.autoCommit,
+    agent: args.options.agent,
+    model: args.options.model,
+  };
 }

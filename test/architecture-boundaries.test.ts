@@ -1710,6 +1710,8 @@ describe("architecture boundaries", () => {
       "src/edges/cli/setup/auto-update-step.ts",
     );
     const setupServiceIndex = await readSource("src/services/setup/index.ts");
+    const setupServicePlan = await readSource("src/services/setup/setup-plan.ts");
+    const setupEdgePlan = await readSource("src/edges/cli/setup/setup-plan.ts");
     const setupWikiState = await readSource("src/services/wiki/setup-state.ts");
     const setupTypes = await readSource("src/edges/cli/setup/types.ts");
     const setupRegistration = await readSource(
@@ -1762,6 +1764,19 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/services/wiki/setup-state.ts"))).toBe(true);
     expect(setupServiceIndex).not.toContain("readSetupWikiState");
     expect(setupServiceIndex).not.toContain("wiki-state");
+    expect(existsSync(join(ROOT, "src/services/setup/setup-plan.ts"))).toBe(true);
+    expect(setupServiceIndex).toContain("setup-plan.js");
+    expect(setupServicePlan).toContain("SETUP_DEFAULTS");
+    expect(setupServicePlan).toContain("resolveSetupPlan");
+    expect(setupServicePlan).toContain("shouldPromptForCliAutoUpdate");
+    expect(setupServicePlan).toContain("hasExplicitLocalAutomationOptions");
+    expect(setupServicePlan).not.toContain("confirm(");
+    expect(setupServicePlan).not.toContain("NodeJS.WritableStream");
+    expect(setupServicePlan).not.toContain("stdin");
+    expect(setupEdgePlan).toContain("resolveSetupPlan");
+    expect(setupEdgePlan).toContain("shouldPromptForSelfManagedAutomation");
+    expect(setupEdgePlan).not.toContain("const SETUP_DEFAULTS =");
+    expect(setupEdgePlan).not.toContain("function hasExplicitLocalAutomationOptions");
     expect(setupWikiState).toContain("existingPageCount");
     expect(setupWikiState).toContain("countWikiPageFilesSync");
     expect(setupWikiState).not.toContain("node:fs");

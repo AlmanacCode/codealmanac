@@ -6,6 +6,12 @@ import {
   buildSetupPlan,
   SETUP_DEFAULTS,
 } from "../src/edges/cli/setup/setup-plan.js";
+import {
+  resolveSetupPlan,
+  shouldPromptForAutoCommit,
+  shouldPromptForCliAutoUpdate,
+  shouldPromptForSelfManagedAutomation,
+} from "../src/services/setup/setup-plan.js";
 import { makeSetupTheme } from "../src/edges/cli/setup/output.js";
 import type { SetupOptions } from "../src/edges/cli/setup/index.js";
 import { DEFAULT_SETUP_INSTRUCTION_TARGETS } from "../src/services/setup/index.js";
@@ -68,6 +74,53 @@ function setupOutput(): {
 }
 
 describe("setup plan", () => {
+  it("keeps setup policy pure in the service layer", () => {
+    expect(resolveSetupPlan({
+      interactive: false,
+      instructionTargets: [...DEFAULT_SETUP_INSTRUCTION_TARGETS],
+      automationEvery: "2h",
+      autoCommit: true,
+    })).toEqual({
+      instructionTargets: [...DEFAULT_SETUP_INSTRUCTION_TARGETS],
+      cliAutoUpdate: SETUP_DEFAULTS.cliAutoUpdate,
+      selfManagedAutomation: true,
+      autoCommit: true,
+    });
+
+    expect(resolveSetupPlan({
+      interactive: false,
+      instructionTargets: [...DEFAULT_SETUP_INSTRUCTION_TARGETS],
+      skipAutomation: true,
+      skipGuides: true,
+      cliAutoUpdateAnswer: true,
+      selfManagedAutomationAnswer: true,
+      autoCommitAnswer: true,
+    })).toEqual({
+      instructionTargets: [],
+      cliAutoUpdate: false,
+      selfManagedAutomation: false,
+      autoCommit: false,
+    });
+  });
+
+  it("describes which setup prompts the CLI edge should ask", () => {
+    expect(shouldPromptForCliAutoUpdate({
+      interactive: true,
+    })).toBe(true);
+    expect(shouldPromptForCliAutoUpdate({
+      interactive: true,
+      skipAutomation: true,
+    })).toBe(false);
+    expect(shouldPromptForSelfManagedAutomation({
+      interactive: true,
+      automationEvery: "2h",
+    })).toBe(false);
+    expect(shouldPromptForAutoCommit({
+      interactive: true,
+      selfManagedAutomation: false,
+    })).toBe(false);
+  });
+
   it("uses launch defaults in non-interactive setup", async () => {
     const { out, theme } = setupOutput();
 

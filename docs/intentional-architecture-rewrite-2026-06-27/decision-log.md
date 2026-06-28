@@ -59,6 +59,8 @@ Setup terminal prompts, display text, setup step rendering, uninstall confirmati
 
 Setup services own product-level normalization, state/result contracts, and error wrapping for provider fix commands and durable global installs. They do not import shell, npm, install-path, or package-manager mechanics directly. `src/platform/setup/runtime.ts` implements the service-owned setup runtime contracts by composing platform shell and global-install helpers, and `src/edges/cli/setup/` wires that concrete runtime into the setup flow.
 
+Setup plan policy is service-owned. `src/services/setup/setup-plan.ts` owns launch defaults, prompt eligibility, and the rules that combine skip flags, explicit automation flags, agent/model flags, and interactive answers into a typed setup plan. `src/edges/cli/setup/setup-plan.ts` can collect instruction-target selections and terminal yes/no answers, but it should not own the defaults or product gates.
+
 ### Transcript file mechanics are platform, sync eligibility is service
 
 Claude and Codex transcript-store scanning, raw transcript snapshot reads, line counting, and JSONL timestamp extraction belong under `src/platform/transcripts/`. The sync service owns quiet-window eligibility, ledger reconciliation, cursor decisions, and Absorb handoff over typed transcript candidates and snapshots.
