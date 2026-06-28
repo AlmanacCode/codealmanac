@@ -4,5 +4,6 @@ export type {
   UpdateInstallFn,
   UpdateInstallResult,
   UpdateOptions,
+  UpdateRuntime,
   UpdateWorkflowResult,
 } from "./types.js";

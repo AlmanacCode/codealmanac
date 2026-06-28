@@ -1030,6 +1030,7 @@ describe("architecture boundaries", () => {
     const updateService = await readSource("src/services/update/update.ts");
     const updateTypes = await readSource("src/services/update/types.ts");
     const updateInstall = await readSource("src/platform/update/install.ts");
+    const updateRuntime = await readSource("src/platform/update/runtime.ts");
     const updateCheck = await readSource("src/platform/update/check.ts");
     const updateAnnounce = await readSource("src/platform/update/announce.ts");
     const updateStoreIndex = await readSource("src/stores/update/index.ts");
@@ -1071,11 +1072,14 @@ describe("architecture boundaries", () => {
     expect(updateService).not.toContain("stderr:");
     expect(updateService).not.toContain("exitCode:");
     expect(updateService).not.toContain("node:child_process");
+    expect(updateService).not.toContain("platform/update");
     expect(updateService).not.toContain("platform/update/state");
     expect(updateService).not.toContain("platform/update/lock");
     expect(updateService).toContain("stores/update/index.js");
-    expect(updateService).toContain("installFn");
-    expect(updateService).toContain("updateInstallResultFromPlatform");
+    expect(updateService).toContain("opts.runtime.readInstalledVersion()");
+    expect(updateService).toContain("opts.runtime.checkForUpdate");
+    expect(updateService).toContain("opts.runtime.installLatestPackage()");
+    expect(updateService).not.toContain("updateInstallResultFromPlatform");
     expect(updateTypes).not.toContain(
       "UpdateInstallResult = PlatformInstallLatestPackageResult",
     );
@@ -1085,10 +1089,16 @@ describe("architecture boundaries", () => {
     expect(updateTypes).not.toContain("SpawnOptions");
     expect(updateTypes).not.toContain("node:child_process");
     expect(updateTypes).toContain("UpdateInstallFn");
+    expect(updateTypes).toContain("export interface UpdateRuntime");
+    expect(updateTypes).toContain("runtime: UpdateRuntime");
     expect(updateTypes).toContain("pid?: number");
     expect(updateTypes).not.toContain("platform/update/check");
     expect(updateInstall).toContain("node:child_process");
     expect(updateInstall).toContain("spawnFn");
+    expect(updateRuntime).toContain("createPlatformUpdateRuntime");
+    expect(updateRuntime).toContain("installLatestPackage");
+    expect(updateRuntime).toContain("readInstalledVersion");
+    expect(updateRuntime).toContain("updateInstallResultFromPlatform");
     expect(updateCheck).toContain("stores/update/index.js");
     expect(updateAnnounce).toContain("stores/update/index.js");
     expect(updateAnnounce).not.toContain("readFileSync(path");
@@ -1097,6 +1107,8 @@ describe("architecture boundaries", () => {
     expect(updateLockStore).toContain("pid: number");
     expect(updateLockStore).toContain("pid: options.pid");
     expect(updateLockStore).not.toContain("process.pid");
+    expect(setupRegistration).toContain("createPlatformUpdateRuntime");
+    expect(setupRegistration).toContain("runtime: createPlatformUpdateRuntime()");
     expect(setupRegistration).toContain("pid: process.pid");
   });
 

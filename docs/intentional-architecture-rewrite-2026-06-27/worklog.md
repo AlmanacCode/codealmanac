@@ -1293,3 +1293,12 @@ One-hundred-eighty-eighth production slice:
 - Updated CLI automation, migrate automation, setup automation, auto-update setup, and uninstall edges to create the concrete launchd scheduler and pass it into command/service workflows.
 - Deleted obsolete `src/platform/automation/job-plan.ts` and removed the unused plist argument parser from `src/platform/automation/launchd.ts`.
 - Strengthened boundary coverage so automation services stay launchd-free while platform scheduler owns launchd/plist mechanics.
+
+One-hundred-eighty-ninth production slice:
+
+- Added the service-owned `UpdateRuntime` contract for installed-version reads, registry checks, and package installation.
+- Added `src/platform/update/runtime.ts` as the real runtime that composes package-version reading, npm registry checks, and `npm i -g codealmanac@latest`.
+- Removed direct `src/platform/update/check.ts`, `install.ts`, and `version.ts` imports from `src/services/update/update.ts`.
+- Updated the update CLI edge to pass `createPlatformUpdateRuntime()` into `almanac update`.
+- Updated update workflow tests to inject a fake runtime instead of passing service-level `installedVersion`, `checkFn`, and `installFn` knobs.
+- Strengthened boundary coverage so update services stay platform-free while platform update modules own npm, registry, and package-version mechanics.

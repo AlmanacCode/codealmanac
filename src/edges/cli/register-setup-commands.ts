@@ -12,6 +12,7 @@ import {
 } from "../../platform/diagnostics/instructions.js";
 import { probeDiagnosticUpdates } from "../../platform/diagnostics/updates.js";
 import { resolveBundledGuidesDir } from "../../platform/install/guides.js";
+import { createPlatformUpdateRuntime } from "../../platform/update/runtime.js";
 
 export interface SetupCommandDeps {
   runSetup?: typeof import("./setup/index.js").runSetup;
@@ -149,6 +150,7 @@ export function registerSetupCommands(
           check: opts.check,
           enableNotifier: opts.enableNotifier,
           disableNotifier: opts.disableNotifier,
+          runtime: createPlatformUpdateRuntime(),
           pid: process.pid,
         });
         emit(result);

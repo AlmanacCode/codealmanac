@@ -3,22 +3,15 @@ import {
   writeConfig,
   type GlobalConfig,
 } from "../../stores/config/index.js";
-import { checkForUpdate } from "../../platform/update/check.js";
-import {
-  installLatestPackage,
-  type InstallLatestPackageResult,
-} from "../../platform/update/install.js";
-import { readInstalledVersion } from "../../platform/update/version.js";
 import { isNewerVersion } from "../../shared/version.js";
 import { acquireUpdateLock, readState, writeState } from "../../stores/update/index.js";
 import type {
-  UpdateInstallResult,
   UpdateOptions,
   UpdateWorkflowResult,
 } from "./types.js";
 
 export async function runUpdateWorkflow(
-  opts: UpdateOptions = {},
+  opts: UpdateOptions,
 ): Promise<UpdateWorkflowResult> {
   if (opts.enableNotifier === true) {
     return await toggleNotifier(true, opts);
@@ -43,7 +36,7 @@ async function dismissLatest(
     return { status: "no-pending-dismiss" };
   }
 
-  const installed = opts.installedVersion ?? readInstalledVersion();
+  const installed = opts.runtime.readInstalledVersion();
   if (!isNewerVersion(state.latest_version, installed)) {
     return { status: "dismiss-already-current", installed };
   }
@@ -61,9 +54,8 @@ async function dismissLatest(
 }
 
 async function forceCheck(opts: UpdateOptions): Promise<UpdateWorkflowResult> {
-  const installed = opts.installedVersion ?? readInstalledVersion();
-  const checkFn = opts.checkFn ?? checkForUpdate;
-  const result = await checkFn({
+  const installed = opts.runtime.readInstalledVersion();
+  const result = await opts.runtime.checkForUpdate({
     installedVersion: installed,
     force: true,
     statePath: opts.statePath,
@@ -104,9 +96,8 @@ async function toggleNotifier(
 async function installIfNeeded(
   opts: UpdateOptions,
 ): Promise<UpdateWorkflowResult> {
-  const installed = opts.installedVersion ?? readInstalledVersion();
-  const checkFn = opts.checkFn ?? checkForUpdate;
-  const result = await checkFn({
+  const installed = opts.runtime.readInstalledVersion();
+  const result = await opts.runtime.checkForUpdate({
     installedVersion: installed,
     force: true,
     statePath: opts.statePath,
@@ -139,8 +130,7 @@ async function installIfNeeded(
   }
 
   try {
-    const installFn = opts.installFn ?? installLatestPackageForUpdate;
-    const install = await installFn();
+    const install = await opts.runtime.installLatestPackage();
     if (install.code !== 0) {
       return { status: "install-result", result: install };
     }
@@ -149,20 +139,6 @@ async function installIfNeeded(
   } finally {
     await lock.release();
   }
-}
-
-async function installLatestPackageForUpdate(): Promise<UpdateInstallResult> {
-  return updateInstallResultFromPlatform(await installLatestPackage());
-}
-
-function updateInstallResultFromPlatform(
-  result: InstallLatestPackageResult,
-): UpdateInstallResult {
-  return {
-    output: result.stdout,
-    errorOutput: result.stderr,
-    code: result.exitCode,
-  };
 }
 
 async function refreshInstalledState(

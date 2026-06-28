@@ -34,6 +34,12 @@ export interface UpdateInstallResult {
 
 export type UpdateInstallFn = () => Promise<UpdateInstallResult>;
 
+export interface UpdateRuntime {
+  readInstalledVersion(): string;
+  checkForUpdate(request?: UpdateCheckRequest): Promise<UpdateCheckResult>;
+  installLatestPackage(): Promise<UpdateInstallResult>;
+}
+
 export interface UpdateOptions {
   dismiss?: boolean;
   check?: boolean;
@@ -42,9 +48,7 @@ export interface UpdateOptions {
 
   statePath?: string;
   configPath?: string;
-  installedVersion?: string;
-  checkFn?: UpdateCheckFn;
-  installFn?: UpdateInstallFn;
+  runtime: UpdateRuntime;
   pid?: number;
   now?: () => number;
   lockPath?: string;

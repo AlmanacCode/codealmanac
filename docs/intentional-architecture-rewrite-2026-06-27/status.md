@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 230 committed rewrite commits past `dev`. The worklog records 188 production slices so far.
+The branch has more than 230 committed rewrite commits past `dev`. The worklog records 189 production slices so far.
 
-The diff is broad: 483 files changed, with 24,246 insertions and 13,098 deletions.
+The diff is broad: 485 files changed, with 24,473 insertions and 13,097 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -40,6 +40,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved worker-program shape into `src/shared/worker-program.ts` so lifecycle services no longer import platform worker-process mechanics.
 - Reshaped update install injection so update services accept typed install results while platform update modules own npm child-process mechanics.
 - Moved update state and install-lock persistence into `src/stores/update/`; platform update modules now own registry/npm/version behavior, not JSON state-file mechanics.
+- Moved update registry/version/install mechanics behind a service-owned `UpdateRuntime` contract, with the real runtime composed in the CLI edge.
 - Moved GitHub source resolution mechanics into `src/platform/github/`.
 - Moved provider execution runtime into `src/agent/runtime/`, especially Claude and Codex app-server mechanics, and made provider runtime environment flow through explicit job/registry contracts.
 - Moved setup, diagnostics, update, automation, jobs, sync, lifecycle, config, and agents workflows behind service-owned contracts.
@@ -63,9 +64,9 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved automation scheduler mechanics behind a service-owned scheduler contract. Automation services now own task selection, interval validation, install/status/uninstall/migration workflows, and command-array policy over an injected scheduler. The launchd implementation now lives in `src/platform/automation/scheduler.ts`, and CLI/setup/uninstall edges create that concrete scheduler.
+The latest slice moved update registry/version/install mechanics behind a service-owned `UpdateRuntime` contract. `src/services/update/update.ts` now owns update policy over an injected runtime, while `src/platform/update/runtime.ts` composes package-version reads, npm registry checks, and `npm i -g codealmanac@latest` installation.
 
-Verification passed so far: `npx tsc --noEmit --pretty false` and focused automation/setup/uninstall/boundary tests.
+Verification passed so far: `npx tsc --noEmit --pretty false` and focused update/boundary tests.
 
 ## Immediate Next Work
 

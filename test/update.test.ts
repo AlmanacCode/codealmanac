@@ -3,11 +3,16 @@ import { join } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { runUpdate } from "../src/cli/commands/update.js";
+import { runUpdate as runUpdateCommand } from "../src/cli/commands/update.js";
+import type { UpdateOptions } from "../src/cli/commands/update.js";
 import { runConfigSet } from "../src/cli/commands/config.js";
 import { parseConfigText, readConfig, writeConfig } from "../src/stores/config/index.js";
 import { readState, writeState } from "../src/stores/update/index.js";
-import type { UpdateInstallFn } from "../src/services/update/index.js";
+import type {
+  UpdateCheckFn,
+  UpdateInstallFn,
+  UpdateRuntime,
+} from "../src/services/update/index.js";
 import { withTempHome } from "./helpers.js";
 
 /**
@@ -38,6 +43,51 @@ function fakeInstall(args: {
     errorOutput: args.errorOutput ?? "",
     code: args.code ?? 0,
   }));
+}
+
+type TestUpdateOptions =
+  Omit<UpdateOptions, "runtime"> & {
+    installedVersion?: string;
+    checkFn?: UpdateCheckFn;
+    installFn?: UpdateInstallFn;
+  };
+
+function runUpdate(options: TestUpdateOptions = {}) {
+  const {
+    installedVersion = "0.2.26",
+    checkFn = defaultCheckFn,
+    installFn = fakeInstall(),
+    ...rest
+  } = options;
+  return runUpdateCommand({
+    ...rest,
+    runtime: testUpdateRuntime({ installedVersion, checkFn, installFn }),
+  });
+}
+
+function testUpdateRuntime(args: {
+  installedVersion: string;
+  checkFn: UpdateCheckFn;
+  installFn: UpdateInstallFn;
+}): UpdateRuntime {
+  return {
+    readInstalledVersion: () => args.installedVersion,
+    checkForUpdate: args.checkFn,
+    installLatestPackage: args.installFn,
+  };
+}
+
+async function defaultCheckFn() {
+  return {
+    state: {
+      last_check_at: 0,
+      installed_version: "0.2.26",
+      latest_version: "0.2.26",
+      dismissed_versions: [],
+    },
+    fetched: false,
+    fetchFailed: false,
+  };
 }
 
 describe("almanac update --dismiss", () => {

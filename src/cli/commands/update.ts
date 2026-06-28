@@ -27,7 +27,7 @@ export type { UpdateOptions };
 export type { UpdateResult } from "./update-render.js";
 
 export async function runUpdate(
-  opts: UpdateOptions = {},
+  opts: UpdateOptions,
 ): Promise<UpdateResult> {
   return renderUpdateResult(await runUpdateWorkflow(opts));
 }
