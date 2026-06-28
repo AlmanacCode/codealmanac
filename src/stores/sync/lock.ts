@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { getRepoAlmanacDir } from "../../paths.js";
+import { getRepoAlmanacDir } from "../wiki-files/repo-location.js";
 import type { IsPidAlive } from "../../shared/pid-liveness.js";
 
 const SYNC_LOCK_STALE_MS = 60 * 60 * 1000;

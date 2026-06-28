@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { getRepoAlmanacDir } from "../../paths.js";
+import { getRepoAlmanacDir } from "../wiki-files/repo-location.js";
 import { writeTextFileAtomically } from "../atomic-write.js";
 import { isJobRecord } from "./record-schema.js";
 import type { JobRecord } from "./types.js";

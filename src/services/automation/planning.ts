@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import {
   DEFAULT_AUTOMATION_TASK_IDS,
   DEFAULT_GARDEN_INTERVAL,
@@ -12,7 +10,7 @@ import {
   type AutomationTaskDefinition,
   updateProgramArguments,
 } from "./tasks.js";
-import { findNearestAlmanacDir } from "../../paths.js";
+import { resolveNearestWikiRootOrCwd } from "../../stores/wiki-files/repo-location.js";
 import { parseDuration } from "../../shared/duration.js";
 import type {
   AutomationTaskId,
@@ -180,7 +178,7 @@ function resolveTaskWorkingDirectory(
   cwd: string,
 ): string | undefined {
   if (task.workingDirectory === "none") return undefined;
-  return findNearestAlmanacDir(cwd) ?? path.resolve(cwd);
+  return resolveNearestWikiRootOrCwd(cwd);
 }
 
 function parseInterval(value: string): { ok: true; seconds: number } | { ok: false; error: string } {

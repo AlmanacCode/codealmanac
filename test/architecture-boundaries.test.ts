@@ -7,6 +7,19 @@ import { describe, expect, it } from "vitest";
 const ROOT = process.cwd();
 
 describe("architecture boundaries", () => {
+  it("keeps global and repo path mechanics in store-owned modules", async () => {
+    const globalPaths = await readSource("src/stores/global-paths.ts");
+    const registryPaths = await readSource("src/stores/wiki-registry/paths.ts");
+    const repoLocation = await readSource("src/stores/wiki-files/repo-location.ts");
+
+    expect(existsSync(join(ROOT, "src/paths.ts"))).toBe(false);
+    expect(globalPaths).toContain("getGlobalAlmanacDir");
+    expect(registryPaths).toContain("getRegistryPath");
+    expect(repoLocation).toContain("findNearestAlmanacDir");
+    expect(repoLocation).toContain("getRepoAlmanacDir");
+    expect(repoLocation).toContain("existsSync");
+  });
+
   it("keeps wiki initialization inside service and store ownership", async () => {
     const initialization = await readSource("src/services/wiki/initialization.ts");
     const fileScaffold = await readSource("src/stores/wiki-files/scaffold.ts");
@@ -1188,6 +1201,9 @@ describe("architecture boundaries", () => {
     expect(automationPlanning).not.toContain("process.cwd()");
     expect(automationPlanning).not.toContain("process.env");
     expect(automationPlanning).not.toContain("homedir");
+    expect(automationPlanning).not.toContain("node:path");
+    expect(automationPlanning).not.toContain("findNearestAlmanacDir");
+    expect(automationPlanning).toContain("resolveNearestWikiRootOrCwd");
     expect(automationPlanning).not.toContain("platform/automation/tasks");
     expect(automationPlanning).not.toContain("platform/automation/launchd");
     expect(automationPlanning).not.toContain("platform/automation/paths");

@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 250 committed rewrite commits past `dev`. The worklog records 226 production slices so far.
+The branch has more than 250 committed rewrite commits past `dev`. The worklog records 227 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -35,7 +35,9 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Removed raw log-file reads from job projections; stores own job log contents while projections parse contents into viewer/job read models.
 - Moved detached job-worker process startup behind an edge-composed background starter; job services now queue records/specs/logs and consume an injected worker starter.
 - Moved job page snapshot file reads and page hashing into `src/stores/wiki-files/`.
+- Moved repo `.almanac` path construction and nearest-wiki-root discovery into `src/stores/wiki-files/repo-location.ts`.
 - Moved registry path reachability checks into `src/stores/wiki-registry/`.
+- Moved global state path and registry path construction into `src/stores/global-paths.ts` and `src/stores/wiki-registry/paths.ts`, deleting the old top-level `src/paths.ts`.
 - Removed the mixed `src/services/jobs/runtime/index.ts` compatibility barrel; callers now import concrete runtime, store, platform, or record-lifecycle modules.
 - Removed the old top-level `src/init/` source bucket; wiki initialization now lives under `src/services/wiki/`, and mechanical `.almanac/` file scaffolding, page-file counting, and absorb-log scanning live under `src/stores/wiki-files/`.
 - Removed the old top-level `src/config/` source bucket; persisted config mechanics now live under `src/stores/config/`, service verbs live under `src/services/config/`, and provider enablement policy lives under `src/shared/`.
@@ -101,17 +103,20 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice deleted the mixed provider-view service file and split provider setup-view responsibilities into owned agent-service files.
+The latest slice deleted the old top-level path helper and moved global, registry, and repo-location path mechanics into store-owned modules.
 
 Verification passed:
 
 - `git diff --check`
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/provider-view.test.ts test/agents-command.test.ts test/setup.test.ts test/doctor.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/paths.test.ts test/registry.test.ts test/autoregister.test.ts test/automation.test.ts test/config-command.test.ts test/update.test.ts test/update-check.test.ts test/update-store.test.ts`
 - `npm test`
 - `npm run build`
-- `node dist/launcher.js agents list`
-- `node dist/launcher.js setup --help`
+- `node dist/launcher.js doctor --wiki-only --json`
+- `node dist/launcher.js automation status --help`
+- `node dist/launcher.js config list --json`
+- `node dist/launcher.js list --help`
+- `node dist/launcher.js list`
 
 ## Immediate Next Work
 

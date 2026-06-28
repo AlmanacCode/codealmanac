@@ -1,6 +1,6 @@
 import type { OperationSpec } from "../../../shared/operation-spec.js";
 import type { FinalOutputSpec } from "../../../shared/agent-runtime/final-output.js";
-import { findNearestAlmanacDir } from "../../../paths.js";
+import { findNearestAlmanacDir } from "../../../stores/wiki-files/repo-location.js";
 import { MissingWikiError } from "./errors.js";
 import type {
   JobWorkerProgram,

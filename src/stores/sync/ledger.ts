@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { getRepoAlmanacDir } from "../../paths.js";
+import { getRepoAlmanacDir } from "../wiki-files/repo-location.js";
 import { writeTextFileAtomically } from "../atomic-write.js";
 
 export type LedgerApp = "claude" | "codex";

@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
-import { getRegistryPath } from "../src/paths.js";
+import { getRegistryPath } from "../src/stores/wiki-registry/paths.js";
 import {
   addEntry,
   dropEntry,

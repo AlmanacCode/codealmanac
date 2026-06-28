@@ -7,7 +7,7 @@ import {
   normalizePath,
   normalizePathPreservingCase,
 } from "../src/stores/wiki/indexer/paths.js";
-import { findNearestAlmanacDir } from "../src/paths.js";
+import { findNearestAlmanacDir } from "../src/stores/wiki-files/repo-location.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
 describe("normalizePath", () => {

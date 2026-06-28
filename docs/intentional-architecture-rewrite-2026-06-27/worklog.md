@@ -1582,3 +1582,11 @@ Two-hundred-twenty-sixth production slice:
 - Split provider setup-view assembly, model-choice fallback behavior, recommendation policy, provider/model shorthand parsing, readiness normalization, provider labels, and shared setup-view types into separate `src/services/agents/provider-*.ts` files.
 - Updated agents, setup, diagnostics, and provider-view tests to import the specific service-owned concept they use instead of the old aggregate file.
 - Strengthened architecture-boundary tests so the old provider-view file stays deleted and the new provider service files keep distinct responsibilities.
+
+Two-hundred-twenty-seventh production slice:
+
+- Deleted the old top-level `src/paths.ts` helper because it mixed global-store paths, registry paths, repo `.almanac` path construction, and filesystem walk-up.
+- Added `src/stores/global-paths.ts` for the global `~/.almanac/` directory, `src/stores/wiki-registry/paths.ts` for the registry file path, and `src/stores/wiki-files/repo-location.ts` for repo `.almanac` path and nearest-wiki-root discovery.
+- Updated config, registry, update, jobs, sync, wiki, lifecycle, transcript, and tests to import the owned path module they actually depend on.
+- Removed `node:path` and direct repo walk-up from automation planning by using the wiki-file repo-location helper.
+- Strengthened architecture-boundary tests so the top-level path bucket stays deleted and automation planning does not regain path-resolution mechanics.

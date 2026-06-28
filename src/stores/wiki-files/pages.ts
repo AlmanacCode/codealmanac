@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
-import { getRepoAlmanacDir } from "../../paths.js";
+import { getRepoAlmanacDir } from "./repo-location.js";
 
 export async function countWikiPageFiles(repoRoot: string): Promise<number> {
   const pagesDir = wikiPagesDir(repoRoot);

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { findNearestAlmanacDir } from "../../paths.js";
+import { findNearestAlmanacDir } from "../../stores/wiki-files/repo-location.js";
 import { ensureFreshIndex } from "../../stores/wiki/indexer/index.js";
 import { readWikiIndexDiagnostics } from "../../stores/wiki/indexer/diagnostics.js";
 import { describeLastAbsorb } from "./doctor-absorb.js";

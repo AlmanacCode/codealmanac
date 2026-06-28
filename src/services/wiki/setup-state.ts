@@ -1,4 +1,4 @@
-import { findNearestAlmanacDir } from "../../paths.js";
+import { findNearestAlmanacDir } from "../../stores/wiki-files/repo-location.js";
 import { countWikiPageFilesSync } from "../../stores/wiki-files/pages.js";
 
 export interface SetupWikiState {

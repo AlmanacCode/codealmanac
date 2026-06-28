@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { getGlobalAlmanacDir } from "../../paths.js";
+import { getGlobalAlmanacDir } from "../global-paths.js";
 import { writeTextFileAtomically } from "../atomic-write.js";
 
 /**

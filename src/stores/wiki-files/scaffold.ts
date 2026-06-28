@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { getRepoAlmanacDir } from "../../paths.js";
+import { getRepoAlmanacDir } from "./repo-location.js";
 
 export interface WikiFileScaffoldOptions {
   repoRoot: string;

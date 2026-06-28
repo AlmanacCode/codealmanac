@@ -6,7 +6,7 @@ import {
   readJobRecordById,
   writeResolvedJobRecord,
 } from "../../stores/jobs/index.js";
-import { findNearestAlmanacDir } from "../../paths.js";
+import { findNearestAlmanacDir } from "../../stores/wiki-files/repo-location.js";
 import { finishJobRecord } from "./record-lifecycle.js";
 import type {
   CancelJobRequest,

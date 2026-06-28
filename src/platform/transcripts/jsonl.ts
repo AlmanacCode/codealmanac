@@ -2,7 +2,7 @@ import { existsSync, type Dirent } from "node:fs";
 import { open, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 
-import { findNearestAlmanacDir } from "../../paths.js";
+import { findNearestAlmanacDir } from "../../stores/wiki-files/repo-location.js";
 import type { TranscriptCandidate, TranscriptSourceApp } from "../../shared/transcripts.js";
 import {
   objectField,
