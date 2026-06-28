@@ -79,6 +79,8 @@ Job execution lifecycle, queue selection, queued-record creation, event logging,
 
 Public jobs service verbs do not read job files or resolve job paths directly. They use `src/stores/jobs/index.ts` for record/log/spec mechanics, while `src/services/jobs/record-lifecycle.ts` owns record state construction/finalization and `src/services/jobs/record-view.ts` owns display-status shaping. Job projections parse log contents and derive viewer/read-model facts; they do not read arbitrary log paths directly. Job runtime code can execute, drain, and finalize jobs, but the runtime folder is not the public read API for commands, viewer read models, lifecycle callers, sync, or tests. There is no `src/services/jobs/runtime/index.ts` barrel because that file hid store, platform, and runtime ownership behind one import path.
 
+Public jobs service files are split by verb. `src/services/jobs/read.ts` owns list/show read workflows, `log-read.ts` owns log reads and attach streaming, `cancel.ts` owns cancellation and record finalization, and `repo-root.ts` owns nearest-wiki-root resolution for public jobs verbs. The deleted `src/services/jobs/jobs.ts` file should not return as a catchall.
+
 ### Internal workers are edges over service workflows
 
 Hidden CLI worker entrypoints belong under `src/edges/worker/`. They can receive process facts such as cwd, pid, and environment, then call one service workflow. Queue draining remains under `src/services/jobs/runtime/` because it owns job lifecycle semantics over records, specs, locks, and agent execution.

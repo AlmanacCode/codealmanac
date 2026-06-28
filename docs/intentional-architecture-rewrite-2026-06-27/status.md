@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 245 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 246 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -32,6 +32,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Split wiki workflows into clearer service boundaries: search, show, health, registry, topics, review, reindex, source migration, and doctor wiki checks.
 - Moved durable job persistence into explicit stores for records, specs, logs, and worker locks.
 - Removed the old top-level `src/jobs/` source bucket; job runtime and projections now live under `src/services/jobs/`, durable job schemas live under `src/stores/jobs/`, and detached worker spawning lives under `src/platform/jobs/`.
+- Split the old public `src/services/jobs/jobs.ts` bucket into owned read, log, cancel, and repo-root service files.
 - Moved job record lifecycle and display-status read-model helpers out of the job runtime folder, and put public job record/log reads behind the `src/stores/jobs/` store API.
 - Removed raw log-file reads from job projections; stores own job log contents while projections parse contents into viewer/job read models.
 - Moved detached job-worker process startup behind an edge-composed background starter; job services now queue records/specs/logs and consume an injected worker starter.
@@ -121,12 +122,12 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice split the old `src/services/config/config.ts` mixed service bucket. Config list/get reads now live in `config-read.ts`, config set/unset mutations live in `config-write.ts`, and result/request contracts live in `config-types.ts`.
+The latest slice split the old public `src/services/jobs/jobs.ts` mixed service bucket. Job list/show reads now live in `read.ts`, log read/attach streaming lives in `log-read.ts`, cancellation lives in `cancel.ts`, and nearest-wiki-root resolution lives in `repo-root.ts`.
 
 Verification passed:
 
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/config-command.test.ts test/agents-command.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/jobs-command.test.ts test/jobs-records.test.ts test/jobs-worker.test.ts`
 - `git diff --check`
 - `npm test`
 - `npm run build`
@@ -137,7 +138,7 @@ Verification passed:
 Previous full-slice verification also passed:
 
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/agents-command.test.ts test/provider-view.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/config-command.test.ts test/agents-command.test.ts`
 - `git diff --check`
 - `npm test`
 - `npm run build`

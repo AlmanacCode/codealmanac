@@ -1,10 +1,14 @@
 export {
-  cancelJob,
   listJobs,
   readJob,
+} from "./read.js";
+export {
   readJobLog,
   streamJobLog,
-} from "./jobs.js";
+} from "./log-read.js";
+export {
+  cancelJob,
+} from "./cancel.js";
 export { listJobProviderSessionIds } from "./provider-sessions.js";
 export type {
   AlreadyTerminalJobResult,

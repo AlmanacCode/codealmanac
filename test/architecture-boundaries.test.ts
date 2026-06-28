@@ -817,7 +817,10 @@ describe("architecture boundaries", () => {
   it("keeps jobs command adapters out of job storage and process mechanics", async () => {
     const jobsServiceIndex = await readSource("src/services/jobs/index.ts");
     const jobsServiceTypes = await readSource("src/services/jobs/types.ts");
-    const jobsService = await readSource("src/services/jobs/jobs.ts");
+    const jobsReadService = await readSource("src/services/jobs/read.ts");
+    const jobsLogService = await readSource("src/services/jobs/log-read.ts");
+    const jobsCancelService = await readSource("src/services/jobs/cancel.ts");
+    const jobsRepoRoot = await readSource("src/services/jobs/repo-root.ts");
     const jobsServiceView = await readSource("src/services/jobs/view.ts");
     const jobsCommand = await readSource("src/edges/cli/commands/jobs.ts");
     const jobsRender = await readSource("src/edges/cli/commands/jobs-render.ts");
@@ -837,10 +840,19 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/edges/cli/commands/jobs-format.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/cli/commands/jobs-render.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/jobs/view.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/services/jobs/jobs.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/services/jobs/read.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/services/jobs/log-read.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/services/jobs/cancel.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/services/jobs/repo-root.ts"))).toBe(true);
     expect(jobsServiceIndex).not.toContain("../../jobs");
     expect(jobsServiceIndex).not.toContain("./runtime/index.js");
     expect(jobsServiceIndex).not.toContain("writeJobRecord");
     expect(jobsServiceIndex).not.toContain("startForegroundJob");
+    expect(jobsServiceIndex).not.toContain("./jobs.js");
+    expect(jobsServiceIndex).toContain("./read.js");
+    expect(jobsServiceIndex).toContain("./log-read.js");
+    expect(jobsServiceIndex).toContain("./cancel.js");
     expect(jobsServiceTypes).not.toContain("RuntimeJobView");
     expect(jobsServiceTypes).not.toContain("JobView as");
     expect(jobsServiceTypes).not.toContain("JobRequest extends JobsRequest");
@@ -891,17 +903,33 @@ describe("architecture boundaries", () => {
     expect(jobLogRegistration).toContain("write: (chunk)");
     expect(jobLogRegistration).toContain("process.stdout.write");
     expect(jobCancelRegistration).toContain("signalLocalPid");
-    expect(jobsService).not.toContain("JobView as RuntimeJobView");
-    expect(jobsService).not.toContain("function jobServiceViewFromRuntime");
-    expect(jobsService).not.toContain("toJobView");
-    expect(jobsService).not.toContain("platform/process");
-    expect(jobsService).not.toContain("readFile");
-    expect(jobsService).not.toContain("resolveJobRecordPath");
-    expect(jobsService).not.toContain("resolveJobLogPath");
-    expect(jobsService).not.toContain("writeJobRecord");
-    expect(jobsService).not.toContain("./runtime/index.js");
-    expect(jobsService).toContain("stores/jobs/index.js");
-    expect(jobsService).toContain("record-lifecycle.js");
+    for (const jobsServiceSource of [
+      jobsReadService,
+      jobsLogService,
+      jobsCancelService,
+    ]) {
+      expect(jobsServiceSource).not.toContain("JobView as RuntimeJobView");
+      expect(jobsServiceSource).not.toContain("function jobServiceViewFromRuntime");
+      expect(jobsServiceSource).not.toContain("toJobView");
+      expect(jobsServiceSource).not.toContain("platform/process");
+      expect(jobsServiceSource).not.toContain("readFile");
+      expect(jobsServiceSource).not.toContain("resolveJobRecordPath");
+      expect(jobsServiceSource).not.toContain("resolveJobLogPath");
+      expect(jobsServiceSource).not.toContain("writeJobRecord");
+      expect(jobsServiceSource).not.toContain("./runtime/index.js");
+      expect(jobsServiceSource).toContain("stores/jobs/index.js");
+    }
+    expect(jobsReadService).toContain("listJobs");
+    expect(jobsReadService).toContain("readJob");
+    expect(jobsReadService).not.toContain("readJobLog");
+    expect(jobsReadService).not.toContain("cancelJob");
+    expect(jobsLogService).toContain("readJobLog");
+    expect(jobsLogService).toContain("streamJobLog");
+    expect(jobsLogService).not.toContain("finishJobRecord");
+    expect(jobsCancelService).toContain("cancelJob");
+    expect(jobsCancelService).toContain("finishJobRecord");
+    expect(jobsCancelService).not.toContain("streamJobLog");
+    expect(jobsRepoRoot).toContain("findNearestAlmanacDir");
     expect(jobsServiceView).not.toContain("platform/process");
     expect(jobsServiceView).not.toContain("./runtime/index.js");
     expect(jobsServiceView).toContain("./record-view.js");
@@ -1096,7 +1124,9 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps local process signaling in the platform layer", async () => {
-    const jobsService = await readSource("src/services/jobs/jobs.ts");
+    const jobsReadService = await readSource("src/services/jobs/read.ts");
+    const jobsLogService = await readSource("src/services/jobs/log-read.ts");
+    const jobsCancelService = await readSource("src/services/jobs/cancel.ts");
     const viewerJobs = await readSource("src/edges/viewer/read-model/jobs.ts");
     const jobWorkerLockStore = await readSource("src/stores/jobs/worker-lock.ts");
     const syncLockStore = await readSource("src/stores/sync/lock.ts");
@@ -1124,7 +1154,14 @@ describe("architecture boundaries", () => {
     );
 
     expect(existsSync(join(ROOT, "src/platform/process.ts"))).toBe(true);
-    for (const source of [jobsService, viewerJobs, jobWorkerLockStore, syncLockStore]) {
+    for (const source of [
+      jobsReadService,
+      jobsLogService,
+      jobsCancelService,
+      viewerJobs,
+      jobWorkerLockStore,
+      syncLockStore,
+    ]) {
       expect(source).not.toContain("process.kill");
     }
     for (const source of [jobWorkerLockStore, syncLockStore]) {

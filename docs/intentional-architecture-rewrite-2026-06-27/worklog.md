@@ -1735,3 +1735,12 @@ Two-hundred-forty-fifth production slice:
 - Added `src/services/config/config-types.ts` for command-facing config result and row contracts.
 - Kept `src/services/config/index.ts` as the stable facade for CLI commands and internal callers.
 - Strengthened architecture-boundary tests so config read, write, and type responsibilities stay separated.
+
+Two-hundred-forty-sixth production slice:
+
+- Split `src/services/jobs/jobs.ts` into owned public jobs service files and deleted the old mixed bucket.
+- Added `src/services/jobs/read.ts` for job list/show read workflows over job records and service views.
+- Added `src/services/jobs/log-read.ts` for job log reads and attach-style log streaming.
+- Added `src/services/jobs/cancel.ts` for durable cancellation, process-signal invocation through the injected request callback, and cancelled record finalization.
+- Added `src/services/jobs/repo-root.ts` for shared nearest-wiki-root resolution used by public jobs service verbs.
+- Strengthened architecture-boundary tests so public jobs read, log, cancel, and repo-root responsibilities stay separated.
