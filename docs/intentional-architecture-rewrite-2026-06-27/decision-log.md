@@ -39,7 +39,7 @@ Stores own persistence mechanics. Provider adapters, process spawning, app-serve
 
 ### Automation task policy is service-owned
 
-Automation task definitions are product policy, not launchd mechanics. `src/services/automation/tasks.ts` owns the sync, Garden, and update task ids, labels, default cadences, command arguments, and working-directory policy. `src/platform/automation/job-plan.ts` owns concrete scheduler job construction, including PATH, plist path, and log path assembly. `src/platform/automation/paths.ts` owns launchd plist/log path construction, and `src/platform/automation/launchd.ts` owns plist rendering, bootstrap/removal, and loaded-state checks.
+Automation task definitions are product policy, not launchd mechanics. `src/services/automation/tasks.ts` owns the sync, Garden, and update task ids, labels, default cadences, command arguments, and working-directory policy. `src/services/automation/scheduler.ts` defines the scheduler contract automation workflows depend on. `src/platform/automation/scheduler.ts` owns the launchd implementation, including PATH construction, plist/log path assembly, plist command-array normalization, job writes, bootstrap/removal, loaded-state checks, legacy capture detection, and legacy-hook cleanup.
 
 ### Diagnostic probe facts are platform-owned
 
@@ -116,6 +116,10 @@ The update service owns update workflow policy: check latest, honor dismissals, 
 ### Transcript contracts are shared; transcript file mechanics are platform
 
 `src/platform/transcripts/` owns Claude/Codex transcript discovery and raw transcript file reads. `src/shared/transcripts.ts` owns the sync-facing transcript candidate, snapshot, read-result, app, and cursor-boundary contracts. `src/services/sync/` owns eligibility, ledger reconciliation, cursor decisions, summaries, and Absorb handoff over those contracts. `executeSyncSweep()` accepts a transcript snapshot reader so lower sync modules do not import platform transcript mechanics directly.
+
+### Automation scheduler contracts are service-owned; launchd is platform
+
+`src/services/automation/` owns automation product workflows: task selection, interval validation, install/status/uninstall results, legacy migration semantics, and setup cleanup verbs. It talks to an injected `AutomationScheduler` contract from `src/services/automation/scheduler.ts`. `src/platform/automation/scheduler.ts` implements that contract with launchd/plist mechanics: default plist paths, log paths, launch PATH construction, plist writes, launchctl activation/removal/status, legacy capture detection, and XML-to-command-array normalization. CLI/setup/uninstall edges create the launchd scheduler because they are the concrete runtime composition points.
 
 ### Guard boundaries with tests
 

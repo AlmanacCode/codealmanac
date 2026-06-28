@@ -1,7 +1,4 @@
-export type AutomationExecFn = (
-  file: string,
-  args: string[],
-) => Promise<{ stdout?: string; stderr?: string }>;
+import type { AutomationScheduler } from "./scheduler.js";
 
 export type AutomationTaskId = "sync" | "garden" | "update";
 
@@ -21,7 +18,7 @@ export interface AutomationInstallOptions {
   programArguments?: string[];
   gardenProgramArguments?: string[];
   updateProgramArguments?: string[];
-  exec?: AutomationExecFn;
+  scheduler: AutomationScheduler;
   now?: Date;
   configPath?: string;
 }
@@ -32,7 +29,7 @@ export interface AutomationUninstallOptions {
   plistPath?: string;
   gardenPlistPath?: string;
   updatePlistPath?: string;
-  exec?: AutomationExecFn;
+  scheduler: AutomationScheduler;
 }
 
 export interface AutomationStatusOptions {
@@ -42,7 +39,7 @@ export interface AutomationStatusOptions {
   gardenPlistPath?: string;
   updatePlistPath?: string;
   legacyCapturePlistPath?: string;
-  exec?: AutomationExecFn;
+  scheduler: AutomationScheduler;
 }
 
 export interface InstalledAutomationTask {

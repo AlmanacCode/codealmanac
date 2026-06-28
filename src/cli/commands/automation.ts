@@ -4,6 +4,7 @@ import {
   uninstallAutomation,
   type AutomationTaskId,
   type AutomationInstallOptions,
+  type AutomationScheduler,
   type AutomationStatusOptions,
   type AutomationUninstallOptions,
 } from "../../services/automation/index.js";
@@ -13,11 +14,6 @@ import {
   renderAutomationUninstallResult,
   type AutomationCommandResult,
 } from "./automation-render.js";
-
-export type AutomationCommandExecFn = (
-  file: string,
-  args: string[],
-) => Promise<{ stdout?: string; stderr?: string }>;
 
 export type { AutomationCommandResult } from "./automation-render.js";
 
@@ -37,7 +33,7 @@ export interface AutomationInstallCommandOptions {
   programArguments?: string[];
   gardenProgramArguments?: string[];
   updateProgramArguments?: string[];
-  exec?: AutomationCommandExecFn;
+  scheduler: AutomationScheduler;
   now?: Date;
   configPath?: string;
 }
@@ -48,7 +44,7 @@ export interface AutomationUninstallCommandOptions {
   plistPath?: string;
   gardenPlistPath?: string;
   updatePlistPath?: string;
-  exec?: AutomationCommandExecFn;
+  scheduler: AutomationScheduler;
 }
 
 export interface AutomationStatusCommandOptions {
@@ -58,7 +54,7 @@ export interface AutomationStatusCommandOptions {
   gardenPlistPath?: string;
   updatePlistPath?: string;
   legacyCapturePlistPath?: string;
-  exec?: AutomationCommandExecFn;
+  scheduler: AutomationScheduler;
 }
 
 export async function runAutomationInstall(
@@ -104,7 +100,7 @@ function toAutomationInstallOptions(
     programArguments: options.programArguments,
     gardenProgramArguments: options.gardenProgramArguments,
     updateProgramArguments: options.updateProgramArguments,
-    exec: options.exec,
+    scheduler: options.scheduler,
     now: options.now,
     configPath: options.configPath,
   };
@@ -119,7 +115,7 @@ function toAutomationUninstallOptions(
     plistPath: options.plistPath,
     gardenPlistPath: options.gardenPlistPath,
     updatePlistPath: options.updatePlistPath,
-    exec: options.exec,
+    scheduler: options.scheduler,
   };
 }
 
@@ -133,6 +129,6 @@ function toAutomationStatusOptions(
     gardenPlistPath: options.gardenPlistPath,
     updatePlistPath: options.updatePlistPath,
     legacyCapturePlistPath: options.legacyCapturePlistPath,
-    exec: options.exec,
+    scheduler: options.scheduler,
   };
 }

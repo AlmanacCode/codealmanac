@@ -1,15 +1,10 @@
 import {
-  readProgramArgumentAfter,
-  removeLaunchdJob,
-} from "../../platform/automation/launchd.js";
-import { detectLegacyCaptureSweepAutomation } from "../../platform/automation/legacy-capture.js";
-import { defaultCapturePlistPath, launchAgentPlistPath } from "../../platform/automation/paths.js";
-import {
   DEFAULT_SYNC_QUIET,
   automationTaskDefinition,
 } from "./tasks.js";
 import { installAutomation } from "./automation.js";
-import type { AutomationExecFn, AutomationInstallResult } from "./types.js";
+import type { AutomationInstallResult } from "./types.js";
+import type { AutomationScheduler } from "./scheduler.js";
 
 export interface MigrateLegacyAutomationOptions {
   cwd: string;
@@ -18,7 +13,7 @@ export interface MigrateLegacyAutomationOptions {
   homeDir: string;
   legacyPlistPath?: string;
   syncPlistPath?: string;
-  exec?: AutomationExecFn;
+  scheduler: AutomationScheduler;
 }
 
 export type MigrateLegacyAutomationResult =
@@ -43,10 +38,17 @@ export async function migrateLegacyAutomation(
   options: MigrateLegacyAutomationOptions,
 ): Promise<MigrateLegacyAutomationResult> {
   const home = options.homeDir;
-  const legacyPlistPath = options.legacyPlistPath ?? defaultCapturePlistPath(home);
+  const legacyPlistPath = options.legacyPlistPath ??
+    options.scheduler.defaultJobPath({
+      homeDir: home,
+      label: "com.codealmanac.capture-sweep",
+    });
   const syncPlistPath = options.syncPlistPath ??
-    launchAgentPlistPath(automationTaskDefinition("sync").label, home);
-  const legacy = await detectLegacyCaptureSweepAutomation({
+    options.scheduler.defaultJobPath({
+      homeDir: home,
+      label: automationTaskDefinition("sync").label,
+    });
+  const legacy = await options.scheduler.detectLegacyCaptureSweep({
     homeDir: home,
     plistPath: legacyPlistPath,
   });
@@ -55,7 +57,7 @@ export async function migrateLegacyAutomation(
     return { status: "current", legacyPlistPath, syncPlistPath };
   }
 
-  const quiet = readProgramArgumentAfter(legacy.contents, "--quiet") ??
+  const quiet = readArgument(legacy.programArguments, "--quiet") ??
     DEFAULT_SYNC_QUIET;
   const every = legacy.intervalSeconds === null
     ? undefined
@@ -69,13 +71,13 @@ export async function migrateLegacyAutomation(
     pathEnvironment: options.pathEnvironment,
     cliProgramArguments: options.cliProgramArguments,
     plistPath: syncPlistPath,
-    exec: options.exec,
+    scheduler: options.scheduler,
   });
   if (installed.status !== "installed") {
     return { status: "install-failed", result: installed };
   }
 
-  await removeLaunchdJob(legacyPlistPath, options.exec);
+  await options.scheduler.removeJob(legacyPlistPath);
   return {
     status: "migrated",
     legacyPlistPath,
@@ -83,4 +85,10 @@ export async function migrateLegacyAutomation(
     quiet,
     intervalSeconds: legacy.intervalSeconds,
   };
+}
+
+function readArgument(args: string[], flag: string): string | null {
+  const index = args.indexOf(flag);
+  if (index < 0) return null;
+  return args[index + 1] ?? null;
 }

@@ -1,4 +1,5 @@
 import { installAutomation } from "../../../services/automation/index.js";
+import { createLaunchdAutomationScheduler } from "../../../platform/automation/scheduler.js";
 import { automationInstallFailure } from "./automation-result.js";
 import {
   type SetupTheme,
@@ -39,7 +40,9 @@ export async function runAutoUpdateSetupStep(args: {
     cliProgramArguments: args.options.cliProgramArguments,
     updateProgramArguments: args.options.updateProgramArguments,
     updatePlistPath: args.options.updatePlistPath,
-    exec: args.options.automationExec,
+    scheduler: createLaunchdAutomationScheduler({
+      exec: args.options.automationExec,
+    }),
   });
   const failure = automationInstallFailure(update);
   if (failure !== null) {

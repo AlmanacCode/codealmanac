@@ -1284,3 +1284,12 @@ One-hundred-eighty-seventh production slice:
 - Moved `transcriptCursorForSince()` out of `src/platform/transcripts/snapshot.ts`, leaving that platform file focused on raw transcript reads and line counting.
 - Changed `executeSyncSweep()` to accept a transcript snapshot reader, so sweep, ledger, cursor, and summary modules no longer import `src/platform/transcripts/`.
 - Strengthened boundary coverage so only the top sync workflow calls platform transcript discovery/read mechanics while lower sync modules consume shared contracts.
+
+One-hundred-eighty-eighth production slice:
+
+- Added `src/services/automation/scheduler.ts` as the service-owned contract for scheduler jobs, status, legacy capture detection, hook cleanup, and activation/removal mechanics.
+- Added `src/platform/automation/scheduler.ts` as the launchd implementation of that contract, including plist path/log path/PATH construction and plist command-array normalization.
+- Removed direct `src/platform/automation/` imports from `src/services/automation/`, including install/status/uninstall, legacy migration, planning, and legacy-hook cleanup.
+- Updated CLI automation, migrate automation, setup automation, auto-update setup, and uninstall edges to create the concrete launchd scheduler and pass it into command/service workflows.
+- Deleted obsolete `src/platform/automation/job-plan.ts` and removed the unused plist argument parser from `src/platform/automation/launchd.ts`.
+- Strengthened boundary coverage so automation services stay launchd-free while platform scheduler owns launchd/plist mechanics.

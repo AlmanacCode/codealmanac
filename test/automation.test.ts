@@ -4,18 +4,26 @@ import { describe, expect, it } from "vitest";
 
 import {
   runAutomationInstall as runAutomationInstallCommand,
-  runAutomationStatus,
-  runAutomationUninstall,
+  runAutomationStatus as runAutomationStatusCommand,
+  runAutomationUninstall as runAutomationUninstallCommand,
   type AutomationInstallCommandOptions,
+  type AutomationStatusCommandOptions,
+  type AutomationUninstallCommandOptions,
 } from "../src/cli/commands/automation.js";
 import {
   runMigrateAutomation as runMigrateAutomationCommand,
   type MigrateAutomationOptions,
 } from "../src/cli/commands/migrate.js";
+import { createLaunchdAutomationScheduler } from "../src/platform/automation/scheduler.js";
 import { ensureAutomationSyncSince, readConfig } from "../src/stores/config/index.js";
 import { withTempHome } from "./helpers.js";
 
 const TEST_CLI_PROGRAM_ARGUMENTS = ["node", "dist/launcher.js"];
+
+type TestAutomationExecFn = (
+  file: string,
+  args: string[],
+) => Promise<{ stdout?: string; stderr?: string }>;
 
 describe("almanac automation", () => {
   it("records sync activation once and preserves it on reinstall", async () => {
@@ -495,38 +503,76 @@ capture_since = "2026-05-12T05:10:00.000Z"
 });
 
 type TestAutomationInstallOptions =
-  Omit<AutomationInstallCommandOptions, "cwd" | "homeDir" | "pathEnvironment" | "cliProgramArguments"> & {
+  Omit<
+    AutomationInstallCommandOptions,
+    "cwd" | "homeDir" | "pathEnvironment" | "cliProgramArguments" | "scheduler"
+  > & {
     cwd?: string;
     homeDir?: string;
     pathEnvironment?: string;
     cliProgramArguments?: string[];
+    exec?: TestAutomationExecFn;
   };
 
 function runAutomationInstall(options: TestAutomationInstallOptions) {
+  const { exec, ...rest } = options;
   return runAutomationInstallCommand({
     cwd: process.cwd(),
     homeDir: testHomeDir(options),
     pathEnvironment: testPathEnvironment(options),
     cliProgramArguments: options.cliProgramArguments ?? TEST_CLI_PROGRAM_ARGUMENTS,
-    ...options,
+    ...rest,
+    scheduler: createLaunchdAutomationScheduler({ exec }),
+  });
+}
+
+type TestAutomationStatusOptions =
+  Omit<AutomationStatusCommandOptions, "scheduler"> & {
+    exec?: TestAutomationExecFn;
+  };
+
+function runAutomationStatus(options: TestAutomationStatusOptions) {
+  const { exec, ...rest } = options;
+  return runAutomationStatusCommand({
+    ...rest,
+    scheduler: createLaunchdAutomationScheduler({ exec }),
+  });
+}
+
+type TestAutomationUninstallOptions =
+  Omit<AutomationUninstallCommandOptions, "scheduler"> & {
+    exec?: TestAutomationExecFn;
+  };
+
+function runAutomationUninstall(options: TestAutomationUninstallOptions) {
+  const { exec, ...rest } = options;
+  return runAutomationUninstallCommand({
+    ...rest,
+    scheduler: createLaunchdAutomationScheduler({ exec }),
   });
 }
 
 type TestMigrateAutomationOptions =
-  Omit<MigrateAutomationOptions, "cwd" | "homeDir" | "pathEnvironment" | "cliProgramArguments"> & {
+  Omit<
+    MigrateAutomationOptions,
+    "cwd" | "homeDir" | "pathEnvironment" | "cliProgramArguments" | "scheduler"
+  > & {
     cwd?: string;
     homeDir?: string;
     pathEnvironment?: string;
     cliProgramArguments?: string[];
+    exec?: TestAutomationExecFn;
   };
 
 function runMigrateAutomation(options: TestMigrateAutomationOptions) {
+  const { exec, ...rest } = options;
   return runMigrateAutomationCommand({
     cwd: process.cwd(),
     homeDir: testHomeDir(options),
     pathEnvironment: testPathEnvironment(options),
     cliProgramArguments: options.cliProgramArguments ?? TEST_CLI_PROGRAM_ARGUMENTS,
-    ...options,
+    ...rest,
+    scheduler: createLaunchdAutomationScheduler({ exec }),
   });
 }
 

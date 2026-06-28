@@ -1,14 +1,5 @@
 import { ensureAutomationSyncSince } from "../../stores/config/index.js";
 import {
-  bootstrapLaunchdJob,
-  ensureLaunchdDirs,
-  readProgramArgumentAfter,
-  readLaunchdJobStatus,
-  removeLaunchdJob,
-  writeLaunchdPlist,
-} from "../../platform/automation/launchd.js";
-import { detectLegacyCaptureSweepAutomation } from "../../platform/automation/legacy-capture.js";
-import {
   automationTaskDefinition,
 } from "./tasks.js";
 import {
@@ -30,10 +21,10 @@ import type {
 export async function installAutomation(
   options: AutomationInstallOptions,
 ): Promise<AutomationInstallResult> {
-  const plan = buildAutomationInstallPlan(options);
+  const plan = buildAutomationInstallPlan(options, options.scheduler);
   if (!plan.ok) return { status: "invalid", error: plan.error };
 
-  await writeAutomationPlists(plan.value);
+  await options.scheduler.writeJobs(plan.value.jobs.map((job) => job.job));
 
   const syncJob = plan.value.jobs.find((job) => job.task.id === "sync");
   const syncSince = syncJob === undefined
@@ -43,7 +34,7 @@ export async function installAutomation(
       options.configPath,
     );
 
-  const activated = await activateAutomationJobs(plan.value, options.exec);
+  const activated = await activateAutomationJobs(plan.value, options);
   if (activated.status === "activation-failed") return activated;
   return {
     status: "installed",
@@ -61,8 +52,8 @@ export async function uninstallAutomation(
   const removed: string[] = [];
 
   for (const task of tasks.map((id) => automationTaskDefinition(id))) {
-    const plist = plistPathForTask(task, home, options);
-    if (await removeLaunchdJob(plist, options.exec)) {
+    const plist = plistPathForTask(task, home, options, options.scheduler);
+    if (await options.scheduler.removeJob(plist)) {
       removed.push(plist);
     }
   }
@@ -79,27 +70,26 @@ export async function readAutomationStatus(
   const tasks = selectedTaskIds(options.tasks, false);
   const sections: AutomationStatusResult["sections"] = [];
   const legacy = tasks.includes("sync")
-    ? await detectLegacyCaptureSweepAutomation({
+    ? await options.scheduler.detectLegacyCaptureSweep({
       homeDir: home,
       plistPath: options.legacyCapturePlistPath,
     })
     : null;
 
   for (const task of tasks.map((id) => automationTaskDefinition(id))) {
-    const status = await readLaunchdJobStatus({
+    const status = await options.scheduler.readJobStatus({
       label: task.label,
-      plistPath: plistPathForTask(task, home, options),
-      exec: options.exec,
+      plistPath: plistPathForTask(task, home, options, options.scheduler),
     });
     sections.push({
       status: "task",
       taskId: task.id,
-      installed: status.contents !== null,
+      installed: status.installed,
       plistPath: status.plistPath,
       loaded: status.loaded,
       intervalSeconds: status.intervalSeconds,
-      quiet: task.id === "sync" && status.contents !== null
-        ? readProgramArgumentAfter(status.contents, "--quiet")
+      quiet: task.id === "sync" && status.programArguments !== null
+        ? readArgument(status.programArguments, "--quiet")
         : null,
     });
     if (task.id === "sync" && legacy !== null) {
@@ -110,19 +100,13 @@ export async function readAutomationStatus(
   return { status: "checked", sections };
 }
 
-async function writeAutomationPlists(plan: AutomationInstallPlan): Promise<void> {
-  const jobs = plan.jobs.map((job) => job.job);
-  await ensureLaunchdDirs(jobs);
-  await Promise.all(jobs.map((job) => writeLaunchdPlist(job)));
-}
-
 async function activateAutomationJobs(
   plan: AutomationInstallPlan,
-  exec: AutomationInstallOptions["exec"],
+  options: AutomationInstallOptions,
 ): Promise<{ status: "activated" } | Extract<AutomationInstallResult, { status: "activation-failed" }>> {
   for (const planned of plan.jobs) {
     try {
-      await bootstrapLaunchdJob(planned.job.plistPath, exec);
+      await options.scheduler.activateJob(planned.job);
     } catch (err: unknown) {
       return {
         status: "activation-failed",
@@ -133,7 +117,7 @@ async function activateAutomationJobs(
     }
   }
   if (plan.disabledGardenPlistPath !== null) {
-    await removeLaunchdJob(plan.disabledGardenPlistPath, exec);
+    await options.scheduler.removeJob(plan.disabledGardenPlistPath);
   }
   return { status: "activated" };
 }

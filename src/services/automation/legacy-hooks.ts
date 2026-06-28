@@ -1,11 +1,12 @@
-import { cleanupLegacyHooks as cleanupPlatformLegacyHooks } from "../../platform/automation/legacy-hooks.js";
+import type { AutomationScheduler } from "./scheduler.js";
 
 export interface CleanupLegacyAutomationHooksOptions {
   homeDir: string;
+  scheduler: AutomationScheduler;
 }
 
 export async function cleanupLegacyAutomationHooks(
   options: CleanupLegacyAutomationHooksOptions,
 ): Promise<void> {
-  await cleanupPlatformLegacyHooks(options);
+  await options.scheduler.cleanupLegacyHooks({ homeDir: options.homeDir });
 }

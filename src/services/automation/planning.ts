@@ -1,11 +1,6 @@
 import path from "node:path";
 
 import {
-  automationSchedulerPlistPath,
-  buildAutomationSchedulerJob,
-  type AutomationSchedulerJob,
-} from "../../platform/automation/job-plan.js";
-import {
   DEFAULT_AUTOMATION_TASK_IDS,
   DEFAULT_GARDEN_INTERVAL,
   DEFAULT_SYNC_INTERVAL,
@@ -23,6 +18,10 @@ import type {
   AutomationTaskId,
   AutomationInstallOptions,
 } from "./types.js";
+import type {
+  AutomationScheduler,
+  AutomationSchedulerJob,
+} from "./scheduler.js";
 
 export interface PlannedAutomationJob {
   task: AutomationTaskDefinition;
@@ -37,6 +36,7 @@ export interface AutomationInstallPlan {
 
 export function buildAutomationInstallPlan(
   options: AutomationInstallOptions,
+  scheduler: AutomationScheduler,
 ): { ok: true; value: AutomationInstallPlan } | { ok: false; error: string } {
   const explicitTasks = options.tasks !== undefined && options.tasks.length > 0;
   if (explicitTasks && options.gardenOff === true) {
@@ -69,9 +69,10 @@ export function buildAutomationInstallPlan(
     jobs.push({
       task,
       intervalInput,
-      job: buildAutomationSchedulerJob({
-        home,
-        plistPath: plistPathForTask(task, home, options),
+      job: scheduler.buildJob({
+        taskId: task.id,
+        homeDir: home,
+        plistPath: plistPathForTask(task, home, options, scheduler),
         label: task.label,
         programArguments: programArgumentsForTask(task, options),
         intervalSeconds: interval.seconds,
@@ -89,7 +90,7 @@ export function buildAutomationInstallPlan(
       jobs,
       disabledGardenPlistPath:
         options.gardenOff === true && !explicitTasks
-          ? plistPathForTask(automationTaskDefinition("garden"), home, options)
+          ? plistPathForTask(automationTaskDefinition("garden"), home, options, scheduler)
           : null,
     },
   };
@@ -112,23 +113,24 @@ export function plistPathForTask(
     AutomationInstallOptions,
     "plistPath" | "gardenPlistPath" | "updatePlistPath"
   >,
+  scheduler: AutomationScheduler,
 ): string {
   if (task.id === "sync") {
-    return automationSchedulerPlistPath({
-      home,
+    return scheduler.defaultJobPath({
+      homeDir: home,
       label: task.label,
       plistPath: options.plistPath,
     });
   }
   if (task.id === "garden") {
-    return automationSchedulerPlistPath({
-      home,
+    return scheduler.defaultJobPath({
+      homeDir: home,
       label: task.label,
       plistPath: options.gardenPlistPath,
     });
   }
-  return automationSchedulerPlistPath({
-    home,
+  return scheduler.defaultJobPath({
+    homeDir: home,
     label: task.label,
     plistPath: options.updatePlistPath,
   });

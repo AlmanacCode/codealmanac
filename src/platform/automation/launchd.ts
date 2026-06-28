@@ -129,13 +129,6 @@ export async function readLaunchdJobStatus(args: {
   };
 }
 
-export function readProgramArgumentAfter(contents: string, flag: string): string | null {
-  const values = [...contents.matchAll(/<string>([^<]*)<\/string>/g)]
-    .map((match) => unescapeXml(match[1] ?? ""));
-  const index = values.indexOf(flag);
-  return index >= 0 ? values[index + 1] ?? null : null;
-}
-
 async function isLaunchdJobLoaded(
   label: string,
   exec: ExecFn = defaultExec,
@@ -197,15 +190,6 @@ function escapeXml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&apos;");
-}
-
-function unescapeXml(value: string): string {
-  return value
-    .replaceAll("&apos;", "'")
-    .replaceAll("&quot;", '"')
-    .replaceAll("&gt;", ">")
-    .replaceAll("&lt;", "<")
-    .replaceAll("&amp;", "&");
 }
 
 function unique(values: string[]): string[] {

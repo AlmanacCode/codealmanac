@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { homedir } from "node:os";
 
+import { createLaunchdAutomationScheduler } from "../../platform/automation/scheduler.js";
 import { currentCliProgramArguments } from "./current-cli.js";
 import { emit } from "./helpers.js";
 
@@ -43,6 +44,7 @@ export function registerAutomationCommands(program: Command): void {
         homeDir: homedir(),
         pathEnvironment: process.env.PATH,
         cliProgramArguments: currentCliProgramArguments(),
+        scheduler: createLaunchdAutomationScheduler(),
       });
       emit(result);
     });
@@ -65,6 +67,7 @@ export function registerAutomationCommands(program: Command): void {
       const result = await runAutomationUninstall({
         tasks: parsed.tasks,
         homeDir: homedir(),
+        scheduler: createLaunchdAutomationScheduler(),
       });
       emit(result);
     });
@@ -87,6 +90,7 @@ export function registerAutomationCommands(program: Command): void {
       const result = await runAutomationStatus({
         tasks: parsed.tasks,
         homeDir: homedir(),
+        scheduler: createLaunchdAutomationScheduler(),
       });
       emit(result);
     });

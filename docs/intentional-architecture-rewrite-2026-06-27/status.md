@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 230 committed rewrite commits past `dev`. The worklog records 187 production slices so far.
+The branch has more than 230 committed rewrite commits past `dev`. The worklog records 188 production slices so far.
 
-The diff is broad: 483 files changed, with 24,201 insertions and 13,079 deletions.
+The diff is broad: 483 files changed, with 24,246 insertions and 13,098 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -47,7 +47,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved setup provider fix-command normalization/execution into `src/services/setup/provider-fix-command.ts`, so setup TUI files no longer import platform shell mechanics.
 - Moved setup global-install state/execution into `src/services/setup/global-install.ts`, so setup TUI files no longer import platform package-manager mechanics.
 - Split the automation task catalog out of platform launchd mechanics: task meaning/defaults live under `src/services/automation/tasks.ts`, while plist/log paths live under `src/platform/automation/paths.ts`.
-- Moved automation scheduler job construction into `src/platform/automation/job-plan.ts`; automation services now keep task/interval policy while platform owns PATH/log/plist job mechanics.
+- Moved automation scheduler mechanics behind `src/services/automation/scheduler.ts`, with launchd implementation in `src/platform/automation/scheduler.ts`; automation services no longer import `src/platform/automation/`.
 - Split most command rendering into command-private render files.
 - Added architecture-boundary tests to stop old dependency leaks from returning.
 - Ran repeated lint, focused tests, full test suites, builds, CLI smokes, and review passes across the branch.
@@ -63,13 +63,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved sync-facing transcript contracts into `src/shared/transcripts.ts` and injected transcript snapshot reads into `executeSyncSweep()`. Platform transcript modules still discover Claude/Codex transcripts and read raw transcript files, while sync sweep, ledger, cursor, and summary modules no longer import `src/platform/transcripts/`.
+The latest slice moved automation scheduler mechanics behind a service-owned scheduler contract. Automation services now own task selection, interval validation, install/status/uninstall/migration workflows, and command-array policy over an injected scheduler. The launchd implementation now lives in `src/platform/automation/scheduler.ts`, and CLI/setup/uninstall edges create that concrete scheduler.
 
-Verification passed: focused sync/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js sync --help`, and `node dist/codealmanac.js sync status --help`.
+Verification passed so far: `npx tsc --noEmit --pretty false` and focused automation/setup/uninstall/boundary tests.
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, and automation scheduler job mechanics have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, and automation scheduler mechanics have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
 
 ## Decision Log
 

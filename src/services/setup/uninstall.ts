@@ -6,7 +6,7 @@ import {
 import {
   cleanupLegacyAutomationHooks,
   uninstallAutomation,
-  type AutomationUninstallOptions,
+  type AutomationScheduler,
   type AutomationUninstallResult,
 } from "../automation/index.js";
 
@@ -21,7 +21,7 @@ export interface SetupUninstallOptions {
   opencodeDir: string;
   automationPlistPath?: string;
   gardenPlistPath?: string;
-  automationExec?: AutomationUninstallOptions["exec"];
+  automationScheduler: AutomationScheduler;
 }
 
 export interface SetupUninstallResult {
@@ -68,12 +68,15 @@ export function removeSetupManagedBlock(
 async function removeSetupAutomation(
   options: SetupUninstallOptions,
 ): Promise<SetupUninstallResult["automation"]> {
-  await cleanupLegacyAutomationHooks({ homeDir: options.homeDir });
+  await cleanupLegacyAutomationHooks({
+    homeDir: options.homeDir,
+    scheduler: options.automationScheduler,
+  });
   const result = await uninstallAutomation({
     homeDir: options.homeDir,
     plistPath: options.automationPlistPath,
     gardenPlistPath: options.gardenPlistPath,
-    exec: options.automationExec,
+    scheduler: options.automationScheduler,
   });
   return { action: "checked", ...result };
 }

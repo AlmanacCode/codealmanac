@@ -31,3 +31,11 @@ export type {
   MigrateLegacyAutomationOptions,
   MigrateLegacyAutomationResult,
 } from "./migration.js";
+export type {
+  AutomationExecFn,
+  AutomationScheduler,
+  AutomationSchedulerJob,
+  AutomationSchedulerJobInput,
+  AutomationSchedulerJobStatus,
+  LegacyAutomationJob,
+} from "./scheduler.js";

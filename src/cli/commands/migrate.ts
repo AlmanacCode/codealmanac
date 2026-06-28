@@ -1,7 +1,7 @@
 import { migrateLegacySources } from "../../services/wiki/source-migration.js";
 import {
   migrateLegacyAutomation,
-  type MigrateLegacyAutomationOptions,
+  type AutomationScheduler,
 } from "../../services/automation/index.js";
 import {
   renderMigrateAutomation,
@@ -28,7 +28,7 @@ export interface MigrateAutomationOptions {
   json?: boolean;
   legacyPlistPath?: string;
   syncPlistPath?: string;
-  exec?: MigrateLegacyAutomationOptions["exec"];
+  scheduler: AutomationScheduler;
 }
 
 export async function runMigrateLegacySources(

@@ -944,7 +944,8 @@ describe("architecture boundaries", () => {
     const automationCatalog = await readSource("src/services/automation/catalog.ts");
     const automationLegacyHooks = await readSource("src/services/automation/legacy-hooks.ts");
     const automationTasks = await readSource("src/services/automation/tasks.ts");
-    const automationJobPlan = await readSource("src/platform/automation/job-plan.ts");
+    const automationScheduler = await readSource("src/services/automation/scheduler.ts");
+    const launchdAutomationScheduler = await readSource("src/platform/automation/scheduler.ts");
     const automationPaths = await readSource("src/platform/automation/paths.ts");
     const automationCommand = await readSource("src/cli/commands/automation.ts");
     const automationRender = await readSource("src/cli/commands/automation-render.ts");
@@ -968,10 +969,15 @@ describe("architecture boundaries", () => {
     expect(automationPlanning).not.toContain("automationLogPaths");
     expect(automationPlanning).not.toContain("launchAgentPlistPath");
     expect(automationPlanning).not.toContain("LaunchdJobDefinition");
+    expect(automationWorkflow).not.toContain("platform/automation");
+    expect(automationMigration).not.toContain("platform/automation");
     expect(automationWorkflow).not.toContain("homedir");
     expect(automationWorkflow).not.toContain("existsSync");
     expect(automationMigration).not.toContain("homedir");
+    expect(automationMigration).not.toContain("readProgramArgumentAfter");
+    expect(automationMigration).not.toContain("removeLaunchdJob");
     expect(automationCatalog).not.toContain("homedir");
+    expect(automationLegacyHooks).not.toContain("platform/automation");
     expect(automationLegacyHooks).not.toContain("homeDir?: string");
     expect(automationLegacyHooks).not.toContain("= {}");
     expect(automationTasks).not.toContain("process.argv");
@@ -983,10 +989,16 @@ describe("architecture boundaries", () => {
     expect(automationTasks).toContain("automationTaskDefinition");
     expect(automationPaths).toContain("LaunchAgents");
     expect(automationPaths).toContain("launchAgentPlistPath");
-    expect(automationJobPlan).toContain("buildLaunchPath");
-    expect(automationJobPlan).toContain("automationLogPaths");
-    expect(automationJobPlan).toContain("launchAgentPlistPath");
-    expect(automationJobPlan).toContain("LaunchdJobDefinition");
+    expect(automationScheduler).toContain("export interface AutomationScheduler");
+    expect(automationScheduler).toContain("programArguments: string[] | null");
+    expect(launchdAutomationScheduler).toContain("createLaunchdAutomationScheduler");
+    expect(launchdAutomationScheduler).toContain("buildLaunchPath");
+    expect(launchdAutomationScheduler).toContain("automationLogPaths");
+    expect(launchdAutomationScheduler).toContain("launchAgentPlistPath");
+    expect(launchdAutomationScheduler).toContain("readLaunchdProgramArguments");
+    expect(existsSync(join(ROOT, "src/platform/automation/job-plan.ts"))).toBe(
+      false,
+    );
     expect(existsSync(join(ROOT, "src/platform/automation/tasks.ts"))).toBe(false);
     expect(automationCommand).toContain("services/automation/index.js");
     expect(automationCommand).not.toContain("import type { CommandResult }");

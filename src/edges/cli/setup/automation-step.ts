@@ -2,6 +2,7 @@ import {
   cleanupLegacyAutomationHooks,
   installAutomation,
 } from "../../../services/automation/index.js";
+import { createLaunchdAutomationScheduler } from "../../../platform/automation/scheduler.js";
 import { automationInstallFailure } from "./automation-result.js";
 import {
   type SetupTheme,
@@ -49,7 +50,13 @@ export async function runAutomationSetupStep(args: {
       )}`,
     );
   } else {
-    await cleanupLegacyAutomationHooks({ homeDir: args.options.homeDir });
+    const scheduler = createLaunchdAutomationScheduler({
+      exec: args.options.automationExec,
+    });
+    await cleanupLegacyAutomationHooks({
+      homeDir: args.options.homeDir,
+      scheduler,
+    });
     const res = await installAutomation({
       every: args.options.automationEvery,
       quiet: args.options.automationQuiet,
@@ -67,7 +74,7 @@ export async function runAutomationSetupStep(args: {
         : undefined,
       plistPath: args.options.automationPlistPath,
       gardenPlistPath: args.options.gardenPlistPath,
-      exec: args.options.automationExec,
+      scheduler,
     });
     const failure = automationInstallFailure(res);
     if (failure !== null) {
