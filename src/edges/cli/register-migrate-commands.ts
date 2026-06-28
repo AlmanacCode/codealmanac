@@ -25,7 +25,9 @@ export function registerMigrateCommands(program: Command): void {
       json?: boolean;
     }) => {
       await autoRegisterCurrentWikiIfNeeded(process.cwd());
-      const { runMigrateLegacySources } = await import("./commands/migrate.js");
+      const { runMigrateLegacySources } = await import(
+        "./commands/migrate/legacy-sources.js"
+      );
       const result = await runMigrateLegacySources({
         cwd: process.cwd(),
         topic: opts.topic,
@@ -42,7 +44,9 @@ export function registerMigrateCommands(program: Command): void {
     .description("migrate legacy scheduled automation to sync")
     .option("--json", "emit structured JSON")
     .action(async (opts: { json?: boolean }) => {
-      const { runMigrateAutomation } = await import("./commands/migrate.js");
+      const { runMigrateAutomation } = await import(
+        "./commands/migrate/automation.js"
+      );
       const result = await runMigrateAutomation({
         cwd: process.cwd(),
         homeDir: homedir(),

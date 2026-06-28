@@ -715,8 +715,13 @@ describe("architecture boundaries: lifecycle and providers", () => {
   });
 
   it("keeps migrate legacy-sources adapter out of source migration mechanics", async () => {
-    const migrateCommand = await readSource("src/edges/cli/commands/migrate.ts");
-    const migrateRender = await readSource("src/edges/cli/commands/migrate-render.ts");
+    const migrateLegacySourcesCommand = await readSource(
+      "src/edges/cli/commands/migrate/legacy-sources.ts",
+    );
+    const migrateAutomationCommand = await readSource(
+      "src/edges/cli/commands/migrate/automation.ts",
+    );
+    const migrateRender = await readSource("src/edges/cli/commands/migrate/render.ts");
     const sourceMigrationService = await readSource(
       "src/services/wiki/source-migration.ts",
     );
@@ -730,25 +735,37 @@ describe("architecture boundaries: lifecycle and providers", () => {
 
     expect(existsSync(join(ROOT, "src/stores/wiki/sources/frontmatter-fix.ts")))
       .toBe(true);
-    expect(existsSync(join(ROOT, "src/edges/cli/commands/migrate-render.ts"))).toBe(
-      true,
-    );
-    expect(migrateCommand).toContain("services/wiki/source-migration.js");
-    expect(migrateCommand).toContain("services/automation/index.js");
-    expect(migrateCommand).toContain("./migrate-render.js");
-    expect(migrateCommand).not.toContain("stores/wiki/indexer");
-    expect(migrateCommand).not.toContain("stores/wiki/sources");
-    expect(migrateCommand).not.toContain("platform/automation");
-    expect(migrateCommand).not.toContain("./automation.js");
-    expect(migrateCommand).not.toContain("resolveWikiRoot");
-    expect(migrateCommand).not.toContain("migrateLegacySourceFrontmatter");
-    expect(migrateCommand).not.toContain("detectLegacyCaptureSweepAutomation");
-    expect(migrateCommand).not.toContain("removeLaunchdJob");
-    expect(migrateCommand).not.toContain("runAutomationInstall");
-    expect(migrateCommand).not.toContain("JSON.stringify");
-    expect(migrateCommand).not.toContain("renderOutcome");
-    expect(migrateCommand).not.toContain("migrated automation to sync");
-    expect(migrateCommand).not.toContain("no migratable legacy source");
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/migrate.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/migrate-render.ts")))
+      .toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/migrate/legacy-sources.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/migrate/automation.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/migrate/render.ts")))
+      .toBe(true);
+    expect(migrateLegacySourcesCommand).toContain("services/wiki/source-migration.js");
+    expect(migrateLegacySourcesCommand).not.toContain("services/automation/index.js");
+    expect(migrateAutomationCommand).toContain("services/automation/index.js");
+    expect(migrateAutomationCommand).not.toContain("services/wiki/source-migration.js");
+    for (const migrateCommand of [
+      migrateLegacySourcesCommand,
+      migrateAutomationCommand,
+    ]) {
+      expect(migrateCommand).toContain("./render.js");
+      expect(migrateCommand).not.toContain("stores/wiki/indexer");
+      expect(migrateCommand).not.toContain("stores/wiki/sources");
+      expect(migrateCommand).not.toContain("platform/automation");
+      expect(migrateCommand).not.toContain("resolveWikiRoot");
+      expect(migrateCommand).not.toContain("migrateLegacySourceFrontmatter");
+      expect(migrateCommand).not.toContain("detectLegacyCaptureSweepAutomation");
+      expect(migrateCommand).not.toContain("removeLaunchdJob");
+      expect(migrateCommand).not.toContain("runAutomationInstall");
+      expect(migrateCommand).not.toContain("JSON.stringify");
+      expect(migrateCommand).not.toContain("renderOutcome");
+      expect(migrateCommand).not.toContain("migrated automation to sync");
+      expect(migrateCommand).not.toContain("no migratable legacy source");
+    }
     expect(migrateRender).toContain("renderMigrateLegacySources");
     expect(migrateRender).toContain("renderMigrateAutomation");
     expect(migrateRender).toContain("renderAutomationInstallFailure");

@@ -73,6 +73,8 @@ Jobs command adapters are split by user-facing verb group. `src/edges/cli/comman
 
 Wiki review command adapters are split by user-facing verb group. `src/edges/cli/commands/review/add.ts` owns add request shaping, `read.ts` owns list/show request shaping, and `decision.ts` owns decide/apply/reopen request shaping. Review command-private markdown normalization and rendering live in `markdown.ts` and `render.ts` under the same folder. The deleted `review.ts` and `review-render.ts` catchalls should not return.
 
+Migrate command adapters are split by migration family. `src/edges/cli/commands/migrate/legacy-sources.ts` owns legacy source-frontmatter request shaping, and `automation.ts` owns legacy automation migration request shaping. Migrate rendering lives in `render.ts` under the same folder. The deleted `migrate.ts` and `migrate-render.ts` catchalls should not return.
+
 ### Transcript file mechanics are platform, sync eligibility is service
 
 Claude and Codex transcript-store scanning, raw transcript snapshot reads, line counting, and JSONL timestamp extraction belong under `src/platform/transcripts/`. The sync service owns quiet-window eligibility, ledger reconciliation, cursor decisions, and Absorb handoff over typed transcript candidates and snapshots.

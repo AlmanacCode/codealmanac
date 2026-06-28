@@ -1,6 +1,6 @@
-import type { MigrateLegacyAutomationResult } from "../../../services/automation/index.js";
-import type { MigrateLegacySourcesResult } from "../../../services/wiki/source-migration.js";
-import { renderOutcome } from "./outcome.js";
+import type { MigrateLegacyAutomationResult } from "../../../../services/automation/index.js";
+import type { MigrateLegacySourcesResult } from "../../../../services/wiki/source-migration.js";
+import { renderOutcome } from "../outcome.js";
 
 export interface MigrateCommandOutput {
   stdout: string;

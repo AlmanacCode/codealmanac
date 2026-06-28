@@ -1936,3 +1936,11 @@ Two-hundred-seventy-second production slice:
 - Added owner-named review command files for add, read, decision, markdown normalization, and rendering under `src/edges/cli/commands/review/`.
 - Updated review command registration and tests to import the verb-owned adapters directly.
 - Strengthened wiki command boundary tests so the old review command and render catchalls cannot return.
+
+Two-hundred-seventy-third production slice:
+
+- Deleted the catchall `src/edges/cli/commands/migrate.ts` command adapter.
+- Deleted the catchall `src/edges/cli/commands/migrate-render.ts` renderer.
+- Added owner-named migrate command files for legacy-sources, automation, and rendering under `src/edges/cli/commands/migrate/`.
+- Updated migrate command registration and tests to import the migration-family adapters directly.
+- Strengthened lifecycle/provider boundary tests so the old migrate command and render catchalls cannot return.

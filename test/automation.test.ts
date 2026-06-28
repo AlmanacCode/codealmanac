@@ -17,7 +17,7 @@ import {
 import {
   runMigrateAutomation as runMigrateAutomationCommand,
   type MigrateAutomationOptions,
-} from "../src/edges/cli/commands/migrate.js";
+} from "../src/edges/cli/commands/migrate/automation.js";
 import { createLaunchdAutomationScheduler } from "../src/platform/automation/scheduler.js";
 import { ensureAutomationSyncSince, readConfig } from "../src/stores/config/index.js";
 import { withTempHome } from "./helpers.js";

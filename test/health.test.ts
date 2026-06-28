@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { runHealth } from "../src/edges/cli/commands/health/index.js";
-import { runMigrateLegacySources } from "../src/edges/cli/commands/migrate.js";
+import { runMigrateLegacySources } from "../src/edges/cli/commands/migrate/legacy-sources.js";
 import { runTopicsCreate } from "../src/edges/cli/commands/topics/index.js";
 import { runIndexer } from "../src/stores/wiki/indexer/index.js";
 import {
