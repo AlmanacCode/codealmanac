@@ -236,6 +236,9 @@ describe("registerCommands", () => {
       "jobs",
       "automation",
       "reindex",
+      "login",
+      "logout",
+      "cloud",
       "agents",
       "config",
       "setup",
@@ -269,6 +272,8 @@ describe("registerCommands", () => {
       .toEqual(["legacy-sources", "automation"]);
     expect(findCommand(program, ["sync"]).commands.map((cmd) => cmd.name()))
       .toEqual(["status"]);
+    expect(findCommand(program, ["cloud"]).commands.map((cmd) => cmd.name()))
+      .toEqual(["status", "capture-hook"]);
 
     expect(optionFlags(findCommand(program, ["setup"]))).toContain("-y, --yes");
     expect(optionFlags(findCommand(program, ["setup"]))).toContain(
@@ -292,6 +297,15 @@ describe("registerCommands", () => {
       "--from <apps>",
     );
     expect(optionFlags(findCommand(program, ["sync", "status"]))).toContain("--json");
+    expect(optionFlags(findCommand(program, ["cloud", "status"]))).toContain("--json");
+    expect(optionFlags(findCommand(program, ["cloud", "capture-hook"]))).toContain(
+      "--provider <provider>",
+    );
+    expect(optionFlags(findCommand(program, ["cloud", "capture-hook"]))).toContain(
+      "--event <event>",
+    );
+    expect(findCommand(program, ["cloud"]).commands.map((cmd) => cmd.name()))
+      .not.toContain("sync");
     expect(optionFlags(findCommand(program, ["ingest"]))).toContain(
       "--using <provider[/model]>",
     );

@@ -1,5 +1,6 @@
 import { Command } from "commander";
 
+import { registerCloudCommands } from "./register-cloud-commands.js";
 import { registerEditCommands } from "./register-edit-commands.js";
 import { registerQueryCommands } from "./register-query-commands.js";
 import {
@@ -17,5 +18,6 @@ export function registerCommands(
   registerQueryCommands(program);
   registerEditCommands(program);
   registerWikiLifecycleCommands(program);
+  registerCloudCommands(program);
   registerSetupCommands(program, deps);
 }
