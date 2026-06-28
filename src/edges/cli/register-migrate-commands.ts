@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 
 import { currentCliProgramArguments } from "./current-cli.js";
 import { emit, readStdin } from "./helpers.js";
-import { createLaunchdAutomationScheduler } from "../../platform/automation/scheduler.js";
+import { createAutomationScheduler } from "../../app/automation-runtime.js";
 import { autoRegisterIfNeeded } from "../../services/wiki/autoregistration.js";
 
 export function registerMigrateCommands(program: Command): void {
@@ -49,7 +49,7 @@ export function registerMigrateCommands(program: Command): void {
         pathEnvironment: process.env.PATH,
         cliProgramArguments: currentCliProgramArguments(),
         json: opts.json,
-        scheduler: createLaunchdAutomationScheduler(),
+        scheduler: createAutomationScheduler(),
       });
       emit(result);
     });

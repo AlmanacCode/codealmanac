@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { createLaunchdAutomationScheduler } from "../../platform/automation/scheduler.js";
+import { createAutomationScheduler } from "../../app/automation-runtime.js";
 import {
   removeSetupImportLine,
   removeSetupManagedBlock,
@@ -129,7 +129,7 @@ export async function runUninstall(
     homeDir: options.homeDir,
     automationPlistPath: options.automationPlistPath,
     gardenPlistPath: options.gardenPlistPath,
-    automationScheduler: createLaunchdAutomationScheduler({
+    automationScheduler: createAutomationScheduler({
       exec: options.automationExec,
     }),
     claudeDir,

@@ -2,7 +2,7 @@ import {
   cleanupLegacyAutomationHooks,
   installAutomation,
 } from "../../../services/automation/index.js";
-import { createLaunchdAutomationScheduler } from "../../../platform/automation/scheduler.js";
+import { createAutomationScheduler } from "../../../app/automation-runtime.js";
 import { automationInstallFailure } from "./automation-result.js";
 import {
   type SetupTheme,
@@ -50,7 +50,7 @@ export async function runAutomationSetupStep(args: {
       )}`,
     );
   } else {
-    const scheduler = createLaunchdAutomationScheduler({
+    const scheduler = createAutomationScheduler({
       exec: args.options.automationExec,
     });
     await cleanupLegacyAutomationHooks({

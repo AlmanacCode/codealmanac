@@ -1423,3 +1423,10 @@ Two-hundred-fifth production slice:
 - Deleted `src/edges/cli/background-jobs.ts`; background job process composition now lives with the rest of CLI app runtime wiring instead of as an edge-local helper.
 - Kept CLI registration files responsible for argv/options/cwd/pid/event rendering while `src/app/cli-runtime.ts` owns concrete runtime wiring over services, platform modules, and agent runtime.
 - Strengthened architecture-boundary tests so lifecycle and sync registration import the app runtime rather than platform/provider runtime modules directly.
+
+Two-hundred-sixth production slice:
+
+- Added `src/app/automation-runtime.ts` as the explicit app composition point for launchd-backed automation scheduler construction.
+- Changed automation, migration, setup automation, setup auto-update, and uninstall CLI edges to use the app runtime instead of importing `src/platform/automation/scheduler.ts` directly.
+- Kept edges responsible for argv/options/home/path/env values while app composition owns the concrete launchd scheduler wiring.
+- Strengthened architecture-boundary tests so edge automation surfaces cannot reintroduce direct launchd scheduler imports.
