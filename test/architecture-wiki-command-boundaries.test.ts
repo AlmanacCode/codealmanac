@@ -548,8 +548,12 @@ describe("architecture boundaries: wiki commands and viewer", () => {
   });
 
   it("keeps review command adapters out of review store mechanics", async () => {
-    const reviewCommand = await readSource("src/edges/cli/commands/review.ts");
-    const reviewRender = await readSource("src/edges/cli/commands/review-render.ts");
+    const reviewAddCommand = await readSource("src/edges/cli/commands/review/add.ts");
+    const reviewReadCommand = await readSource("src/edges/cli/commands/review/read.ts");
+    const reviewDecisionCommand = await readSource(
+      "src/edges/cli/commands/review/decision.ts",
+    );
+    const reviewRender = await readSource("src/edges/cli/commands/review/render.ts");
     const reviewService = await readSource("src/services/wiki/reviews.ts");
     const reviewTypes = await readSource("src/services/wiki/review-types.ts");
     const reviewWorkspace = await readSource(
@@ -571,7 +575,14 @@ describe("architecture boundaries: wiki commands and viewer", () => {
       "src/edges/cli/review-markdown-input.ts",
     );
 
-    expect(existsSync(join(ROOT, "src/edges/cli/commands/review-render.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/review.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/review-render.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/review/add.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/review/read.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/review/decision.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/review/render.ts")))
+      .toBe(true);
     expect(reviewRegistration).toContain("registerReviewAddCommand(review)");
     expect(reviewRegistration).toContain("registerReviewReadCommands(review)");
     expect(reviewRegistration).toContain("registerReviewDecisionCommands(review)");
@@ -589,33 +600,39 @@ describe("architecture boundaries: wiki commands and viewer", () => {
     expect(reviewDecisionRegistration).toContain("runReviewReopen");
     expect(reviewMarkdownInput).toContain("readStdin");
     expect(reviewMarkdownInput).toContain("markdownFromArgs");
-    expect(reviewCommand).toContain("services/wiki/reviews.js");
-    expect(reviewCommand).toContain("review-render.js");
-    expect(reviewCommand).not.toContain("review/store");
-    expect(reviewCommand).not.toContain("stores/wiki-review");
-    expect(reviewCommand).not.toContain("resolveWikiRoot");
-    expect(reviewCommand).not.toContain("reviewYamlPath");
-    expect(reviewCommand).not.toContain("loadReviewFile");
-    expect(reviewCommand).not.toContain("writeReviewFile");
-    expect(reviewCommand).not.toContain("nextReviewId");
-    expect(reviewCommand).not.toContain("type ReviewItem");
-    expect(reviewCommand).not.toContain("type ReviewStatus");
-    expect(reviewCommand).not.toContain("ReviewCommandOutput = CommandResult");
-    expect(reviewCommand).not.toContain("interface ReviewOptions");
-    expect(reviewCommand).not.toContain("ReviewItemOptions extends ReviewOptions");
-    expect(reviewCommand).not.toContain("renderOutcome");
-    expect(reviewCommand).not.toContain("switch (result.status)");
-    expect(reviewCommand).not.toContain("result.status ===");
-    expect(reviewCommand).not.toContain("JSON.stringify");
-    expect(reviewCommand).not.toContain(".trim()");
-    expect(reviewCommand).not.toContain(".replace(/\\s+$/g");
-    expect(reviewCommand).not.toContain("added review item:");
-    expect(reviewCommand).not.toContain("Decision:");
-    expect(reviewCommand).not.toContain(
-      "options: { cwd: string; wiki?: string; id: string; json?: boolean }",
-    );
-    expect(reviewCommand).toContain("interface ReviewShowOptions");
-    expect(reviewCommand).toContain("renderReviewAddResult");
+    for (const reviewCommand of [
+      reviewAddCommand,
+      reviewReadCommand,
+      reviewDecisionCommand,
+    ]) {
+      expect(reviewCommand).toContain("services/wiki/reviews.js");
+      expect(reviewCommand).toContain("./render.js");
+      expect(reviewCommand).not.toContain("review/store");
+      expect(reviewCommand).not.toContain("stores/wiki-review");
+      expect(reviewCommand).not.toContain("resolveWikiRoot");
+      expect(reviewCommand).not.toContain("reviewYamlPath");
+      expect(reviewCommand).not.toContain("loadReviewFile");
+      expect(reviewCommand).not.toContain("writeReviewFile");
+      expect(reviewCommand).not.toContain("nextReviewId");
+      expect(reviewCommand).not.toContain("type ReviewItem");
+      expect(reviewCommand).not.toContain("type ReviewStatus");
+      expect(reviewCommand).not.toContain("ReviewCommandOutput = CommandResult");
+      expect(reviewCommand).not.toContain("interface ReviewOptions");
+      expect(reviewCommand).not.toContain("ReviewItemOptions extends ReviewOptions");
+      expect(reviewCommand).not.toContain("renderOutcome");
+      expect(reviewCommand).not.toContain("switch (result.status)");
+      expect(reviewCommand).not.toContain("result.status ===");
+      expect(reviewCommand).not.toContain("JSON.stringify");
+      expect(reviewCommand).not.toContain(".trim()");
+      expect(reviewCommand).not.toContain(".replace(/\\s+$/g");
+      expect(reviewCommand).not.toContain("added review item:");
+      expect(reviewCommand).not.toContain("Decision:");
+      expect(reviewCommand).not.toContain(
+        "options: { cwd: string; wiki?: string; id: string; json?: boolean }",
+      );
+    }
+    expect(reviewReadCommand).toContain("interface ReviewShowOptions");
+    expect(reviewAddCommand).toContain("renderReviewAddResult");
     expect(reviewRender).toContain("renderOutcome");
     expect(reviewRender).toContain("renderReviewAddResult");
     expect(reviewRender).toContain("switch (result.status)");

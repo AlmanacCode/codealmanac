@@ -42,7 +42,7 @@ function registerReviewDecisionCommand(
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (id: string, markdownArg: string[], opts: { wiki?: string }) => {
       await autoRegisterCurrentWikiIfNeeded(process.cwd());
-      const commandModule = await import("./commands/review.js");
+      const commandModule = await import("./commands/review/decision.js");
       const markdownInput = await reviewMarkdownInput(markdownArg);
       const request = {
         cwd: process.cwd(),

@@ -4,12 +4,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   runReviewAdd,
+} from "../src/edges/cli/commands/review/add.js";
+import {
+  runReviewList,
+  runReviewShow,
+} from "../src/edges/cli/commands/review/read.js";
+import {
   runReviewApply,
   runReviewDecide,
-  runReviewList,
   runReviewReopen,
-  runReviewShow,
-} from "../src/edges/cli/commands/review.js";
+} from "../src/edges/cli/commands/review/decision.js";
 import { loadReviewFile } from "../src/stores/wiki-review/store.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 

@@ -12,7 +12,7 @@ export function registerReviewAddCommand(review: Command): void {
     .option("--json", "emit structured JSON")
     .action(async (markdownArg: string[], opts: { wiki?: string; json?: boolean }) => {
       await autoRegisterCurrentWikiIfNeeded(process.cwd());
-      const { runReviewAdd } = await import("./commands/review.js");
+      const { runReviewAdd } = await import("./commands/review/add.js");
       const markdownInput = await reviewMarkdownInput(markdownArg);
       const result = await runReviewAdd({
         cwd: process.cwd(),

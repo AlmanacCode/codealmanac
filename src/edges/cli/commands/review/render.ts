@@ -7,8 +7,8 @@ import type {
   ReopenWikiReviewItemResult,
   WikiReviewItem,
   WikiReviewStatus,
-} from "../../../services/wiki/review-types.js";
-import { renderOutcome } from "./outcome.js";
+} from "../../../../services/wiki/review-types.js";
+import { renderOutcome } from "../outcome.js";
 
 export interface ReviewCommandOutput {
   stdout: string;

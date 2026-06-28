@@ -1928,3 +1928,11 @@ Two-hundred-seventy-first production slice:
 - Removed the unused non-stream attach compatibility helper while preserving the real streaming attach command path.
 - Updated jobs command registration and tests to import the verb-owned adapters directly.
 - Strengthened jobs/sync boundary tests so the old jobs command, render, and format catchalls cannot return.
+
+Two-hundred-seventy-second production slice:
+
+- Deleted the catchall `src/edges/cli/commands/review.ts` command adapter.
+- Deleted the catchall `src/edges/cli/commands/review-render.ts` renderer.
+- Added owner-named review command files for add, read, decision, markdown normalization, and rendering under `src/edges/cli/commands/review/`.
+- Updated review command registration and tests to import the verb-owned adapters directly.
+- Strengthened wiki command boundary tests so the old review command and render catchalls cannot return.
