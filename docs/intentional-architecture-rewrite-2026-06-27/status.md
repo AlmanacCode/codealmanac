@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 249 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 250 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -100,6 +100,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Split the automation task catalog out of platform launchd mechanics: task meaning/defaults live under `src/services/automation/tasks.ts`, while plist/log paths live under `src/platform/automation/paths.ts`.
 - Moved the automation scheduler port into `src/shared/automation-scheduler.ts`, so launchd platform mechanics no longer import automation services.
 - Moved automation scheduler mechanics behind the shared scheduler port, with launchd implementation in `src/platform/automation/scheduler.ts`; automation services no longer import `src/platform/automation/`.
+- Split automation install planning into task selection, task schedule validation, scheduler-job construction, and top-level install-plan orchestration files.
 - Moved concrete agent runtime provider registry creation out of job runtime services; CLI and worker edges now inject an `AgentRuntimeRunner`, while `src/agent/runtime/job-runner.ts` owns provider-registry composition.
 - Moved the provider-neutral agent runner contract into `src/shared/agent-runtime/runner.ts`, deleting the old job-runtime-private contract file.
 - Moved provider identity and provider-neutral runtime event/final-output/tool contracts into `src/shared/`, so services and stores no longer import provider runtime contract files from `src/agent/runtime/`.
@@ -125,12 +126,12 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice removed stale runtime terminology from the public jobs service view mapper. `src/services/jobs/view.ts` now maps a store-owned `StoredJobView` through `jobServiceViewFromStore`, which matches the current boundary where durable job read mechanics live in `src/stores/jobs/`.
+The latest slice split automation install planning into owned service files. `src/services/automation/planning.ts` now only coordinates the install plan; `task-selection.ts` owns explicit/default task selection rules, `task-schedule.ts` owns interval and quiet-window validation, and `job-planning.ts` owns scheduler-job shaping, plist-path choice, command arguments, and Garden working-directory resolution.
 
 Verification passed:
 
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/jobs-command.test.ts test/jobs-records.test.ts test/jobs-worker.test.ts`
+- `npx vitest run test/automation.test.ts test/architecture-boundaries.test.ts`
 - `git diff --check`
 - `npm test`
 - `npm run build`

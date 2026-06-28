@@ -155,7 +155,9 @@ Codex app-server notifications are routed by notification kind. `app-notificatio
 
 ### Automation scheduler contracts are service-owned; launchd is platform
 
-`src/services/automation/` owns automation product workflows: task selection, interval validation, install/status/uninstall results, legacy migration semantics, and setup cleanup verbs. It talks to an injected `AutomationScheduler` contract from `src/services/automation/scheduler.ts`. `src/platform/automation/scheduler.ts` implements that contract with launchd/plist mechanics: default plist paths, log paths, launch PATH construction, plist writes, launchctl activation/removal/status, legacy capture detection, and XML-to-command-array normalization. CLI/setup/uninstall edges create the launchd scheduler because they are the concrete runtime composition points.
+`src/services/automation/` owns automation product workflows: task selection, interval validation, install/status/uninstall results, legacy migration semantics, and setup cleanup verbs. It talks to an injected `AutomationScheduler` contract from `src/shared/automation-scheduler.ts`. `src/platform/automation/scheduler.ts` implements that contract with launchd/plist mechanics: default plist paths, log paths, launch PATH construction, plist writes, launchctl activation/removal/status, legacy capture detection, and XML-to-command-array normalization. CLI/setup/uninstall edges create the launchd scheduler because they are the concrete runtime composition points.
+
+Automation install planning is not one service bucket. `src/services/automation/task-selection.ts` owns which task ids are in scope, `task-schedule.ts` owns interval and quiet-window validation, `job-planning.ts` owns scheduler job shaping over the injected scheduler contract, and `planning.ts` owns the top-level install-plan assembly. That keeps product choice, schedule parsing, command shaping, and orchestration independently named while staying inside the automation service boundary.
 
 ### Jobs execute through an injected agent runner
 

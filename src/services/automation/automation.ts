@@ -5,9 +5,9 @@ import {
 import {
   buildAutomationInstallPlan,
   type AutomationInstallPlan,
-  plistPathForTask,
-  selectedTaskIds,
 } from "./planning.js";
+import { plistPathForTask } from "./job-planning.js";
+import { selectedTaskIds } from "./task-selection.js";
 import type {
   AutomationInstallOptions,
   AutomationInstallResult,

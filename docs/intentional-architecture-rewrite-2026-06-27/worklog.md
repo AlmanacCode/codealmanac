@@ -1765,3 +1765,12 @@ Two-hundred-forty-ninth production slice:
 - Renamed the jobs service view mapper from `jobServiceViewFromRuntime` to `jobServiceViewFromStore`.
 - Renamed the imported store job view type from `RuntimeJobView` to `StoredJobView`.
 - Strengthened architecture-boundary tests so public jobs service view mapping does not regain runtime terminology after the job store/runtime split.
+
+Two-hundred-fiftieth production slice:
+
+- Split `src/services/automation/planning.ts` into owned automation planning helpers without changing scheduler behavior.
+- Added `src/services/automation/task-selection.ts` for default/explicit task selection, dedupe, `--garden-off`, and explicit multi-task `--every` validation.
+- Added `src/services/automation/task-schedule.ts` for sync quiet-window validation and per-task interval selection/parsing.
+- Added `src/services/automation/job-planning.ts` for scheduler job construction, plist-path choice, command arguments, and Garden working-directory resolution.
+- Kept `src/services/automation/planning.ts` as top-level install-plan orchestration over the new helpers.
+- Updated automation workflow imports and architecture-boundary tests so planning cannot regain schedule parsing, command-argument, or working-directory mechanics.
