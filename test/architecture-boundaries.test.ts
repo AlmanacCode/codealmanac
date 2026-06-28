@@ -1481,6 +1481,7 @@ describe("architecture boundaries", () => {
     const platformGithubSource = await readSource("src/platform/github/source.ts");
     const syncService = await readSource("src/services/sync/sync.ts");
     const operationsCommand = await readSource("src/cli/commands/operations.ts");
+    const operationsRender = await readSource("src/cli/commands/operations-render.ts");
 
     expect(existsSync(join(ROOT, "src/services/lifecycle/operation-results.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/lifecycle/workflows.ts"))).toBe(true);
@@ -1519,10 +1520,13 @@ describe("architecture boundaries", () => {
     expect(lifecycleWorkflows).not.toContain("Command context:");
     expect(lifecycleWorkflows).toContain("runPreparedAbsorbOperationWorkflow");
     expect(lifecycleResults).toContain("lifecycleOperationRunResultFromOperation");
+    expect(lifecycleResults).toContain("interface LifecycleOperationFailure");
     expect(platformGithubSource).not.toContain("services/lifecycle");
     expect(syncService).toContain("runPreparedAbsorbOperationWorkflow");
     expect(syncService).not.toContain("services/lifecycle/operations");
     expect(operationsCommand).toContain("services/lifecycle/index.js");
+    expect(operationsRender).not.toContain("../../agent");
+    expect(operationsRender).not.toContain("AgentRuntimeFailure");
     expect(operationsCommand).not.toContain("import type { CommandResult }");
     expect(operationsCommand).not.toContain("extends InitOperationWorkflowOptions");
     expect(operationsCommand).not.toContain("extends AbsorbOperationWorkflowOptions");

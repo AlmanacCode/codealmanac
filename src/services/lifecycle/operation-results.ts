@@ -9,17 +9,24 @@ export type LifecycleOperationJobStatus =
   | "failed"
   | "cancelled";
 
+export interface LifecycleOperationFailure {
+  provider: string;
+  message: string;
+  code?: string;
+  fix?: string;
+}
+
 export interface LifecycleOperationJobResult {
   status: LifecycleOperationJobStatus;
   pid: number;
   logPath: string;
-  failure?: AgentRuntimeFailure;
+  failure?: LifecycleOperationFailure;
 }
 
 export interface LifecycleOperationForegroundResult {
   success: boolean;
   error?: string;
-  failure?: AgentRuntimeFailure;
+  failure?: LifecycleOperationFailure;
 }
 
 export interface LifecycleOperationBackgroundResult {
@@ -48,7 +55,9 @@ export function lifecycleOperationRunResultFromOperation(
       status: record.status,
       pid: record.pid,
       logPath: record.logPath,
-      ...(record.failure !== undefined ? { failure: record.failure } : {}),
+      ...(record.failure !== undefined
+        ? { failure: lifecycleFailureFromAgent(record.failure) }
+        : {}),
     },
     ...(result.foreground !== undefined
       ? { foreground: lifecycleForegroundResultFromOperation(result.foreground.result) }
@@ -65,6 +74,19 @@ function lifecycleForegroundResultFromOperation(
   return {
     success: result.success,
     ...(result.error !== undefined ? { error: result.error } : {}),
-    ...(result.failure !== undefined ? { failure: result.failure } : {}),
+    ...(result.failure !== undefined
+      ? { failure: lifecycleFailureFromAgent(result.failure) }
+      : {}),
+  };
+}
+
+function lifecycleFailureFromAgent(
+  failure: AgentRuntimeFailure,
+): LifecycleOperationFailure {
+  return {
+    provider: failure.provider,
+    message: failure.message,
+    ...(failure.code !== undefined ? { code: failure.code } : {}),
+    ...(failure.fix !== undefined ? { fix: failure.fix } : {}),
   };
 }

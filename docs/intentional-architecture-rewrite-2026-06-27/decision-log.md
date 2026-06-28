@@ -57,6 +57,8 @@ Claude and Codex transcript-store scanning, raw transcript snapshot reads, line 
 
 Build, Absorb, and Garden operation specs are lifecycle product mechanics, so their provider-neutral construction lives under `src/services/lifecycle/operations/`. CLI commands and peer services call lifecycle workflow contracts instead of importing operation internals.
 
+Lifecycle workflow results expose lifecycle-owned failure contracts. Agent runtime failures are normalized in `src/services/lifecycle/operation-results.ts` before command rendering reads them, so CLI output code does not depend on provider/runtime event types.
+
 ### Absorb source parsing is lifecycle, GitHub mechanics are platform
 
 Absorb owns product input normalization under `src/services/lifecycle/absorb/`: source refs, source input contracts, context rendering, and Absorb run-start shaping. GitHub remote parsing and URL construction are external mechanics, so they live under `src/platform/github/` and return plain typed facts.

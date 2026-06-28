@@ -1,5 +1,5 @@
-import type { AgentRuntimeFailure } from "../../agent/runtime/events.js";
 import {
+  type LifecycleOperationFailure,
   type LifecycleOperationRunResult,
   type LifecycleOperationWorkflowResult,
 } from "../../services/lifecycle/index.js";
@@ -90,7 +90,7 @@ function renderOperationFailureMessage(args: {
   operation: string;
   jobId: string;
   error?: string;
-  failure?: AgentRuntimeFailure;
+  failure?: LifecycleOperationFailure;
 }): string {
   const lines = [`${args.operation} failed: ${args.jobId}`];
   if (args.failure !== undefined) {

@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 227 committed rewrite commits past `dev`. The worklog records 179 production slices so far.
+The branch has 228 committed rewrite commits past `dev`. The worklog records 180 production slices so far.
 
-The diff is broad: 473 files changed, with 23,659 insertions and 12,875 deletions.
+The diff is broad: 473 files changed, with 23,696 insertions and 12,875 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -32,6 +32,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved sync ledger and lock persistence into explicit stores.
 - Moved local Claude/Codex transcript discovery, transcript snapshot reads, and timestamp boundary parsing into `src/platform/transcripts/` and removed the old top-level `src/sync/` source bucket.
 - Moved lifecycle operation construction and Absorb input/source handling into `src/services/lifecycle/` and removed the old top-level `src/operations/` and `src/absorb/` source buckets.
+- Normalized lifecycle operation failures into lifecycle-owned result contracts before command rendering sees them.
 - Moved GitHub source resolution mechanics into `src/platform/github/`.
 - Moved provider execution runtime into `src/agent/runtime/`, especially Claude and Codex app-server mechanics, and made provider runtime environment flow through explicit job/registry contracts.
 - Moved setup, diagnostics, update, automation, jobs, sync, lifecycle, config, and agents workflows behind service-owned contracts.
@@ -55,9 +56,9 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved `almanac uninstall` terminal UI from `src/cli/commands/` to `src/edges/cli/`. Uninstall confirmations, output rendering, and edge orchestration now live with CLI edge code, while setup cleanup stays under `src/services/setup/uninstall.ts`.
+The latest slice normalized lifecycle operation failures into `src/services/lifecycle/operation-results.ts`. Operation command rendering now depends on lifecycle-owned failure contracts instead of importing agent runtime failure types directly.
 
-Verification passed: focused uninstall/CLI/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js uninstall --help`, `node dist/codealmanac.js setup --help`, and `node dist/codealmanac.js doctor --help`.
+Verification passed: focused operation-command/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js init --help`, `node dist/codealmanac.js absorb --help`, and `node dist/codealmanac.js garden --help`.
 
 ## Immediate Next Work
 

@@ -1221,3 +1221,10 @@ One-hundred-seventy-ninth production slice:
 - Updated setup command registration and uninstall tests to import the edge-owned uninstall runner.
 - Kept `src/services/setup/uninstall.ts` responsible for deterministic cleanup workflow over automation and instruction artifacts.
 - Strengthened boundary coverage so old uninstall command files stay deleted while CLI edge owns confirmations and stdout rendering.
+
+One-hundred-eightieth production slice:
+
+- Added a lifecycle-owned `LifecycleOperationFailure` contract in `src/services/lifecycle/operation-results.ts`.
+- Normalized agent runtime failure objects into lifecycle failures before operation command rendering reads them.
+- Removed the direct `AgentRuntimeFailure` import from `src/cli/commands/operations-render.ts`.
+- Strengthened boundary coverage so lifecycle command rendering cannot re-import agent runtime failure types directly.

@@ -22,6 +22,7 @@ export {
 } from "./workflows.js";
 
 export {
+  type LifecycleOperationFailure,
   type LifecycleOperationBackgroundResult,
   type LifecycleOperationForegroundResult,
   type LifecycleOperationJobResult,
