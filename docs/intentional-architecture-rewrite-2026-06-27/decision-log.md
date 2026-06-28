@@ -113,6 +113,8 @@ Topic read services select product mode and shape result contracts. Raw topic pa
 
 Topic rename/delete services decide which topic mutation to perform. The store owns the page-file scan and frontmatter read/rewrite mechanics through `src/stores/wiki/topics/page-rewrite.ts` and `frontmatter-rewrite.ts`.
 
+Topic workspace services can combine editable `topics.yaml` state with indexed topic facts, but the indexed lookup itself belongs in the query store. `src/stores/wiki/query/topics.ts` owns `topicExistsInDb()` over the `topics` table; `src/services/wiki/topic-workspace.ts` should not prepare SQL directly.
+
 ### Viewer read models are viewer-edge code
 
 Viewer-only API payload assembly belongs under `src/edges/viewer/read-model/`, not `src/services/viewer/`, because those contracts exist to serve the local HTTP viewer. Product services should not become a bucket for browser DTOs. Shared persistence and query mechanics remain in stores and job projections; the viewer edge composes them into route-shaped responses.

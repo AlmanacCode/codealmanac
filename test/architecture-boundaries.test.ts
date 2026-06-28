@@ -540,8 +540,13 @@ describe("architecture boundaries", () => {
     expect(topicReadService).not.toContain("SELECT pt.page_slug");
     expect(topicReadService).not.toContain("descendantsInDb");
     expect(topicQueryStore).toContain("export function topicPageSlugs");
+    expect(topicQueryStore).toContain("export function topicExistsInDb");
     expect(topicQueryStore).toContain("SELECT pt.page_slug");
+    expect(topicQueryStore).toContain("SELECT slug FROM topics WHERE slug = ?");
     expect(topicQueryStore).toContain("descendantsInDb");
+    expect(topicWorkspace).not.toContain("db.prepare");
+    expect(topicWorkspace).not.toContain("SELECT slug FROM topics");
+    expect(topicWorkspace).toContain("topicExistsInDb");
     expect(topicTypes).not.toContain("WikiTopicRequest extends WikiTopicsRequest");
     expect(topicTypes).not.toContain(
       "DescribeWikiTopicRequest extends WikiTopicsRequest",

@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 253 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 254 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -31,7 +31,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Made CLI command files much thinner by moving product workflows into `src/services/`.
 - Moved remaining command adapters, renderers, and command output helpers from the old top-level `src/cli/` directory into `src/edges/cli/commands/`.
 - Split wiki workflows into clearer service boundaries: search, show, health, registry, topics, review, reindex, source migration, and doctor wiki checks.
-- Moved topic-read page lookup SQL into the wiki query store so topic services no longer own query mechanics.
+- Moved topic-read page lookup SQL and indexed-topic existence SQL into the wiki query store so topic services no longer own query mechanics.
 - Moved viewer overview count SQL and `topics.yaml` existence checks into stores, so viewer read models compose route payloads over store-owned facts.
 - Moved durable job persistence into explicit stores for records, specs, logs, and worker locks.
 - Removed the old top-level `src/jobs/` source bucket; job runtime and projections now live under `src/services/jobs/`, durable job schemas live under `src/stores/jobs/`, and detached worker spawning lives under `src/platform/jobs/`.
@@ -129,19 +129,19 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved viewer overview storage reads out of `src/edges/viewer/read-model/api.ts`. The viewer read model now composes route payloads over `wikiOverviewCounts()` and `hasTopicsFile()`, while `src/stores/wiki/query/overview.ts` owns overview count SQL and `src/stores/wiki/topics/yaml.ts` owns the `.almanac/topics.yaml` presence check.
+The latest slice moved the remaining indexed-topic existence SQL out of `src/services/wiki/topic-workspace.ts` and into `src/stores/wiki/query/topics.ts`. Topic workspace services now combine `topics.yaml` facts with `topicExistsInDb()`, while the query store owns the `topics` table lookup.
 
 Verification passed:
 
 - `npm run lint`
-- `npx vitest run test/viewer-api.test.ts test/viewer-global-api.test.ts test/serve-command.test.ts test/architecture-boundaries.test.ts`
+- `npx vitest run test/topics.test.ts test/architecture-boundaries.test.ts`
 - `git diff --check`
 - `npm test`
 - `npm run build`
 - `node dist/launcher.js doctor --help`
 - `node dist/launcher.js agents --help`
 - `node dist/launcher.js jobs --help`
-- `node dist/launcher.js serve --help`
+- `node dist/launcher.js topics --help`
 
 Previous full-slice verification also passed:
 

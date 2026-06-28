@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { ensureFreshIndex } from "../../stores/wiki/indexer/index.js";
 import { resolveWikiRoot } from "../../stores/wiki/indexer/resolve-wiki.js";
 import { openIndex } from "../../stores/wiki/indexer/schema.js";
+import { topics as topicQueries } from "../../stores/wiki/query/index.js";
 import { topicsYamlPath } from "../../stores/wiki/topics/paths.js";
 import {
   findTopic,
@@ -52,10 +53,5 @@ export function topicExists(
   slug: string,
 ): boolean {
   if (findTopic(file, slug) !== null) return true;
-  const row = db
-    .prepare<[string], { slug: string }>(
-      "SELECT slug FROM topics WHERE slug = ?",
-    )
-    .get(slug);
-  return row !== undefined;
+  return topicQueries.topicExistsInDb(db, slug);
 }

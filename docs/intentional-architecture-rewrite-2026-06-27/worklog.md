@@ -1796,3 +1796,10 @@ Two-hundred-fifty-third production slice:
 - Added `hasTopicsFile()` to `src/stores/wiki/topics/yaml.ts` so topic YAML file existence remains store-owned.
 - Kept `src/edges/viewer/read-model/api.ts` responsible for assembling overview route payloads over store facts, not filesystem or SQL mechanics.
 - Strengthened architecture-boundary tests so the viewer read model cannot regain `node:fs`, `existsSync`, `db.prepare`, or overview count SQL.
+
+Two-hundred-fifty-fourth production slice:
+
+- Moved indexed-topic existence SQL from `src/services/wiki/topic-workspace.ts` into `src/stores/wiki/query/topics.ts`.
+- Added `topicExistsInDb()` as the store-owned helper for checking the indexed `topics` table.
+- Kept topic workspace services responsible for combining editable `topics.yaml` state with indexed topic facts, not preparing SQL directly.
+- Strengthened architecture-boundary tests so topic workspace services cannot regain `db.prepare` or direct `topics` table SQL.

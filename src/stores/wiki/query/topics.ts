@@ -124,6 +124,19 @@ export function topicPageSlugs(
   return pageSlugsForTopic(db, slug);
 }
 
+export function topicExistsInDb(
+  db: Database.Database,
+  rawSlug: string,
+): boolean {
+  const slug = toKebabCase(rawSlug);
+  const row = db
+    .prepare<[string], { slug: string }>(
+      "SELECT slug FROM topics WHERE slug = ?",
+    )
+    .get(slug);
+  return row !== undefined;
+}
+
 function pageSlugsForTopic(
   db: Database.Database,
   slug: string,
