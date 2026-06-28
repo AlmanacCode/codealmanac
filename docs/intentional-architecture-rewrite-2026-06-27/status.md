@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 222 committed rewrite commits past `dev`. The worklog records 174 production slices so far.
+The branch has 223 committed rewrite commits past `dev`. The worklog records 175 production slices so far.
 
-The diff is broad: 463 files changed, with 23,090 insertions and 12,383 deletions.
+The diff is broad: 463 files changed, with 23,096 insertions and 12,386 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -20,6 +20,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved durable job persistence into explicit stores for records, specs, logs, and worker locks.
 - Removed the old top-level `src/jobs/` source bucket; job runtime and projections now live under `src/services/jobs/`, durable job schemas live under `src/stores/jobs/`, and detached worker spawning lives under `src/platform/jobs/`.
 - Moved job record lifecycle and display-status read-model helpers out of the job runtime folder, and put public job record/log reads behind the `src/stores/jobs/` store API.
+- Removed raw log-file reads from job projections; stores own job log contents while projections parse contents into viewer/job read models.
 - Removed the mixed `src/services/jobs/runtime/index.ts` compatibility barrel; callers now import concrete runtime, store, platform, or record-lifecycle modules.
 - Removed the old top-level `src/init/` source bucket; wiki initialization now lives under `src/services/wiki/`, and mechanical `.almanac/` file scaffolding lives under `src/stores/wiki-files/`.
 - Removed the old top-level `src/config/` source bucket; persisted config mechanics now live under `src/stores/config/`, service verbs live under `src/services/config/`, and provider enablement policy lives under `src/agent/`.
@@ -53,9 +54,9 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved automation scheduler job construction from service planning into `src/platform/automation/job-plan.ts`. Service planning still selects tasks, validates intervals, and chooses command arguments, while platform automation now builds the concrete launchd-shaped job definition.
+The latest slice removed the unused path-based job-log projection reader. `src/services/jobs/projections/log-events.ts` now parses log contents read through `src/stores/jobs/`, so projections no longer import `node:fs/promises` or read arbitrary paths directly.
 
-Verification passed: `npm run lint`, focused automation/boundary tests, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js automation --help`, and `node dist/codealmanac.js doctor --help`.
+Verification passed: `npm run lint`, focused jobs/viewer/boundary tests, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js jobs --help`, and `node dist/codealmanac.js doctor --help`.
 
 ## Immediate Next Work
 

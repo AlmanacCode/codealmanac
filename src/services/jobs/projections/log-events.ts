@@ -1,16 +1,6 @@
-import { readFile } from "node:fs/promises";
-
 import type { AgentRuntimeEvent, RunActor } from "../../../agent/runtime/events.js";
 import { readJobLogContents } from "../../../stores/jobs/index.js";
 import type { JobLogEvent } from "./types.js";
-
-export async function readJobLogEvents(path: string): Promise<JobLogEvent[]> {
-  try {
-    return parseJobLogEvents(await readFile(path, "utf8"));
-  } catch {
-    return [];
-  }
-}
 
 export async function readJobLogEventsForJob(
   repoRoot: string,

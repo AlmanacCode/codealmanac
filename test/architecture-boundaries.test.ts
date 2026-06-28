@@ -725,6 +725,7 @@ describe("architecture boundaries", () => {
 
   it("keeps job run projection concerns in named modules", async () => {
     const projectionView = await readSource("src/services/jobs/projections/view.ts");
+    const logEvents = await readSource("src/services/jobs/projections/log-events.ts");
     const agentTraces = await readSource("src/services/jobs/projections/agent-traces.ts");
     const warnings = await readSource("src/services/jobs/projections/warnings.ts");
     const viewerJobs = await readSource("src/edges/viewer/read-model/jobs.ts");
@@ -735,6 +736,10 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/services/jobs/projections/text.ts"))).toBe(true);
     expect(projectionView).not.toContain("export function deriveJobAgentTraces");
     expect(projectionView).not.toContain("export function deriveJobWarnings");
+    expect(logEvents).not.toContain("node:fs/promises");
+    expect(logEvents).not.toContain("readFile");
+    expect(logEvents).not.toContain("readJobLogEvents(path");
+    expect(logEvents).toContain("readJobLogContents");
     expect(agentTraces).toContain("export function deriveJobAgentTraces");
     expect(warnings).toContain("export function deriveJobWarnings");
     expect(viewerJobs).toContain("projections/agent-traces.js");

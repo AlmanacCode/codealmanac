@@ -1186,3 +1186,10 @@ One-hundred-seventy-fourth production slice:
 - Moved launch PATH construction, automation log path assembly, plist path fallback, and `LaunchdJobDefinition` knowledge out of `src/services/automation/planning.ts`.
 - Kept automation service planning responsible for product policy: task selection, interval validation, quiet-window validation, command arguments, and working-directory policy.
 - Strengthened boundary coverage so service planning does not import launchd/path mechanics directly while the platform job-plan owns those mechanics.
+
+One-hundred-seventy-fifth production slice:
+
+- Removed the unused `readJobLogEvents(path)` helper from `src/services/jobs/projections/log-events.ts`.
+- Removed the direct `node:fs/promises` dependency from job log projections.
+- Kept job projections responsible for parsing log contents and deriving typed event/read-model facts.
+- Strengthened boundary coverage so log file reads stay behind `src/stores/jobs/`.
