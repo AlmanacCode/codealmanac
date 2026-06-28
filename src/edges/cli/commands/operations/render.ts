@@ -2,8 +2,8 @@ import {
   type LifecycleOperationFailure,
   type LifecycleOperationRunResult,
   type LifecycleOperationWorkflowResult,
-} from "../../../services/lifecycle/index.js";
-import { renderError, renderOutcome } from "./outcome.js";
+} from "../../../../services/lifecycle/index.js";
+import { renderError, renderOutcome } from "../outcome.js";
 
 export interface OperationCommandResult {
   stdout: string;

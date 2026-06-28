@@ -31,7 +31,7 @@ export function registerInitCommand(program: Command): void {
         if (start !== null) process.stdout.write(start);
         const runtime = createCliRuntime({ environment: process.env });
 
-        const { runInitCommand } = await import("./commands/operations.js");
+        const { runInitCommand } = await import("./commands/operations/init.js");
         const result = await runInitCommand({
           cwd: process.cwd(),
           using: opts.using,

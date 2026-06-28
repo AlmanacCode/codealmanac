@@ -29,7 +29,9 @@ describe("architecture boundaries: foundation and CLI", () => {
     );
     const cliRuntime = await readSource("src/app/cli-runtime.ts");
     const registerInit = await readSource("src/edges/cli/register-init-command.ts");
-    const operationsCommand = await readSource("src/edges/cli/commands/operations.ts");
+    const initCommand = await readSource(
+      "src/edges/cli/commands/operations/init.ts",
+    );
     const buildOperation = await readSource(
       "src/services/lifecycle/operations/build.ts",
     );
@@ -60,7 +62,7 @@ describe("architecture boundaries: foundation and CLI", () => {
     expect(pageSnapshots).toContain("snapshotWikiPages");
     expect(cliRuntime).toContain("pathsEqualOnCurrentPlatform");
     expect(registerInit).toContain("runtime.registryPathEquals");
-    expect(operationsCommand).toContain("registryPathEquals");
+    expect(initCommand).toContain("registryPathEquals");
     expect(buildOperation).toContain("from \"../../wiki/initialization.js\"");
     expect(buildOperation).toContain("registryPathEquals");
     expect(buildOperation).not.toContain("platform/path-case");
@@ -219,21 +221,44 @@ describe("architecture boundaries: foundation and CLI", () => {
   });
 
   it("keeps lifecycle command rendering out of workflow adapters", async () => {
-    const operationsCommand = await readSource("src/edges/cli/commands/operations.ts");
-    const operationsRender = await readSource(
-      "src/edges/cli/commands/operations-render.ts",
+    const initCommand = await readSource(
+      "src/edges/cli/commands/operations/init.ts",
+    );
+    const absorbCommand = await readSource(
+      "src/edges/cli/commands/operations/absorb.ts",
+    );
+    const gardenCommand = await readSource(
+      "src/edges/cli/commands/operations/garden.ts",
+    );
+    const operationRender = await readSource(
+      "src/edges/cli/commands/operations/render.ts",
     );
 
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations.ts"))).toBe(
+      false,
+    );
     expect(existsSync(join(ROOT, "src/edges/cli/commands/operations-render.ts")))
+      .toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations/init.ts")))
       .toBe(true);
-    expect(operationsCommand).toContain("runInitOperationWorkflow");
-    expect(operationsCommand).toContain("renderWorkflowResult");
-    expect(operationsCommand).not.toContain("renderOutcome");
-    expect(operationsCommand).not.toContain("renderError");
-    expect(operationsCommand).not.toContain("Reason:");
-    expect(operationsCommand).not.toContain("Browse the wiki");
-    expect(operationsRender).toContain("renderOutcome");
-    expect(operationsRender).toContain("renderOperationFailureMessage");
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations/absorb.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations/garden.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations/render.ts")))
+      .toBe(true);
+    expect(initCommand).toContain("runInitOperationWorkflow");
+    expect(absorbCommand).toContain("runAbsorbOperationWorkflow");
+    expect(gardenCommand).toContain("runGardenOperationWorkflow");
+    for (const command of [initCommand, absorbCommand, gardenCommand]) {
+      expect(command).toContain("renderWorkflowResult");
+      expect(command).not.toContain("renderOutcome");
+      expect(command).not.toContain("renderError");
+      expect(command).not.toContain("Reason:");
+      expect(command).not.toContain("Browse the wiki");
+    }
+    expect(operationRender).toContain("renderOutcome");
+    expect(operationRender).toContain("renderOperationFailureMessage");
   });
 });
 

@@ -192,8 +192,18 @@ describe("architecture boundaries: lifecycle and providers", () => {
       "src/edges/cli/register-absorb-command.ts",
     );
     const syncService = await readSource("src/services/sync/sync.ts");
-    const operationsCommand = await readSource("src/edges/cli/commands/operations.ts");
-    const operationsRender = await readSource("src/edges/cli/commands/operations-render.ts");
+    const initCommand = await readSource(
+      "src/edges/cli/commands/operations/init.ts",
+    );
+    const absorbCommand = await readSource(
+      "src/edges/cli/commands/operations/absorb.ts",
+    );
+    const gardenCommand = await readSource(
+      "src/edges/cli/commands/operations/garden.ts",
+    );
+    const operationsRender = await readSource(
+      "src/edges/cli/commands/operations/render.ts",
+    );
 
     expect(existsSync(join(ROOT, "src/services/lifecycle/operation-results.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/lifecycle/workflows.ts"))).toBe(false);
@@ -220,6 +230,19 @@ describe("architecture boundaries: lifecycle and providers", () => {
     expect(existsSync(join(ROOT, "src/platform/sources/absorb.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/operations"))).toBe(false);
     expect(existsSync(join(ROOT, "src/absorb"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations.ts"))).toBe(
+      false,
+    );
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations-render.ts")))
+      .toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations/init.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations/absorb.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations/garden.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations/render.ts")))
+      .toBe(true);
     expect(lifecycleServiceIndex).not.toContain("../../operations");
     expect(lifecycleServiceIndex).toContain("./workflows/init-workflow.js");
     expect(lifecycleServiceIndex).toContain("./workflows/absorb-workflow.js");
@@ -311,30 +334,34 @@ describe("architecture boundaries: lifecycle and providers", () => {
     expect(platformGithubSource).not.toContain("services/lifecycle");
     expect(syncService).toContain("runPreparedAbsorbOperationWorkflow");
     expect(syncService).not.toContain("services/lifecycle/operations");
-    expect(operationsCommand).toContain("services/lifecycle/index.js");
+    expect(initCommand).toContain("services/lifecycle/index.js");
+    expect(absorbCommand).toContain("services/lifecycle/index.js");
+    expect(gardenCommand).toContain("services/lifecycle/index.js");
     expect(operationsRender).not.toContain("../../agent");
     expect(operationsRender).not.toContain("AgentRuntimeFailure");
-    expect(operationsCommand).not.toContain("import type { CommandResult }");
-    expect(operationsCommand).not.toContain("extends InitOperationWorkflowOptions");
-    expect(operationsCommand).not.toContain("extends AbsorbOperationWorkflowOptions");
-    expect(operationsCommand).not.toContain("extends GardenOperationWorkflowOptions");
-    expect(operationsCommand).not.toContain('["onEvent"]');
-    expect(operationsCommand).not.toContain('["startForeground"]');
-    expect(operationsCommand).not.toContain('["startBackground"]');
-    expect(operationsCommand).not.toContain('["resolveSource"]');
-    expect(operationsCommand).toContain("toInitOperationWorkflowOptions");
-    expect(operationsCommand).toContain("toAbsorbOperationWorkflowOptions");
-    expect(operationsCommand).toContain("toGardenOperationWorkflowOptions");
-    expect(operationsCommand).not.toContain("../../services/lifecycle/operations/index");
-    expect(operationsCommand).not.toContain("../../absorb");
-    expect(operationsCommand).not.toContain("resolveProvider");
-    expect(operationsCommand).not.toContain("operations.build");
-    expect(operationsCommand).not.toContain("operations.garden");
-    expect(operationsCommand).not.toContain("absorb.startRun");
-    expect(operationsCommand).not.toContain("initContext");
-    expect(operationsCommand).not.toContain("formatInitRequestContext");
-    expect(operationsCommand).not.toContain("Command context:");
-    expect(operationsCommand).not.toContain("Force requested");
+    for (const command of [initCommand, absorbCommand, gardenCommand]) {
+      expect(command).not.toContain("import type { CommandResult }");
+      expect(command).not.toContain("extends InitOperationWorkflowOptions");
+      expect(command).not.toContain("extends AbsorbOperationWorkflowOptions");
+      expect(command).not.toContain("extends GardenOperationWorkflowOptions");
+      expect(command).not.toContain('["onEvent"]');
+      expect(command).not.toContain('["startForeground"]');
+      expect(command).not.toContain('["startBackground"]');
+      expect(command).not.toContain('["resolveSource"]');
+      expect(command).not.toContain("../../services/lifecycle/operations/index");
+      expect(command).not.toContain("../../absorb");
+      expect(command).not.toContain("resolveProvider");
+      expect(command).not.toContain("operations.build");
+      expect(command).not.toContain("operations.garden");
+      expect(command).not.toContain("absorb.startRun");
+      expect(command).not.toContain("initContext");
+      expect(command).not.toContain("formatInitRequestContext");
+      expect(command).not.toContain("Command context:");
+      expect(command).not.toContain("Force requested");
+    }
+    expect(initCommand).toContain("toInitOperationWorkflowOptions");
+    expect(absorbCommand).toContain("toAbsorbOperationWorkflowOptions");
+    expect(gardenCommand).toContain("toGardenOperationWorkflowOptions");
   });
 
   it("keeps Claude provider protocol mechanics in provider-local modules", async () => {

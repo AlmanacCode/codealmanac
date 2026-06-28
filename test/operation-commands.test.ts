@@ -3,13 +3,17 @@ import { describe, expect, it } from "vitest";
 
 import { initWiki } from "../src/services/wiki/initialization.js";
 import {
-  runAbsorbCommand as runAbsorbCommandHandler,
-  runGardenCommand as runGardenCommandHandler,
-  runInitCommand as runInitCommandHandler,
   type AbsorbCommandOptions,
+  runAbsorbCommand as runAbsorbCommandHandler,
+} from "../src/edges/cli/commands/operations/absorb.js";
+import {
   type GardenCommandOptions,
+  runGardenCommand as runGardenCommandHandler,
+} from "../src/edges/cli/commands/operations/garden.js";
+import {
   type InitCommandOptions,
-} from "../src/edges/cli/commands/operations.js";
+  runInitCommand as runInitCommandHandler,
+} from "../src/edges/cli/commands/operations/init.js";
 import { parseLifecycleProviderSelection } from "../src/services/lifecycle/index.js";
 import type { AgentRuntimeRunner } from "../src/shared/agent-runtime/runner.js";
 import type { OperationPromptLoader } from "../src/shared/operation-prompts.js";

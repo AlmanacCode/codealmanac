@@ -49,7 +49,9 @@ function registerAbsorbLikeCommand(
       ) => {
         await autoRegisterCurrentWikiIfNeeded(process.cwd());
         const runtime = createCliRuntime({ environment: process.env });
-        const { runAbsorbCommand } = await import("./commands/operations.js");
+        const { runAbsorbCommand } = await import(
+          "./commands/operations/absorb.js"
+        );
         const result = await runAbsorbCommand({
           cwd: process.cwd(),
           inputs,

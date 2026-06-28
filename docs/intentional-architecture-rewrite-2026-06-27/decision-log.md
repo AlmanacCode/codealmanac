@@ -37,6 +37,8 @@ Command adapters can choose between transport-equivalent input sources such as e
 
 Command adapters and renderers are CLI edge code. The top-level `src/cli.ts` file is only the stable facade that imports `src/edges/cli/run.ts`; command modules live under `src/edges/cli/commands/` because they shape argv/stdin-derived requests, call services, and render terminal output. A separate `src/cli/` directory is not an ownership category.
 
+Lifecycle command adapters are split by operation. `src/edges/cli/commands/operations/init.ts`, `absorb.ts`, and `garden.ts` each shape one command family into lifecycle workflow options; `src/edges/cli/commands/operations/render.ts` owns lifecycle command output. The deleted `operations.ts` and `operations-render.ts` files should not return as compatibility catchalls.
+
 ### Stores and integrations stay mechanical
 
 Stores own persistence mechanics. Provider adapters, process spawning, app-server protocols, launchd, npm, and OS behavior stay in integration-shaped modules unless they are product service contracts.

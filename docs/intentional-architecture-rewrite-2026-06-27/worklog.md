@@ -1896,3 +1896,11 @@ Two-hundred-sixty-seventh production slice:
 - Removed the `RegistryPathEquality` type from registry stores; stores now consume `PathEquality` while still owning registry lookup mechanics.
 - Updated lifecycle, diagnostics, wiki initialization, CLI command, and app composition types to import `PathEquality` from shared.
 - Strengthened registry boundary tests so platform path-case owns current-platform comparison and stores do not define upward-facing runtime contracts.
+
+Two-hundred-sixty-eighth production slice:
+
+- Deleted the catchall `src/edges/cli/commands/operations.ts` lifecycle command adapter.
+- Moved init, Absorb/ingest, and Garden command request shaping into owner-named files under `src/edges/cli/commands/operations/`.
+- Moved lifecycle command output rendering from `operations-render.ts` into `src/edges/cli/commands/operations/render.ts`.
+- Updated command registration and operation command tests to import the verb-owned adapters directly.
+- Strengthened CLI/lifecycle boundary tests so the old lifecycle command catchalls cannot return.
