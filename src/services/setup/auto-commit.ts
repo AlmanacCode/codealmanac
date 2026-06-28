@@ -1,4 +1,4 @@
-import { readConfig, writeConfig } from "../../config/index.js";
+import { readConfig, writeConfig } from "../../stores/config/index.js";
 
 export type SetupAutoCommitResult =
   | { action: "enabled"; enabled: true }

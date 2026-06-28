@@ -6,7 +6,7 @@ import {
   parseAgentSelection,
 } from "../src/agent/readiness/view.js";
 import type { ProviderStatus } from "../src/agent/types.js";
-import { defaultConfig } from "../src/config/index.js";
+import { defaultConfig } from "../src/stores/config/index.js";
 
 const statuses: ProviderStatus[] = [
   {

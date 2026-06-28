@@ -12,7 +12,7 @@ import {
   runMigrateAutomation as runMigrateAutomationCommand,
   type MigrateAutomationOptions,
 } from "../src/cli/commands/migrate.js";
-import { ensureAutomationSyncSince, readConfig } from "../src/config/index.js";
+import { ensureAutomationSyncSince, readConfig } from "../src/stores/config/index.js";
 import { withTempHome } from "./helpers.js";
 
 const TEST_CLI_PROGRAM_ARGUMENTS = ["node", "dist/launcher.js"];

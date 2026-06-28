@@ -4,7 +4,7 @@ import {
   findNearestAlmanacDir,
   getGlobalAlmanacDir,
   getRepoAlmanacDir,
-} from "../paths.js";
+} from "../../paths.js";
 
 export function getConfigPath(): string {
   return join(getGlobalAlmanacDir(), "config.toml");

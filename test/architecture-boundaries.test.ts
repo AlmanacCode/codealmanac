@@ -932,13 +932,16 @@ describe("architecture boundaries", () => {
   it("keeps config command adapters out of config persistence mechanics", async () => {
     const configCommand = await readSource("src/cli/commands/config.ts");
     const configRender = await readSource("src/cli/commands/config-render.ts");
-    const configStore = await readSource("src/config/store.ts");
-    const configPatch = await readSource("src/config/stored-patch.ts");
+    const configStore = await readSource("src/stores/config/store.ts");
+    const configPatch = await readSource("src/stores/config/stored-patch.ts");
+    const configIndex = await readSource("src/stores/config/index.ts");
 
+    expect(existsSync(join(ROOT, "src/config"))).toBe(false);
     expect(existsSync(join(ROOT, "src/cli/commands/config-render.ts"))).toBe(
       true,
     );
-    expect(existsSync(join(ROOT, "src/config/stored-patch.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/stores/config/stored-patch.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/agent/provider-enablement.ts"))).toBe(true);
     expect(configCommand).toContain("services/config/index.js");
     expect(configCommand).not.toContain("../../config/index");
     expect(configCommand).not.toContain("node:fs");
@@ -962,6 +965,9 @@ describe("architecture boundaries", () => {
     expect(configStore).not.toContain("function pruneEmptyObjects");
     expect(configPatch).toContain("toStoredConfigPatch");
     expect(configPatch).toContain("pruneEmptyObjects");
+    expect(configIndex).not.toContain("getEnabledAgentProviderIds");
+    expect(configIndex).not.toContain("isEnabledAgentProviderId");
+    expect(configIndex).not.toContain("disabledAgentProviderMessage");
   });
 
   it("keeps agents command adapters out of readiness and config mechanics", async () => {
@@ -1477,7 +1483,7 @@ describe("architecture boundaries", () => {
 
   it("passes agent readiness runtime facts through an explicit context", async () => {
     const agentTypes = await readSource("src/agent/types.ts");
-    const configProviders = await readSource("src/config/providers.ts");
+    const configProviders = await readSource("src/agent/provider-enablement.ts");
     const readinessView = await readSource("src/agent/readiness/view.ts");
     const readinessStatus = await readSource(
       "src/agent/readiness/providers/status.ts",
@@ -1787,7 +1793,7 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/platform/update/semver.ts"))).toBe(false);
     expect(diagnosticsTypes).not.toContain("agent/readiness/providers/claude");
     expect(diagnosticsTypes).not.toContain("from \"../../agent/types.js\"");
-    expect(diagnosticsTypes).not.toContain("from \"../../config/index.js\"");
+    expect(diagnosticsTypes).not.toContain("from \"../../stores/config/index.js\"");
     expect(diagnosticsTypes).not.toContain("DiagnosticsSpawnCliFn = SpawnCliFn");
     expect(diagnosticsTypes).not.toContain(
       "DiagnosticsSpawnedProcess = SpawnedProcess",

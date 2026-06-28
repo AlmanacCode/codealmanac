@@ -9,9 +9,11 @@ import {
   disabledAgentProviderMessage,
   formatEnabledAgentProviderList,
   isEnabledAgentProviderId,
+} from "../../agent/provider-enablement.js";
+import {
   readConfig,
   writeConfig,
-} from "../../config/index.js";
+} from "../../stores/config/index.js";
 
 export interface SetupSpawnedProcess {
   stdout: { on: (event: "data", cb: (data: Buffer | string) => void) => void };

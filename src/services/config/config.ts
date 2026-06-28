@@ -8,7 +8,7 @@ import {
   setNestedConfigValue,
   type ConfigOrigin,
   writeConfigObject,
-} from "../../config/index.js";
+} from "../../stores/config/index.js";
 import {
   configEntries,
   getConfigValue,

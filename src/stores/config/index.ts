@@ -13,18 +13,6 @@ export {
   getLegacyConfigPath,
   getProjectConfigPath,
 } from "./paths.js";
-export {
-  AGENT_PROVIDER_IDS,
-  ALL_AGENT_PROVIDER_IDS,
-  DEFAULT_AGENT_PROVIDER_IDS,
-  disabledAgentProviderMessage,
-  formatEnabledAgentProviderList,
-  getEnabledAgentProviderIds,
-  isAgentProviderId,
-  isCursorEnabled,
-  isEnabledAgentProviderId,
-  type AgentProviderId,
-} from "./providers.js";
 export type {
   ConfigOrigin,
 } from "./origins.js";

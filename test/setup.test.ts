@@ -15,7 +15,7 @@ import {
 import type { SetupOptions } from "../src/cli/commands/setup/index.js";
 import { runAutomationSetupStep } from "../src/cli/commands/setup/automation-step.js";
 import { makeSetupTheme } from "../src/cli/commands/setup/output.js";
-import { readConfig, writeConfig } from "../src/config/index.js";
+import { readConfig, writeConfig } from "../src/stores/config/index.js";
 import { withTempHome } from "./helpers.js";
 
 function fakeSpawnCli(stdout: string): SpawnCliFn {

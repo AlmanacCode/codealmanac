@@ -9,7 +9,7 @@ import {
   runConfigSet as runConfigSetCommand,
   runConfigUnset as runConfigUnsetCommand,
 } from "../src/cli/commands/config.js";
-import { parseConfigText, readConfig } from "../src/config/index.js";
+import { parseConfigText, readConfig } from "../src/stores/config/index.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 
 function runConfigList(opts: {

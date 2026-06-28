@@ -2,7 +2,7 @@ import {
   readConfig,
   writeConfig,
   type GlobalConfig,
-} from "../../config/index.js";
+} from "../../stores/config/index.js";
 import { checkForUpdate } from "../../platform/update/check.js";
 import {
   installLatestPackage,

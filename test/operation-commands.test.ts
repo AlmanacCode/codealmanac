@@ -11,7 +11,7 @@ import {
   type InitCommandOptions,
 } from "../src/cli/commands/operations.js";
 import { parseLifecycleProviderSelection } from "../src/services/lifecycle/index.js";
-import { writeConfig } from "../src/config/index.js";
+import { writeConfig } from "../src/stores/config/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";
 
 const TEST_WORKER_PROGRAM = {

@@ -4,7 +4,7 @@ import {
   DEFAULT_AGENT_PROVIDER_IDS,
   isAgentProviderId,
   type AgentProviderId,
-} from "../agent/provider-id.js";
+} from "./provider-id.js";
 
 export {
   AGENT_PROVIDER_IDS,

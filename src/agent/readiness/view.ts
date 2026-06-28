@@ -11,10 +11,12 @@ import type {
 import {
   getEnabledAgentProviderIds,
   isAgentProviderId,
-  readConfig,
   type AgentProviderId,
+} from "../provider-enablement.js";
+import {
+  readConfig,
   type GlobalConfig,
-} from "../../config/index.js";
+} from "../../stores/config/index.js";
 
 export type ProviderReadiness = "ready" | "not-authenticated" | "missing";
 

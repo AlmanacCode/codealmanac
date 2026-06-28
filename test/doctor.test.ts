@@ -19,7 +19,7 @@ import {
   probeDiagnosticInstructionEntries,
 } from "../src/platform/diagnostics/instructions.js";
 import { probeDiagnosticUpdates } from "../src/platform/diagnostics/updates.js";
-import { writeConfig } from "../src/config/index.js";
+import { writeConfig } from "../src/stores/config/index.js";
 import { writeState } from "../src/platform/update/state.js";
 import {
   CODEX_INSTRUCTIONS_END,

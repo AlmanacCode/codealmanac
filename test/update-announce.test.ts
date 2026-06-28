@@ -5,7 +5,7 @@ import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 
 import { announceUpdateIfAvailable } from "../src/platform/update/announce.js";
-import { getConfigPath, writeConfig } from "../src/config/index.js";
+import { getConfigPath, writeConfig } from "../src/stores/config/index.js";
 import { writeState } from "../src/platform/update/state.js";
 import { withTempHome } from "./helpers.js";
 

@@ -632,9 +632,9 @@ Ninety-second production slice:
 
 Ninety-third production slice:
 
-- Split persisted config patch construction into `src/config/stored-patch.ts`.
-- Moved raw-object cloning, minimal stored-value updates, default pruning, legacy `capture_since` removal, and empty-object pruning out of `src/config/store.ts`.
-- Kept `src/config/store.ts` focused on config file paths, legacy config migration, raw config reads, user/project merge reads, atomic writes, and automation sync timestamp ensuring.
+- Split persisted config patch construction into `src/stores/config/stored-patch.ts`.
+- Moved raw-object cloning, minimal stored-value updates, default pruning, legacy `capture_since` removal, and empty-object pruning out of `src/stores/config/store.ts`.
+- Kept `src/stores/config/store.ts` focused on config file paths, legacy config migration, raw config reads, user/project merge reads, atomic writes, and automation sync timestamp ensuring.
 
 Ninety-fourth production slice:
 
@@ -865,7 +865,7 @@ One-hundred-thirtieth production slice:
 
 One-hundred-thirty-first production slice:
 
-- Removed `process.env` defaults from provider enablement helpers in `src/config/providers.ts`.
+- Removed `process.env` defaults from provider enablement helpers in `src/agent/provider-enablement.ts`.
 - Made provider recommendation and setup agent selection receive the already-threaded environment explicitly.
 - Removed the unused provider-list message helper from readiness view.
 - Added an architecture guard so provider enablement cannot reintroduce ambient environment reads.
@@ -1086,3 +1086,11 @@ One-hundred-sixty-first production slice:
 - Moved mechanical `.almanac/` directory creation, starter README writes, and runtime `.gitignore` writes into `src/stores/wiki-files/scaffold.ts`.
 - Updated Build and tests to import initialization through the wiki service boundary instead of a loose top-level helper.
 - Added boundary coverage that `src/init/` stays deleted, wiki initialization does not own raw file writes, and file scaffolding does not own registry writes.
+
+One-hundred-sixty-second production slice:
+
+- Removed the old top-level `src/config/` source bucket.
+- Moved persisted config schema, TOML/JSON codec, raw-object editing, origin tracking, config paths, legacy migration, and atomic config writes into `src/stores/config/`.
+- Moved agent provider enablement policy into `src/agent/provider-enablement.ts` so Cursor enablement and enabled-provider lists live with agent/provider identity instead of config storage.
+- Updated services, platform update checks, lifecycle provider selection, setup, tests, and command surfaces to use the new store and agent/provider boundaries.
+- Added boundary coverage that `src/config/` stays deleted and that config stores do not export provider-enable policy.

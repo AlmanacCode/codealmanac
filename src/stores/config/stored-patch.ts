@@ -1,6 +1,6 @@
 import {
   AGENT_PROVIDER_IDS,
-} from "./providers.js";
+} from "../../agent/provider-id.js";
 import {
   defaultConfig,
   normalizeConfig,

@@ -1,4 +1,4 @@
-import { AGENT_PROVIDER_IDS } from "./providers.js";
+import { AGENT_PROVIDER_IDS } from "../../agent/provider-id.js";
 
 export function parseConfigText(
   raw: string,

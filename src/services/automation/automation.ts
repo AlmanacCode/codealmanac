@@ -1,4 +1,4 @@
-import { ensureAutomationSyncSince } from "../../config/index.js";
+import { ensureAutomationSyncSince } from "../../stores/config/index.js";
 import {
   bootstrapLaunchdJob,
   ensureLaunchdDirs,

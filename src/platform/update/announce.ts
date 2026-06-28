@@ -4,7 +4,7 @@ import {
   getConfigPath,
   getLegacyConfigPath,
   parseConfigText,
-} from "../../config/index.js";
+} from "../../stores/config/index.js";
 import { makeAnsiTheme } from "../../ansi-theme.js";
 import { isNewerVersion } from "../../shared/version.js";
 import { getStatePath, type UpdateState } from "./state.js";

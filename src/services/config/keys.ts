@@ -2,8 +2,10 @@ import {
   AGENT_PROVIDER_IDS,
   isAgentProviderId,
   type AgentProviderId,
+} from "../../agent/provider-id.js";
+import {
   type GlobalConfig,
-} from "../../config/index.js";
+} from "../../stores/config/index.js";
 
 export type ConfigKey =
   | "update_notifier"

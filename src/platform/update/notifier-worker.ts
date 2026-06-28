@@ -6,7 +6,7 @@ import {
   getConfigPath,
   getLegacyConfigPath,
   parseConfigText,
-} from "../../config/index.js";
+} from "../../stores/config/index.js";
 
 /**
  * Post-command worker for the update-notifier cache.

@@ -1,4 +1,4 @@
-import { readConfig } from "../../config/index.js";
+import { readConfig } from "../../stores/config/index.js";
 import {
   discoverTranscriptCandidates,
   type TranscriptSourceApp,

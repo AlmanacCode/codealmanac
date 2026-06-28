@@ -1,4 +1,4 @@
-import { readConfig } from "../../config/index.js";
+import { readConfig } from "../../stores/config/index.js";
 import type { DiagnosticsUpdateStatus } from "../../services/diagnostics/types.js";
 import { readState } from "../update/state.js";
 
