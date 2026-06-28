@@ -1200,3 +1200,10 @@ One-hundred-seventy-sixth production slice:
 - Removed page-count filesystem reads from the Build operation and setup wiki state service.
 - Kept Build and setup services responsible for product behavior: rebuild gating, existing-page counts, and user-facing setup state.
 - Strengthened boundary coverage so page-file counting mechanics stay in `src/stores/wiki-files/`.
+
+One-hundred-seventy-seventh production slice:
+
+- Added `src/stores/wiki-files/absorb-logs.ts` for scanning `.almanac/logs` and `.almanac/` absorb log/jsonl files.
+- Removed direct filesystem scanning from `src/services/wiki/doctor-absorb.ts`.
+- Kept the wiki doctor service responsible for formatting the `wiki.absorb` check from a store-owned latest-log fact.
+- Strengthened boundary coverage so absorb-log file mechanics stay in `src/stores/wiki-files/`.

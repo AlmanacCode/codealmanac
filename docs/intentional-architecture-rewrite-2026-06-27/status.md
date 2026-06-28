@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 224 committed rewrite commits past `dev`. The worklog records 176 production slices so far.
+The branch has 225 committed rewrite commits past `dev`. The worklog records 177 production slices so far.
 
-The diff is broad: 464 files changed, with 23,123 insertions and 12,398 deletions.
+The diff is broad: 465 files changed, with 23,161 insertions and 12,398 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -22,7 +22,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved job record lifecycle and display-status read-model helpers out of the job runtime folder, and put public job record/log reads behind the `src/stores/jobs/` store API.
 - Removed raw log-file reads from job projections; stores own job log contents while projections parse contents into viewer/job read models.
 - Removed the mixed `src/services/jobs/runtime/index.ts` compatibility barrel; callers now import concrete runtime, store, platform, or record-lifecycle modules.
-- Removed the old top-level `src/init/` source bucket; wiki initialization now lives under `src/services/wiki/`, and mechanical `.almanac/` file scaffolding plus page-file counting live under `src/stores/wiki-files/`.
+- Removed the old top-level `src/init/` source bucket; wiki initialization now lives under `src/services/wiki/`, and mechanical `.almanac/` file scaffolding, page-file counting, and absorb-log scanning live under `src/stores/wiki-files/`.
 - Removed the old top-level `src/config/` source bucket; persisted config mechanics now live under `src/stores/config/`, service verbs live under `src/services/config/`, and provider enablement policy lives under `src/agent/`.
 - Removed the old top-level `src/wiki/` source bucket; local wiki index, query, health, topic-file, and source-frontmatter mechanics now live under `src/stores/wiki/`.
 - Removed the `src/services/viewer/` service bucket; viewer-only route read models now live under `src/edges/viewer/read-model/`.
@@ -54,13 +54,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved wiki page-file counting into `src/stores/wiki-files/pages.ts`. Build and setup state now consume a store helper for `.almanac/pages/*.md` counts instead of reading directories directly from service code.
+The latest slice moved doctor absorb-log scanning into `src/stores/wiki-files/absorb-logs.ts`. The wiki doctor service now formats the last-Absorb check from a store-owned file fact instead of scanning `.almanac/logs` directly.
 
-Verification passed: focused lifecycle/setup/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js build --help`, and `node dist/codealmanac.js doctor --help`.
+Verification passed: focused doctor/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js doctor --help`, and `node dist/codealmanac.js build --help`.
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, wiki file counting, and automation scheduler job mechanics have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, wiki file mechanics, and automation scheduler job mechanics have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
 
 ## Decision Log
 

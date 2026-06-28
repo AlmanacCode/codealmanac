@@ -75,7 +75,7 @@ Hidden CLI worker entrypoints belong under `src/edges/worker/`. They can receive
 
 Repo/wiki initialization belongs under `src/services/wiki/` because it is the product verb that decides the repo root, wiki name, starter README content, and registry entry. Mechanical `.almanac/` directory creation and `.gitignore` writes belong under `src/stores/wiki-files/`. A top-level `src/init/` bucket is not an ownership category.
 
-Page-file counting also belongs under `src/stores/wiki-files/`; services use the count to decide Build/setup behavior without owning directory reads.
+Page-file counting and absorb-log scanning also belong under `src/stores/wiki-files/`; services use those file facts to decide Build/setup/doctor behavior without owning directory reads.
 
 ### Config is store mechanics plus service verbs, not a top-level subsystem
 

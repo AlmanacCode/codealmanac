@@ -1809,8 +1809,14 @@ describe("architecture boundaries", () => {
     const doctorIndexService = await readSource(
       "src/services/wiki/doctor-index.ts",
     );
+    const doctorAbsorbService = await readSource(
+      "src/services/wiki/doctor-absorb.ts",
+    );
     const indexDiagnostics = await readSource(
       "src/stores/wiki/indexer/diagnostics.ts",
+    );
+    const absorbLogFiles = await readSource(
+      "src/stores/wiki-files/absorb-logs.ts",
     );
 
     expect(existsSync(join(ROOT, "src/cli/commands/doctor/render.ts"))).toBe(
@@ -1955,6 +1961,13 @@ describe("architecture boundaries", () => {
     expect(doctorIndexService).not.toContain("openIndex");
     expect(doctorIndexService).not.toContain("better-sqlite3");
     expect(doctorIndexService).not.toContain("SELECT COUNT");
+    expect(doctorAbsorbService).toContain("findLatestAbsorbLogFile");
+    expect(doctorAbsorbService).not.toContain("node:fs");
+    expect(doctorAbsorbService).not.toContain("readdirSync");
+    expect(doctorAbsorbService).not.toContain("statSync");
+    expect(absorbLogFiles).toContain("readdirSync");
+    expect(absorbLogFiles).toContain("statSync");
+    expect(absorbLogFiles).toContain("findLatestAbsorbLogFile");
     expect(indexDiagnostics).toContain("openIndex");
     expect(indexDiagnostics).toContain("existsSync");
     expect(indexDiagnostics).toContain("statSync");

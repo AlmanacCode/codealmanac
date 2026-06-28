@@ -1,6 +1,4 @@
-import { existsSync, readdirSync, statSync } from "node:fs";
-import path from "node:path";
-
+import { findLatestAbsorbLogFile } from "../../stores/wiki-files/absorb-logs.js";
 import { formatDuration } from "../../shared/duration.js";
 import type {
   WikiDoctorCheck,
@@ -11,52 +9,16 @@ export function describeLastAbsorb(
   almanacDir: string,
   nowFn?: WikiDoctorOptions["now"],
 ): WikiDoctorCheck {
-  if (!existsSync(almanacDir)) {
+  const latest = findLatestAbsorbLogFile(almanacDir);
+  if (latest === null) {
     return {
       status: "info",
       key: "wiki.absorb",
       message: "last absorb: never",
     };
   }
-  const logDirs = [path.join(almanacDir, "logs"), almanacDir];
-  const absorbs = logDirs
-    .flatMap((dir) => {
-      let entries: string[];
-      try {
-        entries = readdirSync(dir);
-      } catch {
-        return [];
-      }
-      return entries
-        .filter(
-          (entry) =>
-            entry.startsWith(".absorb-") &&
-            (entry.endsWith(".log") || entry.endsWith(".jsonl")),
-        )
-        .map((entry) => ({ dir, name: entry }));
-    })
-    .map((entry) => {
-      try {
-        return {
-          name: entry.name,
-          mtime: statSync(path.join(entry.dir, entry.name)).mtimeMs,
-        };
-      } catch {
-        return null;
-      }
-    })
-    .filter((entry): entry is { name: string; mtime: number } => entry !== null);
-  if (absorbs.length === 0) {
-    return {
-      status: "info",
-      key: "wiki.absorb",
-      message: "last absorb: never",
-    };
-  }
-  absorbs.sort((a, b) => b.mtime - a.mtime);
-  const latest = absorbs[0]!;
   const now = (nowFn?.() ?? new Date()).getTime();
-  const age = now - latest.mtime;
+  const age = now - latest.mtimeMs;
   return {
     status: "info",
     key: "wiki.absorb",
