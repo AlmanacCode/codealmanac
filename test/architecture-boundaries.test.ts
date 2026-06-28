@@ -1371,9 +1371,9 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps uninstall UI out of setup cleanup mechanics", async () => {
-    const uninstallCommand = await readSource("src/cli/commands/uninstall.ts");
+    const uninstallCommand = await readSource("src/edges/cli/uninstall.ts");
     const uninstallRender = await readSource(
-      "src/cli/commands/uninstall-render.ts",
+      "src/edges/cli/uninstall-render.ts",
     );
     const setupUninstall = await readSource("src/services/setup/uninstall.ts");
     const setupRegistration = await readSource(
@@ -1381,7 +1381,10 @@ describe("architecture boundaries", () => {
     );
 
     expect(existsSync(join(ROOT, "src/services/setup/uninstall.ts"))).toBe(true);
-    expect(existsSync(join(ROOT, "src/cli/commands/uninstall-render.ts"))).toBe(
+    expect(existsSync(join(ROOT, "src/cli/commands/uninstall.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/cli/commands/uninstall-render.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/uninstall.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/uninstall-render.ts"))).toBe(
       true,
     );
     expect(setupUninstall).not.toContain("type AgentInstructionDirs");

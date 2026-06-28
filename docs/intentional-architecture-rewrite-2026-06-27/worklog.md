@@ -1214,3 +1214,10 @@ One-hundred-seventy-eighth production slice:
 - Updated setup registration, sqlite-free setup shortcut routing, bare CLI setup routing, and setup-focused tests to import the edge-owned setup runner.
 - Kept `src/services/setup/` responsible for setup product workflows: provider choice state, provider fix commands, global install, auto-commit, instruction installation, and cleanup.
 - Strengthened boundary coverage so setup terminal UI lives under the CLI edge instead of the command-adapter package.
+
+One-hundred-seventy-ninth production slice:
+
+- Moved `almanac uninstall` terminal UI from `src/cli/commands/uninstall.ts` and `src/cli/commands/uninstall-render.ts` to `src/edges/cli/`.
+- Updated setup command registration and uninstall tests to import the edge-owned uninstall runner.
+- Kept `src/services/setup/uninstall.ts` responsible for deterministic cleanup workflow over automation and instruction artifacts.
+- Strengthened boundary coverage so old uninstall command files stay deleted while CLI edge owns confirmations and stdout rendering.

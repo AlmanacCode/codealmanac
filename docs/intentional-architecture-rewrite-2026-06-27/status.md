@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 226 committed rewrite commits past `dev`. The worklog records 178 production slices so far.
+The branch has 227 committed rewrite commits past `dev`. The worklog records 179 production slices so far.
 
-The diff is broad: 473 files changed, with 23,648 insertions and 12,874 deletions.
+The diff is broad: 473 files changed, with 23,659 insertions and 12,875 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -26,7 +26,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Removed the old top-level `src/config/` source bucket; persisted config mechanics now live under `src/stores/config/`, service verbs live under `src/services/config/`, and provider enablement policy lives under `src/agent/`.
 - Removed the old top-level `src/wiki/` source bucket; local wiki index, query, health, topic-file, and source-frontmatter mechanics now live under `src/stores/wiki/`.
 - Removed the `src/services/viewer/` service bucket; viewer-only route read models now live under `src/edges/viewer/read-model/`.
-- Moved the interactive setup TUI out of `src/cli/commands/setup/` and into `src/edges/cli/setup/`, leaving setup services as the product workflow owner.
+- Moved the interactive setup and uninstall terminal UI out of `src/cli/commands/` and into `src/edges/cli/`, leaving setup services as the product workflow owner.
 - Moved `almanac serve` process lifetime and startup rendering into `src/edges/cli/`, leaving viewer server code as the HTTP/static route owner.
 - Moved the hidden internal job worker entrypoint into `src/edges/worker/`; queued job draining remains a job service runtime workflow.
 - Moved sync ledger and lock persistence into explicit stores.
@@ -55,13 +55,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved the interactive setup TUI from `src/cli/commands/setup/` to `src/edges/cli/setup/`. Setup prompts, terminal output, and setup step rendering now read as a CLI edge subsystem, while `src/services/setup/` remains the product workflow layer.
+The latest slice moved `almanac uninstall` terminal UI from `src/cli/commands/` to `src/edges/cli/`. Uninstall confirmations, output rendering, and edge orchestration now live with CLI edge code, while setup cleanup stays under `src/services/setup/uninstall.ts`.
 
-Verification passed: focused setup/CLI/doctor/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js setup --help`, and `node dist/codealmanac.js doctor --help`.
+Verification passed: focused uninstall/CLI/boundary tests, `npm run lint`, full `npm test`, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js uninstall --help`, `node dist/codealmanac.js setup --help`, and `node dist/codealmanac.js doctor --help`.
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup terminal UI, wiki file mechanics, and automation scheduler job mechanics have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, and automation scheduler job mechanics have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
 
 ## Decision Log
 

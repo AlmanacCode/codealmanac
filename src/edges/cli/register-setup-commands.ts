@@ -169,7 +169,7 @@ export function registerSetupCommands(
         keepAutomation?: boolean;
         keepGuides?: boolean;
       }) => {
-        const { runUninstall } = await import("../../cli/commands/uninstall.js");
+        const { runUninstall } = await import("./uninstall.js");
         const result = await runUninstall({
           yes: opts.yes,
           keepAutomation: opts.keepAutomation,

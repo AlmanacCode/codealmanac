@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 
-import { removeImportLine, runUninstall } from "../src/cli/commands/uninstall.js";
+import { removeImportLine, runUninstall } from "../src/edges/cli/uninstall.js";
 import { withTempHome } from "./helpers.js";
 
 async function scaffold(home: string): Promise<{
