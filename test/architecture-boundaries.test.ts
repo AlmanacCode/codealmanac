@@ -1170,18 +1170,30 @@ describe("architecture boundaries", () => {
     const globalInstallStep = await readSource(
       "src/cli/commands/setup/global-install-step.ts",
     );
+    const setupGlobalInstall = await readSource(
+      "src/services/setup/global-install.ts",
+    );
+    const setupServiceIndex = await readSource("src/services/setup/index.ts");
     const globalPackage = await readSource(
       "src/platform/install/global-package.ts",
     );
 
     expect(existsSync(join(ROOT, "src/platform/install/global-package.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/services/setup/global-install.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/cli/commands/setup/install-path.ts"))).toBe(false);
-    expect(globalInstallStep).toContain("platform/install/global-package.js");
+    expect(globalInstallStep).not.toContain("platform/install/global-package.js");
+    expect(globalInstallStep).toContain("services/setup/index.js");
     expect(globalInstallStep).not.toContain("node:child_process");
     expect(globalInstallStep).not.toContain("node:module");
     expect(globalInstallStep).not.toContain("node:os");
     expect(globalInstallStep).not.toContain("fileURLToPath");
     expect(globalInstallStep).not.toContain("execFile");
+    expect(globalInstallStep).not.toContain("detectCurrentInstallPath");
+    expect(globalInstallStep).not.toContain("detectEphemeral");
+    expect(setupGlobalInstall).toContain("platform/install/global-package.js");
+    expect(setupGlobalInstall).toContain("readSetupGlobalInstallState");
+    expect(setupGlobalInstall).toContain("runSetupGlobalInstall");
+    expect(setupServiceIndex).toContain("global-install.js");
     expect(globalPackage).toContain("detectCurrentInstallPath");
     expect(globalPackage).toContain("detectEphemeral");
     expect(globalPackage).toContain("spawnGlobalInstall");

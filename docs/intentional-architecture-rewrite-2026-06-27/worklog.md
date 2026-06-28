@@ -1149,3 +1149,10 @@ One-hundred-sixty-ninth production slice:
 - Updated `src/cli/commands/setup/agent-choice.ts` so the setup TUI asks for confirmation and renders status, while the setup service owns the fix-command workflow.
 - Removed the direct `platform/shell.js` import from the setup agent-choice TUI file.
 - Strengthened boundary coverage so setup provider-login process execution stays behind the setup service and platform shell boundary.
+
+One-hundred-seventieth production slice:
+
+- Added `src/services/setup/global-install.ts` for setup global-install state and execution over platform install package mechanics.
+- Updated `src/cli/commands/setup/global-install-step.ts` so the setup TUI prompts/renders while the setup service owns install path and global npm install workflow.
+- Removed the direct `platform/install/global-package.js` import from the setup global-install TUI file.
+- Strengthened boundary coverage so setup global-install package-manager mechanics stay behind setup service and platform install boundaries.

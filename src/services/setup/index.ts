@@ -40,6 +40,10 @@ export {
   runnableSetupProviderFixCommand,
   runSetupProviderFixCommand,
 } from "./provider-fix-command.js";
+export {
+  readSetupGlobalInstallState,
+  runSetupGlobalInstall,
+} from "./global-install.js";
 export type {
   SetupAgentChoiceState,
   SetupAgentSelection,
@@ -51,3 +55,9 @@ export type {
 export type {
   SetupProviderFixCommandResult,
 } from "./provider-fix-command.js";
+export type {
+  RunSetupGlobalInstallOptions,
+  SetupGlobalInstallResult,
+  SetupGlobalInstallState,
+  SetupGlobalInstallStateOptions,
+} from "./global-install.js";

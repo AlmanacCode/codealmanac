@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 217 committed rewrite commits past `dev`. The worklog records 169 production slices so far.
+The branch has 218 committed rewrite commits past `dev`. The worklog records 170 production slices so far.
 
-The diff is broad: 458 files changed, with 22,866 insertions and 12,297 deletions.
+The diff is broad: 459 files changed, with 22,950 insertions and 12,309 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -33,6 +33,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved setup, diagnostics, update, automation, jobs, sync, lifecycle, config, and agents workflows behind service-owned contracts.
 - Moved diagnostic probe result contracts into `src/platform/diagnostics/types.ts`, while `src/services/diagnostics/` now owns only doctor read models and service-facing re-exports.
 - Moved setup provider fix-command normalization/execution into `src/services/setup/provider-fix-command.ts`, so setup TUI files no longer import platform shell mechanics.
+- Moved setup global-install state/execution into `src/services/setup/global-install.ts`, so setup TUI files no longer import platform package-manager mechanics.
 - Split the automation task catalog out of platform launchd mechanics: task meaning/defaults live under `src/services/automation/tasks.ts`, while plist/log paths live under `src/platform/automation/paths.ts`.
 - Split most command rendering into command-private render files.
 - Added architecture-boundary tests to stop old dependency leaks from returning.
@@ -49,7 +50,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved setup provider fix-command normalization and execution into `src/services/setup/provider-fix-command.ts`. The setup TUI still asks the user and renders status, but provider login command execution now flows through the setup service before reaching platform shell mechanics.
+The latest slice moved setup global-install state and execution into `src/services/setup/global-install.ts`. The setup TUI still asks the user and renders status, but install-path detection and global package installation now flow through the setup service before reaching platform install mechanics.
 
 Verification passed: `npm run lint`, focused setup/boundary tests with 123 tests, full `npm test` with 656 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js setup --help`, and `node dist/codealmanac.js doctor --help`.
 

@@ -1,8 +1,7 @@
 import {
-  detectCurrentInstallPath,
-  detectEphemeral,
-  spawnGlobalInstall,
-} from "../../../platform/install/global-package.js";
+  readSetupGlobalInstallState,
+  runSetupGlobalInstall,
+} from "../../../services/setup/index.js";
 import {
   confirm,
   type InstallDecision,
@@ -34,11 +33,9 @@ export async function runGlobalInstallStep(args: {
   interactive: boolean;
   options: GlobalInstallStepOptions;
 }): Promise<GlobalInstallStepResult> {
-  const ephemeral = args.options.installPath !== undefined
-    ? (args.options.installPath !== null
-        ? detectEphemeral(args.options.installPath)
-        : false)
-    : detectEphemeral(detectCurrentInstallPath());
+  const { ephemeral } = readSetupGlobalInstallState({
+    installPath: args.options.installPath,
+  });
   let durableGlobalInstall = false;
   if (!ephemeral) {
     return { ephemeral, durableGlobalInstall };
@@ -56,17 +53,18 @@ export async function runGlobalInstallStep(args: {
   }
   if (globalAction === "install") {
     stepActive(args.out, args.theme, "Installing Almanac package globally...");
-    try {
-      await (args.options.spawnGlobalInstall ?? spawnGlobalInstall)();
+    const install = await runSetupGlobalInstall({
+      spawnGlobalInstall: args.options.spawnGlobalInstall,
+    });
+    if (install.ok) {
       durableGlobalInstall = true;
       stepDone(
         args.out,
         args.theme,
         "Almanac installed globally (almanac now on PATH)",
       );
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      stepActive(args.out, args.theme, `Global install failed: ${msg}`);
+    } else {
+      stepActive(args.out, args.theme, `Global install failed: ${install.error}`);
       args.out.write(
         `  ${dim(args.theme, "You can retry manually: npm install -g codealmanac")}\n`,
       );

@@ -45,9 +45,9 @@ Automation task definitions are product policy, not launchd mechanics. `src/serv
 
 Doctor probe result contracts that describe local machine facts belong under `src/platform/diagnostics/types.ts`. Platform probes own install path, SQLite binding, auth probe, automation plist, guide-file, instruction-entry, update-state, and subprocess-spawn facts. `src/services/diagnostics/` owns the doctor product read model: options, checks, reports, update/install/agent sections, and stable service-facing re-exports.
 
-### Setup TUI owns interaction, setup services own provider fix workflows
+### Setup TUI owns interaction, setup services own install workflows
 
-Setup command files may own terminal prompts and display text. Provider fix-command normalization and execution are setup product workflow, so they live under `src/services/setup/provider-fix-command.ts` and call platform shell mechanics there. CLI setup files should not import `src/platform/shell.ts` directly.
+Setup command files may own terminal prompts and display text. Provider fix-command normalization/execution and global-install state/execution are setup product workflow, so they live under `src/services/setup/` and call platform shell or package-manager mechanics there. CLI setup files should not import `src/platform/shell.ts` or `src/platform/install/global-package.ts` directly.
 
 ### Transcript discovery is platform, sync eligibility is service
 
