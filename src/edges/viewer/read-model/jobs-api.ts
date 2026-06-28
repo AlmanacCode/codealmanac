@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 
-import * as query from "../../stores/wiki/query/index.js";
+import * as query from "../../../stores/wiki/query/index.js";
 import {
   getViewerJob,
   type ViewerJobPageChangeDetails,

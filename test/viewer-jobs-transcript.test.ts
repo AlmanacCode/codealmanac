@@ -218,7 +218,7 @@ describe("viewer jobs transcript projection", () => {
           type: "tool_use",
           id: "read-1",
           tool: "Read",
-          input: "{\"file_path\":\"/Users/rohan/Desktop/Projects/codealmanac/src/services/viewer/jobs.ts\"}",
+          input: "{\"file_path\":\"/Users/rohan/Desktop/Projects/codealmanac/src/edges/viewer/read-model/jobs.ts\"}",
         },
       },
     ]);
@@ -229,8 +229,8 @@ describe("viewer jobs transcript projection", () => {
     expect(getToolCardModel(tool)).toMatchObject({
       kind: "read",
       title: "Read",
-      target: ".../services/viewer/jobs.ts",
-      preview: ".../services/viewer/jobs.ts",
+      target: ".../viewer/read-model/jobs.ts",
+      preview: ".../viewer/read-model/jobs.ts",
     });
   });
 });

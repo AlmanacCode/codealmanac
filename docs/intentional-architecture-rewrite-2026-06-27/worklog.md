@@ -1102,3 +1102,11 @@ One-hundred-sixty-third production slice:
 - Kept `src/services/wiki/` as the product workflow layer that resolves requests, shapes user-facing results, coordinates store mechanics, and owns wiki verbs.
 - Updated viewer, job runtime wiki effects, lifecycle tests, wiki services, and direct store tests to import wiki mechanics from `src/stores/wiki/`.
 - Added boundary coverage that `src/wiki/` stays deleted and command adapters do not import wiki store mechanics directly.
+
+One-hundred-sixty-fourth production slice:
+
+- Removed the `src/services/viewer/` service bucket.
+- Moved viewer-only API DTO assembly, global wiki listing, review payloads, job payloads, and viewer job response types into `src/edges/viewer/read-model/`.
+- Kept `src/edges/viewer/server.ts` as the HTTP/static route owner that wires platform PID liveness into the viewer read model.
+- Updated viewer tests and architecture-boundary guards so the old `src/services/viewer/` and `src/viewer/` source buckets stay deleted.
+- Updated living wiki pages and the codebase map to point at the viewer edge/read-model home.

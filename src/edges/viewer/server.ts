@@ -2,12 +2,12 @@ import { createServer, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 
 import { isLocalPidAlive } from "../../platform/process.js";
-import type { ViewerApi } from "../../services/viewer/api.js";
+import type { ViewerApi } from "./read-model/api.js";
 import {
   createGlobalViewerApi,
   UnknownWikiError,
   UnreachableWikiError,
-} from "../../services/viewer/global-api.js";
+} from "./read-model/global-api.js";
 import { readViewerAsset, readViewerIndex } from "./static.js";
 
 export interface ViewerServerOptions {

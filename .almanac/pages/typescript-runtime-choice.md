@@ -25,7 +25,7 @@ sources:
     note: Shows a concrete provider adapter that maps Almanac run specs into provider runtime calls.
   - id: viewer-server
     type: file
-    path: src/viewer/server.ts
+    path: src/edges/viewer/server.ts
     note: Shows the Node server layer for the local read-only wiki viewer.
   - id: indexer
     type: file
@@ -43,7 +43,7 @@ CodeAlmanac's current runtime choice is TypeScript. A Python port is feasible, b
 
 `[[./package.json|package.json]]` publishes `codealmanac`, `almanac`, and `alm` as npm bins that all resolve to `dist/launcher.js`, declares Node engine support, and ships TypeScript build output through `tsup`. That distribution shape is part of the product contract, not just an implementation detail. [@package-metadata]
 
-The TypeScript surface spans several user-visible systems: the CLI entrypoint in `[[src/cli.ts]]`, the SQLite indexer in `[[src/stores/wiki/indexer/index.ts]]`, the write-capable job lifecycle in `[[src/jobs/executor.ts]]`, provider adapters such as `[[src/harness/providers/claude.ts]]`, and the local viewer server in `[[src/viewer/server.ts]]`. A port would need to preserve those contracts together, not only translate syntax. [@cli-entry] [@indexer] [@process-manager] [@harness-provider] [@viewer-server]
+The TypeScript surface spans several user-visible systems: the CLI entrypoint in `[[src/cli.ts]]`, the SQLite indexer in `[[src/stores/wiki/indexer/index.ts]]`, the write-capable job lifecycle in `[[src/jobs/executor.ts]]`, provider adapters such as `[[src/harness/providers/claude.ts]]`, and the local viewer server in `[[src/edges/viewer/server.ts]]`. A port would need to preserve those contracts together, not only translate syntax. [@cli-entry] [@indexer] [@process-manager] [@harness-provider] [@viewer-server]
 
 The query stack's strongest Python argument is SQLite. `[[sqlite-indexer]]` currently depends on `better-sqlite3`, and the wiki already records the Node ABI failure mode plus the `[[install-time-node-launcher]]` mitigation. Python's standard SQLite runtime would remove that exact native Node binding constraint, but it would replace the npm install story with pipx, uv, Homebrew, or another distribution decision. [@sqlite-indexer-page] [@package-metadata]
 

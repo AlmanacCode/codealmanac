@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { addEntry, readRegistry } from "../src/stores/wiki-registry/index.js";
-import { createGlobalViewerApi } from "../src/services/viewer/global-api.js";
+import { createGlobalViewerApi } from "../src/edges/viewer/read-model/global-api.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
 const fakeViewerRuntime = {

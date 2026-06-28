@@ -11,7 +11,7 @@ import {
   writeJobRecord,
   writeJobSpec,
 } from "../src/services/jobs/runtime/index.js";
-import { createViewerApi } from "../src/services/viewer/api.js";
+import { createViewerApi } from "../src/edges/viewer/read-model/api.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
 const fakeViewerRuntime = {
@@ -257,7 +257,7 @@ items:
           metadata: {
             operation: "garden",
             targetKind: "wiki",
-            targetPaths: ["src/services/viewer/api.ts"],
+            targetPaths: ["src/edges/viewer/read-model/api.ts"],
           },
         },
       });
@@ -321,7 +321,7 @@ items:
       expect(detail?.run.provider).toBe("codex");
       expect(detail?.run.model).toBe("gpt-5.5");
       expect(detail?.run.providerSessionId).toBe("session-123");
-      expect(detail?.run.displaySubtitle).toBe("src/services/viewer/api.ts");
+      expect(detail?.run.displaySubtitle).toBe("src/edges/viewer/read-model/api.ts");
       expect(detail?.run.pageChangeDetails).toEqual({
         created: [{ slug: "new-page", title: null }],
         updated: [

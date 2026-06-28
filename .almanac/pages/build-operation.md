@@ -26,7 +26,7 @@ sources:
     note: Migrated from legacy files.
   - id: api
     type: file
-    path: src/viewer/api.ts
+    path: src/edges/viewer/read-model/api.ts
     note: Migrated from legacy files.
   - id: app
     type: file

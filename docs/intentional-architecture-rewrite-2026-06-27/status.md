@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 211 committed rewrite commits past `dev`. The worklog records 163 production slices so far.
+The branch has 212 committed rewrite commits past `dev`. The worklog records 164 production slices so far.
 
-The diff is broad: 449 files changed, with 22,313 insertions and 12,043 deletions.
+The diff is broad: 450 files changed, with 22,354 insertions and 12,067 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -22,6 +22,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Removed the old top-level `src/init/` source bucket; wiki initialization now lives under `src/services/wiki/`, and mechanical `.almanac/` file scaffolding lives under `src/stores/wiki-files/`.
 - Removed the old top-level `src/config/` source bucket; persisted config mechanics now live under `src/stores/config/`, service verbs live under `src/services/config/`, and provider enablement policy lives under `src/agent/`.
 - Removed the old top-level `src/wiki/` source bucket; local wiki index, query, health, topic-file, and source-frontmatter mechanics now live under `src/stores/wiki/`.
+- Removed the `src/services/viewer/` service bucket; viewer-only route read models now live under `src/edges/viewer/read-model/`.
 - Moved sync ledger and lock persistence into explicit stores.
 - Moved local Claude/Codex transcript discovery into `src/platform/transcripts/` and removed the old top-level `src/sync/` source bucket.
 - Moved lifecycle operation construction and Absorb input/source handling into `src/services/lifecycle/` and removed the old top-level `src/operations/` and `src/absorb/` source buckets.
@@ -43,13 +44,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice removed the old top-level `src/wiki/` source bucket. Local wiki SQLite indexing, query plans, health checks, topic YAML/frontmatter rewrites, and source-frontmatter maintenance now live under `src/stores/wiki/`; `src/services/wiki/` remains the product workflow layer.
+The latest slice removed the `src/services/viewer/` service bucket. Local viewer HTTP/static routing stays in `src/edges/viewer/`, and viewer-only API DTO assembly now lives in `src/edges/viewer/read-model/` instead of pretending to be a product service.
 
-Verification passed: focused wiki/index/query/search/show/health/topics/tag/frontmatter/viewer/review/boundary tests with 267 tests, `npm run lint`, full `npm test` with 656 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js search "wiki index" --limit 2 --json`, `node dist/codealmanac.js show sqlite-indexer --lead`, `node dist/codealmanac.js health --json`, and `node dist/codealmanac.js topics --help`.
+Verification passed: focused viewer/jobs/boundary tests with 104 tests, `npm run lint`, full `npm test` with 656 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js serve --help`, `node dist/codealmanac.js search "viewer read model" --limit 3 --json`, `node dist/codealmanac.js show almanac-serve --lead`, and a short-lived `node dist/codealmanac.js serve --port 0` startup/interrupt smoke.
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, and wiki have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, automation scheduling policy cleanup, and any lifecycle/job/viewer boundary duplication that remains after the big moves.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, and viewer read models have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, automation scheduling policy cleanup, and any lifecycle/job boundary duplication that remains after the big moves.
 
 ## Decision Log
 

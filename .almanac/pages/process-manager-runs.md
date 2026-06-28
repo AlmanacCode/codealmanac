@@ -88,15 +88,15 @@ sources:
     note: Migrated from legacy files.
   - id: job-projections
     type: file
-    path: src/jobs/projections/view.ts
+    path: src/services/jobs/projections/view.ts
     note: Migrated from legacy files.
   - id: job-types
     type: file
-    path: src/viewer/job-types.ts
+    path: src/edges/viewer/read-model/job-types.ts
     note: Migrated from legacy files.
   - id: jobs-2
     type: file
-    path: src/viewer/jobs.ts
+    path: src/edges/viewer/read-model/jobs.ts
     note: Migrated from legacy files.
   - id: jobs-view
     type: file
@@ -203,7 +203,7 @@ Two review constraints protect that contract. If post-harness finalization fails
 
 ## Jobs viewer
 
-`almanac serve` exposes the same job data through the local viewer API at `/api/jobs` (list) and `/api/jobs/:jobId` (detail with JSONL events). See [[almanac-serve]] for the type shapes and polling design. The viewer uses `listJobRecords`, `readJobRecord`, `resolveJobRecordPath`, `resolveJobLogPath`, and `toJobView` from `[[src/jobs/index.ts]]` — no storage logic is duplicated. Jobs storage/API logic lives in `src/viewer/jobs.ts`; JSONL parsing and derived display title/subtitle, transcript-source inference, agent traces, and run warnings live under `[[src/jobs/projections/]]`. Viewer job response types live in `src/viewer/job-types.ts`. The frontend UI is split across `viewer/jobs-view.js` and `viewer/jobs.css`.
+`almanac serve` exposes the same job data through the local viewer API at `/api/jobs` (list) and `/api/jobs/:jobId` (detail with JSONL events). See [[almanac-serve]] for the type shapes and polling design. The viewer uses `listJobRecords`, `readJobRecord`, `resolveJobRecordPath`, `resolveJobLogPath`, and `toJobView` from `[[src/services/jobs/runtime/index.ts]]` — no storage logic is duplicated. Jobs storage/API logic lives in `src/edges/viewer/read-model/jobs.ts`; JSONL parsing and derived display title/subtitle, transcript-source inference, agent traces, and run warnings live under `[[src/services/jobs/projections/]]`. Viewer job response types live in `src/edges/viewer/read-model/job-types.ts`. The frontend UI is split across `viewer/jobs-view.js` and `viewer/jobs.css`.
 
 ## Agent-thread attribution gap
 

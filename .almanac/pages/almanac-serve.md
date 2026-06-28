@@ -45,27 +45,27 @@ sources:
     note: Migrated from legacy files.
   - id: api
     type: file
-    path: src/viewer/api.ts
+    path: src/edges/viewer/read-model/api.ts
     note: Migrated from legacy files.
   - id: job-projections
     type: file
-    path: src/jobs/projections/view.ts
+    path: src/services/jobs/projections/view.ts
     note: Migrated from legacy files.
   - id: job-types
     type: file
-    path: src/viewer/job-types.ts
+    path: src/edges/viewer/read-model/job-types.ts
     note: Migrated from legacy files.
   - id: jobs
     type: file
-    path: src/viewer/jobs.ts
+    path: src/edges/viewer/read-model/jobs.ts
     note: Migrated from legacy files.
   - id: server
     type: file
-    path: src/viewer/server.ts
+    path: src/edges/viewer/server.ts
     note: Migrated from legacy files.
   - id: static
     type: file
-    path: src/viewer/static.ts
+    path: src/edges/viewer/static.ts
     note: Migrated from legacy files.
   - id: page-view
     type: file
@@ -143,7 +143,7 @@ sources:
 
 `almanac serve` is a lightweight local read-only web viewer for browsing a repo's Almanac wiki. It is the preferred "read the wiki" experience for humans; filesystem browsing is the fallback and editor interface, not the primary UX. Designed and implemented 2026-05-10.
 
-The viewer is mostly a read-only client over existing wiki/index/job-record primitives. `[[src/stores/wiki/query/search.ts]]` owns shared FTS query builders and file-reference matching primitives used by both `[[src/cli/commands/search.ts]]` and `[[src/viewer/api.ts]]`, including parent-folder prefix calculation and SQLite GLOB escaping for literal path queries.
+The viewer is mostly a read-only client over existing wiki/index/job-record primitives. `[[src/stores/wiki/query/search.ts]]` owns shared FTS query builders and file-reference matching primitives used by both `[[src/cli/commands/search.ts]]` and `[[src/edges/viewer/read-model/api.ts]]`, including parent-folder prefix calculation and SQLite GLOB escaping for literal path queries.
 
 ## Rationale
 
@@ -223,7 +223,7 @@ The review route reads `.almanac/review.yaml` through the viewer API and groups 
 
 ## Packaging architecture
 
-The viewer is a small static bundle shipped inside the npm package. The CLI serves it directly from the package install path via `src/viewer/static.ts`, which walks up from `__dirname` to find the package root and reads `viewer/*.{html,js,css}` directly. No separate `npm install` step.
+The viewer is a small static bundle shipped inside the npm package. The CLI serves it directly from the package install path via `src/edges/viewer/static.ts`, which walks up from `__dirname` to find the package root and reads `viewer/*.{html,js,css}` directly. No separate `npm install` step.
 
 ```text
 codealmanac package:
@@ -282,9 +282,9 @@ viewer/               # bundled static frontend (no build step required at runti
   search-suggestions.js # left-rail search suggestion controller
 ```
 
-`serve.ts` owns only the CLI interface. `server.ts` owns HTTP. `api.ts` owns wiki-API payload assembly and delegates jobs concerns to `src/viewer/jobs.ts`. `jobs.ts` owns job storage access, job-id validation, and PID liveness through the shared `src/jobs/` API. `src/jobs/projections/view.ts` owns derived job display fields, transcript-source inference, agent traces, and run warnings; `src/jobs/projections/log-events.ts` owns JSONL job-log parsing. `job-types.ts` owns the shared viewer job response shapes. `page-view.ts` is extracted shared logic: the `show` command and viewer API both call it. The frontend in `viewer/` is plain HTML + vanilla JS with no compile step. `app.js` handles routing and wiki views; `jobs-view.js` handles jobs rendering; `jobs-transcript.js` handles stream projection and tool/result pairing; `search-suggestions.js` owns the debounced search suggestion interaction.
+`serve.ts` owns only the CLI interface. `server.ts` owns HTTP. `api.ts` owns wiki-API payload assembly and delegates jobs concerns to `src/edges/viewer/read-model/jobs.ts`. `jobs.ts` owns job storage access, job-id validation, and PID liveness through the shared `src/jobs/` API. `src/services/jobs/projections/view.ts` owns derived job display fields, transcript-source inference, agent traces, and run warnings; `src/services/jobs/projections/log-events.ts` owns JSONL job-log parsing. `job-types.ts` owns the shared viewer job response shapes. `page-view.ts` is extracted shared logic: the `show` command and viewer API both call it. The frontend in `viewer/` is plain HTML + vanilla JS with no compile step. `app.js` handles routing and wiki views; `jobs-view.js` handles jobs rendering; `jobs-transcript.js` handles stream projection and tool/result pairing; `search-suggestions.js` owns the debounced search suggestion interaction.
 
-`jobs.ts` delegates to `[[src/jobs/index.ts]]` — specifically `listJobRecords()`, `readJobRecord()`, `resolveJobRecordPath()`, `resolveJobLogPath()`, and `toJobView()` — for all job storage access. The viewer does not duplicate the storage rules or introduce its own job model.
+`jobs.ts` delegates to `[[src/services/jobs/runtime/index.ts]]` — specifically `listJobRecords()`, `readJobRecord()`, `resolveJobRecordPath()`, `resolveJobLogPath()`, and `toJobView()` — for all job storage access. The viewer does not duplicate the storage rules or introduce its own job model.
 
 ## Key API types
 
@@ -296,7 +296,7 @@ viewer/               # bundled static frontend (no build step required at runti
 
 `overview()` returns `featuredPages.gettingStarted` when the wiki contains `getting-started.md`. It does not return `featuredPages.projectOverview`; the 2026-05-28 front-door cleanup made `getting-started.md` the only special homepage convention.
 
-`ViewerJobRun` extends `JobView` (from [[process-manager-runs]] via `toJobView()`) with display fields: `displayTitle` (human label derived from operation and target kind), `displaySubtitle` (nullable summary derived from the final `done`/`text` event in the log, falling back to the first target path or the model string), and `transcriptSource` for session captures. The transcript-source field intentionally differs from `provider`: a Claude or Codex transcript may be processed by a Codex, Claude, or future provider agent. `src/jobs/projections/view.ts` derives the source from the saved spec prompt when available and falls back to transcript-path conventions for older records. The `enrichJobView()` helper computes these fields after `jobs.ts` reads the event log. Job IDs are validated by `isSafeJobId()` (regex `/^(job|run)_[A-Za-z0-9_-]+$/`) before any path construction to prevent path traversal.
+`ViewerJobRun` extends `JobView` (from [[process-manager-runs]] via `toJobView()`) with display fields: `displayTitle` (human label derived from operation and target kind), `displaySubtitle` (nullable summary derived from the final `done`/`text` event in the log, falling back to the first target path or the model string), and `transcriptSource` for session captures. The transcript-source field intentionally differs from `provider`: a Claude or Codex transcript may be processed by a Codex, Claude, or future provider agent. `src/services/jobs/projections/view.ts` derives the source from the saved spec prompt when available and falls back to transcript-path conventions for older records. The `enrichJobView()` helper computes these fields after `jobs.ts` reads the event log. Job IDs are validated by `isSafeJobId()` (regex `/^(job|run)_[A-Za-z0-9_-]+$/`) before any path construction to prevent path traversal.
 
 `ViewerJobDetail` is the shape returned by `job(jobId)`: `{ run: ViewerJobRun; events: ViewerJobLogEvent[] }`. `ViewerJobLogEvent` is a discriminated union: a valid line is `{ line: number; timestamp: string | null; event: HarnessEvent }` and an unparseable line is `{ line: number; invalid: true; raw: string; error: string }`. The `readJobLogEvents()` helper reads the JSONL log file line-by-line, unwraps the job-log `{ timestamp, event }` and v2 `{ version, sequence, jobId, actor, event }` envelopes, skips blank lines, and preserves invalid lines as error-shaped display rows rather than throwing. This is intentional: a corrupt or truncated log should still render the rest of the timeline.
 

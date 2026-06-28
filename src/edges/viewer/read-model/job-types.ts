@@ -3,7 +3,7 @@ import type {
   JobLogEvent,
   JobRunProjection,
   JobWarning,
-} from "../jobs/projections/types.js";
+} from "../../../services/jobs/projections/types.js";
 
 export type ViewerJobLogEvent = JobLogEvent;
 export interface ViewerJobRun extends JobRunProjection {
