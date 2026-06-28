@@ -1693,3 +1693,11 @@ Two-hundred-fortieth production slice:
 - Moved the global viewer API off direct registry store reads and filesystem checks.
 - Kept the viewer global read model focused on viewer route composition and error mapping.
 - Strengthened architecture-boundary tests so the global viewer read model cannot regain registry-store or filesystem ownership.
+
+Two-hundred-forty-first production slice:
+
+- Moved all remaining command adapters, command renderers, command output helpers, and command-private formatting helpers from `src/cli/` into `src/edges/cli/commands/`.
+- Deleted the old top-level `src/cli/` source directory while keeping `src/cli.ts` as the stable public facade over the CLI edge runner.
+- Updated CLI registration files and command tests to import command modules from the CLI edge.
+- Updated the health store comment to point at the new CLI command location.
+- Strengthened architecture-boundary tests so the old `src/cli/` directory stays deleted.

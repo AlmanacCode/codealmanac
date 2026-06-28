@@ -3,9 +3,9 @@ import { join } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { runUpdate as runUpdateCommand } from "../src/cli/commands/update.js";
-import type { UpdateOptions } from "../src/cli/commands/update.js";
-import { runConfigSet } from "../src/cli/commands/config.js";
+import { runUpdate as runUpdateCommand } from "../src/edges/cli/commands/update.js";
+import type { UpdateOptions } from "../src/edges/cli/commands/update.js";
+import { runConfigSet } from "../src/edges/cli/commands/config.js";
 import { parseConfigText, readConfig, writeConfig } from "../src/stores/config/index.js";
 import { readState, writeState } from "../src/stores/update/index.js";
 import type {

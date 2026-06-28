@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { runAgentsList, runAgentsModel, runAgentsUse } from "../src/cli/commands/agents.js";
-import { runConfigList } from "../src/cli/commands/config.js";
+import { runAgentsList, runAgentsModel, runAgentsUse } from "../src/edges/cli/commands/agents.js";
+import { runConfigList } from "../src/edges/cli/commands/config.js";
 import { readConfig } from "../src/stores/config/index.js";
 import { withTempHome } from "./helpers.js";
 

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   runSyncCommand as runSyncCommandHandler,
   type SyncCommandOptions,
-} from "../src/cli/commands/sync.js";
+} from "../src/edges/cli/commands/sync.js";
 import { createPlatformSyncTranscriptRuntime } from "../src/platform/transcripts/runtime.js";
 import type { AgentRuntimeRunner } from "../src/shared/agent-runtime/runner.js";
 import type { OperationPromptLoader } from "../src/shared/operation-prompts.js";

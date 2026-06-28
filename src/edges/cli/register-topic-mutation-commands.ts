@@ -10,7 +10,7 @@ export function registerTopicMutationCommands(topics: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (oldSlug: string, newSlug: string, opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
-      const { runTopicsRename } = await import("../../cli/commands/topics/rename.js");
+      const { runTopicsRename } = await import("./commands/topics/rename.js");
       const result = await runTopicsRename({
         cwd: process.cwd(),
         oldSlug,
@@ -26,7 +26,7 @@ export function registerTopicMutationCommands(topics: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (slug: string, opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
-      const { runTopicsDelete } = await import("../../cli/commands/topics/delete.js");
+      const { runTopicsDelete } = await import("./commands/topics/delete.js");
       const result = await runTopicsDelete({
         cwd: process.cwd(),
         slug,
@@ -41,7 +41,7 @@ export function registerTopicMutationCommands(topics: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (slug: string, text: string, opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
-      const { runTopicsDescribe } = await import("../../cli/commands/topics/describe.js");
+      const { runTopicsDescribe } = await import("./commands/topics/describe.js");
       const result = await runTopicsDescribe({
         cwd: process.cwd(),
         slug,

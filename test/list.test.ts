@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { initWiki } from "../src/services/wiki/initialization.js";
-import { listWikis } from "../src/cli/commands/list.js";
+import { listWikis } from "../src/edges/cli/commands/list.js";
 import { autoRegisterIfNeeded } from "../src/services/wiki/autoregistration.js";
 import { readRegistry } from "../src/stores/wiki-registry/index.js";
 import { makeRepo, withTempHome } from "./helpers.js";

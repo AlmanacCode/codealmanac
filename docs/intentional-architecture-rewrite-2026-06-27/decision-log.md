@@ -35,6 +35,8 @@ Command-private render modules own service-result-to-output branching. When a co
 
 Command adapters can choose between transport-equivalent input sources such as explicit flags and stdin. They should not normalize or classify the user-provided content when the service already owns that product rule. Review commands pass raw markdown text to wiki review services; review services clean trailing whitespace and decide whether markdown is missing.
 
+Command adapters and renderers are CLI edge code. The top-level `src/cli.ts` file is only the stable facade that imports `src/edges/cli/run.ts`; command modules live under `src/edges/cli/commands/` because they shape argv/stdin-derived requests, call services, and render terminal output. A separate `src/cli/` directory is not an ownership category.
+
 ### Stores and integrations stay mechanical
 
 Stores own persistence mechanics. Provider adapters, process spawning, app-server protocols, launchd, npm, and OS behavior stay in integration-shaped modules unless they are product service contracts.

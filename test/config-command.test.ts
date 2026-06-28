@@ -8,7 +8,7 @@ import {
   runConfigList as runConfigListCommand,
   runConfigSet as runConfigSetCommand,
   runConfigUnset as runConfigUnsetCommand,
-} from "../src/cli/commands/config.js";
+} from "../src/edges/cli/commands/config.js";
 import { parseConfigText, readConfig } from "../src/stores/config/index.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { runShow } from "../src/cli/commands/show/index.js";
+import { runShow } from "../src/edges/cli/commands/show/index.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
 /**

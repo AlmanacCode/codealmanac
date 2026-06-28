@@ -16,7 +16,7 @@ export function registerPageTopicCommands(program: Command): void {
         opts: { stdin?: boolean; wiki?: string },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
-        const { runTag } = await import("../../cli/commands/tag.js");
+        const { runTag } = await import("./commands/tag.js");
         const result = await runTag({
           cwd: process.cwd(),
           page: opts.stdin === true ? undefined : page,
@@ -36,7 +36,7 @@ export function registerPageTopicCommands(program: Command): void {
     .action(
       async (page: string, topic: string, opts: { wiki?: string }) => {
         await autoRegisterIfNeeded(process.cwd());
-        const { runUntag } = await import("../../cli/commands/tag.js");
+        const { runUntag } = await import("./commands/tag.js");
         const result = await runUntag({
           cwd: process.cwd(),
           page,

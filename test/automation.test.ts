@@ -9,11 +9,11 @@ import {
   type AutomationInstallCommandOptions,
   type AutomationStatusCommandOptions,
   type AutomationUninstallCommandOptions,
-} from "../src/cli/commands/automation.js";
+} from "../src/edges/cli/commands/automation.js";
 import {
   runMigrateAutomation as runMigrateAutomationCommand,
   type MigrateAutomationOptions,
-} from "../src/cli/commands/migrate.js";
+} from "../src/edges/cli/commands/migrate.js";
 import { createLaunchdAutomationScheduler } from "../src/platform/automation/scheduler.js";
 import { ensureAutomationSyncSince, readConfig } from "../src/stores/config/index.js";
 import { withTempHome } from "./helpers.js";

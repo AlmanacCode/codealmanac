@@ -17,7 +17,7 @@ export function registerTopicCreateCommand(topics: Command): void {
     .action(
       async (name: string, opts: { parent?: string[]; wiki?: string }) => {
         await autoRegisterIfNeeded(process.cwd());
-        const { runTopicsCreate } = await import("../../cli/commands/topics/create.js");
+        const { runTopicsCreate } = await import("./commands/topics/create.js");
         const result = await runTopicsCreate({
           cwd: process.cwd(),
           name,

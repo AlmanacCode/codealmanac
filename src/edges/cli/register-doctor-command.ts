@@ -5,7 +5,7 @@ import { readDoctorRuntimeFacts } from "../../app/diagnostics-runtime.js";
 import { emit, shouldUseStdoutColor } from "./helpers.js";
 
 export interface RegisterDoctorCommandDeps {
-  runDoctor?: typeof import("../../cli/commands/doctor/index.js").runDoctor;
+  runDoctor?: typeof import("./commands/doctor/index.js").runDoctor;
 }
 
 export function registerDoctorCommand(
@@ -28,7 +28,7 @@ export function registerDoctorCommand(
         wikiOnly?: boolean;
       }) => {
         const runDoctor = deps.runDoctor ??
-          (await import("../../cli/commands/doctor/index.js")).runDoctor;
+          (await import("./commands/doctor/index.js")).runDoctor;
         const runtimeFacts = await readDoctorRuntimeFacts({
           environment: process.env,
           homeDir: homedir(),

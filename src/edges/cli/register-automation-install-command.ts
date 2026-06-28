@@ -28,7 +28,7 @@ export function registerAutomationInstallCommand(automation: Command): void {
 
       const {
         runAutomationInstall,
-      } = await import("../../cli/commands/automation.js");
+      } = await import("./commands/automation.js");
       const result = await runAutomationInstall({
         tasks: parsedTasks,
         every: opts.every,

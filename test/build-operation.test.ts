@@ -8,7 +8,7 @@ import {
   type BuildOperationOptions,
 } from "../src/services/lifecycle/operations/build.js";
 import { loadBundledPrompt } from "../src/platform/prompts.js";
-import { runConfigSet } from "../src/cli/commands/config.js";
+import { runConfigSet } from "../src/edges/cli/commands/config.js";
 import type { AgentRuntimeRunner } from "../src/shared/agent-runtime/runner.js";
 import type { OperationPromptLoader } from "../src/shared/operation-prompts.js";
 import { makeRepo, withTempHome } from "./helpers.js";

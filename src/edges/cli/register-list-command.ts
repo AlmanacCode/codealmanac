@@ -21,7 +21,7 @@ export function registerListCommand(program: Command): void {
         if (opts.drop === undefined) {
           await autoRegisterIfNeeded(process.cwd());
         }
-        const { listWikis } = await import("../../cli/commands/list.js");
+        const { listWikis } = await import("./commands/list.js");
         const result = await listWikis({
           ...opts,
           color: shouldUseStdoutColor(),

@@ -12,7 +12,7 @@ export function registerAgentCommands(program: Command): void {
     .command("list")
     .description("show Claude, Codex, and Cursor provider status")
     .action(async () => {
-      const { runAgentsList } = await import("../../cli/commands/agents.js");
+      const { runAgentsList } = await import("./commands/agents.js");
       emit(await runAgentsList({
         environment: process.env,
         readinessRuntime: createAgentReadinessRuntime(),
@@ -23,7 +23,7 @@ export function registerAgentCommands(program: Command): void {
     .command("doctor")
     .description("diagnose supported AI agent providers")
     .action(async () => {
-      const { runAgentsDoctor } = await import("../../cli/commands/agents.js");
+      const { runAgentsDoctor } = await import("./commands/agents.js");
       emit(await runAgentsDoctor({
         environment: process.env,
         readinessRuntime: createAgentReadinessRuntime(),
@@ -35,7 +35,7 @@ export function registerAgentCommands(program: Command): void {
     .description("set the default AI agent provider")
     .argument("<provider>", "claude, codex, cursor, or claude/<model>")
     .action(async (provider: string) => {
-      const { runAgentsUse } = await import("../../cli/commands/agents.js");
+      const { runAgentsUse } = await import("./commands/agents.js");
       emit(await runAgentsUse({ provider, cwd: process.cwd() }));
     });
 
@@ -50,7 +50,7 @@ export function registerAgentCommands(program: Command): void {
       model: string | undefined,
       opts: { default?: boolean },
     ) => {
-      const { runAgentsModel } = await import("../../cli/commands/agents.js");
+      const { runAgentsModel } = await import("./commands/agents.js");
       emit(await runAgentsModel({
         provider,
         model,

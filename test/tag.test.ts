@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { runTag, runUntag } from "../src/cli/commands/tag.js";
+import { runTag, runUntag } from "../src/edges/cli/commands/tag.js";
 import { runIndexer } from "../src/stores/wiki/indexer/index.js";
 import { topicsYamlPath } from "../src/stores/wiki/topics/paths.js";
 import { loadTopicsFile } from "../src/stores/wiki/topics/yaml.js";

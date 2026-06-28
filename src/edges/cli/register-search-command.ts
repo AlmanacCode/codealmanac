@@ -55,7 +55,7 @@ export function registerSearchCommand(program: Command): void {
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
-        const { runSearch } = await import("../../cli/commands/search.js");
+        const { runSearch } = await import("./commands/search.js");
         const result = await runSearch({
           cwd: process.cwd(),
           query,

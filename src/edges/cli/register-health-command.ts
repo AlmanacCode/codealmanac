@@ -25,7 +25,7 @@ export function registerHealthCommand(program: Command): void {
         wiki?: string;
       }) => {
         await autoRegisterIfNeeded(process.cwd());
-        const { runHealth } = await import("../../cli/commands/health/index.js");
+        const { runHealth } = await import("./commands/health/index.js");
         const result = await runHealth({
           cwd: process.cwd(),
           topic: opts.topic,

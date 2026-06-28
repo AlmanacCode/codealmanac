@@ -1,5 +1,5 @@
 import { checkSqliteAbi } from "../src/abi-guard.js";
-import { renderErrorText } from "../src/cli/outcome.js";
+import { renderErrorText } from "../src/edges/cli/commands/outcome.js";
 
 // ABI guard: detect better-sqlite3 binding mismatch before commands that may
 // touch the indexer. Skip setup/version/update-only paths so a fresh

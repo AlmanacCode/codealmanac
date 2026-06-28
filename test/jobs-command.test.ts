@@ -9,7 +9,7 @@ import {
   runJobsList,
   runJobsLogs,
   runJobsShow,
-} from "../src/cli/commands/jobs.js";
+} from "../src/edges/cli/commands/jobs.js";
 import {
   buildQueuedJobRecord,
   buildStartedJobRecord,

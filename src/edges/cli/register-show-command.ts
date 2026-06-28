@@ -50,7 +50,7 @@ export function registerShowCommand(program: Command): void {
         },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
-        const { runShow } = await import("../../cli/commands/show/index.js");
+        const { runShow } = await import("./commands/show/index.js");
         const result = await runShow({
           cwd: process.cwd(),
           slug,

@@ -25,7 +25,7 @@ export function registerGardenCommand(program: Command): void {
       }) => {
         await autoRegisterIfNeeded(process.cwd());
         const runtime = createCliRuntime({ environment: process.env });
-        const { runGardenCommand } = await import("../../cli/commands/operations.js");
+        const { runGardenCommand } = await import("./commands/operations.js");
         const result = await runGardenCommand({
           cwd: process.cwd(),
           using: opts.using,

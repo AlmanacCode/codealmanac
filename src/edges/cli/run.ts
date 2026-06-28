@@ -5,7 +5,7 @@ import { Command } from "commander";
 
 import { runSetup } from "./setup/index.js";
 import { emit } from "./helpers.js";
-import { renderError } from "../../cli/outcome.js";
+import { renderError } from "./commands/outcome.js";
 import { configureGroupedHelp } from "./help.js";
 import {
   parseAutomationInstallFlags,
@@ -14,7 +14,7 @@ import {
 } from "./sqlite-free.js";
 import { runCodealmanacBootstrap } from "../../platform/install/global.js";
 import { isLocalPidAlive } from "../../platform/process.js";
-import type { runDoctor } from "../../cli/commands/doctor/index.js";
+import type { runDoctor } from "./commands/doctor/index.js";
 import { runInternalUpdateCheck } from "../../app/update-runtime.js";
 import { announceUpdateIfAvailable } from "./update-announcement.js";
 import { scheduleBackgroundUpdateCheck } from "./update-check-scheduler.js";

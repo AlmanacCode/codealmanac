@@ -45,7 +45,7 @@ title: Absorb
 sources:
   - id: absorb-command
     type: file
-    path: src/cli/commands/operations.ts
+    path: src/edges/cli/commands/operations.ts
     note: Starts absorb.
   - id: sdk-docs
     type: web
@@ -70,7 +70,7 @@ Body.
       {
         id: "absorb-command",
         type: "file",
-        path: "src/cli/commands/operations.ts",
+        path: "src/edges/cli/commands/operations.ts",
         note: "Starts absorb.",
       },
       {

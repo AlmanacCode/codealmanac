@@ -10,7 +10,7 @@ export function registerTopicEdgeCommands(topics: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (child: string, parent: string, opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
-      const { runTopicsLink } = await import("../../cli/commands/topics/link.js");
+      const { runTopicsLink } = await import("./commands/topics/link.js");
       const result = await runTopicsLink({
         cwd: process.cwd(),
         child,
@@ -26,7 +26,7 @@ export function registerTopicEdgeCommands(topics: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (child: string, parent: string, opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
-      const { runTopicsUnlink } = await import("../../cli/commands/topics/unlink.js");
+      const { runTopicsUnlink } = await import("./commands/topics/unlink.js");
       const result = await runTopicsUnlink({
         cwd: process.cwd(),
         child,

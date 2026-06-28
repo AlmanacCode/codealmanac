@@ -36,7 +36,7 @@ describe("almanac search stderr", () => {
       });
 
       vi.resetModules();
-      const { runSearch } = await import("../src/cli/commands/search.js");
+      const { runSearch } = await import("../src/edges/cli/commands/search.js");
       const result = await runSearch({
         cwd: repo,
         query: "ghost",

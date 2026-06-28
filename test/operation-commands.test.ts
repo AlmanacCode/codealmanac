@@ -9,7 +9,7 @@ import {
   type AbsorbCommandOptions,
   type GardenCommandOptions,
   type InitCommandOptions,
-} from "../src/cli/commands/operations.js";
+} from "../src/edges/cli/commands/operations.js";
 import { parseLifecycleProviderSelection } from "../src/services/lifecycle/index.js";
 import type { AgentRuntimeRunner } from "../src/shared/agent-runtime/runner.js";
 import type { OperationPromptLoader } from "../src/shared/operation-prompts.js";

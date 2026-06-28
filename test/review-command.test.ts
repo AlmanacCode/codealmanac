@@ -9,7 +9,7 @@ import {
   runReviewList,
   runReviewReopen,
   runReviewShow,
-} from "../src/cli/commands/review.js";
+} from "../src/edges/cli/commands/review.js";
 import { loadReviewFile } from "../src/stores/wiki-review/store.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 

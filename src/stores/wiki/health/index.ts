@@ -23,7 +23,7 @@ import {
  * Health report collection.
  *
  * This module owns wiki-health checks over the SQLite index and filesystem.
- * CLI option parsing and report rendering live in `src/cli/commands/health/`.
+ * CLI option parsing and report rendering live in `src/edges/cli/commands/health/`.
  */
 
 export interface HealthReport {

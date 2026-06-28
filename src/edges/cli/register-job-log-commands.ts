@@ -9,7 +9,7 @@ export function registerJobLogCommands(jobs: Command): void {
     .description("print a run's JSONL event log")
     .option("--json", "emit structured errors as JSON")
     .action(async (jobId: string, opts: { json?: boolean }) => {
-      const { runJobsLogs } = await import("../../cli/commands/jobs.js");
+      const { runJobsLogs } = await import("./commands/jobs.js");
       const result = await runJobsLogs({
         cwd: process.cwd(),
         jobId,
@@ -23,7 +23,7 @@ export function registerJobLogCommands(jobs: Command): void {
     .description("stream a job log until the job exits")
     .option("--json", "emit structured errors as JSON")
     .action(async (jobId: string, opts: { json?: boolean }) => {
-      const { streamJobsAttach } = await import("../../cli/commands/jobs.js");
+      const { streamJobsAttach } = await import("./commands/jobs.js");
       const result = await streamJobsAttach({
         cwd: process.cwd(),
         jobId,

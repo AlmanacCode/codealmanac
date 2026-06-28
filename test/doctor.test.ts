@@ -8,11 +8,11 @@ import type {
   DoctorReport,
 } from "../src/services/diagnostics/index.js";
 import type { AgentReadinessRuntime } from "../src/shared/agent-readiness.js";
-import { formatReport } from "../src/cli/commands/doctor/format.js";
+import { formatReport } from "../src/edges/cli/commands/doctor/format.js";
 import {
   runDoctor as runDoctorCommand,
   type DoctorOptions,
-} from "../src/cli/commands/doctor/index.js";
+} from "../src/edges/cli/commands/doctor/index.js";
 import { probeDiagnosticClaudeAuth } from "../src/platform/diagnostics/auth.js";
 import { probeDiagnosticAutomation } from "../src/platform/diagnostics/automation.js";
 import {

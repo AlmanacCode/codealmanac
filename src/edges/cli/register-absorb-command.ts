@@ -49,7 +49,7 @@ function registerAbsorbLikeCommand(
       ) => {
         await autoRegisterIfNeeded(process.cwd());
         const runtime = createCliRuntime({ environment: process.env });
-        const { runAbsorbCommand } = await import("../../cli/commands/operations.js");
+        const { runAbsorbCommand } = await import("./commands/operations.js");
         const result = await runAbsorbCommand({
           cwd: process.cwd(),
           inputs,

@@ -32,7 +32,7 @@ export function registerUpdateCommand(program: Command): void {
         enableNotifier?: boolean;
         disableNotifier?: boolean;
       }) => {
-        const { runUpdate } = await import("../../cli/commands/update.js");
+        const { runUpdate } = await import("./commands/update.js");
         const result = await runUpdate({
           dismiss: opts.dismiss,
           check: opts.check,

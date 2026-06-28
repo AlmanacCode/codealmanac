@@ -13,7 +13,7 @@ import {
   runTopicsRename,
   runTopicsShow,
   runTopicsUnlink,
-} from "../src/cli/commands/topics/index.js";
+} from "../src/edges/cli/commands/topics/index.js";
 import { topicsYamlPath } from "../src/stores/wiki/topics/paths.js";
 import { loadTopicsFile } from "../src/stores/wiki/topics/yaml.js";
 import {

@@ -11,7 +11,7 @@ export function registerTopicReadCommands(topics: Command): void {
     .option("--json", "emit structured JSON")
     .action(async (opts: { wiki?: string; json?: boolean }) => {
       await autoRegisterIfNeeded(process.cwd());
-      const { runTopicsList } = await import("../../cli/commands/topics/list.js");
+      const { runTopicsList } = await import("./commands/topics/list.js");
       const result = await runTopicsList({
         cwd: process.cwd(),
         wiki: opts.wiki,
@@ -33,7 +33,7 @@ export function registerTopicReadCommands(topics: Command): void {
         opts: { descendants?: boolean; wiki?: string; json?: boolean },
       ) => {
         await autoRegisterIfNeeded(process.cwd());
-        const { runTopicsShow } = await import("../../cli/commands/topics/show.js");
+        const { runTopicsShow } = await import("./commands/topics/show.js");
         const result = await runTopicsShow({
           cwd: process.cwd(),
           slug,

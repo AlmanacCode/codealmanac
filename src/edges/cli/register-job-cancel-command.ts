@@ -9,7 +9,7 @@ export function registerJobCancelCommand(jobs: Command): void {
     .description("cancel a running or queued job")
     .option("--json", "emit structured JSON")
     .action(async (jobId: string, opts: { json?: boolean }) => {
-      const { runJobsCancel } = await import("../../cli/commands/jobs.js");
+      const { runJobsCancel } = await import("./commands/jobs.js");
       const result = await runJobsCancel({
         cwd: process.cwd(),
         jobId,

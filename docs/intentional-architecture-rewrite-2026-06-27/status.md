@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 240 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 241 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -28,6 +28,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Split jobs command registration into read, log/attach, and cancel edge files.
 - Split sync command registration into run, status, and runtime-input edge files.
 - Made CLI command files much thinner by moving product workflows into `src/services/`.
+- Moved remaining command adapters, renderers, and command output helpers from the old top-level `src/cli/` directory into `src/edges/cli/commands/`.
 - Split wiki workflows into clearer service boundaries: search, show, health, registry, topics, review, reindex, source migration, and doctor wiki checks.
 - Moved durable job persistence into explicit stores for records, specs, logs, and worker locks.
 - Removed the old top-level `src/jobs/` source bucket; job runtime and projections now live under `src/services/jobs/`, durable job schemas live under `src/stores/jobs/`, and detached worker spawning lives under `src/platform/jobs/`.
@@ -116,13 +117,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved global viewer registry lookup through `src/services/wiki/registry.ts`. The viewer global read model no longer imports registry stores or filesystem checks directly; wiki services return browseable, missing, and unreachable registry results over store-owned wiki-root checks.
+The latest slice removed the old top-level `src/cli/` source directory. `src/cli.ts` remains the stable facade over the CLI edge runner, while command adapters, command renderers, text table helpers, and command outcome rendering now live under `src/edges/cli/commands/`.
 
 Verification passed:
 
 - `git diff --check`
 - `npm run lint`
-- `npx vitest run test/viewer-global-api.test.ts test/list.test.ts test/registry.test.ts test/architecture-boundaries.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/cli.test.ts test/operation-commands.test.ts test/search.test.ts test/show.test.ts test/health.test.ts test/topics.test.ts test/tag.test.ts test/review-command.test.ts test/jobs-command.test.ts test/automation.test.ts test/config-command.test.ts test/agents-command.test.ts test/update.test.ts test/sync.test.ts test/outcome.test.ts`
 - `npm test`
 - `npm run build`
 - `node dist/launcher.js doctor --help`

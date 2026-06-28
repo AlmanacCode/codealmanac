@@ -10,7 +10,7 @@ export function registerMaintenanceCommands(program: Command): void {
     .option("--wiki <name>", "target a specific registered wiki")
     .action(async (opts: { wiki?: string }) => {
       await autoRegisterIfNeeded(process.cwd());
-      const { runReindex } = await import("../../cli/commands/reindex.js");
+      const { runReindex } = await import("./commands/reindex.js");
       const result = await runReindex({
         cwd: process.cwd(),
         wiki: opts.wiki,

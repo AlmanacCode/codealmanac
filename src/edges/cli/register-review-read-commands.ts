@@ -17,7 +17,7 @@ export function registerReviewReadCommands(review: Command): void {
         json?: boolean;
       }) => {
         await autoRegisterIfNeeded(process.cwd());
-        const { runReviewList } = await import("../../cli/commands/review.js");
+        const { runReviewList } = await import("./commands/review.js");
         const result = await runReviewList({
           cwd: process.cwd(),
           wiki: opts.wiki,
@@ -35,7 +35,7 @@ export function registerReviewReadCommands(review: Command): void {
     .option("--json", "emit structured JSON")
     .action(async (id: string, opts: { wiki?: string; json?: boolean }) => {
       await autoRegisterIfNeeded(process.cwd());
-      const { runReviewShow } = await import("../../cli/commands/review.js");
+      const { runReviewShow } = await import("./commands/review.js");
       const result = await runReviewShow({
         cwd: process.cwd(),
         wiki: opts.wiki,

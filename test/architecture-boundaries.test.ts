@@ -68,6 +68,7 @@ describe("architecture boundaries", () => {
     expect(facade).not.toContain("cli/commands");
     expect(facade).not.toContain("platform/");
     expect(facade).not.toContain("jobs/");
+    expect(existsSync(join(ROOT, "src/cli"))).toBe(false);
   });
 
   it("keeps process-level CLI machinery inside the CLI edge", async () => {
@@ -164,7 +165,7 @@ describe("architecture boundaries", () => {
 
   it("keeps ordinary command-result emission centralized in the CLI edge helper", async () => {
     const edgeHelpers = await readSource("src/edges/cli/helpers.ts");
-    const outcome = await readSource("src/cli/outcome.ts");
+    const outcome = await readSource("src/edges/cli/commands/outcome.ts");
     const registerMaintenance = await readSource(
       "src/edges/cli/register-maintenance-commands.ts",
     );
@@ -198,12 +199,12 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps lifecycle command rendering out of workflow adapters", async () => {
-    const operationsCommand = await readSource("src/cli/commands/operations.ts");
+    const operationsCommand = await readSource("src/edges/cli/commands/operations.ts");
     const operationsRender = await readSource(
-      "src/cli/commands/operations-render.ts",
+      "src/edges/cli/commands/operations-render.ts",
     );
 
-    expect(existsSync(join(ROOT, "src/cli/commands/operations-render.ts")))
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/operations-render.ts")))
       .toBe(true);
     expect(operationsCommand).toContain("runInitOperationWorkflow");
     expect(operationsCommand).toContain("renderWorkflowResult");
@@ -216,11 +217,11 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps search command adapters out of index storage mechanics", async () => {
-    const searchCommand = await readSource("src/cli/commands/search.ts");
-    const searchRender = await readSource("src/cli/commands/search-render.ts");
+    const searchCommand = await readSource("src/edges/cli/commands/search.ts");
+    const searchRender = await readSource("src/edges/cli/commands/search-render.ts");
     const searchService = await readSource("src/services/wiki/search.ts");
 
-    expect(existsSync(join(ROOT, "src/cli/commands/search-render.ts"))).toBe(
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/search-render.ts"))).toBe(
       true,
     );
     expect(searchCommand).toContain("services/wiki/search.js");
@@ -248,12 +249,12 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps show command adapters out of index storage mechanics", async () => {
-    const showCommand = await readSource("src/cli/commands/show/index.ts");
-    const showRender = await readSource("src/cli/commands/show/render.ts");
-    const showTypes = await readSource("src/cli/commands/show/types.ts");
+    const showCommand = await readSource("src/edges/cli/commands/show/index.ts");
+    const showRender = await readSource("src/edges/cli/commands/show/render.ts");
+    const showTypes = await readSource("src/edges/cli/commands/show/types.ts");
     const pageViewService = await readSource("src/services/wiki/page-view.ts");
 
-    expect(existsSync(join(ROOT, "src/cli/commands/show/render.ts"))).toBe(
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/show/render.ts"))).toBe(
       true,
     );
     expect(showCommand).toContain("services/wiki/page-view.js");
@@ -267,7 +268,7 @@ describe("architecture boundaries", () => {
     expect(showTypes).toContain("color?: boolean");
     expect(showRender).toContain("formatShowRecords");
     expect(showRender).not.toContain("ansi");
-    const showFormat = await readSource("src/cli/commands/show/format.ts");
+    const showFormat = await readSource("src/edges/cli/commands/show/format.ts");
     expect(showFormat).toContain("../../../shared/ansi-theme.js");
     expect(showFormat).not.toContain("../../../ansi.js");
     expect(showFormat).toContain("makeAnsiTheme(options.color === true)");
@@ -278,11 +279,11 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps health command adapters out of index storage mechanics", async () => {
-    const healthCommand = await readSource("src/cli/commands/health/index.ts");
-    const healthRender = await readSource("src/cli/commands/health/render.ts");
+    const healthCommand = await readSource("src/edges/cli/commands/health/index.ts");
+    const healthRender = await readSource("src/edges/cli/commands/health/render.ts");
     const healthService = await readSource("src/services/wiki/health.ts");
 
-    expect(existsSync(join(ROOT, "src/cli/commands/health/render.ts"))).toBe(
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/health/render.ts"))).toBe(
       true,
     );
     expect(healthCommand).toContain("services/wiki/health.js");
@@ -320,11 +321,11 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps reindex command adapters out of index storage mechanics", async () => {
-    const reindexCommand = await readSource("src/cli/commands/reindex.ts");
-    const reindexRender = await readSource("src/cli/commands/reindex-render.ts");
+    const reindexCommand = await readSource("src/edges/cli/commands/reindex.ts");
+    const reindexRender = await readSource("src/edges/cli/commands/reindex-render.ts");
     const reindexService = await readSource("src/services/wiki/reindex.ts");
 
-    expect(existsSync(join(ROOT, "src/cli/commands/reindex-render.ts"))).toBe(
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/reindex-render.ts"))).toBe(
       true,
     );
     expect(reindexCommand).toContain("services/wiki/reindex.js");
@@ -361,8 +362,8 @@ describe("architecture boundaries", () => {
       "src/edges/cli/register-serve-command.ts",
     );
 
-    expect(existsSync(join(ROOT, "src/cli/commands/serve.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/serve-render.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/serve.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/serve-render.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/edges/cli/serve.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/cli/serve-render.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/cli/register-serve-command.ts")))
@@ -411,8 +412,8 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps list command adapters out of registry storage mechanics", async () => {
-    const listCommand = await readSource("src/cli/commands/list.ts");
-    const listRender = await readSource("src/cli/commands/list-render.ts");
+    const listCommand = await readSource("src/edges/cli/commands/list.ts");
+    const listRender = await readSource("src/edges/cli/commands/list-render.ts");
     const registerQuery = await readSource(
       "src/edges/cli/register-query-commands.ts",
     );
@@ -422,7 +423,7 @@ describe("architecture boundaries", () => {
     const registryService = await readSource("src/services/wiki/registry.ts");
     const registryStore = await readSource("src/stores/wiki-registry/store.ts");
 
-    expect(existsSync(join(ROOT, "src/cli/commands/list-render.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/list-render.ts"))).toBe(true);
     expect(listCommand).toContain("services/wiki/registry.js");
     expect(listCommand).toContain("./list-render.js");
     expect(listCommand).not.toContain("../../stores/wiki/registry");
@@ -457,13 +458,13 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps topic read command adapters out of index storage mechanics", async () => {
-    const topicsListCommand = await readSource("src/cli/commands/topics/list.ts");
-    const topicsShowCommand = await readSource("src/cli/commands/topics/show.ts");
+    const topicsListCommand = await readSource("src/edges/cli/commands/topics/list.ts");
+    const topicsShowCommand = await readSource("src/edges/cli/commands/topics/show.ts");
     const topicsReadRender = await readSource(
-      "src/cli/commands/topics/read-render.ts",
+      "src/edges/cli/commands/topics/read-render.ts",
     );
     const topicsCommandTypes = await readSource(
-      "src/cli/commands/topics/types.ts",
+      "src/edges/cli/commands/topics/types.ts",
     );
     const registerTopics = await readSource(
       "src/edges/cli/register-topics-commands.ts",
@@ -547,10 +548,10 @@ describe("architecture boundaries", () => {
 
   it("keeps topic command option contracts explicit per verb", async () => {
     const topicCommandTypes = await readSource(
-      "src/cli/commands/topics/types.ts",
+      "src/edges/cli/commands/topics/types.ts",
     );
     const topicCommandIndex = await readSource(
-      "src/cli/commands/topics/index.ts",
+      "src/edges/cli/commands/topics/index.ts",
     );
 
     expect(topicCommandTypes).not.toContain("TopicsBaseOptions");
@@ -562,14 +563,14 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps service-backed topic mutation adapters out of write mechanics", async () => {
-    const createCommand = await readSource("src/cli/commands/topics/create.ts");
-    const deleteCommand = await readSource("src/cli/commands/topics/delete.ts");
-    const describeCommand = await readSource("src/cli/commands/topics/describe.ts");
-    const linkCommand = await readSource("src/cli/commands/topics/link.ts");
-    const renameCommand = await readSource("src/cli/commands/topics/rename.ts");
-    const unlinkCommand = await readSource("src/cli/commands/topics/unlink.ts");
+    const createCommand = await readSource("src/edges/cli/commands/topics/create.ts");
+    const deleteCommand = await readSource("src/edges/cli/commands/topics/delete.ts");
+    const describeCommand = await readSource("src/edges/cli/commands/topics/describe.ts");
+    const linkCommand = await readSource("src/edges/cli/commands/topics/link.ts");
+    const renameCommand = await readSource("src/edges/cli/commands/topics/rename.ts");
+    const unlinkCommand = await readSource("src/edges/cli/commands/topics/unlink.ts");
     const mutationRender = await readSource(
-      "src/cli/commands/topics/mutation-render.ts",
+      "src/edges/cli/commands/topics/mutation-render.ts",
     );
     const topicPageMutations = await readSource(
       "src/services/wiki/topic-page-mutations.ts",
@@ -613,8 +614,8 @@ describe("architecture boundaries", () => {
     expect(mutationRender).toContain("renderTopicsLink");
     expect(mutationRender).toContain("renderTopicsRename");
     expect(mutationRender).toContain("renderTopicsUnlink");
-    expect(existsSync(join(ROOT, "src/cli/commands/topics/workspace.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/topics/page-rewrite.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/topics/workspace.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/topics/page-rewrite.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/services/wiki/topic-page-rewrite.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/stores/wiki/topics/page-rewrite.ts"))).toBe(true);
     expect(topicPageMutations).toContain("stores/wiki/topics/page-rewrite.js");
@@ -623,8 +624,8 @@ describe("architecture boundaries", () => {
     expect(topicPageRewrite).toContain("fast-glob");
     expect(topicPageRewrite).toContain("readFile");
     expect(existsSync(join(ROOT, "src/services/wiki/topic-mutations.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/topics/read.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/topics/render.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/topics/read.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/topics/render.ts"))).toBe(false);
   });
 
   it("keeps topic frontmatter block splitting separate from topic rewrites", async () => {
@@ -651,13 +652,13 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps tag command adapters out of page topic write mechanics", async () => {
-    const tagCommand = await readSource("src/cli/commands/tag.ts");
-    const tagRender = await readSource("src/cli/commands/tag-render.ts");
+    const tagCommand = await readSource("src/edges/cli/commands/tag.ts");
+    const tagRender = await readSource("src/edges/cli/commands/tag-render.ts");
     const pageTopicService = await readSource(
       "src/services/wiki/page-topic-mutations.ts",
     );
 
-    expect(existsSync(join(ROOT, "src/cli/commands/tag-render.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/tag-render.ts"))).toBe(true);
     expect(tagCommand).toContain("services/wiki/page-topic-mutations.js");
     expect(tagCommand).not.toContain("stores/wiki/indexer");
     expect(tagCommand).not.toContain("stores/wiki/topics");
@@ -681,8 +682,8 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps review command adapters out of review store mechanics", async () => {
-    const reviewCommand = await readSource("src/cli/commands/review.ts");
-    const reviewRender = await readSource("src/cli/commands/review-render.ts");
+    const reviewCommand = await readSource("src/edges/cli/commands/review.ts");
+    const reviewRender = await readSource("src/edges/cli/commands/review-render.ts");
     const reviewService = await readSource("src/services/wiki/reviews.ts");
     const reviewTypes = await readSource("src/services/wiki/review-types.ts");
     const reviewWorkspace = await readSource(
@@ -704,7 +705,7 @@ describe("architecture boundaries", () => {
       "src/edges/cli/review-markdown-input.ts",
     );
 
-    expect(existsSync(join(ROOT, "src/cli/commands/review-render.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/review-render.ts"))).toBe(true);
     expect(reviewRegistration).toContain("registerReviewAddCommand(review)");
     expect(reviewRegistration).toContain("registerReviewReadCommands(review)");
     expect(reviewRegistration).toContain("registerReviewDecisionCommands(review)");
@@ -797,10 +798,10 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps the sync command owning its command contract", async () => {
-    const syncCommand = await readSource("src/cli/commands/sync.ts");
-    const syncRender = await readSource("src/cli/commands/sync-render.ts");
+    const syncCommand = await readSource("src/edges/cli/commands/sync.ts");
+    const syncRender = await readSource("src/edges/cli/commands/sync-render.ts");
 
-    expect(existsSync(join(ROOT, "src/cli/commands/sync-render.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/sync-render.ts"))).toBe(true);
     expect(syncCommand).not.toContain("import type { CommandResult }");
     expect(syncCommand).not.toContain("extends SyncWorkflowOptions");
     expect(syncCommand).toContain("homeDir: string");
@@ -818,8 +819,8 @@ describe("architecture boundaries", () => {
     const jobsServiceTypes = await readSource("src/services/jobs/types.ts");
     const jobsService = await readSource("src/services/jobs/jobs.ts");
     const jobsServiceView = await readSource("src/services/jobs/view.ts");
-    const jobsCommand = await readSource("src/cli/commands/jobs.ts");
-    const jobsRender = await readSource("src/cli/commands/jobs-render.ts");
+    const jobsCommand = await readSource("src/edges/cli/commands/jobs.ts");
+    const jobsRender = await readSource("src/edges/cli/commands/jobs-render.ts");
     const jobsRegistration = await readSource(
       "src/edges/cli/register-jobs-commands.ts",
     );
@@ -833,8 +834,8 @@ describe("architecture boundaries", () => {
       "src/edges/cli/register-job-cancel-command.ts",
     );
 
-    expect(existsSync(join(ROOT, "src/cli/commands/jobs-format.ts"))).toBe(true);
-    expect(existsSync(join(ROOT, "src/cli/commands/jobs-render.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/jobs-format.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/jobs-render.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/jobs/view.ts"))).toBe(true);
     expect(jobsServiceIndex).not.toContain("../../jobs");
     expect(jobsServiceIndex).not.toContain("./runtime/index.js");
@@ -1208,10 +1209,10 @@ describe("architecture boundaries", () => {
     const uninstallEdge = await readSource("src/edges/cli/uninstall.ts");
     const launchdAutomationScheduler = await readSource("src/platform/automation/scheduler.ts");
     const automationPaths = await readSource("src/platform/automation/paths.ts");
-    const automationCommand = await readSource("src/cli/commands/automation.ts");
-    const automationRender = await readSource("src/cli/commands/automation-render.ts");
+    const automationCommand = await readSource("src/edges/cli/commands/automation.ts");
+    const automationRender = await readSource("src/edges/cli/commands/automation-render.ts");
 
-    expect(existsSync(join(ROOT, "src/cli/commands/automation-render.ts"))).toBe(
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/automation-render.ts"))).toBe(
       true,
     );
     expect(automationServiceIndex).not.toContain("platform/automation");
@@ -1321,8 +1322,8 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps update command adapters out of update workflow mechanics", async () => {
-    const updateCommand = await readSource("src/cli/commands/update.ts");
-    const updateRender = await readSource("src/cli/commands/update-render.ts");
+    const updateCommand = await readSource("src/edges/cli/commands/update.ts");
+    const updateRender = await readSource("src/edges/cli/commands/update-render.ts");
     const updateServiceIndex = await readSource("src/services/update/index.ts");
     const updateService = await readSource("src/services/update/update.ts");
     const updateServiceCheck = await readSource("src/services/update/check.ts");
@@ -1341,7 +1342,7 @@ describe("architecture boundaries", () => {
     const updateLockStore = await readSource("src/stores/update/lock.ts");
     const updateRegistration = await readSource("src/edges/cli/register-update-command.ts");
 
-    expect(existsSync(join(ROOT, "src/cli/commands/update-render.ts"))).toBe(
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/update-render.ts"))).toBe(
       true,
     );
     expect(existsSync(join(ROOT, "src/stores/update/state.ts"))).toBe(true);
@@ -1453,14 +1454,14 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps config command adapters out of config persistence mechanics", async () => {
-    const configCommand = await readSource("src/cli/commands/config.ts");
-    const configRender = await readSource("src/cli/commands/config-render.ts");
+    const configCommand = await readSource("src/edges/cli/commands/config.ts");
+    const configRender = await readSource("src/edges/cli/commands/config-render.ts");
     const configStore = await readSource("src/stores/config/store.ts");
     const configPatch = await readSource("src/stores/config/stored-patch.ts");
     const configIndex = await readSource("src/stores/config/index.ts");
 
     expect(existsSync(join(ROOT, "src/config"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/config-render.ts"))).toBe(
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/config-render.ts"))).toBe(
       true,
     );
     expect(existsSync(join(ROOT, "src/stores/config/stored-patch.ts"))).toBe(true);
@@ -1494,7 +1495,7 @@ describe("architecture boundaries", () => {
     expect(configRender).toContain("formatTextTable");
     expect(configRender).toContain("renderConfigList");
     expect(configRender).toContain("renderConfigSet");
-    expect(existsSync(join(ROOT, "src/cli/commands/config-keys.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/config-keys.ts"))).toBe(false);
     expect(configStore).not.toContain("function toStoredConfigPatch");
     expect(configStore).not.toContain("function setStoredValue");
     expect(configStore).not.toContain("function pruneEmptyObjects");
@@ -1508,8 +1509,8 @@ describe("architecture boundaries", () => {
   it("keeps agents command adapters out of readiness and config mechanics", async () => {
     const agentsServiceIndex = await readSource("src/services/agents/index.ts");
     const agentsService = await readSource("src/services/agents/agents.ts");
-    const agentsCommand = await readSource("src/cli/commands/agents.ts");
-    const agentsRender = await readSource("src/cli/commands/agents-render.ts");
+    const agentsCommand = await readSource("src/edges/cli/commands/agents.ts");
+    const agentsRender = await readSource("src/edges/cli/commands/agents-render.ts");
 
     expect(agentsServiceIndex).not.toContain("../../agent/");
     expect(agentsServiceIndex).not.toContain("../../config/");
@@ -1630,7 +1631,7 @@ describe("architecture boundaries", () => {
       readSource("src/edges/cli/setup/setup-plan.ts"),
     ]);
 
-    expect(existsSync(join(ROOT, "src/cli/commands/setup"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/setup"))).toBe(false);
     expect(existsSync(join(ROOT, "src/edges/cli/setup"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/cli/setup/input.ts"))).toBe(true);
     expect(setupInput).not.toContain("process.stdin");
@@ -1915,8 +1916,8 @@ describe("architecture boundaries", () => {
     );
 
     expect(existsSync(join(ROOT, "src/services/setup/uninstall.ts"))).toBe(true);
-    expect(existsSync(join(ROOT, "src/cli/commands/uninstall.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/uninstall-render.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/uninstall.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/uninstall-render.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/edges/cli/uninstall.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/cli/uninstall-render.ts"))).toBe(
       true,
@@ -1991,7 +1992,7 @@ describe("architecture boundaries", () => {
     const transcriptDiscovery = await readSource("src/platform/transcripts/index.ts");
     const transcriptRuntime = await readSource("src/platform/transcripts/runtime.ts");
     const sharedTranscripts = await readSource("src/shared/transcripts.ts");
-    const syncCommand = await readSource("src/cli/commands/sync.ts");
+    const syncCommand = await readSource("src/edges/cli/commands/sync.ts");
     const syncRegistration = await readSource(
       "src/edges/cli/register-sync-commands.ts",
     );
@@ -2132,8 +2133,8 @@ describe("architecture boundaries", () => {
       "src/edges/cli/register-absorb-command.ts",
     );
     const syncService = await readSource("src/services/sync/sync.ts");
-    const operationsCommand = await readSource("src/cli/commands/operations.ts");
-    const operationsRender = await readSource("src/cli/commands/operations-render.ts");
+    const operationsCommand = await readSource("src/edges/cli/commands/operations.ts");
+    const operationsRender = await readSource("src/edges/cli/commands/operations-render.ts");
 
     expect(existsSync(join(ROOT, "src/services/lifecycle/operation-results.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/lifecycle/workflows.ts"))).toBe(true);
@@ -2542,8 +2543,8 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps migrate legacy-sources adapter out of source migration mechanics", async () => {
-    const migrateCommand = await readSource("src/cli/commands/migrate.ts");
-    const migrateRender = await readSource("src/cli/commands/migrate-render.ts");
+    const migrateCommand = await readSource("src/edges/cli/commands/migrate.ts");
+    const migrateRender = await readSource("src/edges/cli/commands/migrate-render.ts");
     const sourceMigrationService = await readSource(
       "src/services/wiki/source-migration.ts",
     );
@@ -2557,7 +2558,7 @@ describe("architecture boundaries", () => {
 
     expect(existsSync(join(ROOT, "src/stores/wiki/sources/frontmatter-fix.ts")))
       .toBe(true);
-    expect(existsSync(join(ROOT, "src/cli/commands/migrate-render.ts"))).toBe(
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/migrate-render.ts"))).toBe(
       true,
     );
     expect(migrateCommand).toContain("services/wiki/source-migration.js");
@@ -2592,7 +2593,7 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps automation command options owned by the command adapter", async () => {
-    const automationCommand = await readSource("src/cli/commands/automation.ts");
+    const automationCommand = await readSource("src/edges/cli/commands/automation.ts");
 
     expect(automationCommand).toContain("AutomationInstallCommandOptions");
     expect(automationCommand).toContain("cwd: string");
@@ -2657,9 +2658,9 @@ describe("architecture boundaries", () => {
   });
 
   it("keeps doctor diagnostics out of the CLI command package", async () => {
-    const doctorIndex = await readSource("src/cli/commands/doctor/index.ts");
-    const doctorRender = await readSource("src/cli/commands/doctor/render.ts");
-    const doctorFormat = await readSource("src/cli/commands/doctor/format.ts");
+    const doctorIndex = await readSource("src/edges/cli/commands/doctor/index.ts");
+    const doctorRender = await readSource("src/edges/cli/commands/doctor/render.ts");
+    const doctorFormat = await readSource("src/edges/cli/commands/doctor/format.ts");
     const doctorDiagnostics = await readSource("src/services/diagnostics/doctor.ts");
     const installDiagnostics = await readSource("src/services/diagnostics/install.ts");
     const platformAuthDiagnostics = await readSource(
@@ -2703,7 +2704,7 @@ describe("architecture boundaries", () => {
       "src/stores/wiki-files/absorb-logs.ts",
     );
 
-    expect(existsSync(join(ROOT, "src/cli/commands/doctor/render.ts"))).toBe(
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/doctor/render.ts"))).toBe(
       true,
     );
     expect(existsSync(join(ROOT, "src/services/diagnostics/probes.ts"))).toBe(
@@ -2849,13 +2850,13 @@ describe("architecture boundaries", () => {
     expect(doctorDiagnostics).toContain("../wiki/doctor.js");
     expect(existsSync(join(ROOT, "src/services/diagnostics/doctor.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/stores/wiki/indexer/diagnostics.ts"))).toBe(true);
-    expect(existsSync(join(ROOT, "src/cli/commands/doctor/install.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/doctor/agents.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/doctor/updates.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/doctor/probes.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/doctor/types.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/doctor/wiki.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/cli/commands/doctor/duration.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/doctor/install.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/doctor/agents.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/doctor/updates.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/doctor/probes.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/doctor/types.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/doctor/wiki.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/doctor/duration.ts"))).toBe(false);
 
     expect(doctorService).not.toContain("readdirSync");
     expect(doctorService).not.toContain("statSync");
