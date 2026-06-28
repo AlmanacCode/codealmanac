@@ -25,6 +25,7 @@ import {
 } from "./claude/events.js";
 import { classifyClaudeFailure } from "./claude/failures.js";
 import { buildClaudeOptions } from "./claude/options.js";
+import { installClaudeAbortSignalHandlers } from "./claude/process.js";
 import type { ClaudeQueryFn, ClaudeTraceState } from "./claude/types.js";
 import { mapClaudeUsage } from "./claude/usage.js";
 
@@ -78,7 +79,7 @@ async function runClaudeAgentRuntime(
   environment: NodeJS.ProcessEnv,
 ): Promise<AgentRuntimeResult> {
   const abortController = new AbortController();
-  const removeSignalHandlers = installAbortSignalHandlers(abortController);
+  const removeSignalHandlers = installClaudeAbortSignalHandlers(abortController);
   const options = {
     ...buildClaudeOptions(spec, resolveExecutable, environment),
     abortController,
@@ -195,19 +196,5 @@ async function runClaudeAgentRuntime(
     output,
     error,
     failure,
-  };
-}
-
-function installAbortSignalHandlers(abortController: AbortController): () => void {
-  const abort = () => {
-    if (!abortController.signal.aborted) abortController.abort();
-  };
-  process.once("SIGINT", abort);
-  process.once("SIGTERM", abort);
-  process.once("SIGHUP", abort);
-  return () => {
-    process.off("SIGINT", abort);
-    process.off("SIGTERM", abort);
-    process.off("SIGHUP", abort);
   };
 }

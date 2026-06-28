@@ -151,6 +151,8 @@ Foreground and queued job execution services own job records, logs, locks, wiki 
 
 Provider ids and static provider definitions live in `src/shared/agent-provider.ts` because config stores, job stores, lifecycle operations, readiness, and provider adapters all need the same id vocabulary. Provider-neutral runtime facts live in `src/shared/agent-runtime/`: normalized events, usage, failures, final-output specs/results, runtime hooks, and tool requests. Concrete provider execution remains under `src/agent/runtime/`, where provider adapters translate `OperationSpec` into Claude/Codex mechanics and emit the shared contracts.
 
+Claude SDK runtime has separate provider-local owners. `src/agent/runtime/providers/claude.ts` coordinates provider status and run result projection. `src/agent/runtime/providers/claude/options.ts` maps `OperationSpec` into Claude SDK options. `src/agent/runtime/providers/claude/process.ts` owns managed child-process spawning and signal-to-abort registration because those mechanics change with Claude SDK process behavior, not with option mapping or result projection.
+
 ### Provider readiness uses an app-composed runtime
 
 Provider readiness status and provider-specific model catalogs are concrete provider facts. Services can decide how those facts become setup, agents, or doctor read models, but they should not import the provider readiness registry directly. `src/shared/agent-readiness.ts` defines the provider readiness/model-choice runtime contract. `src/app/agent-readiness-runtime.ts` wires that contract to `src/agent/readiness/providers/`. CLI setup, agents, and doctor edges pass the concrete runtime into services so app composition is the visible provider wiring point.

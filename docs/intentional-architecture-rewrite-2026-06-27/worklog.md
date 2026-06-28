@@ -1670,3 +1670,11 @@ Two-hundred-thirty-seventh production slice:
 - Moved terminal run-state mutation and provider failure classification out of `app-notifications.ts`.
 - Kept `src/agent/runtime/providers/codex/app-notifications.ts` as the protocol notification router.
 - Strengthened architecture-boundary tests so generic notification routing does not regain failure classification or terminal success/failure mutation.
+
+Two-hundred-thirty-eighth production slice:
+
+- Added `src/agent/runtime/providers/claude/process.ts` for Claude SDK managed child-process spawning and signal-to-abort registration.
+- Moved `spawnManagedChildProcess` usage out of `src/agent/runtime/providers/claude/options.ts`.
+- Moved inline process signal registration out of `src/agent/runtime/providers/claude.ts`.
+- Kept `claude.ts` as the runtime coordinator and `claude/options.ts` as the `OperationSpec` to Claude SDK option mapper.
+- Strengthened architecture-boundary tests so Claude option mapping does not regain managed child-process mechanics and the runtime coordinator does not regain raw signal handling.

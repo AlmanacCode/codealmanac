@@ -2237,18 +2237,32 @@ describe("architecture boundaries", () => {
     const claudeOptions = await readSource(
       "src/agent/runtime/providers/claude/options.ts",
     );
+    const claudeProcess = await readSource(
+      "src/agent/runtime/providers/claude/process.ts",
+    );
 
     expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/options.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/events.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/failures.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/process.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/agent/runtime/providers/claude/usage.ts"))).toBe(true);
     expect(claudeProvider).not.toContain("spawnManagedChildProcess");
+    expect(claudeProvider).not.toContain("process.once");
+    expect(claudeProvider).not.toContain("process.off");
+    expect(claudeProvider).not.toContain("function installAbortSignalHandlers");
+    expect(claudeProvider).toContain("installClaudeAbortSignalHandlers");
     expect(claudeProvider).not.toContain("function buildClaudeOptions");
     expect(claudeProvider).not.toContain("function toClaudeAgentRuntimeEvents");
     expect(claudeProvider).not.toContain("function classifyClaudeFailure");
     expect(claudeProvider).not.toContain("function mapClaudeUsage");
+    expect(claudeOptions).not.toContain("spawnManagedChildProcess");
+    expect(claudeOptions).not.toContain("managed.attachAbort");
     expect(claudeOptions).not.toContain("process.env");
     expect(claudeOptions).toContain("environment: NodeJS.ProcessEnv");
+    expect(claudeOptions).toContain("spawnClaudeCodeProcessGroup");
+    expect(claudeProcess).toContain("spawnManagedChildProcess");
+    expect(claudeProcess).toContain("managed.attachAbort");
+    expect(claudeProcess).toContain("process.once");
   });
 
   it("keeps agent runtime provider runtime environment explicit", async () => {

@@ -5,9 +5,9 @@ import type {
 
 import type { OperationAgentSpec, OperationSpec } from "../../../../shared/operation-spec.js";
 import type { FinalOutputSpec } from "../../../../shared/agent-runtime/final-output.js";
-import { spawnManagedChildProcess } from "../../../../platform/managed-child.js";
 import type { ToolRequest } from "../../../../shared/agent-runtime/tools.js";
 import { AGENT_RUNTIME_PROVIDER_METADATA } from "../metadata.js";
+import { spawnClaudeCodeProcessGroup } from "./process.js";
 
 export function buildClaudeOptions(
   spec: OperationSpec,
@@ -59,44 +59,6 @@ function claudeOutputFormat(
   return {
     type: "json_schema",
     schema: output.schema as Record<string, unknown>,
-  };
-}
-
-function spawnClaudeCodeProcessGroup(
-  options: Parameters<NonNullable<ClaudeOptions["spawnClaudeCodeProcess"]>>[0],
-): ReturnType<NonNullable<ClaudeOptions["spawnClaudeCodeProcess"]>> {
-  const managed = spawnManagedChildProcess(options.command, options.args, {
-    cwd: options.cwd,
-    env: options.env,
-    stdio: ["pipe", "pipe", "ignore"],
-  });
-  const child = managed.child;
-  managed.attachAbort(options.signal);
-  if (child.stdin === null || child.stdout === null) {
-    throw new Error("Claude managed process spawn did not create stdio pipes");
-  }
-  return {
-    stdin: child.stdin,
-    stdout: child.stdout,
-    get killed() {
-      return child.killed;
-    },
-    get exitCode() {
-      return child.exitCode;
-    },
-    kill: (signal) => {
-      void managed.terminate({ signal }).catch(() => undefined);
-      return true;
-    },
-    on: (event, listener) => {
-      child.on(event, listener);
-    },
-    once: (event, listener) => {
-      child.once(event, listener);
-    },
-    off: (event, listener) => {
-      child.off(event, listener);
-    },
   };
 }
 
