@@ -37,12 +37,7 @@ export interface IndexResult {
    * way through to the index. Skipped files (slug collisions, unreadable,
    * un-sluggable filenames) are NOT counted here. Use `filesSeen` for the
    * raw count of `.md` files encountered on disk.
-   *
-   * Alias retained for backwards-compat with existing tests/consumers; new
-   * code should prefer `pagesIndexed` for clarity.
    */
-  total: number;
-  /** Pages that made it into the index. Same number as `total`. */
   pagesIndexed: number;
   /**
    * Count of `.md` files found under `pages/` before any filtering. Always
@@ -109,7 +104,6 @@ function emptyResult(): IndexResult {
   return {
     changed: 0,
     removed: 0,
-    total: 0,
     pagesIndexed: 0,
     filesSeen: 0,
     filesSkipped: 0,
@@ -183,7 +177,6 @@ async function indexPagesInto(
   return {
     changed: plan.planned.length,
     removed: plan.toDelete.length,
-    total: plan.pagesIndexed,
     pagesIndexed: plan.pagesIndexed,
     filesSeen: plan.filesSeen,
     filesSkipped: plan.filesSkipped,

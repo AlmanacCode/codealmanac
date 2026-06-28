@@ -1,7 +1,6 @@
 export interface ReindexSummary {
   changed: number;
   removed: number;
-  total: number;
   pagesIndexed: number;
   filesSeen: number;
   filesSkipped: number;

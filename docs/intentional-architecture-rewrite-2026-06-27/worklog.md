@@ -1817,3 +1817,10 @@ Two-hundred-fifty-sixth production slice:
 - Added `src/app/diagnostic-auth.ts` as the app-composition adapter from provider-owned `checkClaudeAuth()` to doctor auth facts.
 - Updated doctor runtime composition to call `readDiagnosticClaudeAuth()` alongside platform install, automation, guide, and instruction probes.
 - Strengthened architecture-boundary tests so provider auth diagnostic wiring stays in `src/app/` and does not return to `src/platform/diagnostics/`.
+
+Two-hundred-fifty-seventh production slice:
+
+- Removed the stale `total` compatibility alias from the wiki indexer `IndexResult` contract.
+- Kept `pagesIndexed` as the single indexed-page count through the indexer store, wiki reindex service, CLI reindex adapter, and reindex renderer.
+- Updated indexer tests to assert the current result name instead of the old compatibility field.
+- Strengthened architecture-boundary tests so the reindex service and command adapter do not reintroduce `total:` as a parallel result field.

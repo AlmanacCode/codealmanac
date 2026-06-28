@@ -53,7 +53,7 @@ The handler at [[src/checkout/handler.ts]] validates things. See
 
       const result = await runIndexer({ repoRoot: repo });
       expect(result.changed).toBe(1);
-      expect(result.total).toBe(1);
+      expect(result.pagesIndexed).toBe(1);
       expect(result.removed).toBe(0);
 
       const db = openIndex(join(repo, ".almanac", "index.db"));
@@ -114,7 +114,7 @@ The handler at [[src/checkout/handler.ts]] validates things. See
       // (counted as not-changed).
       const second = await runIndexer({ repoRoot: repo });
       expect(second.changed).toBe(0);
-      expect(second.total).toBe(2);
+      expect(second.pagesIndexed).toBe(2);
     });
   });
 
@@ -130,7 +130,7 @@ The handler at [[src/checkout/handler.ts]] validates things. See
 
       const result = await runIndexer({ repoRoot: repo });
       expect(result.changed).toBe(2); // a modified + b new
-      expect(result.total).toBe(2);
+      expect(result.pagesIndexed).toBe(2);
       expect(result.removed).toBe(0);
     });
   });
@@ -146,7 +146,7 @@ The handler at [[src/checkout/handler.ts]] validates things. See
       await rm(join(repo, ".almanac", "pages", "b.md"));
       const result = await runIndexer({ repoRoot: repo });
       expect(result.removed).toBe(1);
-      expect(result.total).toBe(1);
+      expect(result.pagesIndexed).toBe(1);
 
       const db = openIndex(join(repo, ".almanac", "index.db"));
       try {

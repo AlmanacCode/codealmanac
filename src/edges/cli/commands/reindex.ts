@@ -20,7 +20,6 @@ export interface ReindexOptions {
 export interface ReindexResult {
   changed: number;
   removed: number;
-  total: number;
   pagesIndexed: number;
   filesSeen: number;
   filesSkipped: number;
@@ -56,7 +55,6 @@ function reindexResultFromWikiService(result: ReindexWikiResult): ReindexResult 
   return {
     changed: result.changed,
     removed: result.removed,
-    total: result.total,
     pagesIndexed: result.pagesIndexed,
     filesSeen: result.filesSeen,
     filesSkipped: result.filesSkipped,

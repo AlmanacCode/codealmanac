@@ -339,10 +339,12 @@ describe("architecture boundaries", () => {
       "ReindexOptions = ReindexWikiRequest",
     );
     expect(reindexCommand).not.toContain("result: ReindexWikiResult;");
+    expect(reindexCommand).not.toContain("total:");
     expect(reindexRender).toContain("reindexed:");
     expect(reindexRender).not.toContain("services/wiki/reindex.js");
     expect(reindexRender).not.toContain("stores/wiki/indexer");
     expect(reindexService).not.toContain("export type ReindexWikiResult = IndexResult");
+    expect(reindexService).not.toContain("total:");
   });
 
   it("keeps serve startup rendering out of server lifetime control", async () => {
