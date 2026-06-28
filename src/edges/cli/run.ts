@@ -15,7 +15,10 @@ import {
 import { runCodealmanacBootstrap } from "../../platform/install/global.js";
 import { isLocalPidAlive } from "../../platform/process.js";
 import type { runDoctor } from "./commands/doctor/index.js";
-import { runInternalUpdateCheck } from "../../app/update-runtime.js";
+import {
+  createUpdateRuntime,
+  runInternalUpdateCheck,
+} from "../../app/update-runtime.js";
 import { announceUpdateIfAvailable } from "./update-announcement.js";
 import { scheduleBackgroundUpdateCheck } from "./update-check-scheduler.js";
 
@@ -48,7 +51,7 @@ export { parseAutomationInstallFlags, tryParseSetupShortcut };
  * `src/edges/cli/register-commands.ts`.
  */
 export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
-  const announceUpdateFn = deps.announceUpdate ?? announceUpdateIfAvailable;
+  const announceUpdateFn = deps.announceUpdate ?? announceUpdateFromRuntime;
   const scheduleUpdateCheckFn =
     deps.scheduleUpdateCheck ?? scheduleBackgroundUpdateCheck;
   const runInternalUpdateCheckFn =
@@ -101,6 +104,13 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<void> {
   } catch (err: unknown) {
     emit(renderError(err, { json: argv.slice(2).includes("--json") }));
   }
+}
+
+function announceUpdateFromRuntime(stderr: NodeJS.WritableStream): void {
+  const runtime = createUpdateRuntime();
+  announceUpdateIfAvailable(stderr, {
+    installedVersion: runtime.readInstalledVersion(),
+  });
 }
 
 async function tryRunInternalJob(args: string[]): Promise<boolean> {

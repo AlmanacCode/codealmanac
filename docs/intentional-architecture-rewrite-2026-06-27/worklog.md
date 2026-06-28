@@ -1752,3 +1752,10 @@ Two-hundred-forty-seventh production slice:
 - Added service-owned prompt eligibility helpers for CLI auto-update, self-managed automation, and auto-commit setup prompts.
 - Added service-owned setup plan resolution so skip flags, explicit automation flags, agent/model flags, and interactive answers become one typed plan outside the edge.
 - Strengthened setup plan tests and architecture-boundary tests so setup policy stays in services while terminal prompting stays in the CLI edge.
+
+Two-hundred-forty-eighth production slice:
+
+- Removed the direct `src/platform/update/version.ts` import from `src/edges/cli/update-announcement.ts`.
+- Made the update banner renderer require a supplied installed version, so it only renders over service-owned announcement facts.
+- Moved production installed-version wiring into `src/edges/cli/run.ts` through `createUpdateRuntime()`.
+- Strengthened update boundary tests so the update announcement edge cannot regain platform update mechanics.

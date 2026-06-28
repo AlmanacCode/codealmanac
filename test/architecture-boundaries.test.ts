@@ -1474,6 +1474,9 @@ describe("architecture boundaries", () => {
     expect(updateCheck).not.toContain("services/update");
     expect(updateAnnounce).toContain("readUpdateAnnouncement");
     expect(updateAnnounce).toContain("makeAnsiTheme");
+    expect(updateAnnounce).toContain("installedVersion: string");
+    expect(updateAnnounce).not.toContain("platform/update");
+    expect(updateAnnounce).not.toContain("readInstalledVersion");
     expect(updateAnnounce).not.toContain("stores/update");
     expect(updateAnnounce).not.toContain("stores/config");
     expect(updateNotifierWorker).toContain("spawnBackgroundUpdateCheck");

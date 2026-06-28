@@ -1,22 +1,21 @@
 import { makeAnsiTheme } from "../../shared/ansi-theme.js";
 import { readUpdateAnnouncement } from "../../services/update/index.js";
-import { readInstalledVersion } from "../../platform/update/version.js";
 
 export interface AnnounceUpdateOptions {
   statePath?: string;
   configPath?: string;
-  installedVersion?: string;
+  installedVersion: string;
   color?: boolean;
 }
 
 export function announceUpdateIfAvailable(
   stderr: NodeJS.WritableStream,
-  opts: AnnounceUpdateOptions = {},
+  opts: AnnounceUpdateOptions,
 ): void {
   const announcement = readUpdateAnnouncement({
     statePath: opts.statePath,
     configPath: opts.configPath,
-    installedVersion: opts.installedVersion ?? readInstalledVersion(),
+    installedVersion: opts.installedVersion,
   });
   if (announcement === null) return;
 

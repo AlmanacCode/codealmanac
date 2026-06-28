@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 247 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 248 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -74,6 +74,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved update registry/version/install mechanics behind a service-owned `UpdateRuntime` contract, with the real runtime composed in the CLI edge.
 - Moved update check/cache workflow into `src/services/update/check.ts`, registry fetch mechanics into `src/platform/update/check.ts`, and concrete runtime composition into `src/app/update-runtime.ts`.
 - Moved update notifier/banner eligibility into `src/services/update/notifier.ts`, CLI banner rendering into `src/edges/cli/update-announcement.ts`, and detached update-check process spawning into `src/platform/update/notifier-worker.ts`.
+- Removed the update banner edge's direct platform version read; run-level CLI composition now supplies the installed version from `createUpdateRuntime()`.
 - Moved update diagnostic status reads into `src/services/diagnostics/update-status.ts`, leaving platform diagnostics for external/auth/install/automation probes.
 - Moved GitHub source resolution mechanics into `src/platform/github/`.
 - Moved Absorb source resolver composition into `src/platform/sources/absorb.ts` and the CLI edge, so lifecycle Absorb services no longer import platform GitHub mechanics.
@@ -123,12 +124,12 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved setup plan policy out of the CLI edge. `src/services/setup/setup-plan.ts` now owns setup defaults, prompt eligibility, and flag/answer-to-plan resolution, while `src/edges/cli/setup/setup-plan.ts` only collects instruction targets and terminal answers before calling the service policy.
+The latest slice removed direct platform version probing from the update banner renderer. `src/edges/cli/update-announcement.ts` now only renders over a supplied installed version and service-owned announcement facts, while `src/edges/cli/run.ts` composes `createUpdateRuntime()` as the production source of the installed package version.
 
 Verification passed:
 
 - `npm run lint`
-- `npx vitest run test/setup-plan.test.ts test/setup.test.ts test/architecture-boundaries.test.ts`
+- `npx vitest run test/update-announce.test.ts test/update.test.ts test/cli.test.ts test/architecture-boundaries.test.ts`
 - `git diff --check`
 - `npm test`
 - `npm run build`
@@ -139,7 +140,7 @@ Verification passed:
 Previous full-slice verification also passed:
 
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/jobs-command.test.ts test/jobs-records.test.ts test/jobs-worker.test.ts`
+- `npx vitest run test/setup-plan.test.ts test/setup.test.ts test/architecture-boundaries.test.ts`
 - `git diff --check`
 - `npm test`
 - `npm run build`

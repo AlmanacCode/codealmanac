@@ -129,11 +129,11 @@ The CLI edge owns discovering the current Node command and entrypoint. Lifecycle
 
 ### Update services consume runtime contracts
 
-The update service owns update workflow policy: check latest, honor dismissals, acquire the update lock, decide whether installation should run, refresh state after success, and return a user-facing result. It talks to an injected `UpdateRuntime` contract from `src/services/update/types.ts`. `src/platform/update/runtime.ts` implements that contract by composing installed package-version reads, npm registry checks, and package installation. The platform update install module owns npm mechanics: command, arguments, child-process spawn options, missing-npm handling, and install-failure hints. CLI edges create the platform runtime because they are the concrete composition points for command execution.
+The update service owns update workflow policy: check latest, honor dismissals, acquire the update lock, decide whether installation should run, refresh state after success, and return a user-facing result. It talks to an injected `UpdateRuntime` contract from `src/services/update/types.ts`. `src/app/update-runtime.ts` composes installed package-version reads, npm registry checks, and package installation into that runtime. The platform update install module owns npm mechanics: command, arguments, child-process spawn options, missing-npm handling, and install-failure hints. CLI edges create the app runtime because they are the concrete composition points for command execution.
 
 ### Update state and locks are stores
 
-`~/.almanac/update-state.json` and `.update-install.lock` are local persistence mechanics, so they live under `src/stores/update/`. Platform update modules still own registry fetches, npm installation, version lookup, notifier spawning, and pre-command announcement behavior, but they call the update store for state and lock mechanics. The update lock store accepts an explicit `pid` because edges own process facts.
+`~/.almanac/update-state.json` and `.update-install.lock` are local persistence mechanics, so they live under `src/stores/update/`. Platform update modules own registry fetches, npm installation, version lookup, and notifier spawning, but they call the update store for state and lock mechanics. Update banner rendering is a CLI edge concern over a supplied installed version and service-owned announcement state; run-level CLI composition supplies that installed version from `createUpdateRuntime()`. The update lock store accepts an explicit `pid` because edges own process facts.
 
 ### Transcript contracts are shared; transcript file mechanics are platform
 
