@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 250 committed rewrite commits past `dev`. The worklog records 211 production slices so far.
+The branch has more than 250 committed rewrite commits past `dev`. The worklog records 212 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -53,6 +53,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved update state and install-lock persistence into `src/stores/update/`; platform update modules now own registry/npm/version behavior, not JSON state-file mechanics.
 - Moved update registry/version/install mechanics behind a service-owned `UpdateRuntime` contract, with the real runtime composed in the CLI edge.
 - Moved update check/cache workflow into `src/services/update/check.ts`, registry fetch mechanics into `src/platform/update/check.ts`, and concrete runtime composition into `src/app/update-runtime.ts`.
+- Moved update notifier/banner eligibility into `src/services/update/notifier.ts`, CLI banner rendering into `src/edges/cli/update-announcement.ts`, and detached update-check process spawning into `src/platform/update/notifier-worker.ts`.
 - Moved GitHub source resolution mechanics into `src/platform/github/`.
 - Moved Absorb source resolver composition into `src/platform/sources/absorb.ts` and the CLI edge, so lifecycle Absorb services no longer import platform GitHub mechanics.
 - Moved Absorb source-ref and resolved-source contracts into `src/shared/absorb-sources.ts`, so platform source resolvers no longer import lifecycle service-internal Absorb files.
@@ -86,23 +87,23 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved update cache/check workflow out of platform and into `src/services/update/check.ts`, added `src/shared/update-runtime.ts` for update runtime contracts, replaced `src/platform/update/check.ts` with a registry-only latest-version fetcher, and added `src/app/update-runtime.ts` as the concrete composition point. Platform update modules no longer own update-state cache policy.
+The latest slice moved update notifier/banner eligibility and background-check scheduling policy out of platform and into `src/services/update/notifier.ts`, added a config-store sync read for startup-time notifier checks, moved banner rendering into `src/edges/cli/update-announcement.ts`, and reduced `src/platform/update/notifier-worker.ts` to detached process spawning.
 
 Verification passed:
 
 - `git diff --check`
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/update-check.test.ts test/update.test.ts test/update-install.test.ts test/update-store.test.ts test/update-announce.test.ts test/cli.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/update-announce.test.ts test/update.test.ts test/update-check.test.ts test/cli.test.ts test/config-command.test.ts test/doctor.test.ts`
 - `npm test`
 - `npm run build`
-- `node dist/launcher.js update --help | head -50`
-- `node dist/launcher.js doctor --json --install-only`
-- `node dist/launcher.js --help | head -25`
+- `node dist/launcher.js --help`
+- `node dist/launcher.js update --help`
 - `node dist/launcher.js update --check`
+- `node dist/launcher.js doctor --json --install-only`
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, automation scheduler app composition, setup instruction runtime composition, provider setup-view ownership, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, Absorb source contract ownership, prompt loader mechanics, update runtime composition, setup runtime composition, sync transcript runtime composition, sync-to-job session lookup, CLI app composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, review command markdown ownership, and lifecycle workflow type ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, remaining platform modules that read config/store state directly, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, automation scheduler app composition, setup instruction runtime composition, provider setup-view ownership, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, Absorb source contract ownership, prompt loader mechanics, update runtime composition, update notifier ownership, setup runtime composition, sync transcript runtime composition, sync-to-job session lookup, CLI app composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, review command markdown ownership, and lifecycle workflow type ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, remaining platform modules that read config/store state directly, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
 
 ## Decision Log
 

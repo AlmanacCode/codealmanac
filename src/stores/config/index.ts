@@ -25,6 +25,7 @@ export {
 export {
   ensureAutomationSyncSince,
   readConfig,
+  readConfigSync,
   readConfigWithOrigins,
   writeConfig,
   type ConfigReadOptions,

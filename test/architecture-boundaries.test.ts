@@ -60,7 +60,7 @@ describe("architecture boundaries", () => {
   it("keeps process-level CLI machinery inside the CLI edge", async () => {
     const runner = await readSource("src/edges/cli/run.ts");
     const help = await readSource("src/edges/cli/help.ts");
-    const updateAnnounce = await readSource("src/platform/update/announce.ts");
+    const updateAnnounce = await readSource("src/edges/cli/update-announcement.ts");
 
     expect(existsSync(join(ROOT, "src/ansi.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/ansi-theme.ts"))).toBe(true);
@@ -1118,7 +1118,11 @@ describe("architecture boundaries", () => {
     const updateInstall = await readSource("src/platform/update/install.ts");
     const updateRuntime = await readSource("src/app/update-runtime.ts");
     const updateCheck = await readSource("src/platform/update/check.ts");
-    const updateAnnounce = await readSource("src/platform/update/announce.ts");
+    const updateAnnounce = await readSource("src/edges/cli/update-announcement.ts");
+    const updateNotifier = await readSource("src/services/update/notifier.ts");
+    const updateNotifierWorker = await readSource(
+      "src/platform/update/notifier-worker.ts",
+    );
     const updateStoreIndex = await readSource("src/stores/update/index.ts");
     const updateStateStore = await readSource("src/stores/update/state.ts");
     const updateLockStore = await readSource("src/stores/update/lock.ts");
@@ -1132,11 +1136,19 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/app/update-runtime.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/shared/update-runtime.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/update/check.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/services/update/notifier.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/update-announcement.ts"))).toBe(
+      true,
+    );
+    expect(existsSync(join(ROOT, "src/edges/cli/update-check-scheduler.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/platform/update/announce.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/platform/update/runtime.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/platform/update/state.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/platform/update/lock.ts"))).toBe(false);
     expect(updateServiceIndex).not.toContain("platform/update");
     expect(updateServiceIndex).toContain("./check.js");
+    expect(updateServiceIndex).toContain("./notifier.js");
     expect(updateCommand).toContain("services/update/index.js");
     expect(updateCommand).toContain("./update-render.js");
     expect(updateCommand).not.toContain("platform/update");
@@ -1176,6 +1188,12 @@ describe("architecture boundaries", () => {
     expect(updateServiceCheck).not.toContain("globalThis.fetch");
     expect(updateServiceCheck).not.toContain("registry.npmjs.org");
     expect(updateServiceCheck).not.toContain("platform/update");
+    expect(updateNotifier).toContain("readUpdateAnnouncement");
+    expect(updateNotifier).toContain("readUpdateNotifierEnabled");
+    expect(updateNotifier).toContain("shouldScheduleUpdateCheck");
+    expect(updateNotifier).toContain("stores/config/index.js");
+    expect(updateNotifier).toContain("stores/update/index.js");
+    expect(updateNotifier).not.toContain("platform/update");
     expect(updateTypes).not.toContain(
       "UpdateInstallResult = PlatformInstallLatestPackageResult",
     );
@@ -1203,8 +1221,14 @@ describe("architecture boundaries", () => {
     expect(updateCheck).toContain("registry.npmjs.org/codealmanac");
     expect(updateCheck).not.toContain("stores/update");
     expect(updateCheck).not.toContain("services/update");
-    expect(updateAnnounce).toContain("stores/update/index.js");
-    expect(updateAnnounce).not.toContain("readFileSync(path");
+    expect(updateAnnounce).toContain("readUpdateAnnouncement");
+    expect(updateAnnounce).toContain("makeAnsiTheme");
+    expect(updateAnnounce).not.toContain("stores/update");
+    expect(updateAnnounce).not.toContain("stores/config");
+    expect(updateNotifierWorker).toContain("spawnBackgroundUpdateCheck");
+    expect(updateNotifierWorker).toContain("node:child_process");
+    expect(updateNotifierWorker).not.toContain("stores/config");
+    expect(updateNotifierWorker).not.toContain("readFileSync");
     expect(updateStoreIndex).toContain("readStateSync");
     expect(updateStateStore).toContain("readFileSync");
     expect(updateLockStore).toContain("pid: number");

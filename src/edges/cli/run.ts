@@ -16,8 +16,8 @@ import { runCodealmanacBootstrap } from "../../platform/install/global.js";
 import { isLocalPidAlive } from "../../platform/process.js";
 import type { runDoctor } from "../../cli/commands/doctor/index.js";
 import { runInternalUpdateCheck } from "../../app/update-runtime.js";
-import { announceUpdateIfAvailable } from "../../platform/update/announce.js";
-import { scheduleBackgroundUpdateCheck } from "../../platform/update/notifier-worker.js";
+import { announceUpdateIfAvailable } from "./update-announcement.js";
+import { scheduleBackgroundUpdateCheck } from "./update-check-scheduler.js";
 
 /**
  * Optional dependency overrides for `run`. Tests use these to avoid

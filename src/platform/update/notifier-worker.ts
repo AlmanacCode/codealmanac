@@ -1,11 +1,4 @@
 import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
-
-import {
-  getConfigPath,
-  getLegacyConfigPath,
-  parseConfigText,
-} from "../../stores/config/index.js";
 
 /**
  * Post-command worker for the update-notifier cache.
@@ -16,9 +9,7 @@ import {
  * live under `src/platform/automation/`.
  */
 
-export function scheduleBackgroundUpdateCheck(argv: string[]): void {
-  if (!shouldSchedule(argv)) return;
-
+export function spawnBackgroundUpdateCheck(argv: string[]): void {
   const scriptPath = argv[1];
   const nodeBin = process.execPath;
   if (scriptPath === undefined || scriptPath.length === 0) return;
@@ -36,30 +27,5 @@ export function scheduleBackgroundUpdateCheck(argv: string[]): void {
     child.on("error", () => {});
   } catch {
     // Background checks are best-effort.
-  }
-}
-
-function shouldSchedule(argv: string[]): boolean {
-  if (process.env.CODEALMANAC_SKIP_UPDATE_CHECK === "1") return false;
-  if (process.env.NODE_ENV === "test") return false;
-  if (process.env.VITEST !== undefined) return false;
-  if (argv.slice(2).includes("--internal-check-updates")) return false;
-  if (!notifierEnabled()) return false;
-  return true;
-}
-
-function notifierEnabled(): boolean {
-  const parsed = readConfigSync(getConfigPath());
-  if (parsed !== null) return parsed.update_notifier !== false;
-  const legacy = readConfigSync(getLegacyConfigPath());
-  return legacy?.update_notifier !== false;
-}
-
-function readConfigSync(path: string): { update_notifier?: unknown } | null {
-  try {
-    const raw = readFileSync(path, "utf8");
-    return parseConfigText(raw, path) as { update_notifier?: unknown };
-  } catch {
-    return null;
   }
 }

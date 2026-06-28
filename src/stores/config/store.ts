@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 
 import { writeTextFileAtomically } from "../atomic-write.js";
@@ -38,6 +38,16 @@ export async function readConfig(
   input?: string | ConfigReadOptions,
 ): Promise<GlobalConfig> {
   return (await readConfigWithOrigins(input)).config;
+}
+
+export function readConfigSync(path?: string): GlobalConfig {
+  const file = path ?? getConfigPath();
+  const config = readSingleConfigSync(file);
+  if (config !== null) return config;
+
+  const legacy =
+    file.endsWith(".toml") ? readSingleConfigSync(getLegacyConfigPath()) : null;
+  return legacy ?? defaultConfig();
 }
 
 export async function readConfigWithOrigins(
@@ -149,6 +159,22 @@ async function readSingleConfig(file: string): Promise<GlobalConfig> {
     return normalizeRawConfig(parseConfigText(trimmed, file));
   } catch {
     return defaultConfig();
+  }
+}
+
+function readSingleConfigSync(file: string): GlobalConfig | null {
+  let raw: string;
+  try {
+    raw = readFileSync(file, "utf8");
+  } catch {
+    return null;
+  }
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) return null;
+  try {
+    return normalizeRawConfig(parseConfigText(trimmed, file));
+  } catch {
+    return null;
   }
 }
 

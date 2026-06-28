@@ -1472,3 +1472,12 @@ Two-hundred-eleventh production slice:
 - Added `src/app/update-runtime.ts` as the concrete composition point for service check/cache workflow plus platform registry fetch, installed-version reads, and npm install mechanics.
 - Deleted `src/platform/update/runtime.ts` and rewired CLI setup/update paths to use app update runtime composition.
 - Strengthened architecture-boundary tests so platform update check no longer imports update stores and service update check no longer imports platform registry mechanics.
+
+Two-hundred-twelfth production slice:
+
+- Added `src/services/update/notifier.ts` as the service owner for update banner eligibility, notifier-enabled config reads, and background update-check scheduling policy.
+- Added `readConfigSync` to `src/stores/config/store.ts` so startup-time config reads stay in store ownership instead of platform code parsing config files directly.
+- Moved update banner rendering from `src/platform/update/announce.ts` into the CLI edge at `src/edges/cli/update-announcement.ts`.
+- Added `src/edges/cli/update-check-scheduler.ts` to compose service scheduling policy with platform detached-process spawning.
+- Reduced `src/platform/update/notifier-worker.ts` to process mechanics only and deleted `src/platform/update/announce.ts`.
+- Strengthened architecture-boundary tests so platform update modules no longer import config or update stores for notifier behavior.
