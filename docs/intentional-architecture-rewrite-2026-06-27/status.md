@@ -142,6 +142,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved setup raw multi-select keyboard mechanics into a reusable setup input-control file, leaving instruction-target choice focused on target semantics and line-mode parsing.
 - Split setup phase orchestration into `setup-flow.ts`, leaving setup `index.ts` as the public TUI entry wrapper and next-step renderer.
 - Split Claude auth provider internals into auth policy, CLI subprocess mechanics, and parsed status-contract files under `src/agent/providers/claude/`.
+- Split wiki-registry storage into read/write mutation verbs, JSON codec, lookup, filesystem reachability, and type contracts.
 - Moved repeated store atomic-write temp-file mechanics into `src/stores/atomic-write.ts`, removing process-PID temp names from job and sync stores.
 - Split most command rendering into command-private render files.
 - Added architecture-boundary tests to stop old dependency leaks from returning.

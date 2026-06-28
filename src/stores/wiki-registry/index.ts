@@ -1,13 +1,17 @@
 export {
   addEntry,
   dropEntry,
-  ensureGlobalDir,
   findEntry,
-  findRegistryEntry,
-  isRegistryEntryReachable,
-  isRegistryEntryWikiRoot,
   readRegistry,
   writeRegistry,
-  type RegistryEntry,
-  type RegistryPathLookupOptions,
 } from "./store.js";
+export { ensureGlobalDir } from "./filesystem.js";
+export {
+  isRegistryEntryReachable,
+  isRegistryEntryWikiRoot,
+} from "./filesystem.js";
+export { findRegistryEntry } from "./lookup.js";
+export type {
+  RegistryEntry,
+  RegistryPathLookupOptions,
+} from "./types.js";

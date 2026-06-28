@@ -292,6 +292,11 @@ describe("architecture boundaries: wiki commands and viewer", () => {
     );
     const registryService = await readSource("src/services/wiki/registry.ts");
     const registryStore = await readSource("src/stores/wiki-registry/store.ts");
+    const registryCodec = await readSource("src/stores/wiki-registry/codec.ts");
+    const registryLookup = await readSource("src/stores/wiki-registry/lookup.ts");
+    const registryFilesystem = await readSource(
+      "src/stores/wiki-registry/filesystem.ts",
+    );
 
     expect(existsSync(join(ROOT, "src/edges/cli/commands/list-render.ts"))).toBe(true);
     expect(listCommand).toContain("services/wiki/registry.js");
@@ -322,9 +327,17 @@ describe("architecture boundaries: wiki commands and viewer", () => {
     expect(registryService).toContain("getBrowseableWiki");
     expect(registryService).not.toContain("existsSync");
     expect(registryService).not.toContain("node:fs");
-    expect(registryStore).toContain("isRegistryEntryReachable");
-    expect(registryStore).toContain("isRegistryEntryWikiRoot");
-    expect(registryStore).toContain("existsSync");
+    expect(existsSync(join(ROOT, "src/stores/wiki-registry/codec.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/stores/wiki-registry/lookup.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/stores/wiki-registry/filesystem.ts"))).toBe(true);
+    expect(registryStore).toContain("parseRegistryFile");
+    expect(registryStore).not.toContain("JSON.parse");
+    expect(registryStore).not.toContain("existsSync");
+    expect(registryCodec).toContain("JSON.parse");
+    expect(registryLookup).toContain("findRegistryEntry");
+    expect(registryFilesystem).toContain("isRegistryEntryReachable");
+    expect(registryFilesystem).toContain("isRegistryEntryWikiRoot");
+    expect(registryFilesystem).toContain("existsSync");
   });
 
   it("keeps topic read command adapters out of index storage mechanics", async () => {

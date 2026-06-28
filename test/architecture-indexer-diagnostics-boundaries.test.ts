@@ -290,6 +290,8 @@ describe("architecture boundaries: indexer, diagnostics, and registry", () => {
       "src/services/wiki/autoregistration.ts",
     );
     const registryStore = await readSource("src/stores/wiki-registry/store.ts");
+    const registryTypes = await readSource("src/stores/wiki-registry/types.ts");
+    const registryLookup = await readSource("src/stores/wiki-registry/lookup.ts");
     const cliAutoRegistration = await readSource(
       "src/edges/cli/autoregistration.ts",
     );
@@ -297,6 +299,8 @@ describe("architecture boundaries: indexer, diagnostics, and registry", () => {
     const sharedPathEquality = await readSource("src/shared/path-equality.ts");
 
     expect(existsSync(join(ROOT, "src/stores/wiki-registry/store.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/stores/wiki-registry/types.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/stores/wiki-registry/lookup.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/platform/path-case.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/shared/path-equality.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/cli/autoregistration.ts"))).toBe(true);
@@ -304,13 +308,17 @@ describe("architecture boundaries: indexer, diagnostics, and registry", () => {
     expect(existsSync(join(ROOT, "src/stores/wiki/registry/index.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/stores/wiki/registry"))).toBe(false);
     expect(sharedPathEquality).toContain("type PathEquality");
-    expect(registryStore).toContain("shared/path-equality.js");
+    expect(registryTypes).toContain("shared/path-equality.js");
     expect(registryStore).not.toContain("RegistryPathEquality");
-    expect(registryStore).toContain("pathEquals");
+    expect(registryLookup).toContain("pathEquals");
     expect(registryStore).not.toContain("platform/path-case");
+    expect(registryLookup).not.toContain("platform/path-case");
     expect(registryStore).not.toContain("pathsEqualOnCurrentPlatform");
+    expect(registryLookup).not.toContain("pathsEqualOnCurrentPlatform");
     expect(registryStore).not.toContain("process.platform");
+    expect(registryLookup).not.toContain("process.platform");
     expect(registryStore).not.toContain("toLowerCase()");
+    expect(registryLookup).not.toContain("toLowerCase()");
     expect(autoRegistration).toContain("findRegistryEntry");
     expect(autoRegistration).toContain("RegistryPathLookupOptions");
     expect(autoRegistration).not.toContain("platform/path-case");

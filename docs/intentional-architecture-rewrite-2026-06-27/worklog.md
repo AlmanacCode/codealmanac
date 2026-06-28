@@ -2020,3 +2020,13 @@ Two-hundred-eighty-third production slice:
 - Added `src/agent/providers/claude/auth-status.ts` for the parsed Claude auth JSON contract.
 - Kept `auth.ts` as the provider-owned auth policy surface: public auth check, subscription/API-key acceptance, unauthenticated message, and public re-exports.
 - Strengthened provider boundary tests so auth policy does not regain child-process mechanics or raw JSON parsing.
+
+Two-hundred-eighty-fourth production slice:
+
+- Split `src/stores/wiki-registry/store.ts` into registry persistence, codec, lookup, filesystem, and type owners.
+- Added `src/stores/wiki-registry/codec.ts` for registry JSON parsing and validation.
+- Added `src/stores/wiki-registry/lookup.ts` for name/path matching over injected path equality.
+- Added `src/stores/wiki-registry/filesystem.ts` for reachability, wiki-root checks, and global directory creation.
+- Added `src/stores/wiki-registry/types.ts` for registry entry and path-lookup contracts.
+- Kept `store.ts` focused on read/write/add/drop/find persistence verbs.
+- Strengthened architecture tests so registry parsing, path lookup, and filesystem checks do not collapse back into the store catchall.

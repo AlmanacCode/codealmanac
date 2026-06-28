@@ -1,31 +1,16 @@
-import { existsSync } from "node:fs";
-import { mkdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFile } from "node:fs/promises";
 
-import { getGlobalAlmanacDir } from "../global-paths.js";
 import { getRegistryPath } from "./paths.js";
-import type { PathEquality } from "../../shared/path-equality.js";
-import { UserFacingError } from "../../shared/user-facing-error.js";
 import { writeTextFileAtomically } from "../atomic-write.js";
-
-/**
- * One entry in `~/.almanac/registry.json`.
- *
- * `name` is the canonical kebab-case slug the user types. `path` is the
- * absolute repo root (the directory that contains `.almanac/`). We store
- * absolute paths so cross-wiki resolution works regardless of the caller's
- * cwd.
- */
-export interface RegistryEntry {
-  name: string;
-  description: string;
-  path: string;
-  registered_at: string;
-}
-
-export interface RegistryPathLookupOptions {
-  pathEquals?: PathEquality;
-}
+import { parseRegistryFile } from "./codec.js";
+import {
+  exactPathEquality,
+  findRegistryEntry,
+} from "./lookup.js";
+import type {
+  RegistryEntry,
+  RegistryPathLookupOptions,
+} from "./types.js";
 
 /**
  * Read the registry file into memory.
@@ -46,64 +31,7 @@ export async function readRegistry(): Promise<RegistryEntry[]> {
     throw err;
   }
 
-  const trimmed = raw.trim();
-  if (trimmed.length === 0) {
-    return [];
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(trimmed);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    throw new UserFacingError(
-      `registry at ${registryPath} is not valid JSON: ${message}`,
-      { data: { path: registryPath } },
-    );
-  }
-
-  if (!Array.isArray(parsed)) {
-    throw new UserFacingError(
-      `registry at ${registryPath} must be a JSON array`,
-      { data: { path: registryPath } },
-    );
-  }
-
-  // Validate every entry. We do NOT silently coerce missing `name` or
-  // `path` — an entry with `name: ""` would be unremovable via `--drop`
-  // and an empty `path` would match any `findEntry({ path: "" })` call.
-  // If someone hand-edited the registry into a bad state, surfacing the
-  // error is strictly better than limping along with corrupt data.
-  return parsed.map((item, idx) => {
-    if (typeof item !== "object" || item === null) {
-      throw new UserFacingError(
-        `registry entry ${idx} is not an object`,
-        { data: { path: registryPath, index: idx } },
-      );
-    }
-    const e = item as Record<string, unknown>;
-    const name = typeof e.name === "string" ? e.name : "";
-    const path = typeof e.path === "string" ? e.path : "";
-    if (name.length === 0) {
-      throw new UserFacingError(
-        `registry entry ${idx} is missing a non-empty "name"`,
-        { data: { path: registryPath, index: idx, field: "name" } },
-      );
-    }
-    if (path.length === 0) {
-      throw new UserFacingError(
-        `registry entry ${idx} is missing a non-empty "path"`,
-        { data: { path: registryPath, index: idx, field: "path" } },
-      );
-    }
-    return {
-      name,
-      description: typeof e.description === "string" ? e.description : "",
-      path,
-      registered_at:
-        typeof e.registered_at === "string" ? e.registered_at : "",
-    };
-  });
+  return parseRegistryFile(raw, registryPath);
 }
 
 /**
@@ -177,48 +105,6 @@ export async function findEntry(
   return findRegistryEntry(await readRegistry(), params, options);
 }
 
-export function findRegistryEntry(
-  entries: RegistryEntry[],
-  params: {
-    name?: string;
-    path?: string;
-  },
-  options: RegistryPathLookupOptions = {},
-): RegistryEntry | null {
-  const pathEquals = options.pathEquals ?? exactPathEquality;
-  for (const entry of entries) {
-    if (params.name !== undefined && entry.name === params.name) return entry;
-    if (params.path !== undefined && pathEquals(entry.path, params.path)) {
-      return entry;
-    }
-  }
-  return null;
-}
-
-/**
- * A registry path is reachable if something still exists at that path.
- * Unreachable entries stay in the registry until an explicit drop.
- */
-export function isRegistryEntryReachable(entry: RegistryEntry): boolean {
-  return entry.path.length > 0 && existsSync(entry.path);
-}
-
-export function isRegistryEntryWikiRoot(entry: RegistryEntry): boolean {
-  return entry.path.length > 0 && existsSync(join(entry.path, ".almanac"));
-}
-
-/**
- * Ensure the global `.almanac/` directory exists. Safe to call repeatedly;
- * `mkdir recursive` is a no-op when the directory already exists.
- */
-export async function ensureGlobalDir(): Promise<void> {
-  await mkdir(getGlobalAlmanacDir(), { recursive: true });
-}
-
 function isNodeError(err: unknown): err is NodeJS.ErrnoException {
   return err instanceof Error && "code" in err;
-}
-
-function exactPathEquality(a: string, b: string): boolean {
-  return a === b;
 }
