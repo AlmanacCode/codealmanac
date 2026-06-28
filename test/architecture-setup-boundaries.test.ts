@@ -121,6 +121,11 @@ describe("architecture boundaries: setup and uninstall", () => {
       "src/edges/cli/register-setup-command.ts",
     );
     const sqliteFree = await readSource("src/edges/cli/sqlite-free.ts");
+    const setupShortcut = await readSource("src/edges/cli/setup-shortcut.ts");
+    const automationInstallFlags = await readSource(
+      "src/edges/cli/automation-install-flags.ts",
+    );
+    const flagValue = await readSource("src/edges/cli/flag-value.ts");
     const currentCli = await readSource("src/edges/cli/current-cli.ts");
     const setupCallers = await Promise.all([
       readSource("src/edges/cli/setup/agent-model-choice.ts"),
@@ -141,6 +146,10 @@ describe("architecture boundaries: setup and uninstall", () => {
     expect(existsSync(join(ROOT, "src/edges/cli/setup/select-choice.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/cli/setup/raw-input.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/cli/setup/setup-interruption.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/setup-shortcut.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/automation-install-flags.ts")))
+      .toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/flag-value.ts"))).toBe(true);
     expect(linePrompt).toContain("export function confirm");
     expect(linePrompt).toContain("export function promptText");
     expect(linePrompt).toContain("export async function waitForEnter");
@@ -246,6 +255,16 @@ describe("architecture boundaries: setup and uninstall", () => {
     expect(setupRegistration).toContain("runProviderFixCommand");
     expect(sqliteFree).toContain("stdin: process.stdin");
     expect(sqliteFree).toContain("color: shouldUseStdoutColor()");
+    expect(sqliteFree).toContain("tryParseSetupShortcut");
+    expect(sqliteFree).not.toContain("parseAutomationInstallFlags");
+    expect(sqliteFree).not.toContain("function splitFlagValue");
+    expect(setupShortcut).toContain("tryParseSetupShortcut");
+    expect(setupShortcut).toContain("SetupShortcutOptions");
+    expect(setupShortcut).not.toContain("process.");
+    expect(automationInstallFlags).toContain("parseAutomationInstallFlags");
+    expect(automationInstallFlags).not.toContain("process.");
+    expect(flagValue).toContain("splitFlagValue");
+    expect(flagValue).not.toContain("process.");
     expect(currentCli).toContain("process.argv");
     expect(currentCli).toContain("process.execPath");
     for (const caller of setupCallers) {

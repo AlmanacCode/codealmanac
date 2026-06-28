@@ -7,11 +7,9 @@ import { runSetup } from "./setup/index.js";
 import { emit } from "./helpers.js";
 import { renderError } from "./commands/outcome.js";
 import { configureGroupedHelp } from "./help.js";
-import {
-  parseAutomationInstallFlags,
-  tryParseSetupShortcut,
-  tryRunSetupShortcut,
-} from "./sqlite-free.js";
+import { parseAutomationInstallFlags } from "./automation-install-flags.js";
+import { tryParseSetupShortcut } from "./setup-shortcut.js";
+import { tryRunSetupShortcut } from "./sqlite-free.js";
 import { runCodealmanacBootstrap } from "../../platform/install/global.js";
 import { isLocalPidAlive } from "../../platform/process.js";
 import type { runDoctor } from "./commands/doctor/index.js";
