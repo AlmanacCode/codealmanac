@@ -25,6 +25,7 @@ import {
   syncSkippedSummary,
   syncStartedSummary,
 } from "./sweep-results.js";
+import type { IsPidAlive } from "../../shared/pid-liveness.js";
 import {
   loadLedgerForRepo,
   writeLedger,
@@ -54,6 +55,8 @@ export async function executeSyncSweep(args: {
   quietMs: number;
   mode: "sync" | "status";
   now: Date;
+  lockOwnerPid: number;
+  isPidAlive: IsPidAlive;
   readTranscriptSnapshot: ReadSyncTranscriptSnapshotFn;
   startAbsorb: StartSyncAbsorbFn;
 }): Promise<SyncSummary> {
@@ -82,7 +85,10 @@ export async function executeSyncSweep(args: {
       }
 
       if (args.mode === "sync" && !heldLocks.has(candidate.repoRoot)) {
-        const locked = await acquireRepoSyncLock(candidate.repoRoot, args.now);
+        const locked = await acquireRepoSyncLock(candidate.repoRoot, args.now, {
+          ownerPid: args.lockOwnerPid,
+          isPidAlive: args.isPidAlive,
+        });
         if (!locked) {
           summary.skipped.push(
             syncSkippedSummary(candidate, "sync-already-running"),

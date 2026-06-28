@@ -935,11 +935,34 @@ describe("architecture boundaries", () => {
     const viewerJobs = await readSource("src/edges/viewer/read-model/jobs.ts");
     const jobWorkerLockStore = await readSource("src/stores/jobs/worker-lock.ts");
     const syncLockStore = await readSource("src/stores/sync/lock.ts");
+    const syncSweep = await readSource("src/services/sync/sweep.ts");
+    const jobWorker = await readSource("src/edges/worker/job-worker.ts");
+    const cliRunner = await readSource("src/edges/cli/run.ts");
+    const lifecycleRegistration = await readSource(
+      "src/edges/cli/register-lifecycle-run-commands.ts",
+    );
+    const syncRegistration = await readSource(
+      "src/edges/cli/register-sync-commands.ts",
+    );
 
     expect(existsSync(join(ROOT, "src/platform/process.ts"))).toBe(true);
     for (const source of [jobsService, viewerJobs, jobWorkerLockStore, syncLockStore]) {
       expect(source).not.toContain("process.kill");
     }
+    for (const source of [jobWorkerLockStore, syncLockStore]) {
+      expect(source).toContain("pid-liveness.js");
+      expect(source).toContain("ownerPid");
+      expect(source).toContain("isPidAlive");
+      expect(source).not.toContain("platform/process");
+      expect(source).not.toContain("process.pid");
+    }
+    expect(syncSweep).toContain("isPidAlive");
+    expect(syncSweep).not.toContain("platform/process");
+    expect(jobWorker).toContain("isPidAlive");
+    expect(jobWorker).not.toContain("platform/process");
+    expect(cliRunner).toContain("isLocalPidAlive");
+    expect(lifecycleRegistration).toContain("isLocalPidAlive");
+    expect(syncRegistration).toContain("isLocalPidAlive");
   });
 
   it("keeps automation command adapters out of launchd workflow mechanics", async () => {

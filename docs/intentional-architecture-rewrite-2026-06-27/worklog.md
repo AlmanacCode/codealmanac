@@ -1358,3 +1358,12 @@ One-hundred-ninety-sixth production slice:
 - Kept concrete provider execution under `src/agent/runtime/`; provider adapters now import shared runtime contracts while `src/agent/runtime/types.ts` remains the provider implementation contract over `OperationSpec`.
 - Changed `src/services/jobs/runtime/agent-runner.ts` to define the injected `JobAgentRunner` contract directly over lifecycle `OperationSpec` and shared runtime result/hooks instead of importing `AgentRuntimeRunner` from provider runtime types.
 - Strengthened architecture-boundary tests so jobs, lifecycle operations, and stores consume shared runtime contracts rather than `src/agent/runtime/` contract files.
+
+One-hundred-ninety-seventh production slice:
+
+- Added `src/shared/pid-liveness.ts` as the neutral contract for PID liveness probes.
+- Changed `src/stores/jobs/worker-lock.ts` to accept injected lock owner PID and liveness checks instead of importing `src/platform/process.ts` or reading `process.pid`.
+- Changed `src/stores/sync/lock.ts` to accept injected sync-lock owner PID and liveness checks instead of importing `src/platform/process.ts` or reading `process.pid`.
+- Threaded `isPidAlive` through lifecycle foreground operation requests, job worker draining, Absorb/Garden/Build operation runners, sync workflow/sweep, and command adapters.
+- Updated CLI lifecycle/sync/internal-worker edges to provide `isLocalPidAlive` from `src/platform/process.ts`.
+- Strengthened focused lock, worker, executor, sync, and architecture tests around the new injected process-liveness boundary.

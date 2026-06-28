@@ -1,6 +1,7 @@
 import { Command } from "commander";
 
 import { createAgentRuntimeJobRunner } from "../../agent/runtime/job-runner.js";
+import { isLocalPidAlive } from "../../platform/process.js";
 import { createPlatformAbsorbSourceResolver } from "../../platform/sources/absorb.js";
 import { startCliBackgroundJob } from "./background-jobs.js";
 import { currentCliNodeProgram } from "./current-cli.js";
@@ -45,6 +46,7 @@ export function registerLifecycleRunCommands(program: Command): void {
           workerProgram: currentCliNodeProgram(),
           workerEnvironment: process.env,
           pid: process.pid,
+          isPidAlive: isLocalPidAlive,
           agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
           startBackground: startCliBackgroundJob,
           onEvent: opts.background === true
@@ -91,6 +93,7 @@ function registerAbsorbCommand(program: Command): void {
           workerProgram: currentCliNodeProgram(),
           workerEnvironment: process.env,
           pid: process.pid,
+          isPidAlive: isLocalPidAlive,
           agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
           startBackground: startCliBackgroundJob,
           resolveSource: createPlatformAbsorbSourceResolver(),
@@ -135,6 +138,7 @@ function registerIngestCommand(program: Command): void {
           workerProgram: currentCliNodeProgram(),
           workerEnvironment: process.env,
           pid: process.pid,
+          isPidAlive: isLocalPidAlive,
           agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
           startBackground: startCliBackgroundJob,
           resolveSource: createPlatformAbsorbSourceResolver(),
@@ -175,6 +179,7 @@ export function registerGardenCommand(program: Command): void {
           workerProgram: currentCliNodeProgram(),
           workerEnvironment: process.env,
           pid: process.pid,
+          isPidAlive: isLocalPidAlive,
           agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
           startBackground: startCliBackgroundJob,
           onEvent: opts.foreground === true

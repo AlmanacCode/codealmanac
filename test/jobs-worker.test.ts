@@ -167,6 +167,7 @@ describe("job worker background execution", () => {
         repoRoot: repo,
         workerEnvironment: {},
         pid: 789,
+        isPidAlive: () => true,
         now: fixedClock([
           "2026-05-09T19:57:01.000Z",
           "2026-05-09T19:57:02.000Z",
@@ -282,6 +283,7 @@ describe("job worker background execution", () => {
         repoRoot: repo,
         workerEnvironment: {},
         pid: 123,
+        isPidAlive: () => true,
         agentRunner: async () => {
           throw new Error("should not run");
         },
@@ -315,6 +317,7 @@ describe("job worker background execution", () => {
         repoRoot: repo,
         workerEnvironment: {},
         pid: 222,
+        isPidAlive: () => true,
         agentRunner: async () => {
           throw new Error("should not run");
         },
@@ -352,6 +355,7 @@ describe("job worker background execution", () => {
         repoRoot: repo,
         workerEnvironment: {},
         pid: 123,
+        isPidAlive: () => true,
         agentRunner: async () => {
           throw new Error("should not run");
         },
@@ -403,17 +407,20 @@ describe("job worker background execution", () => {
         activeRuns -= 1;
         return { success: true, result: spec.prompt };
       };
+      const isTestWorkerAlive = (pid: number) => pid === 444 || pid === 445;
       await Promise.all([
         runJobWorker({
           repoRoot: repo,
           workerEnvironment: {},
           pid: 444,
+          isPidAlive: isTestWorkerAlive,
           agentRunner,
         }),
         runJobWorker({
           repoRoot: repo,
           workerEnvironment: {},
           pid: 445,
+          isPidAlive: isTestWorkerAlive,
           agentRunner,
         }),
       ]);

@@ -3,6 +3,7 @@ import type {
   LifecycleOperationBackgroundStarter,
 } from "../lifecycle/index.js";
 import type { JobAgentRunner } from "../jobs/runtime/agent-runner.js";
+import type { IsPidAlive } from "../../shared/pid-liveness.js";
 import type {
   TranscriptCandidate,
   TranscriptReadResult,
@@ -29,6 +30,7 @@ export interface SyncWorkflowOptions {
   workerProgram: LifecycleJobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  isPidAlive: IsPidAlive;
   agentRunner: JobAgentRunner;
   transcriptRuntime: SyncTranscriptRuntime;
 }

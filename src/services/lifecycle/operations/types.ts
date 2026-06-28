@@ -5,6 +5,7 @@ import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
 import type { StartBackgroundJobResult } from "../../jobs/runtime/background-start.js";
 import type { StartJobResult } from "../../jobs/runtime/executor.js";
 import type { JobWorkerProgram } from "../../../shared/worker-program.js";
+import type { IsPidAlive } from "../../../shared/pid-liveness.js";
 
 export type { JobWorkerProgram };
 
@@ -28,6 +29,7 @@ export type StartForegroundJob = (options: {
   spec: OperationSpec;
   jobId?: string;
   pid: number;
+  isPidAlive: IsPidAlive;
   onEvent?: (event: AgentRuntimeEvent) => void | Promise<void>;
   agentRunner: JobAgentRunner;
 }) => Promise<StartJobResult>;

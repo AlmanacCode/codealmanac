@@ -29,12 +29,14 @@ type SyncCommandTestOptions = Omit<
   | "workerEnvironment"
   | "workerProgram"
   | "pid"
+  | "isPidAlive"
   | "transcriptRuntime"
 > & {
   agentRunner?: JobAgentRunner;
   workerEnvironment?: NodeJS.ProcessEnv;
   workerProgram?: SyncCommandOptions["workerProgram"];
   pid?: number;
+  isPidAlive?: SyncCommandOptions["isPidAlive"];
   transcriptRuntime?: SyncCommandOptions["transcriptRuntime"];
 };
 
@@ -44,6 +46,7 @@ function runSyncCommand(options: SyncCommandTestOptions) {
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    isPidAlive: options.isPidAlive ?? (() => true),
     agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
     transcriptRuntime: options.transcriptRuntime ??
       createPlatformSyncTranscriptRuntime(),

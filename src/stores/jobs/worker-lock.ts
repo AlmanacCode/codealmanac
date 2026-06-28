@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { isLocalPidAlive } from "../../platform/process.js";
+import type { IsPidAlive } from "../../shared/pid-liveness.js";
 import { jobsDir, legacyRunsDir } from "./records.js";
 
 const OWNERLESS_LOCK_GRACE_MS = 30_000;
@@ -11,6 +11,11 @@ export interface JobWorkerLock {
   release(): Promise<void>;
 }
 
+export interface JobWorkerLockRuntime {
+  ownerPid: number;
+  isPidAlive: IsPidAlive;
+}
+
 export function jobWorkerLockPath(repoRoot: string): string {
   return join(jobsDir(repoRoot), "worker.lock");
 }
@@ -18,18 +23,23 @@ export function jobWorkerLockPath(repoRoot: string): string {
 export async function acquireJobWorkerLock(
   repoRoot: string,
   now: Date,
+  runtime: JobWorkerLockRuntime,
 ): Promise<JobWorkerLock | null> {
-  if (await hasBlockingLegacyWorkerLock(repoRoot, now)) return null;
-  if (await tryCreateJobWorkerLock(repoRoot, now)) {
-    if (await hasBlockingLegacyWorkerLock(repoRoot, now)) {
+  if (await hasBlockingLegacyWorkerLock(repoRoot, now, runtime.isPidAlive)) {
+    return null;
+  }
+  if (await tryCreateJobWorkerLock(repoRoot, now, runtime.ownerPid)) {
+    if (await hasBlockingLegacyWorkerLock(repoRoot, now, runtime.isPidAlive)) {
       await releaseJobWorkerLock(repoRoot);
       return null;
     }
     return workerLock(repoRoot);
   }
-  if (!await isStaleJobWorkerLock(repoRoot, now)) return null;
+  if (!await isStaleJobWorkerLock(repoRoot, now, runtime.isPidAlive)) return null;
   await releaseJobWorkerLock(repoRoot);
-  return await tryCreateJobWorkerLock(repoRoot, now) ? workerLock(repoRoot) : null;
+  return await tryCreateJobWorkerLock(repoRoot, now, runtime.ownerPid)
+    ? workerLock(repoRoot)
+    : null;
 }
 
 function legacyJobWorkerLockPath(repoRoot: string): string {
@@ -48,14 +58,18 @@ function jobWorkerLockOwnerPath(repoRoot: string): string {
   return workerLockOwnerPath(jobWorkerLockPath(repoRoot));
 }
 
-async function tryCreateJobWorkerLock(repoRoot: string, now: Date): Promise<boolean> {
+async function tryCreateJobWorkerLock(
+  repoRoot: string,
+  now: Date,
+  ownerPid: number,
+): Promise<boolean> {
   try {
     const lock = jobWorkerLockPath(repoRoot);
     await mkdir(dirname(lock), { recursive: true });
     await mkdir(lock, { recursive: false });
     await writeFile(
       jobWorkerLockOwnerPath(repoRoot),
-      `${JSON.stringify({ pid: process.pid, startedAt: now.toISOString() }, null, 2)}\n`,
+      `${JSON.stringify({ pid: ownerPid, startedAt: now.toISOString() }, null, 2)}\n`,
       "utf8",
     );
     return true;
@@ -71,17 +85,19 @@ async function releaseJobWorkerLock(repoRoot: string): Promise<void> {
 async function isStaleJobWorkerLock(
   repoRoot: string,
   now: Date,
+  isPidAlive: IsPidAlive,
 ): Promise<boolean> {
-  return isStaleWorkerLockPath(jobWorkerLockPath(repoRoot), now);
+  return isStaleWorkerLockPath(jobWorkerLockPath(repoRoot), now, isPidAlive);
 }
 
 async function hasBlockingLegacyWorkerLock(
   repoRoot: string,
   now: Date,
+  isPidAlive: IsPidAlive,
 ): Promise<boolean> {
   const lockPath = legacyJobWorkerLockPath(repoRoot);
   if (!await workerLockExists(lockPath)) return false;
-  if (!await isStaleWorkerLockPath(lockPath, now)) return true;
+  if (!await isStaleWorkerLockPath(lockPath, now, isPidAlive)) return true;
   await releaseWorkerLockPath(lockPath);
   return false;
 }
@@ -106,6 +122,7 @@ async function releaseWorkerLockPath(lockPath: string): Promise<void> {
 async function isStaleWorkerLockPath(
   lockPath: string,
   now: Date,
+  isPidAlive: IsPidAlive,
 ): Promise<boolean> {
   let raw: Record<string, unknown> = {};
   try {
@@ -117,7 +134,7 @@ async function isStaleWorkerLockPath(
   if (pid === null) {
     return await isOwnerlessLockPastGrace(lockPath, now);
   }
-  return !isLocalPidAlive(pid);
+  return !isPidAlive(pid);
 }
 
 async function isOwnerlessLockPastGrace(

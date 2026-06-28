@@ -13,6 +13,7 @@ import {
   tryRunSetupShortcut,
 } from "./sqlite-free.js";
 import { runCodealmanacBootstrap } from "../../platform/install/global.js";
+import { isLocalPidAlive } from "../../platform/process.js";
 import type { runDoctor } from "../../cli/commands/doctor/index.js";
 import { announceUpdateIfAvailable } from "../../platform/update/announce.js";
 import {
@@ -110,6 +111,7 @@ async function tryRunInternalJob(args: string[]): Promise<boolean> {
   await runJobWorker({
     repoRoot: process.cwd(),
     pid: process.pid,
+    isPidAlive: isLocalPidAlive,
     workerEnvironment: process.env,
   });
   return true;

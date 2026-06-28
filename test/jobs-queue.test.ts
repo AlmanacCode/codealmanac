@@ -20,6 +20,16 @@ import {
 import { oldestQueuedJob } from "../src/services/jobs/runtime/queue.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 
+const LIVE_TEST_LOCK = {
+  ownerPid: process.pid,
+  isPidAlive: () => true,
+};
+
+const STALE_TEST_LOCK = {
+  ownerPid: process.pid,
+  isPidAlive: () => false,
+};
+
 describe("process operation queue", () => {
   it("acquires and releases a per-wiki worker lock", async () => {
     await withTempHome(async (home) => {
@@ -29,6 +39,7 @@ describe("process operation queue", () => {
       const lock = await acquireJobWorkerLock(
         repo,
         new Date(),
+        LIVE_TEST_LOCK,
       );
 
       expect(lock).not.toBeNull();
@@ -40,6 +51,7 @@ describe("process operation queue", () => {
       const second = await acquireJobWorkerLock(
         repo,
         new Date("2026-05-29T10:00:01.000Z"),
+        LIVE_TEST_LOCK,
       );
       expect(second).toBeNull();
 
@@ -63,7 +75,7 @@ describe("process operation queue", () => {
         "utf8",
       );
 
-      const lock = await acquireJobWorkerLock(repo, new Date());
+      const lock = await acquireJobWorkerLock(repo, new Date(), LIVE_TEST_LOCK);
 
       expect(lock).toBeNull();
       expect(existsSync(jobWorkerLockPath(repo))).toBe(false);
@@ -88,6 +100,7 @@ describe("process operation queue", () => {
       const lock = await acquireJobWorkerLock(
         repo,
         new Date(),
+        STALE_TEST_LOCK,
       );
 
       expect(lock).not.toBeNull();
@@ -105,6 +118,7 @@ describe("process operation queue", () => {
       const lock = await acquireJobWorkerLock(
         repo,
         new Date(),
+        LIVE_TEST_LOCK,
       );
 
       expect(lock).toBeNull();
@@ -124,6 +138,7 @@ describe("process operation queue", () => {
       const lock = await acquireJobWorkerLock(
         repo,
         new Date(),
+        LIVE_TEST_LOCK,
       );
 
       expect(lock).not.toBeNull();

@@ -36,6 +36,8 @@ export async function runSyncWorkflow(
         quietMs: quiet.ms,
         mode: options.mode ?? "sync",
         now: options.now ?? new Date(),
+        lockOwnerPid: options.pid,
+        isPidAlive: options.isPidAlive,
         readTranscriptSnapshot: options.transcriptRuntime.readSnapshot,
         startAbsorb: async ({ candidate, contextNote }) => {
           try {
@@ -54,6 +56,7 @@ export async function runSyncWorkflow(
               workerProgram: options.workerProgram,
               workerEnvironment: options.workerEnvironment,
               pid: options.pid,
+              isPidAlive: options.isPidAlive,
               agentRunner: options.agentRunner,
             });
             if (result.status === "failed") throw result.error;

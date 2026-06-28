@@ -3,6 +3,7 @@ import {
   type SyncWorkflowOptions,
 } from "../../services/sync/index.js";
 import type { JobAgentRunner } from "../../services/jobs/runtime/agent-runner.js";
+import type { IsPidAlive } from "../../shared/pid-liveness.js";
 import { renderSyncResult } from "./sync-render.js";
 
 export interface SyncCommandOptions {
@@ -19,6 +20,7 @@ export interface SyncCommandOptions {
   workerProgram: SyncWorkflowOptions["workerProgram"];
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  isPidAlive: IsPidAlive;
   agentRunner: JobAgentRunner;
   transcriptRuntime: SyncWorkflowOptions["transcriptRuntime"];
 }
@@ -53,6 +55,7 @@ function toSyncWorkflowOptions(
     workerProgram: options.workerProgram,
     workerEnvironment: options.workerEnvironment,
     pid: options.pid,
+    isPidAlive: options.isPidAlive,
     agentRunner: options.agentRunner,
     transcriptRuntime: options.transcriptRuntime,
   };

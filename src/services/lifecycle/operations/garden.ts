@@ -9,6 +9,7 @@ import type {
   StartForegroundJob,
 } from "./types.js";
 import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
+import type { IsPidAlive } from "../../../shared/pid-liveness.js";
 import { createOperationRunSpec, runOperationProcess } from "./run.js";
 
 export interface GardenOperationOptions {
@@ -23,6 +24,7 @@ export interface GardenOperationOptions {
   workerProgram: JobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  isPidAlive: IsPidAlive;
   agentRunner: JobAgentRunner;
 }
 
@@ -64,6 +66,7 @@ export async function runGardenOperation(
     workerProgram: options.workerProgram,
     workerEnvironment: options.workerEnvironment,
     pid: options.pid,
+    isPidAlive: options.isPidAlive,
     agentRunner: options.agentRunner,
   });
 }

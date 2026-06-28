@@ -14,6 +14,7 @@ import type {
   StartForegroundJob,
 } from "../operations/types.js";
 import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
+import type { IsPidAlive } from "../../../shared/pid-liveness.js";
 import { renderAbsorbInputContext } from "./context.js";
 import {
   resolveAbsorbInput,
@@ -39,6 +40,7 @@ export interface StartAbsorbRunOptions {
   workerProgram: JobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  isPidAlive: IsPidAlive;
   agentRunner: JobAgentRunner;
 }
 
@@ -77,6 +79,7 @@ export async function startAbsorbRun(
     workerProgram: options.workerProgram,
     workerEnvironment: options.workerEnvironment,
     pid: options.pid,
+    isPidAlive: options.isPidAlive,
     agentRunner: options.agentRunner,
   });
   return {

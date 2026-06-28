@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 230 committed rewrite commits past `dev`. The worklog records 196 production slices so far.
+The branch has more than 230 committed rewrite commits past `dev`. The worklog records 197 production slices so far.
 
-The diff is broad: 493 files changed, with 25,053 insertions and 13,438 deletions.
+The diff is broad: 493 files changed, with 25,286 insertions and 13,183 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -56,6 +56,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved automation scheduler mechanics behind `src/services/automation/scheduler.ts`, with launchd implementation in `src/platform/automation/scheduler.ts`; automation services no longer import `src/platform/automation/`.
 - Moved concrete agent runtime provider registry creation out of job runtime services; CLI and worker edges now inject a `JobAgentRunner`, while `src/agent/runtime/job-runner.ts` owns provider-registry composition.
 - Moved provider identity and provider-neutral runtime event/final-output/tool contracts into `src/shared/`, so services and stores no longer import provider runtime contract files from `src/agent/runtime/`.
+- Moved worker-lock and sync-lock process ownership/liveness facts out of stores; stores now persist lock files over injected owner PID and liveness contracts while CLI/worker edges provide platform process probes.
 - Split most command rendering into command-private render files.
 - Added architecture-boundary tests to stop old dependency leaks from returning.
 - Ran repeated lint, focused tests, full test suites, builds, CLI smokes, and review passes across the branch.
@@ -71,13 +72,21 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved provider identity and provider-neutral agent runtime contracts out of `src/agent/runtime/`. `src/shared/agent-provider.ts` now owns provider ids and provider definitions, `src/shared/agent-runtime/` owns normalized runtime events, final-output shapes, and tool requests, and concrete provider execution remains under `src/agent/runtime/providers/`.
+The latest slice moved process ownership and liveness facts out of job/sync lock stores. `src/stores/jobs/worker-lock.ts` and `src/stores/sync/lock.ts` now receive owner PID and `isPidAlive` from callers, `src/shared/pid-liveness.ts` owns the neutral liveness function type, and CLI/worker edges provide `isLocalPidAlive` from `src/platform/process.ts`.
 
-Verification passed so far: `npx tsc --noEmit --pretty false`.
+Verification passed:
+
+- `npx vitest run test/jobs-worker.test.ts test/jobs-queue.test.ts test/architecture-boundaries.test.ts`
+- `git diff --check`
+- `npm run lint`
+- `npm test`
+- `npm run build`
+- `node dist/launcher.js --help | head -40`
+- `node dist/launcher.js doctor --json --install-only`
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, setup runtime composition, sync transcript runtime composition, diagnostic fact contracts, and provider-neutral agent runtime contracts have now been removed or assigned. Remaining candidates include process/PID mechanics still visible in some stores, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, setup runtime composition, sync transcript runtime composition, diagnostic fact contracts, provider-neutral agent runtime contracts, and lock process-liveness contracts have now been removed or assigned. Remaining candidates include temp-file PID suffixes still visible in stores, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
 
 ## Decision Log
 

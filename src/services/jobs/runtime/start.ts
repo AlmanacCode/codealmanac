@@ -14,6 +14,7 @@ import { acquireJobWorkerLock } from "../../../stores/jobs/worker-lock.js";
 import { cancelledRecordIfRequested } from "./finalization.js";
 import type { JobRecord } from "../../../stores/jobs/index.js";
 import type { JobAgentEventHandler, JobAgentRunner } from "./agent-runner.js";
+import type { IsPidAlive } from "../../../shared/pid-liveness.js";
 
 export interface StartJobOptions {
   repoRoot: string;
@@ -21,6 +22,7 @@ export interface StartJobOptions {
   jobId?: string;
   now?: () => Date;
   pid: number;
+  isPidAlive: IsPidAlive;
   onEvent?: JobAgentEventHandler;
   agentRunner: JobAgentRunner;
 }
@@ -31,7 +33,10 @@ export async function startForegroundJob(
   const now = options.now ?? (() => new Date());
   const jobId = options.jobId ?? createJobId(now());
   const startedAt = now();
-  const lock = await acquireJobWorkerLock(options.repoRoot, startedAt);
+  const lock = await acquireJobWorkerLock(options.repoRoot, startedAt, {
+    ownerPid: options.pid,
+    isPidAlive: options.isPidAlive,
+  });
   if (lock === null) {
     throw new Error(
       "another Almanac operation is already running for this wiki; " +

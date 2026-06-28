@@ -6,6 +6,7 @@ import type { ToolRequest } from "../../../shared/agent-runtime/tools.js";
 import type { JobAgentRunner } from "../../jobs/runtime/agent-runner.js";
 import { startForegroundJob } from "../../jobs/runtime/start.js";
 import type { JobWorkerProgram } from "../../../shared/worker-program.js";
+import type { IsPidAlive } from "../../../shared/pid-liveness.js";
 import { readConfig } from "../../../stores/config/index.js";
 import { PROVIDER_DEFINITIONS } from "../../../shared/agent-provider.js";
 import type {
@@ -90,6 +91,7 @@ export async function runOperationProcess(args: {
   workerProgram: JobWorkerProgram;
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
+  isPidAlive: IsPidAlive;
   agentRunner: JobAgentRunner;
 }): Promise<OperationRunResult> {
   if (args.background) {
@@ -111,6 +113,7 @@ export async function runOperationProcess(args: {
     spec: args.spec,
     jobId: args.jobId,
     pid: args.pid,
+    isPidAlive: args.isPidAlive,
     onEvent: args.onEvent,
     agentRunner: args.agentRunner,
   });

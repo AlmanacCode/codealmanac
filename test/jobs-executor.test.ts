@@ -21,6 +21,7 @@ describe("job foreground execution", () => {
       const result = await startForegroundJob({
         repoRoot: repo,
         pid: 123,
+        isPidAlive: () => true,
         jobId: "run_20260509195500_success",
         now: fixedClock([
           "2026-05-09T19:55:00.000Z",
@@ -116,6 +117,7 @@ describe("job foreground execution", () => {
       const result = await startForegroundJob({
         repoRoot: repo,
         pid: 123,
+        isPidAlive: () => true,
         jobId: "run_20260509195500_unrelated_output",
         now: fixedClock([
           "2026-05-09T19:55:00.000Z",
@@ -165,6 +167,7 @@ describe("job foreground execution", () => {
       const result = await startForegroundJob({
         repoRoot: repo,
         pid: 123,
+        isPidAlive: () => true,
         jobId: "run_20260509195500_session_id",
         now: fixedClock([
           "2026-05-09T19:55:00.000Z",
@@ -214,6 +217,7 @@ describe("job foreground execution", () => {
       const result = await startForegroundJob({
         repoRoot: repo,
         pid: 123,
+        isPidAlive: () => true,
         jobId: "run_20260509195500_failure",
         now: fixedClock([
           "2026-05-09T19:55:00.000Z",
@@ -265,6 +269,7 @@ describe("job foreground execution", () => {
       const result = await startForegroundJob({
         repoRoot: repo,
         pid: 123,
+        isPidAlive: () => true,
         jobId: "run_20260509195600_structured_failure",
         now: fixedClock([
           "2026-05-09T19:56:00.000Z",
@@ -320,6 +325,7 @@ describe("job foreground execution", () => {
       const result = await startForegroundJob({
         repoRoot: repo,
         pid: 123,
+        isPidAlive: () => true,
         jobId: "run_20260509203000_observer",
         now: fixedClock([
           "2026-05-09T20:30:00.000Z",
@@ -358,6 +364,7 @@ describe("job foreground execution", () => {
       const result = await startForegroundJob({
         repoRoot: repo,
         pid: 123,
+        isPidAlive: () => true,
         jobId,
         now: fixedClock([
           "2026-05-09T20:40:00.000Z",
@@ -403,6 +410,7 @@ describe("job foreground execution", () => {
       const result = await startForegroundJob({
         repoRoot: repo,
         pid: 123,
+        isPidAlive: () => true,
         jobId: "run_20260509204100_finalization",
         now: fixedClock([
           "2026-05-09T20:41:00.000Z",

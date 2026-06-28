@@ -12,11 +12,13 @@ import { oldestQueuedJob } from "./queue.js";
 import { startQueuedJob } from "./start.js";
 import type { JobRecord } from "../../../stores/jobs/index.js";
 import type { JobAgentEventHandler, JobAgentRunner } from "./agent-runner.js";
+import type { IsPidAlive } from "../../../shared/pid-liveness.js";
 
 export interface DrainQueuedJobsOptions {
   repoRoot: string;
   now?: () => Date;
   pid: number;
+  isPidAlive: IsPidAlive;
   onEvent?: JobAgentEventHandler;
   agentRunner: JobAgentRunner;
 }
@@ -26,7 +28,10 @@ export async function drainQueuedJobs(
 ): Promise<void> {
   const now = options.now ?? (() => new Date());
   while (true) {
-    const lock = await acquireJobWorkerLock(options.repoRoot, now());
+    const lock = await acquireJobWorkerLock(options.repoRoot, now(), {
+      ownerPid: options.pid,
+      isPidAlive: options.isPidAlive,
+    });
     if (lock === null) return;
     try {
       while (true) {
@@ -40,6 +45,7 @@ export async function drainQueuedJobs(
             jobId: record.id,
             now,
             pid: options.pid,
+            isPidAlive: options.isPidAlive,
             onEvent: options.onEvent,
             agentRunner: options.agentRunner,
           });

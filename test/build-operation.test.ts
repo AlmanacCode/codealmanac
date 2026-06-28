@@ -22,11 +22,12 @@ const TEST_AGENT_RUNNER: JobAgentRunner = async () => ({
 });
 
 function runBuildOperation(
-  options: Omit<BuildOperationOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
+  options: Omit<BuildOperationOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid" | "isPidAlive"> & {
     agentRunner?: JobAgentRunner;
     workerEnvironment?: NodeJS.ProcessEnv;
     workerProgram?: BuildOperationOptions["workerProgram"];
     pid?: number;
+    isPidAlive?: BuildOperationOptions["isPidAlive"];
   },
 ) {
   return runBuildOperationCommand({
@@ -34,6 +35,7 @@ function runBuildOperation(
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    isPidAlive: options.isPidAlive ?? (() => true),
     agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
   });
 }

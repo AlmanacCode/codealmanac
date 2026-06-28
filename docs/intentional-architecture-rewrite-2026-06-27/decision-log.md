@@ -133,6 +133,10 @@ Foreground and queued job execution services own job records, logs, locks, wiki 
 
 Provider ids and static provider definitions live in `src/shared/agent-provider.ts` because config stores, job stores, lifecycle operations, readiness, and provider adapters all need the same id vocabulary. Provider-neutral runtime facts live in `src/shared/agent-runtime/`: normalized events, usage, failures, final-output specs/results, runtime hooks, and tool requests. Concrete provider execution remains under `src/agent/runtime/`, where provider adapters translate `OperationSpec` into Claude/Codex mechanics and emit the shared contracts.
 
+### Lock stores receive process facts
+
+Job worker locks and sync locks are persistence mechanics, but process ownership and liveness are runtime facts. `src/stores/jobs/worker-lock.ts` and `src/stores/sync/lock.ts` own lock paths, owner-file persistence, stale-lock grace policy, and legacy lock cleanup. CLI and worker edges provide the current owner PID and `isLocalPidAlive` from `src/platform/process.ts` through service workflows. The neutral liveness function type lives in `src/shared/pid-liveness.ts`.
+
 ### Absorb source resolution is an injected platform resolver
 
 Lifecycle Absorb services own input parsing, target classification, prompt context facts, and the source-resolver contract. They do not import GitHub platform mechanics. `src/platform/sources/absorb.ts` implements the concrete resolver by using `src/platform/github/source.ts` for GitHub refs and normalizing web URLs into service-owned source facts. CLI lifecycle edges inject this resolver for `absorb` and `ingest`, while tests can inject fake resolvers directly.

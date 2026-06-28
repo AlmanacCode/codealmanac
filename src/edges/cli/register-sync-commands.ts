@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { homedir } from "node:os";
 
 import { createAgentRuntimeJobRunner } from "../../agent/runtime/job-runner.js";
+import { isLocalPidAlive } from "../../platform/process.js";
 import { createPlatformSyncTranscriptRuntime } from "../../platform/transcripts/runtime.js";
 import { startCliBackgroundJob } from "./background-jobs.js";
 import { currentCliNodeProgram } from "./current-cli.js";
@@ -32,6 +33,7 @@ export function registerSyncCommands(program: Command): void {
         workerProgram: currentCliNodeProgram(),
         workerEnvironment: process.env,
         pid: process.pid,
+        isPidAlive: isLocalPidAlive,
         agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
         transcriptRuntime: createPlatformSyncTranscriptRuntime(),
         startBackground: startCliBackgroundJob,
@@ -66,6 +68,7 @@ export function registerSyncCommands(program: Command): void {
         workerProgram: currentCliNodeProgram(),
         workerEnvironment: process.env,
         pid: process.pid,
+        isPidAlive: isLocalPidAlive,
         agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
         transcriptRuntime: createPlatformSyncTranscriptRuntime(),
       });

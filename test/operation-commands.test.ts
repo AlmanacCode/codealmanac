@@ -26,11 +26,12 @@ const TEST_AGENT_RUNNER: JobAgentRunner = async () => ({
 });
 
 function runInitCommand(
-  options: Omit<InitCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
+  options: Omit<InitCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid" | "isPidAlive"> & {
     agentRunner?: JobAgentRunner;
     workerEnvironment?: NodeJS.ProcessEnv;
     workerProgram?: InitCommandOptions["workerProgram"];
     pid?: number;
+    isPidAlive?: InitCommandOptions["isPidAlive"];
   },
 ) {
   return runInitCommandHandler({
@@ -38,16 +39,18 @@ function runInitCommand(
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    isPidAlive: options.isPidAlive ?? (() => true),
     agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
   });
 }
 
 function runAbsorbCommand(
-  options: Omit<AbsorbCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
+  options: Omit<AbsorbCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid" | "isPidAlive"> & {
     agentRunner?: JobAgentRunner;
     workerEnvironment?: NodeJS.ProcessEnv;
     workerProgram?: AbsorbCommandOptions["workerProgram"];
     pid?: number;
+    isPidAlive?: AbsorbCommandOptions["isPidAlive"];
   },
 ) {
   return runAbsorbCommandHandler({
@@ -55,16 +58,18 @@ function runAbsorbCommand(
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    isPidAlive: options.isPidAlive ?? (() => true),
     agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
   });
 }
 
 function runGardenCommand(
-  options: Omit<GardenCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
+  options: Omit<GardenCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid" | "isPidAlive"> & {
     agentRunner?: JobAgentRunner;
     workerEnvironment?: NodeJS.ProcessEnv;
     workerProgram?: GardenCommandOptions["workerProgram"];
     pid?: number;
+    isPidAlive?: GardenCommandOptions["isPidAlive"];
   },
 ) {
   return runGardenCommandHandler({
@@ -72,6 +77,7 @@ function runGardenCommand(
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
+    isPidAlive: options.isPidAlive ?? (() => true),
     agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
   });
 }
