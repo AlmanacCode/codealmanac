@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import { getGlobalAlmanacDir } from "../global-paths.js";
 import { getRegistryPath } from "./paths.js";
@@ -202,6 +203,10 @@ export function findRegistryEntry(
  */
 export function isRegistryEntryReachable(entry: RegistryEntry): boolean {
   return entry.path.length > 0 && existsSync(entry.path);
+}
+
+export function isRegistryEntryWikiRoot(entry: RegistryEntry): boolean {
+  return entry.path.length > 0 && existsSync(join(entry.path, ".almanac"));
 }
 
 /**

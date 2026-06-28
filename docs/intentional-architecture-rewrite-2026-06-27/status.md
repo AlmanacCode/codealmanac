@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 239 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 240 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -37,6 +37,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved job page snapshot file reads and page hashing into `src/stores/wiki-files/`.
 - Moved repo `.almanac` path construction and nearest-wiki-root discovery into `src/stores/wiki-files/repo-location.ts`.
 - Moved registry path reachability checks into `src/stores/wiki-registry/`.
+- Moved global viewer registry browseability decisions into wiki registry services over store-owned wiki-root checks.
 - Moved registry path case-sensitivity detection into `src/platform/path-case.ts`.
 - Moved global state path and registry path construction into `src/stores/global-paths.ts` and `src/stores/wiki-registry/paths.ts`, deleting the old top-level `src/paths.ts`.
 - Moved cross-cutting slug, user-facing error, and ANSI theme helper contracts into `src/shared/`, deleting the old root-level helper files.
@@ -115,13 +116,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved current-platform path case behavior into `src/platform/path-case.ts`. Registry storage still owns registry JSON persistence and idempotent entry mutation, but it no longer reads `process.platform` directly when comparing repo paths.
+The latest slice moved global viewer registry lookup through `src/services/wiki/registry.ts`. The viewer global read model no longer imports registry stores or filesystem checks directly; wiki services return browseable, missing, and unreachable registry results over store-owned wiki-root checks.
 
 Verification passed:
 
 - `git diff --check`
 - `npm run lint`
-- `npx vitest run test/codex-agent-runtime-provider.test.ts test/architecture-boundaries.test.ts`
+- `npx vitest run test/viewer-global-api.test.ts test/list.test.ts test/registry.test.ts test/architecture-boundaries.test.ts`
 - `npm test`
 - `npm run build`
 - `node dist/launcher.js doctor --help`

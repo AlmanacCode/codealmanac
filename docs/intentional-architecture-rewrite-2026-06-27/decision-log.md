@@ -113,6 +113,8 @@ Wiki services own registry product verbs such as listing and dropping wikis. The
 
 Registry path case-sensitivity is platform-owned. The registry store still compares paths to keep add/find idempotent, but the current-OS rule for case-insensitive path comparison lives in `src/platform/path-case.ts` because it depends on `process.platform`, not registry JSON semantics.
 
+Global viewer registry lookup goes through wiki registry services. The registry store owns mechanical checks such as whether a registered path contains `.almanac`; wiki services own the browseable, missing, and unreachable registry result contracts; the viewer edge maps those service results into viewer APIs and viewer-specific errors.
+
 ### Worker-program shape is a shared contract
 
 The CLI edge owns discovering the current Node command and entrypoint. Lifecycle services pass that worker-program value through their workflows, and the job runtime validates that an entrypoint exists before queueing a detached worker. `src/platform/jobs/worker-process.ts` owns only the mechanics of spawning the detached process. The shared shape lives in `src/shared/worker-program.ts` so lifecycle code does not import platform worker-process mechanics and platform code does not import service workflow types.

@@ -5,6 +5,7 @@ export {
   findEntry,
   findRegistryEntry,
   isRegistryEntryReachable,
+  isRegistryEntryWikiRoot,
   readRegistry,
   writeRegistry,
   type RegistryEntry,

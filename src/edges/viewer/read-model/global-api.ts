@@ -1,7 +1,7 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-
-import { readRegistry, type RegistryEntry } from "../../../stores/wiki-registry/index.js";
+import {
+  getBrowseableWiki,
+  listBrowseableWikis,
+} from "../../../services/wiki/registry.js";
 import { createViewerApi, type ViewerApi } from "./api.js";
 import type { ViewerJobsRuntime } from "./jobs-api.js";
 
@@ -39,10 +39,9 @@ export class UnreachableWikiError extends Error {
 export function createGlobalViewerApi(ctx: GlobalViewerApiContext): GlobalViewerApi {
   return {
     async wikis() {
-      const entries = await readRegistry();
+      const entries = await listBrowseableWikis();
       const wikis: ViewerWikiSummary[] = [];
       for (const entry of entries) {
-        if (!isBrowseableWiki(entry)) continue;
         const overview = await createViewerApi({
           repoRoot: entry.path,
           runtime: ctx,
@@ -61,18 +60,16 @@ export function createGlobalViewerApi(ctx: GlobalViewerApiContext): GlobalViewer
     },
 
     async forWiki(name) {
-      const entry = (await readRegistry()).find((candidate) => candidate.name === name);
-      if (entry === undefined) {
+      const result = await getBrowseableWiki(name);
+      if (result.status === "missing") {
         throw new UnknownWikiError(name);
       }
-      if (!isBrowseableWiki(entry)) {
+      if (result.status === "unreachable") {
+        const entry = result.wiki;
         throw new UnreachableWikiError(name, entry.path);
       }
+      const entry = result.wiki;
       return createViewerApi({ repoRoot: entry.path, runtime: ctx });
     },
   };
-}
-
-function isBrowseableWiki(entry: RegistryEntry): boolean {
-  return entry.path.length > 0 && existsSync(join(entry.path, ".almanac"));
 }

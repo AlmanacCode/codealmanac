@@ -1685,3 +1685,11 @@ Two-hundred-thirty-ninth production slice:
 - Moved `process.platform` use out of `src/stores/wiki-registry/store.ts`.
 - Kept registry storage responsible for registry JSON persistence, reachability checks, and idempotent entry mutation.
 - Strengthened architecture-boundary tests so registry storage does not regain ambient `process.platform` reads and path-case OS behavior remains under platform ownership.
+
+Two-hundred-fortieth production slice:
+
+- Added wiki registry service read models for browseable wiki listing and named browseable wiki lookup.
+- Added store-owned `isRegistryEntryWikiRoot` so the registry store owns the mechanical `.almanac` existence check next to reachability checks.
+- Moved the global viewer API off direct registry store reads and filesystem checks.
+- Kept the viewer global read model focused on viewer route composition and error mapping.
+- Strengthened architecture-boundary tests so the global viewer read model cannot regain registry-store or filesystem ownership.

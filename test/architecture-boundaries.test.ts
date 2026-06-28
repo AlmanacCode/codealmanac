@@ -349,6 +349,9 @@ describe("architecture boundaries", () => {
     const serveRender = await readSource("src/edges/cli/serve-render.ts");
     const viewerServer = await readSource("src/edges/viewer/server.ts");
     const viewerReadModel = await readSource("src/edges/viewer/read-model/api.ts");
+    const viewerGlobalReadModel = await readSource(
+      "src/edges/viewer/read-model/global-api.ts",
+    );
     const viewerJobs = await readSource("src/edges/viewer/read-model/jobs.ts");
     const cliInterrupt = await readSource("src/edges/cli/interrupt.ts");
     const registerQueryCommands = await readSource(
@@ -389,6 +392,13 @@ describe("architecture boundaries", () => {
     expect(viewerServer).not.toContain("services/viewer");
     expect(viewerReadModel).not.toContain("node:http");
     expect(viewerReadModel).not.toContain("readViewerAsset");
+    expect(viewerGlobalReadModel).toContain("services/wiki/registry.js");
+    expect(viewerGlobalReadModel).toContain("listBrowseableWikis");
+    expect(viewerGlobalReadModel).toContain("getBrowseableWiki");
+    expect(viewerGlobalReadModel).not.toContain("stores/wiki-registry");
+    expect(viewerGlobalReadModel).not.toContain("readRegistry");
+    expect(viewerGlobalReadModel).not.toContain("existsSync");
+    expect(viewerGlobalReadModel).not.toContain("node:fs");
     expect(viewerJobs).not.toContain("platform/process");
     expect(cliInterrupt).toContain("process.once");
     expect(cliInterrupt).toContain("SIGINT");
@@ -436,9 +446,13 @@ describe("architecture boundaries", () => {
     expect(registerListCommand).toContain("shouldUseStdoutColor()");
     expect(registryService).not.toContain("export type RegisteredWiki = RegistryEntry");
     expect(registryService).toContain("isRegistryEntryReachable");
+    expect(registryService).toContain("isRegistryEntryWikiRoot");
+    expect(registryService).toContain("listBrowseableWikis");
+    expect(registryService).toContain("getBrowseableWiki");
     expect(registryService).not.toContain("existsSync");
     expect(registryService).not.toContain("node:fs");
     expect(registryStore).toContain("isRegistryEntryReachable");
+    expect(registryStore).toContain("isRegistryEntryWikiRoot");
     expect(registryStore).toContain("existsSync");
   });
 

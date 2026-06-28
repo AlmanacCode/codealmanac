@@ -133,4 +133,20 @@ describe("global viewer api", () => {
       );
     });
   });
+
+  it("reports a registered non-wiki path as unreachable on direct lookup", async () => {
+    await withTempHome(async (home) => {
+      const notWiki = await makeRepo(home, "not-wiki");
+      await addEntry({
+        name: "not-wiki",
+        description: "",
+        path: notWiki,
+        registered_at: "2026-05-11T12:00:00.000Z",
+      });
+
+      await expect(
+        createGlobalViewerApi(fakeViewerRuntime).forWiki("not-wiki"),
+      ).rejects.toThrow(/path is unreachable/);
+    });
+  });
 });
