@@ -14,7 +14,7 @@ import type {
   AutomationScheduler,
   AutomationSchedulerJob,
   AutomationSchedulerJobInput,
-} from "../../services/automation/scheduler.js";
+} from "../../shared/automation-scheduler.js";
 
 export function createLaunchdAutomationScheduler(args: {
   exec?: ExecFn;
@@ -76,7 +76,6 @@ function buildLaunchdAutomationJob(
   });
 
   return {
-    taskId: input.taskId,
     label: input.label,
     plistPath: input.plistPath ?? launchAgentPlistPath(input.label, input.homeDir),
     programArguments: input.programArguments,
@@ -103,4 +102,3 @@ function unescapeXml(value: string): string {
     .replaceAll("&lt;", "<")
     .replaceAll("&amp;", "&");
 }
-

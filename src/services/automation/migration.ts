@@ -4,7 +4,7 @@ import {
 } from "./tasks.js";
 import { installAutomation } from "./automation.js";
 import type { AutomationInstallResult } from "./types.js";
-import type { AutomationScheduler } from "./scheduler.js";
+import type { AutomationScheduler } from "../../shared/automation-scheduler.js";
 
 export interface MigrateLegacyAutomationOptions {
   cwd: string;

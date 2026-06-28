@@ -1,12 +1,9 @@
-import type { AutomationTaskId } from "./types.js";
-
 export type AutomationExecFn = (
   file: string,
   args: string[],
 ) => Promise<{ stdout?: string; stderr?: string }>;
 
 export interface AutomationSchedulerJobInput {
-  taskId: AutomationTaskId;
   homeDir: string;
   label: string;
   plistPath?: string;
@@ -19,7 +16,6 @@ export interface AutomationSchedulerJobInput {
 }
 
 export interface AutomationSchedulerJob {
-  taskId: AutomationTaskId;
   label: string;
   plistPath: string;
   programArguments: string[];
@@ -64,4 +60,3 @@ export interface AutomationScheduler {
   }): Promise<LegacyAutomationJob | null>;
   cleanupLegacyHooks(args: { homeDir: string }): Promise<void>;
 }
-

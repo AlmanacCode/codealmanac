@@ -1,5 +1,5 @@
-import type { AutomationScheduler } from "../services/automation/scheduler.js";
 import { createLaunchdAutomationScheduler } from "../platform/automation/scheduler.js";
+import type { AutomationScheduler } from "../shared/automation-scheduler.js";
 
 export type AutomationRuntimeExec = (
   file: string,

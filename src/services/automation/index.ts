@@ -38,4 +38,4 @@ export type {
   AutomationSchedulerJobInput,
   AutomationSchedulerJobStatus,
   LegacyAutomationJob,
-} from "./scheduler.js";
+} from "../../shared/automation-scheduler.js";

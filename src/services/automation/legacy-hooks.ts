@@ -1,4 +1,4 @@
-import type { AutomationScheduler } from "./scheduler.js";
+import type { AutomationScheduler } from "../../shared/automation-scheduler.js";
 
 export interface CleanupLegacyAutomationHooksOptions {
   homeDir: string;

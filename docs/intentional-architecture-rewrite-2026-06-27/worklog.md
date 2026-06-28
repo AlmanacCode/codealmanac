@@ -1503,3 +1503,11 @@ Two-hundred-fifteenth production slice:
 - Kept `src/services/setup/global-install.ts` and `src/services/setup/provider-fix-command.ts` as product helpers for setup state/result shaping and fix-command normalization.
 - Changed `src/platform/setup/runtime.ts` to import only shared setup contracts instead of setup service files.
 - Strengthened architecture-boundary tests so setup service helpers do not own the runtime interfaces and platform setup runtime no longer imports setup services.
+
+Two-hundred-sixteenth production slice:
+
+- Added `src/shared/automation-scheduler.ts` for the scheduler port shared by automation services, automation app composition, and launchd platform mechanics.
+- Deleted `src/services/automation/scheduler.ts`; scheduler contracts are now neutral shared contracts rather than service implementation files.
+- Removed `taskId` from scheduler job input/output because launchd mechanics do not need product task identity; automation services keep task ids in planning/result objects.
+- Changed launchd automation scheduler, automation planning, automation types, migration, and legacy-hook cleanup to import the shared scheduler contract.
+- Strengthened architecture-boundary tests so platform automation scheduler no longer imports automation services and the shared scheduler contract stays free of `AutomationTaskId`.

@@ -21,7 +21,7 @@ import type {
 import type {
   AutomationScheduler,
   AutomationSchedulerJob,
-} from "./scheduler.js";
+} from "../../shared/automation-scheduler.js";
 
 export interface PlannedAutomationJob {
   task: AutomationTaskDefinition;
@@ -70,7 +70,6 @@ export function buildAutomationInstallPlan(
       task,
       intervalInput,
       job: scheduler.buildJob({
-        taskId: task.id,
         homeDir: home,
         plistPath: plistPathForTask(task, home, options, scheduler),
         label: task.label,

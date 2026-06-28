@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 250 committed rewrite commits past `dev`. The worklog records 215 production slices so far.
+The branch has more than 250 committed rewrite commits past `dev`. The worklog records 216 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -68,7 +68,8 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved setup runtime ports into `src/shared/setup-runtime.ts`, so platform setup mechanics no longer import setup service files for contract types.
 - Moved setup shell/global-install mechanics behind `src/platform/setup/runtime.ts`, so setup services own contracts/results while the CLI setup edge owns concrete runtime composition.
 - Split the automation task catalog out of platform launchd mechanics: task meaning/defaults live under `src/services/automation/tasks.ts`, while plist/log paths live under `src/platform/automation/paths.ts`.
-- Moved automation scheduler mechanics behind `src/services/automation/scheduler.ts`, with launchd implementation in `src/platform/automation/scheduler.ts`; automation services no longer import `src/platform/automation/`.
+- Moved the automation scheduler port into `src/shared/automation-scheduler.ts`, so launchd platform mechanics no longer import automation services.
+- Moved automation scheduler mechanics behind the shared scheduler port, with launchd implementation in `src/platform/automation/scheduler.ts`; automation services no longer import `src/platform/automation/`.
 - Moved concrete agent runtime provider registry creation out of job runtime services; CLI and worker edges now inject a `JobAgentRunner`, while `src/agent/runtime/job-runner.ts` owns provider-registry composition.
 - Moved provider identity and provider-neutral runtime event/final-output/tool contracts into `src/shared/`, so services and stores no longer import provider runtime contract files from `src/agent/runtime/`.
 - Moved provider enablement policy into `src/shared/agent-provider-enablement.ts` and provider setup/readiness view construction into `src/services/agents/provider-view.ts`, leaving `src/agent/readiness/providers/` focused on provider status probing.
@@ -90,16 +91,16 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved setup runtime ports into `src/shared/setup-runtime.ts`, so platform setup mechanics depend on shared setup contracts instead of setup service files.
+The latest slice moved the automation scheduler port into `src/shared/automation-scheduler.ts`, deleted the old service scheduler contract file, and removed product `taskId` from the launchd-facing job shape.
 
 Verification passed:
 
 - `git diff --check`
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/setup.test.ts test/setup-plan.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/automation.test.ts test/setup.test.ts test/uninstall.test.ts`
 - `npm test`
 - `npm run build`
-- `node dist/launcher.js setup --help`
+- `node dist/launcher.js automation --help`
 
 ## Immediate Next Work
 

@@ -1009,7 +1009,7 @@ describe("architecture boundaries", () => {
     const automationCatalog = await readSource("src/services/automation/catalog.ts");
     const automationLegacyHooks = await readSource("src/services/automation/legacy-hooks.ts");
     const automationTasks = await readSource("src/services/automation/tasks.ts");
-    const automationScheduler = await readSource("src/services/automation/scheduler.ts");
+    const automationScheduler = await readSource("src/shared/automation-scheduler.ts");
     const automationAppRuntime = await readSource("src/app/automation-runtime.ts");
     const automationRegistration = await readSource("src/edges/cli/register-automation-commands.ts");
     const migrateRegistration = await readSource("src/edges/cli/register-migrate-commands.ts");
@@ -1026,6 +1026,7 @@ describe("architecture boundaries", () => {
     );
     expect(automationServiceIndex).not.toContain("platform/automation");
     expect(automationServiceTypes).not.toContain("platform/automation");
+    expect(automationServiceTypes).toContain("shared/automation-scheduler.js");
     expect(automationServiceTypes).not.toContain("PlatformExecFn");
     expect(automationServiceTypes).not.toContain("PlatformScheduledTaskId");
     expect(automationServiceTypes).not.toContain("NodeJS.ProcessEnv");
@@ -1060,7 +1061,11 @@ describe("architecture boundaries", () => {
     expect(automationTasks).toContain("automationTaskDefinition");
     expect(automationPaths).toContain("LaunchAgents");
     expect(automationPaths).toContain("launchAgentPlistPath");
+    expect(existsSync(join(ROOT, "src/services/automation/scheduler.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/shared/automation-scheduler.ts"))).toBe(true);
     expect(automationScheduler).toContain("export interface AutomationScheduler");
+    expect(automationScheduler).not.toContain("AutomationTaskId");
+    expect(automationScheduler).not.toContain("taskId");
     expect(automationScheduler).toContain("programArguments: string[] | null");
     expect(existsSync(join(ROOT, "src/app/automation-runtime.ts"))).toBe(true);
     expect(automationAppRuntime).toContain("createLaunchdAutomationScheduler");
@@ -1076,6 +1081,9 @@ describe("architecture boundaries", () => {
       expect(source).not.toContain("createLaunchdAutomationScheduler");
     }
     expect(launchdAutomationScheduler).toContain("createLaunchdAutomationScheduler");
+    expect(launchdAutomationScheduler).toContain("shared/automation-scheduler.js");
+    expect(launchdAutomationScheduler).not.toContain("services/automation");
+    expect(launchdAutomationScheduler).not.toContain("taskId");
     expect(launchdAutomationScheduler).toContain("buildLaunchPath");
     expect(launchdAutomationScheduler).toContain("automationLogPaths");
     expect(launchdAutomationScheduler).toContain("launchAgentPlistPath");
