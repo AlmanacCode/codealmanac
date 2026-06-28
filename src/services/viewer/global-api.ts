@@ -1,8 +1,11 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-import { readRegistry, type RegistryEntry } from "../stores/wiki-registry/index.js";
+import { readRegistry, type RegistryEntry } from "../../stores/wiki-registry/index.js";
 import { createViewerApi, type ViewerApi } from "./api.js";
+import type { ViewerJobsRuntime } from "./jobs-api.js";
+
+export type GlobalViewerApiContext = ViewerJobsRuntime;
 
 export interface ViewerWikiSummary {
   name: string;
@@ -33,14 +36,17 @@ export class UnreachableWikiError extends Error {
   }
 }
 
-export function createGlobalViewerApi(): GlobalViewerApi {
+export function createGlobalViewerApi(ctx: GlobalViewerApiContext): GlobalViewerApi {
   return {
     async wikis() {
       const entries = await readRegistry();
       const wikis: ViewerWikiSummary[] = [];
       for (const entry of entries) {
         if (!isBrowseableWiki(entry)) continue;
-        const overview = await createViewerApi({ repoRoot: entry.path }).overview();
+        const overview = await createViewerApi({
+          repoRoot: entry.path,
+          runtime: ctx,
+        }).overview();
         wikis.push({
           name: entry.name,
           description: entry.description,
@@ -62,7 +68,7 @@ export function createGlobalViewerApi(): GlobalViewerApi {
       if (!isBrowseableWiki(entry)) {
         throw new UnreachableWikiError(name, entry.path);
       }
-      return createViewerApi({ repoRoot: entry.path });
+      return createViewerApi({ repoRoot: entry.path, runtime: ctx });
     },
   };
 }

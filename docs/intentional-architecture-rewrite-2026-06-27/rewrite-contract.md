@@ -89,6 +89,20 @@ src/
 
 This shape can change if implementation proves a better ownership map. Any change should keep the same dependency direction and make the call graph easier to explain.
 
+## Working Strategy
+
+Work top-down. Do not spend many slices polishing small leaks while a major subsystem boundary is still unclear.
+
+Preferred order:
+
+1. Pick a whole subsystem and redraw its folder/file ownership.
+2. Move files and names so the subsystem reads correctly at directory level.
+3. Delete obsolete compatibility paths and duplicate mental models exposed by that move.
+4. Add only the boundary tests needed to protect the new shape.
+5. After the big boundary is clear, do medium cleanup, then small leak cleanup.
+
+Tiny slices are still valid when they are the final hardening step for a subsystem. They are not the default mode of the rewrite.
+
 ## Service Ownership
 
 | Service | Owns | Must not own |
@@ -177,3 +191,20 @@ The rewrite is not done because files moved. It is done only when current eviden
 - Review passes find no major ownership, naming, or accidental-complexity issues.
 - A future maintainer can understand the architecture from folder names, file names, and callsites.
 
+## Completion Stop Rule
+
+The rewrite is merge-ready after one full subsystem audit pass over `src/` proves that:
+
+- Every top-level `src/` folder has a clear reason to exist.
+- Major subsystems match the ownership map: edges, CLI adapters, services, stores, platform/integrations, agent/providers, wiki, and viewer.
+- Command files are request shaping and rendering surfaces, not workflow owners.
+- Services own product verbs and workflows, not platform/provider/CLI mechanics.
+- Stores own persistence and query mechanics.
+- Platform/integration modules own operating-system, process, provider, package-manager, and SDK mechanics.
+- Provider modules own provider runtime truth.
+- Large files have been reviewed; any remaining large files are naturally dense, not mixed-responsibility.
+- Dead compatibility layers and duplicate old paths are gone or explicitly justified.
+- Boundary tests protect the main dependency and ownership rules.
+- Full tests, build, common CLI smokes, and a broad architectural review pass all pass.
+
+If the remaining findings after that audit are only polish items and not architecture-shaping, stop the rewrite and call the branch merge-ready.

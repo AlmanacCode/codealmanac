@@ -7,8 +7,8 @@ import {
 } from "../src/jobs/index.js";
 import { runServe } from "../src/cli/commands/serve.js";
 import { renderServeStartup } from "../src/cli/commands/serve-render.js";
+import { startViewerServer } from "../src/edges/viewer/server.js";
 import { addEntry } from "../src/stores/wiki-registry/index.js";
-import { startViewerServer } from "../src/viewer/server.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
 
 describe("serve command rendering", () => {

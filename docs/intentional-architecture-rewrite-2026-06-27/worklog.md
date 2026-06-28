@@ -1036,3 +1036,10 @@ One-hundred-fifty-fifth production slice:
 - Kept `src/services/wiki/doctor-index.ts` focused on formatting typed index diagnostics into doctor checks.
 - Kept `src/services/wiki/doctor.ts` as the composer that refreshes the index, asks the indexer for diagnostics, and aggregates wiki doctor checks.
 - Added boundary guards so doctor services cannot re-own SQLite, file-existence, mtime, or `SELECT COUNT` mechanics.
+
+One-hundred-fifty-sixth production slice:
+
+- Split the viewer subsystem by ownership: HTTP/static serving moved to `src/edges/viewer/`, while viewer read-model APIs moved to `src/services/viewer/`.
+- Updated `almanac serve` to call the viewer edge instead of the old mixed `src/viewer/server.ts` bucket.
+- Made the viewer edge wire platform PID-liveness into the viewer service so service read models no longer import `src/platform/process.ts`.
+- Removed the old `src/viewer/*.ts` source bucket and added boundary guards around the new viewer edge/service split.

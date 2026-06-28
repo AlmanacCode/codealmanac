@@ -4,8 +4,12 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { addEntry, readRegistry } from "../src/stores/wiki-registry/index.js";
-import { createGlobalViewerApi } from "../src/viewer/global-api.js";
+import { createGlobalViewerApi } from "../src/services/viewer/global-api.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
+
+const fakeViewerRuntime = {
+  isPidAlive: () => false,
+};
 
 describe("global viewer api", () => {
   it("lists reachable registered wikis with overview counts", async () => {
@@ -37,7 +41,7 @@ describe("global viewer api", () => {
         registered_at: "2026-05-11T12:01:00.000Z",
       });
 
-      const api = createGlobalViewerApi();
+      const api = createGlobalViewerApi(fakeViewerRuntime);
       const result = await api.wikis();
 
       expect(result.wikis.map((wiki) => wiki.name)).toEqual(["alpha", "beta"]);
@@ -90,7 +94,7 @@ describe("global viewer api", () => {
       });
       await rm(gone, { recursive: true, force: true });
 
-      const api = createGlobalViewerApi();
+      const api = createGlobalViewerApi(fakeViewerRuntime);
       const result = await api.wikis();
 
       expect(result.wikis.map((wiki) => wiki.name)).toEqual(["alpha"]);
@@ -118,13 +122,13 @@ describe("global viewer api", () => {
         registered_at: "2026-05-11T12:00:00.000Z",
       });
 
-      const api = await createGlobalViewerApi().forWiki("beta");
+      const api = await createGlobalViewerApi(fakeViewerRuntime).forWiki("beta");
 
       await expect(api.page("beta-page")).resolves.toMatchObject({
         slug: "beta-page",
         title: "Beta Page",
       });
-      await expect(createGlobalViewerApi().forWiki("missing")).rejects.toThrow(
+      await expect(createGlobalViewerApi(fakeViewerRuntime).forWiki("missing")).rejects.toThrow(
         /no registered wiki named "missing"/,
       );
     });

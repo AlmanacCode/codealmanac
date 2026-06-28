@@ -1,4 +1,4 @@
-import { startViewerServer } from "../../viewer/server.js";
+import { startViewerServer } from "../../edges/viewer/server.js";
 import { renderServeStartup, type ServeStartup } from "./serve-render.js";
 
 export type { ServeStartup } from "./serve-render.js";

@@ -1,12 +1,13 @@
 import { createServer, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import type { ViewerApi } from "./api.js";
+import { isLocalPidAlive } from "../../platform/process.js";
+import type { ViewerApi } from "../../services/viewer/api.js";
 import {
   createGlobalViewerApi,
   UnknownWikiError,
   UnreachableWikiError,
-} from "./global-api.js";
+} from "../../services/viewer/global-api.js";
 import { readViewerAsset, readViewerIndex } from "./static.js";
 
 export interface ViewerServerOptions {
@@ -24,7 +25,7 @@ export async function startViewerServer(
 ): Promise<StartedViewerServer> {
   const host = options.host ?? "127.0.0.1";
   const port = options.port ?? 3927;
-  const api = createGlobalViewerApi();
+  const api = createGlobalViewerApi({ isPidAlive: isLocalPidAlive });
 
   const server = createServer(async (req, res) => {
     try {

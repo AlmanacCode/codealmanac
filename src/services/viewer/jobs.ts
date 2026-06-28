@@ -5,18 +5,21 @@ import {
   resolveJobLogPath,
   resolveJobRecordPath,
   toJobView,
-} from "../jobs/index.js";
+} from "../../jobs/index.js";
 import {
   enrichJobView,
-} from "../jobs/projections/view.js";
-import { deriveJobAgentTraces } from "../jobs/projections/agent-traces.js";
-import { deriveJobWarnings } from "../jobs/projections/warnings.js";
-import { readJobLogEvents } from "../jobs/projections/log-events.js";
-import { isLocalPidAlive } from "../platform/process.js";
+} from "../../jobs/projections/view.js";
+import { deriveJobAgentTraces } from "../../jobs/projections/agent-traces.js";
+import { deriveJobWarnings } from "../../jobs/projections/warnings.js";
+import { readJobLogEvents } from "../../jobs/projections/log-events.js";
 import type {
   ViewerJobDetail,
   ViewerJobRun,
 } from "./job-types.js";
+
+export interface ViewerJobsRuntime {
+  isPidAlive(pid: number): boolean;
+}
 
 export type {
   ViewerAgentTrace,
@@ -27,7 +30,10 @@ export type {
   ViewerRunWarning,
 } from "./job-types.js";
 
-export async function listViewerJobs(repoRoot: string): Promise<{ runs: ViewerJobRun[] }> {
+export async function listViewerJobs(
+  repoRoot: string,
+  runtime: ViewerJobsRuntime,
+): Promise<{ runs: ViewerJobRun[] }> {
   const records = await listJobRecords(repoRoot);
   const runs = await Promise.all(
     records
@@ -36,7 +42,7 @@ export async function listViewerJobs(repoRoot: string): Promise<{ runs: ViewerJo
         const view = toJobView({
           record,
           now: new Date(),
-          isPidAlive: isLocalPidAlive,
+          isPidAlive: runtime.isPidAlive,
         });
         const events = await readJobLogEvents(await resolveJobLogPath(repoRoot, record.id));
         const specPrompt = await readSpecPrompt(repoRoot, record.id);
@@ -49,6 +55,7 @@ export async function listViewerJobs(repoRoot: string): Promise<{ runs: ViewerJo
 export async function getViewerJob(
   repoRoot: string,
   jobId: string,
+  runtime: ViewerJobsRuntime,
 ): Promise<ViewerJobDetail | null> {
   if (!isSafeJobId(jobId)) return null;
   const record = await readJobRecord(await resolveJobRecordPath(repoRoot, jobId));
@@ -59,7 +66,7 @@ export async function getViewerJob(
   const run = toJobView({
     record,
     now: new Date(),
-    isPidAlive: isLocalPidAlive,
+    isPidAlive: runtime.isPidAlive,
   });
   return {
     run: enrichJobView(

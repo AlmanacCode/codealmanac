@@ -11,8 +11,12 @@ import {
   writeJobRecord,
   writeJobSpec,
 } from "../src/jobs/index.js";
-import { createViewerApi } from "../src/viewer/api.js";
+import { createViewerApi } from "../src/services/viewer/api.js";
 import { makeRepo, scaffoldWiki, withTempHome, writePage } from "./helpers.js";
+
+const fakeViewerRuntime = {
+  isPidAlive: () => false,
+};
 
 async function seedViewerWiki(repo: string): Promise<void> {
   await scaffoldWiki(repo);
@@ -75,7 +79,7 @@ describe("viewer api", () => {
     await withTempHome(async (home) => {
       const repo = await makeRepo(home, "r");
       await seedViewerWiki(repo);
-      const api = createViewerApi({ repoRoot: repo });
+      const api = createViewerApi({ repoRoot: repo, runtime: fakeViewerRuntime });
 
       const overview = await api.overview();
       expect(overview.pageCount).toBe(2);
@@ -169,7 +173,7 @@ items:
         "utf8",
       );
 
-      const api = createViewerApi({ repoRoot: repo });
+      const api = createViewerApi({ repoRoot: repo, runtime: fakeViewerRuntime });
       const review = await api.review();
 
       expect(review.counts).toEqual({ open: 1, decided: 0, applied: 1 });
@@ -191,7 +195,7 @@ items:
         "---\ntitle: Getting Started\ntopics: [product]\n---\n\n# Getting Started\n\nStart here.\n",
       );
 
-      const api = createViewerApi({ repoRoot: repo });
+      const api = createViewerApi({ repoRoot: repo, runtime: fakeViewerRuntime });
       const overview = await api.overview();
 
       expect(overview.featuredPages.gettingStarted?.slug).toBe("getting-started");
@@ -208,7 +212,7 @@ items:
         "---\ntitle: Tagged Page\ntopics: [alpha, beta, gamma]\n---\n\n# Tagged Page\n\nBody.\n",
       );
 
-      const api = createViewerApi({ repoRoot: repo });
+      const api = createViewerApi({ repoRoot: repo, runtime: fakeViewerRuntime });
       const overview = await api.overview();
 
       expect(overview.topicNavigation).toEqual({ source: "tags", sidebarLimit: 8 });
@@ -228,7 +232,7 @@ items:
         );
       }
 
-      const api = createViewerApi({ repoRoot: repo });
+      const api = createViewerApi({ repoRoot: repo, runtime: fakeViewerRuntime });
       const overview = await api.overview();
 
       expect(overview.topicNavigation).toEqual({ source: "tags", sidebarLimit: 8 });
@@ -253,7 +257,7 @@ items:
           metadata: {
             operation: "garden",
             targetKind: "wiki",
-            targetPaths: ["src/viewer/api.ts"],
+            targetPaths: ["src/services/viewer/api.ts"],
           },
         },
       });
@@ -301,7 +305,7 @@ items:
         "utf8",
       );
 
-      const api = createViewerApi({ repoRoot: repo });
+      const api = createViewerApi({ repoRoot: repo, runtime: fakeViewerRuntime });
       const jobs = await api.jobs();
       expect(jobs.runs.map((run) => run.id)).toEqual([finished.id]);
       expect(jobs.runs[0]?.displayStatus).toBe("done");
@@ -317,7 +321,7 @@ items:
       expect(detail?.run.provider).toBe("codex");
       expect(detail?.run.model).toBe("gpt-5.5");
       expect(detail?.run.providerSessionId).toBe("session-123");
-      expect(detail?.run.displaySubtitle).toBe("src/viewer/api.ts");
+      expect(detail?.run.displaySubtitle).toBe("src/services/viewer/api.ts");
       expect(detail?.run.pageChangeDetails).toEqual({
         created: [{ slug: "new-page", title: null }],
         updated: [
@@ -386,7 +390,7 @@ items:
         },
       });
 
-      const api = createViewerApi({ repoRoot: repo });
+      const api = createViewerApi({ repoRoot: repo, runtime: fakeViewerRuntime });
       const jobs = await api.jobs();
       expect(jobs.runs[0]).toMatchObject({
         provider: "codex",
@@ -431,7 +435,7 @@ items:
         logPath: leakedLogPath,
       });
 
-      const api = createViewerApi({ repoRoot: repo });
+      const api = createViewerApi({ repoRoot: repo, runtime: fakeViewerRuntime });
 
       await expect(api.job("../run_20260510120500_secure")).resolves.toBeNull();
       const detail = await api.job(started.id);

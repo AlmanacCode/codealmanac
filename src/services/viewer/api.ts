@@ -3,16 +3,17 @@ import { join } from "node:path";
 
 import type Database from "better-sqlite3";
 
-import { ensureFreshIndex } from "../wiki/indexer/index.js";
-import { openIndex } from "../wiki/indexer/schema.js";
-import * as wikiQuery from "../wiki/query/index.js";
-import { toKebabCase } from "../slug.js";
-import { topicsYamlPath } from "../wiki/topics/paths.js";
+import { toKebabCase } from "../../slug.js";
+import { ensureFreshIndex } from "../../wiki/indexer/index.js";
+import { openIndex } from "../../wiki/indexer/schema.js";
+import * as wikiQuery from "../../wiki/query/index.js";
+import { topicsYamlPath } from "../../wiki/topics/paths.js";
 import {
   getViewerJobDetail,
   getViewerJobs,
   type ViewerJobDetail,
   type ViewerJobRun,
+  type ViewerJobsRuntime,
 } from "./jobs-api.js";
 import { getViewerReview, type ViewerReview } from "./review-api.js";
 
@@ -20,6 +21,7 @@ const SIDEBAR_TAG_LIMIT = 8;
 
 export interface ViewerApiContext {
   repoRoot: string;
+  runtime: ViewerJobsRuntime;
 }
 
 export type ViewerPageSummary = wikiQuery.PageSummary;
@@ -138,12 +140,12 @@ export function createViewerApi(ctx: ViewerApiContext): ViewerApi {
     },
 
     async jobs() {
-      return getViewerJobs(ctx.repoRoot);
+      return getViewerJobs(ctx.repoRoot, ctx.runtime);
     },
 
     async job(jobId) {
       return withFreshDb(ctx.repoRoot, async (db) => {
-        return getViewerJobDetail(ctx.repoRoot, jobId, db);
+        return getViewerJobDetail(ctx.repoRoot, jobId, db, ctx.runtime);
       });
     },
   };

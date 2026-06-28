@@ -1,31 +1,35 @@
 import type Database from "better-sqlite3";
 
-import * as query from "../wiki/query/index.js";
+import * as query from "../../wiki/query/index.js";
 import {
   getViewerJob,
   type ViewerJobPageChangeDetails,
   listViewerJobs,
   type ViewerJobDetail,
   type ViewerJobRun,
+  type ViewerJobsRuntime,
 } from "./jobs.js";
 
 export type {
   ViewerJobDetail,
+  ViewerJobsRuntime,
   ViewerJobRun,
 };
 
 export async function getViewerJobs(
   repoRoot: string,
+  runtime: ViewerJobsRuntime,
 ): Promise<{ runs: ViewerJobRun[] }> {
-  return listViewerJobs(repoRoot);
+  return listViewerJobs(repoRoot, runtime);
 }
 
 export async function getViewerJobDetail(
   repoRoot: string,
   jobId: string,
   db: Database.Database,
+  runtime: ViewerJobsRuntime,
 ): Promise<ViewerJobDetail | null> {
-  const detail = await getViewerJob(repoRoot, jobId);
+  const detail = await getViewerJob(repoRoot, jobId, runtime);
   if (detail === null) return null;
   return {
     ...detail,

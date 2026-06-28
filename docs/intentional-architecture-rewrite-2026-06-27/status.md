@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has 201 committed rewrite commits past `dev`. The worklog records 155 production slices so far.
+The branch has 202 committed rewrite commits past `dev`. The worklog records 156 production slices so far.
 
-The diff is broad: 353 files changed, with 20,670 insertions and 10,672 deletions.
+The diff is broad: 359 files changed, with 20,788 insertions and 10,713 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -31,18 +31,18 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Continue checking for service files that still know too much about platform, provider, or CLI mechanics.
 - Continue checking for command files that still own workflow decisions instead of request shaping and rendering.
 - Review large files that remain large because of mixed ownership, not because the domain is naturally dense.
-- Audit viewer/server boundaries; most current work has focused on CLI, services, jobs, sync, automation, and providers.
+- Continue subsystem-level passes before small leak cleanup.
 - Run another broad review pass over the full branch before calling the rewrite merge-ready.
 
 ## Latest Checkpoint
 
-The latest slice moved wiki doctor index probing out of doctor services. `src/wiki/indexer/diagnostics.ts` now owns index page/topic counts and index-db freshness reads; `src/services/wiki/doctor-index.ts` only formats typed diagnostics into doctor checks.
+The latest slice split the viewer subsystem by directory ownership. HTTP/static serving now lives under `src/edges/viewer/`, viewer read-model APIs live under `src/services/viewer/`, and the old mixed `src/viewer/*.ts` source bucket is gone.
 
-Verification passed: `npm run lint`, focused doctor/health/boundary tests, full `npm test` with 655 tests, `npm run build`, `node dist/codealmanac.js --version`, `node dist/codealmanac.js doctor --json`, and `node dist/codealmanac.js health`. The health smoke still reports existing wiki-content problems unrelated to this code slice.
+Verification passed: `npm run lint`, focused viewer/serve/boundary tests, full `npm test` with 655 tests, `npm run build`, `node dist/codealmanac.js --version`, and an isolated built `almanac serve` smoke that loaded the static UI and `/api/wikis`.
 
 ## Immediate Next Work
 
-Continue checking services that still know too much about platform, provider, or CLI mechanics; command files that still own workflow decisions instead of request shaping and rendering; and large files whose size reflects mixed ownership rather than domain density. The indexer warning, provider enablement, autoregistration registry-matching, harness provider environment, job-record PID paths, serve interrupt handling, setup/uninstall terminal sinks and input streams, setup guide package lookup, setup next-step wiki-state ownership, automation disabled-plist existence probing, doctor Node runtime version, doctor auth/automation/instruction/update probing, doctor index-db probing, doctor option cleanup, jobs PID liveness/signaling paths, lifecycle init request context, and review command result rendering are now explicit. Remaining candidates include provider/platform mechanics, command workflow decisions, and viewer API/read-model boundaries.
+Continue top-down subsystem passes before small leak cleanup. The indexer warning, provider enablement, autoregistration registry-matching, harness provider environment, job-record PID paths, serve interrupt handling, setup/uninstall terminal sinks and input streams, setup guide package lookup, setup next-step wiki-state ownership, automation disabled-plist existence probing, doctor Node runtime version, doctor auth/automation/instruction/update probing, doctor index-db probing, doctor option cleanup, jobs PID liveness/signaling paths, lifecycle init request context, review command result rendering, and viewer edge/read-model split are now explicit. Remaining candidates include provider/platform mechanics, command workflow decisions, service taxonomy, and any remaining viewer read-model/storage duplication.
 
 ## Decision Log
 

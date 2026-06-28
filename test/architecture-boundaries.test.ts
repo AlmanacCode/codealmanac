@@ -256,7 +256,9 @@ describe("architecture boundaries", () => {
   it("keeps serve startup rendering out of server lifetime control", async () => {
     const serveCommand = await readSource("src/cli/commands/serve.ts");
     const serveRender = await readSource("src/cli/commands/serve-render.ts");
-    const viewerServer = await readSource("src/viewer/server.ts");
+    const viewerServer = await readSource("src/edges/viewer/server.ts");
+    const viewerReadModel = await readSource("src/services/viewer/api.ts");
+    const viewerJobs = await readSource("src/services/viewer/jobs.ts");
     const cliInterrupt = await readSource("src/edges/cli/interrupt.ts");
     const registerQueryCommands = await readSource(
       "src/edges/cli/register-query-commands.ts",
@@ -266,7 +268,11 @@ describe("architecture boundaries", () => {
       true,
     );
     expect(existsSync(join(ROOT, "src/edges/cli/interrupt.ts"))).toBe(true);
-    expect(serveCommand).toContain("viewer/server.js");
+    expect(existsSync(join(ROOT, "src/edges/viewer/server.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/services/viewer/api.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/viewer/server.ts"))).toBe(false);
+    expect(existsSync(join(ROOT, "src/viewer/api.ts"))).toBe(false);
+    expect(serveCommand).toContain("edges/viewer/server.js");
     expect(serveCommand).toContain("./serve-render.js");
     expect(serveCommand).toContain("waitForStop");
     expect(serveCommand).not.toContain("process.stdout");
@@ -280,6 +286,11 @@ describe("architecture boundaries", () => {
     expect(viewerServer).not.toContain("process.off");
     expect(viewerServer).not.toContain("SIGINT");
     expect(viewerServer).not.toContain("SIGTERM");
+    expect(viewerServer).toContain("platform/process.js");
+    expect(viewerServer).toContain("services/viewer/global-api.js");
+    expect(viewerReadModel).not.toContain("node:http");
+    expect(viewerReadModel).not.toContain("readViewerAsset");
+    expect(viewerJobs).not.toContain("platform/process");
     expect(cliInterrupt).toContain("process.once");
     expect(cliInterrupt).toContain("SIGINT");
     expect(registerQueryCommands).toContain("waitForCliInterrupt");
@@ -673,7 +684,7 @@ describe("architecture boundaries", () => {
     const projectionView = await readSource("src/jobs/projections/view.ts");
     const agentTraces = await readSource("src/jobs/projections/agent-traces.ts");
     const warnings = await readSource("src/jobs/projections/warnings.ts");
-    const viewerJobs = await readSource("src/viewer/jobs.ts");
+    const viewerJobs = await readSource("src/services/viewer/jobs.ts");
 
     expect(existsSync(join(ROOT, "src/jobs/projections/agent-traces.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/jobs/projections/warnings.ts"))).toBe(true);
@@ -768,7 +779,7 @@ describe("architecture boundaries", () => {
 
   it("keeps local process signaling in the platform layer", async () => {
     const jobsService = await readSource("src/services/jobs/jobs.ts");
-    const viewerJobs = await readSource("src/viewer/jobs.ts");
+    const viewerJobs = await readSource("src/services/viewer/jobs.ts");
     const jobWorkerLockStore = await readSource("src/stores/jobs/worker-lock.ts");
     const syncLockStore = await readSource("src/stores/sync/lock.ts");
 
