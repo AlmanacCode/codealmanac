@@ -88,9 +88,38 @@ describe("architecture boundaries: wiki commands and viewer", () => {
     expect(showRender).toContain("formatShowRecords");
     expect(showRender).not.toContain("ansi");
     const showFormat = await readSource("src/edges/cli/commands/show/format.ts");
+    const showFields = await readSource("src/edges/cli/commands/show/fields.ts");
+    const showMetadata = await readSource(
+      "src/edges/cli/commands/show/metadata.ts",
+    );
+    const showBody = await readSource("src/edges/cli/commands/show/body.ts");
+    const showTime = await readSource("src/edges/cli/commands/show/time.ts");
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/show/fields.ts"))).toBe(
+      true,
+    );
+    expect(
+      existsSync(join(ROOT, "src/edges/cli/commands/show/metadata.ts")),
+    ).toBe(true);
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/show/body.ts"))).toBe(
+      true,
+    );
+    expect(existsSync(join(ROOT, "src/edges/cli/commands/show/time.ts"))).toBe(
+      true,
+    );
     expect(showFormat).toContain("../../../shared/ansi-theme.js");
     expect(showFormat).not.toContain("../../../ansi.js");
     expect(showFormat).toContain("makeAnsiTheme(options.color === true)");
+    expect(showFormat).toContain("selectedFields(options)");
+    expect(showFormat).not.toContain("function metadataHeader");
+    expect(showFormat).not.toContain("function formatBareLineage");
+    expect(showFormat).not.toContain("function firstParagraph");
+    expect(showFields).toContain("formatBareField");
+    expect(showFields).toContain("formatLabeledFields");
+    expect(showFields).toContain("selectedFields");
+    expect(showMetadata).toContain("metadataHeader");
+    expect(showBody).toContain("bodyOnly");
+    expect(showBody).toContain("firstParagraph");
+    expect(showTime).toContain("formatTimestamp");
     expect(showRender).toContain("renderShowResult");
     expect(showTypes).not.toContain("WikiPageView");
     expect(showTypes).not.toContain("ShowRecord =");

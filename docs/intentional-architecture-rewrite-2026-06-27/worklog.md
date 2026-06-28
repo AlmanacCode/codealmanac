@@ -1977,3 +1977,9 @@ Two-hundred-seventy-seventh production slice:
 - Added owner-named sync command files for run, status, shared option mapping, and rendering under `src/edges/cli/commands/sync/`.
 - Updated sync command registration and sync tests to import run/status adapters directly.
 - Strengthened jobs/sync and lifecycle/provider boundary tests so the old sync command and render catchalls cannot return.
+
+Two-hundred-seventy-eighth production slice:
+
+- Split the large `src/edges/cli/commands/show/format.ts` renderer into mode routing plus owner-named body, field, metadata, and time formatting files.
+- Kept `formatShowRecords()` as the command-output mode router while moving `--lead`, body-only, field flags, lineage, metadata headers, sources, backlinks, cross-wiki links, and timestamp formatting into smaller files.
+- Strengthened wiki command boundary tests so show output responsibilities stay split and `format.ts` does not grow field/body/metadata helpers back.
