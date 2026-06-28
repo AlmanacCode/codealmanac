@@ -5,9 +5,9 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 230 committed rewrite commits past `dev`. The worklog records 192 production slices so far.
+The branch has more than 230 committed rewrite commits past `dev`. The worklog records 193 production slices so far.
 
-The diff is broad: 490 files changed, with 24,829 insertions and 13,154 deletions.
+The diff is broad: 491 files changed, with 24,885 insertions and 13,154 deletions.
 
 This is no longer a small cleanup branch. It is a real ownership rewrite.
 
@@ -35,6 +35,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved sync ledger and lock persistence into explicit stores.
 - Moved local Claude/Codex transcript discovery, transcript snapshot reads, and timestamp boundary parsing into `src/platform/transcripts/` and removed the old top-level `src/sync/` source bucket.
 - Moved sync-facing transcript contracts and cursor boundary calculation into `src/shared/transcripts.ts`, leaving platform transcript modules focused on discovery and file reads.
+- Moved concrete transcript discovery/snapshot composition behind a service-owned sync transcript runtime contract, with `src/platform/transcripts/runtime.ts` wired by the CLI sync edge.
 - Moved lifecycle operation construction and Absorb input/source handling into `src/services/lifecycle/` and removed the old top-level `src/operations/` and `src/absorb/` source buckets.
 - Normalized lifecycle operation failures into lifecycle-owned result contracts before command rendering sees them.
 - Moved worker-program shape into `src/shared/worker-program.ts` so lifecycle services no longer import platform worker-process mechanics.
@@ -67,13 +68,13 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved setup shell and global-install mechanics out of setup services. `src/services/setup/provider-fix-command.ts` now depends on an injected provider-fix runner, `src/services/setup/global-install.ts` now depends on a service-owned global-install runtime contract, and `src/platform/setup/runtime.ts` composes shell/npm install mechanics for the CLI setup edge.
+The latest slice moved concrete transcript discovery and snapshot reads out of the sync service. `src/services/sync/types.ts` now owns the `SyncTranscriptRuntime` contract, `src/services/sync/sync.ts` consumes the injected runtime, and `src/platform/transcripts/runtime.ts` composes the Claude/Codex transcript mechanics for the CLI sync edge.
 
-Verification passed so far: `npx tsc --noEmit --pretty false` and focused setup/setup-plan/boundary tests.
+Verification passed so far: `npx tsc --noEmit --pretty false` and focused sync/boundary tests.
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, job provider-runner composition, Absorb source resolver composition, and setup runtime composition have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, job provider-runner composition, Absorb source resolver composition, setup runtime composition, and sync transcript runtime composition have now been removed or assigned. Remaining candidates include service files that still know platform/provider mechanics, command files that still own workflow decisions, and any lifecycle/job boundary duplication that remains after the big moves.
 
 ## Decision Log
 

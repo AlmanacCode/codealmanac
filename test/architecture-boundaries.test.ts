@@ -1553,12 +1553,17 @@ describe("architecture boundaries", () => {
     const syncSweep = await readSource("src/services/sync/sweep.ts");
     const syncSweepResults = await readSource("src/services/sync/sweep-results.ts");
     const transcriptDiscovery = await readSource("src/platform/transcripts/index.ts");
+    const transcriptRuntime = await readSource("src/platform/transcripts/runtime.ts");
     const sharedTranscripts = await readSource("src/shared/transcripts.ts");
     const syncCommand = await readSource("src/cli/commands/sync.ts");
+    const syncRegistration = await readSource(
+      "src/edges/cli/register-sync-commands.ts",
+    );
 
     expect(existsSync(join(ROOT, "src/services/sync/types.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/services/sync/sweep-results.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/platform/transcripts/index.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/platform/transcripts/runtime.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/sync"))).toBe(false);
     expect(syncServiceIndex).not.toContain("../../sync");
     expect(syncService).not.toContain("interface SyncWorkflowOptions");
@@ -1575,9 +1580,15 @@ describe("architecture boundaries", () => {
     );
     expect(syncService).not.toContain("...syncWorkflowReadyItemFromSweep(item)");
     expect(syncService).toContain("syncWorkflowSummaryFromSweep");
-    expect(syncService).toContain("platform/transcripts/index.js");
+    expect(syncService).not.toContain("platform/transcripts");
+    expect(syncServiceTypes).toContain("interface SyncTranscriptRuntime");
     expect(syncSweep).not.toContain("platform/transcripts");
     expect(syncSweepResults).not.toContain("platform/transcripts");
+    expect(syncCommand).not.toContain("platform/transcripts");
+    expect(syncRegistration).toContain("platform/transcripts/runtime.js");
+    expect(transcriptRuntime).toContain("discoverTranscriptCandidates");
+    expect(transcriptRuntime).toContain("readTranscriptSnapshot");
+    expect(transcriptRuntime).toContain("SyncTranscriptRuntime");
     expect(transcriptDiscovery).toContain("discoverTranscriptCandidates");
     expect(transcriptDiscovery).toContain("shared/transcripts.js");
     expect(transcriptDiscovery).not.toContain("operations");

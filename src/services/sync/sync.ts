@@ -1,8 +1,4 @@
 import { readConfig } from "../../stores/config/index.js";
-import {
-  discoverTranscriptCandidates,
-  readTranscriptSnapshot,
-} from "../../platform/transcripts/index.js";
 import { runPreparedAbsorbOperationWorkflow } from "../lifecycle/index.js";
 import { parseDuration } from "../../shared/duration.js";
 import type { TranscriptSourceApp } from "../../shared/transcripts.js";
@@ -32,15 +28,15 @@ export async function runSyncWorkflow(
     status: "completed",
     summary: syncWorkflowSummaryFromSweep(
       await executeSyncSweep({
-        candidates: await discoverTranscriptCandidates({
+        candidates: await options.transcriptRuntime.discoverCandidates({
           apps: sources.value,
-          home: options.homeDir,
+          homeDir: options.homeDir,
         }),
         syncSince: await readSyncSince(options.configPath),
         quietMs: quiet.ms,
         mode: options.mode ?? "sync",
         now: options.now ?? new Date(),
-        readTranscriptSnapshot,
+        readTranscriptSnapshot: options.transcriptRuntime.readSnapshot,
         startAbsorb: async ({ candidate, contextNote }) => {
           try {
             const result = await runPreparedAbsorbOperationWorkflow({

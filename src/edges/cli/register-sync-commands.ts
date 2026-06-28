@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { homedir } from "node:os";
 
 import { createAgentRuntimeJobRunner } from "../../agent/runtime/job-runner.js";
+import { createPlatformSyncTranscriptRuntime } from "../../platform/transcripts/runtime.js";
 import { currentCliNodeProgram } from "./current-cli.js";
 import { emit } from "./helpers.js";
 
@@ -31,6 +32,7 @@ export function registerSyncCommands(program: Command): void {
         workerEnvironment: process.env,
         pid: process.pid,
         agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
+        transcriptRuntime: createPlatformSyncTranscriptRuntime(),
       });
       emit(result);
     });
@@ -63,6 +65,7 @@ export function registerSyncCommands(program: Command): void {
         workerEnvironment: process.env,
         pid: process.pid,
         agentRunner: createAgentRuntimeJobRunner({ environment: process.env }),
+        transcriptRuntime: createPlatformSyncTranscriptRuntime(),
       });
       emit(result);
     });

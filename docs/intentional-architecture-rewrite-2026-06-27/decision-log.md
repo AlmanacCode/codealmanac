@@ -119,7 +119,7 @@ The update service owns update workflow policy: check latest, honor dismissals, 
 
 ### Transcript contracts are shared; transcript file mechanics are platform
 
-`src/platform/transcripts/` owns Claude/Codex transcript discovery and raw transcript file reads. `src/shared/transcripts.ts` owns the sync-facing transcript candidate, snapshot, read-result, app, and cursor-boundary contracts. `src/services/sync/` owns eligibility, ledger reconciliation, cursor decisions, summaries, and Absorb handoff over those contracts. `executeSyncSweep()` accepts a transcript snapshot reader so lower sync modules do not import platform transcript mechanics directly.
+`src/platform/transcripts/` owns Claude/Codex transcript discovery and raw transcript file reads. `src/platform/transcripts/runtime.ts` adapts those mechanics to the service-owned `SyncTranscriptRuntime` contract. `src/shared/transcripts.ts` owns the sync-facing transcript candidate, snapshot, read-result, app, and cursor-boundary contracts. `src/services/sync/` owns source-filter parsing, quiet-window eligibility, ledger reconciliation, cursor decisions, summaries, and Absorb handoff over injected transcript runtime facts. CLI sync edges create the concrete transcript runtime because they are the command composition point.
 
 ### Automation scheduler contracts are service-owned; launchd is platform
 

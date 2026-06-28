@@ -3,7 +3,19 @@ import type {
   LifecycleOperationBackgroundStarter,
 } from "../lifecycle/index.js";
 import type { JobAgentRunner } from "../jobs/runtime/agent-runner.js";
-import type { TranscriptSourceApp } from "../../shared/transcripts.js";
+import type {
+  TranscriptCandidate,
+  TranscriptReadResult,
+  TranscriptSourceApp,
+} from "../../shared/transcripts.js";
+
+export interface SyncTranscriptRuntime {
+  discoverCandidates(args: {
+    apps: TranscriptSourceApp[];
+    homeDir: string;
+  }): Promise<TranscriptCandidate[]>;
+  readSnapshot(transcriptPath: string): Promise<TranscriptReadResult>;
+}
 
 export interface SyncWorkflowOptions {
   mode?: "sync" | "status";
@@ -18,6 +30,7 @@ export interface SyncWorkflowOptions {
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
   agentRunner: JobAgentRunner;
+  transcriptRuntime: SyncTranscriptRuntime;
 }
 
 export type SyncWorkflowMode = "sync" | "status";

@@ -7,6 +7,7 @@ import {
   runSyncCommand as runSyncCommandHandler,
   type SyncCommandOptions,
 } from "../src/cli/commands/sync.js";
+import { createPlatformSyncTranscriptRuntime } from "../src/platform/transcripts/runtime.js";
 import type { JobAgentRunner } from "../src/services/jobs/runtime/agent-runner.js";
 import { makeRepo, scaffoldWiki, withTempHome } from "./helpers.js";
 import { writeConfig } from "../src/stores/config/index.js";
@@ -22,20 +23,30 @@ const TEST_AGENT_RUNNER: JobAgentRunner = async () => ({
   result: "done",
 });
 
-function runSyncCommand(
-  options: Omit<SyncCommandOptions, "agentRunner" | "workerEnvironment" | "workerProgram" | "pid"> & {
-    agentRunner?: JobAgentRunner;
-    workerEnvironment?: NodeJS.ProcessEnv;
-    workerProgram?: SyncCommandOptions["workerProgram"];
-    pid?: number;
-  },
-) {
+type SyncCommandTestOptions = Omit<
+  SyncCommandOptions,
+  | "agentRunner"
+  | "workerEnvironment"
+  | "workerProgram"
+  | "pid"
+  | "transcriptRuntime"
+> & {
+  agentRunner?: JobAgentRunner;
+  workerEnvironment?: NodeJS.ProcessEnv;
+  workerProgram?: SyncCommandOptions["workerProgram"];
+  pid?: number;
+  transcriptRuntime?: SyncCommandOptions["transcriptRuntime"];
+};
+
+function runSyncCommand(options: SyncCommandTestOptions) {
   return runSyncCommandHandler({
     ...options,
     workerProgram: options.workerProgram ?? TEST_WORKER_PROGRAM,
     workerEnvironment: options.workerEnvironment ?? process.env,
     pid: options.pid ?? 123,
     agentRunner: options.agentRunner ?? TEST_AGENT_RUNNER,
+    transcriptRuntime: options.transcriptRuntime ??
+      createPlatformSyncTranscriptRuntime(),
   });
 }
 

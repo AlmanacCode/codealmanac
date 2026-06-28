@@ -1326,3 +1326,11 @@ One-hundred-ninety-second production slice:
 - Changed `src/services/setup/global-install.ts` to depend on an injected `SetupGlobalInstallRuntime` instead of importing npm/global-install mechanics.
 - Updated CLI setup edge files to compose the platform setup runtime and pass service-owned contracts into setup workflows.
 - Strengthened architecture-boundary tests so setup services cannot reintroduce platform shell or package-manager imports.
+
+One-hundred-ninety-third production slice:
+
+- Added the service-owned `SyncTranscriptRuntime` contract for transcript candidate discovery and transcript snapshot reads.
+- Added `src/platform/transcripts/runtime.ts` as the concrete runtime that composes Claude/Codex transcript discovery and snapshot reads.
+- Removed direct `src/platform/transcripts/` imports from `src/services/sync/sync.ts`; the sync workflow now consumes the injected runtime.
+- Updated the CLI sync edge to pass the platform transcript runtime into `runSyncCommand`.
+- Strengthened sync boundary coverage so sync services and command adapters cannot reintroduce platform transcript imports.

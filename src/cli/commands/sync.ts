@@ -20,6 +20,7 @@ export interface SyncCommandOptions {
   workerEnvironment: NodeJS.ProcessEnv;
   pid: number;
   agentRunner: JobAgentRunner;
+  transcriptRuntime: SyncWorkflowOptions["transcriptRuntime"];
 }
 
 export interface SyncCommandResult {
@@ -53,5 +54,6 @@ function toSyncWorkflowOptions(
     workerEnvironment: options.workerEnvironment,
     pid: options.pid,
     agentRunner: options.agentRunner,
+    transcriptRuntime: options.transcriptRuntime,
   };
 }
