@@ -1753,7 +1753,7 @@ describe("architecture boundaries", () => {
     expect(syncService).not.toContain("...syncWorkflowReadyItemFromSweep(item)");
     expect(syncService).toContain("syncWorkflowSummaryFromSweep");
     expect(syncService).not.toContain("platform/transcripts");
-    expect(syncServiceTypes).toContain("interface SyncTranscriptRuntime");
+    expect(syncServiceTypes).not.toContain("interface SyncTranscriptRuntime");
     expect(syncSweep).not.toContain("platform/transcripts");
     expect(syncSweep).not.toContain("stores/jobs");
     expect(syncSweep).toContain("listJobProviderSessionIds");
@@ -1763,15 +1763,19 @@ describe("architecture boundaries", () => {
     expect(syncRegistration).not.toContain("platform/transcripts");
     expect(syncRegistration).toContain("createCliRuntime");
     expect(appCliRuntime).toContain("createPlatformSyncTranscriptRuntime");
+    expect(appCliRuntime).toContain("shared/transcripts.js");
     expect(transcriptRuntime).toContain("discoverTranscriptCandidates");
     expect(transcriptRuntime).toContain("readTranscriptSnapshot");
     expect(transcriptRuntime).toContain("SyncTranscriptRuntime");
+    expect(transcriptRuntime).toContain("shared/transcripts.js");
+    expect(transcriptRuntime).not.toContain("services/sync");
     expect(transcriptDiscovery).toContain("discoverTranscriptCandidates");
     expect(transcriptDiscovery).toContain("shared/transcripts.js");
     expect(transcriptDiscovery).not.toContain("operations");
     expect(transcriptDiscovery).not.toContain("stores/sync");
     expect(transcriptDiscovery).not.toContain("services/sync");
     expect(sharedTranscripts).toContain("TranscriptSourceApp");
+    expect(sharedTranscripts).toContain("interface SyncTranscriptRuntime");
     expect(syncCommand).toContain("services/sync/index.js");
     expect(syncCommand).not.toContain("../../sync");
     expect(syncCommand).not.toContain("../../operations");

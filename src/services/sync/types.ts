@@ -6,18 +6,10 @@ import type {
 import type { JobAgentRunner } from "../jobs/runtime/agent-runner.js";
 import type { IsPidAlive } from "../../shared/pid-liveness.js";
 import type {
-  TranscriptCandidate,
-  TranscriptReadResult,
+  SyncTranscriptRuntime,
   TranscriptSourceApp,
 } from "../../shared/transcripts.js";
-
-export interface SyncTranscriptRuntime {
-  discoverCandidates(args: {
-    apps: TranscriptSourceApp[];
-    homeDir: string;
-  }): Promise<TranscriptCandidate[]>;
-  readSnapshot(transcriptPath: string): Promise<TranscriptReadResult>;
-}
+export type { SyncTranscriptRuntime } from "../../shared/transcripts.js";
 
 export interface SyncWorkflowOptions {
   mode?: "sync" | "status";

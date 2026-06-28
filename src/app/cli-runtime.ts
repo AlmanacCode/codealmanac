@@ -11,8 +11,8 @@ import type {
   LifecycleOperationBackgroundStarter,
   LifecyclePromptLoader,
 } from "../services/lifecycle/index.js";
-import type { SyncTranscriptRuntime } from "../services/sync/index.js";
 import type { IsPidAlive } from "../shared/pid-liveness.js";
+import type { SyncTranscriptRuntime } from "../shared/transcripts.js";
 
 export interface CliRuntime {
   workerEnvironment: NodeJS.ProcessEnv;

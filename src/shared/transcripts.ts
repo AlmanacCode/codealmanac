@@ -27,6 +27,14 @@ export type TranscriptReadResult =
   | { ok: true; snapshot: TranscriptSnapshot }
   | { ok: false; reason: string };
 
+export interface SyncTranscriptRuntime {
+  discoverCandidates(args: {
+    apps: TranscriptSourceApp[];
+    homeDir: string;
+  }): Promise<TranscriptCandidate[]>;
+  readSnapshot(transcriptPath: string): Promise<TranscriptReadResult>;
+}
+
 export function transcriptCursorForSince(
   content: Buffer,
   since: Date,

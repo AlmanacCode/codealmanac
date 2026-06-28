@@ -1488,3 +1488,10 @@ Two-hundred-thirteenth production slice:
 - Deleted `src/platform/diagnostics/updates.ts`; reading CodeAlmanac config/update stores is product diagnostic state, not an external platform probe.
 - Changed the doctor CLI edge and doctor tests to use `readDiagnosticUpdateStatus()` from diagnostics services.
 - Strengthened architecture-boundary tests so the old platform update-diagnostics path stays gone while service update status explicitly owns config/update store reads.
+
+Two-hundred-fourteenth production slice:
+
+- Moved the `SyncTranscriptRuntime` port from `src/services/sync/types.ts` into `src/shared/transcripts.ts`.
+- Changed `src/platform/transcripts/runtime.ts` and `src/app/cli-runtime.ts` to depend on the shared transcript contract instead of the sync service type barrel.
+- Kept sync workflow request/result types under `src/services/sync/types.ts`, while the platform/service transcript port now lives beside the transcript data contracts it carries.
+- Strengthened architecture-boundary tests so platform transcript runtime no longer imports `services/sync`.

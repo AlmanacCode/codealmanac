@@ -1,4 +1,4 @@
-import type { SyncTranscriptRuntime } from "../../services/sync/types.js";
+import type { SyncTranscriptRuntime } from "../../shared/transcripts.js";
 import {
   discoverTranscriptCandidates,
   readTranscriptSnapshot,
