@@ -1,6 +1,9 @@
 export {
   gatherDoctorReport,
 } from "./doctor.js";
+export {
+  readDiagnosticUpdateStatus,
+} from "./update-status.js";
 export type {
   AgentDoctorCheck,
   Check,
@@ -20,3 +23,6 @@ export type {
   DoctorResult,
   SqliteProbeResult,
 } from "./types.js";
+export type {
+  DiagnosticUpdateStatusOptions,
+} from "./update-status.js";

@@ -2,13 +2,13 @@ import { readConfig } from "../../stores/config/index.js";
 import { readState } from "../../stores/update/index.js";
 import type { DiagnosticsUpdateStatus } from "../../shared/diagnostics.js";
 
-export interface UpdateDiagnosticsProbeOptions {
+export interface DiagnosticUpdateStatusOptions {
   statePath?: string;
   configPath?: string;
 }
 
-export async function probeDiagnosticUpdates(
-  options: UpdateDiagnosticsProbeOptions = {},
+export async function readDiagnosticUpdateStatus(
+  options: DiagnosticUpdateStatusOptions = {},
 ): Promise<DiagnosticsUpdateStatus> {
   const [state, config] = await Promise.all([
     readState(options.statePath),

@@ -18,7 +18,7 @@ import {
   probeDiagnosticGuides,
   probeDiagnosticInstructionEntries,
 } from "../src/platform/diagnostics/instructions.js";
-import { probeDiagnosticUpdates } from "../src/platform/diagnostics/updates.js";
+import { readDiagnosticUpdateStatus } from "../src/services/diagnostics/index.js";
 import { writeConfig } from "../src/stores/config/index.js";
 import { writeState } from "../src/stores/update/index.js";
 import {
@@ -348,7 +348,7 @@ describe("almanac doctor", () => {
       );
       await writeConfig({ update_notifier: false }, updateConfigPath);
       await expect(
-        probeDiagnosticUpdates({
+        readDiagnosticUpdateStatus({
           statePath: updateStatePath,
           configPath: updateConfigPath,
         }),

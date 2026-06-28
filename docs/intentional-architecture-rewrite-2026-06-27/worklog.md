@@ -1481,3 +1481,10 @@ Two-hundred-twelfth production slice:
 - Added `src/edges/cli/update-check-scheduler.ts` to compose service scheduling policy with platform detached-process spawning.
 - Reduced `src/platform/update/notifier-worker.ts` to process mechanics only and deleted `src/platform/update/announce.ts`.
 - Strengthened architecture-boundary tests so platform update modules no longer import config or update stores for notifier behavior.
+
+Two-hundred-thirteenth production slice:
+
+- Added `src/services/diagnostics/update-status.ts` as the diagnostics-service read model for update state and notifier config.
+- Deleted `src/platform/diagnostics/updates.ts`; reading CodeAlmanac config/update stores is product diagnostic state, not an external platform probe.
+- Changed the doctor CLI edge and doctor tests to use `readDiagnosticUpdateStatus()` from diagnostics services.
+- Strengthened architecture-boundary tests so the old platform update-diagnostics path stays gone while service update status explicitly owns config/update store reads.

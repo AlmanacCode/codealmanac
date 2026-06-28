@@ -2278,13 +2278,13 @@ describe("architecture boundaries", () => {
     const platformInstructionDiagnostics = await readSource(
       "src/platform/diagnostics/instructions.ts",
     );
-    const platformUpdateDiagnostics = await readSource(
-      "src/platform/diagnostics/updates.ts",
-    );
     const sharedDiagnosticTypes = await readSource(
       "src/shared/diagnostics.ts",
     );
     const updateDiagnostics = await readSource("src/services/diagnostics/updates.ts");
+    const updateStatusDiagnostics = await readSource(
+      "src/services/diagnostics/update-status.ts",
+    );
     const diagnosticsTypes = await readSource("src/services/diagnostics/types.ts");
     const diagnosticsIndex = await readSource("src/services/diagnostics/index.ts");
     const setupRegistration = await readSource(
@@ -2321,6 +2321,11 @@ describe("architecture boundaries", () => {
     expect(existsSync(join(ROOT, "src/shared/diagnostics.ts"))).toBe(
       true,
     );
+    expect(existsSync(join(ROOT, "src/platform/diagnostics/updates.ts"))).toBe(
+      false,
+    );
+    expect(existsSync(join(ROOT, "src/services/diagnostics/update-status.ts")))
+      .toBe(true);
     expect(doctorIndex).toContain("services/diagnostics/index.js");
     expect(doctorIndex).toContain("./render.js");
     expect(doctorIndex).not.toContain("./install.js");
@@ -2375,6 +2380,10 @@ describe("architecture boundaries", () => {
     expect(updateDiagnostics).not.toContain("readState");
     expect(updateDiagnostics).not.toContain("readConfig");
     expect(updateDiagnostics).not.toContain("readStateForDoctor");
+    expect(updateStatusDiagnostics).toContain("readDiagnosticUpdateStatus");
+    expect(updateStatusDiagnostics).toContain("stores/config/index.js");
+    expect(updateStatusDiagnostics).toContain("stores/update/index.js");
+    expect(updateStatusDiagnostics).not.toContain("../../platform/");
     expect(setupRegistration).toContain("shouldUseStdoutColor()");
     expect(setupRegistration).toContain("nodeVersion: process.version");
     expect(setupRegistration).toContain("probeDiagnosticInstall({ homeDir: homedir() })");
@@ -2382,7 +2391,7 @@ describe("architecture boundaries", () => {
     expect(setupRegistration).toContain("probeDiagnosticAutomation()");
     expect(setupRegistration).toContain("probeDiagnosticGuides()");
     expect(setupRegistration).toContain("probeDiagnosticInstructionEntries()");
-    expect(setupRegistration).toContain("probeDiagnosticUpdates()");
+    expect(setupRegistration).toContain("readDiagnosticUpdateStatus()");
     expect(setupRegistration).not.toContain("color: process.stdout.isTTY === true");
     expect(platformAuthDiagnostics).toContain("checkClaudeAuth");
     expect(platformInstallDiagnostics).toContain("probeBetterSqlite3");
@@ -2394,14 +2403,11 @@ describe("architecture boundaries", () => {
     expect(platformAutomationDiagnostics).toContain("../automation/paths.js");
     expect(platformInstructionDiagnostics).toContain("checkAgentInstructions");
     expect(platformInstructionDiagnostics).toContain("homedir()");
-    expect(platformUpdateDiagnostics).toContain("readState");
-    expect(platformUpdateDiagnostics).toContain("readConfig");
     for (const platformDiagnostics of [
       platformAuthDiagnostics,
       platformInstallDiagnostics,
       platformAutomationDiagnostics,
       platformInstructionDiagnostics,
-      platformUpdateDiagnostics,
     ]) {
       expect(platformDiagnostics).not.toContain("services/diagnostics");
     }

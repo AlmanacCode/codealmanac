@@ -10,9 +10,9 @@ import {
   probeDiagnosticGuides,
   probeDiagnosticInstructionEntries,
 } from "../../platform/diagnostics/instructions.js";
-import { probeDiagnosticUpdates } from "../../platform/diagnostics/updates.js";
 import { resolveBundledGuidesDir } from "../../platform/install/guides.js";
 import { createUpdateRuntime } from "../../app/update-runtime.js";
+import { readDiagnosticUpdateStatus } from "../../services/diagnostics/index.js";
 
 export interface SetupCommandDeps {
   runSetup?: typeof import("./setup/index.js").runSetup;
@@ -110,7 +110,7 @@ export function registerSetupCommands(
           automationStatus: await probeDiagnosticAutomation(),
           guideStatus: probeDiagnosticGuides(),
           instructionEntriesStatus: await probeDiagnosticInstructionEntries(),
-          updateStatus: await probeDiagnosticUpdates(),
+          updateStatus: await readDiagnosticUpdateStatus(),
           installStatus: probeDiagnosticInstall({ homeDir: homedir() }),
           json: opts.json,
           installOnly: opts.installOnly,

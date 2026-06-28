@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 250 committed rewrite commits past `dev`. The worklog records 212 production slices so far.
+The branch has more than 250 committed rewrite commits past `dev`. The worklog records 213 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -54,6 +54,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved update registry/version/install mechanics behind a service-owned `UpdateRuntime` contract, with the real runtime composed in the CLI edge.
 - Moved update check/cache workflow into `src/services/update/check.ts`, registry fetch mechanics into `src/platform/update/check.ts`, and concrete runtime composition into `src/app/update-runtime.ts`.
 - Moved update notifier/banner eligibility into `src/services/update/notifier.ts`, CLI banner rendering into `src/edges/cli/update-announcement.ts`, and detached update-check process spawning into `src/platform/update/notifier-worker.ts`.
+- Moved update diagnostic status reads into `src/services/diagnostics/update-status.ts`, leaving platform diagnostics for external/auth/install/automation probes.
 - Moved GitHub source resolution mechanics into `src/platform/github/`.
 - Moved Absorb source resolver composition into `src/platform/sources/absorb.ts` and the CLI edge, so lifecycle Absorb services no longer import platform GitHub mechanics.
 - Moved Absorb source-ref and resolved-source contracts into `src/shared/absorb-sources.ts`, so platform source resolvers no longer import lifecycle service-internal Absorb files.
@@ -87,18 +88,15 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice moved update notifier/banner eligibility and background-check scheduling policy out of platform and into `src/services/update/notifier.ts`, added a config-store sync read for startup-time notifier checks, moved banner rendering into `src/edges/cli/update-announcement.ts`, and reduced `src/platform/update/notifier-worker.ts` to detached process spawning.
+The latest slice moved doctor update-state/config status reads out of `src/platform/diagnostics/updates.ts` and into `src/services/diagnostics/update-status.ts`, because those facts come from CodeAlmanac stores rather than an external platform probe.
 
 Verification passed:
 
 - `git diff --check`
 - `npm run lint`
-- `npx vitest run test/architecture-boundaries.test.ts test/update-announce.test.ts test/update.test.ts test/update-check.test.ts test/cli.test.ts test/config-command.test.ts test/doctor.test.ts`
+- `npx vitest run test/architecture-boundaries.test.ts test/doctor.test.ts`
 - `npm test`
 - `npm run build`
-- `node dist/launcher.js --help`
-- `node dist/launcher.js update --help`
-- `node dist/launcher.js update --check`
 - `node dist/launcher.js doctor --json --install-only`
 
 ## Immediate Next Work
