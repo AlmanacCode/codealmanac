@@ -10,8 +10,8 @@ import type {
   StartForegroundJob,
 } from "./types.js";
 import type { AgentRuntimeRunner } from "../../../shared/agent-runtime/runner.js";
+import type { PathEquality } from "../../../shared/path-equality.js";
 import type { IsPidAlive } from "../../../shared/pid-liveness.js";
-import type { RegistryPathEquality } from "../../../stores/wiki-registry/index.js";
 import { OperationError } from "./errors.js";
 import { createOperationRunSpec, runOperationProcess } from "./run.js";
 
@@ -31,7 +31,7 @@ export interface BuildOperationOptions {
   isPidAlive: IsPidAlive;
   agentRunner: AgentRuntimeRunner;
   loadPrompt: OperationPromptLoader;
-  registryPathEquals?: RegistryPathEquality;
+  registryPathEquals?: PathEquality;
 }
 
 export async function createBuildRunSpec(args: {

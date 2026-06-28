@@ -9,6 +9,5 @@ export {
   readRegistry,
   writeRegistry,
   type RegistryEntry,
-  type RegistryPathEquality,
   type RegistryPathLookupOptions,
 } from "./store.js";

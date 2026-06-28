@@ -1,11 +1,11 @@
 import type { CollectWikiHealthReport } from "./health.js";
-import type { RegistryPathEquality } from "../../stores/wiki-registry/index.js";
+import type { PathEquality } from "../../shared/path-equality.js";
 
 export type { CollectWikiHealthReport };
 
 export interface WikiDoctorOptions {
   cwd: string;
-  registryPathEquals?: RegistryPathEquality;
+  registryPathEquals?: PathEquality;
   collectHealthReportFn?: CollectWikiHealthReport;
   now?: () => Date;
 }

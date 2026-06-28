@@ -13,8 +13,8 @@ import {
   type LifecyclePromptLoader,
 } from "../../../services/lifecycle/index.js";
 import type { AgentRuntimeRunner } from "../../../shared/agent-runtime/runner.js";
+import type { PathEquality } from "../../../shared/path-equality.js";
 import type { IsPidAlive } from "../../../shared/pid-liveness.js";
-import type { RegistryPathEquality } from "../../../stores/wiki-registry/index.js";
 import {
   renderWorkflowResult,
   type OperationCommandResult,
@@ -38,7 +38,7 @@ export interface InitCommandOptions {
   isPidAlive: IsPidAlive;
   agentRunner: AgentRuntimeRunner;
   loadPrompt: LifecyclePromptLoader;
-  registryPathEquals?: RegistryPathEquality;
+  registryPathEquals?: PathEquality;
 }
 
 export interface AbsorbCommandOptions {

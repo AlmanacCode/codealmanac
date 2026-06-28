@@ -7,8 +7,8 @@ import type {
   AbsorbInputSource,
   SourceRef,
 } from "../../shared/absorb-sources.js";
-import type { RegistryPathEquality } from "../../stores/wiki-registry/index.js";
 import type { AgentRuntimeRunner } from "../../shared/agent-runtime/runner.js";
+import type { PathEquality } from "../../shared/path-equality.js";
 import type {
   OperationBackgroundStartResult,
   OperationForegroundStartResult,
@@ -73,7 +73,7 @@ export interface InitOperationWorkflowOptions {
   isPidAlive: IsPidAlive;
   agentRunner: AgentRuntimeRunner;
   loadPrompt: LifecyclePromptLoader;
-  registryPathEquals?: RegistryPathEquality;
+  registryPathEquals?: PathEquality;
 }
 
 export interface AbsorbOperationWorkflowOptions {

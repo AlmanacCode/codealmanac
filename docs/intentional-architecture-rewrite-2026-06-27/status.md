@@ -5,7 +5,7 @@ Branch: `codex/intentional-architecture-rewrite`
 
 ## Current State
 
-The branch has more than 280 committed rewrite commits past `dev`. The worklog records 266 production slices so far.
+The branch has more than 280 committed rewrite commits past `dev`. The worklog records 267 production slices so far.
 
 The diff is broad: more than 490 files changed, with tens of thousands of lines reshaped.
 
@@ -123,6 +123,7 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 - Moved lifecycle operation starter result contracts off concrete job runtime/store result types.
 - Moved operation-output contracts into `src/shared/operation-output.ts` so lifecycle, jobs services, and job stores share one neutral type.
 - Split lifecycle workflows into owner-named init, Absorb, Garden, and provider-resolution files under `src/services/lifecycle/workflows/`, deleting the old catchall workflow bucket.
+- Moved the path-equality runtime contract into `src/shared/path-equality.ts`, so services, app composition, and registry stores no longer import a neutral contract from registry persistence.
 - Moved the provider-neutral operation spec contract into `src/shared/operation-spec.ts`, so lifecycle services build specs, job stores persist them, and provider adapters execute them without stores or providers importing lifecycle service internals.
 - Moved worker-lock and sync-lock process ownership/liveness facts out of stores; stores now persist lock files over injected owner PID and liveness contracts while CLI/worker edges provide platform process probes.
 - Moved repeated store atomic-write temp-file mechanics into `src/stores/atomic-write.ts`, removing process-PID temp names from job and sync stores.
@@ -141,12 +142,12 @@ This is no longer a small cleanup branch. It is a real ownership rewrite.
 
 ## Latest Checkpoint
 
-The latest slice split lifecycle workflow ownership into `src/services/lifecycle/workflows/`. Init owns init prompt context, Absorb owns direct and prepared Absorb handoff, Garden owns Garden run-mode policy, and provider resolution owns workflow-level provider parsing/resolution. The old `src/services/lifecycle/workflows.ts` catchall is gone.
+The latest slice moved the path-equality runtime contract into `src/shared/path-equality.ts`. Registry stores still consume injected path-comparison mechanics, but services, app composition, and CLI command adapters no longer import `RegistryPathEquality` from registry persistence.
 
 Verification passed:
 
 - `npm run lint`
-- `npx vitest run test/architecture-lifecycle-provider-boundaries.test.ts test/operation-commands.test.ts test/sync.test.ts test/build-operation.test.ts test/absorb-operation.test.ts test/garden-operation.test.ts`
+- `npx vitest run test/architecture-indexer-diagnostics-boundaries.test.ts test/architecture-lifecycle-provider-boundaries.test.ts test/operation-commands.test.ts test/build-operation.test.ts test/doctor.test.ts test/registry.test.ts`
 - `npx vitest run test/architecture-*-boundaries.test.ts`
 - `git diff --check`
 - `npm test`
@@ -171,7 +172,7 @@ Previous full-slice verification also passed:
 
 ## Immediate Next Work
 
-Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, automation scheduler app composition, setup instruction runtime composition, provider setup-view ownership, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, Absorb source contract ownership, prompt loader mechanics, update runtime composition, update notifier ownership, setup runtime composition, sync transcript runtime composition, sync-to-job session lookup, CLI app composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, operation-output type ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, review command markdown ownership, lifecycle workflow type ownership, lifecycle workflow verb ownership, path construction ownership, shared helper-contract ownership, wiki command target resolution, cross-wiki health coordination, job service view ownership, and lifecycle/job starter result ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, remaining platform modules that read config/store state directly, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
+Continue top-down subsystem passes before small leak cleanup. The major loose source buckets for jobs, init, config, wiki, viewer read models, worker entrypoints, serve process lifetime, setup/uninstall terminal UI, wiki file mechanics, automation scheduler mechanics, automation scheduler app composition, setup instruction runtime composition, provider setup-view ownership, job provider-runner composition, job-worker process spawning, Absorb source resolver composition, Absorb source contract ownership, prompt loader mechanics, update runtime composition, update notifier ownership, setup runtime composition, sync transcript runtime composition, sync-to-job session lookup, CLI app composition, diagnostic fact contracts, provider-neutral agent runtime contracts, lock process-liveness contracts, operation-spec type ownership, operation-output type ownership, path-equality contract ownership, init prompt-context ownership, config command validation ownership, store atomic-write ownership, review command markdown ownership, lifecycle workflow type ownership, lifecycle workflow verb ownership, path construction ownership, shared helper-contract ownership, wiki command target resolution, cross-wiki health coordination, job service view ownership, and lifecycle/job starter result ownership have now been removed or assigned. Remaining candidates include command files that still own workflow decisions, remaining platform modules that read config/store state directly, lifecycle/job boundary duplication that remains after the big moves, and large files whose size may still reflect mixed ownership.
 
 ## Decision Log
 

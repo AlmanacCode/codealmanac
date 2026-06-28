@@ -12,9 +12,9 @@ import type {
   LifecycleOperationBackgroundStarter,
   LifecyclePromptLoader,
 } from "../services/lifecycle/index.js";
+import type { PathEquality } from "../shared/path-equality.js";
 import type { IsPidAlive } from "../shared/pid-liveness.js";
 import type { SyncTranscriptRuntime } from "../shared/transcripts.js";
-import type { RegistryPathEquality } from "../stores/wiki-registry/index.js";
 
 export interface CliRuntime {
   workerEnvironment: NodeJS.ProcessEnv;
@@ -24,7 +24,7 @@ export interface CliRuntime {
   resolveAbsorbSource: LifecycleAbsorbSourceResolver;
   loadPrompt: LifecyclePromptLoader;
   transcriptRuntime: SyncTranscriptRuntime;
-  registryPathEquals: RegistryPathEquality;
+  registryPathEquals: PathEquality;
 }
 
 export function createCliRuntime(options: {

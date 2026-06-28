@@ -1889,3 +1889,10 @@ Two-hundred-sixty-sixth production slice:
 - Added owner-named lifecycle workflow files for init, Absorb, Garden, and provider resolution under `src/services/lifecycle/workflows/`.
 - Kept the public lifecycle service exports stable through `src/services/lifecycle/index.ts`.
 - Strengthened lifecycle boundary tests so workflow verb ownership stays split and init prompt context remains service-owned.
+
+Two-hundred-sixty-seventh production slice:
+
+- Added `src/shared/path-equality.ts` as the neutral owner for injected path-comparison contracts.
+- Removed the `RegistryPathEquality` type from registry stores; stores now consume `PathEquality` while still owning registry lookup mechanics.
+- Updated lifecycle, diagnostics, wiki initialization, CLI command, and app composition types to import `PathEquality` from shared.
+- Strengthened registry boundary tests so platform path-case owns current-platform comparison and stores do not define upward-facing runtime contracts.

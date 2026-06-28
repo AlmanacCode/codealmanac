@@ -6,15 +6,15 @@ import {
   addEntry,
   ensureGlobalDir,
   type RegistryEntry,
-  type RegistryPathEquality,
 } from "../../stores/wiki-registry/index.js";
+import type { PathEquality } from "../../shared/path-equality.js";
 import { scaffoldWikiFiles } from "../../stores/wiki-files/scaffold.js";
 
 export interface InitOptions {
   cwd: string;
   name?: string;
   description?: string;
-  registryPathEquals?: RegistryPathEquality;
+  registryPathEquals?: PathEquality;
 }
 
 export interface InitResult {

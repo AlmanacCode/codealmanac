@@ -213,6 +213,8 @@ Machine-global paths and repo `.almanac` paths are persistence mechanics, not a 
 
 Root-level helper files are not an ownership category. Cross-cutting contracts such as canonical slugification, user-facing error shape, and ANSI theme construction live under `src/shared/` because edges, services, stores, platform modules, and tests all depend on the same neutral vocabulary. Root-level source files should be entrypoints or startup guards, not reusable helper buckets.
 
+Path equality is a shared runtime contract. `src/shared/path-equality.ts` owns the neutral `PathEquality` type; `src/platform/path-case.ts` owns the current-platform implementation; registry stores consume the injected comparer for persistence lookups without defining a contract used by services or edges.
+
 ### Operation specs are shared contracts
 
 `OperationSpec` is the provider-neutral execution and persistence contract for Build, Absorb, and Garden jobs. Lifecycle operations build specs, job stores persist and validate specs, job runtime services execute specs, and provider adapters translate specs into concrete Claude/Codex mechanics. The contract lives in `src/shared/operation-spec.ts` so stores and provider adapters do not import lifecycle service internals just to understand persisted job files or executable run shape.

@@ -294,14 +294,18 @@ describe("architecture boundaries: indexer, diagnostics, and registry", () => {
       "src/edges/cli/autoregistration.ts",
     );
     const platformPathCase = await readSource("src/platform/path-case.ts");
+    const sharedPathEquality = await readSource("src/shared/path-equality.ts");
 
     expect(existsSync(join(ROOT, "src/stores/wiki-registry/store.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/platform/path-case.ts"))).toBe(true);
+    expect(existsSync(join(ROOT, "src/shared/path-equality.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/edges/cli/autoregistration.ts"))).toBe(true);
     expect(existsSync(join(ROOT, "src/stores/wiki/registry/store.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/stores/wiki/registry/index.ts"))).toBe(false);
     expect(existsSync(join(ROOT, "src/stores/wiki/registry"))).toBe(false);
-    expect(registryStore).toContain("RegistryPathEquality");
+    expect(sharedPathEquality).toContain("type PathEquality");
+    expect(registryStore).toContain("shared/path-equality.js");
+    expect(registryStore).not.toContain("RegistryPathEquality");
     expect(registryStore).toContain("pathEquals");
     expect(registryStore).not.toContain("platform/path-case");
     expect(registryStore).not.toContain("pathsEqualOnCurrentPlatform");
@@ -317,6 +321,7 @@ describe("architecture boundaries: indexer, diagnostics, and registry", () => {
     expect(autoRegistration).not.toContain("toLowerCase()");
     expect(cliAutoRegistration).toContain("pathsEqualOnCurrentPlatform");
     expect(cliAutoRegistration).toContain("autoRegisterIfNeeded");
+    expect(platformPathCase).toContain("PathEquality");
     expect(platformPathCase).toContain("process.platform");
     expect(platformPathCase).toContain("isCaseInsensitivePathPlatform");
   });

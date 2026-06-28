@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { getGlobalAlmanacDir } from "../global-paths.js";
 import { getRegistryPath } from "./paths.js";
+import type { PathEquality } from "../../shared/path-equality.js";
 import { UserFacingError } from "../../shared/user-facing-error.js";
 import { writeTextFileAtomically } from "../atomic-write.js";
 
@@ -22,10 +23,8 @@ export interface RegistryEntry {
   registered_at: string;
 }
 
-export type RegistryPathEquality = (a: string, b: string) => boolean;
-
 export interface RegistryPathLookupOptions {
-  pathEquals?: RegistryPathEquality;
+  pathEquals?: PathEquality;
 }
 
 /**

@@ -1,8 +1,10 @@
-export function pathsEqualOnCurrentPlatform(a: string, b: string): boolean {
+import type { PathEquality } from "../shared/path-equality.js";
+
+export const pathsEqualOnCurrentPlatform: PathEquality = (a, b) => {
   return isCaseInsensitivePathPlatform(process.platform)
     ? a.toLowerCase() === b.toLowerCase()
     : a === b;
-}
+};
 
 export function isCaseInsensitivePathPlatform(
   platform: NodeJS.Platform,
