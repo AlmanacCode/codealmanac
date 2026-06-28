@@ -129,6 +129,8 @@ The update service owns update workflow policy: check latest, honor dismissals, 
 
 Platform transcript discovery returns `DiscoveredTranscript` facts: app, session id, transcript path, cwd, mtime, and size. Sync services turn those facts into repo-bound `TranscriptCandidate` records by resolving the nearest `.almanac` root. The platform transcript layer must not import wiki-file stores or decide repo eligibility.
 
+The top-level sync workflow file coordinates the sync verb; it should not be a bucket for all sync helper behavior. Source/quiet parsing, transcript-to-repo candidate shaping, sweep-summary projection, and sync Absorb prompt context each have named files under `src/services/sync/`. `src/services/sync/sync.ts` keeps config activation lookup and lifecycle Absorb handoff because those are workflow decisions of the sync product verb.
+
 ### Automation scheduler contracts are service-owned; launchd is platform
 
 `src/services/automation/` owns automation product workflows: task selection, interval validation, install/status/uninstall results, legacy migration semantics, and setup cleanup verbs. It talks to an injected `AutomationScheduler` contract from `src/services/automation/scheduler.ts`. `src/platform/automation/scheduler.ts` implements that contract with launchd/plist mechanics: default plist paths, log paths, launch PATH construction, plist writes, launchctl activation/removal/status, legacy capture detection, and XML-to-command-array normalization. CLI/setup/uninstall edges create the launchd scheduler because they are the concrete runtime composition points.

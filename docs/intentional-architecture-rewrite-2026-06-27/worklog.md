@@ -1622,3 +1622,11 @@ Two-hundred-thirty-first production slice:
 - Moved repo-root enrichment into `src/services/sync/sync.ts`, where sync product workflow decides whether a discovered transcript belongs to an Almanac repo.
 - Renamed the platform JSONL helper to `discoveredTranscriptFromMeta` so the platform layer no longer claims it creates sync candidates.
 - Strengthened architecture-boundary tests so platform transcript discovery stays store-free and sync owns transcript-to-repo candidate shaping.
+
+Two-hundred-thirty-second production slice:
+
+- Split `src/services/sync/sync.ts` so it reads as the sync workflow coordinator instead of a mixed helper bucket.
+- Added `src/services/sync/input.ts` for `--from` and `--quiet` parsing, `src/services/sync/transcript-candidates.ts` for discovered-transcript-to-repo-candidate shaping, `src/services/sync/summary.ts` for sweep-to-command result projection, and `src/services/sync/absorb-context.ts` for sync Absorb prompt context text.
+- Kept config `sync_since` lookup and lifecycle Absorb handoff in `sync.ts` because those are the workflow decisions the top-level sync verb coordinates.
+- Reduced `src/services/sync/sync.ts` from a large mixed file to a small orchestrator over named sync helpers.
+- Strengthened architecture-boundary tests so sync parsing, summary projection, repo candidate shaping, and Absorb context rendering stay in their owned files.

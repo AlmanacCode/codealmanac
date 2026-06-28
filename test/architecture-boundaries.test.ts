@@ -1930,6 +1930,14 @@ describe("architecture boundaries", () => {
     const syncServiceTypes = await readSource("src/services/sync/types.ts");
     const syncSweep = await readSource("src/services/sync/sweep.ts");
     const syncSweepResults = await readSource("src/services/sync/sweep-results.ts");
+    const syncInput = await readSource("src/services/sync/input.ts");
+    const syncSummary = await readSource("src/services/sync/summary.ts");
+    const syncCandidates = await readSource(
+      "src/services/sync/transcript-candidates.ts",
+    );
+    const syncAbsorbContext = await readSource(
+      "src/services/sync/absorb-context.ts",
+    );
     const jobsProviderSessions = await readSource(
       "src/services/jobs/provider-sessions.ts",
     );
@@ -1970,10 +1978,21 @@ describe("architecture boundaries", () => {
       "SyncWorkflowStartedItem extends SyncWorkflowReadyItem",
     );
     expect(syncService).not.toContain("...syncWorkflowReadyItemFromSweep(item)");
-    expect(syncService).toContain("syncWorkflowSummaryFromSweep");
+    expect(syncService).toContain("completedSyncWorkflowResult");
+    expect(syncService).not.toContain("syncWorkflowReadyItemFromSweep");
+    expect(syncService).not.toContain("function parseSources");
+    expect(syncService).not.toContain("function parseQuiet");
+    expect(syncService).not.toContain("function syncAbsorbContext");
     expect(syncService).not.toContain("platform/transcripts");
     expect(syncService).toContain("repoTranscriptCandidates");
-    expect(syncService).toContain("findNearestAlmanacDir");
+    expect(syncService).not.toContain("findNearestAlmanacDir");
+    expect(syncInput).toContain("parseSyncWorkflowInput");
+    expect(syncInput).toContain("parseDuration");
+    expect(syncSummary).toContain("completedSyncWorkflowResult");
+    expect(syncSummary).toContain("syncWorkflowReadyItemFromSweep");
+    expect(syncCandidates).toContain("repoTranscriptCandidates");
+    expect(syncCandidates).toContain("findNearestAlmanacDir");
+    expect(syncAbsorbContext).toContain("syncAbsorbContext");
     expect(syncServiceTypes).not.toContain("interface SyncTranscriptRuntime");
     expect(syncSweep).not.toContain("platform/transcripts");
     expect(syncSweep).not.toContain("stores/jobs");
