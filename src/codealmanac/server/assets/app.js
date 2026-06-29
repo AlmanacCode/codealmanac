@@ -46,6 +46,10 @@ async function route() {
       await renderSearch(value);
       return;
     }
+    if (kind === "file" && value) {
+      await renderFile(value);
+      return;
+    }
     renderHome();
   } catch (error) {
     renderError(error);
@@ -129,6 +133,21 @@ async function renderSearch(query) {
   el.main.focus();
 }
 
+async function renderFile(path) {
+  const result = await getJson(`/api/file?path=${encodeURIComponent(path)}`);
+  const noun = result.kind === "directory" ? "folder" : "file";
+  el.main.innerHTML = "";
+  el.main.append(
+    readerHeader(
+      result.path,
+      `${result.pages.length} pages mention this ${noun}`,
+      [],
+    ),
+    gridList(result.pages),
+  );
+  el.main.focus();
+}
+
 function readerHeader(title, summary, topics) {
   const header = document.createElement("header");
   header.className = "reader-header";
@@ -206,7 +225,8 @@ function renderSidebarLinks(target, slugs, kind) {
 function renderSidebarFiles(files) {
   el.fileRefs.replaceChildren(
     ...files.map((file) => {
-      const row = document.createElement("span");
+      const row = document.createElement("a");
+      row.href = `#/file/${encodeURIComponent(file.path)}`;
       row.textContent = file.path;
       return row;
     }),

@@ -404,6 +404,12 @@
   and architecture tests, focused ruff, and live editable-install checks:
   `update --check`, `update --check --json`, and default `update` which
   refused mutation with `run: git pull && uv sync`.
+- Added slice-30 viewer file route. `ViewerService.file(...)` returns pages
+  that mention a file or folder reference through the existing index mentions
+  query. `/api/file?path=src/foo.py` and frontend `#/file/<path>` restore the
+  old viewer graph-navigation behavior without reading repo source contents.
+- Verified slice 30 focused behavior with viewer service/server tests and
+  focused ruff before full verification.
 
 ## Current Hypothesis
 
@@ -425,7 +431,8 @@ and Garden through a service-owned task plan and a launchd adapter. Git,
 GitHub, transcript, web URL, and local path source refs now produce bounded
 runtime snapshots before Ingest starts the harness. Manual `update` now exists
 as a conservative package-manager command and does not install scheduled update
-automation.
+automation. The viewer file route is now graph navigation over indexed file
+references, not source-code preview.
 
 ## Next Hypothesis
 
@@ -435,6 +442,5 @@ update checks should wait for real non-editable install dogfood. The remaining
 source-runtime pressure is large-repo tuning for directory inputs: more exact
 `.gitignore` semantics, nested ignore files, and smarter file selection if
 dogfood shows the current bounded traversal is too noisy. The remaining serve
-risks are markdown wikilink rewriting inside code spans, browser-harness
-verification once Chrome allows remote debugging, and whether a source/file
-route belongs in the first viewer shape.
+risks are markdown wikilink rewriting inside code spans and browser-harness
+verification once Chrome allows remote debugging.

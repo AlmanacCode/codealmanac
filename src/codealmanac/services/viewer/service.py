@@ -6,6 +6,8 @@ from codealmanac.services.index.models import PageView, SearchPageResult
 from codealmanac.services.index.requests import SearchIndexRequest
 from codealmanac.services.index.service import IndexService
 from codealmanac.services.viewer.models import (
+    ViewerFile,
+    ViewerFileKind,
     ViewerFileReference,
     ViewerOverview,
     ViewerPage,
@@ -17,11 +19,13 @@ from codealmanac.services.viewer.models import (
 )
 from codealmanac.services.viewer.renderer import MarkdownRenderer
 from codealmanac.services.viewer.requests import (
+    ViewerFileRequest,
     ViewerOverviewRequest,
     ViewerPageRequest,
     ViewerSearchRequest,
     ViewerTopicRequest,
 )
+from codealmanac.services.wiki.paths import looks_like_dir
 from codealmanac.services.workspaces.models import Workspace
 from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
 from codealmanac.services.workspaces.service import WorkspacesService
@@ -93,6 +97,24 @@ class ViewerService:
         return ViewerSearch(
             workspace=viewer_workspace(workspace),
             query=request.query,
+            pages=tuple(page_summary_from_search(page) for page in pages),
+        )
+
+    def file(self, request: ViewerFileRequest) -> ViewerFile:
+        workspace = self.select_workspace(request.cwd, request.wiki)
+        pages = self.index.search(
+            workspace.workspace_id,
+            SearchIndexRequest(mentions=request.path, limit=request.limit),
+        )
+        kind = (
+            ViewerFileKind.DIRECTORY
+            if looks_like_dir(request.path)
+            else ViewerFileKind.FILE
+        )
+        return ViewerFile(
+            workspace=viewer_workspace(workspace),
+            path=request.path,
+            kind=kind,
             pages=tuple(page_summary_from_search(page) for page in pages),
         )
 

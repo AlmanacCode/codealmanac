@@ -1,6 +1,12 @@
+from enum import StrEnum
 from pathlib import Path
 
 from codealmanac.core.models import CodeAlmanacModel
+
+
+class ViewerFileKind(StrEnum):
+    FILE = "file"
+    DIRECTORY = "directory"
 
 
 class ViewerWorkspace(CodeAlmanacModel):
@@ -54,6 +60,13 @@ class ViewerPage(CodeAlmanacModel):
 class ViewerSearch(CodeAlmanacModel):
     workspace: ViewerWorkspace
     query: str | None
+    pages: tuple[ViewerPageSummary, ...]
+
+
+class ViewerFile(CodeAlmanacModel):
+    workspace: ViewerWorkspace
+    path: str
+    kind: ViewerFileKind
     pages: tuple[ViewerPageSummary, ...]
 
 

@@ -36,7 +36,7 @@ that root instead of constructing stores or adapters themselves.
 | `config` | user/project config parsing and precedence | first slice only if pyproject/config needs it |
 | `diagnostics` | doctor checks and readiness reports | `doctor`, local install/wiki readiness |
 | `updates` | package update planning, installer metadata, supported foreground update methods | `codealmanac update`, `PackageInstallMetadataProvider`, `PackageCommandRunner` |
-| `viewer` | read-only browser payloads, page/topic/search overview assembly, rendered markdown for the local viewer | `serve`, future non-CLI read adapter |
+| `viewer` | read-only browser payloads, page/topic/search/file overview assembly, rendered markdown for the local viewer | `serve`, future non-CLI read adapter |
 
 ## Support Packages
 
@@ -132,6 +132,12 @@ execution ports. `integrations/updates/` reads `importlib.metadata` install
 metadata and runs foreground package-manager commands. The service decides
 whether an install is safe to update; the integration only reports metadata and
 executes the chosen command.
+
+`services/viewer` owns the local browser payload for file references. Its
+`file` verb delegates to the index's mentions query and returns matching wiki
+pages. It must not read repo source contents directly or reuse source runtime
+adapters; selected source material belongs to lifecycle workflows, while viewer
+file routes are graph-navigation routes.
 
 ## First Slice Boundary
 

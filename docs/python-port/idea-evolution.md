@@ -649,3 +649,29 @@ Follow-up test:
 If source runtime needs cursor-aware slicing, extend
 `InspectSourceRuntimeRequest` with explicit line or byte bounds instead of
 teaching Ingest to parse sync guidance text.
+
+## 2026-06-29 - Viewer File Route Is Graph Navigation
+
+Old hypothesis:
+The next viewer hardening slice might read referenced repo files so the local
+browser could preview source material.
+
+New hypothesis:
+The viewer file route should restore the old `/file?path=...` behavior: list
+wiki pages that mention a file or folder reference. It should not read repo
+source contents.
+
+Evidence that forced the change:
+The current `almanac-serve` wiki page describes `/file?path=src/foo.ts` as
+"pages mentioning a file" and says the viewer is a read-only client over the
+existing wiki/index primitives. The source runtime system already owns reading
+selected local files for lifecycle prompts.
+
+Code or product assumption affected:
+`ViewerService.file()` delegates to the index mentions query. `server/app.py`
+exposes `/api/file` as a query route. The frontend links page rail file refs to
+`#/file/<path>` and renders matching pages.
+
+Follow-up test:
+Keep service and server tests that prove file and folder refs use index mention
+semantics and that parent traversal is rejected before querying.

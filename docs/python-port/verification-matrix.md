@@ -7,7 +7,7 @@ means the goal remains active.
 
 | Requirement | Implementation evidence | Test/live evidence | Remaining risk |
 |---|---|---|---|
-| Fresh Python codebase | `pyproject.toml`, `src/codealmanac/`, `tests/` | `uv run pytest`, `uv run ruff check .` passed on 2026-06-29 | Remaining risks are background sync reconciliation, large-repo directory tuning, and viewer hardening. |
+| Fresh Python codebase | `pyproject.toml`, `src/codealmanac/`, `tests/` | `uv run pytest`, `uv run ruff check .` passed on 2026-06-29 | Remaining risks are background sync reconciliation, large-repo directory tuning, and visual browser verification. |
 | Based on live agreement | `docs/python-port-live-agreement.md`, `src/codealmanac/app.py`, service/workflow packages | tests exercise CLI -> app -> services/workflows over local `.almanac/` | Need future architecture tests as more services appear. |
 | Cosmic Python actively considered | `docs/reference/cosmic-python/`, `docs/python-port/`, composition root, service-layer tests, store boundary, Git snapshot policy for lifecycle writes | tests call workflow/service and CLI surfaces instead of private helpers; Relayforge Discord checkpoints sent | Need continued review before public lifecycle CLI. |
 | CLI exists as `codealmanac` only | `[project.scripts] codealmanac = "codealmanac.cli.main:main"` plus argparse commands | `uv run codealmanac --help`, live `init`, `build`, `ingest`, `garden`, foreground `sync`, `sync status`, `list`, `search`, `show`, `topics create/describe/link/unlink/rename/delete`, `reindex`, `doctor`, `serve`, `automation status`, and `update --check` passed on 2026-06-29 | Non-editable package-manager update dogfood remains pending. |
@@ -377,3 +377,15 @@ means the goal remains active.
 | Live check | `uv run codealmanac update --check` | passed; editable install reported unsupported with `run: git pull && uv sync` |
 | Live JSON check | `uv run codealmanac update --check --json` | passed; reported `method: editable`, `installer: uv`, and source URL for this checkout |
 | Live default update refusal | `uv run codealmanac update` | passed; exited 1 and refused editable source mutation |
+
+## Gates For Slice 30 Viewer File Route
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused viewer/server tests | `uv run pytest tests/test_viewer_service.py tests/test_server.py` | 9 passed |
+| Focused lint | `uv run ruff check src/codealmanac/services/viewer src/codealmanac/server tests/test_viewer_service.py tests/test_server.py` | passed |
+| Full tests | `uv run pytest` | 150 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+| Package build | `uv build --out-dir /tmp/codealmanac-build-slice30`; wheel inspection | passed; wheel includes `server/assets/index.html`, `server/assets/app.js`, and `server/assets/app.css` |
+| Live serve API | `uv run codealmanac serve --port 49231`, then curl `/api/file?path=src/viewer/api.ts`, `/api/file?path=src/viewer/`, invalid `../secret.txt`, and `/app.js` | passed; file and folder routes returned matching pages, traversal returned 422, frontend asset contains `renderFile` and `/api/file?path=` |

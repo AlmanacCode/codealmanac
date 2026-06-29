@@ -1,7 +1,11 @@
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from codealmanac.app import CodeAlmanac
 from codealmanac.services.viewer.requests import (
+    ViewerFileRequest,
     ViewerOverviewRequest,
     ViewerPageRequest,
     ViewerSearchRequest,
@@ -53,3 +57,30 @@ def test_viewer_page_reports_backlinks(
 
     assert page.backlinks == ("auth-flow",)
     assert page.related_pages[0].slug == "auth-flow"
+
+
+def test_viewer_file_lists_pages_that_mention_file_and_folder_refs(
+    viewer_repo: tuple[Path, CodeAlmanac],
+):
+    repo, app = viewer_repo
+
+    file_result = app.viewer.file(
+        ViewerFileRequest(cwd=repo, path="src/auth/session.py")
+    )
+    folder_result = app.viewer.file(ViewerFileRequest(cwd=repo, path="src/auth/"))
+
+    assert file_result.path == "src/auth/session.py"
+    assert file_result.kind == "file"
+    assert [page.slug for page in file_result.pages] == ["auth-flow"]
+    assert folder_result.path == "src/auth/"
+    assert folder_result.kind == "directory"
+    assert [page.slug for page in folder_result.pages] == ["auth-flow"]
+
+
+def test_viewer_file_request_rejects_paths_outside_reference_space(
+    viewer_repo: tuple[Path, CodeAlmanac],
+):
+    repo, _ = viewer_repo
+
+    with pytest.raises(ValidationError, match="file path must be repo-relative"):
+        ViewerFileRequest(cwd=repo, path="../secret.txt")

@@ -27,6 +27,9 @@ It is the constraint document for future agents.
   local JSONL parsing through the same port. Web URL runtime uses a local HTTP
   and HTML/text adapter through the same port. Path file/directory runtime uses
   a local filesystem adapter through the same port.
+- 2026-06-29: The local viewer's file route is a wiki-reference route:
+  `/api/file?path=src/foo.py` returns pages that mention the file or folder
+  reference. It does not read or preview repo file contents.
 
 ## Product Frame
 

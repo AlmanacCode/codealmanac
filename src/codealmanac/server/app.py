@@ -8,12 +8,14 @@ from pydantic import ValidationError
 from codealmanac.app import CodeAlmanac
 from codealmanac.core.errors import CodeAlmanacError, ConflictError, NotFoundError
 from codealmanac.services.viewer.models import (
+    ViewerFile,
     ViewerOverview,
     ViewerPage,
     ViewerSearch,
     ViewerTopic,
 )
 from codealmanac.services.viewer.requests import (
+    ViewerFileRequest,
     ViewerOverviewRequest,
     ViewerPageRequest,
     ViewerSearchRequest,
@@ -55,6 +57,17 @@ def create_server_app(
         try:
             return codealmanac.viewer.search(
                 ViewerSearchRequest(cwd=cwd, wiki=wiki, query=q, limit=limit)
+            )
+        except ValidationError as error:
+            raise validation_error(error) from error
+        except CodeAlmanacError as error:
+            raise http_error(error) from error
+
+    @server.get("/api/file", response_model=ViewerFile)
+    def file(path: str, limit: int = 50) -> ViewerFile:
+        try:
+            return codealmanac.viewer.file(
+                ViewerFileRequest(cwd=cwd, wiki=wiki, path=path, limit=limit)
             )
         except ValidationError as error:
             raise validation_error(error) from error

@@ -6,7 +6,7 @@ Updated: 2026-06-29
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
-- Latest committed slice: `feat(slice-29): add update command`.
+- Latest committed slice: `feat(slice-30): add viewer file route`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
 - Latest verified source-runtime direction: selected local material becomes
@@ -18,6 +18,9 @@ Updated: 2026-06-29
   foreground sync, sync status, local automation, Codex/Claude harness adapters,
   transcript discovery, source runtime adapters, and a conservative manual
   update command.
+- The local viewer now exposes `/api/file?path=...` and frontend
+  `#/file/<path>` for wiki file/folder reference navigation. It lists pages
+  mentioning the reference and does not read repo source contents.
 - Source runtime covers filesystem paths, Git, GitHub, transcripts, and web
   URLs behind `services/sources/ports.py::SourceRuntimeAdapter`.
 - Ingest remains source-kind agnostic. It resolves `SourceBrief` values, asks
@@ -62,6 +65,17 @@ Behavior:
 - refuses editable/source installs with `run: git pull && uv sync`
 - keeps update automation unscheduled until non-editable install dogfood exists
 
+Slice 30 added the viewer file route.
+
+Behavior:
+
+- `ViewerService.file(...)` uses the index mentions query to find pages that
+  reference a file or folder
+- `/api/file?path=src/foo.py` returns `ViewerFile` payloads
+- frontend file refs in the right rail route to `#/file/<path>`
+- parent traversal such as `../secret.txt` is rejected before querying
+- the route is graph navigation, not source-code preview
+
 ## Verification To Preserve
 
 - Focused filesystem/source/ingest/architecture tests
@@ -78,14 +92,18 @@ Behavior:
 - Slice 29 live editable-install checks:
   `update --check`, `update --check --json`, and default `update` refusing
   mutation
+- Slice 30 focused viewer/server tests, full pytest, full ruff, diff check,
+  package build asset inspection, and live `serve` API dogfood for file,
+  folder, traversal rejection, and frontend asset wiring
 
 ## Next Move
 
 1. Likely next pressure points:
-   - viewer source/file route hardening
    - large-repo tuning for filesystem directory runtime
    - background sync pending/reconciliation only if a durable owner is added
    - scheduled update automation only after non-editable update dogfood
+   - browser-harness visual verification for `serve` once Chrome remote
+     debugging permission is available
 2. Do not add hosted CLI, login/connect/upload, MCP, SDK, public `capture`,
    public `absorb`, or public `almanac`/`alm` aliases.
 3. Keep future source material additions inside `SourceAddress -> SourceRef ->
