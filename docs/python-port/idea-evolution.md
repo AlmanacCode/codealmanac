@@ -1454,3 +1454,29 @@ Follow-up test:
 Keep real provider dogfood in the release gate. Add orchestration only when a
 real run fails because the service boundary cannot express the needed product
 operation.
+
+## 2026-06-29 - Release Risk Is Maintainer-Facing Drift
+
+Old hypothesis:
+After final wheel/sdist package rehearsal, the next release pressure was mostly
+prompt-quality dogfood and product judgment.
+
+New hypothesis:
+Run a maintainer-facing release-surface audit before more dogfood. A stale
+release guide can invalidate an otherwise working package by sending the
+maintainer down the archived npm path.
+
+Evidence that forced the change:
+`RELEASE.md` still described `npm test`, `npm run build`, `npm pack`, npm
+dist-tags, `NPM_TOKEN`, and `npm publish` after the repo had moved to Python
+packaging, PyPI-style install, and `codealmanac` as the only public command.
+
+Code or product assumption affected:
+Release docs are public product surface. `RELEASE.md` now names the Python
+release use case directly: pytest, ruff, diff check, `uv build`, `uvx twine
+check`, clean wheel/sdist install smoke, and `uvx twine upload`. Public-contract
+tests guard the guide and the PyPI metadata.
+
+Follow-up test:
+Before any publish attempt, run `uvx twine check dist/*` against freshly built
+artifacts and smoke both wheel and sdist from clean Python 3.12 environments.

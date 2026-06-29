@@ -706,6 +706,16 @@ the `codealmanac` console script. Clean Python 3.12.9 installs from both wheel
 and sdist passed installed CLI smoke for `init`, `search`, `show`, `topics`,
 `health`, `jobs`, `sync status`, `doctor`, and `serve`. A Python 3.11 install
 attempt failed with the expected `requires-python >=3.12` guard.
+Slice 62 cleans the release path after the package rehearsal exposed a
+maintainer-facing mismatch. `RELEASE.md` still described the archived npm
+release flow, so it now documents the Python/PyPI flow: pytest, ruff, diff
+check, `uv build`, `uvx twine check`, clean wheel/sdist install smoke, and
+`uvx twine upload`. `pyproject.toml` now includes PyPI-facing author,
+keyword, classifier, repository, and issue metadata. The first classifier pass
+included the old Apache license classifier, and setuptools rejected it because
+PEP 639 license expressions supersede license classifiers. The final metadata
+keeps SPDX `Apache-2.0` and removes the license classifier. Public-contract
+tests guard the Python release guide and package metadata.
 
 ## Next Hypothesis
 

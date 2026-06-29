@@ -17,7 +17,7 @@ means the goal remains active.
 | Prompts/manual surfaces | `src/codealmanac/prompts/` package resources, `PromptRenderer`, `src/codealmanac/manual/` package resources, `<almanac-root>/manual/` build materialization, and doctor manual checks | prompt/manual tests; build and diagnostics tests; ingest and garden workflow prompt assertions; wheel inspection confirmed prompt and manual Markdown packaged; isolated live build/doctor dogfood passed | Prompt and manual quality need continued lifecycle dogfood review. |
 | Tests and live verification | pytest/ruff configured in `pyproject.toml` | `uv run pytest`, `uv run ruff check .`, `uv run codealmanac --help`, live temp `init`/`list`/`search`/`show`, dogfood search, dogfood serve API, viewer renderer token-safety tests, browser-harness desktop/mobile serve verification, and final wheel/sdist installed CLI smoke passed through slice 61 | Keep using browser-harness for future visual changes. |
 | Frequent review | slice-1 review fix hardened registry temp writes and typed selector helpers | `uv run pytest`, `uv run ruff check .`, live temp `init`/`list` passed after review fix | Need the same checkpoint discipline after each meaningful slice. |
-| No hosted CLI/MCP/SDK/aliases | live agreement records exclusion; `tests/test_public_contract.py` guards entry points, forbidden commands, and package module names | `uv run pytest tests/test_public_contract.py` passed on 2026-06-29; full `uv run pytest` and `uv run ruff check .` passed on 2026-06-29 | Future CLI expansion must keep the public-contract guard current. |
+| No hosted CLI/MCP/SDK/aliases | live agreement records exclusion; `tests/test_public_contract.py` guards entry points, forbidden commands, package module names, README, release guide, and package metadata | `uv run pytest tests/test_public_contract.py` passed on 2026-06-29; full `uv run pytest` and `uv run ruff check .` passed on 2026-06-29 | Future CLI expansion must keep the public-contract guard current. |
 
 ## Gates For First Slice
 
@@ -768,3 +768,15 @@ means the goal remains active.
 | Clean wheel install | Python 3.12.9 venv install from built wheel | passed; installed `codealmanac --help` rendered the CLI |
 | Clean sdist install | Python 3.12.9 venv install from built sdist | passed; installed `codealmanac --help` rendered the CLI |
 | Installed CLI smoke | both clean installs ran `init`, `search`, `show`, `topics`, `health --json`, `jobs`, `sync status`, `doctor --json`, and live `serve` HTTP checks | passed; final output was `wheel-install: ok` and `sdist-install: ok` |
+
+## Gates For Slice 62 Python Release Guide
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Public contract tests | `uv run pytest tests/test_public_contract.py` | passed; release guide and package metadata guards included |
+| Package metadata build | `uv build --out-dir /tmp/codealmanac-release-slice62` | passed; built wheel and sdist after removing the superseded license classifier |
+| Twine metadata check | `uvx twine check /tmp/codealmanac-release-slice62/*` | passed for wheel and sdist |
+| Wheel metadata inspection | stdlib `zipfile`/`email.parser` over built wheel metadata | passed; author, SPDX license expression, license file, repository/issues URLs, and classifiers present |
+| Full tests | `uv run pytest` | 240 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |

@@ -10,6 +10,18 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
 license-files = ["LICENSE.md"]
+authors = [{ name = "Almanac" }]
+keywords = ["agents", "codebase", "documentation", "wiki"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Documentation",
+  "Topic :: Software Development :: Documentation",
+]
 dependencies = [
   "beautifulsoup4>=4.15.0",
   "charset-normalizer>=3.4.7",
@@ -29,6 +41,10 @@ dependencies = [
 
 [project.scripts]
 codealmanac = "codealmanac.cli.main:main"
+
+[project.urls]
+Repository = "https://github.com/AlmanacCode/codealmanac"
+Issues = "https://github.com/AlmanacCode/codealmanac/issues"
 
 [dependency-groups]
 dev = [

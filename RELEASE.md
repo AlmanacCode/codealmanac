@@ -1,133 +1,131 @@
 # Releasing codealmanac
 
-How releases are cut for the `codealmanac` npm package. Local, manual, and
-opinionated — the same pattern the OpenAlmanac MCP package uses.
+This file describes the Python package release flow for `codealmanac`.
 
-## How to cut a release
+CodeAlmanac v1 is local-only. A release publishes the Python CLI package; it
+does not publish a hosted service, hosted capture path, SDK, MCP package, npm
+package, or compatibility alias.
 
-From a clean checkout of `main` on the maintainer's machine:
+## Release Channels
 
-```bash
-cd ~/Desktop/Projects/codealmanac
-git pull
-npm test                         # must pass
-npm run build                    # must succeed
-npm pack --dry-run               # sanity: tarball contains only expected files
-npm version patch                # or: minor | major — commits + tags
-git push && git push --tags
-npm publish --access public
-npm view codealmanac version     # confirm the new version is live
-```
+| Channel | Branch | Version shape | Publish target |
+|---|---|---|---|
+| stable | `main` | `0.1.1` | PyPI default release |
+| dev | `dev` | `0.1.1.dev0` | PyPI pre-release |
 
-The `publishcodealmanac` Claude skill wraps these steps. Prefer invoking
-the skill over running the commands by hand; skill keeps the checks uniform.
-
-## Dev channel
-
-Two npm dist-tags, two branches:
-
-| Channel | Branch | Publish | Consumers install |
-|---------|--------|---------|-------------------|
-| stable  | `main` | `npm publish` (default `latest`) | `npm i -g codealmanac` |
-| dev     | `dev`  | `npm publish --tag dev` | `npm i -g codealmanac@dev` |
-
-The dev channel ships bleeding-edge builds from `dev` without touching
-`latest`, so stable users are never affected. The hosted Modal worker
-(`usealmanac`) installs `codealmanac@dev` to exercise unreleased work like the
-`gh`-based `ingest github:pr` flow.
-
-Dev builds are **prereleases of the next patch**, above the live `latest`:
+Stable users install the normal PyPI release:
 
 ```bash
-cd ~/Desktop/Projects/codealmanac
-git switch dev
-npm test && npm run build
-npm view codealmanac version            # e.g. 0.2.25 (latest)
-npm version 0.2.26-dev.0                # explicit; or: npm version prerelease --preid dev
-                                        # add --no-git-tag-version if the tree is dirty
-                                        # with unrelated local changes, then commit + tag by hand
-npm publish --tag dev --access public   # ALWAYS --tag dev
-git push && git push --tags
-npm view codealmanac dist-tags          # confirm: dev -> new prerelease, latest unchanged
+uv tool install codealmanac
+python -m pip install codealmanac
 ```
 
-Run via `/publishcodealmanac dev`. The one rule that must never break: a
-`-dev.` prerelease must never land on the `latest` tag. If it does, fix
-forward by publishing a real stable version to `latest` immediately.
+Dev users must opt into a pre-release:
 
-The automation token lives in the `codealmanac` Doppler project (`prd` config)
-as `NPM_TOKEN` — a granular token that publishes headless. The skill fetches it
-into a temp userconfig (`doppler secrets get NPM_TOKEN … → npm publish
---userconfig`) rather than `~/.npmrc`, whose interactive login token would
-prompt for a 2FA OTP. Same token works for stable `main` publishes.
-
-## Why local and not CI
-
-Publishing runs from the maintainer's machine using the npm auth token in
-`~/.npmrc`. No GitHub Secret, no rotating token, no CI publish workflow.
-
-- Matches the existing `publishmcp` flow for the OpenAlmanac MCP package.
-- npm's granular tokens max out at 90 days for read-write — local auth via
-  a classic automation token in `~/.npmrc` avoids the rotation treadmill.
-- One less moving piece.
-
-`.github/workflows/publish.yml` exists but is disabled (`workflow_dispatch`
-only, with a hard-fail step). It's kept as a reference in case we want CI
-provenance attestation later — that's the main thing local publish gives up.
-If we flip to CI publish, the path is: restore the tag trigger, add a
-`NPM_TOKEN` repo secret, drop the fail-stop step. History at commit `196d423`.
-
-## Versioning policy
-
-Semver, with pre-1.0 specifics:
-
-- **Pre-1.0 breaking changes** bump minor: `0.1.x` → `0.2.0`.
-- **Pre-1.0 features and fixes** bump patch: `0.1.0` → `0.1.1`.
-- **Cut 1.0** when the CLI surface is stable and we've dogfooded it on real
-  repos (not just fixture tests).
-- **First release is `v0.1.0`**, cut once slice 5 (capture + hook) lands.
-
-Prereleases (`0.1.0-rc.1`) are allowed but reserved for genuine release
-candidates — not the default flow.
-
-## Pre-release checklist
-
-Before running `npm version`:
-
-- [ ] All tests pass on `main` (`npm test`)
-- [ ] `npm run build` succeeds cleanly
-- [ ] `npm pack --dry-run` shows only: `dist/`, `prompts/`, `README.md`,
-      `LICENSE.md`, `package.json`. No source, no tests, no `.git`, no
-      `node_modules`.
-- [ ] `README.md` describes the current feature set accurately — not
-      aspirational. Users read this on npmjs.com.
-- [ ] `CHANGELOG.md` updated with the release notes.
-      TODO: add `CHANGELOG.md` once we have multi-release history.
-
-## npm auth
-
-The maintainer's `~/.npmrc` holds a classic automation token scoped to the
-maintainer's npm user. That user has publish rights on the unscoped
-`codealmanac` package (claimed on first publish — whoever publishes `v0.1.0`
-claims it).
-
-If the token ever expires or the maintainer changes, regenerate at
-https://www.npmjs.com/settings/~/tokens ("Generate New Token" → "Classic
-Token" → "Automation"), and replace the value in `~/.npmrc`:
-
-```
-//registry.npmjs.org/:_authToken=<token>
+```bash
+uv tool install --prerelease allow codealmanac
+python -m pip install --pre codealmanac
 ```
 
-## Unpublishing
+## Pre-Release Checklist
 
-Don't, if you can avoid it. npm's rules:
+Run from a clean checkout of the release branch:
 
-- `npm unpublish codealmanac@x.y.z` only works within **72 hours** of publish.
-- After 72 hours, use `npm deprecate codealmanac@x.y.z "reason"` instead.
-  The version stays installable but warns on install.
-- Never reuse a version number — once published (even if unpublished),
-  that exact `name@version` is burned forever.
+```bash
+git status --short
+uv run pytest
+uv run ruff check .
+git diff --check
+rm -rf dist
+uv build --out-dir dist
+uvx twine check dist/*
+```
 
-If a release is broken, fix forward: publish a new patch that supersedes
-the broken one. Don't try to erase history.
+Then install the built artifacts into clean Python 3.12 environments and smoke
+the installed CLI:
+
+```bash
+python3.12 -m venv /tmp/codealmanac-wheel-venv
+/tmp/codealmanac-wheel-venv/bin/python -m pip install dist/*.whl
+/tmp/codealmanac-wheel-venv/bin/codealmanac --help
+
+python3.12 -m venv /tmp/codealmanac-sdist-venv
+/tmp/codealmanac-sdist-venv/bin/python -m pip install dist/*.tar.gz
+/tmp/codealmanac-sdist-venv/bin/codealmanac --help
+```
+
+For a full local smoke, use a temp `HOME` and temp repo, then run:
+
+```bash
+codealmanac init <repo> --name release-smoke
+codealmanac search getting
+codealmanac show getting-started --lead
+codealmanac topics
+codealmanac health --json
+codealmanac jobs
+codealmanac sync status --from codex --quiet 0s
+codealmanac doctor --json
+codealmanac serve --host 127.0.0.1 --port 49280
+```
+
+Confirm `/api/overview` and `/app.js` respond from the local server.
+
+## Publish
+
+Publish only after the checklist passes and the release commit is on the
+release branch.
+
+```bash
+uvx twine upload dist/*
+```
+
+Verify the uploaded version:
+
+```bash
+python -m pip index versions codealmanac
+```
+
+Do not upload a `dev` version as the stable release. If a bad release is
+published, fix forward with a new version.
+
+## Versioning Policy
+
+CodeAlmanac is pre-1.0.
+
+- Breaking changes bump minor: `0.1.x` -> `0.2.0`.
+- Features and fixes bump patch: `0.1.0` -> `0.1.1`.
+- Dev builds use PEP 440 dev releases: `0.1.1.dev0`, `0.1.1.dev1`.
+- Release candidates are allowed when needed: `0.1.1rc1`.
+
+Do not reuse a published version number.
+
+## Package Surface
+
+The package must expose exactly one public command:
+
+```text
+codealmanac
+```
+
+The published artifact must include:
+
+- `README.md`
+- `LICENSE.md`
+- `src/codealmanac/server/assets/`
+- `src/codealmanac/server/assets/viewer/`
+- `src/codealmanac/manual/*.md`
+- `src/codealmanac/prompts/base/*.md`
+- `src/codealmanac/prompts/operations/*.md`
+
+The published artifact must not introduce:
+
+- public `almanac` or `alm` commands
+- public `capture`, `login`, `connect`, or `upload` commands
+- public SDK or MCP modules
+- npm, Node, or hosted-dashboard install instructions
+
+## Secrets
+
+PyPI upload credentials belong in the maintainer's local keyring, `.pypirc`, or
+environment. Do not commit tokens. Do not add a CI publish path until release
+provenance and token ownership are explicitly decided.

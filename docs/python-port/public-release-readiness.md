@@ -19,6 +19,7 @@ unless a gate below exposes a boundary problem.
 | Fresh install | Build a wheel, install it into a clean environment, run `codealmanac --help`, `init`, `search`, `show`, `health`, `serve`, and `jobs` without relying on editable checkout state. |
 | Package metadata | Wheel metadata includes README and Apache-2.0 license text; package data includes server assets, manual files, and prompts. |
 | Public docs | `README.md` describes only the Python `codealmanac` local surface: no Node/npm install path, no `almanac` alias, no hosted dashboard happy path. |
+| Release guide | `RELEASE.md` describes the Python/PyPI release path, clean artifact install smoke, and no npm/Node release flow. |
 | Local wiki read path | A new repo can initialize, search, show a page, inspect topics, run health, and serve the local viewer. |
 | Lifecycle write path | Real Codex or Claude ingest writes useful wiki changes under the configured Almanac root and leaves readable `jobs logs`. |
 | Sync path | A synthetic and a real local transcript can be discovered, claimed, ingested, and skipped on a second run. |
@@ -70,6 +71,10 @@ unless a gate below exposes a boundary problem.
 - Slice 61 also updated package metadata to SPDX `Apache-2.0` plus
   `license-files = ["LICENSE.md"]`, removing the setuptools license-table
   deprecation warning.
+- Slice 62 replaced the stale npm release guide with the Python/PyPI release
+  guide, added PyPI-facing project metadata, verified wheel/sdist metadata with
+  `twine check`, and extended public-contract tests so npm release commands do
+  not return.
 
 ## Next Useful Pressure Tests
 

@@ -7,7 +7,7 @@ Updated: 2026-06-29
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `dev`.
 - Latest implementation slice:
-  slice 61 final package rehearsal.
+  slice 62 Python release guide.
 - Latest committed product-direction slice: `docs: record viewer design correction`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
@@ -135,6 +135,12 @@ Updated: 2026-06-29
   `sync status`, `doctor`, and `serve`, and a Python 3.11 install failed as
   intended because the package requires `>=3.12`. Package metadata now uses
   SPDX `Apache-2.0` plus `license-files = ["LICENSE.md"]`.
+- Slice 62 replaced the stale npm release guide with the Python/PyPI release
+  guide, added PyPI-facing package metadata, and extended public-contract tests
+  to reject old npm release commands. Current setuptools rejects license
+  classifiers when SPDX `license = "Apache-2.0"` is present, so package
+  classifiers intentionally omit `License :: OSI Approved :: Apache Software
+  License`.
 - The manual surface is a support package, not a public command. `ManualLibrary`
   reads `src/codealmanac/manual/*.md`, `build`/`init` copy missing docs into
   the configured root's `manual/`, prompts tell lifecycle agents to read those
@@ -548,6 +554,8 @@ Behavior:
   /search/file routes and mobile page route
 - Slice 61 final wheel/sdist package rehearsal from clean Python 3.12.9
   installs, including installed CLI smoke and package metadata inspection
+- Slice 62 Python release guide update, package metadata guards, and
+  `twine check` package metadata verification
 
 ## Next Move
 

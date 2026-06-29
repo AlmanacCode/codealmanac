@@ -44,6 +44,24 @@ README_FORBIDDEN_FRAGMENTS = (
     "absorb",
 )
 
+RELEASE_REQUIRED_FRAGMENTS = (
+    "Python package release flow",
+    "uv build --out-dir dist",
+    "uvx twine check dist/*",
+    "uvx twine upload dist/*",
+    "codealmanac",
+    "must not introduce",
+)
+
+RELEASE_FORBIDDEN_FRAGMENTS = (
+    "npm publish",
+    "npm test",
+    "npm run build",
+    "npm pack",
+    "NPM_TOKEN",
+    "npx",
+)
+
 
 def test_public_entry_point_is_codealmanac_only():
     pyproject = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
@@ -61,6 +79,17 @@ def test_python_package_metadata_declares_readme_and_license():
     assert project["readme"] == "README.md"
     assert project["license"] == "Apache-2.0"
     assert project["license-files"] == ["LICENSE.md"]
+    assert project["authors"] == [{"name": "Almanac"}]
+    assert project["urls"] == {
+        "Repository": "https://github.com/AlmanacCode/codealmanac",
+        "Issues": "https://github.com/AlmanacCode/codealmanac/issues",
+    }
+    assert "Development Status :: 3 - Alpha" in project["classifiers"]
+    assert "License :: OSI Approved :: Apache Software License" not in project[
+        "classifiers"
+    ]
+    assert "Operating System :: OS Independent" in project["classifiers"]
+    assert "Topic :: Software Development :: Documentation" in project["classifiers"]
 
 
 def test_readme_documents_python_local_public_surface():
@@ -71,6 +100,16 @@ def test_readme_documents_python_local_public_surface():
 
     for fragment in README_FORBIDDEN_FRAGMENTS:
         assert fragment not in readme
+
+
+def test_release_guide_documents_python_package_release_surface():
+    release_guide = (PROJECT_ROOT / "RELEASE.md").read_text(encoding="utf-8")
+
+    for fragment in RELEASE_REQUIRED_FRAGMENTS:
+        assert fragment in release_guide
+
+    for fragment in RELEASE_FORBIDDEN_FRAGMENTS:
+        assert fragment not in release_guide
 
 
 @pytest.mark.parametrize("command", FORBIDDEN_TOP_LEVEL_COMMANDS)
