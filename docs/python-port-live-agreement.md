@@ -56,6 +56,11 @@ It is the constraint document for future agents.
   It contains bundled wiki-maintenance doctrine. `init` and `build` copy
   missing files into `.almanac/manual/`, prompts tell lifecycle agents to read
   those files, and `doctor` reports package/workspace manual readiness.
+- 2026-06-29: `database/` owns SQLite connection setup and migration
+  application. Product stores still own their SQL schemas and query semantics.
+  The current `index.db` migration strategy is rebuild-on-version-change
+  because the index is a derived read model from `.almanac/pages/` and
+  `topics.yaml`.
 
 ## Product Frame
 

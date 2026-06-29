@@ -42,6 +42,7 @@ that root instead of constructing stores or adapters themselves.
 
 | Package | Owns | First implementation pressure |
 |---|---|---|
+| `database` | SQLite connection setup, PRAGMA policy, and migration application helpers | `index.db` read model |
 | `prompts` | packaged lifecycle prompt doctrine and operation prompt rendering | `ingest`, `garden`, future `sync` |
 | `manual` | packaged wiki-maintenance rulebook and workspace manual materialization helpers | `build`, `doctor`, lifecycle prompt guidance |
 
@@ -98,6 +99,12 @@ state.
 `integrations/command.py` holds captured subprocess execution shared by local
 integration adapters. It is not a service port because it describes local
 process mechanics, not a product contract.
+
+`database/` holds local SQLite mechanics shared by stores. `connect_sqlite`
+creates parent directories, applies row factory and PRAGMA policy, and returns
+the connection. `apply_migrations` applies typed `SQLiteMigration` values in
+version order. Product stores still own SQL schema text, row conversion, and
+query semantics.
 
 `integrations/harnesses/git_status.py` holds Git porcelain changed-file
 snapshots shared by Claude and Codex harness adapters.

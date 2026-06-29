@@ -477,6 +477,17 @@
   applied in slice 37: run lifecycle transitions are durable facts, and sync
   reconciliation reacts to those facts at the workflow boundary rather than
   hiding policy inside transcript adapters or CLI glue.
+- Added slice-38 database boundary. `codealmanac.database` now owns SQLite
+  connection setup, row factory/PRAGMA policy, parent directory creation, and
+  typed migration application. `services/index/store.py` still owns the
+  `index.db` schema, FTS/search/topic/health SQL, and row conversion.
+- Added an architecture guard that rejects direct `sqlite3` imports outside
+  `database/`. This keeps future stores from bypassing the shared SQLite
+  mechanics while still allowing store-owned schemas and queries.
+- Sent a Relayforge Discord checkpoint for the Cosmic Python chapter 2 and
+  chapter 6 patterns applied in slice 38: the store remains the repository for
+  product persistence behavior, while database mechanics and migration
+  application are infrastructure owned by `database/`.
 
 ## Current Hypothesis
 
@@ -509,7 +520,9 @@ Git-listed directories rank changed material before unchanged files. The
 local-only public surface now has executable guards for hosted verbs,
 compatibility aliases, SDK modules, and MCP modules. The manual surface now
 exists as packaged doctrine plus `.almanac/manual/` workspace files without
-adding a public command.
+adding a public command. The database spine now exists for SQLite connection
+and migration mechanics, with `IndexStore` supplying the first store-owned
+typed migration for the derived read model.
 
 ## Next Hypothesis
 

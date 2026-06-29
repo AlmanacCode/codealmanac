@@ -1,5 +1,4 @@
 import re
-import sqlite3
 from hashlib import sha256
 from pathlib import Path
 
@@ -7,6 +6,13 @@ from pydantic import ValidationError
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.slug import to_kebab_case
+from codealmanac.database import (
+    SQLiteConnection,
+    SQLiteMigration,
+    SQLiteRow,
+    apply_migrations,
+    connect_sqlite,
+)
 from codealmanac.services.index.models import (
     BrokenCrossWikiLink,
     BrokenPageLink,
@@ -101,6 +107,25 @@ CREATE TABLE IF NOT EXISTS index_metadata (
 );
 """
 
+DROP_DERIVED_INDEX_DDL = """
+DROP TABLE IF EXISTS cross_wiki_links;
+DROP TABLE IF EXISTS wikilinks;
+DROP TABLE IF EXISTS file_refs;
+DROP TABLE IF EXISTS page_topics;
+DROP TABLE IF EXISTS topic_parents;
+DROP TABLE IF EXISTS topics;
+DROP TABLE IF EXISTS pages;
+DROP TABLE IF EXISTS fts_pages;
+DROP TABLE IF EXISTS index_metadata;
+"""
+
+INDEX_MIGRATIONS = (
+    SQLiteMigration(
+        version=SCHEMA_VERSION,
+        sql=f"{DROP_DERIVED_INDEX_DDL}\n{SCHEMA_DDL}",
+    ),
+)
+
 SOURCE_SIGNATURE_KEY = "source_signature"
 
 
@@ -108,9 +133,7 @@ class IndexStore:
     def refresh(self, almanac_path: Path) -> IndexRefreshResult:
         sources = load_index_sources(almanac_path)
         db_path = index_db_path(almanac_path)
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        with connect(db_path) as connection:
-            ensure_schema(connection)
+        with connect_index(db_path) as connection:
             if stored_signature(connection) == sources.signature:
                 return IndexRefreshResult(
                     changed=0,
@@ -131,9 +154,7 @@ class IndexStore:
     def rebuild(self, almanac_path: Path) -> IndexRefreshResult:
         sources = load_index_sources(almanac_path)
         db_path = index_db_path(almanac_path)
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        with connect(db_path) as connection:
-            ensure_schema(connection)
+        with connect_index(db_path) as connection:
             replace_documents(connection, sources)
         return IndexRefreshResult(
             changed=len(sources.documents),
@@ -148,8 +169,7 @@ class IndexStore:
         almanac_path: Path,
         request: SearchIndexRequest,
     ) -> tuple[SearchPageResult, ...]:
-        with connect(index_db_path(almanac_path)) as connection:
-            ensure_schema(connection)
+        with connect_index(index_db_path(almanac_path)) as connection:
             rows = connection.execute(
                 *search_sql(request),
             ).fetchall()
@@ -159,8 +179,7 @@ class IndexStore:
         return tuple(results)
 
     def counts(self, almanac_path: Path) -> IndexCounts:
-        with connect(index_db_path(almanac_path)) as connection:
-            ensure_schema(connection)
+        with connect_index(index_db_path(almanac_path)) as connection:
             page_count = connection.execute("SELECT COUNT(*) FROM pages").fetchone()[0]
             topic_count = connection.execute(
                 "SELECT COUNT(*) FROM topics"
@@ -168,8 +187,7 @@ class IndexStore:
         return IndexCounts(pages=page_count, topics=topic_count)
 
     def get_page(self, almanac_path: Path, slug: str) -> PageView | None:
-        with connect(index_db_path(almanac_path)) as connection:
-            ensure_schema(connection)
+        with connect_index(index_db_path(almanac_path)) as connection:
             row = connection.execute(
                 """
                 SELECT slug, title, summary, file_path, updated_at, archived_at,
@@ -184,8 +202,7 @@ class IndexStore:
             return page_view_from_row(connection, row)
 
     def list_topics(self, almanac_path: Path) -> tuple[TopicSummary, ...]:
-        with connect(index_db_path(almanac_path)) as connection:
-            ensure_schema(connection)
+        with connect_index(index_db_path(almanac_path)) as connection:
             rows = connection.execute(
                 """
                 SELECT t.slug, t.title, t.description,
@@ -213,8 +230,7 @@ class IndexStore:
         slug: str,
         include_descendants: bool,
     ) -> TopicDetail | None:
-        with connect(index_db_path(almanac_path)) as connection:
-            ensure_schema(connection)
+        with connect_index(index_db_path(almanac_path)) as connection:
             row = connection.execute(
                 "SELECT slug, title, description FROM topics WHERE slug = ?",
                 (slug,),
@@ -242,8 +258,7 @@ class IndexStore:
         registered_wikis: set[str],
     ) -> HealthReport:
         repo_root = almanac_path.parent
-        with connect(index_db_path(almanac_path)) as connection:
-            ensure_schema(connection)
+        with connect_index(index_db_path(almanac_path)) as connection:
             return HealthReport(
                 orphans=orphan_pages(connection),
                 dead_refs=dead_file_refs(connection, repo_root),
@@ -266,33 +281,10 @@ def index_db_path(almanac_path: Path) -> Path:
     return almanac_path / "index.db"
 
 
-def connect(path: Path) -> sqlite3.Connection:
-    connection = sqlite3.connect(path)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    connection.execute("PRAGMA journal_mode = WAL")
+def connect_index(path: Path) -> SQLiteConnection:
+    connection = connect_sqlite(path)
+    apply_migrations(connection, INDEX_MIGRATIONS)
     return connection
-
-
-def ensure_schema(connection: sqlite3.Connection) -> None:
-    version = connection.execute("PRAGMA user_version").fetchone()[0]
-    if version < SCHEMA_VERSION:
-        connection.executescript(
-            """
-            DROP TABLE IF EXISTS cross_wiki_links;
-            DROP TABLE IF EXISTS wikilinks;
-            DROP TABLE IF EXISTS file_refs;
-            DROP TABLE IF EXISTS page_topics;
-            DROP TABLE IF EXISTS topic_parents;
-            DROP TABLE IF EXISTS topics;
-            DROP TABLE IF EXISTS pages;
-            DROP TABLE IF EXISTS fts_pages;
-            DROP TABLE IF EXISTS index_metadata;
-            """
-        )
-    connection.executescript(SCHEMA_DDL)
-    connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
-    connection.commit()
 
 
 def load_documents(pages_path: Path) -> tuple[list[PageDocument], int, int]:
@@ -347,7 +339,7 @@ def file_hash(path: Path) -> str:
         return sha256(b"").hexdigest()
 
 
-def stored_signature(connection: sqlite3.Connection) -> IndexSourceSignature | None:
+def stored_signature(connection: SQLiteConnection) -> IndexSourceSignature | None:
     row = connection.execute(
         "SELECT value FROM index_metadata WHERE key = ?",
         (SOURCE_SIGNATURE_KEY,),
@@ -361,7 +353,7 @@ def stored_signature(connection: sqlite3.Connection) -> IndexSourceSignature | N
 
 
 def replace_documents(
-    connection: sqlite3.Connection,
+    connection: SQLiteConnection,
     sources: LoadedIndexSources,
 ) -> None:
     with connection:
@@ -386,7 +378,7 @@ def replace_documents(
         )
 
 
-def insert_document(connection: sqlite3.Connection, document: PageDocument) -> None:
+def insert_document(connection: SQLiteConnection, document: PageDocument) -> None:
     connection.execute(
         """
         INSERT INTO pages (
@@ -448,7 +440,7 @@ def insert_document(connection: sqlite3.Connection, document: PageDocument) -> N
 
 
 def insert_topic_definition(
-    connection: sqlite3.Connection,
+    connection: SQLiteConnection,
     topic: TopicDefinition,
 ) -> None:
     connection.execute(
@@ -588,8 +580,8 @@ def build_fts_query(raw: str) -> str:
 
 
 def search_result_from_row(
-    connection: sqlite3.Connection,
-    row: sqlite3.Row,
+    connection: SQLiteConnection,
+    row: SQLiteRow,
 ) -> SearchPageResult:
     return SearchPageResult(
         slug=row["slug"],
@@ -602,7 +594,7 @@ def search_result_from_row(
     )
 
 
-def page_view_from_row(connection: sqlite3.Connection, row: sqlite3.Row) -> PageView:
+def page_view_from_row(connection: SQLiteConnection, row: SQLiteRow) -> PageView:
     slug = row["slug"]
     return PageView(
         slug=slug,
@@ -621,7 +613,7 @@ def page_view_from_row(connection: sqlite3.Connection, row: sqlite3.Row) -> Page
     )
 
 
-def topics_for_page(connection: sqlite3.Connection, slug: str) -> tuple[str, ...]:
+def topics_for_page(connection: SQLiteConnection, slug: str) -> tuple[str, ...]:
     rows = connection.execute(
         "SELECT topic_slug FROM page_topics WHERE page_slug = ? ORDER BY topic_slug",
         (slug,),
@@ -630,7 +622,7 @@ def topics_for_page(connection: sqlite3.Connection, slug: str) -> tuple[str, ...
 
 
 def file_refs_for_page(
-    connection: sqlite3.Connection,
+    connection: SQLiteConnection,
     slug: str,
 ) -> tuple[PageFileReference, ...]:
     rows = connection.execute(
@@ -649,7 +641,7 @@ def file_refs_for_page(
 
 
 def wikilinks_out_for_page(
-    connection: sqlite3.Connection,
+    connection: SQLiteConnection,
     slug: str,
 ) -> tuple[str, ...]:
     rows = connection.execute(
@@ -659,7 +651,7 @@ def wikilinks_out_for_page(
     return tuple(row["target_slug"] for row in rows)
 
 
-def wikilinks_in_for_page(connection: sqlite3.Connection, slug: str) -> tuple[str, ...]:
+def wikilinks_in_for_page(connection: SQLiteConnection, slug: str) -> tuple[str, ...]:
     rows = connection.execute(
         "SELECT source_slug FROM wikilinks WHERE target_slug = ? ORDER BY source_slug",
         (slug,),
@@ -668,7 +660,7 @@ def wikilinks_in_for_page(connection: sqlite3.Connection, slug: str) -> tuple[st
 
 
 def cross_wiki_for_page(
-    connection: sqlite3.Connection,
+    connection: SQLiteConnection,
     slug: str,
 ) -> tuple[CrossWikiReference, ...]:
     rows = connection.execute(
@@ -690,7 +682,7 @@ def title_for_slug(slug: str) -> str:
     return " ".join(word.capitalize() for word in slug.split("-") if word)
 
 
-def topic_descendants(connection: sqlite3.Connection, slug: str) -> tuple[str, ...]:
+def topic_descendants(connection: SQLiteConnection, slug: str) -> tuple[str, ...]:
     rows = connection.execute(
         """
         WITH RECURSIVE descendants(slug, depth) AS (
@@ -709,7 +701,7 @@ def topic_descendants(connection: sqlite3.Connection, slug: str) -> tuple[str, .
 
 
 def pages_for_topics(
-    connection: sqlite3.Connection,
+    connection: SQLiteConnection,
     topic_slugs: tuple[str, ...],
 ) -> tuple[str, ...]:
     if len(topic_slugs) == 0:
@@ -729,7 +721,7 @@ def pages_for_topics(
     return tuple(row["slug"] for row in rows)
 
 
-def topic_parents(connection: sqlite3.Connection, slug: str) -> tuple[str, ...]:
+def topic_parents(connection: SQLiteConnection, slug: str) -> tuple[str, ...]:
     rows = connection.execute(
         """
         SELECT parent_slug
@@ -742,7 +734,7 @@ def topic_parents(connection: sqlite3.Connection, slug: str) -> tuple[str, ...]:
     return tuple(row["parent_slug"] for row in rows)
 
 
-def topic_children(connection: sqlite3.Connection, slug: str) -> tuple[str, ...]:
+def topic_children(connection: SQLiteConnection, slug: str) -> tuple[str, ...]:
     rows = connection.execute(
         """
         SELECT child_slug
@@ -755,7 +747,7 @@ def topic_children(connection: sqlite3.Connection, slug: str) -> tuple[str, ...]
     return tuple(row["child_slug"] for row in rows)
 
 
-def orphan_pages(connection: sqlite3.Connection) -> tuple[OrphanPage, ...]:
+def orphan_pages(connection: SQLiteConnection) -> tuple[OrphanPage, ...]:
     rows = connection.execute(
         """
         SELECT p.slug
@@ -771,7 +763,7 @@ def orphan_pages(connection: sqlite3.Connection) -> tuple[OrphanPage, ...]:
 
 
 def dead_file_refs(
-    connection: sqlite3.Connection,
+    connection: SQLiteConnection,
     repo_root: Path,
 ) -> tuple[DeadFileReference, ...]:
     rows = connection.execute(
@@ -794,7 +786,7 @@ def dead_file_refs(
     return tuple(findings)
 
 
-def broken_page_links(connection: sqlite3.Connection) -> tuple[BrokenPageLink, ...]:
+def broken_page_links(connection: SQLiteConnection) -> tuple[BrokenPageLink, ...]:
     rows = connection.execute(
         """
         SELECT w.source_slug, w.target_slug
@@ -816,7 +808,7 @@ def broken_page_links(connection: sqlite3.Connection) -> tuple[BrokenPageLink, .
 
 
 def broken_cross_wiki_links(
-    connection: sqlite3.Connection,
+    connection: SQLiteConnection,
     registered_wikis: set[str],
 ) -> tuple[BrokenCrossWikiLink, ...]:
     rows = connection.execute(
@@ -839,7 +831,7 @@ def broken_cross_wiki_links(
     )
 
 
-def empty_topics(connection: sqlite3.Connection) -> tuple[EmptyTopic, ...]:
+def empty_topics(connection: SQLiteConnection) -> tuple[EmptyTopic, ...]:
     rows = connection.execute(
         """
         SELECT t.slug
@@ -856,7 +848,7 @@ def empty_topics(connection: sqlite3.Connection) -> tuple[EmptyTopic, ...]:
     return tuple(EmptyTopic(slug=row["slug"]) for row in rows)
 
 
-def empty_pages(connection: sqlite3.Connection) -> tuple[EmptyPage, ...]:
+def empty_pages(connection: SQLiteConnection) -> tuple[EmptyPage, ...]:
     rows = connection.execute(
         """
         SELECT slug, body

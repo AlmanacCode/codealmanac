@@ -876,3 +876,32 @@ that run. Transcript adapters still do no policy work.
 Follow-up test:
 When a real background queue exists, add an owner/retry budget that uses the
 same pending run linkage instead of adding a second queue ledger.
+
+## 2026-06-29 - SQLite Mechanics Belong In Database Package
+
+Old hypothesis:
+The index store could own SQLite connection setup and schema application
+because it is the only SQLite-backed store in the current Python port.
+
+New hypothesis:
+`database/` should own connection setup and migration application now, while
+`services/index/store.py` keeps the read-model schema and query semantics.
+
+Evidence that forced the change:
+The live agreement already names `database/` as the owner of SQLite
+connections and migration application. `IndexStore` had accumulated
+`sqlite3.connect`, row-factory setup, PRAGMA policy, and schema migration in
+the same file as FTS/search/topic/health query behavior. Cosmic Python chapter
+2 separates repository behavior from persistence mechanics, and chapter 6
+frames transaction/migration setup as infrastructure around repositories.
+
+Code or product assumption affected:
+`codealmanac.database` now exposes `connect_sqlite(...)`,
+`apply_migrations(...)`, and typed `SQLiteMigration` values. `IndexStore` still
+owns the index schema and all read-model SQL. An architecture test rejects
+direct `sqlite3` imports outside the database package.
+
+Follow-up test:
+If a second durable SQLite store appears, decide whether migrations need a
+shared migration catalog or whether each store should continue to supply typed
+store-owned migrations to `database.apply_migrations(...)`.

@@ -6,7 +6,7 @@ Updated: 2026-06-29
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
-- Latest committed slice: `feat(slice-37): add sync pending run linkage`.
+- Latest committed slice: `feat(slice-38): add database boundary`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
 - Latest verified source-runtime direction: selected local material becomes
@@ -24,6 +24,9 @@ Updated: 2026-06-29
   mentioning the reference and does not read repo source contents.
 - Source runtime covers filesystem paths, Git, GitHub, transcripts, and web
   URLs behind `services/sources/ports.py::SourceRuntimeAdapter`.
+- `codealmanac.database` owns SQLite connection setup and migration
+  application. `IndexStore` owns the first typed store migration for the
+  derived `index.db` read model.
 - Filesystem directory runtime uses Git listing inside worktrees, then falls
   back to the bounded Python/pathspec walk outside Git.
 - Git-listed directory runtime ranks changed and untracked files before
@@ -186,6 +189,20 @@ Behavior:
   from the last successful cursor when the transcript prefix still matches
 - unlinked pending entries keep the existing active/stale timeout behavior
 
+Slice 38 adds the database boundary.
+
+Behavior:
+
+- `src/codealmanac/database/` now exposes `connect_sqlite(...)`,
+  `apply_migrations(...)`, and `SQLiteMigration`
+- SQLite parent directory creation, row factory setup, `foreign_keys`, and
+  `journal_mode=WAL` live in `database/`
+- `services/index/store.py` supplies a typed rebuild migration for `index.db`
+- `IndexStore` still owns the schema DDL, refresh/rebuild behavior, search SQL,
+  topic SQL, health SQL, and row conversion
+- `tests/test_architecture.py` rejects direct `sqlite3` imports outside the
+  database package
+
 ## Verification To Preserve
 
 - Focused filesystem/source/ingest/architecture tests
@@ -219,6 +236,9 @@ Behavior:
   run-status dogfood
 - Slice 37 sync pending run-linkage tests, ingest regression tests, full
   pytest, full ruff, diff check, and live sync reconciliation dogfood
+- Slice 38 database helper tests, read-model regression tests, architecture
+  boundary test, full pytest, full ruff, diff check, and live build/search
+  dogfood
 
 ## Next Move
 
@@ -237,3 +257,8 @@ Behavior:
    public `absorb`, or public `almanac`/`alm` aliases.
 3. Keep future source material additions inside `SourceAddress -> SourceRef ->
    SourceBrief -> SourceRuntime` unless the live agreement changes.
+4. Browser-harness note from 2026-06-29: `codealmanac serve` started on
+   `127.0.0.1`, but `browser-harness` could not connect to local Chrome.
+   `browser-harness --doctor` reported Chrome running, no daemon, no active
+   browser connections, and optional Browser Use cloud auth missing. Retry
+   visual verification after Chrome remote debugging is explicitly allowed.
