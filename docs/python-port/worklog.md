@@ -66,6 +66,8 @@
   round-trip YAML editing. Verified body preservation, comment preservation,
   CRLF preservation, idempotence, no-frontmatter pages, CLI smoke, 24 tests,
   and ruff.
+- Slice-4 review fixed frontmatter closing fences at EOF and no-op untag
+  summaries. Re-verified with 25 tests, ruff, and a live EOF/no-op smoke.
 
 ## Current Hypothesis
 

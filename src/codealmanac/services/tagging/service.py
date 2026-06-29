@@ -19,6 +19,7 @@ class TaggingService:
         changed = tuple(topic for topic in after if topic not in before)
         return TaggingResult(
             slug=page.slug,
+            requested_topics=request.topics,
             topics_before=before,
             topics_after=after,
             changed_topics=changed,
@@ -35,6 +36,7 @@ class TaggingService:
         changed = tuple(topic for topic in before if topic not in after)
         return TaggingResult(
             slug=page.slug,
+            requested_topics=request.topics,
             topics_before=before,
             topics_after=after,
             changed_topics=changed,

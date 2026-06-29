@@ -69,6 +69,23 @@ def test_tag_adds_frontmatter_when_page_has_none(
     assert raw.endswith("# Note\n\nBody.\n")
 
 
+def test_tag_handles_frontmatter_closing_fence_at_eof(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = make_repo(tmp_path)
+    page = repo / ".almanac/pages/note.md"
+    page.write_text("---\ntitle: Note\n---", encoding="utf-8")
+    app = create_app(AppConfig(registry_path=isolated_home / ".almanac/registry.json"))
+
+    app.tagging.tag(TagPageRequest(cwd=repo, slug="note", topics=("concepts",)))
+
+    raw = page.read_text(encoding="utf-8")
+    assert raw.count("---") == 2
+    assert "title: Note" in raw
+    assert "concepts" in raw
+
+
 def test_tag_preserves_crlf_frontmatter_and_body(
     tmp_path: Path,
     isolated_home: Path,

@@ -318,7 +318,7 @@ def render_tagging(changed_label: str, unchanged_label: str, result: TaggingResu
     if result.changed_topics:
         print(f"{result.slug}: {changed_label} {', '.join(result.changed_topics)}")
         return
-    unchanged = ", ".join(result.topics_after or result.topics_before)
+    unchanged = ", ".join(result.requested_topics)
     print(f"{result.slug}: {unchanged_label} {unchanged}")
 
 

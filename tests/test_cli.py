@@ -144,4 +144,8 @@ def test_cli_tag_and_untag_update_page_frontmatter(
     untag_output = capsys.readouterr()
     assert untag_output.out == "auth-flow: untagged auth\n"
 
+    assert main(["untag", "auth-flow", "missing"]) == 0
+    noop_output = capsys.readouterr()
+    assert noop_output.out == "auth-flow: not tagged missing\n"
+
     assert "sessions" in page.read_text(encoding="utf-8")

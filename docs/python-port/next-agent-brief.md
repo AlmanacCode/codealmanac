@@ -59,12 +59,16 @@ Updated: 2026-06-29
   - ruff
   - isolated live `tag`, `show --topics`, `untag`, `show --topics`
   - CLI `--help` includes `tag` and `untag`
+- Slice-4 review fix passed:
+  - 25 tests
+  - ruff
+  - live EOF-frontmatter and no-op untag smoke
 
 ## Dirty/Staged Files
 
-At this checkpoint, slice-4 tag/untag files should be dirty until committed.
-Re-run `git diff --check`, pytest, ruff, and isolated live tag/untag before
-committing.
+At this checkpoint, only slice-4 review-fix files should be dirty until
+committed. Re-run `git diff --check`, pytest, ruff, and the live EOF/no-op
+smoke before committing.
 
 ## Next Move
 

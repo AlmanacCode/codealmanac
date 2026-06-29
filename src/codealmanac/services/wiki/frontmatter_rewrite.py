@@ -51,12 +51,15 @@ def split_frontmatter(raw: str) -> FrontmatterSplit:
 
 def split_with_delimiter(raw: str, line_ending: str) -> FrontmatterSplit:
     opener = f"---{line_ending}"
-    closer = f"{line_ending}---{line_ending}"
+    closer = f"{line_ending}---"
     end = raw.find(closer, len(opener))
     if end == -1:
         return FrontmatterSplit(frontmatter="", body=raw)
     frontmatter = raw[len(opener) : end]
-    body = raw[end + len(closer) :]
+    body_start = end + len(closer)
+    if raw.startswith(line_ending, body_start):
+        body_start += len(line_ending)
+    body = raw[body_start:]
     return FrontmatterSplit(frontmatter=frontmatter, body=body)
 
 
