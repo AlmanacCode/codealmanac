@@ -572,6 +572,11 @@
   `cli/dispatch/config.py`. Architecture tests keep admin request/result types
   out of root dispatch/render, matching the Cosmic Python entrypoint-adapter
   reading from chapters 4 and 13.
+- Added slice-50 index read views. `IndexStore` remains the facade and
+  projection writer, while `services/index/views.py` owns read-only SQL for
+  search, pages, topics, and health. Architecture tests keep the view module
+  free of markdown loading, migrations, and write SQL, matching Cosmic Python
+  chapter 12's read-view split without adding full CQRS machinery.
 
 ## Current Hypothesis
 
@@ -606,7 +611,9 @@ compatibility aliases, SDK modules, and MCP modules. The manual surface now
 exists as packaged doctrine plus workspace manual files without adding a public
 command. The database spine now exists for SQLite connection
 and migration mechanics, with `IndexStore` supplying the first store-owned
-typed migration for the derived read model. The local config seam now exists
+typed migration for the derived read model. Index read queries now live in
+`services/index/views.py`, so projection writes and read-only views have
+separate reasons to change. The local config seam now exists
 for typed user/project TOML defaults, with no public `config` command or
 hosted/account configuration surface. The target root has changed: new repos
 should default to `almanac/` and all wiki docs plus local runtime artifacts
@@ -643,4 +650,6 @@ After slice 48, the next update pressure is no longer install detection; it is
 the product policy for notification cadence, dismissal, and release channels
 before any scheduled update automation exists. After slice 49, the next CLI
 pressure is not "split every file"; it is to wait for wiki or lifecycle command
-changes that justify their own dispatch/render domains.
+changes that justify their own dispatch/render domains. After slice 50, index
+refresh cost is still a dogfood question, not something the read-view split
+pretends to solve.

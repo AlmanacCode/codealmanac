@@ -55,6 +55,21 @@ def test_config_service_owns_pydantic_settings_imports():
     assert offenders == []
 
 
+def test_index_read_views_are_separate_from_projection_writes():
+    store = SRC_ROOT / "services/index/store.py"
+    views = SRC_ROOT / "services/index/views.py"
+    views_text = views.read_text(encoding="utf-8")
+
+    assert views.is_file()
+    assert "search_pages(connection, request)" in store.read_text(encoding="utf-8")
+    assert "load_page_document" not in views_text
+    assert "apply_migrations" not in views_text
+    assert "INSERT " not in views_text
+    assert "DELETE " not in views_text
+    assert "CREATE " not in views_text
+    assert "DROP " not in views_text
+
+
 def test_cli_main_stays_as_thin_entrypoint():
     main = SRC_ROOT / "cli/main.py"
     text = main.read_text(encoding="utf-8")

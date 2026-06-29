@@ -28,7 +28,7 @@ that root instead of constructing stores or adapters themselves.
 |---|---|---|
 | `workspaces` | repo root detection, configurable Almanac root, registry, nearest-root discovery, path containment, local wiki selection | `init`, current-repo queries, `--wiki` lookup |
 | `wiki` | page files, frontmatter, topics, wikilinks, page writes, health inputs | `init`, `show`, page parsing for index |
-| `index` | SQLite read model, FTS, mentions, backlinks, query projections | `search`, `show --links`, `health` |
+| `index` | SQLite derived read model, projection refresh/write facade, read-only query views, FTS, mentions, backlinks, health projections | `search`, `show --links`, `health` |
 | `sources` | source observations, source refs, fingerprints, local source state, source runtime snapshots, transcript discovery ports and typed transcript candidates | `SourceAddress`/`SourceRef`/`SourceBrief`/`SourceRuntime`, `SourceRuntimeAdapter`, `TranscriptDiscoveryAdapter`, `TranscriptCandidate`, ingest and sync inputs |
 | `runs` | run ledger, events, outputs, lifecycle state transitions, persisted harness transcript identity | `jobs` read surface, lifecycle workflows, future sync exclusion and reconciliation |
 | `harnesses` | normalized Codex/Claude run contracts, provider transcript refs, and ports | `HarnessKind`/`RunHarnessRequest`/`HarnessRunResult`/`HarnessTranscriptRef`/`HarnessAdapter`, later `build`, `ingest`, `garden` |

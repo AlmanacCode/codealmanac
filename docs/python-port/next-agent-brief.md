@@ -6,7 +6,7 @@ Updated: 2026-06-29
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
-- Latest committed implementation slice: `feat(slice-49): split admin cli edge`.
+- Latest committed implementation slice: `feat(slice-50): split index read views`.
 - Latest product-direction commit: `docs: record configurable almanac root`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
@@ -60,7 +60,9 @@ Updated: 2026-06-29
   such as ignored workspace directories.
 - `codealmanac.database` owns SQLite connection setup and migration
   application. `IndexStore` owns the first typed store migration for the
-  derived `index.db` read model.
+  derived `index.db` read model. `services/index/views.py` owns read-only
+  query SQL and row-to-Pydantic view construction for search, page/topic reads,
+  and health.
 - `services/config` owns local TOML config parsing and precedence. Project
   config is `<almanac-root>/config.toml`; CLI flags still win over config. It
   uses `pydantic-settings` TOML sources.
@@ -450,6 +452,9 @@ Behavior:
 - Slice 49 focused architecture/admin CLI tests, focused CLI ruff, full pytest,
   full ruff, diff check, package build, wheel inspection, and live admin CLI
   dogfood for update, doctor, automation, jobs, and help
+- Slice 50 focused read-view tests, focused index lint, temp-repo CLI read
+  dogfood, full pytest, full ruff, diff check, package build, and wheel
+  inspection
 
 ## Next Move
 
@@ -462,6 +467,8 @@ Behavior:
    - manual update/sync policy only if bundled doctrine must update existing
      workspace manual files; ordinary build/init currently copies missing files
      only
+   - index refresh cost only after large-repo dogfood proves source-signature
+     parsing is too slow; slice 50 split read views but did not optimize refresh
 2. Do not add hosted CLI, login/connect/upload, MCP, SDK, public `capture`,
    public `absorb`, or public `almanac`/`alm` aliases.
 3. Keep future source material additions inside `SourceAddress -> SourceRef ->

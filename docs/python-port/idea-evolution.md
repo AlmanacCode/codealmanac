@@ -1226,3 +1226,35 @@ Follow-up test:
 Architecture tests should keep admin request/result types out of
 `dispatch/root.py` and `render/root.py`. Split wiki or lifecycle dispatch only
 when a future command change provides a concrete reason-to-change.
+
+## 2026-06-29 - Index Reads Are Views Over A Derived Projection
+
+Old hypothesis:
+`services/index/store.py` could own schema, refresh, replacement writes, search,
+page reads, topic reads, and health queries as one SQLite store.
+
+New hypothesis:
+Keep `IndexStore` as the service-facing facade, but split read-only queries
+into `services/index/views.py`. The store owns the projection lifecycle;
+views own SQL that retrieves data from the projection and maps rows into
+Pydantic view models.
+
+Evidence that forced the change:
+`store.py` became the largest Python file and mixed two reasons to change:
+freshness/write-projection mechanics and read/query/health shape. Cosmic
+Python chapter 12 recommends keeping read-only views separate from
+state-changing code even without full CQRS machinery. The local `index.db` is
+already a derived read model, so the smaller read-view split fits without
+adding a bus, event handlers, or new storage.
+
+Code or product assumption affected:
+`services/index/store.py` still owns migrations, source signatures, source
+loading, and `replace_documents(...)`. `services/index/views.py` owns
+`search_pages(...)`, `get_page_view(...)`, `get_topic_detail(...)`, and
+`build_health_report(...)`. `IndexService` and public CLI behavior are
+unchanged.
+
+Follow-up test:
+Architecture tests should keep `views.py` read-only: no markdown loading,
+migrations, or write SQL. Optimize index refresh cost only after large-repo
+dogfood proves source-signature parsing is too slow.

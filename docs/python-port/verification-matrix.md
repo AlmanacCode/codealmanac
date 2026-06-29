@@ -631,3 +631,15 @@ means the goal remains active.
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
 | Package build | `uv build --wheel --no-build-logs --out-dir /tmp/codealmanac-build-slice49-final`; wheel inspection | passed; wheel includes `cli/dispatch/admin.py`, `cli/dispatch/config.py`, and `cli/render/admin.py` |
+
+## Gates For Slice 50 Index Read Views
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused read-view tests | `uv run pytest tests/test_architecture.py tests/test_read_model.py tests/test_topics_health.py tests/test_viewer_service.py tests/test_cli.py::test_cli_search_and_show_read_current_repo_wiki tests/test_cli.py::test_cli_topics_and_health_read_current_repo_wiki tests/test_cli.py::test_cli_build_and_reindex_commands` | 27 passed |
+| Focused index lint | `uv run ruff check src/codealmanac/services/index tests/test_architecture.py tests/test_read_model.py tests/test_topics_health.py tests/test_viewer_service.py tests/test_cli.py` | passed |
+| Temp-repo read dogfood | isolated temp `HOME`; initialized a wiki; ran `search`, `search --mentions`, `show --backlinks`, `topics --wiki cqrs-dogfood show auth`, and `health` | passed; search/mentions/backlinks returned `auth-flow`, topic listed both pages, and health was clean |
+| Full tests | `uv run pytest` | 225 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+| Package build | `uv build --wheel --no-build-logs --out-dir /tmp/codealmanac-build-slice50-final`; wheel inspection | passed; wheel includes `services/index/views.py` |

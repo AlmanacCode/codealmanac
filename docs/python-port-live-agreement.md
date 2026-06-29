@@ -124,6 +124,11 @@ It is the constraint document for future agents.
   appears. `doctor`, `update`, `jobs`, and `automation` now live under the
   admin dispatch/render edge; the root dispatcher delegates to that edge and
   keeps services/workflows as the product boundary.
+- 2026-06-29: The SQLite index service separates projection writes from
+  read-only views. `services/index/store.py` owns schema, migrations,
+  freshness signatures, source loading, and replacement writes into
+  `index.db`; `services/index/views.py` owns read-only query SQL and row-to-
+  Pydantic view construction.
 
 ## Product Frame
 
