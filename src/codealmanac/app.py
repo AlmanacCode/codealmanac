@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
+from codealmanac import __version__
 from codealmanac.core.models import AppConfig
+from codealmanac.services.diagnostics.service import DiagnosticsService
 from codealmanac.services.health.service import HealthService
 from codealmanac.services.index.service import IndexService
 from codealmanac.services.index.store import IndexStore
@@ -23,6 +25,7 @@ class CodeAlmanac:
     pages: PagesService
     topics: TopicsService
     health: HealthService
+    diagnostics: DiagnosticsService
     tagging: TaggingService
     build: BuildWorkflow
 
@@ -36,6 +39,7 @@ def create_app(config: AppConfig | None = None) -> CodeAlmanac:
     pages = PagesService(workspaces, index)
     topics = TopicsService(workspaces, index)
     health = HealthService(workspaces, index)
+    diagnostics = DiagnosticsService(workspaces, index, __version__)
     tagging = TaggingService(pages)
     build = BuildWorkflow(workspaces, wiki, index)
     return CodeAlmanac(
@@ -46,6 +50,7 @@ def create_app(config: AppConfig | None = None) -> CodeAlmanac:
         pages=pages,
         topics=topics,
         health=health,
+        diagnostics=diagnostics,
         tagging=tagging,
         build=build,
     )

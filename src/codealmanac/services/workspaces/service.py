@@ -78,6 +78,10 @@ class WorkspacesService:
     def list(self) -> list[Workspace]:
         return [entry.to_workspace() for entry in self.store.list()]
 
+    @property
+    def registry_path(self) -> Path:
+        return self.store.path
+
 
 def workspace_name_for(root_path: Path, requested_name: str | None) -> str:
     name = to_kebab_case(requested_name or root_path.name)

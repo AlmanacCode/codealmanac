@@ -1,6 +1,7 @@
 from codealmanac.services.index.models import (
     HealthReport,
     IndexRefreshResult,
+    IndexSummary,
     PageView,
     SearchPageResult,
     TopicDetail,
@@ -29,6 +30,17 @@ class IndexService:
                 SelectWorkspaceRequest(selector=request.wiki, base_path=request.cwd)
             )
         return self.ensure_fresh(workspace.workspace_id)
+
+    def summary(self, workspace_id: str) -> IndexSummary:
+        workspace = self.workspaces.get(workspace_id)
+        refresh = self.store.rebuild(workspace.almanac_path)
+        counts = self.store.counts(workspace.almanac_path)
+        return IndexSummary(
+            pages=counts.pages,
+            topics=counts.topics,
+            files_seen=refresh.files_seen,
+            files_skipped=refresh.files_skipped,
+        )
 
     def search(
         self,

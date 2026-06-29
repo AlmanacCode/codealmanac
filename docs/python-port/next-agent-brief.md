@@ -13,9 +13,9 @@ Updated: 2026-06-29
 - Steering docs live in `docs/python-port/`.
 - Python code exists under `src/codealmanac/` with CLI, app composition,
   workspaces, wiki scaffold/build workflow, SQLite FTS5 read model, search,
-  show, topics, health, tag/untag, topic mutation, build, and reindex.
+  show, topics, health, tag/untag, topic mutation, build, reindex, and doctor.
 - Current implemented CLI commands are `init`, `build`, `list`, `search`,
-  `show`, `topics`, `health`, `reindex`, `tag`, and `untag`.
+  `show`, `topics`, `health`, `reindex`, `doctor`, `tag`, and `untag`.
 - Topic metadata mutation now covers `topics create`, `topics describe`,
   `topics link`, `topics unlink`, `topics rename`, and `topics delete`.
 
@@ -88,17 +88,25 @@ Updated: 2026-06-29
   - `git diff --check`
   - isolated live `build`, `reindex`, `search`, and `--help`
   - top-level CLI `--help` includes `build` and `reindex`
+- Slice-8 doctor passed:
+  - 46 tests
+  - ruff
+  - `git diff --check`
+  - isolated live no-wiki and built-wiki `doctor`
+  - dogfood `codealmanac doctor`
+  - dogfood `codealmanac doctor --json`
+  - top-level CLI `--help` includes `doctor`
 
 ## Dirty/Staged Files
 
-After slice 7 is committed, the worktree should be clean. If any slice-7 files
+After slice 8 is committed, the worktree should be clean. If any slice-8 files
 are dirty, re-run `git diff --check`, pytest, ruff, and an isolated
-build/reindex live smoke before committing further work.
+doctor live smoke before committing further work.
 
 ## Next Move
 
-1. Review slice-7 build/reindex before broader lifecycle work.
-2. Decide whether next slice is `doctor` or `serve`.
+1. Review slice-8 doctor before broader lifecycle work.
+2. Decide the first `serve` slice shape and framework/library choice.
 3. Keep lifecycle/AI commands out until local maintenance surfaces hold.
 4. Add an architecture test that CLI imports do not import concrete integration
    modules once integrations exist.

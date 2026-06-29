@@ -34,7 +34,7 @@ that root instead of constructing stores or adapters themselves.
 | `harnesses` | normalized Codex/Claude run contracts and ports | later `build`, `ingest`, `garden` |
 | `automation` | local scheduler decisions, quiet windows, installed task state | later `sync`/`garden` scheduling |
 | `config` | user/project config parsing and precedence | first slice only if pyproject/config needs it |
-| `diagnostics` | doctor checks and readiness reports | after core read model exists |
+| `diagnostics` | doctor checks and readiness reports | `doctor`, local install/wiki readiness |
 
 ## Workflows
 

@@ -11,6 +11,7 @@ from codealmanac.services.index.models import (
     EmptyPage,
     EmptyTopic,
     HealthReport,
+    IndexCounts,
     IndexRefreshResult,
     OrphanPage,
     PageFileReference,
@@ -121,6 +122,15 @@ class IndexStore:
         if request.limit is not None:
             return tuple(results[: request.limit])
         return tuple(results)
+
+    def counts(self, almanac_path: Path) -> IndexCounts:
+        with connect(index_db_path(almanac_path)) as connection:
+            ensure_schema(connection)
+            page_count = connection.execute("SELECT COUNT(*) FROM pages").fetchone()[0]
+            topic_count = connection.execute(
+                "SELECT COUNT(*) FROM topics"
+            ).fetchone()[0]
+        return IndexCounts(pages=page_count, topics=topic_count)
 
     def get_page(self, almanac_path: Path, slug: str) -> PageView | None:
         with connect(index_db_path(almanac_path)) as connection:

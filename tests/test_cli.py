@@ -95,6 +95,42 @@ def test_cli_reindex_can_target_registered_wiki(
     assert output.out == "reindexed: 2 pages (2 updated, 0 removed)\n"
 
 
+def test_cli_doctor_reports_local_state(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    assert main(["build", str(repo)]) == 0
+    capsys.readouterr()
+    monkeypatch.chdir(repo)
+
+    assert main(["doctor"]) == 0
+
+    output = capsys.readouterr()
+    assert "codealmanac v0.1.0\n" in output.out
+    assert "## Install\n" in output.out
+    assert f"repo: {repo}\n" in output.out
+    assert "index: 1 page, 4 topics" in output.out
+
+
+def test_cli_doctor_json_reports_no_wiki(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["doctor", "--json"]) == 0
+
+    output = capsys.readouterr()
+    assert '"key": "wiki.none"' in output.out
+    assert '"fix": "run: codealmanac init"' in output.out
+
+
 def test_cli_search_and_show_read_current_repo_wiki(
     tmp_path: Path,
     isolated_home: Path,

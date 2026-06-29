@@ -9,6 +9,11 @@ from pydantic import ValidationError
 from codealmanac import __version__
 from codealmanac.app import create_app
 from codealmanac.core.errors import CodeAlmanacError
+from codealmanac.services.diagnostics.models import (
+    DoctorCheck,
+    DoctorReport,
+)
+from codealmanac.services.diagnostics.requests import DoctorRequest
 from codealmanac.services.health.requests import HealthCheckRequest
 from codealmanac.services.index.models import (
     HealthReport,
@@ -131,6 +136,10 @@ def build_parser() -> argparse.ArgumentParser:
     reindex = subcommands.add_parser("reindex", help="force a full index rebuild")
     reindex.add_argument("--wiki")
     reindex.add_argument("--json", action="store_true")
+
+    doctor = subcommands.add_parser("doctor", help="check local install and wiki")
+    doctor.add_argument("--wiki")
+    doctor.add_argument("--json", action="store_true")
 
     tag = subcommands.add_parser("tag", help="add topics to a page")
     tag.add_argument("slug")
@@ -284,6 +293,10 @@ def dispatch(args: argparse.Namespace) -> int:
         result = app.index.reindex(ReindexRequest(cwd=Path.cwd(), wiki=args.wiki))
         render_reindex(result, json_output=args.json)
         return 0
+    if args.command == "doctor":
+        report = app.diagnostics.check(DoctorRequest(cwd=Path.cwd(), wiki=args.wiki))
+        render_doctor(report, json_output=args.json)
+        return 0
     if args.command == "tag":
         result = app.tagging.tag(
             TagPageRequest(
@@ -340,6 +353,27 @@ def index_summary(result: IndexRefreshResult) -> str:
         f"{result.pages_indexed} {page_word(result.pages_indexed)} "
         f"({result.changed} updated, {result.removed} removed{skip_suffix})"
     )
+
+
+def render_doctor(report: DoctorReport, json_output: bool) -> None:
+    if json_output:
+        print(json.dumps(report.model_dump(mode="json"), indent=2))
+        return
+    print(f"codealmanac v{report.version}")
+    print("")
+    render_doctor_section("Install", report.install)
+    render_doctor_section("Current wiki", report.wiki)
+
+
+def render_doctor_section(title: str, checks: tuple[DoctorCheck, ...]) -> None:
+    if len(checks) == 0:
+        return
+    print(f"## {title}")
+    for check in checks:
+        print(f"  {check.status.value} {check.message}")
+        if check.fix is not None:
+            print(f"    {check.fix}")
+    print("")
 
 
 def render_page(page: PageView, args: argparse.Namespace) -> None:

@@ -101,16 +101,27 @@
 - Verified slice 7 with 42 passing tests, ruff, `git diff --check`, isolated
   live build/reindex/search/help, and top-level `codealmanac --help` in this
   repo.
+- Read Cosmic Python chapter 13 on dependency injection and sent a Relayforge
+  Discord checkpoint. The applied lesson: keep dependencies explicit and wired
+  in `app.py`; do not hide diagnostics probes in CLI code or add a DI framework.
+- Added slice-8 `doctor`: a local diagnostics service and CLI command with text
+  and JSON output. The Python v1 doctor checks package/runtime basics, registry
+  path, current or named wiki resolution, index summary, and health problem
+  count. It deliberately omits archived Node/npm/provider/hosted checks.
+- Verified slice 8 with 46 passing tests, ruff, `git diff --check`, dogfood
+  `doctor` text/JSON in this repo, and isolated live no-wiki plus built-wiki
+  doctor checks.
 
 ## Current Hypothesis
 
 The read and organization paths now cover the main local wiki management loop:
 search/show, topic reads, health, tag/untag, and topic DAG mutation including
-rename/delete, plus explicit `build` and `reindex`. The next pressure should
-move toward `serve` or `doctor` before AI lifecycle commands.
+rename/delete, plus explicit `build`, `reindex`, and `doctor`. The next pressure
+should move toward `serve` before AI lifecycle commands.
 
 ## Next Hypothesis
 
-The next slice should probably add `doctor` or `serve`. `doctor` is a smaller
-local diagnostic surface over the same services; `serve` adds a human reader and
-will require a careful framework/library choice plus browser verification.
+The next slice should probably add `serve`. It adds a human reader and will
+require a careful framework/library choice plus browser verification. If `serve`
+feels too large, add only the read-only HTTP/API spine first and defer visual
+polish.

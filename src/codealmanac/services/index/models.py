@@ -57,6 +57,18 @@ class IndexRefreshResult(CodeAlmanacModel):
     files_skipped: int
 
 
+class IndexCounts(CodeAlmanacModel):
+    pages: int
+    topics: int
+
+
+class IndexSummary(CodeAlmanacModel):
+    pages: int
+    topics: int
+    files_seen: int
+    files_skipped: int
+
+
 class TopicSummary(CodeAlmanacModel):
     slug: str
     title: str | None
