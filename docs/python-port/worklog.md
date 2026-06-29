@@ -44,6 +44,10 @@
 - Verified slice-2 work with `uv run pytest`, `uv run ruff check .`, an isolated
   live `search`/`show`/`--mentions`/backlink smoke, and dogfood
   `codealmanac search python --limit 5` against this repo.
+- Slice-2 review fixed two correctness issues: `show --body` now wins over
+  metadata/field flags, and full index rebuild clears stale topic rows.
+  Re-verified with 14 passing tests, ruff, isolated live `show --body --meta`,
+  and dogfood search in this repo.
 
 ## Current Hypothesis
 

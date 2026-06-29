@@ -39,12 +39,17 @@ Updated: 2026-06-29
   - `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run ruff check .`
   - isolated live `search --mentions`, `show --backlinks`, `show --files`
   - dogfood `codealmanac search python --limit 5` in this repo
+- Slice-2 review fix passed:
+  - 14 tests
+  - ruff
+  - isolated live `show --body --meta`
+  - dogfood `codealmanac search python --limit 3`
 
 ## Dirty/Staged Files
 
-At this checkpoint, slice-2 read-model files should be dirty until committed.
-Re-run `git diff --check`, pytest, ruff, isolated live smoke, and dogfood
-search before committing.
+At this checkpoint, only the slice-2 review fix should be dirty until
+committed. Re-run `git diff --check`, pytest, ruff, isolated live smoke, and
+dogfood search before committing.
 
 ## Next Move
 

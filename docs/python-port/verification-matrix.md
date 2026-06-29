@@ -45,3 +45,12 @@ means the goal remains active.
 | Isolated live read smoke | temp repo `search --mentions`, `show --backlinks`, `show --files` | passed |
 | Dogfood search | `uv run codealmanac search python --limit 5` in this repo | passed |
 | Dogfood empty mentions | `uv run codealmanac search --mentions docs/python-port-live-agreement.md --limit 5` | passed with `# 0 results` |
+
+## Gates For Slice-2 Review Fix
+
+| Gate | Command | 2026-06-29 result |
+|---|---|
+| Formatting/lint | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run ruff check .` | passed |
+| Tests | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run pytest` | 14 passed |
+| Isolated live CLI precedence | temp repo `show auth-flow --body --meta` | body output passed |
+| Dogfood search | `uv run codealmanac search python --limit 3` in this repo | passed |

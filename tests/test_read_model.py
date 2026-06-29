@@ -91,6 +91,28 @@ def test_search_rebuilds_stale_existing_index_schema(
     assert [row.slug for row in rows] == ["note"]
 
 
+def test_rebuild_removes_stale_topic_rows(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(AppConfig(registry_path=isolated_home / ".almanac/registry.json"))
+    app.build.initialize(InitializeWorkspaceRequest(path=repo))
+    page_path = repo / ".almanac/pages/note.md"
+    page_path.write_text("---\ntopics: [old]\n---\n# Note\n", encoding="utf-8")
+    app.search.search(SearchPagesRequest(cwd=repo, query="note"))
+    page_path.write_text("---\ntopics: [new]\n---\n# Note\n", encoding="utf-8")
+
+    app.search.search(SearchPagesRequest(cwd=repo, query="note"))
+
+    with sqlite3.connect(repo / ".almanac/index.db") as connection:
+        rows = connection.execute("SELECT slug FROM topics ORDER BY slug").fetchall()
+    topic_slugs = {row[0] for row in rows}
+    assert "new" in topic_slugs
+    assert "old" not in topic_slugs
+
+
 def write_page(repo: Path, name: str, body: str) -> None:
     path = repo / ".almanac/pages" / name
     path.parent.mkdir(parents=True, exist_ok=True)

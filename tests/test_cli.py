@@ -73,6 +73,10 @@ Login reads [[src/auth/session.py]].
     show_output = capsys.readouterr()
     assert show_output.out == "# Auth Flow\n"
 
+    assert main(["show", "auth-flow", "--body", "--meta"]) == 0
+    body_output = capsys.readouterr()
+    assert body_output.out.startswith("# Auth Flow\n\nLogin reads")
+
     assert main(["search", "missing"]) == 0
     empty_output = capsys.readouterr()
     assert empty_output.out == ""

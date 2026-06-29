@@ -177,6 +177,7 @@ def replace_documents(
     with connection:
         connection.execute("DELETE FROM fts_pages")
         connection.execute("DELETE FROM pages")
+        connection.execute("DELETE FROM topics")
         for document in documents:
             insert_document(connection, document)
 

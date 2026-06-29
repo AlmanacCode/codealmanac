@@ -125,6 +125,9 @@ def render_page(page: PageView, args: argparse.Namespace) -> None:
     if args.json:
         print(json.dumps(page.model_dump(mode="json"), indent=2))
         return
+    if args.body:
+        print(body_with_trailing_newline(page.body), end="")
+        return
     if args.links:
         print_lines(page.wikilinks_out)
         return
