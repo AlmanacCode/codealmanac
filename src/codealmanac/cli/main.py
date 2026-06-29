@@ -25,12 +25,15 @@ from codealmanac.services.topics.models import (
     TopicEdgeMutationResult,
     TopicMutationAction,
     TopicMutationResult,
+    TopicRewriteMutationResult,
 )
 from codealmanac.services.topics.requests import (
     CreateTopicRequest,
+    DeleteTopicRequest,
     DescribeTopicRequest,
     LinkTopicRequest,
     ListTopicsRequest,
+    RenameTopicRequest,
     ShowTopicRequest,
     UnlinkTopicRequest,
 )
@@ -108,6 +111,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     topic_unlink.add_argument("child")
     topic_unlink.add_argument("parent")
+    topic_rename = topic_subcommands.add_parser("rename", help="rename a topic")
+    topic_rename.add_argument("old_slug")
+    topic_rename.add_argument("new_slug")
+    topic_delete = topic_subcommands.add_parser("delete", help="delete a topic")
+    topic_delete.add_argument("slug")
 
     health = subcommands.add_parser("health", help="check wiki health")
     health.add_argument("--wiki")
@@ -222,6 +230,27 @@ def dispatch(args: argparse.Namespace) -> int:
                 )
             )
             render_topic_edge_mutation(result)
+            return 0
+        if args.topic_command == "rename":
+            result = app.topics.rename(
+                RenameTopicRequest(
+                    cwd=Path.cwd(),
+                    wiki=args.wiki,
+                    old_slug=args.old_slug,
+                    new_slug=args.new_slug,
+                )
+            )
+            render_topic_rewrite_mutation(result)
+            return 0
+        if args.topic_command == "delete":
+            result = app.topics.delete(
+                DeleteTopicRequest(
+                    cwd=Path.cwd(),
+                    wiki=args.wiki,
+                    slug=args.slug,
+                )
+            )
+            render_topic_rewrite_mutation(result)
             return 0
         topics = app.topics.list(ListTopicsRequest(cwd=Path.cwd(), wiki=args.wiki))
         render_topics(topics)
@@ -359,6 +388,29 @@ def render_topic_edge_mutation(result: TopicEdgeMutationResult) -> None:
         print(f"edge {result.child} -> {result.parent} already exists")
         return
     print(f"{result.action.value} {result.child} -> {result.parent}")
+
+
+def render_topic_rewrite_mutation(result: TopicRewriteMutationResult) -> None:
+    if result.action == TopicMutationAction.UNCHANGED:
+        print(f"topic {result.slug} unchanged")
+        return
+    if result.action == TopicMutationAction.RENAMED:
+        print(
+            f"renamed {result.slug} -> {result.new_slug} "
+            f"({result.pages_updated} {page_word(result.pages_updated)} updated)"
+        )
+        return
+    if result.action == TopicMutationAction.DELETED:
+        print(
+            f"deleted {result.slug} "
+            f"({result.pages_updated} {page_word(result.pages_updated)} untagged)"
+        )
+        return
+    print(f"{result.slug}: {result.action.value}")
+
+
+def page_word(count: int) -> str:
+    return "page" if count == 1 else "pages"
 
 
 def render_health(report: HealthReport, json_output: bool) -> None:

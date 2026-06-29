@@ -13,12 +13,11 @@ Updated: 2026-06-29
 - Steering docs live in `docs/python-port/`.
 - Python code exists under `src/codealmanac/` with CLI, app composition,
   workspaces, wiki scaffold/build workflow, SQLite FTS5 read model, search,
-  show, topics, health, tag/untag, and topic metadata mutation.
+  show, topics, health, tag/untag, and topic mutation.
 - Current implemented CLI commands are `init`, `list`, `search`, `show`,
   `topics`, `health`, `tag`, and `untag`.
 - Topic metadata mutation now covers `topics create`, `topics describe`,
-  `topics link`, and `topics unlink`; `topics rename` and `topics delete`
-  remain pending.
+  `topics link`, `topics unlink`, `topics rename`, and `topics delete`.
 
 ## Last Good Evidence
 
@@ -75,19 +74,26 @@ Updated: 2026-06-29
     `topics unlink`, and `topics show`
   - CLI `topics --help`
   - dogfood `topics show cli --descendants` in this repo
+- Slice-6 topic rewrite mutation passed:
+  - 39 tests
+  - ruff
+  - `git diff --check`
+  - isolated live `topics rename`, `topics show`, `topics delete`,
+    `topics show`, and page inspection
+  - CLI `topics --help`
+  - dogfood `topics show cli --descendants` in this repo
 
 ## Dirty/Staged Files
 
-At this checkpoint, slice-5 topic metadata mutation files should be dirty until
-committed. Re-run `git diff --check`, pytest, ruff, and an isolated topic
-mutation live smoke before committing.
+After slice 6 is committed, the worktree should be clean. If any slice-6 files
+are dirty, re-run `git diff --check`, pytest, ruff, and an isolated
+rename/delete live smoke before committing further work.
 
 ## Next Move
 
-1. Review slice-5 topic metadata mutation before page-rewriting topic commands.
-2. Decide whether next slice is `topics rename`/`topics delete` or explicit
-   `build`/`reindex`.
-3. Keep lifecycle/AI commands out until read and organization surfaces hold.
+1. Review slice-6 topic rewrite mutation before broadening lifecycle work.
+2. Decide whether next slice is explicit `build` or explicit `reindex`.
+3. Keep lifecycle/AI commands out until local maintenance surfaces hold.
 4. Add an architecture test that CLI imports do not import concrete integration
    modules once integrations exist.
 

@@ -6,14 +6,21 @@ from codealmanac.services.topics.models import (
     TopicEdgeMutationResult,
     TopicMutationAction,
     TopicMutationResult,
+    TopicRewriteMutationResult,
 )
 from codealmanac.services.topics.requests import (
     CreateTopicRequest,
+    DeleteTopicRequest,
     DescribeTopicRequest,
     LinkTopicRequest,
     ListTopicsRequest,
+    RenameTopicRequest,
     ShowTopicRequest,
     UnlinkTopicRequest,
+)
+from codealmanac.services.wiki.frontmatter_rewrite import (
+    apply_page_topic_rewrites,
+    plan_page_topic_rewrites,
 )
 from codealmanac.services.wiki.topics import (
     TopicDefinition,
@@ -160,6 +167,73 @@ class TopicsService:
             action=TopicMutationAction.UNLINKED,
             child=request.child,
             parent=request.parent,
+        )
+
+    def rename(self, request: RenameTopicRequest) -> TopicRewriteMutationResult:
+        workspace = resolve_workspace(
+            self.workspaces,
+            request.cwd,
+            request.wiki,
+        )
+        if request.old_slug == request.new_slug:
+            return TopicRewriteMutationResult(
+                action=TopicMutationAction.UNCHANGED,
+                slug=request.old_slug,
+                new_slug=request.new_slug,
+            )
+        existing = existing_topic_slugs(self.index, workspace.workspace_id)
+        if request.old_slug not in existing:
+            raise NotFoundError("topic", request.old_slug)
+        if request.new_slug in existing:
+            raise ConflictError(
+                f'topic "{request.new_slug}" already exists; delete it first '
+                "if you intend to merge"
+            )
+
+        rewrites = plan_page_topic_rewrites(
+            workspace.almanac_path / "pages",
+            lambda topics: tuple(
+                request.new_slug if topic == request.old_slug else topic
+                for topic in topics
+            ),
+        )
+        topic_file = load_topics_file(workspace.almanac_path)
+        topic_file.rename_topic(request.old_slug, request.new_slug)
+        _ = topic_file.definitions
+        topic_file.write()
+        pages_updated = apply_page_topic_rewrites(rewrites)
+        self.index.ensure_fresh(workspace.workspace_id)
+        return TopicRewriteMutationResult(
+            action=TopicMutationAction.RENAMED,
+            slug=request.old_slug,
+            new_slug=request.new_slug,
+            pages_updated=pages_updated,
+        )
+
+    def delete(self, request: DeleteTopicRequest) -> TopicRewriteMutationResult:
+        workspace = resolve_workspace(
+            self.workspaces,
+            request.cwd,
+            request.wiki,
+        )
+        existing = existing_topic_slugs(self.index, workspace.workspace_id)
+        if request.slug not in existing:
+            raise NotFoundError("topic", request.slug)
+
+        rewrites = plan_page_topic_rewrites(
+            workspace.almanac_path / "pages",
+            lambda topics: tuple(topic for topic in topics if topic != request.slug),
+        )
+        topic_file = load_topics_file(workspace.almanac_path)
+        topic_file.delete_topic(request.slug)
+        _ = topic_file.definitions
+        topic_file.write()
+        pages_updated = apply_page_topic_rewrites(rewrites)
+        self.index.ensure_fresh(workspace.workspace_id)
+        return TopicRewriteMutationResult(
+            action=TopicMutationAction.DELETED,
+            slug=request.slug,
+            pages_updated=pages_updated,
         )
 
 

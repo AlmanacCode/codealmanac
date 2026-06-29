@@ -139,6 +139,46 @@ class TopicsYamlFile:
         entry["parents"] = parents
         return removed
 
+    def rename_topic(self, old_slug: str, new_slug: str) -> bool:
+        changed = False
+        entry = self.entry_for(old_slug)
+        if entry is not None:
+            entry["slug"] = new_slug
+            if entry.get("title") == title_for_slug(old_slug):
+                entry["title"] = title_for_slug(new_slug)
+            changed = True
+        for item in self.topics:
+            if not isinstance(item, CommentedMap):
+                continue
+            parents = parent_sequence(item)
+            next_parents = replace_parent_slug(parents, old_slug, new_slug)
+            if next_parents != tuple(str(parent) for parent in parents):
+                item["parents"] = CommentedSeq(next_parents)
+                changed = True
+        return changed
+
+    def delete_topic(self, slug: str) -> bool:
+        changed = False
+        for index in range(len(self.topics) - 1, -1, -1):
+            item = self.topics[index]
+            if (
+                isinstance(item, CommentedMap)
+                and to_kebab_case(str(item.get("slug"))) == slug
+            ):
+                del self.topics[index]
+                changed = True
+        for item in self.topics:
+            if not isinstance(item, CommentedMap):
+                continue
+            parents = parent_sequence(item)
+            next_parents = tuple(
+                str(parent) for parent in parents if str(parent) != slug
+            )
+            if next_parents != tuple(str(parent) for parent in parents):
+                item["parents"] = CommentedSeq(next_parents)
+                changed = True
+        return changed
+
     def write(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         yaml = YAML(typ="rt")
@@ -207,6 +247,19 @@ def parent_sequence(entry: CommentedMap) -> CommentedSeq:
     if isinstance(existing, list):
         sequence.extend(to_kebab_case(str(item)) for item in existing)
     return sequence
+
+
+def replace_parent_slug(
+    parents: CommentedSeq,
+    old_slug: str,
+    new_slug: str,
+) -> tuple[str, ...]:
+    replaced: list[str] = []
+    for parent in parents:
+        next_parent = new_slug if str(parent) == old_slug else str(parent)
+        if next_parent not in replaced:
+            replaced.append(next_parent)
+    return tuple(replaced)
 
 
 def title_for_slug(slug: str) -> str:

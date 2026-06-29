@@ -79,17 +79,29 @@
 - Verified slice 5 with 32 passing tests, ruff, `git diff --check`, isolated
   live topic create/describe/link/unlink/show, CLI help, and dogfood
   `codealmanac topics show cli --descendants` in this repo.
+- Read Cosmic Python chapter 6 on Unit of Work and sent a Relayforge Discord
+  checkpoint. The applied lesson: topic rewrite operations need an explicit
+  operation boundary. Because filesystem writes cannot roll back like a
+  database transaction, slice 6 builds a full page-rewrite plan before any
+  write, writes `topics.yaml` first, then writes affected pages.
+- Added slice-6 topic rewrite mutation: `topics rename` and `topics delete`.
+  Rename refuses implicit merge into an existing topic; delete removes topic
+  edges and page tags without deleting pages or child topics.
+- Verified slice 6 with 39 passing tests, ruff, `git diff --check`, isolated
+  live topic rename/delete/show, CLI help, and dogfood
+  `codealmanac topics show cli --descendants` in this repo.
 
 ## Current Hypothesis
 
-The read and basic organization paths now exist. Topic metadata mutation is
-small enough to keep in the `topics` service; page-rewriting topic operations
-(`rename`, `delete`) should be a separate slice because they combine
-`topics.yaml` mutation with page frontmatter rewrites.
+The read and organization paths now cover the main local wiki management loop:
+search/show, topic reads, health, tag/untag, and topic DAG mutation including
+rename/delete. The next pressure should move toward explicit public lifecycle
+surface (`build`, `reindex`, then `serve` or `doctor`) before AI lifecycle
+commands.
 
 ## Next Hypothesis
 
-The next slice should either add `topics rename`/`topics delete` with explicit
-YAML-first crash semantics, or restore an explicit `build`/`reindex` command if
-the public CLI surface becomes the higher-risk gap. Lifecycle AI commands should
-wait until organization and read surfaces hold under review.
+The next slice should restore an explicit local `build` or `reindex` command.
+`build` already exists as a workflow behind `init`, but the public CLI contract
+still lists it as a first-class command. Lifecycle AI commands should wait until
+the public local maintenance surface is coherent.

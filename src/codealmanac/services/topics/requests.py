@@ -84,3 +84,32 @@ class LinkTopicRequest(CodeAlmanacModel):
 
 class UnlinkTopicRequest(LinkTopicRequest):
     pass
+
+
+class RenameTopicRequest(CodeAlmanacModel):
+    cwd: Path
+    old_slug: str
+    new_slug: str
+    wiki: str | None = None
+
+    @field_validator("old_slug", "new_slug")
+    @classmethod
+    def canonical_topic(cls, value: str) -> str:
+        slug = to_kebab_case(required_text(value, "topic"))
+        if not slug:
+            raise ValueError("topic must contain slug-able characters")
+        return slug
+
+
+class DeleteTopicRequest(CodeAlmanacModel):
+    cwd: Path
+    slug: str
+    wiki: str | None = None
+
+    @field_validator("slug")
+    @classmethod
+    def canonical_topic(cls, value: str) -> str:
+        slug = to_kebab_case(required_text(value, "topic"))
+        if not slug:
+            raise ValueError("topic must contain slug-able characters")
+        return slug

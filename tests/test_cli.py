@@ -188,3 +188,11 @@ def test_cli_topics_mutation_commands(
     show_output = capsys.readouterr()
     assert "description: Authentication\n" in show_output.out
     assert "children: jwt\n" in show_output.out
+
+    assert main(["topics", "rename", "auth", "security"]) == 0
+    rename_output = capsys.readouterr()
+    assert rename_output.out == "renamed auth -> security (0 pages updated)\n"
+
+    assert main(["topics", "delete", "security"]) == 0
+    delete_output = capsys.readouterr()
+    assert delete_output.out == "deleted security (0 pages untagged)\n"
