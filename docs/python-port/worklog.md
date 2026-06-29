@@ -698,17 +698,25 @@ the lifecycle and sync evidence slices. A temp wiki with page links, topics,
 searchable content, and file refs rendered correctly in desktop Chrome for the
 overview, page, topic, search, and file routes. A 390px mobile page route also
 rendered without horizontal overflow. No viewer code or CSS patch was needed.
+Slice 61 runs the final package rehearsal from built artifacts. Wheel and
+sdist builds passed after package metadata moved from deprecated license-table
+syntax to SPDX `Apache-2.0` plus `license-files = ["LICENSE.md"]`. The
+artifacts included README, license, server assets, manual files, prompts, and
+the `codealmanac` console script. Clean Python 3.12.9 installs from both wheel
+and sdist passed installed CLI smoke for `init`, `search`, `show`, `topics`,
+`health`, `jobs`, `sync status`, `doctor`, and `serve`. A Python 3.11 install
+attempt failed with the expected `requires-python >=3.12` guard.
 
 ## Next Hypothesis
 
-The next high-pressure product slice is release proof, not another root or sync
-migration. Scheduled update checks should wait for a notifier policy. The
-remaining source-runtime pressure is lifecycle dogfood, not a missing selection
-mechanism. The remaining serve risk is polish and product review of navigation
-density, especially the compact mobile rail. Browser-harness should still
-verify visual changes, using an isolated temporary Chrome profile with explicit
-`BU_CDP_URL` when the default Chrome profile requests the remote-debugging Allow
-prompt.
+The next high-pressure product slice is release review and prompt-quality
+dogfood, not another root or sync migration. Scheduled update checks should wait
+for a notifier policy. The remaining source-runtime pressure is lifecycle
+dogfood, not a missing selection mechanism. The remaining serve risk is polish
+and product review of navigation density, especially the compact mobile rail.
+Browser-harness should still verify visual changes, using an isolated temporary
+Chrome profile with explicit `BU_CDP_URL` when the default Chrome profile
+requests the remote-debugging Allow prompt.
 After slice 48, the next update pressure is no longer install detection; it is
 the product policy for notification cadence, dismissal, and release channels
 before any scheduled update automation exists. After slice 49, the next CLI
@@ -720,6 +728,7 @@ After slice 55, the next Codex harness pressure is event completeness, not
 parity for its own sake. `codex exec` remains a one-shot writer transport;
 Codex app-server belongs back on the table when jobs need normalized text,
 tool, usage, actor, or root-turn events from the run itself.
-After slice 60, public release should be measured against
-`docs/python-port/public-release-readiness.md`: final package rehearsal, and
-prompt-quality review from more real source shapes only if that gate passes.
+After slice 61, public release should be measured against
+`docs/python-port/public-release-readiness.md`: package proof has passed, so
+remaining work is release judgment and prompt-quality review from more real
+source shapes.

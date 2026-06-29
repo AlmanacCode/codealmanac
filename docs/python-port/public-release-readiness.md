@@ -4,14 +4,13 @@ Date: 2026-06-29
 
 ## Current Read
 
-CodeAlmanac is usable as an internal local alpha. Clean wheel install, real
-Codex ingest, real Claude ingest, real sync, and final viewer browser proof now
-have dogfood evidence. It is not public-release ready until release-package
-rehearsal also passes.
+CodeAlmanac is usable as an internal local alpha. Clean wheel install, final
+wheel/sdist package rehearsal, real Codex ingest, real Claude ingest, real
+sync, and final viewer browser proof now have dogfood evidence.
 
-The main remaining work is release proof, prompt quality, and real-world
-dogfood. More generic architecture seams are diminishing returns unless a gate
-below exposes a boundary problem.
+The main remaining work is public-release judgment, prompt quality, and
+real-world dogfood. More generic architecture seams are diminishing returns
+unless a gate below exposes a boundary problem.
 
 ## Public Beta Gate
 
@@ -63,8 +62,16 @@ below exposes a boundary problem.
   Overview, page, topic, search, and file-reference routes rendered in desktop
   Chrome with no horizontal overflow, and the mobile `390x844` page route also
   rendered without horizontal overflow.
+- Slice 61 passed final package rehearsal. Built wheel and sdist artifacts,
+  inspected metadata/package data, installed both into clean Python 3.12.9
+  environments, ran installed CLI smoke checks for `init`, `search`, `show`,
+  `topics`, `health`, `jobs`, `sync status`, `doctor`, and `serve`, and
+  confirmed Python 3.11 is rejected by `requires-python`.
+- Slice 61 also updated package metadata to SPDX `Apache-2.0` plus
+  `license-files = ["LICENSE.md"]`, removing the setuptools license-table
+  deprecation warning.
 
 ## Next Useful Pressure Tests
 
-1. Final wheel/sdist install rehearsal before any publish attempt.
-2. More lifecycle prompt-quality dogfood only if package rehearsal passes.
+1. Product/release review against this gate before any publish attempt.
+2. More lifecycle prompt-quality dogfood against real project source shapes.

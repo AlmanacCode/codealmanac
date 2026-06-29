@@ -7,7 +7,7 @@ Updated: 2026-06-29
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `dev`.
 - Latest implementation slice:
-  slice 60 serve browser proof.
+  slice 61 final package rehearsal.
 - Latest committed product-direction slice: `docs: record viewer design correction`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
@@ -22,6 +22,11 @@ Updated: 2026-06-29
   transcript discovery, source runtime adapters, bundled manual resources
   materialized into `<almanac-root>/manual/`, and a conservative package update
   command.
+- There is no public or hidden cloud capture surface. `codealmanac update`
+  updates the installed CLI package only. `sync` scans local transcripts and
+  runs local ingest. `automation` schedules local `sync`/`garden`.
+  `capture`, cloud upload, hosted connection, and login remain outside Python
+  v1.
 - `codealmanac update` is dogfooded from non-editable pip and uv-tool installs.
   Successful package-manager execution reports status `completed`, not
   `updated`, because package-manager output may say no files changed and the
@@ -124,6 +129,12 @@ Updated: 2026-06-29
   expected headings/content with no horizontal overflow. A 390px mobile
   `#/page/auth-flow` route also rendered page content and file refs with no
   horizontal overflow. No viewer code or CSS patch was needed.
+- Slice 61 final package rehearsal passed from built artifacts. Wheel and
+  sdist builds installed into clean Python 3.12.9 environments, installed CLI
+  smoke passed for `init`, `search`, `show`, `topics`, `health`, `jobs`,
+  `sync status`, `doctor`, and `serve`, and a Python 3.11 install failed as
+  intended because the package requires `>=3.12`. Package metadata now uses
+  SPDX `Apache-2.0` plus `license-files = ["LICENSE.md"]`.
 - The manual surface is a support package, not a public command. `ManualLibrary`
   reads `src/codealmanac/manual/*.md`, `build`/`init` copy missing docs into
   the configured root's `manual/`, prompts tell lifecycle agents to read those
@@ -535,12 +546,14 @@ Behavior:
   public CLI readback for sync/jobs/search/show/health
 - Slice 60 browser-harness proof for live `serve` desktop overview/page/topic
   /search/file routes and mobile page route
+- Slice 61 final wheel/sdist package rehearsal from clean Python 3.12.9
+  installs, including installed CLI smoke and package metadata inspection
 
 ## Next Move
 
 1. Likely next pressure points:
-   - final wheel/sdist package rehearsal from non-editable installs before any
-     publish attempt
+   - release review against `docs/python-port/public-release-readiness.md`
+     before any publish attempt
    - more lifecycle dogfood for prompt quality and real project behavior; add
      source-runtime ranking/recency only after a failing case proves current
      diversity is insufficient
@@ -555,8 +568,8 @@ Behavior:
      parsing is too slow; slice 50 split read views but did not optimize refresh
    - richer registry filtering only if local wiki management needs more than
      explicit JSON/drop/drop-missing
-2. Do not add hosted CLI, login/connect/upload, MCP, SDK, public `capture`,
-   public `absorb`, or public `almanac`/`alm` aliases.
+2. Do not add hosted CLI, login/connect/upload, cloud capture/upload, MCP, SDK,
+   public `capture`, public `absorb`, or public `almanac`/`alm` aliases.
 3. Keep future source material additions inside `SourceAddress -> SourceRef ->
    SourceBrief -> SourceRuntime` unless the live agreement changes.
 4. Browser-harness note from 2026-06-29: Chrome remote debugging is available

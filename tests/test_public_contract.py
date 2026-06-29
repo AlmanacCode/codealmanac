@@ -59,7 +59,8 @@ def test_python_package_metadata_declares_readme_and_license():
     project = pyproject["project"]
 
     assert project["readme"] == "README.md"
-    assert project["license"] == {"file": "LICENSE.md"}
+    assert project["license"] == "Apache-2.0"
+    assert project["license-files"] == ["LICENSE.md"]
 
 
 def test_readme_documents_python_local_public_surface():

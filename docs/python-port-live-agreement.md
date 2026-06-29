@@ -38,6 +38,11 @@ It is the constraint document for future agents.
   `sync` and `garden`. Manual `update` is a foreground package-manager command
   and has pip/uv non-editable install dogfood. Do not schedule `update` until
   an explicit update-notification policy exists.
+- 2026-06-29: There is no cloud capture surface in Python v1.
+  `codealmanac update` updates the installed CLI package only. `sync` scans
+  local transcripts and runs local ingest. `automation` schedules local
+  `sync`/`garden`. Do not add public `capture`, cloud upload, hosted
+  connection, login, or remote collection commands without a new agreement.
 - 2026-06-29: `sync` writes a durable pending ledger claim before it invokes
   Ingest. Active pending claims skip that transcript; stale pending claims
   surface as needs-attention; terminal success or failure clears the pending
