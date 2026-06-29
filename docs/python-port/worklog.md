@@ -151,6 +151,15 @@
 - Verified slice 11 with focused source tests, 64 passing full tests, ruff,
   `git diff --check`, and a live service dogfood run that resolved a mixed
   source input tuple into typed source briefs.
+- Read Cosmic Python chapters 4 and 13 before the harness seam and sent a
+  Relayforge Discord checkpoint. The applied lesson: use cases belong behind
+  services/workflows, while `app.py` wires dependencies.
+- Added slice-12 harness contracts: `HarnessKind`, `HarnessRunStatus`,
+  `HarnessReadiness`, `HarnessRunResult`, `RunHarnessRequest`,
+  `HarnessAdapter`, and `HarnessesService`.
+- Verified slice 12 with focused harness tests, 68 passing full tests, ruff,
+  `git diff --check`, and a live fake-adapter dogfood run through
+  `HarnessesService.check()` and `HarnessesService.run(...)`.
 
 ## Current Hypothesis
 
@@ -160,12 +169,14 @@ rename/delete, explicit `build`, `reindex`, `doctor`, and a first read-only
 local `serve` viewer. The highest-risk serve/index review issue found so far is
 fixed: read traffic no longer forces projection rewrites when the source wiki
 is unchanged. The first lifecycle/runs spine now exists as a ledger and read
-surface, and source inputs now have a typed operation-input contract.
+surface. Source inputs and harness execution now have typed service contracts,
+but no AI-backed lifecycle workflow is wired yet.
 
 ## Next Hypothesis
 
-The next slice should connect source input contracts to an `ingest` workflow
-shape or add foreground/background execution over runs. The remaining serve
-risks are markdown wikilink rewriting inside code spans, browser-harness
-verification once Chrome allows remote debugging, and whether a source/file
-route belongs in the first viewer shape before lifecycle commands.
+The next slice should connect `sources`, `harnesses`, and `runs` into the first
+`workflows/ingest` shape without exposing a misleading public command before it
+can honestly execute work. The remaining serve risks are markdown wikilink
+rewriting inside code spans, browser-harness verification once Chrome allows
+remote debugging, and whether a source/file route belongs in the first viewer
+shape before lifecycle commands.

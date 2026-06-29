@@ -31,7 +31,7 @@ that root instead of constructing stores or adapters themselves.
 | `index` | SQLite read model, FTS, mentions, backlinks, query projections | `search`, `show --links`, `health` |
 | `sources` | source observations, source refs, fingerprints, local source state | `SourceAddress`/`SourceRef`/`SourceBrief`, later `ingest` and `sync` inputs |
 | `runs` | run ledger, events, outputs, lifecycle state | `jobs` read surface, later lifecycle workflows |
-| `harnesses` | normalized Codex/Claude run contracts and ports | later `build`, `ingest`, `garden` |
+| `harnesses` | normalized Codex/Claude run contracts and ports | `HarnessKind`/`RunHarnessRequest`/`HarnessRunResult`/`HarnessAdapter`, later `build`, `ingest`, `garden` |
 | `automation` | local scheduler decisions, quiet windows, installed task state | later `sync`/`garden` scheduling |
 | `config` | user/project config parsing and precedence | first slice only if pyproject/config needs it |
 | `diagnostics` | doctor checks and readiness reports | `doctor`, local install/wiki readiness |

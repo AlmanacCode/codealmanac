@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from codealmanac import __version__
 from codealmanac.core.models import AppConfig
 from codealmanac.services.diagnostics.service import DiagnosticsService
+from codealmanac.services.harnesses.service import HarnessesService
 from codealmanac.services.health.service import HealthService
 from codealmanac.services.index.service import IndexService
 from codealmanac.services.index.store import IndexStore
@@ -35,6 +36,7 @@ class CodeAlmanac:
     viewer: ViewerService
     runs: RunsService
     sources: SourcesService
+    harnesses: HarnessesService
     build: BuildWorkflow
 
 
@@ -52,6 +54,7 @@ def create_app(config: AppConfig | None = None) -> CodeAlmanac:
     viewer = ViewerService(workspaces, index, MarkdownRenderer())
     runs = RunsService(workspaces, RunStore())
     sources = SourcesService()
+    harnesses = HarnessesService()
     build = BuildWorkflow(workspaces, wiki, index)
     return CodeAlmanac(
         workspaces=workspaces,
@@ -66,5 +69,6 @@ def create_app(config: AppConfig | None = None) -> CodeAlmanac:
         viewer=viewer,
         runs=runs,
         sources=sources,
+        harnesses=harnesses,
         build=build,
     )

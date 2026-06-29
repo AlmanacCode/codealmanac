@@ -142,3 +142,29 @@ Follow-up test:
 When `workflows/ingest` lands, test that it consumes `SourceBrief` values from
 `SourcesService` and records the selected source refs in the run ledger without
 letting CLI parsing become the workflow boundary.
+
+## 2026-06-29 - Harnesses Are Ports Before Adapters
+
+Old hypothesis:
+The next lifecycle slice might connect source refs directly to an `ingest`
+workflow.
+
+New hypothesis:
+Add `services/harnesses` first. `ingest`, `sync`, and `garden` need a
+normalized agent task/result/readiness contract before they can call Codex or
+Claude without importing concrete adapters.
+
+Evidence that forced the change:
+The live agreement says harnesses own normalized Codex/Claude contracts and
+ports, while integrations implement those ports. Cosmic Python chapter 4 keeps
+use cases out of entrypoints, and chapter 13 keeps wiring in the composition
+root.
+
+Code or product assumption affected:
+`app.harnesses.run(...)` is now the port-backed service call workflows will use
+for agent execution. `cli/main.py` remains uninvolved in agent task execution.
+
+Follow-up test:
+When concrete Codex or Claude adapters land, add an architecture test that CLI
+modules do not import `integrations/harnesses/*` and workflows only depend on
+`services/harnesses`.

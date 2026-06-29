@@ -20,6 +20,9 @@ Updated: 2026-06-29
 - `services/sources` owns source input contracts: raw addresses, parsed refs,
   source briefs, local path observations, file fingerprints, and Pydantic URL
   validation.
+- `services/harnesses` owns normalized Codex/Claude task, readiness, and result
+  contracts plus the adapter port. There are no concrete Codex or Claude
+  adapters yet.
 - The index read model now uses stale-aware source signatures for ordinary
   `ensure_fresh`; `reindex` remains the explicit forced rebuild command.
 - Current implemented CLI commands are `init`, `build`, `list`, `search`,
@@ -134,17 +137,23 @@ Updated: 2026-06-29
   - 64 full tests
   - `git diff --check`
   - source-resolution dogfood through `app.sources.resolve(...)`
+- Slice-12 harness contract focused checks passed:
+  - focused harness service tests
+  - ruff
+  - 68 full tests
+  - `git diff --check`
+  - fake-adapter dogfood through `HarnessesService`
 
 ## Dirty/Staged Files
 
-After slice 11 is committed, the worktree should be clean. If any slice-11 files
-are dirty, re-run focused sources tests, `git diff --check`, pytest, ruff, and
-source-resolution dogfood.
+After slice 12 is committed, the worktree should be clean. If any slice-12 files
+are dirty, re-run focused harness tests, `git diff --check`, pytest, ruff, and
+harness service dogfood.
 
 ## Next Move
 
-1. Decide whether the next lifecycle slice should connect source input
-   contracts to an `ingest` workflow or add foreground/background run execution.
+1. Connect source input contracts, harness contracts, and run records into the
+   first `workflows/ingest` shape without exposing a misleading public command.
 2. Decide whether the viewer needs source/file route hardening before AI-backed
    lifecycle commands.
 3. Keep AI execution behind workflow and harness seams; do not put it in CLI.
