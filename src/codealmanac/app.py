@@ -10,6 +10,7 @@ from codealmanac.services.pages.service import PagesService
 from codealmanac.services.runs.service import RunsService
 from codealmanac.services.runs.store import RunStore
 from codealmanac.services.search.service import SearchService
+from codealmanac.services.sources.service import SourcesService
 from codealmanac.services.tagging.service import TaggingService
 from codealmanac.services.topics.service import TopicsService
 from codealmanac.services.viewer.renderer import MarkdownRenderer
@@ -33,6 +34,7 @@ class CodeAlmanac:
     tagging: TaggingService
     viewer: ViewerService
     runs: RunsService
+    sources: SourcesService
     build: BuildWorkflow
 
 
@@ -49,6 +51,7 @@ def create_app(config: AppConfig | None = None) -> CodeAlmanac:
     tagging = TaggingService(pages)
     viewer = ViewerService(workspaces, index, MarkdownRenderer())
     runs = RunsService(workspaces, RunStore())
+    sources = SourcesService()
     build = BuildWorkflow(workspaces, wiki, index)
     return CodeAlmanac(
         workspaces=workspaces,
@@ -62,5 +65,6 @@ def create_app(config: AppConfig | None = None) -> CodeAlmanac:
         tagging=tagging,
         viewer=viewer,
         runs=runs,
+        sources=sources,
         build=build,
     )

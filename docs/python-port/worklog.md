@@ -139,6 +139,18 @@
   `git diff --check`, and an isolated live dogfood run that created a run
   through `RunsService` and read it back through `codealmanac jobs`, `jobs show`,
   `jobs logs`, and `jobs --json`.
+- Read Cosmic Python chapter 11 on external events before the source-input
+  slice and sent a Relayforge Discord checkpoint. The applied lesson: raw
+  outside-world inputs should be translated at the boundary into typed messages
+  before workflows or agents see them.
+- Added slice-11 source input contracts: `SourcesService`, `SourceAddress`,
+  `SourceRef`, `SourceBrief`, source kind/provenance enums, local path
+  observations and fingerprints, GitHub PR/issue refs and URLs, generic web
+  URLs, git range/diff refs, and transcript refs. URL decomposition uses
+  `urlsplit`, while validity uses Pydantic `AnyHttpUrl`.
+- Verified slice 11 with focused source tests, 64 passing full tests, ruff,
+  `git diff --check`, and a live service dogfood run that resolved a mixed
+  source input tuple into typed source briefs.
 
 ## Current Hypothesis
 
@@ -148,12 +160,12 @@ rename/delete, explicit `build`, `reindex`, `doctor`, and a first read-only
 local `serve` viewer. The highest-risk serve/index review issue found so far is
 fixed: read traffic no longer forces projection rewrites when the source wiki
 is unchanged. The first lifecycle/runs spine now exists as a ledger and read
-surface, without harness execution or background workers.
+surface, and source inputs now have a typed operation-input contract.
 
 ## Next Hypothesis
 
-The next slice should extend lifecycle from durable records into either source
-input contracts or foreground/background execution. The remaining serve risks
-are markdown wikilink rewriting inside code spans, browser-harness verification
-once Chrome allows remote debugging, and whether a source/file route belongs in
-the first viewer shape before lifecycle commands.
+The next slice should connect source input contracts to an `ingest` workflow
+shape or add foreground/background execution over runs. The remaining serve
+risks are markdown wikilink rewriting inside code spans, browser-harness
+verification once Chrome allows remote debugging, and whether a source/file
+route belongs in the first viewer shape before lifecycle commands.

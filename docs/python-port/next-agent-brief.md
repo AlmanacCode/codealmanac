@@ -17,6 +17,9 @@ Updated: 2026-06-29
   the first local `serve` viewer.
 - `services/runs` owns the local run ledger under `.almanac/jobs/`; public
   inspection stays under `codealmanac jobs`.
+- `services/sources` owns source input contracts: raw addresses, parsed refs,
+  source briefs, local path observations, file fingerprints, and Pydantic URL
+  validation.
 - The index read model now uses stale-aware source signatures for ordinary
   `ensure_fresh`; `reindex` remains the explicit forced rebuild command.
 - Current implemented CLI commands are `init`, `build`, `list`, `search`,
@@ -125,17 +128,23 @@ Updated: 2026-06-29
   - ruff
   - `git diff --check`
   - isolated live jobs CLI dogfood
+- Slice-11 source input focused checks passed:
+  - focused sources service tests
+  - ruff
+  - 64 full tests
+  - `git diff --check`
+  - source-resolution dogfood through `app.sources.resolve(...)`
 
 ## Dirty/Staged Files
 
-After slice 10 is committed, the worktree should be clean. If any slice-10 files
-are dirty, re-run focused runs tests, `git diff --check`, pytest, ruff, and live
-jobs CLI dogfood.
+After slice 11 is committed, the worktree should be clean. If any slice-11 files
+are dirty, re-run focused sources tests, `git diff --check`, pytest, ruff, and
+source-resolution dogfood.
 
 ## Next Move
 
-1. Decide whether the next lifecycle slice should add source input contracts or
-   foreground/background run execution.
+1. Decide whether the next lifecycle slice should connect source input
+   contracts to an `ingest` workflow or add foreground/background run execution.
 2. Decide whether the viewer needs source/file route hardening before AI-backed
    lifecycle commands.
 3. Keep AI execution behind workflow and harness seams; do not put it in CLI.

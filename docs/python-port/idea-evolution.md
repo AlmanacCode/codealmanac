@@ -113,3 +113,32 @@ Follow-up test:
 When foreground/background execution lands, workflows should call
 `app.runs.start`, `app.runs.record_event`, and `app.runs.finish` directly
 instead of shelling out to `codealmanac jobs`.
+
+## 2026-06-29 - Source Inputs Are Boundary Messages
+
+Old hypothesis:
+The next lifecycle slice might start with a public `ingest` command and fill in
+the source model as command parsing needed it.
+
+New hypothesis:
+Add `services/sources` first. Raw user inputs are external boundary messages
+that should become typed `SourceAddress`, `SourceRef`, and `SourceBrief` values
+before workflows or agents see them. The public `ingest` command should wait
+until an ingest workflow can honestly start or run lifecycle work.
+
+Evidence that forced the change:
+The live agreement says `sources` owns observations, refs, fingerprints, and
+local source state, while workflows own update verbs. The `evidence-bundles`
+wiki page also distinguishes operation input from page provenance and rejects
+durable candidate objects. Cosmic Python chapter 11 frames outside messages as
+edge inputs that should be translated before entering the core.
+
+Code or product assumption affected:
+`app.sources.resolve(...)` is the source-input boundary. It may classify local
+paths, GitHub refs, URLs, git refs, and transcript refs, but it does not write
+pages, start runs, fetch external systems, or decide notability.
+
+Follow-up test:
+When `workflows/ingest` lands, test that it consumes `SourceBrief` values from
+`SourcesService` and records the selected source refs in the run ledger without
+letting CLI parsing become the workflow boundary.
