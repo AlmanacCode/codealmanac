@@ -444,6 +444,17 @@
 - Sent a Relayforge Discord checkpoint for the Cosmic Python chapter 13 pattern
   applied in slice 34: `ManualLibrary` is wired once in `app.py` and injected
   into services instead of making CLI/build/doctor locate resources directly.
+- Added slice-35 sync pending claims. Foreground `sync` now writes a durable
+  pending ledger entry before invoking Ingest, records owner/start/range
+  fields, skips active pending transcript ranges, reports stale pending ranges
+  as needs-attention, and clears pending fields on success or failure.
+- Dogfood for slice 35 exposed a macOS temp-path mismatch: a ledger entry
+  written with `/var/...` did not match transcript discovery returning
+  `/private/var/...`. Sync ledger keys now use normalized paths, and lookup can
+  match a stored entry by normalized app/session/transcript identity.
+- Sent a Relayforge Discord checkpoint for the Cosmic Python chapter 6 pattern
+  applied in slice 35: sync needs an explicit durable pending claim before the
+  side-effecting Ingest run, so the cursor update has an atomic checkpoint.
 
 ## Current Hypothesis
 
@@ -459,9 +470,11 @@ API. `sync status` now exposes read-only local transcript readiness behind the
 same service/workflow/adapter boundaries, and it skips provider transcripts
 that came from CodeAlmanac lifecycle runs. Lifecycle runs retain optional
 provider transcript identity for that exclusion. Foreground `sync` now runs
-ordinary Ingest work for ready transcripts and advances the sync ledger after
-success. Local automation now installs scheduler entries for foreground sync
-and Garden through a service-owned task plan and a launchd adapter. Git,
+ordinary Ingest work for ready transcripts, writes a durable pending claim
+before Ingest, advances the sync ledger after success, and reports stale
+pending work as needs-attention. Local automation now installs scheduler
+entries for foreground sync and Garden through a service-owned task plan and a
+launchd adapter. Git,
 GitHub, transcript, web URL, and local path source refs now produce bounded
 runtime snapshots before Ingest starts the harness. Manual `update` now exists
 as a conservative package-manager command and does not install scheduled update
@@ -476,9 +489,10 @@ adding a public command.
 
 ## Next Hypothesis
 
-The next automation or sync slice should add background/pending semantics only
-if it first adds a durable background owner and reconciliation loop. Scheduled
-update checks should wait for real non-editable install dogfood. The remaining
+The next automation or sync slice should add retry/reconciliation semantics
+only if it builds on the durable pending claim with an explicit background owner
+and recovery policy. Scheduled update checks should wait for real non-editable
+install dogfood. The remaining
 source-runtime pressure is semantic diversity or recency ranking for clean
 large directories if dogfood shows unchanged inputs are still too noisy. The
 remaining serve risks are markdown wikilink rewriting inside code spans and

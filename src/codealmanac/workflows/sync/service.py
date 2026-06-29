@@ -1,6 +1,7 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
+from uuid import uuid4
 
 from codealmanac.core.paths import normalize_path
 from codealmanac.services.runs.models import RunRecord
@@ -60,11 +61,21 @@ class SyncWorkflow:
     def run(self, request: RunSyncRequest) -> SyncSummary:
         now = request.now or datetime.now(UTC)
         evaluation = self.evaluate(request, SyncMode.SYNC, now=now)
+        claim_owner = request.claim_owner or sync_claim_owner(now)
         started: list[SyncStarted] = []
         needs_attention = list(evaluation.summary.needs_attention)
         ledgers = dict(evaluation.ledgers)
         for item in evaluation.work_items:
             ledger = ledgers[item.candidate.repo_root]
+            pending = pending_entry(item.entry, item, now, claim_owner)
+            ledger.sessions[item.ledger_key] = pending
+            ledger = self.ledger_store.save(
+                item.candidate.repo_root / ".almanac",
+                ledger,
+                now,
+            )
+            ledgers[item.candidate.repo_root] = ledger
+            item = item.model_copy(update={"entry": pending})
             try:
                 result = self.ingest.run(
                     RunIngestRequest(
@@ -155,8 +166,13 @@ class SyncWorkflow:
                 needs_attention.append(skip(candidate, "read-failed"))
                 continue
             key = ledger_key(candidate)
-            entry = ledger.sessions.get(key) or fresh_ledger_entry(candidate)
-            decision = evaluate_cursor(entry, snapshot)
+            entry = ledger_entry(ledger, candidate, key)
+            decision = evaluate_cursor(
+                entry,
+                snapshot,
+                current_time,
+                request.pending_timeout,
+            )
             if decision.kind == SyncDecisionKind.SKIP:
                 skipped.append(skip(candidate, decision.reason))
             elif decision.kind == SyncDecisionKind.NEEDS_ATTENTION:
@@ -286,6 +302,10 @@ def absorbed_entry(
             "last_absorbed_at": now,
             "last_job_id": run_id,
             "last_error": None,
+            "pending_started_at": None,
+            "pending_owner": None,
+            "pending_from_line": None,
+            "pending_to_line": None,
         }
     )
 
@@ -295,6 +315,28 @@ def failed_entry(entry: SyncLedgerEntry, error: Exception) -> SyncLedgerEntry:
         update={
             "status": SyncLedgerStatus.FAILED,
             "last_error": first_error_line(error),
+            "pending_started_at": None,
+            "pending_owner": None,
+            "pending_from_line": None,
+            "pending_to_line": None,
+        }
+    )
+
+
+def pending_entry(
+    entry: SyncLedgerEntry,
+    item: SyncWorkItem,
+    now: datetime,
+    owner: str,
+) -> SyncLedgerEntry:
+    return entry.model_copy(
+        update={
+            "status": SyncLedgerStatus.PENDING,
+            "last_error": None,
+            "pending_started_at": now,
+            "pending_owner": owner,
+            "pending_from_line": item.from_line,
+            "pending_to_line": item.to_line,
         }
     )
 
@@ -309,8 +351,15 @@ def first_error_line(error: Exception) -> str:
 def evaluate_cursor(
     entry: SyncLedgerEntry,
     snapshot: TranscriptSnapshot,
+    now: datetime,
+    pending_timeout: timedelta,
 ) -> SyncCursorDecision:
     if entry.status == SyncLedgerStatus.PENDING:
+        if pending_is_stale(entry, now, pending_timeout):
+            return SyncCursorDecision(
+                kind=SyncDecisionKind.NEEDS_ATTENTION,
+                reason="sync-pending-stale",
+            )
         return SyncCursorDecision(
             kind=SyncDecisionKind.SKIP,
             reason="sync-already-pending",
@@ -330,8 +379,58 @@ def evaluate_cursor(
     )
 
 
+def pending_is_stale(
+    entry: SyncLedgerEntry,
+    now: datetime,
+    pending_timeout: timedelta,
+) -> bool:
+    if entry.pending_started_at is None:
+        return True
+    return now - entry.pending_started_at > pending_timeout
+
+
+def sync_claim_owner(now: datetime) -> str:
+    stamp = now.strftime("%Y%m%d%H%M%S")
+    return f"sync-{stamp}-{uuid4().hex[:8]}"
+
+
 def ledger_key(candidate: TranscriptCandidate) -> str:
+    return f"{candidate.app.value}:{normalize_path(candidate.transcript_path)}"
+
+
+def ledger_entry(
+    ledger: SyncLedger,
+    candidate: TranscriptCandidate,
+    key: str,
+) -> SyncLedgerEntry:
+    entry = ledger.sessions.get(key)
+    if entry is not None:
+        return entry
+    raw_key = raw_ledger_key(candidate)
+    if raw_key != key:
+        entry = ledger.sessions.get(raw_key)
+        if entry is not None:
+            return entry
+    for stored_entry in ledger.sessions.values():
+        if same_ledger_identity(stored_entry, candidate):
+            return stored_entry
+    return fresh_ledger_entry(candidate)
+
+
+def raw_ledger_key(candidate: TranscriptCandidate) -> str:
     return f"{candidate.app.value}:{candidate.transcript_path}"
+
+
+def same_ledger_identity(
+    entry: SyncLedgerEntry,
+    candidate: TranscriptCandidate,
+) -> bool:
+    return (
+        entry.app == candidate.app
+        and entry.session_id == candidate.session_id
+        and normalize_path(entry.transcript_path)
+        == normalize_path(candidate.transcript_path)
+    )
 
 
 def sha256_bytes(content: bytes) -> str:

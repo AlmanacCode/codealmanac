@@ -20,6 +20,11 @@ It is the constraint document for future agents.
 - 2026-06-29: Local automation v1 installs scheduler jobs for foreground
   `sync` and `garden`. Do not schedule `update` until the Python `update`
   command and packaging policy exist.
+- 2026-06-29: `sync` writes a durable pending ledger claim before it invokes
+  Ingest. Active pending claims skip that transcript; stale pending claims
+  surface as needs-attention; terminal success or failure clears the pending
+  fields. This is foreground/scheduled sync safety, not a background
+  worker/retry loop.
 - 2026-06-29: Source input has four local layers:
   `SourceAddress -> SourceRef -> SourceBrief -> SourceRuntime`. Git source
   runtime uses the Git CLI through a source-runtime adapter. GitHub PR/issue
@@ -234,8 +239,8 @@ may exist as source material if their observed state does not change during the
 run.
 
 `sync` scans supported local transcript stores, waits for quiet sessions, maps
-material back to repos with `.almanac/`, and queues ordinary local ingest work.
-It does not mean cloud sync.
+material back to repos with `.almanac/`, claims a transcript range in the sync
+ledger, and starts ordinary local ingest work. It does not mean cloud sync.
 
 `garden` maintains existing wiki structure, links, topics, stale pages, and page
 quality. It may run without new source material.

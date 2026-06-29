@@ -5,6 +5,7 @@ from pathlib import Path
 
 from codealmanac.app import create_app
 from codealmanac.core.models import AppConfig
+from codealmanac.core.paths import normalize_path
 from codealmanac.services.harnesses.models import (
     HarnessKind,
     HarnessReadiness,
@@ -82,6 +83,22 @@ Sync ingested a quiet transcript.
         )
 
 
+class LedgerObservingHarnessAdapter(SyncWritingHarnessAdapter):
+    def __init__(self, candidate: TranscriptCandidate):
+        super().__init__()
+        self.candidate = candidate
+        self.observed_entry: SyncLedgerEntry | None = None
+
+    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
+        ledger = SyncLedger.model_validate_json(
+            (request.cwd / ".almanac/jobs/sync-ledger.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.observed_entry = ledger.sessions[sync_ledger_key(self.candidate)]
+        return super().run(request)
+
+
 def test_sync_status_reports_ready_transcript_ranges(
     tmp_path: Path,
     isolated_home: Path,
@@ -147,7 +164,7 @@ def test_sync_run_ingests_ready_transcripts_and_advances_ledger(
     ledger = SyncLedger.model_validate_json(
         (repo / ".almanac/jobs/sync-ledger.json").read_text(encoding="utf-8")
     )
-    entry = ledger.sessions[f"{candidate.app.value}:{candidate.transcript_path}"]
+    entry = ledger.sessions[sync_ledger_key(candidate)]
     assert summary.mode == SyncMode.SYNC
     assert summary.eligible == 1
     assert summary.ready == ()
@@ -170,6 +187,212 @@ def test_sync_run_ingests_ready_transcripts_and_advances_ledger(
     )
     assert status.eligible == 0
     assert status.skipped[0].reason == "unchanged"
+
+
+def test_sync_run_writes_pending_claim_before_ingest(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    transcript = write_transcript(tmp_path, "one\ntwo\n")
+    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
+    harness = LedgerObservingHarnessAdapter(candidate)
+    app = app_with_candidates(isolated_home, (candidate,), harness=harness)
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
+
+    summary = app.workflows.sync.run(
+        RunSyncRequest(
+            cwd=repo,
+            apps=(TranscriptApp.CODEX,),
+            quiet=timedelta(),
+            harness=HarnessKind.CODEX,
+            now=current_time(),
+            claim_owner="test-sync-owner",
+        )
+    )
+
+    assert harness.observed_entry is not None
+    assert harness.observed_entry.status == SyncLedgerStatus.PENDING
+    assert harness.observed_entry.pending_started_at == current_time()
+    assert harness.observed_entry.pending_owner == "test-sync-owner"
+    assert harness.observed_entry.pending_from_line == 1
+    assert harness.observed_entry.pending_to_line == 2
+    ledger = SyncLedger.model_validate_json(
+        (repo / ".almanac/jobs/sync-ledger.json").read_text(encoding="utf-8")
+    )
+    entry = ledger.sessions[sync_ledger_key(candidate)]
+    assert entry.status == SyncLedgerStatus.DONE
+    assert entry.last_job_id == summary.started[0].run_id
+    assert entry.pending_started_at is None
+    assert entry.pending_owner is None
+    assert entry.pending_from_line is None
+    assert entry.pending_to_line is None
+
+
+def test_sync_status_skips_active_pending_ledger_entry(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    transcript = write_transcript(tmp_path, "one\ntwo\n")
+    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
+    app = app_with_candidates(isolated_home, (candidate,))
+    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    write_sync_ledger(
+        workspace.almanac_path,
+        candidate,
+        last_absorbed_size=0,
+        last_absorbed_line=0,
+        prefix_hash=sha256_text(""),
+        status=SyncLedgerStatus.PENDING,
+        pending_started_at=current_time() - timedelta(minutes=30),
+        pending_owner="active-owner",
+        pending_from_line=1,
+        pending_to_line=2,
+    )
+
+    summary = app.workflows.sync.status(
+        RunSyncStatusRequest(
+            cwd=repo,
+            apps=(TranscriptApp.CODEX,),
+            quiet=timedelta(),
+            pending_timeout=timedelta(hours=1),
+            now=current_time(),
+        )
+    )
+
+    assert summary.eligible == 0
+    assert summary.ready == ()
+    assert summary.skipped[0].reason == "sync-already-pending"
+
+
+def test_sync_status_reports_stale_pending_ledger_entry(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    transcript = write_transcript(tmp_path, "one\ntwo\n")
+    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
+    app = app_with_candidates(isolated_home, (candidate,))
+    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    write_sync_ledger(
+        workspace.almanac_path,
+        candidate,
+        last_absorbed_size=0,
+        last_absorbed_line=0,
+        prefix_hash=sha256_text(""),
+        status=SyncLedgerStatus.PENDING,
+        pending_started_at=current_time() - timedelta(hours=3),
+        pending_owner="stale-owner",
+        pending_from_line=1,
+        pending_to_line=2,
+    )
+
+    summary = app.workflows.sync.status(
+        RunSyncStatusRequest(
+            cwd=repo,
+            apps=(TranscriptApp.CODEX,),
+            quiet=timedelta(),
+            pending_timeout=timedelta(hours=1),
+            now=current_time(),
+        )
+    )
+
+    assert summary.eligible == 0
+    assert summary.ready == ()
+    assert summary.needs_attention[0].reason == "sync-pending-stale"
+
+
+def test_sync_status_matches_normalized_transcript_ledger_key(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    transcript = write_transcript(tmp_path, "one\ntwo\n")
+    alias = tmp_path / "alias"
+    alias.mkdir()
+    candidate = transcript_candidate(
+        repo,
+        alias / ".." / transcript.name,
+        modified_at=old_time(),
+    )
+    app = app_with_candidates(isolated_home, (candidate,))
+    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    write_sync_ledger(
+        workspace.almanac_path,
+        candidate,
+        last_absorbed_size=0,
+        last_absorbed_line=0,
+        prefix_hash=sha256_text(""),
+        status=SyncLedgerStatus.PENDING,
+        pending_started_at=current_time() - timedelta(minutes=30),
+        pending_owner="normalized-owner",
+        pending_from_line=1,
+        pending_to_line=2,
+    )
+
+    summary = app.workflows.sync.status(
+        RunSyncStatusRequest(
+            cwd=repo,
+            apps=(TranscriptApp.CODEX,),
+            quiet=timedelta(),
+            pending_timeout=timedelta(hours=1),
+            now=current_time(),
+        )
+    )
+
+    assert summary.eligible == 0
+    assert summary.ready == ()
+    assert summary.skipped[0].reason == "sync-already-pending"
+
+
+def test_sync_status_matches_ledger_entry_by_normalized_identity(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    transcript = write_transcript(tmp_path, "one\ntwo\n")
+    transcript_link_root = tmp_path / "transcript-link"
+    transcript_link_root.symlink_to(tmp_path, target_is_directory=True)
+    linked_transcript = transcript_link_root / transcript.name
+    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
+    app = app_with_candidates(isolated_home, (candidate,))
+    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    write_sync_ledger(
+        workspace.almanac_path,
+        candidate,
+        last_absorbed_size=0,
+        last_absorbed_line=0,
+        prefix_hash=sha256_text(""),
+        status=SyncLedgerStatus.PENDING,
+        pending_started_at=current_time() - timedelta(minutes=30),
+        pending_owner="linked-owner",
+        pending_from_line=1,
+        pending_to_line=2,
+        session_key=f"{candidate.app.value}:{linked_transcript}",
+        entry_transcript_path=linked_transcript,
+    )
+
+    summary = app.workflows.sync.status(
+        RunSyncStatusRequest(
+            cwd=repo,
+            apps=(TranscriptApp.CODEX,),
+            quiet=timedelta(),
+            pending_timeout=timedelta(hours=1),
+            now=current_time(),
+        )
+    )
+
+    assert summary.eligible == 0
+    assert summary.ready == ()
+    assert summary.skipped[0].reason == "sync-already-pending"
 
 
 def test_sync_status_skips_internal_lifecycle_transcripts_by_session(
@@ -360,6 +583,13 @@ def write_sync_ledger(
     last_absorbed_size: int,
     last_absorbed_line: int,
     prefix_hash: str,
+    status: SyncLedgerStatus = SyncLedgerStatus.DONE,
+    pending_started_at: datetime | None = None,
+    pending_owner: str | None = None,
+    pending_from_line: int | None = None,
+    pending_to_line: int | None = None,
+    session_key: str | None = None,
+    entry_transcript_path: Path | None = None,
 ) -> None:
     path = almanac_path / "jobs/sync-ledger.json"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -367,14 +597,18 @@ def write_sync_ledger(
         version=1,
         updated_at=current_time(),
         sessions={
-            f"{candidate.app.value}:{candidate.transcript_path}": SyncLedgerEntry(
+            session_key or sync_ledger_key(candidate): SyncLedgerEntry(
                 app=candidate.app,
                 session_id=candidate.session_id,
-                transcript_path=candidate.transcript_path,
-                status=SyncLedgerStatus.DONE,
+                transcript_path=entry_transcript_path or candidate.transcript_path,
+                status=status,
                 last_absorbed_size=last_absorbed_size,
                 last_absorbed_line=last_absorbed_line,
                 last_absorbed_prefix_hash=prefix_hash,
+                pending_started_at=pending_started_at,
+                pending_owner=pending_owner,
+                pending_from_line=pending_from_line,
+                pending_to_line=pending_to_line,
             )
         },
     )
@@ -383,6 +617,10 @@ def write_sync_ledger(
 
 def sha256_text(value: str) -> str:
     return f"sha256:{sha256(value.encode('utf-8')).hexdigest()}"
+
+
+def sync_ledger_key(candidate: TranscriptCandidate) -> str:
+    return f"{candidate.app.value}:{normalize_path(candidate.transcript_path)}"
 
 
 def initialize_git(repo: Path) -> None:

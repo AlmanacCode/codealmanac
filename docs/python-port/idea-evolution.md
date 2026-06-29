@@ -788,3 +788,33 @@ Follow-up test:
 If manual files need package-driven updates later, add an explicit local
 maintenance policy that distinguishes bundled doctrine updates from user-edited
 workspace conventions.
+
+## 2026-06-29 - Sync Needs Pending Claims Before Ingest Side Effects
+
+Old hypothesis:
+Foreground `sync` could advance the cursor only after Ingest succeeded or
+failed.
+
+New hypothesis:
+`sync` needs a durable pending claim before it invokes Ingest. Active pending
+claims should skip the transcript range; stale pending claims should surface as
+needs-attention; terminal success or failure should clear the pending fields.
+
+Evidence that forced the change:
+The sync ledger already had a `PENDING` status, but `SyncWorkflow.run()` never
+wrote it before the side-effecting Ingest call. A scheduled foreground sync
+that crashed mid-run could leave no durable record of the claimed range.
+Cosmic Python chapter 6 frames a Unit of Work as the place to make an atomic
+persistence boundary around side effects. Dogfood also showed that raw
+transcript paths were not stable enough for ledger keys on macOS, where temp
+paths can appear as `/var/...` or `/private/var/...`.
+
+Code or product assumption affected:
+`workflows/sync` now owns pending ledger cursor policy. Transcript discovery
+adapters still only return typed local transcript candidates, and Ingest remains
+the normal wiki-writing workflow. Sync ledger lookup uses normalized transcript
+identity instead of treating the raw key string as the only truth.
+
+Follow-up test:
+When background execution exists, decide whether stale pending work should
+retry automatically, require manual attention, or use a bounded retry policy.

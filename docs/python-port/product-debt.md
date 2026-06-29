@@ -27,7 +27,7 @@ alive while rebuilding in Python.
 | `serve` slice timing | Restore after core read model works unless a viewer need becomes the highest-risk boundary. |
 | Agent harness contract | Re-evaluate old Codex app-server and Claude SDK adapters before implementing lifecycle workflows. |
 | Codex app-server parity | The Python v1 Codex adapter uses `codex exec`; port app-server only if the harness contract needs streaming, usage, structured tool display, structured output, or subagents. |
-| Background sync reconciliation | Foreground `codealmanac sync` now runs Ingest and commits the cursor after success. Background/scheduled sync still needs pending cursor fields, a durable owner, stale recovery, and reconciliation before unattended automation. |
+| Background sync reconciliation | Foreground `codealmanac sync` now writes a durable pending claim before Ingest, clears it on terminal success/failure, and reports stale pending entries. Background execution still needs retry/reconciliation policy before stale pending work can recover unattended. |
 | Scheduled update automation | Manual `codealmanac update` now exists. Do not schedule update automation until package-manager behavior has more real install dogfood. |
 | Legacy automation migration | The Python rewrite does not port TypeScript capture-sweep migration in the first automation slice. Add only if real installed legacy jobs must be migrated. |
 | Index refresh cost | `ensure_fresh` skips unchanged projection writes using source signatures, but still parses page markdown to compute them. Optimize only after real large-repo dogfood shows this is too slow. |

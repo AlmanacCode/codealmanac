@@ -6,7 +6,7 @@ Updated: 2026-06-29
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
-- Latest committed slice: `feat(slice-34): add manual package surface`.
+- Latest committed slice: `feat(slice-35): add sync pending claims`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
 - Latest verified source-runtime direction: selected local material becomes
@@ -35,6 +35,9 @@ Updated: 2026-06-29
   reads `src/codealmanac/manual/*.md`, `build`/`init` copy missing docs into
   `.almanac/manual/`, prompts tell lifecycle agents to read those docs, and
   `doctor` checks package/workspace manual readiness.
+- Foreground `sync` writes a durable pending ledger claim before invoking
+  Ingest, skips active pending transcript ranges, reports stale pending ranges
+  as needs-attention, and clears pending fields on terminal success/failure.
 - Ingest remains source-kind agnostic. It resolves `SourceBrief` values, asks
   `SourcesService.inspect_runtime(...)` for snapshots, renders typed runtime
   JSON into the prompt, calls the selected harness, validates `.almanac/`
@@ -136,6 +139,20 @@ Behavior:
 - `codealmanac doctor` reports `install.manual` and `wiki.manual`
 - lifecycle prompts point agents at `.almanac/manual/` before wiki edits
 
+Slice 35 adds sync pending claims.
+
+Behavior:
+
+- foreground `sync` writes a `PENDING` sync ledger entry before invoking Ingest
+- pending entries record owner, start time, and claimed line range
+- ledger keys use normalized transcript paths, and lookup can match stored
+  entries by normalized app/session/transcript identity
+- active pending entries are skipped by status/run
+- stale pending entries surface as needs-attention instead of being skipped
+  forever
+- terminal success/failure clears pending fields
+- this is not a full background retry/reconciliation loop
+
 ## Verification To Preserve
 
 - Focused filesystem/source/ingest/architecture tests
@@ -163,13 +180,15 @@ Behavior:
 - Slice 34 manual/build/doctor/prompt tests, full pytest, full ruff, diff
   check, package build with manual Markdown wheel inspection, and isolated
   build/doctor manual dogfood
+- Slice 35 sync pending tests, full pytest, full ruff, diff check, and pending
+  claim dogfood
 
 ## Next Move
 
 1. Likely next pressure points:
    - semantic diversity or recency ranking for clean large directories if
      Git-listed unchanged files are still too noisy in dogfood
-   - background sync pending/reconciliation only if a durable owner is added
+   - background sync retry/reconciliation now that durable pending claims exist
    - scheduled update automation only after non-editable update dogfood
    - browser-harness visual verification for `serve` once Chrome remote
      debugging permission is available

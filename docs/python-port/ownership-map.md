@@ -51,7 +51,7 @@ that root instead of constructing stores or adapters themselves.
 |---|---|---|
 | `build` | initial wiki creation or refresh | `workspaces`, `wiki`, `index` |
 | `ingest` | update wiki from selected local material | `sources`, `runs`, `harnesses`, `index`, `prompts`, `lifecycle` |
-| `sync` | discover quiet local transcripts, skip internal lifecycle transcripts, evaluate cursor readiness, run foreground ingest, and update sync cursor ledger | `sources`, `runs`, `ingest`, sync ledger, later `automation` |
+| `sync` | discover quiet local transcripts, skip internal lifecycle transcripts, evaluate cursor readiness, claim pending transcript ranges, run foreground ingest, clear terminal claims, and update sync cursor ledger | `sources`, `runs`, `ingest`, sync ledger, later `automation` |
 | `garden` | maintain wiki shape, links, topics, staleness, quality | `health`, `index`, `runs`, `harnesses`, `prompts`, `lifecycle` |
 
 Workflows coordinate. They do not own durable schema unless a missing service is
@@ -107,6 +107,13 @@ sync to observe local transcript stores. Concrete Codex and Claude JSONL
 scanners live in `integrations/sources/transcripts/`. Those integrations parse
 raw provider JSON and return typed `TranscriptCandidate` values; they do not
 decide quiet windows, cursor state, or whether ingest should run.
+
+`workflows/sync` owns sync ledger cursor policy. It writes a durable pending
+claim before calling Ingest, treats active pending entries as skipped work,
+reports stale pending entries as needs-attention, and clears pending fields on
+success or failure. This is still foreground sync ownership; a future
+background worker may add retry/reconciliation policy without changing
+transcript discovery adapters.
 
 The same source service owns `SourceRuntimeAdapter`, the port used by Ingest to
 turn selected source refs into bounded readable material before harness

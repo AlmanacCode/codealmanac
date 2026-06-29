@@ -38,17 +38,35 @@ class SyncLedgerEntry(CodeAlmanacModel):
     last_absorbed_at: datetime | None = None
     last_job_id: str | None = None
     last_error: str | None = None
+    pending_started_at: datetime | None = None
+    pending_owner: str | None = None
+    pending_from_line: int | None = None
+    pending_to_line: int | None = None
 
     @field_validator("session_id", "last_absorbed_prefix_hash")
     @classmethod
     def require_text(cls, value: str) -> str:
         return required_text(value, "sync ledger entry")
 
+    @field_validator("pending_owner")
+    @classmethod
+    def require_pending_owner(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return required_text(value, "sync pending owner")
+
     @field_validator("last_absorbed_size", "last_absorbed_line")
     @classmethod
     def non_negative_cursor(cls, value: int) -> int:
         if value < 0:
             raise ValueError("sync cursor must be non-negative")
+        return value
+
+    @field_validator("pending_from_line", "pending_to_line")
+    @classmethod
+    def non_negative_pending_line(cls, value: int | None) -> int | None:
+        if value is not None and value < 0:
+            raise ValueError("sync pending line must be non-negative")
         return value
 
 
