@@ -85,3 +85,31 @@ Follow-up test:
 Keep the SQLite trigger regression proving unchanged `ensure_fresh` does not
 delete/reinsert `pages`, and add a cheaper stat-manifest test only if large-repo
 dogfood makes parsing cost visible.
+
+## 2026-06-29 - Public Jobs, Internal Runs
+
+Old hypothesis:
+The Python rewrite might rename the public lifecycle inspection surface from
+`jobs` to `runs` because `runs` is the service named in the live agreement.
+
+New hypothesis:
+Keep public `jobs` as the CLI noun and use internal `runs` as the service noun.
+Users inspect jobs; workflows record runs. This avoids a user-facing rename
+while still giving the Python code a service that owns execution records,
+events, outputs, and lifecycle state.
+
+Evidence that forced the change:
+The live agreement lists `codealmanac jobs` as the public CLI command and names
+`runs` as the service owner. The old lifecycle wiki also says `jobs` is the
+durable queued-work term while recurring scheduled intent belongs to
+automation. Cosmic Python chapter 10 made the split cleaner: starting work is a
+command, while run-log entries are facts.
+
+Code or product assumption affected:
+`services/runs` owns `.almanac/jobs/` records and logs. `cli/main.py` exposes
+that service as `codealmanac jobs`, `jobs show`, and `jobs logs`.
+
+Follow-up test:
+When foreground/background execution lands, workflows should call
+`app.runs.start`, `app.runs.record_event`, and `app.runs.finish` directly
+instead of shelling out to `codealmanac jobs`.

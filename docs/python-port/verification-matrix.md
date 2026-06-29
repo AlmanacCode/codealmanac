@@ -12,7 +12,7 @@ means the goal remains active.
 | Cosmic Python actively considered | `docs/reference/cosmic-python/`, `docs/python-port/`, composition root, service-layer tests, store boundary | tests call workflow/service and CLI surfaces instead of private helpers; Relayforge Discord checkpoint sent | Need deeper transaction/freshness review before lifecycle writes. |
 | CLI exists as `codealmanac` only | `[project.scripts] codealmanac = "codealmanac.cli.main:main"` plus argparse commands | `uv run codealmanac --help`, live `init`, `build`, `list`, `search`, `show`, `topics create/describe/link/unlink/rename/delete`, `reindex`, `doctor`, `serve` passed on 2026-06-29 | Many planned lifecycle commands remain pending. |
 | SQLite-backed wiki/index behavior | `services/index`, `services/wiki`, `services/search`, `services/pages` | parser/index/search/show tests, stale-schema regression, stale-aware refresh regression, isolated live smoke, dogfood search | `refresh` still parses source markdown to compute signatures; optimize only after real large-repo pressure. |
-| Workflows: build, ingest, sync, garden | pending | pending | Not scaffolded. |
+| Workflows: build, ingest, sync, garden | `workflows/build`; `services/runs` ledger seam for future lifecycle workflows | build tests; runs service and jobs CLI tests | `ingest`, `sync`, and `garden` execution remain pending. |
 | Integrations behind service ports | ownership map drafted | pending | Ports/adapters not implemented yet. |
 | Prompts/manual surfaces | pending | pending | Must avoid old npm prompt layout assumptions. |
 | Tests and live verification | pytest/ruff configured in `pyproject.toml` | `uv run pytest`, `uv run ruff check .`, `uv run codealmanac --help`, live temp `init`/`list`/`search`/`show`, dogfood search, dogfood serve API passed | Browser-harness needs Chrome remote-debugging permission before visual UI verification can pass. |
@@ -158,3 +158,13 @@ means the goal remains active.
 | Formatting/lint | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run ruff check .` | passed |
 | Live serve API | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run codealmanac serve --port 49219`, then request `/api/overview`, `/api/search?q=python`, `/api/page/almanac-serve`, `/app.js` | passed; server stopped after checks |
 | Warm-read rewrite check | SQLite trigger on derived `pages` table while hitting live serve API routes | passed; `serve_rewrites_after_warm_index=0` |
+
+## Gates For Slice 10 Runs Ledger
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused runs tests | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run pytest tests/test_runs_service.py tests/test_cli.py::test_cli_jobs_inspects_local_run_records tests/test_cli.py::test_cli_help_includes_serve` | 5 passed |
+| Full tests | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run pytest` | 59 passed |
+| Formatting/lint | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+| Isolated live jobs CLI | temp repo `build`; create run through `RunsService`; read through `codealmanac jobs`, `jobs show`, `jobs logs`, `jobs --json` | passed; repo-relative `log_path` shown |

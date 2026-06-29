@@ -30,7 +30,7 @@ that root instead of constructing stores or adapters themselves.
 | `wiki` | page files, frontmatter, topics, wikilinks, page writes, health inputs | `init`, `show`, page parsing for index |
 | `index` | SQLite read model, FTS, mentions, backlinks, query projections | `search`, `show --links`, `health` |
 | `sources` | source observations, source refs, fingerprints, local source state | later `ingest` and `sync` inputs |
-| `runs` | run ledger, events, outputs, lifecycle state | later lifecycle workflows |
+| `runs` | run ledger, events, outputs, lifecycle state | `jobs` read surface, later lifecycle workflows |
 | `harnesses` | normalized Codex/Claude run contracts and ports | later `build`, `ingest`, `garden` |
 | `automation` | local scheduler decisions, quiet windows, installed task state | later `sync`/`garden` scheduling |
 | `config` | user/project config parsing and precedence | first slice only if pyproject/config needs it |

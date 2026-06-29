@@ -128,6 +128,17 @@
   remains the explicit forced rebuild. Re-verified with 55 passing tests, ruff,
   live `codealmanac serve --port 49219`, API dogfood for overview/search/page,
   and a SQLite trigger proving warm read traffic did not rewrite `pages`.
+- Read Cosmic Python chapters 6, 8, and 10 before the first lifecycle seam and
+  sent a Relayforge Discord checkpoint for the Commands vs Events pattern. The
+  applied lesson: future lifecycle starts are commands that fail loudly, while
+  run-log entries are past-tense facts recorded by the `runs` service.
+- Added slice-10 runs ledger and `jobs` read surface: `RunsService`, JSON/JSONL
+  run storage under `.almanac/jobs/`, typed run records/events/status enums,
+  and `codealmanac jobs`, `jobs show`, and `jobs logs`.
+- Verified slice 10 with focused runs/CLI tests, 59 passing full tests, ruff,
+  `git diff --check`, and an isolated live dogfood run that created a run
+  through `RunsService` and read it back through `codealmanac jobs`, `jobs show`,
+  `jobs logs`, and `jobs --json`.
 
 ## Current Hypothesis
 
@@ -136,13 +147,13 @@ search/show, topic reads, health, tag/untag, topic DAG mutation including
 rename/delete, explicit `build`, `reindex`, `doctor`, and a first read-only
 local `serve` viewer. The highest-risk serve/index review issue found so far is
 fixed: read traffic no longer forces projection rewrites when the source wiki
-is unchanged. The next pressure should choose whether to harden another viewer
-edge or start the first lifecycle/runs spine.
+is unchanged. The first lifecycle/runs spine now exists as a ledger and read
+surface, without harness execution or background workers.
 
 ## Next Hypothesis
 
-The next slice should probably move toward the lifecycle/runs spine unless
-viewer dogfood reveals a sharper local-read problem. The remaining serve risks
+The next slice should extend lifecycle from durable records into either source
+input contracts or foreground/background execution. The remaining serve risks
 are markdown wikilink rewriting inside code spans, browser-harness verification
 once Chrome allows remote debugging, and whether a source/file route belongs in
 the first viewer shape before lifecycle commands.

@@ -15,10 +15,12 @@ Updated: 2026-06-29
   workspaces, wiki scaffold/build workflow, SQLite FTS5 read model, search,
   show, topics, health, tag/untag, topic mutation, build, reindex, doctor, and
   the first local `serve` viewer.
+- `services/runs` owns the local run ledger under `.almanac/jobs/`; public
+  inspection stays under `codealmanac jobs`.
 - The index read model now uses stale-aware source signatures for ordinary
   `ensure_fresh`; `reindex` remains the explicit forced rebuild command.
 - Current implemented CLI commands are `init`, `build`, `list`, `search`,
-  `show`, `topics`, `health`, `reindex`, `doctor`, `serve`, `tag`, and
+  `show`, `topics`, `health`, `reindex`, `doctor`, `jobs`, `serve`, `tag`, and
   `untag`.
 - Topic metadata mutation now covers `topics create`, `topics describe`,
   `topics link`, `topics unlink`, `topics rename`, and `topics delete`.
@@ -117,20 +119,26 @@ Updated: 2026-06-29
   - live `codealmanac serve --port 49219`
   - live API overview/search/page/app.js checks in this repo
   - SQLite trigger check showing warm read traffic did not rewrite `pages`
+- Slice-10 runs ledger focused checks passed:
+  - focused runs service and jobs CLI tests
+  - 59 full tests
+  - ruff
+  - `git diff --check`
+  - isolated live jobs CLI dogfood
 
 ## Dirty/Staged Files
 
-After the slice-9 review fix is committed, the worktree should be clean. If any
-slice-9 review files are dirty, re-run `git diff --check`, pytest, ruff, live
-serve API checks, and browser-harness if Chrome remote debugging has been
-allowed.
+After slice 10 is committed, the worktree should be clean. If any slice-10 files
+are dirty, re-run focused runs tests, `git diff --check`, pytest, ruff, and live
+jobs CLI dogfood.
 
 ## Next Move
 
-1. Decide whether the next slice starts the lifecycle/runs spine or hardens a
-   remaining viewer issue found through dogfood.
-2. Decide whether the viewer needs source/file route hardening before jobs.
-3. Keep lifecycle/AI commands out until local maintenance surfaces hold.
+1. Decide whether the next lifecycle slice should add source input contracts or
+   foreground/background run execution.
+2. Decide whether the viewer needs source/file route hardening before AI-backed
+   lifecycle commands.
+3. Keep AI execution behind workflow and harness seams; do not put it in CLI.
 4. Add an architecture test that CLI imports do not import concrete integration
    modules once integrations exist.
 

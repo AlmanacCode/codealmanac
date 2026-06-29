@@ -333,8 +333,9 @@ subprocess.run(["codealmanac", "show", "..."])
 
 1. Whether local `add` deserves a v1 command or should wait until source-pool
    behavior is concrete.
-2. Whether `jobs` should remain the public noun or become `runs` in the Python
-   rewrite.
+2. Resolved 2026-06-29: keep public `jobs` as the CLI inspection noun and use
+   internal `runs` as the service that owns execution records, events, outputs,
+   and lifecycle state.
 3. Resolved 2026-06-29: `serve` is restored after the core CLI/read model,
    because the Python index can now support a read-only viewer without a second
    content model.

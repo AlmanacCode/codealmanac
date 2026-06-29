@@ -25,6 +25,12 @@ from codealmanac.services.index.models import (
 )
 from codealmanac.services.index.requests import ReindexRequest
 from codealmanac.services.pages.requests import ShowPageRequest
+from codealmanac.services.runs.models import RunLogEvent, RunRecord
+from codealmanac.services.runs.requests import (
+    ListRunsRequest,
+    ReadRunLogRequest,
+    ShowRunRequest,
+)
 from codealmanac.services.search.requests import SearchPagesRequest
 from codealmanac.services.tagging.models import TaggingResult
 from codealmanac.services.tagging.requests import TagPageRequest, UntagPageRequest
@@ -143,6 +149,18 @@ def build_parser() -> argparse.ArgumentParser:
     doctor = subcommands.add_parser("doctor", help="check local install and wiki")
     doctor.add_argument("--wiki")
     doctor.add_argument("--json", action="store_true")
+
+    jobs = subcommands.add_parser("jobs", help="inspect local lifecycle jobs")
+    jobs.add_argument("--wiki")
+    jobs.add_argument("--limit", type=int)
+    jobs.add_argument("--json", action="store_true")
+    job_subcommands = jobs.add_subparsers(dest="jobs_command")
+    jobs_show = job_subcommands.add_parser("show", help="show one job record")
+    jobs_show.add_argument("run_id")
+    jobs_show.add_argument("--json", action="store_true")
+    jobs_logs = job_subcommands.add_parser("logs", help="show one job log")
+    jobs_logs.add_argument("run_id")
+    jobs_logs.add_argument("--json", action="store_true")
 
     serve = subcommands.add_parser("serve", help="serve the local wiki viewer")
     serve.add_argument("--wiki")
@@ -305,6 +323,24 @@ def dispatch(args: argparse.Namespace) -> int:
         report = app.diagnostics.check(DoctorRequest(cwd=Path.cwd(), wiki=args.wiki))
         render_doctor(report, json_output=args.json)
         return 0
+    if args.command == "jobs":
+        if args.jobs_command == "show":
+            record = app.runs.show(
+                ShowRunRequest(cwd=Path.cwd(), wiki=args.wiki, run_id=args.run_id)
+            )
+            render_run(record, json_output=args.json)
+            return 0
+        if args.jobs_command == "logs":
+            events = app.runs.log(
+                ReadRunLogRequest(cwd=Path.cwd(), wiki=args.wiki, run_id=args.run_id)
+            )
+            render_run_log(events, json_output=args.json)
+            return 0
+        records = app.runs.list(
+            ListRunsRequest(cwd=Path.cwd(), wiki=args.wiki, limit=args.limit)
+        )
+        render_runs(records, json_output=args.json)
+        return 0
     if args.command == "serve":
         return run_serve(app, args)
     if args.command == "tag":
@@ -384,6 +420,48 @@ def render_doctor_section(title: str, checks: tuple[DoctorCheck, ...]) -> None:
         if check.fix is not None:
             print(f"    {check.fix}")
     print("")
+
+
+def render_runs(records: tuple[RunRecord, ...], json_output: bool) -> None:
+    if json_output:
+        data = [record.model_dump(mode="json") for record in records]
+        print(json.dumps(data, indent=2))
+        return
+    if len(records) == 0:
+        print("# 0 jobs", file=sys.stderr)
+        return
+    for record in records:
+        title = record.title or ""
+        print(
+            f"{record.run_id}\t{record.status.value}\t"
+            f"{record.operation.value}\t{title}"
+        )
+
+
+def render_run(record: RunRecord, json_output: bool) -> None:
+    if json_output:
+        print(json.dumps(record.model_dump(mode="json"), indent=2))
+        return
+    print(f"id: {record.run_id}")
+    print(f"operation: {record.operation.value}")
+    print(f"status: {record.status.value}")
+    if record.title is not None:
+        print(f"title: {record.title}")
+    if record.summary is not None:
+        print(f"summary: {record.summary}")
+    if record.error is not None:
+        print(f"error: {record.error}")
+    print(f"created_at: {record.created_at.isoformat()}")
+    print(f"updated_at: {record.updated_at.isoformat()}")
+
+
+def render_run_log(events: tuple[RunLogEvent, ...], json_output: bool) -> None:
+    if json_output:
+        data = [event.model_dump(mode="json") for event in events]
+        print(json.dumps(data, indent=2))
+        return
+    for event in events:
+        print(f"{event.sequence}\t{event.kind.value}\t{event.message}")
 
 
 def render_page(page: PageView, args: argparse.Namespace) -> None:

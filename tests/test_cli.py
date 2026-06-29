@@ -2,7 +2,15 @@ from pathlib import Path
 
 import pytest
 
+from codealmanac.app import create_app
 from codealmanac.cli.main import build_parser, main
+from codealmanac.core.models import AppConfig
+from codealmanac.services.runs.models import RunEventKind, RunOperation
+from codealmanac.services.runs.requests import (
+    RecordRunEventRequest,
+    StartRunRequest,
+)
+from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
 
 
 def test_cli_init_creates_wiki_and_prints_name(
@@ -142,6 +150,53 @@ def test_cli_help_includes_serve(capsys):
     output = capsys.readouterr()
     assert exit_info.value.code == 0
     assert "serve" in output.out
+    assert "jobs" in output.out
+
+
+def test_cli_jobs_inspects_local_run_records(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(AppConfig(registry_path=isolated_home / ".almanac/registry.json"))
+    app.build.initialize(InitializeWorkspaceRequest(path=repo))
+    record = app.runs.start(
+        StartRunRequest(
+            cwd=repo,
+            operation=RunOperation.INGEST,
+            title="Digest note",
+        )
+    )
+    app.runs.record_event(
+        RecordRunEventRequest(
+            cwd=repo,
+            run_id=record.run_id,
+            kind=RunEventKind.MESSAGE,
+            message="read note",
+        )
+    )
+    monkeypatch.chdir(repo)
+
+    assert main(["jobs"]) == 0
+    list_output = capsys.readouterr()
+    assert f"{record.run_id}\tqueued\tingest\tDigest note\n" in list_output.out
+
+    assert main(["jobs", "show", record.run_id]) == 0
+    show_output = capsys.readouterr()
+    assert f"id: {record.run_id}\n" in show_output.out
+    assert "operation: ingest\n" in show_output.out
+
+    assert main(["jobs", "logs", record.run_id]) == 0
+    log_output = capsys.readouterr()
+    assert "1\tstatus\tqueued ingest\n" in log_output.out
+    assert "2\tmessage\tread note\n" in log_output.out
+
+    assert main(["jobs", "--json"]) == 0
+    json_output = capsys.readouterr()
+    assert f'"run_id": "{record.run_id}"' in json_output.out
 
 
 def test_cli_search_and_show_read_current_repo_wiki(
