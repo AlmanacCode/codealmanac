@@ -55,6 +55,44 @@ def test_config_service_owns_pydantic_settings_imports():
     assert offenders == []
 
 
+def test_cli_main_stays_as_thin_entrypoint():
+    main = SRC_ROOT / "cli/main.py"
+    text = main.read_text(encoding="utf-8")
+
+    assert len(text.splitlines()) <= 80
+    assert "def main(" in text
+    assert "def build_parser(" not in text
+    assert "def render_" not in text
+    assert "add_parser(" not in text
+
+
+def test_cli_parser_is_split_by_command_domain():
+    parser_root = SRC_ROOT / "cli/parser"
+    parser_files = {path.name for path in parser_root.glob("*.py")}
+    root = (parser_root / "root.py").read_text(encoding="utf-8")
+
+    assert parser_files == {
+        "__init__.py",
+        "admin.py",
+        "lifecycle.py",
+        "root.py",
+        "wiki.py",
+    }
+    assert len(root.splitlines()) <= 80
+    assert "add_lifecycle_commands(subcommands)" in root
+    assert "add_wiki_commands(subcommands)" in root
+    assert "add_admin_commands(subcommands)" in root
+    assert "add_parser(" not in root
+
+
+def test_cli_has_separate_parser_dispatch_and_render_packages():
+    cli_root = SRC_ROOT / "cli"
+
+    assert (cli_root / "parser/root.py").is_file()
+    assert (cli_root / "dispatch/root.py").is_file()
+    assert (cli_root / "render/root.py").is_file()
+
+
 def imports_integration(path: Path) -> bool:
     return imports_module(path, "codealmanac.integrations")
 

@@ -6,7 +6,8 @@ Updated: 2026-06-29
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
-- Latest committed slice: `feat(slice-39): add config boundary`.
+- Latest committed implementation slice: `feat(slice-39): add config boundary`.
+- Latest product-direction commit: `docs: record configurable almanac root`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
 - Latest verified source-runtime direction: selected local material becomes
@@ -37,10 +38,10 @@ Updated: 2026-06-29
   `.almanac/config.toml` and must be updated with the configurable-root slice.
   CLI flags still win over config. It uses `pydantic-settings` TOML sources.
   The first supported fields are `[harness].default` and `[sync].quiet`.
-- An in-flight CLI split has moved `src/codealmanac/cli/main.py` toward
-  `parser/`, `dispatch/`, and `render/` packages inspired by
-  `../almanac/clients/cli/src/almanac_cli/`. It is not committed yet in this
-  brief if the worktree is dirty.
+- Slice 40 splits the CLI edge: `main.py` is thin, parser construction is under
+  `cli/parser/` by command domain, and dispatch/render moved to
+  `cli/dispatch/root.py` and `cli/render/root.py`. Dispatch/render are still
+  broad and can be split later when a concrete CLI change creates pressure.
 - Filesystem directory runtime uses Git listing inside worktrees, then falls
   back to the bounded Python/pathspec walk outside Git.
 - Git-listed directory runtime ranks changed and untracked files before
@@ -269,6 +270,9 @@ Behavior:
   dogfood
 - Slice 39 config service tests, CLI default-resolution tests, architecture
   boundary test, full pytest, full ruff, diff check, and live config dogfood
+- Slice 40 focused CLI/public-contract/architecture tests, full pytest, full
+  ruff, diff check, package build, CLI help smoke, and temp build/search
+  dogfood
 
 ## Next Move
 
@@ -277,7 +281,6 @@ Behavior:
      `docs/almanac/` and explicit `.almanac/`, and make pages, index, manual,
      runs, config, viewer, prompts, sync ledger, and safety checks resolve
      through `workspaces`
-   - finish and verify the in-flight CLI split if present in the worktree
    - semantic diversity or recency ranking for clean large directories if
      Git-listed unchanged files are still too noisy in dogfood
    - background sync owner/retry policy now that foreground sync can reconcile

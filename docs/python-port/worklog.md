@@ -503,6 +503,12 @@
   `.almanac/` available only by configuration. Current code still hard-codes
   `.almanac/` in workspace paths, prompts, tests, safety checks, and dogfood
   docs; that is now product debt, not the target shape.
+- Added slice-40 CLI edge split. `src/codealmanac/cli/main.py` now only owns
+  parser invocation, known error formatting, and app dispatch. Parser
+  construction lives under `cli/parser/` and is split into lifecycle, wiki, and
+  admin command domains. Dispatch and render moved out of `main.py` into
+  `cli/dispatch/root.py` and `cli/render/root.py`; they remain broad but are no
+  longer mixed into the process entrypoint.
 
 ## Current Hypothesis
 
@@ -542,6 +548,9 @@ for typed user/project TOML defaults, with no public `config` command or
 hosted/account configuration surface. The target root has changed: new repos
 should default to `almanac/` and all wiki docs plus local runtime artifacts
 should resolve through the configured Almanac root.
+The CLI edge now follows the same parser/dispatch/render package shape as the
+sibling Almanac CLI, with architecture tests preventing `main.py` and parser
+root from growing back into all-purpose modules.
 
 ## Next Hypothesis
 

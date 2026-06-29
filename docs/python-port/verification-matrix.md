@@ -498,3 +498,15 @@ means the goal remains active.
 | Diff hygiene | `git diff --check` | passed |
 | Package build | `uv build --out-dir /tmp/codealmanac-build-slice39`; wheel inspection | passed; wheel includes `services/config/` and metadata dependency `pydantic-settings` |
 | Live config dogfood | temp repo with `.almanac/config.toml` setting `[sync].quiet = "0s"`, temp `HOME` with one Codex transcript, run `codealmanac sync status --from codex --json` from repo cwd without `--quiet` | passed; scanned 1, eligible 1, ready 1, session `config-dogfood-session` |
+
+## Gates For Slice 40 CLI Edge Split
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused CLI/public-contract/architecture tests | `uv run pytest tests/test_architecture.py tests/test_cli.py tests/test_public_contract.py` | 42 passed |
+| Focused lint | `uv run ruff check src/codealmanac/cli tests/test_architecture.py tests/test_cli.py tests/test_public_contract.py` | passed |
+| Full tests | `uv run pytest` | 195 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+| Package build | `uv build --out-dir /tmp/codealmanac-build-slice40`; wheel inspection | passed; wheel includes `cli/main.py`, `cli/parser/`, `cli/dispatch/root.py`, and `cli/render/root.py` |
+| Live CLI dogfood | temp repo with `codealmanac build`, committed page, and `codealmanac search` through the installed console script | passed; search returned `cli-split-dogfood` |
