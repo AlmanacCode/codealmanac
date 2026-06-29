@@ -49,12 +49,17 @@ Updated: 2026-06-29
   - ruff
   - isolated live `topics`, `topics show`, `health --json`
   - dogfood `topics` and `health` in this repo
+- Slice-3 review fix passed:
+  - 19 tests
+  - ruff
+  - isolated live path-safety `health --json`
+  - dogfood `health`
 
 ## Dirty/Staged Files
 
-At this checkpoint, slice-3 topics/health files should be dirty until
+At this checkpoint, only slice-3 review-fix files should be dirty until
 committed. Re-run `git diff --check`, pytest, ruff, isolated live smoke, and
-dogfood `topics`/`health` before committing.
+dogfood health before committing.
 
 ## Next Move
 

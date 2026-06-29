@@ -18,6 +18,9 @@ def normalize_reference_shape(raw: str, is_dir: bool) -> str:
     while text.startswith("./"):
         text = text[2:]
     text = re.sub(r"/+", "/", text)
+    text = text.lstrip("/")
+    if ".." in text.split("/"):
+        return ""
     text = text.rstrip("/")
     if is_dir and text:
         return f"{text}/"

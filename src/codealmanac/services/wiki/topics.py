@@ -2,7 +2,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from yaml import YAMLError
 
 from codealmanac.core.slug import to_kebab_case
 
@@ -50,8 +51,14 @@ def load_topics_yaml(almanac_path: Path) -> tuple[TopicDefinition, ...]:
     path = almanac_path / "topics.yaml"
     if not path.is_file():
         return ()
-    parsed = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    try:
+        parsed = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except (OSError, YAMLError):
+        return ()
     if not isinstance(parsed, dict):
         return ()
-    model = TopicsYaml.model_validate(parsed)
+    try:
+        model = TopicsYaml.model_validate(parsed)
+    except ValidationError:
+        return ()
     return tuple(topic for topic in model.topics if topic.slug)

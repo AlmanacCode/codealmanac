@@ -45,6 +45,24 @@ def test_health_reports_read_model_problems(tmp_path: Path, isolated_home: Path)
     assert {item.slug for item in report.empty_pages} == {"empty-page"}
 
 
+def test_malformed_topics_yaml_does_not_break_reads(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    pages = repo / ".almanac/pages"
+    pages.mkdir(parents=True)
+    (repo / ".almanac/topics.yaml").write_text("topics: [", encoding="utf-8")
+    (pages / "note.md").write_text("# Note\n\nBody.\n", encoding="utf-8")
+    app = create_app(AppConfig(registry_path=isolated_home / ".almanac/registry.json"))
+
+    topics = app.topics.list(ListTopicsRequest(cwd=repo))
+    report = app.health.check(HealthCheckRequest(cwd=repo))
+
+    assert topics == ()
+    assert {item.slug for item in report.orphans} == {"note"}
+
+
 def make_topic_repo(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
     pages = repo / ".almanac/pages"

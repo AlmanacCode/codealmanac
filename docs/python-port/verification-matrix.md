@@ -64,3 +64,12 @@ means the goal remains active.
 | Isolated live topics/health | temp repo `topics`, `topics show auth`, `health --json` | passed |
 | Dogfood topics | `uv run codealmanac topics` in this repo | passed |
 | Dogfood health | `uv run codealmanac health` in this repo | passed; reports expected dead refs to archived TypeScript paths |
+
+## Gates For Slice-3 Review Fix
+
+| Gate | Command | 2026-06-29 result |
+|---|---|
+| Formatting/lint | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run ruff check .` | passed |
+| Tests | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run pytest` | 19 passed |
+| Isolated live path safety | temp repo `health --json` with `/src/...` and `../...` refs | passed |
+| Dogfood health | `uv run codealmanac health` in this repo | passed |

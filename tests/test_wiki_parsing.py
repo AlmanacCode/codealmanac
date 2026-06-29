@@ -39,3 +39,8 @@ def test_reference_paths_normalize_and_escape_glob_metacharacters():
 
     assert normalized == "src/[id]/page.tsx"
     assert escape_glob_meta(normalized) == "src/[[]id]/page.tsx"
+
+
+def test_reference_paths_stay_repo_relative():
+    assert normalize_reference_path("/Src/Auth.py", is_dir=False) == "src/auth.py"
+    assert normalize_reference_path("../secrets.txt", is_dir=False) == ""

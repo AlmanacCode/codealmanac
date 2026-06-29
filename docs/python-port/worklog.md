@@ -58,6 +58,10 @@
   and dogfood `codealmanac topics` plus `codealmanac health` in this repo.
   Dogfood health currently reports dead refs to archived TypeScript paths,
   which is expected product signal after the Python rewrite archive move.
+- Slice-3 review fixed path safety and resilience: file refs now stay
+  repo-relative (`/x` becomes `x`, `../x` is ignored), and malformed
+  `topics.yaml` no longer breaks read commands. Re-verified with 19 tests,
+  ruff, live `health --json`, and dogfood health.
 
 ## Current Hypothesis
 
