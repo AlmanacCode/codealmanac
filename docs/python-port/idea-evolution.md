@@ -759,3 +759,32 @@ Python modules. No production code changed.
 Follow-up test:
 When a new public command is intentionally added, update the public-contract
 test in the same slice so the local-only boundary remains deliberate.
+
+## 2026-06-29 - Manual Is A Support Package, Not A Command
+
+Old hypothesis:
+The existing prompt package might be enough to satisfy the prompts/manual
+surface until lifecycle dogfood showed more need.
+
+New hypothesis:
+The target Python package shape needs a concrete `manual/` package now, but it
+should not create a public CLI command. The right boundary is a support
+library that bundles doctrine, copies missing files into `.almanac/manual/`,
+and lets diagnostics verify that both package and workspace manuals exist.
+
+Evidence that forced the change:
+The live agreement's target root includes `manual/`, and the current Almanac
+engine separates prompts as the job bootloader from manual files as the
+rulebook. The public CLI contract does not include `manual`, so adding a
+command would widen the surface without agreement.
+
+Code or product assumption affected:
+`ManualLibrary` is wired in `app.py` and injected into `WikiService` and
+`DiagnosticsService`. `build` and `init` materialize missing manual files under
+`.almanac/manual/`. `doctor` reports manual readiness. Prompts tell lifecycle
+agents to read the relevant manual files before editing.
+
+Follow-up test:
+If manual files need package-driven updates later, add an explicit local
+maintenance policy that distinguishes bundled doctrine updates from user-edited
+workspace conventions.

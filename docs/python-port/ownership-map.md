@@ -43,6 +43,7 @@ that root instead of constructing stores or adapters themselves.
 | Package | Owns | First implementation pressure |
 |---|---|---|
 | `prompts` | packaged lifecycle prompt doctrine and operation prompt rendering | `ingest`, `garden`, future `sync` |
+| `manual` | packaged wiki-maintenance rulebook and workspace manual materialization helpers | `build`, `doctor`, lifecycle prompt guidance |
 
 ## Workflows
 
@@ -139,6 +140,12 @@ executes the chosen command.
 pages. It must not read repo source contents directly or reuse source runtime
 adapters; selected source material belongs to lifecycle workflows, while viewer
 file routes are graph-navigation routes.
+
+`manual/` is a support package rather than a product service. `ManualLibrary`
+loads bundled Markdown resources, installs missing files into
+`.almanac/manual/`, and reports workspace manual completeness. `app.py`
+constructs it once and injects it into `WikiService` and `DiagnosticsService`.
+There is no public `manual` command in v1.
 
 ## First Slice Boundary
 

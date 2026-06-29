@@ -3,6 +3,7 @@ import sys
 from collections.abc import Sequence
 
 from codealmanac.core.errors import CodeAlmanacError, NotFoundError
+from codealmanac.manual import ManualLibrary
 from codealmanac.services.diagnostics.models import (
     DoctorCheck,
     DoctorReport,
@@ -21,12 +22,14 @@ class DiagnosticsService:
         self,
         workspaces: WorkspacesService,
         index: IndexService,
+        manual: ManualLibrary,
         version: str,
         python_version: str | None = None,
         python_supported: bool | None = None,
     ):
         self.workspaces = workspaces
         self.index = index
+        self.manual = manual
         self.version = version
         self.python_version = python_version or platform.python_version()
         if python_supported is None:
@@ -63,6 +66,7 @@ class DiagnosticsService:
                 status=DoctorStatus.INFO,
                 message=f"registry: {self.workspaces.registry_path}",
             ),
+            self._manual_package_check(),
         )
 
     def _wiki_checks(self, request: DoctorRequest) -> tuple[DoctorCheck, ...]:
@@ -82,8 +86,41 @@ class DiagnosticsService:
             ),
         ]
         checks.extend(self._index_checks(workspace))
+        checks.append(self._manual_workspace_check(workspace))
         checks.append(self._health_check(workspace))
         return tuple(checks)
+
+    def _manual_package_check(self) -> DoctorCheck:
+        try:
+            inventory = self.manual.inventory()
+        except CodeAlmanacError as error:
+            return DoctorCheck(
+                key="install.manual",
+                status=DoctorStatus.PROBLEM,
+                message=f"manual package unavailable: {first_line(str(error))}",
+                fix="reinstall codealmanac",
+            )
+        return DoctorCheck(
+            key="install.manual",
+            status=DoctorStatus.OK,
+            message=f"manual: {len(inventory.documents)} bundled docs",
+        )
+
+    def _manual_workspace_check(self, workspace: Workspace) -> DoctorCheck:
+        status = self.manual.workspace_status(workspace.almanac_path / "manual")
+        if status.complete:
+            return DoctorCheck(
+                key="wiki.manual",
+                status=DoctorStatus.OK,
+                message=f"manual: {len(status.present)} docs",
+            )
+        missing = ", ".join(status.missing)
+        return DoctorCheck(
+            key="wiki.manual",
+            status=DoctorStatus.PROBLEM,
+            message=f"manual missing: {missing}",
+            fix="run: codealmanac build",
+        )
 
     def _select_workspace(self, request: DoctorRequest) -> Workspace | DoctorCheck:
         try:

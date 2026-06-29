@@ -24,6 +24,12 @@ Do not write pages that restate nearby code.
 
 Topics live in `topics.yaml`. Pages live in `pages/`.
 
+## Manual
+
+Read `manual/README.md` before creating, reorganizing, or substantially
+rewriting pages. The manual is bundled with CodeAlmanac and copied here by
+`codealmanac init` and `codealmanac build`.
+
 ## Links
 
 Use `[[page-slug]]` for page links and `[[src/path.py]]` for file references.

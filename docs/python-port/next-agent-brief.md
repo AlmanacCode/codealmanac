@@ -6,7 +6,7 @@ Updated: 2026-06-29
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
-- Latest committed slice: `feat(slice-33): guard local public contract`.
+- Latest committed slice: `feat(slice-34): add manual package surface`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
 - Latest verified source-runtime direction: selected local material becomes
@@ -16,8 +16,9 @@ Updated: 2026-06-29
   registry, `.almanac/` build, SQLite read model, search/show/topics/health,
   tag/untag/topic mutation, reindex, doctor, serve, runs/jobs, ingest, garden,
   foreground sync, sync status, local automation, Codex/Claude harness adapters,
-  transcript discovery, source runtime adapters, and a conservative manual
-  update command.
+  transcript discovery, source runtime adapters, bundled manual resources
+  materialized into `.almanac/manual/`, and a conservative package update
+  command.
 - The local viewer now exposes `/api/file?path=...` and frontend
   `#/file/<path>` for wiki file/folder reference navigation. It lists pages
   mentioning the reference and does not read repo source contents.
@@ -30,6 +31,10 @@ Updated: 2026-06-29
 - Public-contract tests guard the local-only CLI/package surface: only the
   `codealmanac` script, no hosted verbs, no compatibility aliases, and no
   `sdk` or `mcp` package modules.
+- The manual surface is a support package, not a public command. `ManualLibrary`
+  reads `src/codealmanac/manual/*.md`, `build`/`init` copy missing docs into
+  `.almanac/manual/`, prompts tell lifecycle agents to read those docs, and
+  `doctor` checks package/workspace manual readiness.
 - Ingest remains source-kind agnostic. It resolves `SourceBrief` values, asks
   `SourcesService.inspect_runtime(...)` for snapshots, renders typed runtime
   JSON into the prompt, calls the selected harness, validates `.almanac/`
@@ -117,6 +122,20 @@ Behavior:
   `upload`, `capture`, `absorb`, `use`, `sources`, `mcp`, and `sdk`
 - package tree tests reject `sdk` and `mcp` Python modules
 
+Slice 34 adds the local manual surface.
+
+Behavior:
+
+- `src/codealmanac/manual/` packages the wiki-maintenance rulebook
+- `ManualLibrary` reads bundled docs, installs missing workspace manual files,
+  and reports workspace completeness
+- `app.py` wires `ManualLibrary` once and injects it into `WikiService` and
+  `DiagnosticsService`
+- `codealmanac init` and `codealmanac build` copy missing files into
+  `.almanac/manual/` without overwriting local edits
+- `codealmanac doctor` reports `install.manual` and `wiki.manual`
+- lifecycle prompts point agents at `.almanac/manual/` before wiki edits
+
 ## Verification To Preserve
 
 - Focused filesystem/source/ingest/architecture tests
@@ -141,6 +160,9 @@ Behavior:
   ruff, and dirty-checkout dogfood against `src/codealmanac/`
 - Slice 33 public-contract tests, focused CLI/architecture tests, full pytest,
   full ruff, diff check, package build, and live CLI help smoke
+- Slice 34 manual/build/doctor/prompt tests, full pytest, full ruff, diff
+  check, package build with manual Markdown wheel inspection, and isolated
+  build/doctor manual dogfood
 
 ## Next Move
 
@@ -151,6 +173,9 @@ Behavior:
    - scheduled update automation only after non-editable update dogfood
    - browser-harness visual verification for `serve` once Chrome remote
      debugging permission is available
+   - manual update/sync policy only if bundled doctrine must update existing
+     workspace manual files; ordinary build/init currently copies missing files
+     only
 2. Do not add hosted CLI, login/connect/upload, MCP, SDK, public `capture`,
    public `absorb`, or public `almanac`/`alm` aliases.
 3. Keep future source material additions inside `SourceAddress -> SourceRef ->

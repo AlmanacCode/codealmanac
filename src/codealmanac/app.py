@@ -14,6 +14,7 @@ from codealmanac.integrations.updates import (
     SubprocessPackageCommandRunner,
 )
 from codealmanac.integrations.workspaces.git import GitWorkspaceChangeProbe
+from codealmanac.manual import ManualLibrary
 from codealmanac.prompts import PromptRenderer
 from codealmanac.services.automation.ports import SchedulerAdapter
 from codealmanac.services.automation.service import AutomationService
@@ -78,6 +79,7 @@ class CodeAlmanac:
     sources: SourcesService
     harnesses: HarnessesService
     prompts: PromptRenderer
+    manual: ManualLibrary
     workflows: CodeAlmanacWorkflows
 
 
@@ -93,13 +95,14 @@ def create_app(
     app_config = config or AppConfig()
     workspaces = WorkspacesService(WorkspaceRegistryStore(app_config.registry_path))
     automation = AutomationService(workspaces, scheduler or LaunchdSchedulerAdapter())
-    wiki = WikiService(workspaces)
+    manual = ManualLibrary()
+    wiki = WikiService(workspaces, manual)
     index = IndexService(workspaces, IndexStore())
     search = SearchService(workspaces, index)
     pages = PagesService(workspaces, index)
     topics = TopicsService(workspaces, index)
     health = HealthService(workspaces, index)
-    diagnostics = DiagnosticsService(workspaces, index, __version__)
+    diagnostics = DiagnosticsService(workspaces, index, manual, __version__)
     tagging = TaggingService(pages)
     updates = UpdatesService(
         update_metadata or InstalledPackageMetadataProvider(),
@@ -162,5 +165,6 @@ def create_app(
         sources=sources,
         harnesses=harnesses,
         prompts=prompts,
+        manual=manual,
         workflows=workflows,
     )

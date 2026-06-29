@@ -436,6 +436,14 @@
 - Sent a Relayforge Discord checkpoint for the Cosmic Python chapter 4 pattern
   applied in slice 33: the CLI stays an outer adapter over local service-layer
   use cases rather than growing hosted product modes.
+- Added slice-34 manual surface. `src/codealmanac/manual/` now packages the
+  wiki-maintenance rulebook, `WikiService.initialize(...)` copies missing
+  files into `.almanac/manual/`, `DiagnosticsService` reports bundled and
+  workspace manual readiness, and lifecycle prompts point agents at the
+  operation-specific manual files.
+- Sent a Relayforge Discord checkpoint for the Cosmic Python chapter 13 pattern
+  applied in slice 34: `ManualLibrary` is wired once in `app.py` and injected
+  into services instead of making CLI/build/doctor locate resources directly.
 
 ## Current Hypothesis
 
@@ -462,7 +470,9 @@ references, not source-code preview. Filesystem directory runtime now uses Git
 listing inside worktrees before falling back to Python/pathspec traversal, and
 Git-listed directories rank changed material before unchanged files. The
 local-only public surface now has executable guards for hosted verbs,
-compatibility aliases, SDK modules, and MCP modules.
+compatibility aliases, SDK modules, and MCP modules. The manual surface now
+exists as packaged doctrine plus `.almanac/manual/` workspace files without
+adding a public command.
 
 ## Next Hypothesis
 

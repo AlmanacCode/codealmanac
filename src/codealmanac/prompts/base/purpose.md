@@ -16,3 +16,6 @@ The public command and product name is `codealmanac`. Do not introduce public
 `almanac`, `alm`, `absorb`, or hosted CLI language.
 
 The public CLI name is codealmanac.
+
+Detailed wiki doctrine lives in `.almanac/manual/`. The prompt names the job;
+the manual defines the page, evidence, style, source, and operation rules.

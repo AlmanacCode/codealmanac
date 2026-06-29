@@ -49,6 +49,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 codealmanac = ["server/assets/*.html", "server/assets/*.css", "server/assets/*.js"]
+"codealmanac.manual" = ["*.md"]
 "codealmanac.prompts" = ["base/*.md", "operations/*.md"]
 
 [tool.uv]

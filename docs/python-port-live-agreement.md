@@ -39,6 +39,10 @@ It is the constraint document for future agents.
   `changed` or `unchanged` in the runtime tree. This is a prompt-material
   selection policy inside the filesystem adapter; it is not a durable
   `candidate` object.
+- 2026-06-29: `manual/` is a local support package, not a public CLI surface.
+  It contains bundled wiki-maintenance doctrine. `init` and `build` copy
+  missing files into `.almanac/manual/`, prompts tell lifecycle agents to read
+  those files, and `doctor` reports package/workspace manual readiness.
 
 ## Product Frame
 
@@ -155,6 +159,10 @@ outside tool into service-owned models and errors.
 
 `cli/` owns command parsing, rendering, stdout/stderr, and exit codes. It does
 not own product decisions.
+
+`manual/` owns bundled wiki-maintenance doctrine. It is read by prompts,
+copied into `.almanac/manual/` by local build/init, and checked by diagnostics.
+It does not add a public command.
 
 ## Python Service Symmetry
 
