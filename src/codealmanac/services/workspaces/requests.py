@@ -67,3 +67,16 @@ class SelectWorkspaceRequest(CodeAlmanacModel):
     @classmethod
     def require_selector(cls, value: str) -> str:
         return required_text(value, "workspace selector")
+
+
+class DropWorkspaceRequest(CodeAlmanacModel):
+    selector: str
+    base_path: Path | None = Field(
+        default=None,
+        description="None means relative path selectors are not resolved.",
+    )
+
+    @field_validator("selector")
+    @classmethod
+    def require_selector(cls, value: str) -> str:
+        return required_text(value, "workspace selector")

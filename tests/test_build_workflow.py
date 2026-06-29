@@ -1,10 +1,13 @@
+import shutil
 from pathlib import Path
 
 import pytest
 
 from codealmanac.app import create_app
 from codealmanac.core.models import AppConfig
+from codealmanac.services.workspaces.models import WorkspaceRegistryStatus
 from codealmanac.services.workspaces.requests import (
+    DropWorkspaceRequest,
     InitializeWorkspaceRequest,
     SelectWorkspaceRequest,
 )
@@ -176,3 +179,64 @@ def test_workspace_selection_supports_name_id_and_path(
     by_name = app.workspaces.select(SelectWorkspaceRequest(selector="repo"))
 
     assert by_name.workspace_id == workspace.workspace_id
+
+
+def test_workspace_registry_reports_and_drops_missing_wikis(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    live_repo = tmp_path / "live"
+    live_repo.mkdir()
+    missing_repo = tmp_path / "missing"
+    missing_repo.mkdir()
+    missing_almanac = tmp_path / "missing-almanac"
+    missing_almanac.mkdir()
+    app = create_app(AppConfig(registry_path=isolated_home / ".almanac/registry.json"))
+    app.workflows.build.initialize(
+        InitializeWorkspaceRequest(path=live_repo, name="live")
+    )
+    app.workflows.build.initialize(
+        InitializeWorkspaceRequest(path=missing_repo, name="missing")
+    )
+    app.workflows.build.initialize(
+        InitializeWorkspaceRequest(path=missing_almanac, name="missing-almanac")
+    )
+    remove_tree(missing_repo)
+    remove_tree(missing_almanac / "almanac")
+
+    before = app.workspaces.list_registry()
+    statuses = {item.workspace.name: item.status for item in before.items}
+    result = app.workspaces.drop_missing()
+
+    assert statuses == {
+        "live": WorkspaceRegistryStatus.AVAILABLE,
+        "missing": WorkspaceRegistryStatus.MISSING_REPO,
+        "missing-almanac": WorkspaceRegistryStatus.MISSING_ALMANAC,
+    }
+    assert tuple(workspace.name for workspace in result.dropped) == (
+        "missing",
+        "missing-almanac",
+    )
+    remaining = tuple(
+        item.workspace.name for item in app.workspaces.list_registry().items
+    )
+    assert remaining == ("live",)
+
+
+def test_workspace_registry_drops_selected_wiki(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(AppConfig(registry_path=isolated_home / ".almanac/registry.json"))
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo, name="repo"))
+
+    result = app.workspaces.drop(DropWorkspaceRequest(selector="repo"))
+
+    assert tuple(workspace.name for workspace in result.dropped) == ("repo",)
+    assert app.workspaces.list_registry().items == ()
+
+
+def remove_tree(path: Path) -> None:
+    shutil.rmtree(path)

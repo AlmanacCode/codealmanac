@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -229,6 +230,67 @@ def test_cli_list_outputs_registered_wikis(
     captured = capsys.readouterr()
     assert exit_code == 0
     assert captured.out == f"repo\t{repo}\talmanac\n"
+
+
+def test_cli_list_json_reports_registry_status(
+    tmp_path: Path,
+    isolated_home: Path,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    assert main(["init", str(repo)]) == 0
+    capsys.readouterr()
+
+    assert main(["list", "--json"]) == 0
+
+    captured = capsys.readouterr()
+    assert '"name": "repo"' in captured.out
+    assert '"almanac_root": "almanac"' in captured.out
+    assert '"status": "available"' in captured.out
+
+
+def test_cli_list_drop_removes_selected_wiki(
+    tmp_path: Path,
+    isolated_home: Path,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    assert main(["init", str(repo)]) == 0
+    capsys.readouterr()
+
+    assert main(["list", "--drop", "repo"]) == 0
+    drop_output = capsys.readouterr()
+    assert drop_output.out == f"dropped repo\t{repo}\talmanac\n"
+
+    assert main(["list"]) == 0
+    list_output = capsys.readouterr()
+    assert list_output.out == ""
+
+
+def test_cli_list_drop_missing_removes_unreachable_wikis(
+    tmp_path: Path,
+    isolated_home: Path,
+    capsys,
+):
+    live_repo = tmp_path / "live"
+    missing_repo = tmp_path / "missing"
+    live_repo.mkdir()
+    missing_repo.mkdir()
+    assert main(["init", str(live_repo), "--name", "live"]) == 0
+    capsys.readouterr()
+    assert main(["init", str(missing_repo), "--name", "missing"]) == 0
+    capsys.readouterr()
+    shutil.rmtree(missing_repo)
+
+    assert main(["list", "--drop-missing"]) == 0
+    drop_output = capsys.readouterr()
+    assert drop_output.out == f"dropped missing\t{missing_repo}\talmanac\n"
+
+    assert main(["list"]) == 0
+    list_output = capsys.readouterr()
+    assert list_output.out == f"live\t{live_repo}\talmanac\n"
 
 
 def test_cli_build_and_reindex_commands(

@@ -74,6 +74,25 @@ class WorkspaceRegistryEntry(CodeAlmanacModel):
         )
 
 
+class WorkspaceRegistryStatus(StrEnum):
+    AVAILABLE = "available"
+    MISSING_REPO = "missing_repo"
+    MISSING_ALMANAC = "missing_almanac"
+
+
+class WorkspaceListItem(CodeAlmanacModel):
+    workspace: Workspace
+    status: WorkspaceRegistryStatus
+
+
+class WorkspaceListResult(CodeAlmanacModel):
+    items: tuple[WorkspaceListItem, ...]
+
+
+class DropWorkspaceResult(CodeAlmanacModel):
+    dropped: tuple[Workspace, ...]
+
+
 class WorkspacePathState(StrEnum):
     ADDED = "added"
     COPIED = "copied"

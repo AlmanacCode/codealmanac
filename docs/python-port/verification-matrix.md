@@ -667,3 +667,16 @@ means the goal remains active.
 | Diff hygiene | `git diff --check` | passed |
 | Package build | `uv build --wheel --no-build-logs --out-dir /tmp/codealmanac-build-slice52`; wheel inspection | passed; wheel includes manual library/model modules and bundled manual Markdown |
 | Manual drift dogfood | isolated temp `HOME`; temp repo; `codealmanac build`; edit `almanac/manual/README.md`; `codealmanac doctor --wiki manual-drift-dogfood --json` | passed; `wiki.manual` reported `status: "info"`, `manual differs: README.md`, and a review-only fix message |
+
+## Gates For Slice 53 Registry List Management
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused workspace/CLI tests | `uv run pytest tests/test_build_workflow.py::test_workspace_registry_reports_and_drops_missing_wikis tests/test_build_workflow.py::test_workspace_registry_drops_selected_wiki tests/test_cli.py::test_cli_list_json_reports_registry_status tests/test_cli.py::test_cli_list_drop_removes_selected_wiki tests/test_cli.py::test_cli_list_drop_missing_removes_unreachable_wikis -q` | 5 passed |
+| Focused workspace/CLI lint | `uv run ruff check src/codealmanac/services/workspaces src/codealmanac/cli tests/test_build_workflow.py tests/test_cli.py` | passed |
+| Source-runtime dogfood | `uv run python` service-level inspection of `src/codealmanac/`, `src/codealmanac/services/sources/`, and `src/codealmanac/integrations/sources/filesystem/` | passed; Git listing used changed-then-diverse selection and did not justify recency/ranking changes |
+| Full tests | `uv run pytest` | 234 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+| Package build | `uv build --wheel --no-build-logs --out-dir /tmp/codealmanac-build-slice53`; wheel inspection | passed; wheel includes changed workspace service and CLI parser/render modules |
+| Registry cleanup dogfood | isolated temp `HOME`; temp live and missing repos; `codealmanac list --json`; `codealmanac list --drop-missing`; `codealmanac list`; `codealmanac list --drop drop-me` | passed; JSON reported `available` and `missing_repo`, drop-missing removed only the unreachable entry, selected drop removed the named entry |

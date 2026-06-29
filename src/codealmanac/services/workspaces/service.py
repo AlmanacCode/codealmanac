@@ -5,8 +5,16 @@ from pathlib import Path
 from codealmanac.core.errors import ConflictError, NotFoundError, ValidationFailed
 from codealmanac.core.paths import normalize_path
 from codealmanac.core.slug import to_kebab_case
-from codealmanac.services.workspaces.models import Workspace, WorkspaceRegistryEntry
+from codealmanac.services.workspaces.models import (
+    DropWorkspaceResult,
+    Workspace,
+    WorkspaceListItem,
+    WorkspaceListResult,
+    WorkspaceRegistryEntry,
+    WorkspaceRegistryStatus,
+)
 from codealmanac.services.workspaces.requests import (
+    DropWorkspaceRequest,
     RegisterWorkspaceRequest,
     SelectWorkspaceRequest,
 )
@@ -119,6 +127,53 @@ class WorkspacesService:
     def list(self) -> list[Workspace]:
         return [entry.to_workspace() for entry in self.store.list()]
 
+    def list_registry(self) -> WorkspaceListResult:
+        return WorkspaceListResult(
+            items=tuple(
+                WorkspaceListItem(
+                    workspace=entry.to_workspace(),
+                    status=workspace_registry_status(entry.to_workspace()),
+                )
+                for entry in self.store.list()
+            )
+        )
+
+    def drop(self, request: DropWorkspaceRequest) -> DropWorkspaceResult:
+        entries = self.store.list()
+        selected = select_registry_entry(
+            SelectWorkspaceRequest(
+                selector=request.selector,
+                base_path=request.base_path,
+            ),
+            entries,
+        )
+        if selected is None:
+            raise NotFoundError("workspace", request.selector)
+        remaining = [
+            entry
+            for entry in entries
+            if entry.workspace_id != selected.workspace_id
+        ]
+        self.store.replace(remaining)
+        return DropWorkspaceResult(dropped=(selected.to_workspace(),))
+
+    def drop_missing(self) -> DropWorkspaceResult:
+        entries = self.store.list()
+        dropped = tuple(
+            entry.to_workspace()
+            for entry in entries
+            if workspace_registry_status(entry.to_workspace())
+            != WorkspaceRegistryStatus.AVAILABLE
+        )
+        remaining = [
+            entry
+            for entry in entries
+            if workspace_registry_status(entry.to_workspace())
+            == WorkspaceRegistryStatus.AVAILABLE
+        ]
+        self.store.replace(remaining)
+        return DropWorkspaceResult(dropped=dropped)
+
     def discoverable_almanac_roots(self) -> tuple[Path, ...]:
         roots = [DEFAULT_ALMANAC_ROOT]
         for workspace in self.list():
@@ -182,6 +237,19 @@ def entry_by_path(
     return None
 
 
+def select_registry_entry(
+    request: SelectWorkspaceRequest,
+    entries: list[WorkspaceRegistryEntry],
+) -> WorkspaceRegistryEntry | None:
+    selected = entry_by_workspace_id(request.selector, entries)
+    if selected is not None:
+        return selected
+    selected = entry_by_name(request.selector, entries)
+    if selected is not None:
+        return selected
+    return entry_by_path(request, entries)
+
+
 def entry_by_exact_path(
     path: Path,
     entries: list[WorkspaceRegistryEntry],
@@ -224,3 +292,11 @@ def contains_path(root_path: Path, path: Path) -> bool:
 
 def same_path(left: Path, right: Path) -> bool:
     return normalize_path(left) == normalize_path(right)
+
+
+def workspace_registry_status(workspace: Workspace) -> WorkspaceRegistryStatus:
+    if not workspace.root_path.is_dir():
+        return WorkspaceRegistryStatus.MISSING_REPO
+    if not workspace.almanac_path.is_dir():
+        return WorkspaceRegistryStatus.MISSING_ALMANAC
+    return WorkspaceRegistryStatus.AVAILABLE

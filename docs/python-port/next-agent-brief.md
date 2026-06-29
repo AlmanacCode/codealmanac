@@ -6,7 +6,7 @@ Updated: 2026-06-29
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
-- Latest committed implementation slice: `feat(slice-52): report manual drift`.
+- Latest committed implementation slice: `feat(slice-53): manage registry list`.
 - Latest committed product-direction slice: `docs: record viewer design correction`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
@@ -96,6 +96,11 @@ Updated: 2026-06-29
   docs, and `doctor` checks package/workspace manual readiness. Slice 52 adds
   drift diagnostics: complete manual files that differ from bundled docs are
   reported as informational review work, not overwritten by build/init.
+- `codealmanac list` is the local registry management surface. Plain `list`
+  keeps the three-column output; `list --json` reports registry availability;
+  `list --drop <selector>` removes one explicit entry; `list --drop-missing`
+  explicitly removes unreachable entries. Read commands do not prune registry
+  state silently.
 - Foreground `sync` writes a durable pending ledger claim before invoking
   Ingest, skips active pending transcript ranges, reports stale pending ranges
   as needs-attention, stores linked run ids plus cursor snapshots, reconciles
@@ -469,12 +474,15 @@ Behavior:
   verification through an isolated Chrome profile
 - Slice 52 focused manual/diagnostics/CLI tests, focused ruff, full pytest,
   full ruff, diff check, package build, and manual-drift doctor dogfood
+- Slice 53 focused workspace/CLI tests, focused ruff, source-runtime dogfood
+  against this repo, full pytest, full ruff, diff check, package build, and
+  list JSON/drop/drop-missing dogfood
 
 ## Next Move
 
 1. Likely next pressure points:
-   - more real-repo dogfood for source-runtime diversity; add recency only
-     after a failing case proves diversity is insufficient
+   - more lifecycle dogfood for source runtime; add ranking/recency only after
+     a failing case proves current diversity is insufficient
    - scheduled update automation only after non-editable update dogfood
    - serve polish after product review; slice 51 browser-verified the sidebar
      shell through an isolated temporary Chrome profile, while default-profile
@@ -484,6 +492,8 @@ Behavior:
      copy missing files only
    - index refresh cost only after large-repo dogfood proves source-signature
      parsing is too slow; slice 50 split read views but did not optimize refresh
+   - richer registry filtering only if local wiki management needs more than
+     explicit JSON/drop/drop-missing
 2. Do not add hosted CLI, login/connect/upload, MCP, SDK, public `capture`,
    public `absorb`, or public `almanac`/`alm` aliases.
 3. Keep future source material additions inside `SourceAddress -> SourceRef ->

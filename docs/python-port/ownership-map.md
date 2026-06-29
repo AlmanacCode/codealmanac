@@ -26,7 +26,7 @@ that root instead of constructing stores or adapters themselves.
 
 | Service | Owns | First implementation pressure |
 |---|---|---|
-| `workspaces` | repo root detection, configurable Almanac root, registry, nearest-root discovery, path containment, local wiki selection | `init`, current-repo queries, `--wiki` lookup |
+| `workspaces` | repo root detection, configurable Almanac root, registry, nearest-root discovery, path containment, local wiki selection, explicit registry cleanup | `init`, `list`, current-repo queries, `--wiki` lookup |
 | `wiki` | page files, frontmatter, topics, wikilinks, page writes, health inputs | `init`, `show`, page parsing for index |
 | `index` | SQLite derived read model, projection refresh/write facade, read-only query views, FTS, mentions, backlinks, health projections | `search`, `show --links`, `health` |
 | `sources` | source observations, source refs, fingerprints, local source state, source runtime snapshots, transcript discovery ports and typed transcript candidates | `SourceAddress`/`SourceRef`/`SourceBrief`/`SourceRuntime`, `SourceRuntimeAdapter`, `TranscriptDiscoveryAdapter`, `TranscriptCandidate`, ingest and sync inputs |

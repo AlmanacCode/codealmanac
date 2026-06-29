@@ -1315,3 +1315,35 @@ Follow-up test:
 Only add replacement machinery if users need a real workflow for accepting
 package manual updates. That workflow must preserve local edits explicitly
 instead of making `build` destructive.
+
+## 2026-06-29 - Registry Cleanup Is Explicit Local Management
+
+Old hypothesis:
+The next pressure after manual drift was more source-runtime selection work,
+possibly recency or another ranking layer.
+
+New hypothesis:
+Do not add source-runtime ranking machinery yet. The real local-product gap is
+registry management: `list` can contain stale temp workspaces from dogfood or
+tests, and users need explicit cleanup without read commands mutating registry
+state.
+
+Evidence that forced the change:
+Real-repo source-runtime dogfood against `src/codealmanac/`,
+`src/codealmanac/services/sources/`, and
+`src/codealmanac/integrations/sources/filesystem/` selected role-bearing,
+directory-diverse files with `listing_source: git` and no changed files. During
+that pass, `codealmanac list` exposed many stale temp registry entries and no
+JSON/drop management surface.
+
+Code or product assumption affected:
+`WorkspacesService` now owns registry status and explicit cleanup use cases.
+`codealmanac list --json` exposes `available`, `missing_repo`, and
+`missing_almanac`; `list --drop <selector>` removes one selected entry; and
+`list --drop-missing` removes unreachable entries only when the user asks.
+Plain `list` keeps the established three-column output.
+
+Follow-up test:
+Do not add automatic pruning to `search`, `show`, `serve`, `doctor`, or plain
+`list`. Add richer registry filtering only if real local wiki management
+requires it.

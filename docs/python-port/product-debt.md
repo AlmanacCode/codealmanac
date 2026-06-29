@@ -25,6 +25,7 @@ alive while rebuilding in Python.
 |---|---|
 | `jobs` vs `runs` public noun | resolved: public CLI noun is `jobs`; internal service noun is `runs`. |
 | Local `add` command | Decide only when source-pool behavior is concrete. |
+| Registry cleanup | resolved for local v1: `list --json` reports registry availability, `list --drop <selector>` removes one entry, and `list --drop-missing` explicitly removes unreachable entries. Read commands do not auto-prune. |
 | `serve` slice timing | resolved: read-only local viewer exists; renderer token-safety is covered by tests; UseAlmanac visual language is reference material only. Do not copy the current UseAlmanac wiki page/search UX. Keep the earlier CodeAlmanac sidebar-first reader shape and improve the design layer around it. Slice 51 tightened rail wording, active page/topic state, compact mobile density, and browser-verified desktop/mobile behavior through an isolated Chrome profile. |
 | Agent harness contract | Re-evaluate old Codex app-server and Claude SDK adapters before implementing lifecycle workflows. |
 | Codex app-server parity | The Python v1 Codex adapter uses `codex exec`; port app-server only if the harness contract needs streaming, usage, structured tool display, structured output, or subagents. |

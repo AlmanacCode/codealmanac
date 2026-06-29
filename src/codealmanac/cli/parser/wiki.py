@@ -5,7 +5,11 @@ DEFAULT_VIEWER_PORT = 3927
 
 
 def add_wiki_commands(subcommands: argparse._SubParsersAction) -> None:
-    subcommands.add_parser("list", help="list registered local wikis")
+    list_parser = subcommands.add_parser("list", help="list registered local wikis")
+    list_parser.add_argument("--json", action="store_true")
+    list_actions = list_parser.add_mutually_exclusive_group()
+    list_actions.add_argument("--drop")
+    list_actions.add_argument("--drop-missing", action="store_true")
 
     search = subcommands.add_parser("search", help="search the local wiki")
     search.add_argument("query", nargs="?")

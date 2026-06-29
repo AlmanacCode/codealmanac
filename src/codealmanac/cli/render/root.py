@@ -17,6 +17,10 @@ from codealmanac.services.topics.models import (
     TopicMutationResult,
     TopicRewriteMutationResult,
 )
+from codealmanac.services.workspaces.models import (
+    DropWorkspaceResult,
+    WorkspaceListResult,
+)
 from codealmanac.workflows.garden.models import GardenResult
 from codealmanac.workflows.ingest.models import IngestResult
 from codealmanac.workflows.sync.models import SyncMode, SyncSummary
@@ -32,6 +36,34 @@ def render_search(rows: tuple[SearchPageResult, ...], json_output: bool) -> None
         return
     for row in rows:
         print(row.slug)
+
+
+def render_workspace_list(result: WorkspaceListResult, json_output: bool) -> None:
+    if json_output:
+        data = [item.model_dump(mode="json") for item in result.items]
+        print(json.dumps(data, indent=2))
+        return
+    for item in result.items:
+        workspace = item.workspace
+        print(
+            f"{workspace.name}\t{workspace.root_path}\t"
+            f"{workspace.almanac_root.as_posix()}"
+        )
+
+
+def render_workspace_drop(result: DropWorkspaceResult, json_output: bool) -> None:
+    if json_output:
+        print(json.dumps(result.model_dump(mode="json"), indent=2))
+        return
+    if len(result.dropped) == 0:
+        print("# 0 wikis dropped", file=sys.stderr)
+        return
+    for workspace in result.dropped:
+        print(
+            f"dropped {workspace.name}\t{workspace.root_path}\t"
+            f"{workspace.almanac_root.as_posix()}"
+        )
+
 
 def render_build(workspace_name: str, result: IndexRefreshResult) -> None:
     print(f"built {workspace_name}: {index_summary(result)}")

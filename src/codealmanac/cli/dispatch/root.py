@@ -25,6 +25,8 @@ from codealmanac.cli.render.root import (
     render_topic_mutation,
     render_topic_rewrite_mutation,
     render_topics,
+    render_workspace_drop,
+    render_workspace_list,
 )
 from codealmanac.core.errors import ValidationFailed
 from codealmanac.services.health.requests import HealthCheckRequest
@@ -43,7 +45,10 @@ from codealmanac.services.topics.requests import (
     ShowTopicRequest,
     UnlinkTopicRequest,
 )
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.services.workspaces.requests import (
+    DropWorkspaceRequest,
+    InitializeWorkspaceRequest,
+)
 from codealmanac.workflows.garden.requests import RunGardenRequest
 from codealmanac.workflows.ingest.requests import RunIngestRequest
 from codealmanac.workflows.sync.requests import (
@@ -143,11 +148,17 @@ def dispatch(args: argparse.Namespace, app: CodeAlmanac) -> int:
         render_sync_status(result, json_output=args.json)
         return 0
     if args.command == "list":
-        for workspace in app.workspaces.list():
-            print(
-                f"{workspace.name}\t{workspace.root_path}\t"
-                f"{workspace.almanac_root.as_posix()}"
+        if args.drop is not None:
+            result = app.workspaces.drop(
+                DropWorkspaceRequest(selector=args.drop, base_path=Path.cwd())
             )
+            render_workspace_drop(result, json_output=args.json)
+            return 0
+        if args.drop_missing:
+            result = app.workspaces.drop_missing()
+            render_workspace_drop(result, json_output=args.json)
+            return 0
+        render_workspace_list(app.workspaces.list_registry(), json_output=args.json)
         return 0
     if args.command == "search":
         rows = app.search.search(

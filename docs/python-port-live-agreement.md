@@ -130,6 +130,10 @@ It is the constraint document for future agents.
   freshness signatures, source loading, and replacement writes into
   `index.db`; `services/index/views.py` owns read-only query SQL and row-to-
   Pydantic view construction.
+- 2026-06-29: Registry cleanup is explicit. `codealmanac list` remains the
+  local wiki registry surface; `list --json` exposes availability status, and
+  `list --drop <selector>` / `list --drop-missing` remove entries only when the
+  user asks. Read commands do not silently prune missing workspaces.
 
 ## Product Frame
 

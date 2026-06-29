@@ -30,6 +30,9 @@ class WorkspaceRegistryStore:
         write_entries(self.path, entries)
         return entry
 
+    def replace(self, entries: Sequence[WorkspaceRegistryEntry]) -> None:
+        write_entries(self.path, list(entries))
+
     def find_by_workspace_id(self, workspace_id: str) -> WorkspaceRegistryEntry | None:
         for entry in self.list():
             if entry.workspace_id == workspace_id:

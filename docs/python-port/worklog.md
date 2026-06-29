@@ -646,13 +646,21 @@ from bundled package resources; `doctor` reports those differences as
 informational review work while keeping missing manual files as build-fixable
 problems. Build/init still copy missing manual files only and preserve existing
 workspace manual text.
+Slice 53 adds explicit registry cleanup to `codealmanac list`. Real-repo
+source-runtime dogfood against `src/codealmanac/`, `services/sources/`, and
+`integrations/sources/filesystem/` showed the current changed-then-diverse
+selection was coherent enough for local v1. The stronger local-product gap was
+registry hygiene: stale temp entries made `list` hard to use, while read
+commands should not silently prune them. `WorkspacesService` now owns registry
+status plus explicit drop/drop-missing use cases, and the CLI exposes
+`list --json`, `list --drop <selector>`, and `list --drop-missing`.
 
 ## Next Hypothesis
 
 The next high-pressure product slice is not another root or sync migration.
 Scheduled update checks should wait for real non-editable install dogfood. The
-remaining source-runtime pressure is now real-repo dogfood for the diversity
-policy rather than a missing v1 mechanism. The remaining serve risk is polish
+remaining source-runtime pressure is now lifecycle dogfood, not a missing
+selection mechanism. The remaining serve risk is polish
 and product review of navigation density, especially the compact mobile rail.
 Browser-harness should still verify visual changes, but the current run is
 using an isolated temporary Chrome profile with explicit `BU_CDP_URL` when the
