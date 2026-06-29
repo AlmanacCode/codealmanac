@@ -5,9 +5,9 @@ Updated: 2026-06-29
 ## Current State
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
-- Branch: `codex/python-port-archive-existing-code`.
+- Branch: `dev`.
 - Latest implementation slice:
-  slice 57 real Codex ingest dogfood and prompt/manual link-contract fix.
+  slice 58 real Claude ingest dogfood.
 - Latest committed product-direction slice: `docs: record viewer design correction`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
@@ -104,6 +104,12 @@ Updated: 2026-06-29
   says page links must resolve. A second real Codex run on the same source
   shape produced a page with no broken links. Starter scaffold topics were
   narrowed so fresh init no longer creates empty-topic health noise.
+- Slice 58 real Claude ingest dogfood passed through `IngestWorkflow` and
+  `ClaudeCliHarnessAdapter` in an isolated temp repo. It created
+  `incident-window-policy.md`, updated `topics.yaml`, preserved mutation safety,
+  produced readable `jobs logs`, and left `health --json` clean. Public CLI
+  readback worked for jobs logs, search, show, and health. No code or prompt
+  patch was needed.
 - The manual surface is a support package, not a public command. `ManualLibrary`
   reads `src/codealmanac/manual/*.md`, `build`/`init` copy missing docs into
   the configured root's `manual/`, prompts tell lifecycle agents to read those
@@ -509,13 +515,14 @@ Behavior:
   CLI dogfood
 - Slice 57 focused prompt/manual/build tests, two real Codex ingest dogfood
   runs, and health checks showing the prompt fix removed broken page links
+- Slice 58 real Claude ingest dogfood, public CLI readback for jobs/search/show
+  /health, and Relayforge Discord note through Doppler `almanac/dev`
 
 ## Next Move
 
 1. Likely next pressure points:
-   - real Claude lifecycle dogfood against
-     `docs/python-port/public-release-readiness.md`
    - real sync proof against a local transcript, including second-run skip
+     against `docs/python-port/public-release-readiness.md`
    - more lifecycle dogfood for prompt quality and real project behavior; add
      source-runtime ranking/recency only after a failing case proves current
      diversity is insufficient

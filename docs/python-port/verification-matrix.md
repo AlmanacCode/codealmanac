@@ -728,3 +728,12 @@ means the goal remains active.
 | Full tests | `uv run pytest` | 239 passed |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 58 Real Claude Ingest Dogfood
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Claude readiness | `claude auth status` | passed; logged in with first-party Claude auth |
+| Real Claude ingest dogfood | service-level temp repo, temp registry, real `ClaudeCliHarnessAdapter`, source `notes/incident-window.md` | passed; created `almanac/pages/incident-window-policy.md`, updated `almanac/topics.yaml`, preserved non-wiki files, and recorded jobs log output |
+| Public CLI readback | `codealmanac jobs logs ingest-20260629230850-d1048550`; `codealmanac search deploy`; `codealmanac show incident-window-policy`; `codealmanac health --json` | passed; logs were readable, search returned the page, show rendered the page, and health was clean |
+| Cosmic note relay | `doppler run --project almanac --config dev -- relayforge reply ... --binding rohan-almanac-main` | passed; sent the service-layer/composition-root dogfood note to Discord |

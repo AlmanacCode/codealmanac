@@ -679,6 +679,12 @@ wikilinks must resolve, and entity names stay plain text unless a real page
 exists or is created in the same run. A second real Codex run on the same
 source shape produced a health-clean page. The slice also removes predefined
 empty scaffold topics so fresh init does not start with health noise.
+Slice 58 runs real Claude ingest dogfood through the same Python service-layer
+path. `ClaudeCliHarnessAdapter` wrote `incident-window-policy.md`, updated
+`topics.yaml`, preserved mutation safety, recorded provider output in
+`jobs logs`, and left `health --json` clean. The public CLI readback
+(`jobs logs`, `search`, `show`, and `health --json`) worked against the temp
+repo with an isolated registry. No prompt or code patch was needed.
 
 ## Next Hypothesis
 
@@ -701,7 +707,7 @@ After slice 55, the next Codex harness pressure is event completeness, not
 parity for its own sake. `codex exec` remains a one-shot writer transport;
 Codex app-server belongs back on the table when jobs need normalized text,
 tool, usage, actor, or root-turn events from the run itself.
-After slice 57, public release should be measured against
-`docs/python-port/public-release-readiness.md`: real Claude lifecycle dogfood,
-sync proof, viewer browser proof, final package rehearsal, and prompt-quality
-review from more than one real source shape.
+After slice 58, public release should be measured against
+`docs/python-port/public-release-readiness.md`: real sync proof, viewer browser
+proof, final package rehearsal, and prompt-quality review from more real source
+shapes.

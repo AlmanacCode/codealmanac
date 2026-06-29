@@ -4,10 +4,10 @@ Date: 2026-06-29
 
 ## Current Read
 
-CodeAlmanac is usable as an internal local alpha. Clean wheel install and real
-Codex ingest now have dogfood evidence. It is not public-release ready until
-real sync, real Claude ingest, final viewer browser proof, and release-package
-rehearsal also pass.
+CodeAlmanac is usable as an internal local alpha. Clean wheel install, real
+Codex ingest, and real Claude ingest now have dogfood evidence. It is not
+public-release ready until real sync, final viewer browser proof, and
+release-package rehearsal also pass.
 
 The main remaining work is release proof, prompt quality, and real-world
 dogfood. More generic architecture seams are diminishing returns unless a gate
@@ -50,10 +50,13 @@ below exposes a boundary problem.
   health-clean page for the same source shape.
 - Slice 57 also removed default empty-topic health noise from newly initialized
   starter wikis.
+- Slice 58 passed real Claude ingest through `IngestWorkflow` and
+  `ClaudeCliHarnessAdapter` in an isolated temp repo. The run produced a
+  health-clean page, updated topics, and left readable public CLI `jobs logs`,
+  `search`, `show`, and `health --json` output.
 
 ## Next Useful Pressure Tests
 
-1. Real Claude ingest on a small repo.
-2. Real sync against a local transcript, then second-run skip proof.
-3. Browser-harness pass over `serve` after the latest viewer/static package.
-4. Final wheel/sdist install rehearsal before any publish attempt.
+1. Real sync against a local transcript, then second-run skip proof.
+2. Browser-harness pass over `serve` after the latest viewer/static package.
+3. Final wheel/sdist install rehearsal before any publish attempt.
