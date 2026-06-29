@@ -5,8 +5,8 @@ Date: 2026-06-29
 ## Current Read
 
 CodeAlmanac is usable as an internal local alpha. Clean wheel install, real
-Codex ingest, and real Claude ingest now have dogfood evidence. It is not
-public-release ready until real sync, final viewer browser proof, and
+Codex ingest, real Claude ingest, and real sync now have dogfood evidence. It
+is not public-release ready until final viewer browser proof and
 release-package rehearsal also pass.
 
 The main remaining work is release proof, prompt quality, and real-world
@@ -54,9 +54,14 @@ below exposes a boundary problem.
   `ClaudeCliHarnessAdapter` in an isolated temp repo. The run produced a
   health-clean page, updated topics, and left readable public CLI `jobs logs`,
   `search`, `show`, and `health --json` output.
+- Slice 59 passed real foreground sync against a temp Codex transcript. Sync
+  discovered the transcript, started a real Claude-backed ingest, advanced the
+  ledger to done, skipped the same transcript as unchanged on the second
+  status run, and left public CLI `sync status`, `jobs logs`, `jobs show`,
+  `search`, `show`, and `health --json` output readable.
 
 ## Next Useful Pressure Tests
 
-1. Real sync against a local transcript, then second-run skip proof.
-2. Browser-harness pass over `serve` after the latest viewer/static package.
-3. Final wheel/sdist install rehearsal before any publish attempt.
+1. Browser-harness pass over `serve` after the latest viewer/static package.
+2. Final wheel/sdist install rehearsal before any publish attempt.
+3. More lifecycle prompt-quality dogfood only if viewer/package gates pass.

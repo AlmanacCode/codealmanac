@@ -7,7 +7,7 @@ Updated: 2026-06-29
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `dev`.
 - Latest implementation slice:
-  slice 58 real Claude ingest dogfood.
+  slice 59 real sync dogfood.
 - Latest committed product-direction slice: `docs: record viewer design correction`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
@@ -110,6 +110,14 @@ Updated: 2026-06-29
   produced readable `jobs logs`, and left `health --json` clean. Public CLI
   readback worked for jobs logs, search, show, and health. No code or prompt
   patch was needed.
+- Slice 59 real sync dogfood passed against a temp Codex transcript and real
+  Claude-backed Ingest. Sync discovered one ready transcript, started
+  `ingest-20260629231810-40e74df3`, advanced the ledger to `done`, skipped the
+  same transcript as `unchanged` on the second status run, produced
+  `sync-workflow.md`, and left health clean. Public CLI readback worked for
+  `sync status`, `jobs logs`, `jobs show`, `search`, `show`, and
+  `health --json` when selected with `uv run --project` because the branch is
+  not published yet.
 - The manual surface is a support package, not a public command. `ManualLibrary`
   reads `src/codealmanac/manual/*.md`, `build`/`init` copy missing docs into
   the configured root's `manual/`, prompts tell lifecycle agents to read those
@@ -517,12 +525,16 @@ Behavior:
   runs, and health checks showing the prompt fix removed broken page links
 - Slice 58 real Claude ingest dogfood, public CLI readback for jobs/search/show
   /health, and Relayforge Discord note through Doppler `almanac/dev`
+- Slice 59 real sync dogfood, repeat unchanged-skip proof, clean health, and
+  public CLI readback for sync/jobs/search/show/health
 
 ## Next Move
 
 1. Likely next pressure points:
-   - real sync proof against a local transcript, including second-run skip
+   - browser-harness pass over `serve` after the latest viewer/static package
      against `docs/python-port/public-release-readiness.md`
+   - final wheel/sdist package rehearsal from non-editable installs before any
+     publish attempt
    - more lifecycle dogfood for prompt quality and real project behavior; add
      source-runtime ranking/recency only after a failing case proves current
      diversity is insufficient

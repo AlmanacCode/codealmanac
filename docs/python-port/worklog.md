@@ -685,6 +685,14 @@ path. `ClaudeCliHarnessAdapter` wrote `incident-window-policy.md`, updated
 `jobs logs`, and left `health --json` clean. The public CLI readback
 (`jobs logs`, `search`, `show`, and `health --json`) worked against the temp
 repo with an isolated registry. No prompt or code patch was needed.
+Slice 59 runs real foreground sync dogfood against a transcript-shaped Codex
+JSONL file in a temp home. Sync discovered one ready transcript, started real
+Claude-backed Ingest run `ingest-20260629231810-40e74df3`, advanced the
+sync ledger to `done`, then skipped the same transcript as `unchanged` on the
+second status run. The generated `sync-workflow.md` page was health-clean, and
+public CLI readback worked for `sync status`, `jobs logs`, `jobs show`,
+`search`, `show`, and `health --json` when the unpublished branch was selected
+with `uv run --project /Users/rohan/Desktop/Projects/codealmanac`.
 
 ## Next Hypothesis
 
@@ -707,7 +715,7 @@ After slice 55, the next Codex harness pressure is event completeness, not
 parity for its own sake. `codex exec` remains a one-shot writer transport;
 Codex app-server belongs back on the table when jobs need normalized text,
 tool, usage, actor, or root-turn events from the run itself.
-After slice 58, public release should be measured against
-`docs/python-port/public-release-readiness.md`: real sync proof, viewer browser
-proof, final package rehearsal, and prompt-quality review from more real source
-shapes.
+After slice 59, public release should be measured against
+`docs/python-port/public-release-readiness.md`: viewer browser proof, final
+package rehearsal, and prompt-quality review from more real source shapes only
+if those gates pass.
