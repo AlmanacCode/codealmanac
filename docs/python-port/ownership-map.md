@@ -31,7 +31,7 @@ that root instead of constructing stores or adapters themselves.
 | `index` | SQLite derived read model, projection refresh/write facade, read-only query views, FTS, mentions, backlinks, health projections | `search`, `show --links`, `health` |
 | `sources` | source observations, source refs, fingerprints, local source state, source runtime snapshots, transcript discovery ports and typed transcript candidates | `SourceAddress`/`SourceRef`/`SourceBrief`/`SourceRuntime`, `SourceRuntimeAdapter`, `TranscriptDiscoveryAdapter`, `TranscriptCandidate`, ingest and sync inputs |
 | `runs` | run ledger, events, outputs, lifecycle state transitions, persisted harness transcript identity | `jobs` read surface, lifecycle workflows, future sync exclusion and reconciliation |
-| `harnesses` | normalized Codex/Claude run contracts, provider transcript refs, and ports | `HarnessKind`/`RunHarnessRequest`/`HarnessRunResult`/`HarnessTranscriptRef`/`HarnessAdapter`, later `build`, `ingest`, `garden` |
+| `harnesses` | normalized Codex/Claude run contracts, provider transcript refs, provider-neutral harness events, and ports | `HarnessKind`/`RunHarnessRequest`/`HarnessRunResult`/`HarnessTranscriptRef`/`HarnessEvent`/`HarnessAdapter`, later `build`, `ingest`, `garden` |
 | `automation` | local scheduler decisions, quiet windows, unattended sync command policy, installed task state | `AutomationTask`/`ScheduledJob`/`SchedulerAdapter`, `sync` and `garden` scheduling |
 | `config` | user/project TOML parsing and precedence for local CLI defaults | lifecycle harness default and sync quiet window |
 | `diagnostics` | doctor checks and readiness reports | `doctor`, local install/wiki readiness |
@@ -120,6 +120,11 @@ stores each workspace's repo-relative `almanac_root`; downstream services use
 
 `integrations/harnesses/git_status.py` holds Git porcelain changed-file
 snapshots shared by Claude and Codex harness adapters.
+
+Harness adapters translate provider output into `HarnessEvent` values before
+workflows persist anything to run logs. Raw provider transcript files are not a
+workflow contract; they are optional provider evidence for exclusion and
+debugging.
 
 `services/sources/ports.py` owns `TranscriptDiscoveryAdapter`, the port used by
 sync to observe local transcript stores. Concrete Codex and Claude JSONL

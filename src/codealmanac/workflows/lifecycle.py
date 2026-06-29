@@ -2,7 +2,14 @@ from pathlib import Path
 
 from codealmanac.core.errors import ExecutionFailed, ValidationFailed
 from codealmanac.core.models import CodeAlmanacModel
-from codealmanac.services.harnesses.models import HarnessRunResult, HarnessRunStatus
+from codealmanac.services.harnesses.models import (
+    HarnessEvent,
+    HarnessEventKind,
+    HarnessRunResult,
+    HarnessRunStatus,
+    terminal_harness_event,
+)
+from codealmanac.services.runs.models import RunEventKind
 from codealmanac.services.workspaces.models import (
     Workspace,
     WorkspaceChangeSnapshot,
@@ -89,10 +96,24 @@ def validate_harness_result(result: HarnessRunResult) -> None:
         )
 
 
-def harness_output_message(result: HarnessRunResult) -> str:
-    suffix = first_line(result.output_text)
-    details = f": {suffix}" if suffix else ""
-    return f"{result.kind.value} {result.status.value}{details}"
+def harness_events(result: HarnessRunResult) -> tuple[HarnessEvent, ...]:
+    if len(result.events) > 0:
+        return result.events
+    return (terminal_harness_event(result.kind, result.status, result.output_text),)
+
+
+def harness_run_event_kind(event: HarnessEvent) -> RunEventKind:
+    if event.kind == HarnessEventKind.ERROR:
+        return RunEventKind.ERROR
+    if event.kind in {
+        HarnessEventKind.TOOL_USE,
+        HarnessEventKind.TOOL_RESULT,
+        HarnessEventKind.TOOL_SUMMARY,
+        HarnessEventKind.CONTEXT_USAGE,
+        HarnessEventKind.WARNING,
+    }:
+        return RunEventKind.TOOL
+    return RunEventKind.OUTPUT
 
 
 def first_line(value: str) -> str:

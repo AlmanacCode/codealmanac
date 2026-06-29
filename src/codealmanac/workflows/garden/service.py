@@ -26,7 +26,8 @@ from codealmanac.workflows.garden.requests import RunGardenRequest
 from codealmanac.workflows.lifecycle import (
     LifecycleMutationPolicy,
     first_line,
-    harness_output_message,
+    harness_events,
+    harness_run_event_kind,
     validate_harness_result,
 )
 
@@ -182,12 +183,13 @@ class GardenWorkflow:
         run_id: str,
         harness: HarnessRunResult,
     ) -> None:
-        self.record(
-            request,
-            run_id,
-            RunEventKind.OUTPUT,
-            harness_output_message(harness),
-        )
+        for event in harness_events(harness):
+            self.record(
+                request,
+                run_id,
+                harness_run_event_kind(event),
+                event.message,
+            )
 
     def fail_run(
         self,

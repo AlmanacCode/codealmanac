@@ -11,7 +11,11 @@ from codealmanac.integrations.harnesses.claude.adapter import (
 from codealmanac.integrations.harnesses.git_status import (
     parse_git_status_paths,
 )
-from codealmanac.services.harnesses.models import HarnessKind, HarnessRunStatus
+from codealmanac.services.harnesses.models import (
+    HarnessEventKind,
+    HarnessKind,
+    HarnessRunStatus,
+)
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 
 
@@ -107,6 +111,9 @@ def test_claude_adapter_runs_print_json_and_reports_git_changes(tmp_path: Path):
         tmp_path / "almanac/pages/new-page.md",
         tmp_path / "src/app.py",
     )
+    assert result.events[0].kind == HarnessEventKind.DONE
+    assert result.events[0].status == HarnessRunStatus.SUCCEEDED
+    assert result.events[0].message == "claude succeeded: updated wiki"
 
 
 def test_claude_adapter_returns_failed_result_for_invalid_json(tmp_path: Path):
@@ -129,6 +136,11 @@ def test_claude_adapter_returns_failed_result_for_invalid_json(tmp_path: Path):
 
     assert result.status == HarnessRunStatus.FAILED
     assert result.output_text.startswith("claude returned invalid JSON:")
+    assert result.events[0].kind == HarnessEventKind.DONE
+    assert result.events[0].status == HarnessRunStatus.FAILED
+    assert result.events[0].message.startswith(
+        "claude failed: claude returned invalid JSON:"
+    )
 
 
 def test_claude_adapter_returns_failed_result_for_timeout(tmp_path: Path):

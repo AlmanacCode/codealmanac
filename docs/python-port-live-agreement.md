@@ -45,6 +45,12 @@ It is the constraint document for future agents.
   mutation-safety validation and harness success validation. A failed harness
   run should leave an `output` event in `jobs logs` even when the terminal run
   error is a later safety failure.
+- 2026-06-29: The inspectable transcript surface is a CodeAlmanac-owned
+  normalized harness event stream, not raw provider transcript files. Current
+  Python CLI adapters may emit only terminal `done` events; richer text,
+  tool, usage, and warning events belong in the same `HarnessEvent` contract.
+  Codex app-server should be reconsidered when this event completeness becomes
+  required, while `codex exec` remains acceptable for one-shot local v1 runs.
 - 2026-06-29: Sync pending claims store the run id plus claimed byte/line
   cursor. `sync status` reports active linked runs separately from terminal
   linked runs that need reconciliation. Foreground `sync` reconciles terminal
@@ -305,7 +311,7 @@ not make CLI contain product decisions.
 | `index` | SQLite read model, FTS, mentions, backlinks, query projections | markdown truth, agent execution |
 | `sources` | source observations, source refs, fingerprints, local source state | deciding when AI runs, page writes |
 | `runs` | run ledger, events, outputs, lifecycle state transitions | source discovery, page parsing, provider transports |
-| `harnesses` | normalized Codex/Claude task/session contracts and ports | run lifecycle, page writes, source catalog |
+| `harnesses` | normalized Codex/Claude task/session/event contracts and ports | run lifecycle, page writes, source catalog |
 | `automation` | local trigger decisions, quiet windows, scheduler state | run internals, source parsing, provider transports |
 | `config` | user/project config parsing and precedence | product workflows |
 | `diagnostics` | doctor-style checks and readiness reports | mutation workflows |
@@ -348,7 +354,8 @@ AI-backed ingest must be auditable before it becomes public CLI behavior. The
 workflow requires Git change tracking, clean wiki-root state before the run,
 and no non-wiki file mutation during harness execution. Dirty application
 files may exist as source material if their observed state does not change
-during the run.
+during the run. Workflows persist normalized harness events into run logs after
+the harness returns and before later validation.
 
 `sync` scans supported local transcript stores, waits for quiet sessions, maps
 material back to repos with a configured Almanac root, claims a transcript

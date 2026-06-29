@@ -692,3 +692,15 @@ means the goal remains active.
 | Diff hygiene | `git diff --check` | passed |
 | Package build | `uv build --wheel --no-build-logs --out-dir /tmp/codealmanac-build-slice54`; wheel inspection | passed; wheel includes lifecycle, ingest workflow, and garden workflow modules |
 | Failed-harness log dogfood | isolated temp `HOME`; temp Git repo; fake Codex harness returned failed and mutated `src/app.py`; `codealmanac jobs logs <run-id>` | passed; log reported `output codex failed...`, then safety `error`, then `status failed` |
+
+## Gates For Slice 55 Normalized Harness Events
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused harness/workflow tests | `uv run pytest tests/test_harnesses_service.py tests/test_codex_adapter.py tests/test_claude_adapter.py tests/test_ingest_workflow.py tests/test_garden_workflow.py` | 35 passed |
+| Focused harness/workflow lint | `uv run ruff check src/codealmanac/services/harnesses src/codealmanac/integrations/harnesses src/codealmanac/workflows tests/test_harnesses_service.py tests/test_codex_adapter.py tests/test_claude_adapter.py tests/test_ingest_workflow.py tests/test_garden_workflow.py` | passed |
+| Full tests | `uv run pytest` | 236 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+| Package build | `uv build --wheel --no-build-logs --out-dir /tmp/codealmanac-build-slice55`; wheel inspection | passed; wheel includes harness models, Codex/Claude adapters, lifecycle helpers, and ingest/garden workflows |
+| Normalized harness event dogfood | isolated temp `HOME`; temp Git repo; fake Codex harness returned text/tool/tool/done events; `codealmanac jobs logs <run-id>` | passed; log reported output/tool/tool/output events before `status done` |

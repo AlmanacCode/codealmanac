@@ -23,6 +23,7 @@ from codealmanac.services.harnesses.models import (
     HarnessRunResult,
     HarnessRunStatus,
     HarnessTranscriptRef,
+    terminal_harness_event,
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 
@@ -127,6 +128,13 @@ class CodexCliHarnessAdapter:
             summary=first_line(output_text),
             changed_files=changed_files,
             transcript=transcript,
+            events=(
+                terminal_harness_event(
+                    self.kind,
+                    HarnessRunStatus.SUCCEEDED,
+                    output_text,
+                ),
+            ),
         )
 
 
@@ -168,6 +176,13 @@ def failed_result(
         output_text=output_text,
         changed_files=changed_files,
         transcript=transcript,
+        events=(
+            terminal_harness_event(
+                HarnessKind.CODEX,
+                HarnessRunStatus.FAILED,
+                output_text,
+            ),
+        ),
     )
 
 

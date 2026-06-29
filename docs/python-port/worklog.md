@@ -659,6 +659,12 @@ returned harness status and first output line before mutation-safety validation
 and harness success validation. Failed harness runs now leave an `output` event
 before the terminal `error`, including the case where a failed harness also
 mutates a non-wiki file and the run error correctly remains the safety failure.
+Slice 55 turns that log line into a normalized harness event contract.
+`HarnessRunResult.events` now carries typed text/tool/usage/warning/error/done
+events. Current Codex and Claude CLI adapters emit terminal `done` events, and
+`ingest`/`garden` persist all returned events in order before later validation.
+This keeps `codex exec` acceptable for v1 while leaving a clean Codex
+app-server trigger: port it when actual transcript event completeness matters.
 
 ## Next Hypothesis
 
@@ -677,3 +683,7 @@ pressure is not "split every file"; it is to wait for wiki or lifecycle command
 changes that justify their own dispatch/render domains. After slice 50, index
 refresh cost is still a dogfood question, not something the read-view split
 pretends to solve.
+After slice 55, the next Codex harness pressure is event completeness, not
+parity for its own sake. `codex exec` remains a one-shot writer transport;
+Codex app-server belongs back on the table when jobs need normalized text,
+tool, usage, actor, or root-turn events from the run itself.

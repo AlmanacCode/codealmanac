@@ -10,6 +10,8 @@ from codealmanac.core.errors import ExecutionFailed, NotFoundError, ValidationFa
 from codealmanac.core.models import AppConfig
 from codealmanac.integrations.sources.web import WebSourceRuntimeAdapter
 from codealmanac.services.harnesses.models import (
+    HarnessEvent,
+    HarnessEventKind,
     HarnessKind,
     HarnessReadiness,
     HarnessRunResult,
@@ -88,6 +90,30 @@ class UnsafeHarnessAdapter(WritingHarnessAdapter):
             status=HarnessRunStatus.SUCCEEDED,
             output_text="changed the wrong file",
             changed_files=(outside,),
+        )
+
+
+class EventfulHarnessAdapter(WritingHarnessAdapter):
+    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
+        result = super().run(request)
+        return result.model_copy(
+            update={
+                "events": (
+                    HarnessEvent(
+                        kind=HarnessEventKind.TEXT,
+                        message="agent read source note",
+                    ),
+                    HarnessEvent(
+                        kind=HarnessEventKind.TOOL_SUMMARY,
+                        message="agent wrote almanac/pages/ingested-note.md",
+                    ),
+                    HarnessEvent(
+                        kind=HarnessEventKind.DONE,
+                        status=HarnessRunStatus.SUCCEEDED,
+                        message="codex succeeded: updated wiki",
+                    ),
+                )
+            }
         )
 
 
@@ -242,6 +268,39 @@ def test_ingest_workflow_resolves_sources_runs_harness_and_refreshes_index(
         RunEventKind.STATUS,
     )
     assert log[1].message == RunStatus.RUNNING.value
+
+
+def test_ingest_workflow_records_normalized_harness_events(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".almanac/registry.json"),
+        harness_adapters=(EventfulHarnessAdapter(),),
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
+
+    result = app.workflows.ingest.run(
+        RunIngestRequest(
+            cwd=repo,
+            inputs=("note.md",),
+            harness=HarnessKind.CODEX,
+        )
+    )
+
+    log = app.runs.log(ReadRunLogRequest(cwd=repo, run_id=result.run.run_id))
+
+    assert tuple((entry.kind, entry.message) for entry in log[-4:]) == (
+        (RunEventKind.OUTPUT, "agent read source note"),
+        (RunEventKind.TOOL, "agent wrote almanac/pages/ingested-note.md"),
+        (RunEventKind.OUTPUT, "codex succeeded: updated wiki"),
+        (RunEventKind.STATUS, "done"),
+    )
 
 
 def test_ingest_prompt_includes_git_source_runtime(

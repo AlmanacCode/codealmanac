@@ -7,7 +7,7 @@ Updated: 2026-06-29
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
 - Latest committed implementation slice:
-  `feat(slice-54): record harness failure logs`.
+  `feat(slice-55): normalize harness events`.
 - Latest committed product-direction slice: `docs: record viewer design correction`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
@@ -102,10 +102,12 @@ Updated: 2026-06-29
   `list --drop <selector>` removes one explicit entry; `list --drop-missing`
   explicitly removes unreachable entries. Read commands do not prune registry
   state silently.
-- Lifecycle workflows record returned harness status/output before later
-  validation. `ingest` and `garden` now write an `output` event as soon as the
+- Lifecycle workflows record normalized harness events before later validation.
+  `ingest` and `garden` write returned `HarnessEvent` values as soon as the
   harness returns, so failed harness runs remain visible in `jobs logs` even
-  when the terminal run error is a mutation-safety failure.
+  when the terminal run error is a mutation-safety failure. Current Codex and
+  Claude CLI adapters emit terminal `done` events only; Codex app-server is
+  the future path if jobs need richer text/tool/usage transcript completeness.
 - Foreground `sync` writes a durable pending ledger claim before invoking
   Ingest, skips active pending transcript ranges, reports stale pending ranges
   as needs-attention, stores linked run ids plus cursor snapshots, reconciles
@@ -120,8 +122,8 @@ Updated: 2026-06-29
 - Ingest remains source-kind agnostic. It resolves `SourceBrief` values, asks
   `SourcesService.inspect_runtime(...)` for snapshots, renders typed runtime
   JSON into the prompt, calls the selected harness, validates wiki-root
-  mutation safety, refreshes the index, and records the run. Harness status
-  and first-line output are recorded before safety/success validation.
+  mutation safety, refreshes the index, and records the run. Normalized
+  harness events are recorded before safety/success validation.
 - The CLI remains a thin adapter. Do not shell out to `codealmanac` from
   workflows, automation, tests, or future server wrappers.
 
@@ -485,6 +487,9 @@ Behavior:
   list JSON/drop/drop-missing dogfood
 - Slice 54 focused ingest/garden workflow tests, focused lifecycle ruff,
   full pytest, full ruff, diff check, package build, and harness-failure-log
+  dogfood
+- Slice 55 focused harness/adapter/workflow tests, focused ruff, full pytest,
+  full ruff, diff check, package build, and normalized-harness-event jobs-log
   dogfood
 
 ## Next Move

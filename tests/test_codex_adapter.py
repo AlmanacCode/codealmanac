@@ -8,7 +8,11 @@ from codealmanac.integrations.harnesses.codex.adapter import (
     CodexCliHarnessAdapter,
     codex_exec_args,
 )
-from codealmanac.services.harnesses.models import HarnessKind, HarnessRunStatus
+from codealmanac.services.harnesses.models import (
+    HarnessEventKind,
+    HarnessKind,
+    HarnessRunStatus,
+)
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 
 
@@ -125,6 +129,9 @@ def test_codex_adapter_runs_exec_and_reports_git_changes(tmp_path: Path):
     assert result.transcript.session_id == "codex-session-1"
     assert result.transcript.transcript_path == sessions / "rollout.jsonl"
     assert result.changed_files == (tmp_path / "almanac/pages/codex-note.md",)
+    assert result.events[0].kind == HarnessEventKind.DONE
+    assert result.events[0].status == HarnessRunStatus.SUCCEEDED
+    assert result.events[0].message == "codex succeeded: updated wiki"
 
 
 def test_codex_adapter_returns_failed_result_when_final_message_is_missing(
@@ -149,6 +156,9 @@ def test_codex_adapter_returns_failed_result_when_final_message_is_missing(
 
     assert result.status == HarnessRunStatus.FAILED
     assert result.output_text == "empty final"
+    assert result.events[0].kind == HarnessEventKind.DONE
+    assert result.events[0].status == HarnessRunStatus.FAILED
+    assert result.events[0].message == "codex failed: empty final"
 
 
 def test_codex_adapter_returns_failed_result_for_timeout(tmp_path: Path):

@@ -5,6 +5,32 @@ Updated: 2026-06-29
 Record hypothesis changes here. Do not rewrite history; append a new entry when
 evidence changes the shape.
 
+## 2026-06-29 - Transcript Visibility Belongs To Harness Events
+
+Old hypothesis:
+`HarnessTranscriptRef` plus one harness output log line might be enough for
+local lifecycle auditability.
+
+New hypothesis:
+The durable CodeAlmanac contract is a normalized harness event stream. Provider
+transcript identity is useful for sync exclusion and debugging, but run logs
+should not depend on raw Claude or Codex transcript file shapes.
+
+Evidence that forced the change:
+The user wants to see actual transcripts through a normalized harness surface.
+`codex exec` can still serve v1 one-shot wiki updates, but it does not expose
+the same complete text/tool/usage lifecycle surface as Codex app-server.
+
+Code or product assumption affected:
+`HarnessRunResult.events` now carries typed `HarnessEvent` values.
+`ingest` and `garden` persist those events into `jobs logs`; adapters without
+rich events fall back to a terminal `done` event.
+
+Follow-up test:
+Keep workflow tests that prove multiple harness events are recorded in order.
+Reopen Codex app-server only when real lifecycle dogfood requires event
+completeness beyond the current terminal `codex exec` event.
+
 ## 2026-06-29 - Harness Results Are Run Facts Before Validation
 
 Old hypothesis:
@@ -24,7 +50,7 @@ an earlier output event the run log loses the direct evidence that the harness
 returned `failed`.
 
 Code or product assumption affected:
-`ingest` and `garden` now call `harness_output_message(...)` immediately after
+`ingest` and `garden` now record normalized harness events immediately after
 the harness returns and before mutation-safety validation. `validate_harness_result`
 still owns the command failure contract.
 

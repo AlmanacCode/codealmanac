@@ -38,7 +38,8 @@ from codealmanac.workflows.ingest.requests import (
 from codealmanac.workflows.lifecycle import (
     LifecycleMutationPolicy,
     first_line,
-    harness_output_message,
+    harness_events,
+    harness_run_event_kind,
     validate_harness_result,
 )
 
@@ -143,12 +144,7 @@ class IngestWorkflow:
                 )
             )
             self.record_harness_transcript(request, run_id, harness)
-            self.record(
-                request,
-                run_id,
-                RunEventKind.OUTPUT,
-                harness_output_message(harness),
-            )
+            self.record_harness_events(request, run_id, harness)
             safety = self.mutation_policy.validate(
                 preflight,
                 workspace,
@@ -217,6 +213,20 @@ class IngestWorkflow:
                 transcript=harness.transcript,
             )
         )
+
+    def record_harness_events(
+        self,
+        request: RunIngestRequest,
+        run_id: str,
+        harness: HarnessRunResult,
+    ) -> None:
+        for event in harness_events(harness):
+            self.record(
+                request,
+                run_id,
+                harness_run_event_kind(event),
+                event.message,
+            )
 
     def inspect_source_runtime(
         self,

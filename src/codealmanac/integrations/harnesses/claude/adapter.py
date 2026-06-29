@@ -21,6 +21,7 @@ from codealmanac.services.harnesses.models import (
     HarnessRunResult,
     HarnessRunStatus,
     HarnessTranscriptRef,
+    terminal_harness_event,
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 
@@ -157,6 +158,13 @@ class ClaudeCliHarnessAdapter:
             summary=first_line(parsed.result),
             changed_files=changed_files,
             transcript=transcript,
+            events=(
+                terminal_harness_event(
+                    self.kind,
+                    HarnessRunStatus.SUCCEEDED,
+                    parsed.result,
+                ),
+            ),
         )
 
 
@@ -184,6 +192,13 @@ def failed_result(
         output_text=output_text,
         changed_files=changed_files,
         transcript=transcript,
+        events=(
+            terminal_harness_event(
+                HarnessKind.CLAUDE,
+                HarnessRunStatus.FAILED,
+                output_text,
+            ),
+        ),
     )
 
 
