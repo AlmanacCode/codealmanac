@@ -17,6 +17,9 @@ It is the constraint document for future agents.
 - 2026-06-29: Repo-owned wiki data stays in `.almanac/`.
 - 2026-06-29: Follow Almanac's Python style: service symmetry, explicit request
   models, service-owned verbs, store-owned persistence, thin CLI edges.
+- 2026-06-29: Local automation v1 installs scheduler jobs for foreground
+  `sync` and `garden`. Do not schedule `update` until the Python `update`
+  command and packaging policy exist.
 
 ## Product Frame
 

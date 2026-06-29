@@ -452,3 +452,30 @@ ledger entry `failed` and appear in `needs_attention`.
 Follow-up test:
 When background jobs land, introduce pending cursor fields and reconcile them
 against durable run records before scheduled automation uses sync unattended.
+
+## 2026-06-29 - Automation Is Scheduler State, Not Sync Ownership
+
+Old hypothesis:
+The next automation slice might need to port the archived TypeScript background
+sync pending model before installing scheduled jobs.
+
+New hypothesis:
+Install/status/uninstall can land first if automation only owns scheduler
+state. The scheduled sync job invokes the foreground `sync` workflow; it does
+not own transcript eligibility, cursor mutation, pending runs, or wiki writes.
+
+Evidence that forced the change:
+Slice 22 made foreground sync safe by committing the cursor only after Ingest
+succeeds. Cosmic Python chapter 13 points dependency construction to the
+composition root, so the scheduler should be an injected adapter behind an
+automation port rather than a CLI helper or sync dependency.
+
+Code or product assumption affected:
+`services/automation` owns `AutomationTask`, `ScheduledJob`, and
+install/status/uninstall requests. `integrations/automation/scheduler/launchd`
+owns plist serialization and launchctl calls. `app.py` wires the launchd
+adapter; tests inject fake schedulers.
+
+Follow-up test:
+If scheduled sync needs pending state, add a background owner and reconciliation
+tests before changing the sync ledger model.

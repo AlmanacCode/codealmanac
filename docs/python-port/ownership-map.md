@@ -32,7 +32,7 @@ that root instead of constructing stores or adapters themselves.
 | `sources` | source observations, source refs, fingerprints, local source state, transcript discovery ports and typed transcript candidates | `SourceAddress`/`SourceRef`/`SourceBrief`, `TranscriptDiscoveryAdapter`, `TranscriptCandidate`, later ingest and sync inputs |
 | `runs` | run ledger, events, outputs, lifecycle state, persisted harness transcript identity | `jobs` read surface, lifecycle workflows, future sync exclusion |
 | `harnesses` | normalized Codex/Claude run contracts, provider transcript refs, and ports | `HarnessKind`/`RunHarnessRequest`/`HarnessRunResult`/`HarnessTranscriptRef`/`HarnessAdapter`, later `build`, `ingest`, `garden` |
-| `automation` | local scheduler decisions, quiet windows, installed task state | later `sync`/`garden` scheduling |
+| `automation` | local scheduler decisions, quiet windows, installed task state | `AutomationTask`/`ScheduledJob`/`SchedulerAdapter`, `sync` and `garden` scheduling |
 | `config` | user/project config parsing and precedence | first slice only if pyproject/config needs it |
 | `diagnostics` | doctor checks and readiness reports | `doctor`, local install/wiki readiness |
 | `viewer` | read-only browser payloads, page/topic/search overview assembly, rendered markdown for the local viewer | `serve`, future non-CLI read adapter |
@@ -102,6 +102,12 @@ sync to observe local transcript stores. Concrete Codex and Claude JSONL
 scanners live in `integrations/sources/transcripts/`. Those integrations parse
 raw provider JSON and return typed `TranscriptCandidate` values; they do not
 decide quiet windows, cursor state, or whether ingest should run.
+
+`services/automation/ports.py` owns `SchedulerAdapter`, the port used by local
+automation install/status/uninstall. The launchd implementation lives in
+`integrations/automation/scheduler/` and only translates `ScheduledJob` models
+into plist files plus launchctl calls. It does not decide which jobs should
+exist or what `sync` and `garden` mean.
 
 ## First Slice Boundary
 

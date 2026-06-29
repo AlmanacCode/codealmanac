@@ -327,6 +327,22 @@
 - Verified slice 22 with focused sync workflow and CLI tests, 111 passing full
   tests, ruff, `git diff --check`, and an isolated foreground sync dogfood that
   wrote `foreground-sync-dogfood.md` and advanced the sync ledger.
+- Added slice-23 local automation. `AutomationService` owns the scheduled task
+  plan for `sync` and `garden`, while `LaunchdSchedulerAdapter` is a concrete
+  port implementation that writes plist files through Python `plistlib` and
+  calls launchctl.
+- `codealmanac automation install|status|uninstall` now exists. Default
+  install selects sync plus Garden; explicit task selection accepts only
+  `sync` and `garden` in v1. Garden install resolves the current wiki root as
+  launchd `WorkingDirectory`; status and uninstall can run outside a repo.
+- Deliberately did not add update automation or legacy capture migration.
+  Python `codealmanac update` and background sync reconciliation are separate
+  product debts.
+- Verified slice 23 with focused automation service, CLI automation, and
+  architecture tests, 118 passing full tests, full ruff, `git diff --check`,
+  and a safe `automation status --json` smoke under a temporary `HOME`.
+  The smoke showed plist state and launchd loaded state are independent: a
+  same-label job may be loaded even when the temp HOME has no plist.
 
 ## Current Hypothesis
 
@@ -343,13 +359,14 @@ same service/workflow/adapter boundaries, and it skips provider transcripts
 that came from CodeAlmanac lifecycle runs. Lifecycle runs retain optional
 provider transcript identity for that exclusion. Foreground `sync` now runs
 ordinary Ingest work for ready transcripts and advances the sync ledger after
-success.
+success. Local automation now installs scheduler entries for foreground sync
+and Garden through a service-owned task plan and a launchd adapter.
 
 ## Next Hypothesis
 
-The next sync slice should add background/pending semantics only if it first
-adds a durable background owner and reconciliation loop. Automation
-install/status/uninstall remains separate from sync execution. The remaining
-serve risks are markdown wikilink rewriting inside code spans, browser-harness
-verification once Chrome allows remote debugging, and whether a source/file
-route belongs in the first viewer shape.
+The next automation or sync slice should add background/pending semantics only
+if it first adds a durable background owner and reconciliation loop. Scheduled
+update checks should wait until the Python `update` command exists. The
+remaining serve risks are markdown wikilink rewriting inside code spans,
+browser-harness verification once Chrome allows remote debugging, and whether
+a source/file route belongs in the first viewer shape.

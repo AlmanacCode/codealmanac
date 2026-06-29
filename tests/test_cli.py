@@ -7,6 +7,10 @@ import pytest
 from codealmanac.app import create_app
 from codealmanac.cli.main import build_parser, main
 from codealmanac.core.models import AppConfig
+from codealmanac.services.automation.models import (
+    ScheduledJob,
+    ScheduledJobStatus,
+)
 from codealmanac.services.harnesses.models import (
     HarnessKind,
     HarnessReadiness,
@@ -113,6 +117,36 @@ class CliTranscriptDiscoveryAdapter:
     ) -> tuple[TranscriptCandidate, ...]:
         self.requests.append(request)
         return self.candidates
+
+
+class CliSchedulerAdapter:
+    def __init__(self):
+        self.installed: list[ScheduledJob] = []
+        self.uninstalled: list[ScheduledJob] = []
+
+    def install(self, job: ScheduledJob) -> ScheduledJobStatus:
+        self.installed.append(job)
+        return ScheduledJobStatus(
+            task=job.task,
+            label=job.label,
+            plist_path=job.plist_path,
+            installed=True,
+            loaded=True,
+            interval=job.interval,
+        )
+
+    def uninstall(self, job: ScheduledJob) -> bool:
+        self.uninstalled.append(job)
+        return False
+
+    def status(self, job: ScheduledJob) -> ScheduledJobStatus:
+        return ScheduledJobStatus(
+            task=job.task,
+            label=job.label,
+            plist_path=job.plist_path,
+            installed=False,
+            loaded=False,
+        )
 
 
 def test_cli_init_creates_wiki_and_prints_name(
@@ -256,6 +290,7 @@ def test_cli_help_includes_serve(capsys):
     assert "ingest" in output.out
     assert "garden" in output.out
     assert "sync" in output.out
+    assert "automation" in output.out
 
 
 def test_cli_ingest_runs_workflow_with_selected_harness(
@@ -429,6 +464,56 @@ def test_cli_sync_runs_ingest_for_ready_transcripts(
     assert "Scheduled sync cursor:" in harness.requests[0].prompt
     assert f"transcript:{transcript}" in harness.requests[0].prompt
     assert (repo / ".almanac/jobs/sync-ledger.json").is_file()
+
+
+def test_cli_automation_install_status_and_uninstall(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    scheduler = CliSchedulerAdapter()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".almanac/registry.json"),
+        scheduler=scheduler,
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert (
+        main(
+            [
+                "automation",
+                "install",
+                "--every",
+                "1m",
+                "--quiet",
+                "1s",
+                "--garden-every",
+                "2m",
+            ]
+        )
+        == 0
+    )
+    install_output = capsys.readouterr()
+    assert "automation installed\n" in install_output.out
+    assert "sync interval: 60s\n" in install_output.out
+    assert "sync quiet: 1s\n" in install_output.out
+    assert "garden interval: 120s\n" in install_output.out
+    assert tuple(job.task.value for job in scheduler.installed) == ("sync", "garden")
+
+    assert main(["automation", "status", "--json"]) == 0
+    status_output = capsys.readouterr()
+    assert '"statuses": [' in status_output.out
+    assert '"task": "sync"' in status_output.out
+
+    assert main(["automation", "uninstall", "sync"]) == 0
+    uninstall_output = capsys.readouterr()
+    assert "automation not installed\n" in uninstall_output.out
+    assert scheduler.uninstalled[-1].task.value == "sync"
 
 
 def test_cli_jobs_inspects_local_run_records(

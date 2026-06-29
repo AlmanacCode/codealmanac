@@ -293,3 +293,14 @@ means the goal remains active.
 | Formatting/lint | `uv run ruff check src tests` | passed |
 | Diff hygiene | `git diff --check` | passed |
 | Isolated foreground sync dogfood | temp repo, fake Codex transcript, fake Codex harness, foreground `codealmanac sync --from codex --quiet 0s --using codex` | passed; wrote `foreground-sync-dogfood.md`, started one Ingest run, and advanced the sync ledger |
+
+## Gates For Slice 23 Local Automation
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused automation tests | `uv run pytest tests/test_automation_service.py tests/test_cli.py::test_cli_help_includes_serve tests/test_cli.py::test_cli_automation_install_status_and_uninstall tests/test_architecture.py` | 9 passed |
+| Formatting/lint | `uv run ruff check src/codealmanac/services/automation src/codealmanac/integrations/automation src/codealmanac/app.py src/codealmanac/cli/main.py tests/test_automation_service.py tests/test_cli.py` | passed |
+| Full tests | `uv run pytest` | 118 passed |
+| Formatting/lint | `uv run ruff check src tests` | passed |
+| Diff hygiene | `git diff --check` | passed |
+| Automation status smoke | temp `HOME`; `uv run codealmanac automation status --json` | passed; no plist installed in temp HOME, launchd loaded state reported independently by label |

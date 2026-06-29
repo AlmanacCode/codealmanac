@@ -11,6 +11,19 @@ from pydantic import ValidationError
 from codealmanac import __version__
 from codealmanac.app import create_app
 from codealmanac.core.errors import CodeAlmanacError, ValidationFailed
+from codealmanac.services.automation.models import (
+    AutomationInstallResult,
+    AutomationStatusReport,
+    AutomationTask,
+    AutomationUninstallResult,
+    ScheduledJob,
+    ScheduledJobStatus,
+)
+from codealmanac.services.automation.requests import (
+    AutomationStatusRequest,
+    InstallAutomationRequest,
+    UninstallAutomationRequest,
+)
 from codealmanac.services.diagnostics.models import (
     DoctorCheck,
     DoctorReport,
@@ -214,6 +227,62 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--wiki")
     serve.add_argument("--host", default=DEFAULT_VIEWER_HOST)
     serve.add_argument("--port", type=int, default=DEFAULT_VIEWER_PORT)
+
+    automation = subcommands.add_parser(
+        "automation",
+        help="manage local scheduled automation",
+    )
+    automation_subcommands = automation.add_subparsers(
+        dest="automation_command",
+        required=True,
+    )
+    automation_install = automation_subcommands.add_parser(
+        "install",
+        help="install scheduled sync and garden jobs",
+    )
+    automation_install.add_argument(
+        "tasks",
+        nargs="*",
+        choices=tuple(task.value for task in AutomationTask),
+    )
+    automation_install.add_argument(
+        "--every",
+        help="run interval for sync or one selected task",
+    )
+    automation_install.add_argument(
+        "--quiet",
+        help="minimum quiet time before sync (default: 45m)",
+    )
+    automation_install.add_argument(
+        "--garden-every",
+        help="Garden run interval (default: 4h)",
+    )
+    automation_install.add_argument(
+        "--garden-off",
+        action="store_true",
+        help="disable scheduled Garden automation",
+    )
+    automation_install.add_argument("--json", action="store_true")
+    automation_uninstall = automation_subcommands.add_parser(
+        "uninstall",
+        help="remove scheduled jobs",
+    )
+    automation_uninstall.add_argument(
+        "tasks",
+        nargs="*",
+        choices=tuple(task.value for task in AutomationTask),
+    )
+    automation_uninstall.add_argument("--json", action="store_true")
+    automation_status = automation_subcommands.add_parser(
+        "status",
+        help="show scheduled automation status",
+    )
+    automation_status.add_argument(
+        "tasks",
+        nargs="*",
+        choices=tuple(task.value for task in AutomationTask),
+    )
+    automation_status.add_argument("--json", action="store_true")
 
     tag = subcommands.add_parser("tag", help="add topics to a page")
     tag.add_argument("slug")
@@ -439,6 +508,32 @@ def dispatch(args: argparse.Namespace) -> int:
         return 0
     if args.command == "serve":
         return run_serve(app, args)
+    if args.command == "automation":
+        tasks = parse_automation_tasks(args.tasks)
+        if args.automation_command == "install":
+            result = app.automation.install(
+                InstallAutomationRequest(
+                    cwd=Path.cwd(),
+                    tasks=tasks,
+                    every=parse_optional_duration(args.every, "--every"),
+                    quiet=parse_optional_duration(args.quiet, "--quiet"),
+                    garden_every=parse_optional_duration(
+                        args.garden_every,
+                        "--garden-every",
+                    ),
+                    garden_off=args.garden_off,
+                )
+            )
+            render_automation_install(result, json_output=args.json)
+            return 0
+        if args.automation_command == "uninstall":
+            result = app.automation.uninstall(UninstallAutomationRequest(tasks=tasks))
+            render_automation_uninstall(result, json_output=args.json)
+            return 0
+        if args.automation_command == "status":
+            result = app.automation.status(AutomationStatusRequest(tasks=tasks))
+            render_automation_status(result, json_output=args.json)
+            return 0
     if args.command == "tag":
         result = app.tagging.tag(
             TagPageRequest(
@@ -549,6 +644,95 @@ def parse_quiet(value: str) -> timedelta:
     except InvalidTimespan as error:
         raise ValidationFailed(f"invalid --quiet value: {value}") from error
     return timedelta(seconds=seconds)
+
+
+def parse_optional_duration(value: str | None, flag: str) -> timedelta | None:
+    if value is None:
+        return None
+    try:
+        seconds = parse_timespan(value)
+    except InvalidTimespan as error:
+        raise ValidationFailed(f"invalid {flag} value: {value}") from error
+    return timedelta(seconds=seconds)
+
+
+def parse_automation_tasks(values: Sequence[str]) -> tuple[AutomationTask, ...]:
+    tasks: list[AutomationTask] = []
+    for value in values:
+        task = AutomationTask(value)
+        if task not in tasks:
+            tasks.append(task)
+    return tuple(tasks)
+
+
+def render_automation_install(
+    result: AutomationInstallResult,
+    json_output: bool,
+) -> None:
+    if json_output:
+        print(json.dumps(result.model_dump(mode="json"), indent=2))
+        return
+    print("automation installed")
+    for job in result.jobs:
+        print_automation_job(job)
+    for job in result.disabled:
+        print(f"  {job.task.value}: disabled")
+
+
+def render_automation_uninstall(
+    result: AutomationUninstallResult,
+    json_output: bool,
+) -> None:
+    if json_output:
+        print(json.dumps(result.model_dump(mode="json"), indent=2))
+        return
+    if len(result.removed) == 0:
+        print("automation not installed")
+        return
+    print("automation removed")
+    for path in result.removed:
+        print(f"  plist: {path}")
+
+
+def render_automation_status(
+    report: AutomationStatusReport,
+    json_output: bool,
+) -> None:
+    if json_output:
+        print(json.dumps(report.model_dump(mode="json"), indent=2))
+        return
+    for status in report.statuses:
+        render_automation_job_status(status)
+
+
+def print_automation_job(job: ScheduledJob) -> None:
+    print(f"  {job.task.value} interval: {duration_label(job.interval)}")
+    if job.task == AutomationTask.SYNC:
+        quiet = job.program_arguments[job.program_arguments.index("--quiet") + 1]
+        print(f"  sync quiet: {quiet}")
+    print(f"  {job.task.value} command: {' '.join(job.program_arguments)}")
+    if job.working_directory is not None:
+        print(f"  {job.task.value} cwd: {job.working_directory}")
+    print(f"  {job.task.value} plist: {job.plist_path}")
+
+
+def render_automation_job_status(status: ScheduledJobStatus) -> None:
+    label = f"{status.task.value} automation"
+    if not status.installed:
+        print(f"{label}: not installed")
+        return
+    print(f"{label}: installed")
+    print(f"  plist: {status.plist_path}")
+    print(f"  launchd loaded: {'yes' if status.loaded else 'no'}")
+    if status.interval is not None:
+        print(f"  interval: {duration_label(status.interval)}")
+    if status.quiet is not None:
+        print(f"  quiet: {duration_label(status.quiet)}")
+
+
+def duration_label(value: timedelta) -> str:
+    seconds = int(value.total_seconds())
+    return f"{seconds}s"
 
 
 def health_issue_count(report: HealthReport) -> int:

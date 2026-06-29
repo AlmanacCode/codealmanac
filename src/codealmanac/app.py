@@ -3,10 +3,13 @@ from dataclasses import dataclass
 
 from codealmanac import __version__
 from codealmanac.core.models import AppConfig
+from codealmanac.integrations.automation import LaunchdSchedulerAdapter
 from codealmanac.integrations.harnesses import default_harness_adapters
 from codealmanac.integrations.sources import default_transcript_discovery_adapters
 from codealmanac.integrations.workspaces.git import GitWorkspaceChangeProbe
 from codealmanac.prompts import PromptRenderer
+from codealmanac.services.automation.ports import SchedulerAdapter
+from codealmanac.services.automation.service import AutomationService
 from codealmanac.services.diagnostics.service import DiagnosticsService
 from codealmanac.services.harnesses.ports import HarnessAdapter
 from codealmanac.services.harnesses.service import HarnessesService
@@ -44,6 +47,7 @@ class CodeAlmanacWorkflows:
 
 @dataclass(frozen=True)
 class CodeAlmanac:
+    automation: AutomationService
     workspaces: WorkspacesService
     wiki: WikiService
     index: IndexService
@@ -65,9 +69,11 @@ def create_app(
     config: AppConfig | None = None,
     harness_adapters: Sequence[HarnessAdapter] | None = None,
     transcript_discovery_adapters: Sequence[TranscriptDiscoveryAdapter] | None = None,
+    scheduler: SchedulerAdapter | None = None,
 ) -> CodeAlmanac:
     app_config = config or AppConfig()
     workspaces = WorkspacesService(WorkspaceRegistryStore(app_config.registry_path))
+    automation = AutomationService(workspaces, scheduler or LaunchdSchedulerAdapter())
     wiki = WikiService(workspaces)
     index = IndexService(workspaces, IndexStore())
     search = SearchService(workspaces, index)
@@ -114,6 +120,7 @@ def create_app(
         sync=sync,
     )
     return CodeAlmanac(
+        automation=automation,
         workspaces=workspaces,
         wiki=wiki,
         index=index,

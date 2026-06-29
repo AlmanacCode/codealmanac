@@ -255,29 +255,47 @@ Updated: 2026-06-29
   - diff hygiene
   - isolated foreground sync dogfood wrote `foreground-sync-dogfood.md` and
     advanced the sync ledger
+- Slice-23 local automation checks passed so far:
+  - focused automation service, CLI automation, and architecture tests
+  - focused ruff over automation/app/CLI/test files
+  - 118 full tests
+  - full ruff
+  - diff hygiene
+  - safe temp-HOME `automation status --json` smoke
 
 ## Dirty/Staged Files
 
-If slice 22 is committed, the worktree should be clean. If slice-22 files are
-dirty, re-run:
+Slice 23 is ready to commit if the current worktree still only contains:
 
-- focused sync workflow and CLI tests
+- `src/codealmanac/services/automation/`
+- `src/codealmanac/integrations/automation/`
+- `src/codealmanac/app.py`
+- `src/codealmanac/cli/main.py`
+- `tests/test_automation_service.py`
+- `tests/test_cli.py`
+- `docs/python-port/slice-23-automation.md`
+- steering docs under `docs/python-port/`
+
+Before committing slice 23, re-run if any code changes:
+
+- focused automation service, CLI, and architecture tests
 - full pytest
 - ruff
 - `git diff --check`
-- isolated foreground `sync` dogfood with a fake Codex transcript and fake
-  Codex harness
+- a safe automation status smoke; do not install real launchd jobs during
+  dogfood
 
 ## Next Move
 
-1. Decide whether background job ownership is needed before automation. If yes,
-   add pending cursor fields and reconciliation together.
-2. Add automation install/status/uninstall without making the scheduler own sync
-   eligibility or ledger semantics.
-3. Decide whether the viewer needs source/file route hardening before more
+1. Commit slice 23 after a final `git status` check.
+2. Decide whether `codealmanac update` or Git/GitHub source adapters are the
+   next highest-pressure local product gap.
+3. If background sync pending state becomes necessary, add the durable owner
+   and reconciliation loop before changing sync cursor semantics.
+4. Decide whether the viewer needs source/file route hardening before more
    lifecycle commands.
-4. Keep AI execution behind workflow and harness seams; do not put it in CLI.
-5. If provider runtime requirements expand to streaming, usage accounting,
+5. Keep AI execution behind workflow and harness seams; do not put it in CLI.
+6. If provider runtime requirements expand to streaming, usage accounting,
    structured output, or subagents, revisit the archived Codex app-server
    adapter as reference instead of stretching the `codex exec` adapter.
 
