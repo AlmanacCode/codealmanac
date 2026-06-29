@@ -24,8 +24,28 @@ sources:
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/05/31/rollout-2026-05-31T23-31-46-019e8173-bc02-7503-a102-e9de99d6bb9c.jsonl
     note: Records the 2026-06-05 production smoke that retried the Almanac check after the model quota reset, fixed duplicate GitHub webhook delivery processing, redeployed Render at commit 05ead0e, and verified a same-repository Almanac bot commit on PR 12.
+  - id: cloud-hook-command
+    type: file
+    path: src/cli/commands/cloud.ts
+    note: Implements the local cloud login, status, and provider hook command surface used to send conversation turns to the hosted backend.
+  - id: cloud-capture-hook
+    type: file
+    path: src/cloud/capture/hooks.ts
+    note: Records the start/stop hook contract and uploads completed provider turns through the cloud client path.
+  - id: conversation-turn-upload
+    type: file
+    path: src/cloud/capture/conversation-turn.ts
+    note: Builds hosted conversation-turn uploads with repo routing, branch/head metadata, transcript-path hashing, and normalized messages.
+  - id: cloud-capture-tests
+    type: file
+    path: test/cloud-capture.test.ts
+    note: Verifies completed hook turns upload to the hosted API and skip repositories that Almanac Cloud does not host.
+  - id: modal-conversation-smoke
+    type: conversation
+    path: /tmp/almanac-conversation-_xrno75p.md
+    note: Records the 2026-06-29 synthetic Codex turn used only to force a hosted conversation ingest run through the production Modal path.
 status: active
-verified: 2026-06-05
+verified: 2026-06-29
 ---
 
 The hosted Almanac for GitHub environment is split between the `usealmanac` application repository and a `codealmanac` provider namespace. `usealmanac` is the code home for the hosted frontend, FastAPI backend, Modal worker scaffold, provider docs, and local deployment configuration, while `codealmanac` is the shared resource name used for Supabase, Doppler, Modal secrets, and the Render backend service [@external-providers-doc].
@@ -87,6 +107,14 @@ Repository settings are backend-owned for v1. The settings API is protected by t
 The production smoke followed the live-smoke runbook and used `AlmanacCode/codealmanac#12`. Render deployed commit `05ead0e`, the production health endpoint was green, the Almanac check reached success with the title "Almanac updated", the App committed `.almanac/pages/github-native-wiki-maintenance.md` as bot commit `09e4b706491207e3433cc264d7911839682b2196`, and the production run row reached `succeeded`, `delivered`, `same_pr_branch` with that delivered commit SHA [@pr-update-live-smoke-runbook] [@pr-update-production-smoke-session].
 
 The live smoke found one production-readiness blocker before the successful retry: duplicate GitHub webhook deliveries were recorded idempotently but still processed. The fix made duplicate deliveries stop before trigger handling, added a regression test, and redeployed before the successful smoke. Future webhook work must preserve that boundary because a duplicate `check_run.requested_action` delivery can otherwise queue duplicate Modal runs for the same pull-request head [@pr-update-production-smoke-session].
+
+## Hosted Conversation Capture State
+
+Hosted conversation capture is separate from local quiet-session `almanac sync`. The local CLI installs provider hooks that call `almanac cloud capture-hook --provider <codex|claude> --event UserPromptSubmit|Stop`; the start hook stores an open turn locally, and the stop hook builds one completed `ConversationTurnUpload` before sending it to Almanac Cloud [@cloud-hook-command] [@cloud-capture-hook].
+
+The upload object is deliberately a routed conversation turn, not a wiki update. It carries provider identity, provider session and turn ids, a transcript path hash, first cwd, branch and branch-source metadata, routing status, head SHA, timestamps, and normalized messages. Repo routing comes from the current Git remote and branch when the provider payload does not supply enough information; missing branch information is preserved as `missing_branch` rather than guessed [@conversation-turn-upload] [@cloud-capture-tests].
+
+A synthetic Codex turn on 2026-06-29 was created only to force a hosted conversation ingest run through the production Modal path. It should not be treated as project knowledge beyond the operational fact that production hosted conversation ingest needed, and received, a smoke input shaped like a completed Codex turn [@modal-conversation-smoke].
 
 ## Related Pages
 
