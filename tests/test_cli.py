@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -5,12 +6,56 @@ import pytest
 from codealmanac.app import create_app
 from codealmanac.cli.main import build_parser, main
 from codealmanac.core.models import AppConfig
+from codealmanac.services.harnesses.models import (
+    HarnessKind,
+    HarnessReadiness,
+    HarnessRunResult,
+    HarnessRunStatus,
+)
+from codealmanac.services.harnesses.requests import RunHarnessRequest
 from codealmanac.services.runs.models import RunEventKind, RunOperation
 from codealmanac.services.runs.requests import (
     RecordRunEventRequest,
     StartRunRequest,
 )
 from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+
+
+class CliWritingHarnessAdapter:
+    kind = HarnessKind.CODEX
+
+    def __init__(self):
+        self.requests: list[RunHarnessRequest] = []
+
+    def check(self) -> HarnessReadiness:
+        return HarnessReadiness(
+            kind=self.kind,
+            available=True,
+            message="codex ready",
+        )
+
+    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
+        self.requests.append(request)
+        page = request.cwd / ".almanac/pages/cli-ingest-note.md"
+        page.write_text(
+            """---
+title: CLI Ingest Note
+topics: [getting-started]
+sources: []
+---
+# CLI Ingest Note
+
+The public CLI ingested bounded source material.
+""",
+            encoding="utf-8",
+        )
+        return HarnessRunResult(
+            kind=self.kind,
+            status=HarnessRunStatus.SUCCEEDED,
+            output_text="ingested through CLI",
+            summary="ingested through CLI",
+            changed_files=(page,),
+        )
 
 
 def test_cli_init_creates_wiki_and_prints_name(
@@ -151,6 +196,53 @@ def test_cli_help_includes_serve(capsys):
     assert exit_info.value.code == 0
     assert "serve" in output.out
     assert "jobs" in output.out
+    assert "ingest" in output.out
+
+
+def test_cli_ingest_runs_workflow_with_selected_harness(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    adapter = CliWritingHarnessAdapter()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".almanac/registry.json"),
+        harness_adapters=(adapter,),
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert (
+        main(
+            [
+                "ingest",
+                "note.md",
+                "--using",
+                "codex",
+                "--title",
+                "Digest note",
+                "--guidance",
+                "Write one short page.",
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr()
+    assert "ingested " in output.out
+    assert "sources: 1\n" in output.out
+    assert "wiki_changes: 1\n" in output.out
+    assert "summary: ingested through CLI\n" in output.out
+    assert adapter.requests[0].title == "Digest note"
+    assert "Write one short page." in adapter.requests[0].prompt
+    assert (repo / ".almanac/pages/cli-ingest-note.md").is_file()
 
 
 def test_cli_jobs_inspects_local_run_records(
@@ -356,3 +448,31 @@ def test_cli_topics_mutation_commands(
     assert main(["topics", "delete", "security"]) == 0
     delete_output = capsys.readouterr()
     assert delete_output.out == "deleted security (0 pages untagged)\n"
+
+
+def initialize_git(repo: Path) -> None:
+    run_git(repo, "init")
+
+
+def commit_all(repo: Path, message: str) -> None:
+    run_git(repo, "add", ".")
+    run_git(
+        repo,
+        "-c",
+        "user.email=agent@example.com",
+        "-c",
+        "user.name=CodeAlmanac Test",
+        "commit",
+        "-m",
+        message,
+    )
+
+
+def run_git(repo: Path, *args: str) -> None:
+    subprocess.run(
+        ("git", *args),
+        cwd=repo,
+        text=True,
+        capture_output=True,
+        check=True,
+    )

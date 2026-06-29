@@ -249,7 +249,7 @@ def test_ingest_workflow_fails_when_harness_returns_failed_status(
     run = app.runs.list(ListRunsRequest(cwd=repo))[0]
 
     assert run.status == RunStatus.FAILED
-    assert run.error == "harness codex failed with status failed"
+    assert run.error == "harness codex failed with status failed: agent failed"
 
 
 def test_ingest_workflow_allows_preexisting_dirty_app_files_when_unchanged(

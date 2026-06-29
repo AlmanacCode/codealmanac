@@ -33,6 +33,7 @@ class CommandRunner(Protocol):
         args: tuple[str, ...],
         cwd: Path,
         timeout_seconds: int,
+        stdin: str | None = None,
     ) -> CommandResult:
         """Run a local command and return captured text output."""
 
@@ -44,11 +45,13 @@ class SubprocessCommandRunner:
         args: tuple[str, ...],
         cwd: Path,
         timeout_seconds: int,
+        stdin: str | None = None,
     ) -> CommandResult:
         completed = subprocess.run(
             (command, *args),
             cwd=cwd,
             text=True,
+            input=stdin,
             capture_output=True,
             timeout=timeout_seconds,
             check=False,
@@ -153,9 +156,10 @@ class ClaudeCliHarnessAdapter:
         try:
             result = self.runner.run(
                 self.command,
-                claude_print_args(request.prompt),
+                claude_print_args(),
                 request.cwd,
                 self.run_timeout_seconds,
+                request.prompt,
             )
         except FileNotFoundError:
             return failed_result("claude not found on PATH")
@@ -187,7 +191,7 @@ class ClaudeCliHarnessAdapter:
         )
 
 
-def claude_print_args(prompt: str) -> tuple[str, ...]:
+def claude_print_args() -> tuple[str, ...]:
     return (
         "-p",
         "--output-format",
@@ -197,7 +201,6 @@ def claude_print_args(prompt: str) -> tuple[str, ...]:
         "acceptEdits",
         "--tools",
         CLAUDE_ALLOWED_TOOLS,
-        prompt,
     )
 
 

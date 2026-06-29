@@ -14,6 +14,7 @@ from codealmanac.services.diagnostics.models import (
     DoctorReport,
 )
 from codealmanac.services.diagnostics.requests import DoctorRequest
+from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.services.health.requests import HealthCheckRequest
 from codealmanac.services.index.models import (
     HealthReport,
@@ -51,6 +52,8 @@ from codealmanac.services.topics.requests import (
     UnlinkTopicRequest,
 )
 from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.workflows.ingest.models import IngestResult
+from codealmanac.workflows.ingest.requests import RunIngestRequest
 
 DEFAULT_VIEWER_HOST = "127.0.0.1"
 DEFAULT_VIEWER_PORT = 3927
@@ -83,6 +86,17 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("path", nargs="?", default=".")
     build.add_argument("--name")
     build.add_argument("--description", default="")
+
+    ingest = subcommands.add_parser("ingest", help="ingest local material")
+    ingest.add_argument("inputs", nargs="+")
+    ingest.add_argument("--wiki")
+    ingest.add_argument(
+        "--using",
+        choices=tuple(kind.value for kind in HarnessKind),
+        default=HarnessKind.CLAUDE.value,
+    )
+    ingest.add_argument("--title")
+    ingest.add_argument("--guidance")
 
     subcommands.add_parser("list", help="list registered local wikis")
 
@@ -205,6 +219,19 @@ def dispatch(args: argparse.Namespace) -> int:
             )
         )
         render_build(result.workspace.name, result.index)
+        return 0
+    if args.command == "ingest":
+        result = app.workflows.ingest.run(
+            RunIngestRequest(
+                cwd=Path.cwd(),
+                wiki=args.wiki,
+                inputs=tuple(args.inputs),
+                harness=HarnessKind(args.using),
+                title=args.title,
+                guidance=args.guidance,
+            )
+        )
+        render_ingest(result)
         return 0
     if args.command == "list":
         for workspace in app.workspaces.list():
@@ -382,6 +409,14 @@ def render_search(rows: tuple[SearchPageResult, ...], json_output: bool) -> None
 
 def render_build(workspace_name: str, result: IndexRefreshResult) -> None:
     print(f"built {workspace_name}: {index_summary(result)}")
+
+
+def render_ingest(result: IngestResult) -> None:
+    print(f"ingested {result.run.run_id}: {result.run.status.value}")
+    print(f"sources: {len(result.sources)}")
+    print(f"wiki_changes: {len(result.safety.changed_files)}")
+    if result.run.summary is not None:
+        print(f"summary: {result.run.summary}")
 
 
 def render_reindex(result: IndexRefreshResult, json_output: bool) -> None:

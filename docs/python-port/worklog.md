@@ -203,6 +203,21 @@
   harness writing `.almanac/pages/safety-dogfood.md`. The run finished `done`,
   `result.safety.changed_files` contained only the wiki page, `src/app.py`
   preserved the user's dirty edit, and search found `safety-dogfood`.
+- Read Cosmic Python chapters 4 and 10 before exposing public ingest. No new
+  pattern checkpoint was sent because the applied command-vs-event and thin
+  service-layer lessons were already recorded in earlier slices.
+- Added slice-16 public `codealmanac ingest`. The CLI adapts argv into
+  `RunIngestRequest`, defaults `--using` to `claude`, accepts `--using codex`
+  as the existing harness enum for future adapter parity, and renders a short
+  run/source/wiki-change summary.
+- Real CLI dogfood exposed two issues before the final success: Claude prompt
+  input had to move from a positional argument to stdin because `--tools` is
+  variadic, and workflow errors needed to include harness output text. Both are
+  fixed and covered by focused tests.
+- Dogfooded real `codealmanac ingest note.md --using claude` in a temp Git repo
+  after backing up and restoring the local registry. Claude created
+  `.almanac/pages/ingest-cli-thin-adapter.md`, search found
+  `ingest-cli-thin-adapter`, and Git status showed only that wiki page changed.
 
 ## Current Hypothesis
 
@@ -215,13 +230,14 @@ is unchanged. The first lifecycle/runs spine now exists as a ledger and read
 surface. Source inputs and harness execution now have typed service contracts,
 the first internal ingest workflow coordinates them with the run ledger and
 index, the Claude CLI adapter is wired through the app composition root, and
-ingest has provider-neutral Git mutation safety around harness execution.
+ingest has provider-neutral Git mutation safety around harness execution. The
+public `codealmanac ingest` command now reaches that workflow without making
+the CLI an internal API.
 
 ## Next Hypothesis
 
-The next slice can expose public `codealmanac ingest` as a thin CLI adapter over
-`app.workflows.ingest.run(...)`, or add Codex as the second harness adapter if
-we want provider parity before public CLI. The remaining serve risks are
-markdown wikilink rewriting inside code spans, browser-harness verification
-once Chrome allows remote debugging, and whether a source/file route belongs in
-the first viewer shape before lifecycle commands.
+The next slice should either add Codex as the second harness adapter or add the
+next lifecycle workflow (`garden` or `sync`) behind the same run/safety seams.
+The remaining serve risks are markdown wikilink rewriting inside code spans,
+browser-harness verification once Chrome allows remote debugging, and whether a
+source/file route belongs in the first viewer shape.

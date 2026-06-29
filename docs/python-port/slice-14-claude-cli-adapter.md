@@ -41,9 +41,12 @@ The adapter uses Claude Code's non-interactive CLI mode:
 ```text
 claude -p --output-format json --no-session-persistence \
   --permission-mode acceptEdits \
-  --tools Read,Write,Edit,MultiEdit,Glob,Grep,LS \
-  <prompt>
+  --tools Read,Write,Edit,MultiEdit,Glob,Grep,LS
 ```
+
+The prompt is sent through stdin. Real CLI dogfood showed that passing the
+prompt positionally after Claude's variadic `--tools <tools...>` option can
+let `--tools` consume the prompt.
 
 Readiness uses `claude auth status`, which returns JSON in the tested local CLI.
 Run output uses Pydantic models over Claude's JSON result envelope; the adapter

@@ -16,7 +16,7 @@ from codealmanac.services.harnesses.requests import RunHarnessRequest
 class FakeCommandRunner:
     def __init__(self, results: tuple[CommandResult | BaseException, ...]):
         self.results = list(results)
-        self.calls: list[tuple[str, tuple[str, ...], Path, int]] = []
+        self.calls: list[tuple[str, tuple[str, ...], Path, int, str | None]] = []
 
     def run(
         self,
@@ -24,8 +24,9 @@ class FakeCommandRunner:
         args: tuple[str, ...],
         cwd: Path,
         timeout_seconds: int,
+        stdin: str | None = None,
     ) -> CommandResult:
-        self.calls.append((command, args, cwd, timeout_seconds))
+        self.calls.append((command, args, cwd, timeout_seconds, stdin))
         result = self.results.pop(0)
         if isinstance(result, BaseException):
             raise result
@@ -91,7 +92,8 @@ def test_claude_adapter_runs_print_json_and_reports_git_changes(tmp_path: Path):
 
     claude_call = runner.calls[1]
     assert claude_call[0] == "claude"
-    assert claude_call[1] == claude_print_args("Update the wiki.")
+    assert claude_call[1] == claude_print_args()
+    assert claude_call[4] == "Update the wiki."
     assert CLAUDE_ALLOWED_TOOLS in claude_call[1]
     assert result.status == HarnessRunStatus.SUCCEEDED
     assert result.output_text == "updated wiki"

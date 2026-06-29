@@ -33,8 +33,11 @@ Updated: 2026-06-29
 - The index read model now uses stale-aware source signatures for ordinary
   `ensure_fresh`; `reindex` remains the explicit forced rebuild command.
 - Current implemented CLI commands are `init`, `build`, `list`, `search`,
-  `show`, `topics`, `health`, `reindex`, `doctor`, `jobs`, `serve`, `tag`, and
-  `untag`.
+  `show`, `topics`, `health`, `reindex`, `doctor`, `jobs`, `serve`, `tag`,
+  `untag`, and `ingest`.
+- Public `codealmanac ingest` is a thin CLI adapter over
+  `app.workflows.ingest.run(...)`. It supports `--using claude|codex`, `--wiki`,
+  `--title`, and `--guidance`; only Claude is wired today.
 - Topic metadata mutation now covers `topics create`, `topics describe`,
   `topics link`, `topics unlink`, `topics rename`, and `topics delete`.
 
@@ -171,24 +174,29 @@ Updated: 2026-06-29
   - non-Git lifecycle write rejected
   - live temp-Git dogfood preserved dirty `src/app.py` while writing only
     `.almanac/pages/safety-dogfood.md`
+- Slice-16 public ingest CLI checks passed:
+  - focused CLI, ingest workflow, Claude adapter, and architecture tests
+  - top-level and `ingest` help smoke
+  - direct Claude stdin smoke
+  - real CLI ingest dogfood in a temp Git repo created
+    `.almanac/pages/ingest-cli-thin-adapter.md`; search found it; Git status
+    showed only that wiki page changed
 
 ## Dirty/Staged Files
 
-After slice 15 is committed, the worktree should be clean. If any slice-15 files
-are dirty, re-run focused parser/ingest/architecture tests, `git diff --check`,
-pytest, ruff, and a fake or real ingest dogfood run.
+After slice 16 is committed, the worktree should be clean. If any slice-16 files
+are dirty, re-run focused CLI/ingest/Claude/architecture tests,
+`git diff --check`, pytest, ruff, and a real or fake ingest dogfood run.
 
 ## Next Move
 
-1. Decide whether to expose public `codealmanac ingest` now as a thin CLI
-   adapter over `app.workflows.ingest.run(...)`, or add Codex as the second
-   harness adapter first.
+1. Add Codex as the second harness adapter, or add the next lifecycle workflow
+   (`garden` or `sync`) behind the same run/safety seams.
 2. Decide whether the viewer needs source/file route hardening before AI-backed
    lifecycle commands.
 3. Keep AI execution behind workflow and harness seams; do not put it in CLI.
-4. If public ingest lands next, test CLI argument adaptation only; source
-   parsing, prompt rendering, harness execution, safety, runs, and index refresh
-   must remain in services/workflows.
+4. If Codex lands next, preserve the public `--using codex` command shape and
+   test that CLI argument adaptation does not change.
 
 ## Things Not To Do
 

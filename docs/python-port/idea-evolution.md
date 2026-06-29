@@ -250,3 +250,31 @@ Follow-up test:
 Before public CLI ingest, add a real CLI smoke over a Git repo once the command
 exists, and decide whether failure should offer a one-line fix such as
 committing or stashing `.almanac/` changes.
+
+## 2026-06-29 - Public Ingest After Safety, Before Codex Parity
+
+Old hypothesis:
+Public `codealmanac ingest` might wait until both Claude and Codex adapters
+exist, so the command does not expose an incomplete provider matrix.
+
+New hypothesis:
+Expose public ingest once the workflow has source contracts, run records, a
+real Claude adapter, and mutation safety. Codex parity can land as a provider
+slice later because the CLI already targets the provider-neutral `HarnessKind`
+contract.
+
+Evidence that forced the change:
+The live agreement lists `codealmanac ingest <inputs...>` in the v1 CLI
+contract. Slice 15 made real-provider mutation safe enough to expose locally.
+Cosmic Python chapter 10 also keeps the command as intent: the CLI sends
+`RunIngestRequest`, while the workflow remains the handler.
+
+Code or product assumption affected:
+`cli/main.py` now exposes `ingest` with `--using claude|codex`, `--wiki`,
+`--title`, and `--guidance`. The CLI prints a short result summary and does
+not own source parsing, prompt rendering, harness execution, mutation safety,
+runs, or index refresh.
+
+Follow-up test:
+When the Codex adapter lands, add one CLI test that `--using codex` reaches the
+adapter without changing the CLI command shape.

@@ -178,8 +178,11 @@ def render_ingest_prompt(
 
 def validate_harness_result(result: HarnessRunResult) -> None:
     if result.status != HarnessRunStatus.SUCCEEDED:
+        suffix = first_line(result.output_text)
+        details = f": {suffix}" if suffix else ""
         raise ExecutionFailed(
-            f"harness {result.kind.value} failed with status {result.status.value}"
+            f"harness {result.kind.value} failed with status "
+            f"{result.status.value}{details}"
         )
 
 
