@@ -10,7 +10,7 @@ means the goal remains active.
 | Fresh Python codebase | `pyproject.toml`, `src/codealmanac/`, `tests/` | `uv run pytest`, `uv run ruff check .` passed on 2026-06-29 | Lifecycle services remain pending. |
 | Based on live agreement | `docs/python-port-live-agreement.md`, `src/codealmanac/app.py`, service/workflow packages | tests exercise CLI -> app -> services/workflows over local `.almanac/` | Need future architecture tests as more services appear. |
 | Cosmic Python actively considered | `docs/reference/cosmic-python/`, `docs/python-port/`, composition root, service-layer tests, store boundary | tests call workflow/service and CLI surfaces instead of private helpers; Relayforge Discord checkpoint sent | Need deeper transaction/freshness review before lifecycle writes. |
-| CLI exists as `codealmanac` only | `[project.scripts] codealmanac = "codealmanac.cli.main:main"` plus argparse commands | `uv run codealmanac --help`, live `init`, `list`, `search`, `show` passed on 2026-06-29 | Many planned commands remain pending. |
+| CLI exists as `codealmanac` only | `[project.scripts] codealmanac = "codealmanac.cli.main:main"` plus argparse commands | `uv run codealmanac --help`, live `init`, `list`, `search`, `show`, `topics create/describe/link/unlink` passed on 2026-06-29 | Many planned commands remain pending. |
 | SQLite-backed wiki/index behavior | `services/index`, `services/wiki`, `services/search`, `services/pages` | parser/index/search/show tests, stale-schema regression, isolated live smoke, dogfood search | Index currently rebuilds on every read command; optimize after review or real perf pressure. |
 | Workflows: build, ingest, sync, garden | pending | pending | Not scaffolded. |
 | Integrations behind service ports | ownership map drafted | pending | Ports/adapters not implemented yet. |
@@ -90,3 +90,14 @@ means the goal remains active.
 | Formatting/lint | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run ruff check .` | passed |
 | Tests | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run pytest` | 25 passed |
 | Live EOF/no-op smoke | temp repo `tag note concepts`, `untag note missing`, `cat page` | passed |
+
+## Gates For Slice 5 Topic Metadata Mutation
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Formatting/lint | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run ruff check .` | passed |
+| Tests | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run pytest` | 32 passed |
+| Diff hygiene | `git diff --check` | passed |
+| Isolated live topic mutation | temp repo `topics create`, `topics describe`, `topics create`, `topics link`, `topics show`, `topics unlink`, `topics show` | passed |
+| CLI help | `uv run codealmanac topics --help` | passed with `show`, `create`, `describe`, `link`, `unlink` |
+| Dogfood topics read | `uv run codealmanac topics show cli --descendants` | passed |

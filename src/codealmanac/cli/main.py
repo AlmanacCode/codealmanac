@@ -21,7 +21,19 @@ from codealmanac.services.pages.requests import ShowPageRequest
 from codealmanac.services.search.requests import SearchPagesRequest
 from codealmanac.services.tagging.models import TaggingResult
 from codealmanac.services.tagging.requests import TagPageRequest, UntagPageRequest
-from codealmanac.services.topics.requests import ListTopicsRequest, ShowTopicRequest
+from codealmanac.services.topics.models import (
+    TopicEdgeMutationResult,
+    TopicMutationAction,
+    TopicMutationResult,
+)
+from codealmanac.services.topics.requests import (
+    CreateTopicRequest,
+    DescribeTopicRequest,
+    LinkTopicRequest,
+    ListTopicsRequest,
+    ShowTopicRequest,
+    UnlinkTopicRequest,
+)
 from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
 
 
@@ -78,6 +90,24 @@ def build_parser() -> argparse.ArgumentParser:
     topic_show = topic_subcommands.add_parser("show", help="show a topic")
     topic_show.add_argument("slug")
     topic_show.add_argument("--descendants", action="store_true")
+    topic_create = topic_subcommands.add_parser("create", help="create a topic")
+    topic_create.add_argument("name")
+    topic_create.add_argument("--parent", action="append", default=[])
+    topic_describe = topic_subcommands.add_parser(
+        "describe",
+        help="set a topic description",
+    )
+    topic_describe.add_argument("slug")
+    topic_describe.add_argument("description")
+    topic_link = topic_subcommands.add_parser("link", help="link topic to parent")
+    topic_link.add_argument("child")
+    topic_link.add_argument("parent")
+    topic_unlink = topic_subcommands.add_parser(
+        "unlink",
+        help="unlink topic from parent",
+    )
+    topic_unlink.add_argument("child")
+    topic_unlink.add_argument("parent")
 
     health = subcommands.add_parser("health", help="check wiki health")
     health.add_argument("--wiki")
@@ -148,6 +178,50 @@ def dispatch(args: argparse.Namespace) -> int:
                 )
             )
             render_topic(topic)
+            return 0
+        if args.topic_command == "create":
+            result = app.topics.create(
+                CreateTopicRequest(
+                    cwd=Path.cwd(),
+                    wiki=args.wiki,
+                    name=args.name,
+                    parents=tuple(args.parent),
+                )
+            )
+            render_topic_mutation(result)
+            return 0
+        if args.topic_command == "describe":
+            result = app.topics.describe(
+                DescribeTopicRequest(
+                    cwd=Path.cwd(),
+                    wiki=args.wiki,
+                    slug=args.slug,
+                    description=args.description,
+                )
+            )
+            render_topic_mutation(result)
+            return 0
+        if args.topic_command == "link":
+            result = app.topics.link(
+                LinkTopicRequest(
+                    cwd=Path.cwd(),
+                    wiki=args.wiki,
+                    child=args.child,
+                    parent=args.parent,
+                )
+            )
+            render_topic_edge_mutation(result)
+            return 0
+        if args.topic_command == "unlink":
+            result = app.topics.unlink(
+                UnlinkTopicRequest(
+                    cwd=Path.cwd(),
+                    wiki=args.wiki,
+                    child=args.child,
+                    parent=args.parent,
+                )
+            )
+            render_topic_edge_mutation(result)
             return 0
         topics = app.topics.list(ListTopicsRequest(cwd=Path.cwd(), wiki=args.wiki))
         render_topics(topics)
@@ -271,6 +345,20 @@ def render_topic(topic: TopicDetail) -> None:
             print(f"  {slug}")
     else:
         print("pages: none")
+
+
+def render_topic_mutation(result: TopicMutationResult) -> None:
+    print(f"{result.slug}: {result.action.value}")
+
+
+def render_topic_edge_mutation(result: TopicEdgeMutationResult) -> None:
+    if result.action == TopicMutationAction.NO_EDGE:
+        print(f"no edge {result.child} -> {result.parent}")
+        return
+    if result.action == TopicMutationAction.ALREADY_LINKED:
+        print(f"edge {result.child} -> {result.parent} already exists")
+        return
+    print(f"{result.action.value} {result.child} -> {result.parent}")
 
 
 def render_health(report: HealthReport, json_output: bool) -> None:

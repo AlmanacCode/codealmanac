@@ -68,16 +68,28 @@
   and ruff.
 - Slice-4 review fixed frontmatter closing fences at EOF and no-op untag
   summaries. Re-verified with 25 tests, ruff, and a live EOF/no-op smoke.
+- Read Cosmic Python chapter 5 on service-layer tests and sent a Relayforge
+  Discord checkpoint. The applied lesson: behavior tests should mostly drive
+  service-layer request models, with lower-level tests reserved for fragile
+  implementation boundaries such as YAML round-tripping.
+- Added slice-5 topic metadata mutation: `topics create`, `topics describe`,
+  `topics link`, and `topics unlink`. The service owns parent existence,
+  ad-hoc topic promotion, cycle rejection, and result enums; the wiki helper
+  owns round-trip `.almanac/topics.yaml` mutation with `ruamel.yaml`.
+- Verified slice 5 with 32 passing tests, ruff, `git diff --check`, isolated
+  live topic create/describe/link/unlink/show, CLI help, and dogfood
+  `codealmanac topics show cli --descendants` in this repo.
 
 ## Current Hypothesis
 
-The read path now exists and should be reviewed before lifecycle commands. The
-indexer deliberately rebuilds the read model on every read command for slice 2;
-that is correct but not final for large repos.
+The read and basic organization paths now exist. Topic metadata mutation is
+small enough to keep in the `topics` service; page-rewriting topic operations
+(`rename`, `delete`) should be a separate slice because they combine
+`topics.yaml` mutation with page frontmatter rewrites.
 
 ## Next Hypothesis
 
-The next slice should review and tighten the SQLite read model, then either add
-`topics`/`health` on top of the same index or optimize freshness with
-content-hash/incremental indexing if performance becomes the higher-risk
-boundary.
+The next slice should either add `topics rename`/`topics delete` with explicit
+YAML-first crash semantics, or restore an explicit `build`/`reindex` command if
+the public CLI surface becomes the higher-risk gap. Lifecycle AI commands should
+wait until organization and read surfaces hold under review.

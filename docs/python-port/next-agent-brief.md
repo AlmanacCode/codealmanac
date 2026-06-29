@@ -11,10 +11,14 @@ Updated: 2026-06-29
 - `docs/python-port-live-agreement.md` is the live contract.
 - `docs/reference/cosmic-python/` contains Markdown-only reference chapters.
 - Steering docs live in `docs/python-port/`.
-- First Python scaffold exists under `src/codealmanac/` with CLI, app,
-  workspaces, wiki scaffold, and build workflow.
-- Slice-2 read-model work exists with `search` and `show`, SQLite FTS5 index,
-  wiki parser/link classifier, and service-layer tests.
+- Python code exists under `src/codealmanac/` with CLI, app composition,
+  workspaces, wiki scaffold/build workflow, SQLite FTS5 read model, search,
+  show, topics, health, tag/untag, and topic metadata mutation.
+- Current implemented CLI commands are `init`, `list`, `search`, `show`,
+  `topics`, `health`, `tag`, and `untag`.
+- Topic metadata mutation now covers `topics create`, `topics describe`,
+  `topics link`, and `topics unlink`; `topics rename` and `topics delete`
+  remain pending.
 
 ## Last Good Evidence
 
@@ -63,18 +67,26 @@ Updated: 2026-06-29
   - 25 tests
   - ruff
   - live EOF-frontmatter and no-op untag smoke
+- Slice-5 topic metadata mutation passed:
+  - 32 tests
+  - ruff
+  - `git diff --check`
+  - isolated live `topics create`, `topics describe`, `topics link`,
+    `topics unlink`, and `topics show`
+  - CLI `topics --help`
+  - dogfood `topics show cli --descendants` in this repo
 
 ## Dirty/Staged Files
 
-At this checkpoint, only slice-4 review-fix files should be dirty until
-committed. Re-run `git diff --check`, pytest, ruff, and the live EOF/no-op
-smoke before committing.
+At this checkpoint, slice-5 topic metadata mutation files should be dirty until
+committed. Re-run `git diff --check`, pytest, ruff, and an isolated topic
+mutation live smoke before committing.
 
 ## Next Move
 
-1. Review slice-4 frontmatter mutation before adding broader topic mutation.
-2. Decide whether next slice is topic create/link/describe or index freshness
-   optimization.
+1. Review slice-5 topic metadata mutation before page-rewriting topic commands.
+2. Decide whether next slice is `topics rename`/`topics delete` or explicit
+   `build`/`reindex`.
 3. Keep lifecycle/AI commands out until read and organization surfaces hold.
 4. Add an architecture test that CLI imports do not import concrete integration
    modules once integrations exist.

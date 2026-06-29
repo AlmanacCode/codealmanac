@@ -149,3 +149,42 @@ def test_cli_tag_and_untag_update_page_frontmatter(
     assert noop_output.out == "auth-flow: not tagged missing\n"
 
     assert "sessions" in page.read_text(encoding="utf-8")
+
+
+def test_cli_topics_mutation_commands(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    pages = repo / ".almanac/pages"
+    pages.mkdir(parents=True)
+    (repo / ".almanac/topics.yaml").write_text(
+        """topics:
+  - slug: concepts
+    title: Concepts
+    parents: []
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(repo)
+
+    assert main(["topics", "create", "Auth", "--parent", "concepts"]) == 0
+    create_output = capsys.readouterr()
+    assert create_output.out == "auth: created\n"
+
+    assert main(["topics", "describe", "auth", "Authentication"]) == 0
+    describe_output = capsys.readouterr()
+    assert describe_output.out == "auth: described\n"
+
+    assert main(["topics", "create", "JWT"]) == 0
+    capsys.readouterr()
+    assert main(["topics", "link", "jwt", "auth"]) == 0
+    link_output = capsys.readouterr()
+    assert link_output.out == "linked jwt -> auth\n"
+
+    assert main(["topics", "show", "auth"]) == 0
+    show_output = capsys.readouterr()
+    assert "description: Authentication\n" in show_output.out
+    assert "children: jwt\n" in show_output.out
