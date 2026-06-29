@@ -1,7 +1,7 @@
 from contextlib import suppress
 from pathlib import Path
 
-from codealmanac.core.errors import ExecutionFailed, ValidationFailed
+from codealmanac.core.errors import ExecutionFailed
 from codealmanac.services.harnesses.models import HarnessRunResult, HarnessRunStatus
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 from codealmanac.services.harnesses.service import HarnessesService
@@ -21,6 +21,7 @@ from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
 from codealmanac.services.workspaces.service import WorkspacesService
 from codealmanac.workflows.ingest.models import IngestPromptPayload, IngestResult
 from codealmanac.workflows.ingest.requests import RunIngestRequest
+from codealmanac.workflows.ingest.safety import IngestMutationPolicy
 
 
 class IngestWorkflow:
@@ -31,12 +32,14 @@ class IngestWorkflow:
         harnesses: HarnessesService,
         runs: RunsService,
         index: IndexService,
+        mutation_policy: IngestMutationPolicy,
     ):
         self.workspaces = workspaces
         self.sources = sources
         self.harnesses = harnesses
         self.runs = runs
         self.index = index
+        self.mutation_policy = mutation_policy
 
     def run(self, request: RunIngestRequest) -> IngestResult:
         workspace = self.resolve_workspace(request.cwd, request.wiki)
@@ -49,6 +52,13 @@ class IngestWorkflow:
             )
         )
         try:
+            preflight = self.mutation_policy.preflight(workspace)
+            self.record(
+                request,
+                started.run_id,
+                RunEventKind.MESSAGE,
+                "verified clean .almanac preflight",
+            )
             sources = self.sources.resolve(
                 ResolveSourcesRequest(cwd=request.cwd, inputs=request.inputs)
             )
@@ -66,7 +76,12 @@ class IngestWorkflow:
                     title=request.title,
                 )
             )
-            validate_harness_result(harness, workspace)
+            validate_harness_result(harness)
+            safety = self.mutation_policy.validate(
+                preflight,
+                workspace,
+                harness.changed_files,
+            )
             self.record(
                 request,
                 started.run_id,
@@ -87,6 +102,7 @@ class IngestWorkflow:
                 run=finished,
                 sources=sources,
                 harness=harness,
+                safety=safety,
                 index=index,
             )
         except Exception as error:
@@ -160,22 +176,11 @@ def render_ingest_prompt(
     )
 
 
-def validate_harness_result(result: HarnessRunResult, workspace: Workspace) -> None:
+def validate_harness_result(result: HarnessRunResult) -> None:
     if result.status != HarnessRunStatus.SUCCEEDED:
         raise ExecutionFailed(
             f"harness {result.kind.value} failed with status {result.status.value}"
         )
-    almanac_root = workspace.almanac_path.resolve()
-    for changed_file in result.changed_files:
-        candidate = changed_file
-        if not candidate.is_absolute():
-            candidate = workspace.root_path / candidate
-        try:
-            candidate.resolve().relative_to(almanac_root)
-        except ValueError as error:
-            raise ValidationFailed(
-                f"harness changed file outside .almanac: {changed_file}"
-            ) from error
 
 
 def default_title(inputs: tuple[str, ...]) -> str:

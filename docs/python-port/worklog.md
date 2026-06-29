@@ -186,6 +186,23 @@
   two pages, and search found the new page. The run exposed a naming prompt bug
   (`almanac CLI`), so the ingest prompt now states the public CLI name is
   `codealmanac`, never `almanac` or `alm`.
+- Read Cosmic Python chapter 6 before hardening ingest mutation safety and sent
+  a Relayforge Discord checkpoint. The applied lesson: a lifecycle write needs
+  a stable operation snapshot, but filesystem writes cannot honestly roll back
+  like database transactions.
+- Added slice-15 ingest mutation safety. `WorkspaceChangeProbe` is a
+  workspace-owned port, `GitWorkspaceChangeProbe` parses `git status
+  --porcelain=v1 -z --untracked-files=all`, and `IngestMutationPolicy` requires
+  Git change tracking, clean `.almanac/` preflight, and no non-wiki mutations
+  during the harness run.
+- Verified the slice-15 focused behavior with parser, ingest workflow, and
+  architecture tests. The workflow allows pre-existing dirty app files when
+  unchanged, rejects harness mutation to dirty app files, rejects dirty
+  `.almanac/` preflight, and rejects non-Git lifecycle writes.
+- Dogfooded slice-15 in a temp Git repo with a dirty `src/app.py` and a fake
+  harness writing `.almanac/pages/safety-dogfood.md`. The run finished `done`,
+  `result.safety.changed_files` contained only the wiki page, `src/app.py`
+  preserved the user's dirty edit, and search found `safety-dogfood`.
 
 ## Current Hypothesis
 
@@ -197,13 +214,14 @@ fixed: read traffic no longer forces projection rewrites when the source wiki
 is unchanged. The first lifecycle/runs spine now exists as a ledger and read
 surface. Source inputs and harness execution now have typed service contracts,
 the first internal ingest workflow coordinates them with the run ledger and
-index, and the Claude CLI adapter is wired through the app composition root.
+index, the Claude CLI adapter is wired through the app composition root, and
+ingest has provider-neutral Git mutation safety around harness execution.
 
 ## Next Hypothesis
 
-The next slice should harden real-provider lifecycle preflight before public
-`codealmanac ingest`: dirty-worktree policy, safer changed-file guarantees, and
-clear failure messages when provider execution is unsafe. The remaining serve
-risks are markdown wikilink rewriting inside code spans, browser-harness
-verification once Chrome allows remote debugging, and whether a source/file
-route belongs in the first viewer shape before lifecycle commands.
+The next slice can expose public `codealmanac ingest` as a thin CLI adapter over
+`app.workflows.ingest.run(...)`, or add Codex as the second harness adapter if
+we want provider parity before public CLI. The remaining serve risks are
+markdown wikilink rewriting inside code spans, browser-harness verification
+once Chrome allows remote debugging, and whether a source/file route belongs in
+the first viewer shape before lifecycle commands.

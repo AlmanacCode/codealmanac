@@ -24,9 +24,12 @@ Updated: 2026-06-29
   contracts plus the adapter port. Claude CLI is the first concrete adapter;
   Codex remains pending.
 - `workflows/ingest` now coordinates source resolution, harness execution, run
-  ledger updates, `.almanac/` changed-file validation, and index refresh.
+  ledger updates, `.almanac/` mutation safety, and index refresh.
 - App workflow entrypoints now live under `app.workflows.build` and
   `app.workflows.ingest`. `create_app()` wires the default Claude adapter.
+- Ingest lifecycle writes now require Git change tracking, clean `.almanac/`
+  preflight, and no non-wiki mutation during harness execution. Dirty app files
+  are allowed as source material if they remain unchanged.
 - The index read model now uses stale-aware source signatures for ordinary
   `ensure_fresh`; `reindex` remains the explicit forced rebuild command.
 - Current implemented CLI commands are `init`, `build`, `list`, `search`,
@@ -160,22 +163,32 @@ Updated: 2026-06-29
   - `git diff --check`
   - default Claude readiness dogfood
   - real Claude ingest dogfood in a temp Git repo
+- Slice-15 ingest mutation safety focused checks passed:
+  - parser, ingest workflow, and architecture tests
+  - dirty app file allowed if unchanged
+  - dirty app file mutation rejected even when the harness does not report it
+  - dirty `.almanac/` preflight rejected
+  - non-Git lifecycle write rejected
+  - live temp-Git dogfood preserved dirty `src/app.py` while writing only
+    `.almanac/pages/safety-dogfood.md`
 
 ## Dirty/Staged Files
 
-After slice 14 is committed, the worktree should be clean. If any slice-14 files
-are dirty, re-run focused architecture/Claude/ingest tests, `git diff --check`,
-pytest, ruff, default adapter readiness, and real or fake ingest dogfood.
+After slice 15 is committed, the worktree should be clean. If any slice-15 files
+are dirty, re-run focused parser/ingest/architecture tests, `git diff --check`,
+pytest, ruff, and a fake or real ingest dogfood run.
 
 ## Next Move
 
-1. Harden real-provider lifecycle preflight before public `codealmanac ingest`:
-   dirty-worktree policy, changed-file guarantees, and unsafe execution errors.
+1. Decide whether to expose public `codealmanac ingest` now as a thin CLI
+   adapter over `app.workflows.ingest.run(...)`, or add Codex as the second
+   harness adapter first.
 2. Decide whether the viewer needs source/file route hardening before AI-backed
    lifecycle commands.
 3. Keep AI execution behind workflow and harness seams; do not put it in CLI.
-4. Add an architecture test that CLI imports do not import concrete integration
-   modules once integrations exist.
+4. If public ingest lands next, test CLI argument adaptation only; source
+   parsing, prompt rendering, harness execution, safety, runs, and index refresh
+   must remain in services/workflows.
 
 ## Things Not To Do
 

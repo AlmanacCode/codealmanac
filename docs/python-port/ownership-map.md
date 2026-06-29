@@ -74,6 +74,12 @@ errors. It does not decide product policy.
 integrations. Tests enforce that `cli/`, `workflows/`, and `services/` do not
 import `codealmanac.integrations`.
 
+`services/workspaces/ports.py` also owns `WorkspaceChangeProbe`, the port used
+by lifecycle workflows to inspect repo/worktree mutation state. The concrete
+Git implementation lives in `integrations/workspaces/git/`. Ingest policy
+decides what mutations are allowed; the Git integration only reports observed
+state.
+
 ## First Slice Boundary
 
 The first Python implementation slice should prove:

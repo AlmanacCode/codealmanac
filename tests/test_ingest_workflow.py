@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -82,6 +83,32 @@ class FailedHarnessAdapter(WritingHarnessAdapter):
         )
 
 
+class DirtyFileMutatingHarnessAdapter(WritingHarnessAdapter):
+    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
+        self.requests.append(request)
+        page = request.cwd / ".almanac/pages/ingested-note.md"
+        page.write_text(
+            """---
+title: Ingested Note
+topics: [getting-started]
+sources: []
+---
+# Ingested Note
+
+Ingested durable wiki knowledge from the note.
+""",
+            encoding="utf-8",
+        )
+        (request.cwd / "src/app.py").write_text("agent mutation\n", encoding="utf-8")
+        return HarnessRunResult(
+            kind=self.kind,
+            status=HarnessRunStatus.SUCCEEDED,
+            output_text="updated wiki",
+            summary="ingested note",
+            changed_files=(page,),
+        )
+
+
 def test_ingest_workflow_resolves_sources_runs_harness_and_refreshes_index(
     tmp_path: Path,
     isolated_home: Path,
@@ -95,6 +122,8 @@ def test_ingest_workflow_resolves_sources_runs_harness_and_refreshes_index(
         harness_adapters=(adapter,),
     )
     app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
 
     result = app.workflows.ingest.run(
         RunIngestRequest(
@@ -115,6 +144,9 @@ def test_ingest_workflow_resolves_sources_runs_harness_and_refreshes_index(
     assert result.harness.changed_files == (
         repo / ".almanac/pages/ingested-note.md",
     )
+    assert result.safety.changed_files == (
+        repo / ".almanac/pages/ingested-note.md",
+    )
     assert result.index.pages_indexed == 2
     assert matches[0].slug == "ingested-note"
     assert "path.file" in adapter.requests[0].prompt
@@ -122,6 +154,7 @@ def test_ingest_workflow_resolves_sources_runs_harness_and_refreshes_index(
     assert "public CLI name is codealmanac" in adapter.requests[0].prompt
     assert tuple(entry.kind for entry in log) == (
         RunEventKind.STATUS,
+        RunEventKind.MESSAGE,
         RunEventKind.MESSAGE,
         RunEventKind.OUTPUT,
         RunEventKind.STATUS,
@@ -137,6 +170,8 @@ def test_ingest_workflow_fails_run_when_harness_is_missing(
     (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
     app = create_app(AppConfig(registry_path=isolated_home / ".almanac/registry.json"))
     app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
 
     with pytest.raises(NotFoundError):
         app.workflows.ingest.run(
@@ -167,6 +202,8 @@ def test_ingest_workflow_rejects_harness_changes_outside_almanac(
         harness_adapters=(UnsafeHarnessAdapter(),),
     )
     app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
 
     with pytest.raises(ValidationFailed):
         app.workflows.ingest.run(
@@ -181,7 +218,7 @@ def test_ingest_workflow_rejects_harness_changes_outside_almanac(
 
     assert run.status == RunStatus.FAILED
     assert run.error is not None
-    assert run.error.startswith("harness changed file outside .almanac:")
+    assert run.error.startswith("harness reported change outside .almanac:")
     assert "README.md" in run.error
 
 
@@ -197,6 +234,8 @@ def test_ingest_workflow_fails_when_harness_returns_failed_status(
         harness_adapters=(FailedHarnessAdapter(),),
     )
     app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
 
     with pytest.raises(ExecutionFailed):
         app.workflows.ingest.run(
@@ -213,6 +252,166 @@ def test_ingest_workflow_fails_when_harness_returns_failed_status(
     assert run.error == "harness codex failed with status failed"
 
 
+def test_ingest_workflow_allows_preexisting_dirty_app_files_when_unchanged(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    (repo / "src").mkdir()
+    (repo / "src/app.py").write_text("clean\n", encoding="utf-8")
+    adapter = WritingHarnessAdapter()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".almanac/registry.json"),
+        harness_adapters=(adapter,),
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
+    (repo / "src/app.py").write_text("user edit\n", encoding="utf-8")
+
+    result = app.workflows.ingest.run(
+        RunIngestRequest(
+            cwd=repo,
+            inputs=("note.md",),
+            harness=HarnessKind.CODEX,
+        )
+    )
+
+    assert result.run.status == RunStatus.DONE
+    assert result.safety.changed_files == (
+        repo / ".almanac/pages/ingested-note.md",
+    )
+    assert (repo / "src/app.py").read_text(encoding="utf-8") == "user edit\n"
+
+
+def test_ingest_workflow_rejects_harness_mutation_to_dirty_app_file(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    (repo / "src").mkdir()
+    (repo / "src/app.py").write_text("clean\n", encoding="utf-8")
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".almanac/registry.json"),
+        harness_adapters=(DirtyFileMutatingHarnessAdapter(),),
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
+    (repo / "src/app.py").write_text("user edit\n", encoding="utf-8")
+
+    with pytest.raises(ValidationFailed):
+        app.workflows.ingest.run(
+            RunIngestRequest(
+                cwd=repo,
+                inputs=("note.md",),
+                harness=HarnessKind.CODEX,
+            )
+        )
+
+    run = app.runs.list(ListRunsRequest(cwd=repo))[0]
+
+    assert run.status == RunStatus.FAILED
+    assert run.error is not None
+    assert run.error == "ingest changed file outside .almanac: src/app.py"
+
+
+def test_ingest_workflow_rejects_dirty_almanac_preflight(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".almanac/registry.json"),
+        harness_adapters=(WritingHarnessAdapter(),),
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
+    (repo / ".almanac/pages/getting-started.md").write_text(
+        "local wiki edit\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValidationFailed):
+        app.workflows.ingest.run(
+            RunIngestRequest(
+                cwd=repo,
+                inputs=("note.md",),
+                harness=HarnessKind.CODEX,
+            )
+        )
+
+    run = app.runs.list(ListRunsRequest(cwd=repo))[0]
+
+    assert run.status == RunStatus.FAILED
+    assert run.error is not None
+    assert run.error.startswith("ingest requires a clean .almanac before running:")
+
+
+def test_ingest_workflow_requires_git_change_tracking(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".almanac/registry.json"),
+        harness_adapters=(WritingHarnessAdapter(),),
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+
+    with pytest.raises(ValidationFailed):
+        app.workflows.ingest.run(
+            RunIngestRequest(
+                cwd=repo,
+                inputs=("note.md",),
+                harness=HarnessKind.CODEX,
+            )
+        )
+
+    run = app.runs.list(ListRunsRequest(cwd=repo))[0]
+
+    assert run.status == RunStatus.FAILED
+    assert run.error is not None
+    assert run.error.startswith("ingest requires Git change tracking:")
+
+
 def test_run_ingest_request_requires_inputs(tmp_path: Path):
     with pytest.raises(ValidationError):
         RunIngestRequest(cwd=tmp_path, inputs=(), harness=HarnessKind.CODEX)
+
+
+def initialize_git(repo: Path) -> None:
+    run_git(repo, "init")
+
+
+def commit_all(repo: Path, message: str) -> None:
+    run_git(repo, "add", ".")
+    run_git(
+        repo,
+        "-c",
+        "user.email=agent@example.com",
+        "-c",
+        "user.name=CodeAlmanac Test",
+        "commit",
+        "-m",
+        message,
+    )
+
+
+def run_git(repo: Path, *args: str) -> None:
+    subprocess.run(
+        ("git", *args),
+        cwd=repo,
+        text=True,
+        capture_output=True,
+        check=True,
+    )

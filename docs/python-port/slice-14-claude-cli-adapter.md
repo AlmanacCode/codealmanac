@@ -60,9 +60,10 @@ The adapter snapshots `git status --porcelain=v1 -z --untracked-files=all`
 before and after the Claude run and reports newly changed paths to the harness
 result. `workflows/ingest` rejects reported changes outside `.almanac/`.
 
-This is a first guard, not a complete sandbox. If the repo is already dirty or
-not a Git repository, changed-file detection can miss some effects. The next
-hardening step is stronger preflight policy before public `codealmanac ingest`.
+This adapter-level report is diagnostic, not the authoritative lifecycle safety
+boundary. Slice 15 adds workflow-owned Git mutation policy: ingest now requires
+Git change tracking, clean `.almanac/` preflight, and no non-wiki mutation
+during harness execution.
 
 ## Dogfood Result
 

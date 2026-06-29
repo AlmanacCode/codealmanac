@@ -91,6 +91,8 @@ the service boundary they implement, not as one flat external-tool list.
 
 ```text
 integrations/
+  workspaces/
+    git/
   harnesses/
     codex/
     claude/
@@ -168,7 +170,7 @@ not make CLI contain product decisions.
 
 | Service | Owns | Must Not Own |
 |---|---|---|
-| `workspaces` | repo root, `.almanac/` root, registry, path containment, local wiki selection | page parsing, source discovery, run execution |
+| `workspaces` | repo root, `.almanac/` root, registry, path containment, local wiki selection, repo/worktree mutation observations | page parsing, source discovery, run execution policy |
 | `wiki` | markdown page truth, frontmatter, topics, wikilinks, page writes, health inputs | trigger timing, harness execution, source discovery |
 | `index` | SQLite read model, FTS, mentions, backlinks, query projections | markdown truth, agent execution |
 | `sources` | source observations, source refs, fingerprints, local source state | deciding when AI runs, page writes |
@@ -188,6 +190,12 @@ is missing.
 
 `ingest` updates the wiki from selected local material such as paths, PR refs,
 diffs, commit ranges, notes, or transcript refs.
+
+AI-backed ingest must be auditable before it becomes public CLI behavior. The
+workflow requires Git change tracking, clean `.almanac/` state before the run,
+and no non-wiki file mutation during harness execution. Dirty application files
+may exist as source material if their observed state does not change during the
+run.
 
 `sync` scans supported local transcript stores, waits for quiet sessions, maps
 material back to repos with `.almanac/`, and queues ordinary local ingest work.

@@ -222,3 +222,31 @@ from `codealmanac.integrations`.
 Follow-up test:
 Before public `codealmanac ingest`, add stronger dirty-worktree or sandbox
 preflight so a real provider run cannot silently change application code.
+
+## 2026-06-29 - Git Snapshot Policy Before Public Ingest
+
+Old hypothesis:
+The Claude adapter's `changed_files` output plus workflow validation might be
+enough to make real-provider ingest safe.
+
+New hypothesis:
+The workflow needs its own mutation policy around every harness run. Adapter
+reported changes are diagnostic, but product safety must use a provider-neutral
+before/after snapshot.
+
+Evidence that forced the change:
+The Claude adapter can only report changes it observes through its own Git
+status delta. If application code is already dirty before ingest, a provider
+could mutate that same path without creating a new status entry. Cosmic Python
+chapter 6 frames a Unit of Work as a stable snapshot around an operation; for
+filesystem writes, Git snapshots are the honest audit boundary.
+
+Code or product assumption affected:
+`workflows/ingest` now runs `IngestMutationPolicy` before and after harness
+execution. `.almanac/` must be clean before the run, pre-existing dirty app
+files are allowed, and any non-wiki mutation during the run fails the job.
+
+Follow-up test:
+Before public CLI ingest, add a real CLI smoke over a Git repo once the command
+exists, and decide whether failure should offer a one-line fix such as
+committing or stashing `.almanac/` changes.

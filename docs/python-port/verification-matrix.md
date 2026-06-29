@@ -9,11 +9,11 @@ means the goal remains active.
 |---|---|---|---|
 | Fresh Python codebase | `pyproject.toml`, `src/codealmanac/`, `tests/` | `uv run pytest`, `uv run ruff check .` passed on 2026-06-29 | Lifecycle services remain pending. |
 | Based on live agreement | `docs/python-port-live-agreement.md`, `src/codealmanac/app.py`, service/workflow packages | tests exercise CLI -> app -> services/workflows over local `.almanac/` | Need future architecture tests as more services appear. |
-| Cosmic Python actively considered | `docs/reference/cosmic-python/`, `docs/python-port/`, composition root, service-layer tests, store boundary | tests call workflow/service and CLI surfaces instead of private helpers; Relayforge Discord checkpoint sent | Need deeper transaction/freshness review before lifecycle writes. |
+| Cosmic Python actively considered | `docs/reference/cosmic-python/`, `docs/python-port/`, composition root, service-layer tests, store boundary, Git snapshot policy for lifecycle writes | tests call workflow/service and CLI surfaces instead of private helpers; Relayforge Discord checkpoints sent | Need continued review before public lifecycle CLI. |
 | CLI exists as `codealmanac` only | `[project.scripts] codealmanac = "codealmanac.cli.main:main"` plus argparse commands | `uv run codealmanac --help`, live `init`, `build`, `list`, `search`, `show`, `topics create/describe/link/unlink/rename/delete`, `reindex`, `doctor`, `serve` passed on 2026-06-29 | Many planned lifecycle commands remain pending. |
 | SQLite-backed wiki/index behavior | `services/index`, `services/wiki`, `services/search`, `services/pages` | parser/index/search/show tests, stale-schema regression, stale-aware refresh regression, isolated live smoke, dogfood search | `refresh` still parses source markdown to compute signatures; optimize only after real large-repo pressure. |
-| Workflows: build, ingest, sync, garden | `workflows/build`; internal `workflows/ingest`; `services/runs`; `services/sources`; `services/harnesses` | build tests; runs service/jobs CLI tests; sources service tests; source-resolution dogfood; harness service tests; ingest workflow tests | Public `ingest`, `sync`, and `garden` execution remain pending. |
-| Integrations behind service ports | ownership map drafted; source contracts ready for Git/GitHub/transcript adapters; Claude CLI implements `HarnessAdapter`; architecture test guards import direction | sources, harness, Claude adapter, and architecture tests; real Claude ingest dogfood | Codex adapter and source adapters remain pending. |
+| Workflows: build, ingest, sync, garden | `workflows/build`; internal `workflows/ingest`; `services/runs`; `services/sources`; `services/harnesses`; `IngestMutationPolicy` | build tests; runs service/jobs CLI tests; sources service tests; source-resolution dogfood; harness service tests; ingest workflow safety tests | Public `ingest`, `sync`, and `garden` execution remain pending. |
+| Integrations behind service ports | ownership map drafted; source contracts ready for Git/GitHub/transcript adapters; Claude CLI implements `HarnessAdapter`; Git workspace change probe implements `WorkspaceChangeProbe`; architecture test guards import direction | sources, harness, Claude adapter, Git probe, ingest safety, and architecture tests; real Claude ingest dogfood | Codex adapter and source adapters remain pending. |
 | Prompts/manual surfaces | pending | pending | Must avoid old npm prompt layout assumptions. |
 | Tests and live verification | pytest/ruff configured in `pyproject.toml` | `uv run pytest`, `uv run ruff check .`, `uv run codealmanac --help`, live temp `init`/`list`/`search`/`show`, dogfood search, dogfood serve API passed | Browser-harness needs Chrome remote-debugging permission before visual UI verification can pass. |
 | Frequent review | slice-1 review fix hardened registry temp writes and typed selector helpers | `uv run pytest`, `uv run ruff check .`, live temp `init`/`list` passed after review fix | Need the same checkpoint discipline after each meaningful slice. |
@@ -209,3 +209,12 @@ means the goal remains active.
 | Diff hygiene | `git diff --check` | passed |
 | Default adapter readiness dogfood | `create_app().harnesses.check()` | passed; Claude available via `claude.ai` |
 | Real Claude ingest dogfood | temp Git repo; `app.workflows.ingest.run(..., harness=HarnessKind.CLAUDE)` | passed; one `.almanac/pages` file changed, run `done`, index refreshed, search found page |
+
+## Gates For Slice 15 Ingest Mutation Safety
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused mutation tests | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run pytest tests/test_git_workspace_probe.py tests/test_ingest_workflow.py tests/test_architecture.py` | 12 passed |
+| Policy coverage | ingest workflow tests | passed; dirty app files allowed when unchanged, dirty app mutation rejected, dirty `.almanac/` rejected, non-Git ingest rejected |
+| Architecture guard | `tests/test_architecture.py` | passed; CLI/workflows/services do not import integrations |
+| Live safety dogfood | temp Git repo with dirty `src/app.py`; fake harness wrote `.almanac/pages/safety-dogfood.md`; `app.workflows.ingest.run(...)`; search readback | passed; run `done`, safety changed files only wiki page, dirty app file preserved, search found page |
