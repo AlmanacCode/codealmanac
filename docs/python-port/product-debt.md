@@ -16,7 +16,8 @@ alive while rebuilding in Python.
 | Hosted-shipping work merged from `origin/dev` | archive/reference only | The branch may contain hosted assumptions that are not v1 product direction. |
 | TypeScript module boundaries | archive/reference only | The old code is behavior evidence, not a shape to preserve. |
 | Semantic/vector search | out of scope | FTS5 and explicit refs come first. |
-| `.almanac/wiki/` nesting | forbidden | `.almanac/` remains flat; future files are peers. |
+| Hard-coded `.almanac/` root | rejected | Python v1 targets new users and defaults to `almanac/`; `.almanac/` is only valid when explicitly configured. |
+| `<almanac-root>/wiki/` nesting | forbidden | The configured Almanac root remains flat; future files are peers. |
 
 ## Open Debts To Resolve During Slices
 
@@ -33,5 +34,6 @@ alive while rebuilding in Python.
 | Index refresh cost | `ensure_fresh` skips unchanged projection writes using source signatures, but still parses page markdown to compute them. Optimize only after real large-repo dogfood shows this is too slow. |
 | Viewer source-code preview | Not a v1 viewer feature. The restored file route lists wiki pages mentioning a file/folder reference; source-content reading belongs to source runtime snapshots used by lifecycle workflows. |
 | Filesystem directory ranking | Directory runtime now uses Git listing, respects nested ignore semantics, and ranks changed/untracked files before unchanged files. Clean large directories may still need semantic diversity or recency ranking after dogfood proves which unchanged files are wrong. |
-| Manual package updates | `.almanac/manual/` is copied missing-only during build/init. If bundled doctrine needs to update existing workspace manual files, add an explicit maintenance policy rather than overwriting local edits silently. |
+| Configurable Almanac root migration | Current implementation still assumes `.almanac/` in paths, prompts, tests, viewer, safety checks, and dogfood docs. Replace that with a workspace-owned root setting before calling the local product surface complete. |
+| Manual package updates | `<almanac-root>/manual/` is copied missing-only during build/init. If bundled doctrine needs to update existing workspace manual files, add an explicit maintenance policy rather than overwriting local edits silently. |
 | Oversized CLI edge | `src/codealmanac/cli/main.py` is over 1000 lines. Use `../almanac/clients/cli/src/almanac_cli/` as prior art for a split `parser/`, `dispatch/`, and `render/` CLI package, then add architecture tests that keep root parser/dispatch small. |

@@ -26,7 +26,7 @@ that root instead of constructing stores or adapters themselves.
 
 | Service | Owns | First implementation pressure |
 |---|---|---|
-| `workspaces` | repo root detection, `.almanac/` root, registry, path containment, local wiki selection | `init`, current-repo queries, `--wiki` lookup |
+| `workspaces` | repo root detection, configurable Almanac root, registry, path containment, local wiki selection | `init`, current-repo queries, `--wiki` lookup |
 | `wiki` | page files, frontmatter, topics, wikilinks, page writes, health inputs | `init`, `show`, page parsing for index |
 | `index` | SQLite read model, FTS, mentions, backlinks, query projections | `search`, `show --links`, `health` |
 | `sources` | source observations, source refs, fingerprints, local source state, source runtime snapshots, transcript discovery ports and typed transcript candidates | `SourceAddress`/`SourceRef`/`SourceBrief`/`SourceRuntime`, `SourceRuntimeAdapter`, `TranscriptDiscoveryAdapter`, `TranscriptCandidate`, ingest and sync inputs |
@@ -59,7 +59,7 @@ Workflows coordinate. They do not own durable schema unless a missing service is
 identified and added to this map.
 
 `workflows/lifecycle.py` owns shared lifecycle execution helpers: harness-result
-validation and Git-backed `.almanac/` mutation safety. Operation-specific
+validation and Git-backed wiki-root mutation safety. Operation-specific
 workflows pass their public verb into `LifecycleMutationPolicy`, so shared
 safety does not leak another workflow's product language.
 
@@ -109,9 +109,9 @@ query semantics.
 `services/config/` owns local config parsing and precedence. `ConfigStore`
 uses `pydantic-settings` TOML sources to build the frozen
 `CodeAlmanacConfig` settings model. `ConfigService` supplies sources in
-precedence order: selected project `.almanac/config.toml`, then
-`~/.almanac/config.toml`, then model defaults. CLI flags remain the final
-override at the command edge. There is no public `config` command in v1.
+precedence order: selected project `<almanac-root>/config.toml`, then user
+config, then model defaults. CLI flags remain the final override at the
+command edge. There is no public `config` command in v1.
 
 `integrations/harnesses/git_status.py` holds Git porcelain changed-file
 snapshots shared by Claude and Codex harness adapters.
@@ -165,7 +165,7 @@ file routes are graph-navigation routes.
 
 `manual/` is a support package rather than a product service. `ManualLibrary`
 loads bundled Markdown resources, installs missing files into
-`.almanac/manual/`, and reports workspace manual completeness. `app.py`
+`<almanac-root>/manual/`, and reports workspace manual completeness. `app.py`
 constructs it once and injects it into `WikiService` and `DiagnosticsService`.
 There is no public `manual` command in v1.
 
@@ -176,7 +176,7 @@ The first Python implementation slice should prove:
 - package install metadata exists
 - `codealmanac` invokes a Python CLI
 - `app.py` wires a minimal application object
-- `workspaces` can resolve and initialize a local `.almanac/`
+- `workspaces` can resolve and initialize a local configurable Almanac root
 - tests run through public service/CLI entrypoints, not hidden helpers
 
 This is intentionally smaller than the full product surface. It should create

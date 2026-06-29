@@ -14,7 +14,19 @@ It is the constraint document for future agents.
   `archive/code/`. Use it as behavior reference, not as code to preserve.
 - 2026-06-29: Public command and package language is `codealmanac`. Do not add
   public `almanac` or `alm` aliases for compatibility.
-- 2026-06-29: Repo-owned wiki data stays in `.almanac/`.
+- 2026-06-29: The Python rewrite targets new CodeAlmanac users. Do not keep
+  TypeScript-era backward compatibility, legacy aliases, legacy root
+  migrations, or old frontmatter repair paths unless the user explicitly
+  reopens that decision.
+- 2026-06-29: "Frontmatter rewrite" means deterministic editing of current
+  page metadata such as `topics:` while preserving page body text. It is not a
+  compatibility layer for old page formats.
+- 2026-06-29: Repo-owned wiki data lives under a configurable repo-local
+  Almanac root. New Python installs default to `almanac/`, not `.almanac/`.
+  Users may configure another root such as `docs/almanac/` or `.almanac/`.
+  The chosen root owns committed wiki docs and local runtime artifacts,
+  including the SQLite index, unless a future decision splits runtime state
+  elsewhere.
 - 2026-06-29: Follow Almanac's Python style: service symmetry, explicit request
   models, service-owned verbs, store-owned persistence, thin CLI edges.
 - 2026-06-29: Local automation v1 installs scheduler jobs for foreground
@@ -54,20 +66,19 @@ It is the constraint document for future agents.
   `candidate` object.
 - 2026-06-29: `manual/` is a local support package, not a public CLI surface.
   It contains bundled wiki-maintenance doctrine. `init` and `build` copy
-  missing files into `.almanac/manual/`, prompts tell lifecycle agents to read
-  those files, and `doctor` reports package/workspace manual readiness.
+  missing files into `<almanac-root>/manual/`, prompts tell lifecycle agents to
+  read those files, and `doctor` reports package/workspace manual readiness.
 - 2026-06-29: `database/` owns SQLite connection setup and migration
   application. Product stores still own their SQL schemas and query semantics.
   The current `index.db` migration strategy is rebuild-on-version-change
-  because the index is a derived read model from `.almanac/pages/` and
+  because the index is a derived read model from `<almanac-root>/pages/` and
   `topics.yaml`.
 - 2026-06-29: `config` owns local user/project TOML parsing and precedence
   through `pydantic-settings`. The first config surface is intentionally
-  narrow: `~/.almanac/config.toml` and `.almanac/config.toml` can set the
-  default lifecycle harness and sync quiet window. CLI flags still win over
-  config. Do not add a public `config` command, environment override system,
-  secrets system, or hosted/account config surface until a later agreement
-  requires it.
+  narrow: user config and `<almanac-root>/config.toml` can set the default
+  lifecycle harness and sync quiet window. CLI flags still win over config. Do
+  not add a public `config` command, environment override system, secrets
+  system, or hosted/account config surface until a later agreement requires it.
 
 ## Product Frame
 
@@ -78,8 +89,8 @@ The wiki can cover code, architecture, decisions, incidents, conversations, PR
 context, team conventions, deployment constraints, product strategy, and other
 durable knowledge that helps future work.
 
-The durable artifact is the repository's `.almanac/` directory. Git remains the
-system of record for wiki changes.
+The durable artifact is the repository's configured Almanac root. New installs
+default to `almanac/`. Git remains the system of record for wiki changes.
 
 The Python rewrite is a fresh codebase. Use the old CodeAlmanac implementation
 and Almanac's Python engine as references for behavior and structure. Do not
@@ -186,8 +197,8 @@ outside tool into service-owned models and errors.
 not own product decisions.
 
 `manual/` owns bundled wiki-maintenance doctrine. It is read by prompts,
-copied into `.almanac/manual/` by local build/init, and checked by diagnostics.
-It does not add a public command.
+copied into `<almanac-root>/manual/` by local build/init, and checked by
+diagnostics. It does not add a public command.
 
 ## Python Service Symmetry
 
@@ -230,7 +241,7 @@ not make CLI contain product decisions.
 
 | Service | Owns | Must Not Own |
 |---|---|---|
-| `workspaces` | repo root, `.almanac/` root, registry, path containment, local wiki selection, repo/worktree mutation observations | page parsing, source discovery, run execution policy |
+| `workspaces` | repo root, configured Almanac root, registry, path containment, local wiki selection, repo/worktree mutation observations | page parsing, source discovery, run execution policy |
 | `wiki` | markdown page truth, frontmatter, topics, wikilinks, page writes, health inputs | trigger timing, harness execution, source discovery |
 | `index` | SQLite read model, FTS, mentions, backlinks, query projections | markdown truth, agent execution |
 | `sources` | source observations, source refs, fingerprints, local source state | deciding when AI runs, page writes |
@@ -247,20 +258,22 @@ not make CLI contain product decisions.
 Workflows coordinate services. They do not own durable schema unless a service
 is missing.
 
-`build` creates or refreshes the initial local wiki in `.almanac/`.
+`build` creates or refreshes the initial local wiki in the configured Almanac
+root. New installs default to `almanac/`.
 
 `ingest` updates the wiki from selected local material such as paths, PR refs,
 diffs, commit ranges, notes, or transcript refs.
 
 AI-backed ingest must be auditable before it becomes public CLI behavior. The
-workflow requires Git change tracking, clean `.almanac/` state before the run,
-and no non-wiki file mutation during harness execution. Dirty application files
-may exist as source material if their observed state does not change during the
-run.
+workflow requires Git change tracking, clean wiki-root state before the run,
+and no non-wiki file mutation during harness execution. Dirty application
+files may exist as source material if their observed state does not change
+during the run.
 
 `sync` scans supported local transcript stores, waits for quiet sessions, maps
-material back to repos with `.almanac/`, claims a transcript range in the sync
-ledger, and starts ordinary local ingest work. It does not mean cloud sync.
+material back to repos with a configured Almanac root, claims a transcript
+range in the sync ledger, and starts ordinary local ingest work. It does not
+mean cloud sync.
 
 `garden` maintains existing wiki structure, links, topics, stale pages, and page
 quality. It may run without new source material.
@@ -314,10 +327,11 @@ codealmanac doctor
 codealmanac update
 ```
 
-Commands run inside a repo resolve the nearest `.almanac/`, like Git resolves
-`.git/`.
+Commands run inside a repo resolve the nearest configured Almanac root, like
+Git resolves `.git/`.
 
-`codealmanac list` reads the local registry of known `.almanac/` repos.
+`codealmanac list` reads the local registry of known repos with configured
+Almanac roots.
 
 Use `--wiki <name>` to target a different registered local wiki. Do not add
 `codealmanac use <wiki>` in v1; sticky selection is hosted-style state and can
@@ -385,7 +399,8 @@ subprocess.run(["codealmanac", "show", "..."])
 ## Non-Negotiables
 
 - Public naming is `codealmanac`.
-- `.almanac/` remains the repo-owned wiki artifact.
+- The configured Almanac root remains the repo-owned wiki artifact. New
+  installs default to `almanac/`.
 - Local v1 must not inherit hosted assumptions from merged `dev` or `origin/dev`.
 - CLI edges stay thin.
 - Services own product verbs.

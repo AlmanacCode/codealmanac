@@ -13,12 +13,17 @@ Updated: 2026-06-29
   `SourceAddress -> SourceRef -> SourceBrief -> SourceRuntime` before Ingest
   calls a harness.
 - Current Python product surface includes CLI/app composition, workspace
-  registry, `.almanac/` build, SQLite read model, search/show/topics/health,
+  registry, hard-coded `.almanac/` build, SQLite read model, search/show/topics/health,
   tag/untag/topic mutation, reindex, doctor, serve, runs/jobs, ingest, garden,
   foreground sync, sync status, local automation, Codex/Claude harness adapters,
   transcript discovery, source runtime adapters, bundled manual resources
   materialized into `.almanac/manual/`, and a conservative package update
   command.
+- Product direction changed after slice 39: the Python rewrite targets new
+  users and must not preserve TypeScript-era `.almanac/` compatibility by
+  default. The configured Almanac root should default to `almanac/`; users may
+  configure `docs/almanac/` or `.almanac/`. Current code still needs a root
+  configuration slice before this is true.
 - The local viewer now exposes `/api/file?path=...` and frontend
   `#/file/<path>` for wiki file/folder reference navigation. It lists pages
   mentioning the reference and does not read repo source contents.
@@ -27,15 +32,15 @@ Updated: 2026-06-29
 - `codealmanac.database` owns SQLite connection setup and migration
   application. `IndexStore` owns the first typed store migration for the
   derived `index.db` read model.
-- `services/config` owns local TOML config parsing and precedence. User config
-  lives at `~/.almanac/config.toml`; project config lives at
-  `.almanac/config.toml`; project config wins over user config; CLI flags still
-  win over both. It uses `pydantic-settings` TOML sources. The first supported
-  fields are `[harness].default` and `[sync].quiet`.
-- `src/codealmanac/cli/main.py` is now the clearest structural debt. Almanac's
-  current CLI in `../almanac/clients/cli/src/almanac_cli/` splits parser,
-  dispatch, and render modules and has architecture tests that keep root files
-  small. Use that as prior art for the next CLI cleanup slice.
+- `services/config` owns local TOML config parsing and precedence. Project
+  config should become `<almanac-root>/config.toml`; current code still uses
+  `.almanac/config.toml` and must be updated with the configurable-root slice.
+  CLI flags still win over config. It uses `pydantic-settings` TOML sources.
+  The first supported fields are `[harness].default` and `[sync].quiet`.
+- An in-flight CLI split has moved `src/codealmanac/cli/main.py` toward
+  `parser/`, `dispatch/`, and `render/` packages inspired by
+  `../almanac/clients/cli/src/almanac_cli/`. It is not committed yet in this
+  brief if the worktree is dirty.
 - Filesystem directory runtime uses Git listing inside worktrees, then falls
   back to the bounded Python/pathspec walk outside Git.
 - Git-listed directory runtime ranks changed and untracked files before
@@ -45,8 +50,8 @@ Updated: 2026-06-29
   `sdk` or `mcp` package modules.
 - The manual surface is a support package, not a public command. `ManualLibrary`
   reads `src/codealmanac/manual/*.md`, `build`/`init` copy missing docs into
-  `.almanac/manual/`, prompts tell lifecycle agents to read those docs, and
-  `doctor` checks package/workspace manual readiness.
+  the configured root's `manual/`, prompts tell lifecycle agents to read those
+  docs, and `doctor` checks package/workspace manual readiness.
 - Foreground `sync` writes a durable pending ledger claim before invoking
   Ingest, skips active pending transcript ranges, reports stale pending ranges
   as needs-attention, stores linked run ids plus cursor snapshots, reconciles
@@ -56,7 +61,7 @@ Updated: 2026-06-29
   running before Ingest/Garden side effects, then terminal done/failed/cancelled.
 - Ingest remains source-kind agnostic. It resolves `SourceBrief` values, asks
   `SourcesService.inspect_runtime(...)` for snapshots, renders typed runtime
-  JSON into the prompt, calls the selected harness, validates `.almanac/`
+  JSON into the prompt, calls the selected harness, validates wiki-root
   mutation safety, refreshes the index, and records the run.
 - The CLI remains a thin adapter. Do not shell out to `codealmanac` from
   workflows, automation, tests, or future server wrappers.
@@ -268,6 +273,11 @@ Behavior:
 ## Next Move
 
 1. Likely next pressure points:
+   - configurable Almanac root: default new repos to `almanac/`, allow
+     `docs/almanac/` and explicit `.almanac/`, and make pages, index, manual,
+     runs, config, viewer, prompts, sync ledger, and safety checks resolve
+     through `workspaces`
+   - finish and verify the in-flight CLI split if present in the worktree
    - semantic diversity or recency ranking for clean large directories if
      Git-listed unchanged files are still too noisy in dogfood
    - background sync owner/retry policy now that foreground sync can reconcile

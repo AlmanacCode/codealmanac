@@ -497,6 +497,12 @@
   resolve lifecycle defaults through `app.config` instead of embedding product
   defaults in argparse. The first supported config fields are
   `[harness].default` and `[sync].quiet`.
+- User clarified after slice 39 that the Python rewrite is for new users, not
+  backward compatibility with old TypeScript installs. The repo Almanac root
+  must become configurable and default to `almanac/`, with `docs/almanac/` or
+  `.almanac/` available only by configuration. Current code still hard-codes
+  `.almanac/` in workspace paths, prompts, tests, safety checks, and dogfood
+  docs; that is now product debt, not the target shape.
 
 ## Current Hypothesis
 
@@ -528,23 +534,27 @@ listing inside worktrees before falling back to Python/pathspec traversal, and
 Git-listed directories rank changed material before unchanged files. The
 local-only public surface now has executable guards for hosted verbs,
 compatibility aliases, SDK modules, and MCP modules. The manual surface now
-exists as packaged doctrine plus `.almanac/manual/` workspace files without
-adding a public command. The database spine now exists for SQLite connection
+exists as packaged doctrine plus workspace manual files without adding a public
+command. The database spine now exists for SQLite connection
 and migration mechanics, with `IndexStore` supplying the first store-owned
 typed migration for the derived read model. The local config seam now exists
 for typed user/project TOML defaults, with no public `config` command or
-hosted/account configuration surface.
+hosted/account configuration surface. The target root has changed: new repos
+should default to `almanac/` and all wiki docs plus local runtime artifacts
+should resolve through the configured Almanac root.
 
 ## Next Hypothesis
 
-The next automation or sync slice should add a real background owner, retry
-budget, or unattended failure policy only if it builds on the durable pending
-claim and run lifecycle reconciliation already in foreground sync. Scheduled
-update checks should wait for real non-editable
-install dogfood. The remaining
-source-runtime pressure is semantic diversity or recency ranking for clean
-large directories if dogfood shows unchanged inputs are still too noisy. The
-remaining serve risks are markdown wikilink rewriting inside code spans and
-browser-harness verification once Chrome allows remote debugging. The remaining
-config pressure should come from concrete use: add more config keys only when a
-second local default needs the same precedence path.
+The next high-pressure product slice is configurable Almanac root ownership:
+`workspaces` should default new repos to `almanac/`, support configured
+alternatives such as `docs/almanac/` and `.almanac/`, and make pages, topics,
+index, manual, runs, sync ledger, config, viewer, prompts, and lifecycle safety
+resolve through that root. After that, automation or sync can add a real
+background owner, retry budget, or unattended failure policy only if it builds
+on the durable pending claim and run lifecycle reconciliation already in
+foreground sync. Scheduled update checks should wait for real non-editable
+install dogfood. The remaining source-runtime pressure is semantic diversity
+or recency ranking for clean large directories if dogfood shows unchanged
+inputs are still too noisy. The remaining serve risks are markdown wikilink
+rewriting inside code spans and browser-harness verification once Chrome
+allows remote debugging.

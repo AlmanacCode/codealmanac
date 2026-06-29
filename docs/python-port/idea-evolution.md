@@ -5,6 +5,37 @@ Updated: 2026-06-29
 Record hypothesis changes here. Do not rewrite history; append a new entry when
 evidence changes the shape.
 
+## 2026-06-29 - Configured Almanac Root, Default `almanac/`
+
+Old hypothesis:
+The Python rewrite could keep `.almanac/` as the repo-owned wiki artifact
+because that matched the TypeScript implementation and the early slices.
+
+New hypothesis:
+The Python rewrite targets new CodeAlmanac users, so the repo wiki root should
+be configurable and should default to `almanac/`. Users can choose
+`docs/almanac/` or `.almanac/`, but `.almanac/` is not the default and should
+not be treated as a compatibility requirement.
+
+Evidence that forced the change:
+The user clarified that this product is being built for new users, not old
+TypeScript-era users, and explicitly asked to stop storing everything in
+`.almanac/` by default. The current code and docs still contain many hard-coded
+`.almanac/` assumptions, so this must become a first-class workspace/config
+boundary rather than a piecemeal rename.
+
+Code or product assumption affected:
+`workspaces` owns the configured Almanac root. Build/init, manual
+materialization, `index.db`, page paths, topics, runs, sync ledger, config,
+viewer routes, safety checks, and prompts must resolve paths through the
+workspace root instead of concatenating `.almanac/`.
+
+Follow-up test:
+Add root-configuration tests proving a fresh repo defaults to `almanac/`, can
+use `docs/almanac/`, and only uses `.almanac/` when explicitly configured.
+Architecture tests should reject new hard-coded repo `.almanac/` path joins
+outside the workspace root service.
+
 ## 2026-06-29 - Fresh Python Codebase, Not a Ported TS Shape
 
 Old hypothesis:
