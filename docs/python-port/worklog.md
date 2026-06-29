@@ -693,6 +693,11 @@ second status run. The generated `sync-workflow.md` page was health-clean, and
 public CLI readback worked for `sync status`, `jobs logs`, `jobs show`,
 `search`, `show`, and `health --json` when the unpublished branch was selected
 with `uv run --project /Users/rohan/Desktop/Projects/codealmanac`.
+Slice 60 reruns the current local `serve` viewer through browser-harness after
+the lifecycle and sync evidence slices. A temp wiki with page links, topics,
+searchable content, and file refs rendered correctly in desktop Chrome for the
+overview, page, topic, search, and file routes. A 390px mobile page route also
+rendered without horizontal overflow. No viewer code or CSS patch was needed.
 
 ## Next Hypothesis
 
@@ -715,7 +720,6 @@ After slice 55, the next Codex harness pressure is event completeness, not
 parity for its own sake. `codex exec` remains a one-shot writer transport;
 Codex app-server belongs back on the table when jobs need normalized text,
 tool, usage, actor, or root-turn events from the run itself.
-After slice 59, public release should be measured against
-`docs/python-port/public-release-readiness.md`: viewer browser proof, final
-package rehearsal, and prompt-quality review from more real source shapes only
-if those gates pass.
+After slice 60, public release should be measured against
+`docs/python-port/public-release-readiness.md`: final package rehearsal, and
+prompt-quality review from more real source shapes only if that gate passes.

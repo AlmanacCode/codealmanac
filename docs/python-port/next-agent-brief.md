@@ -7,7 +7,7 @@ Updated: 2026-06-29
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `dev`.
 - Latest implementation slice:
-  slice 59 real sync dogfood.
+  slice 60 serve browser proof.
 - Latest committed product-direction slice: `docs: record viewer design correction`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
@@ -118,6 +118,12 @@ Updated: 2026-06-29
   `sync status`, `jobs logs`, `jobs show`, `search`, `show`, and
   `health --json` when selected with `uv run --project` because the branch is
   not published yet.
+- Slice 60 serve browser proof passed through browser-harness against a live
+  temp `serve` instance. The desktop routes `/`, `#/page/auth-flow`,
+  `#/topic/auth`, `#/search/auth`, and `#/file/src/auth/session.py` rendered the
+  expected headings/content with no horizontal overflow. A 390px mobile
+  `#/page/auth-flow` route also rendered page content and file refs with no
+  horizontal overflow. No viewer code or CSS patch was needed.
 - The manual surface is a support package, not a public command. `ManualLibrary`
   reads `src/codealmanac/manual/*.md`, `build`/`init` copy missing docs into
   the configured root's `manual/`, prompts tell lifecycle agents to read those
@@ -527,12 +533,12 @@ Behavior:
   /health, and Relayforge Discord note through Doppler `almanac/dev`
 - Slice 59 real sync dogfood, repeat unchanged-skip proof, clean health, and
   public CLI readback for sync/jobs/search/show/health
+- Slice 60 browser-harness proof for live `serve` desktop overview/page/topic
+  /search/file routes and mobile page route
 
 ## Next Move
 
 1. Likely next pressure points:
-   - browser-harness pass over `serve` after the latest viewer/static package
-     against `docs/python-port/public-release-readiness.md`
    - final wheel/sdist package rehearsal from non-editable installs before any
      publish attempt
    - more lifecycle dogfood for prompt quality and real project behavior; add

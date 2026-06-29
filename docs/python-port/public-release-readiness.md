@@ -5,9 +5,9 @@ Date: 2026-06-29
 ## Current Read
 
 CodeAlmanac is usable as an internal local alpha. Clean wheel install, real
-Codex ingest, real Claude ingest, and real sync now have dogfood evidence. It
-is not public-release ready until final viewer browser proof and
-release-package rehearsal also pass.
+Codex ingest, real Claude ingest, real sync, and final viewer browser proof now
+have dogfood evidence. It is not public-release ready until release-package
+rehearsal also passes.
 
 The main remaining work is release proof, prompt quality, and real-world
 dogfood. More generic architecture seams are diminishing returns unless a gate
@@ -59,9 +59,12 @@ below exposes a boundary problem.
   ledger to done, skipped the same transcript as unchanged on the second
   status run, and left public CLI `sync status`, `jobs logs`, `jobs show`,
   `search`, `show`, and `health --json` output readable.
+- Slice 60 passed browser-harness proof over a live temp `serve` instance.
+  Overview, page, topic, search, and file-reference routes rendered in desktop
+  Chrome with no horizontal overflow, and the mobile `390x844` page route also
+  rendered without horizontal overflow.
 
 ## Next Useful Pressure Tests
 
-1. Browser-harness pass over `serve` after the latest viewer/static package.
-2. Final wheel/sdist install rehearsal before any publish attempt.
-3. More lifecycle prompt-quality dogfood only if viewer/package gates pass.
+1. Final wheel/sdist install rehearsal before any publish attempt.
+2. More lifecycle prompt-quality dogfood only if package rehearsal passes.
