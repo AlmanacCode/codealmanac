@@ -654,4 +654,4 @@ means the goal remains active.
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
 | Package build | `uv build --wheel --no-build-logs --out-dir /tmp/codealmanac-build-slice51-final`; wheel inspection | passed; wheel includes updated viewer assets, no `clamp(` or `vw`, `repo-owned wiki`, and `dataset.railKind` |
-| Browser-harness visual dogfood | `browser-harness` navigation to the live temp `serve` URL | blocked by Chrome remote-debugging permission: `CDP WS handshake failed`, prompt requested clicking Allow |
+| Browser-harness visual dogfood | isolated temporary Chrome profile with explicit `BU_CDP_URL`; live temp `serve`; overview/page/topic/search route checks; 390px mobile page route check | passed; sidebar-first shell rendered, page/topic/search active states were correct, file refs were visible, dense mobile rail and side panel collapsed, search fit viewport, and no horizontal overflow appeared |

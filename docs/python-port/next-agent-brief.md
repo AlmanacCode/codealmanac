@@ -51,8 +51,8 @@ Updated: 2026-06-29
   repo-owned wiki rail wording, `Local knowledge graph` scope text, active
   page/topic rail links from hash-route metadata, mobile rail density cleanup,
   and a CSS guard against viewport-scaled type. Browser-harness visual dogfood
-  is the remaining open check because Chrome remote debugging requested the
-  manual Allow click.
+  passed through an isolated temporary Chrome profile with explicit `BU_CDP_URL`;
+  default-profile Chrome still requires the manual remote-debugging Allow click.
 - Bulletproof React Markdown reference lives under
   `docs/reference/bulletproof-react/`. Treat it as frontend architecture
   guidance for future viewer growth, not a reason to add React/Next.js while
@@ -469,9 +469,9 @@ Behavior:
    - more real-repo dogfood for source-runtime diversity; add recency only
      after a failing case proves diversity is insufficient
    - scheduled update automation only after non-editable update dogfood
-   - serve polish after product review; slice 51 is currently tightening the
-     sidebar shell and still needs browser-harness visual verification after
-     Chrome remote debugging allows connection
+   - serve polish after product review; slice 51 browser-verified the sidebar
+     shell through an isolated temporary Chrome profile, while default-profile
+     Chrome remote debugging still needs the manual Allow click
    - manual update/sync policy only if bundled doctrine must update existing
      workspace manual files; ordinary build/init currently copies missing files
      only

@@ -1284,6 +1284,7 @@ out of scope. The viewer route state lives in `viewer/main.js` over existing
 hash routes.
 
 Follow-up test:
-Complete browser-harness desktop/mobile verification after Chrome allows remote
-debugging again. Do not add React, Next.js, or Vite unless the static viewer
-stops fitting real UI complexity.
+Use an isolated temporary Chrome profile with explicit `BU_CDP_URL` for future
+browser-harness checks if the default Chrome profile requests the manual
+remote-debugging Allow click. Do not add React, Next.js, or Vite unless the
+static viewer stops fitting real UI complexity.

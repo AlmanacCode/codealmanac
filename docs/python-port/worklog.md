@@ -649,7 +649,8 @@ remaining source-runtime pressure is now real-repo dogfood for the diversity
 policy rather than a missing v1 mechanism. The remaining serve risk is polish
 and product review of navigation density, especially the compact mobile rail.
 Browser-harness should still verify visual changes, but the current run is
-blocked on Chrome's remote-debugging Allow prompt rather than a repo failure.
+using an isolated temporary Chrome profile with explicit `BU_CDP_URL` when the
+default Chrome profile requests the remote-debugging Allow prompt.
 After slice 48, the next update pressure is no longer install detection; it is
 the product policy for notification cadence, dismissal, and release channels
 before any scheduled update automation exists. After slice 49, the next CLI
