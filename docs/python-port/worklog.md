@@ -418,6 +418,17 @@
 - Sent a Relayforge Discord checkpoint for the Cosmic Python chapter 13 pattern
   applied in slice 31: explicit dependency on a `CommandRunner` abstraction
   instead of hardcoded subprocess calls or monkeypatching.
+- Added slice-32 changed-first filesystem directory selection. Git-listed
+  directories now ask `git status --porcelain=v1 -z --untracked-files=all` for
+  the selected path, rank changed and untracked files before unchanged files,
+  and annotate the runtime tree with `changed` or `unchanged` state.
+- Dogfood against this repo's dirty `src/codealmanac/` directory selected the
+  changed filesystem adapter and selector files first before unchanged
+  `app.py` and `cli/main.py`, proving broad-directory prompt material now
+  follows the current slice instead of alphabetical path order.
+- Sent a Relayforge Discord checkpoint for the Cosmic Python chapter 5 pattern
+  applied in slice 32: high-gear tests drive the source service runtime
+  contract instead of freezing private selector helper details.
 
 ## Current Hypothesis
 
@@ -441,14 +452,15 @@ runtime snapshots before Ingest starts the harness. Manual `update` now exists
 as a conservative package-manager command and does not install scheduled update
 automation. The viewer file route is now graph navigation over indexed file
 references, not source-code preview. Filesystem directory runtime now uses Git
-listing inside worktrees before falling back to Python/pathspec traversal.
+listing inside worktrees before falling back to Python/pathspec traversal, and
+Git-listed directories rank changed material before unchanged files.
 
 ## Next Hypothesis
 
 The next automation or sync slice should add background/pending semantics only
 if it first adds a durable background owner and reconciliation loop. Scheduled
 update checks should wait for real non-editable install dogfood. The remaining
-source-runtime pressure is smarter file selection or ranking if dogfood shows
-Git-listed directory inputs are still too noisy. The remaining serve risks are
-markdown wikilink rewriting inside code spans and browser-harness verification
-once Chrome allows remote debugging.
+source-runtime pressure is semantic diversity or recency ranking for clean
+large directories if dogfood shows unchanged inputs are still too noisy. The
+remaining serve risks are markdown wikilink rewriting inside code spans and
+browser-harness verification once Chrome allows remote debugging.

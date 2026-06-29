@@ -132,15 +132,57 @@ def test_filesystem_source_runtime_uses_git_directory_listing(
     content = runtime.content or ""
     assert runtime.status == SourceRuntimeStatus.AVAILABLE
     assert "listing_source: git" in content
+    assert "selection_policy: changed_first" in content
+    assert "changed_files_available: 2" in content
     assert "src/keep.py" in content
+    assert "src/keep.py [changed]" in content
     assert "TRACKED = True" in content
     assert "src/new-note.md" in content
+    assert "src/new-note.md [changed]" in content
     assert "untracked source" in content
     assert "nested-secret.txt" not in content
     assert ".gitignore" not in content
     assert ".almanac/pages/wiki.md" not in content
     assert "SECRET=1" not in content
     assert "root-ignored.md" not in content
+
+
+def test_filesystem_source_runtime_prioritizes_git_changes_when_bounded(
+    tmp_path: Path,
+):
+    if shutil.which("git") is None:
+        pytest.skip("git is required for this integration test")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run_git(repo, "init", "-q")
+    run_git(repo, "config", "user.email", "test@example.com")
+    run_git(repo, "config", "user.name", "Test User")
+    (repo / "src").mkdir()
+    (repo / "src/alpha.py").write_text("UNCHANGED = True\n", encoding="utf-8")
+    (repo / "src/zeta.py").write_text("OLD = True\n", encoding="utf-8")
+    run_git(repo, "add", "src/alpha.py", "src/zeta.py")
+    run_git(repo, "commit", "-m", "initial", "--quiet")
+    (repo / "src/zeta.py").write_text("MODIFIED = True\n", encoding="utf-8")
+    (repo / "src/new.py").write_text("UNTRACKED = True\n", encoding="utf-8")
+    app = create_app(
+        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=2),)
+    )
+    (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=repo, inputs=("src",)))
+
+    runtime = app.sources.inspect_runtime(
+        InspectSourceRuntimeRequest(cwd=repo, ref=brief.ref)
+    )
+
+    content = runtime.content or ""
+    assert runtime.status == SourceRuntimeStatus.AVAILABLE
+    assert runtime.truncated is True
+    assert "selection_policy: changed_first" in content
+    assert "changed_files_available: 2" in content
+    assert "src/new.py [changed]" in content
+    assert "UNTRACKED = True" in content
+    assert "src/zeta.py [changed]" in content
+    assert "MODIFIED = True" in content
+    assert "src/alpha.py" not in content
 
 
 def test_filesystem_source_runtime_bounds_directory_files(tmp_path: Path):

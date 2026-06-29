@@ -34,6 +34,11 @@ It is the constraint document for future agents.
   selected directory is inside a Git worktree, then falls back to the bounded
   Python/pathspec walk when Git cannot answer. This is runtime material
   selection, not a new source kind or source catalog.
+- 2026-06-29: Git-listed filesystem directory runtime ranks changed and
+  untracked files before unchanged files and annotates included files as
+  `changed` or `unchanged` in the runtime tree. This is a prompt-material
+  selection policy inside the filesystem adapter; it is not a durable
+  `candidate` object.
 
 ## Product Frame
 

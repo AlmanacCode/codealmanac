@@ -6,7 +6,7 @@ Updated: 2026-06-29
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
-- Latest committed slice: `feat(slice-31): add git-aware filesystem listing`.
+- Latest committed slice: `feat(slice-32): rank changed directory sources first`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
 - Latest verified source-runtime direction: selected local material becomes
@@ -25,6 +25,8 @@ Updated: 2026-06-29
   URLs behind `services/sources/ports.py::SourceRuntimeAdapter`.
 - Filesystem directory runtime uses Git listing inside worktrees, then falls
   back to the bounded Python/pathspec walk outside Git.
+- Git-listed directory runtime ranks changed and untracked files before
+  unchanged files and labels included files as `changed` or `unchanged`.
 - Ingest remains source-kind agnostic. It resolves `SourceBrief` values, asks
   `SourcesService.inspect_runtime(...)` for snapshots, renders typed runtime
   JSON into the prompt, calls the selected harness, validates `.almanac/`
@@ -91,6 +93,17 @@ Behavior:
 - non-Git directories keep the old bounded Python/pathspec walk
 - runtime metadata includes `listing_source: git` or `listing_source: walk`
 
+Slice 32 adds changed-first directory selection.
+
+Behavior:
+
+- Git-listed directory runtime also asks `git status --porcelain=v1 -z` for the
+  selected path
+- changed and untracked files are ranked before unchanged files
+- unchanged files keep deterministic content/path ordering
+- runtime metadata includes `selection_policy: changed_first`
+- the rendered tree annotates included files as `changed` or `unchanged`
+
 ## Verification To Preserve
 
 - Focused filesystem/source/ingest/architecture tests
@@ -111,12 +124,14 @@ Behavior:
   package build asset inspection, and live `serve` API dogfood for file,
   folder, traversal rejection, and frontend asset wiring
 - Slice 31 focused filesystem/source/ingest/architecture tests and focused ruff
+- Slice 32 focused filesystem tests, source/ingest/architecture tests, focused
+  ruff, and dirty-checkout dogfood against `src/codealmanac/`
 
 ## Next Move
 
 1. Likely next pressure points:
-   - smarter directory file selection/ranking if Git-listed directory runtime
-     is still too noisy in dogfood
+   - semantic diversity or recency ranking for clean large directories if
+     Git-listed unchanged files are still too noisy in dogfood
    - background sync pending/reconciliation only if a durable owner is added
    - scheduled update automation only after non-editable update dogfood
    - browser-harness visual verification for `serve` once Chrome remote

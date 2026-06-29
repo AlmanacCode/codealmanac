@@ -15,6 +15,13 @@ from codealmanac.integrations.command import (
     SubprocessCommandRunner,
     first_line,
 )
+from codealmanac.integrations.sources.filesystem.selection import (
+    FilesystemDirectoryCandidate,
+    FilesystemDirectoryFileState,
+    FilesystemDirectoryListingSource,
+    FilesystemDirectorySelectionPolicy,
+    ranked_directory_candidates,
+)
 from codealmanac.integrations.sources.runtime import (
     bounded_text,
     source_runtime_section,
@@ -54,17 +61,16 @@ class FilesystemRuntimeKind(StrEnum):
     DIRECTORY = "directory"
 
 
-class FilesystemDirectoryListingSource(StrEnum):
-    GIT = "git"
-    WALK = "walk"
-
-
 class FilesystemTextDocument(CodeAlmanacModel):
     path: Path
     display_path: str
     size_bytes: int
     encoding: str
     text: str
+    selection_state: FilesystemDirectoryFileState = (
+        FilesystemDirectoryFileState.UNCHANGED
+    )
+    git_status: str | None = None
     bytes_truncated: bool = False
 
     @field_validator("display_path", "encoding", "text")
@@ -79,11 +85,22 @@ class FilesystemTextDocument(CodeAlmanacModel):
             raise ValueError("filesystem runtime file size must be non-negative")
         return value
 
+    @field_validator("git_status")
+    @classmethod
+    def validate_git_status(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if len(value) != 2:
+            raise ValueError("filesystem runtime git status must be two characters")
+        return value
+
 
 class FilesystemDirectoryDocument(CodeAlmanacModel):
     path: Path
     display_path: str
     listing_source: FilesystemDirectoryListingSource
+    selection_policy: FilesystemDirectorySelectionPolicy
+    changed_count: int = 0
     files: tuple[FilesystemTextDocument, ...]
     skipped_count: int = 0
     file_list_truncated: bool = False
@@ -98,6 +115,13 @@ class FilesystemDirectoryDocument(CodeAlmanacModel):
     def non_negative_skipped_count(cls, value: int) -> int:
         if value < 0:
             raise ValueError("filesystem runtime skipped count must be non-negative")
+        return value
+
+    @field_validator("changed_count")
+    @classmethod
+    def non_negative_changed_count(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("filesystem runtime changed count must be non-negative")
         return value
 
 
@@ -234,6 +258,10 @@ def read_text_document(
     path: Path,
     cwd: Path,
     max_file_bytes: int,
+    selection_state: FilesystemDirectoryFileState = (
+        FilesystemDirectoryFileState.UNCHANGED
+    ),
+    git_status: str | None = None,
 ) -> FilesystemTextDocument:
     size_bytes = path.stat().st_size
     with path.open("rb") as file:
@@ -248,6 +276,8 @@ def read_text_document(
             size_bytes=size_bytes,
             encoding="utf-8",
             text="(empty file)",
+            selection_state=selection_state,
+            git_status=git_status,
             bytes_truncated=False,
         )
     match = from_bytes(raw).best()
@@ -264,6 +294,8 @@ def read_text_document(
         size_bytes=size_bytes,
         encoding=match.encoding,
         text=text,
+        selection_state=selection_state,
+        git_status=git_status,
         bytes_truncated=bytes_truncated,
     )
 
@@ -278,30 +310,59 @@ def read_directory_document(
 ) -> FilesystemDirectoryDocument:
     ignore_spec = ignore_spec_for(root, cwd)
     listing_source = FilesystemDirectoryListingSource.WALK
-    paths: Iterator[Path] = walk_files(root, cwd, ignore_spec)
-    git_paths = git_directory_files(root, cwd, runner, git_timeout_seconds)
-    if git_paths is not None:
+    selection_policy = FilesystemDirectorySelectionPolicy.PATH_ORDER
+    candidates = tuple(walk_file_candidates(root, cwd, ignore_spec))
+    git_candidates = git_directory_candidates(root, cwd, runner, git_timeout_seconds)
+    if git_candidates is not None:
         listing_source = FilesystemDirectoryListingSource.GIT
-        paths = iter(git_paths)
+        selection_policy = FilesystemDirectorySelectionPolicy.CHANGED_FIRST
+        candidates = git_candidates
     files: list[FilesystemTextDocument] = []
     skipped_count = 0
     file_list_truncated = False
-    for path in paths:
+    changed_count = sum(
+        1
+        for candidate in candidates
+        if candidate.state == FilesystemDirectoryFileState.CHANGED
+    )
+    for candidate in candidates:
         if len(files) >= max_directory_files:
             file_list_truncated = True
             break
         try:
-            files.append(read_text_document(path, cwd, max_file_bytes))
+            files.append(
+                read_text_document(
+                    candidate.path,
+                    cwd,
+                    max_file_bytes,
+                    candidate.state,
+                    candidate.git_status,
+                )
+            )
         except (OSError, UnreadableTextError):
             skipped_count += 1
     return FilesystemDirectoryDocument(
         path=root,
         display_path=display_path(root, cwd),
         listing_source=listing_source,
+        selection_policy=selection_policy,
+        changed_count=changed_count,
         files=tuple(files),
         skipped_count=skipped_count,
         file_list_truncated=file_list_truncated,
     )
+
+
+def walk_file_candidates(
+    root: Path,
+    cwd: Path,
+    ignore_spec: GitIgnoreSpec,
+) -> Iterator[FilesystemDirectoryCandidate]:
+    for path in walk_files(root, cwd, ignore_spec):
+        yield FilesystemDirectoryCandidate(
+            path=path,
+            display_path=display_path(path, cwd),
+        )
 
 
 def walk_files(
@@ -328,12 +389,12 @@ def sorted_children(path: Path) -> tuple[Path, ...]:
         return ()
 
 
-def git_directory_files(
+def git_directory_candidates(
     root: Path,
     cwd: Path,
     runner: CommandRunner,
     timeout_seconds: int,
-) -> tuple[Path, ...] | None:
+) -> tuple[FilesystemDirectoryCandidate, ...] | None:
     repo_root = git_repo_root(root, runner, timeout_seconds)
     if repo_root is None:
         return None
@@ -360,8 +421,15 @@ def git_directory_files(
     )
     if result is None:
         return None
+    changed_statuses = git_changed_statuses(
+        repo_root,
+        root,
+        pathspec,
+        runner,
+        timeout_seconds,
+    )
     default_spec = GitIgnoreSpec.from_lines(DEFAULT_IGNORE_PATTERNS)
-    paths: list[Path] = []
+    candidates: list[FilesystemDirectoryCandidate] = []
     seen: set[Path] = set()
     for value in result.stdout.split("\0"):
         if not value:
@@ -375,8 +443,67 @@ def git_directory_files(
             continue
         if path.is_file():
             seen.add(path)
-            paths.append(path)
-    return tuple(sorted(paths, key=lambda path: display_path(path, cwd).casefold()))
+            git_status = changed_statuses.get(path)
+            state = FilesystemDirectoryFileState.UNCHANGED
+            if git_status is not None:
+                state = FilesystemDirectoryFileState.CHANGED
+            candidates.append(
+                FilesystemDirectoryCandidate(
+                    path=path,
+                    display_path=display_path(path, cwd),
+                    state=state,
+                    git_status=git_status,
+                )
+            )
+    return ranked_directory_candidates(tuple(candidates))
+
+
+def git_changed_statuses(
+    repo_root: Path,
+    root: Path,
+    pathspec: str,
+    runner: CommandRunner,
+    timeout_seconds: int,
+) -> dict[Path, str]:
+    result = run_git(
+        runner,
+        repo_root,
+        (
+            "--no-optional-locks",
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--",
+            pathspec,
+        ),
+        timeout_seconds,
+    )
+    if result is None:
+        return {}
+    statuses: dict[Path, str] = {}
+    for relative_path, status in parse_git_status_z(result.stdout):
+        path = repo_root / relative_path
+        if is_relative_to(path, root):
+            statuses[path] = status
+    return statuses
+
+
+def parse_git_status_z(stdout: str) -> tuple[tuple[str, str], ...]:
+    parts = stdout.split("\0")
+    parsed: list[tuple[str, str]] = []
+    index = 0
+    while index < len(parts):
+        entry = parts[index]
+        index += 1
+        if not entry or len(entry) < 4 or entry[2] != " ":
+            continue
+        status = entry[:2]
+        relative_path = entry[3:]
+        parsed.append((relative_path, status))
+        if "R" in status or "C" in status:
+            index += 1
+    return tuple(parsed)
 
 
 def git_repo_root(
@@ -452,7 +579,9 @@ def render_directory_metadata(document: FilesystemDirectoryDocument) -> str:
             f"kind: {FilesystemRuntimeKind.DIRECTORY.value}",
             f"path: {document.display_path}",
             f"listing_source: {document.listing_source.value}",
+            f"selection_policy: {document.selection_policy.value}",
             f"files_included: {len(document.files)}",
+            f"changed_files_available: {document.changed_count}",
             f"files_skipped: {document.skipped_count}",
             f"file_list_truncated: {str(document.file_list_truncated).lower()}",
         )
@@ -463,7 +592,10 @@ def render_tree(files: tuple[FilesystemTextDocument, ...]) -> str:
     if len(files) == 0:
         return "(no readable files)"
     return "\n".join(
-        f"- {file.display_path} ({file.size_bytes} bytes, {file.encoding})"
+        (
+            f"- {file.display_path} [{file.selection_state.value}] "
+            f"({file.size_bytes} bytes, {file.encoding})"
+        )
         for file in files
     )
 

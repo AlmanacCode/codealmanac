@@ -705,3 +705,31 @@ Follow-up test:
 If large directories remain noisy, add ranking or selection rules inside the
 filesystem integration after dogfood proves which files are wrong, rather than
 teaching Ingest to branch on directory shape.
+
+## 2026-06-29 - Directory Runtime Selection Is Changed-First
+
+Old hypothesis:
+After Git listing, deterministic path order might be enough for bounded
+directory runtime material.
+
+New hypothesis:
+Git-listed directory runtime should rank changed and untracked files before
+unchanged files, then fall back to deterministic content/path ordering for the
+remaining files. The prompt should show whether an included file was selected
+as changed or unchanged.
+
+Evidence that forced the change:
+Dogfood against this repo's `src/codealmanac/` directory selected package
+markers and broad unchanged modules before the files in the current slice, then
+hit the file-count bound. Git's porcelain status format gives a stable
+machine-readable changed-file signal for this exact path.
+
+Code or product assumption affected:
+`integrations/sources/filesystem` now owns a typed directory-selection policy.
+The source service, Ingest workflow, and CLI still see one directory
+`SourceRuntime`; there is no durable source-pool or candidate object.
+
+Follow-up test:
+If clean large directories remain noisy after changed-first selection, add a
+separate semantic-diversity or recency policy with dogfood proving the wrong
+unchanged files.
