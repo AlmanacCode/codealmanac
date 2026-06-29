@@ -81,3 +81,43 @@ Login reads [[src/auth/session.py]].
     empty_output = capsys.readouterr()
     assert empty_output.out == ""
     assert empty_output.err == "# 0 results\n"
+
+
+def test_cli_topics_and_health_read_current_repo_wiki(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    pages = repo / ".almanac/pages"
+    pages.mkdir(parents=True)
+    (repo / ".almanac/topics.yaml").write_text(
+        """topics:
+  - slug: auth
+    title: Auth
+    parents: []
+  - slug: empty-topic
+    title: Empty Topic
+    parents: []
+""",
+        encoding="utf-8",
+    )
+    (pages / "auth-flow.md").write_text(
+        "---\ntopics: [auth]\n---\n# Auth Flow\n\nSee [[missing-page]].\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(repo)
+
+    assert main(["topics"]) == 0
+    topics_output = capsys.readouterr()
+    assert "auth\t1\tAuth\n" in topics_output.out
+
+    assert main(["topics", "show", "auth"]) == 0
+    topic_output = capsys.readouterr()
+    assert "pages:\n  auth-flow\n" in topic_output.out
+
+    assert main(["health", "--json"]) == 0
+    health_output = capsys.readouterr()
+    assert '"broken_links": [' in health_output.out
+    assert '"target_slug": "missing-page"' in health_output.out

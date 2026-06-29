@@ -1,6 +1,16 @@
+from enum import StrEnum
 from pathlib import Path
 
 from codealmanac.core.models import CodeAlmanacModel
+
+
+class HealthCategory(StrEnum):
+    ORPHANS = "orphans"
+    DEAD_REFS = "dead_refs"
+    BROKEN_LINKS = "broken_links"
+    BROKEN_XWIKI = "broken_xwiki"
+    EMPTY_TOPICS = "empty_topics"
+    EMPTY_PAGES = "empty_pages"
 
 
 class SearchPageResult(CodeAlmanacModel):
@@ -45,3 +55,56 @@ class IndexRefreshResult(CodeAlmanacModel):
     pages_indexed: int
     files_seen: int
     files_skipped: int
+
+
+class TopicSummary(CodeAlmanacModel):
+    slug: str
+    title: str | None
+    description: str | None
+    page_count: int
+
+
+class TopicDetail(CodeAlmanacModel):
+    slug: str
+    title: str | None
+    description: str | None
+    parents: tuple[str, ...]
+    children: tuple[str, ...]
+    pages: tuple[str, ...]
+
+
+class OrphanPage(CodeAlmanacModel):
+    slug: str
+
+
+class DeadFileReference(CodeAlmanacModel):
+    slug: str
+    path: str
+
+
+class BrokenPageLink(CodeAlmanacModel):
+    source_slug: str
+    target_slug: str
+
+
+class BrokenCrossWikiLink(CodeAlmanacModel):
+    source_slug: str
+    target_wiki: str
+    target_slug: str
+
+
+class EmptyTopic(CodeAlmanacModel):
+    slug: str
+
+
+class EmptyPage(CodeAlmanacModel):
+    slug: str
+
+
+class HealthReport(CodeAlmanacModel):
+    orphans: tuple[OrphanPage, ...]
+    dead_refs: tuple[DeadFileReference, ...]
+    broken_links: tuple[BrokenPageLink, ...]
+    broken_xwiki: tuple[BrokenCrossWikiLink, ...]
+    empty_topics: tuple[EmptyTopic, ...]
+    empty_pages: tuple[EmptyPage, ...]

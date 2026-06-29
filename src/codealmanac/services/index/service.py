@@ -1,7 +1,10 @@
 from codealmanac.services.index.models import (
+    HealthReport,
     IndexRefreshResult,
     PageView,
     SearchPageResult,
+    TopicDetail,
+    TopicSummary,
 )
 from codealmanac.services.index.requests import SearchIndexRequest
 from codealmanac.services.index.store import IndexStore
@@ -30,3 +33,28 @@ class IndexService:
         self.ensure_fresh(workspace_id)
         workspace = self.workspaces.get(workspace_id)
         return self.store.get_page(workspace.almanac_path, slug)
+
+    def list_topics(self, workspace_id: str) -> tuple[TopicSummary, ...]:
+        self.ensure_fresh(workspace_id)
+        workspace = self.workspaces.get(workspace_id)
+        return self.store.list_topics(workspace.almanac_path)
+
+    def get_topic(
+        self,
+        workspace_id: str,
+        slug: str,
+        include_descendants: bool,
+    ) -> TopicDetail | None:
+        self.ensure_fresh(workspace_id)
+        workspace = self.workspaces.get(workspace_id)
+        return self.store.get_topic(
+            workspace.almanac_path,
+            slug,
+            include_descendants,
+        )
+
+    def health_report(self, workspace_id: str) -> HealthReport:
+        self.ensure_fresh(workspace_id)
+        workspace = self.workspaces.get(workspace_id)
+        registered_wikis = {workspace.name for workspace in self.workspaces.list()}
+        return self.store.health_report(workspace.almanac_path, registered_wikis)

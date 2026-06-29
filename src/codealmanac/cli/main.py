@@ -9,9 +9,17 @@ from pydantic import ValidationError
 from codealmanac import __version__
 from codealmanac.app import create_app
 from codealmanac.core.errors import CodeAlmanacError
-from codealmanac.services.index.models import PageView, SearchPageResult
+from codealmanac.services.health.requests import HealthCheckRequest
+from codealmanac.services.index.models import (
+    HealthReport,
+    PageView,
+    SearchPageResult,
+    TopicDetail,
+    TopicSummary,
+)
 from codealmanac.services.pages.requests import ShowPageRequest
 from codealmanac.services.search.requests import SearchPagesRequest
+from codealmanac.services.topics.requests import ListTopicsRequest, ShowTopicRequest
 from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
 
 
@@ -61,6 +69,17 @@ def build_parser() -> argparse.ArgumentParser:
     show.add_argument("--backlinks", action="store_true")
     show.add_argument("--files", action="store_true")
     show.add_argument("--topics", action="store_true")
+
+    topics = subcommands.add_parser("topics", help="list or inspect topics")
+    topics.add_argument("--wiki")
+    topic_subcommands = topics.add_subparsers(dest="topic_command")
+    topic_show = topic_subcommands.add_parser("show", help="show a topic")
+    topic_show.add_argument("slug")
+    topic_show.add_argument("--descendants", action="store_true")
+
+    health = subcommands.add_parser("health", help="check wiki health")
+    health.add_argument("--wiki")
+    health.add_argument("--json", action="store_true")
     return parser
 
 
@@ -105,6 +124,25 @@ def dispatch(args: argparse.Namespace) -> int:
             ShowPageRequest(cwd=Path.cwd(), wiki=args.wiki, slug=args.slug)
         )
         render_page(page, args)
+        return 0
+    if args.command == "topics":
+        if args.topic_command == "show":
+            topic = app.topics.show(
+                ShowTopicRequest(
+                    cwd=Path.cwd(),
+                    wiki=args.wiki,
+                    slug=args.slug,
+                    include_descendants=args.descendants,
+                )
+            )
+            render_topic(topic)
+            return 0
+        topics = app.topics.list(ListTopicsRequest(cwd=Path.cwd(), wiki=args.wiki))
+        render_topics(topics)
+        return 0
+    if args.command == "health":
+        report = app.health.check(HealthCheckRequest(cwd=Path.cwd(), wiki=args.wiki))
+        render_health(report, json_output=args.json)
         return 0
     raise AssertionError(f"unhandled command: {args.command}")
 
@@ -176,6 +214,70 @@ def body_with_trailing_newline(body: str) -> str:
     if body == "" or body.endswith("\n"):
         return body
     return f"{body}\n"
+
+
+def render_topics(rows: tuple[TopicSummary, ...]) -> None:
+    for row in rows:
+        title = row.title or row.slug
+        print(f"{row.slug}\t{row.page_count}\t{title}")
+
+
+def render_topic(topic: TopicDetail) -> None:
+    print(f"slug: {topic.slug}")
+    print(f"title: {topic.title or ''}")
+    if topic.description:
+        print(f"description: {topic.description}")
+    if topic.parents:
+        print(f"parents: {', '.join(topic.parents)}")
+    if topic.children:
+        print(f"children: {', '.join(topic.children)}")
+    if topic.pages:
+        print("pages:")
+        for slug in topic.pages:
+            print(f"  {slug}")
+    else:
+        print("pages: none")
+
+
+def render_health(report: HealthReport, json_output: bool) -> None:
+    if json_output:
+        print(json.dumps(report.model_dump(mode="json"), indent=2))
+        return
+    render_health_section("orphans", tuple(item.slug for item in report.orphans))
+    render_health_section(
+        "dead_refs",
+        tuple(f"{item.slug}\t{item.path}" for item in report.dead_refs),
+    )
+    render_health_section(
+        "broken_links",
+        tuple(
+            f"{item.source_slug}\t{item.target_slug}" for item in report.broken_links
+        ),
+    )
+    render_health_section(
+        "broken_xwiki",
+        tuple(
+            f"{item.source_slug}\t{item.target_wiki}:{item.target_slug}"
+            for item in report.broken_xwiki
+        ),
+    )
+    render_health_section(
+        "empty_topics",
+        tuple(item.slug for item in report.empty_topics),
+    )
+    render_health_section(
+        "empty_pages",
+        tuple(item.slug for item in report.empty_pages),
+    )
+
+
+def render_health_section(name: str, rows: tuple[str, ...]) -> None:
+    if not rows:
+        print(f"{name} (0): ok")
+        return
+    print(f"{name} ({len(rows)}):")
+    for row in rows:
+        print(f"  {row}")
 
 
 if __name__ == "__main__":

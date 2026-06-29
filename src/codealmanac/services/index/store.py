@@ -4,11 +4,20 @@ from pathlib import Path
 
 from codealmanac.core.slug import to_kebab_case
 from codealmanac.services.index.models import (
+    BrokenCrossWikiLink,
+    BrokenPageLink,
     CrossWikiReference,
+    DeadFileReference,
+    EmptyPage,
+    EmptyTopic,
+    HealthReport,
     IndexRefreshResult,
+    OrphanPage,
     PageFileReference,
     PageView,
     SearchPageResult,
+    TopicDetail,
+    TopicSummary,
 )
 from codealmanac.services.index.requests import SearchIndexRequest
 from codealmanac.services.wiki.documents import load_page_document
@@ -19,8 +28,9 @@ from codealmanac.services.wiki.paths import (
     normalize_reference_path,
     parent_folder_prefixes,
 )
+from codealmanac.services.wiki.topics import TopicDefinition, load_topics_yaml
 
-SCHEMA_VERSION = 20260629
+SCHEMA_VERSION = 20260630
 
 SCHEMA_DDL = """
 CREATE TABLE IF NOT EXISTS pages (
@@ -45,6 +55,13 @@ CREATE TABLE IF NOT EXISTS page_topics (
   page_slug  TEXT NOT NULL REFERENCES pages(slug) ON DELETE CASCADE,
   topic_slug TEXT NOT NULL,
   PRIMARY KEY (page_slug, topic_slug)
+);
+
+CREATE TABLE IF NOT EXISTS topic_parents (
+  child_slug  TEXT NOT NULL,
+  parent_slug TEXT NOT NULL,
+  PRIMARY KEY (child_slug, parent_slug),
+  CHECK (child_slug != parent_slug)
 );
 
 CREATE TABLE IF NOT EXISTS file_refs (
@@ -81,7 +98,7 @@ class IndexStore:
         with connect(db_path) as connection:
             ensure_schema(connection)
             documents, files_seen, files_skipped = load_documents(pages_path)
-            replace_documents(connection, documents)
+            replace_documents(connection, documents, load_topics_yaml(almanac_path))
         return IndexRefreshResult(
             changed=len(documents),
             removed=0,
@@ -121,6 +138,76 @@ class IndexStore:
                 return None
             return page_view_from_row(connection, row)
 
+    def list_topics(self, almanac_path: Path) -> tuple[TopicSummary, ...]:
+        with connect(index_db_path(almanac_path)) as connection:
+            ensure_schema(connection)
+            rows = connection.execute(
+                """
+                SELECT t.slug, t.title, t.description,
+                       COUNT(p.slug) AS page_count
+                FROM topics t
+                LEFT JOIN page_topics pt ON pt.topic_slug = t.slug
+                LEFT JOIN pages p ON p.slug = pt.page_slug AND p.archived_at IS NULL
+                GROUP BY t.slug, t.title, t.description
+                ORDER BY t.slug
+                """
+            ).fetchall()
+        return tuple(
+            TopicSummary(
+                slug=row["slug"],
+                title=row["title"],
+                description=row["description"],
+                page_count=row["page_count"],
+            )
+            for row in rows
+        )
+
+    def get_topic(
+        self,
+        almanac_path: Path,
+        slug: str,
+        include_descendants: bool,
+    ) -> TopicDetail | None:
+        with connect(index_db_path(almanac_path)) as connection:
+            ensure_schema(connection)
+            row = connection.execute(
+                "SELECT slug, title, description FROM topics WHERE slug = ?",
+                (slug,),
+            ).fetchone()
+            if row is None:
+                return None
+            topic_slugs = (
+                topic_descendants(connection, slug)
+                if include_descendants
+                else (slug,)
+            )
+            pages = pages_for_topics(connection, topic_slugs)
+            return TopicDetail(
+                slug=row["slug"],
+                title=row["title"],
+                description=row["description"],
+                parents=topic_parents(connection, slug),
+                children=topic_children(connection, slug),
+                pages=pages,
+            )
+
+    def health_report(
+        self,
+        almanac_path: Path,
+        registered_wikis: set[str],
+    ) -> HealthReport:
+        repo_root = almanac_path.parent
+        with connect(index_db_path(almanac_path)) as connection:
+            ensure_schema(connection)
+            return HealthReport(
+                orphans=orphan_pages(connection),
+                dead_refs=dead_file_refs(connection, repo_root),
+                broken_links=broken_page_links(connection),
+                broken_xwiki=broken_cross_wiki_links(connection, registered_wikis),
+                empty_topics=empty_topics(connection),
+                empty_pages=empty_pages(connection),
+            )
+
 
 def index_db_path(almanac_path: Path) -> Path:
     return almanac_path / "index.db"
@@ -143,6 +230,7 @@ def ensure_schema(connection: sqlite3.Connection) -> None:
             DROP TABLE IF EXISTS wikilinks;
             DROP TABLE IF EXISTS file_refs;
             DROP TABLE IF EXISTS page_topics;
+            DROP TABLE IF EXISTS topic_parents;
             DROP TABLE IF EXISTS topics;
             DROP TABLE IF EXISTS pages;
             DROP TABLE IF EXISTS fts_pages;
@@ -173,13 +261,17 @@ def load_documents(pages_path: Path) -> tuple[list[PageDocument], int, int]:
 def replace_documents(
     connection: sqlite3.Connection,
     documents: list[PageDocument],
+    topics: tuple[TopicDefinition, ...],
 ) -> None:
     with connection:
         connection.execute("DELETE FROM fts_pages")
         connection.execute("DELETE FROM pages")
+        connection.execute("DELETE FROM topic_parents")
         connection.execute("DELETE FROM topics")
         for document in documents:
             insert_document(connection, document)
+        for topic in topics:
+            insert_topic_definition(connection, topic)
 
 
 def insert_document(connection: sqlite3.Connection, document: PageDocument) -> None:
@@ -240,6 +332,34 @@ def insert_document(connection: sqlite3.Connection, document: PageDocument) -> N
             VALUES (?, ?, ?)
             """,
             (document.slug, wiki, target),
+        )
+
+
+def insert_topic_definition(
+    connection: sqlite3.Connection,
+    topic: TopicDefinition,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO topics (slug, title, description)
+        VALUES (?, ?, ?)
+        ON CONFLICT(slug) DO UPDATE SET
+          title = excluded.title,
+          description = excluded.description
+        """,
+        (topic.slug, topic.title or title_for_slug(topic.slug), topic.description),
+    )
+    for parent in topic.parents:
+        connection.execute(
+            "INSERT OR IGNORE INTO topics (slug, title) VALUES (?, ?)",
+            (parent, title_for_slug(parent)),
+        )
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO topic_parents (child_slug, parent_slug)
+            VALUES (?, ?)
+            """,
+            (topic.slug, parent),
         )
 
 
@@ -456,3 +576,194 @@ def cross_wiki_for_page(
 
 def title_for_slug(slug: str) -> str:
     return " ".join(word.capitalize() for word in slug.split("-") if word)
+
+
+def topic_descendants(connection: sqlite3.Connection, slug: str) -> tuple[str, ...]:
+    rows = connection.execute(
+        """
+        WITH RECURSIVE descendants(slug, depth) AS (
+          VALUES (?, 0)
+          UNION
+          SELECT tp.child_slug, descendants.depth + 1
+          FROM topic_parents tp
+          JOIN descendants ON tp.parent_slug = descendants.slug
+          WHERE descendants.depth < 32
+        )
+        SELECT slug FROM descendants ORDER BY slug
+        """,
+        (slug,),
+    ).fetchall()
+    return tuple(row["slug"] for row in rows)
+
+
+def pages_for_topics(
+    connection: sqlite3.Connection,
+    topic_slugs: tuple[str, ...],
+) -> tuple[str, ...]:
+    if len(topic_slugs) == 0:
+        return ()
+    placeholders = ", ".join("?" for _ in topic_slugs)
+    rows = connection.execute(
+        f"""
+        SELECT DISTINCT p.slug
+        FROM pages p
+        JOIN page_topics pt ON pt.page_slug = p.slug
+        WHERE p.archived_at IS NULL
+          AND pt.topic_slug IN ({placeholders})
+        ORDER BY p.slug
+        """,
+        topic_slugs,
+    ).fetchall()
+    return tuple(row["slug"] for row in rows)
+
+
+def topic_parents(connection: sqlite3.Connection, slug: str) -> tuple[str, ...]:
+    rows = connection.execute(
+        """
+        SELECT parent_slug
+        FROM topic_parents
+        WHERE child_slug = ?
+        ORDER BY parent_slug
+        """,
+        (slug,),
+    ).fetchall()
+    return tuple(row["parent_slug"] for row in rows)
+
+
+def topic_children(connection: sqlite3.Connection, slug: str) -> tuple[str, ...]:
+    rows = connection.execute(
+        """
+        SELECT child_slug
+        FROM topic_parents
+        WHERE parent_slug = ?
+        ORDER BY child_slug
+        """,
+        (slug,),
+    ).fetchall()
+    return tuple(row["child_slug"] for row in rows)
+
+
+def orphan_pages(connection: sqlite3.Connection) -> tuple[OrphanPage, ...]:
+    rows = connection.execute(
+        """
+        SELECT p.slug
+        FROM pages p
+        WHERE p.archived_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM page_topics pt WHERE pt.page_slug = p.slug
+          )
+        ORDER BY p.slug
+        """
+    ).fetchall()
+    return tuple(OrphanPage(slug=row["slug"]) for row in rows)
+
+
+def dead_file_refs(
+    connection: sqlite3.Connection,
+    repo_root: Path,
+) -> tuple[DeadFileReference, ...]:
+    rows = connection.execute(
+        """
+        SELECT p.slug, r.original_path, r.is_dir
+        FROM pages p
+        JOIN file_refs r ON r.page_slug = p.slug
+        WHERE p.archived_at IS NULL
+        ORDER BY p.slug, r.original_path
+        """
+    ).fetchall()
+    findings: list[DeadFileReference] = []
+    for row in rows:
+        path = repo_root / row["original_path"]
+        exists = path.is_dir() if row["is_dir"] else path.is_file()
+        if not exists:
+            findings.append(
+                DeadFileReference(slug=row["slug"], path=row["original_path"])
+            )
+    return tuple(findings)
+
+
+def broken_page_links(connection: sqlite3.Connection) -> tuple[BrokenPageLink, ...]:
+    rows = connection.execute(
+        """
+        SELECT w.source_slug, w.target_slug
+        FROM wikilinks w
+        JOIN pages source ON source.slug = w.source_slug
+        LEFT JOIN pages target ON target.slug = w.target_slug
+        WHERE source.archived_at IS NULL
+          AND target.slug IS NULL
+        ORDER BY w.source_slug, w.target_slug
+        """
+    ).fetchall()
+    return tuple(
+        BrokenPageLink(
+            source_slug=row["source_slug"],
+            target_slug=row["target_slug"],
+        )
+        for row in rows
+    )
+
+
+def broken_cross_wiki_links(
+    connection: sqlite3.Connection,
+    registered_wikis: set[str],
+) -> tuple[BrokenCrossWikiLink, ...]:
+    rows = connection.execute(
+        """
+        SELECT x.source_slug, x.target_wiki, x.target_slug
+        FROM cross_wiki_links x
+        JOIN pages source ON source.slug = x.source_slug
+        WHERE source.archived_at IS NULL
+        ORDER BY x.source_slug, x.target_wiki, x.target_slug
+        """
+    ).fetchall()
+    return tuple(
+        BrokenCrossWikiLink(
+            source_slug=row["source_slug"],
+            target_wiki=row["target_wiki"],
+            target_slug=row["target_slug"],
+        )
+        for row in rows
+        if row["target_wiki"] not in registered_wikis
+    )
+
+
+def empty_topics(connection: sqlite3.Connection) -> tuple[EmptyTopic, ...]:
+    rows = connection.execute(
+        """
+        SELECT t.slug
+        FROM topics t
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM page_topics pt
+          JOIN pages p ON p.slug = pt.page_slug
+          WHERE pt.topic_slug = t.slug AND p.archived_at IS NULL
+        )
+        ORDER BY t.slug
+        """
+    ).fetchall()
+    return tuple(EmptyTopic(slug=row["slug"]) for row in rows)
+
+
+def empty_pages(connection: sqlite3.Connection) -> tuple[EmptyPage, ...]:
+    rows = connection.execute(
+        """
+        SELECT slug, body
+        FROM pages
+        WHERE archived_at IS NULL
+        ORDER BY slug
+        """
+    ).fetchall()
+    return tuple(
+        EmptyPage(slug=row["slug"])
+        for row in rows
+        if not meaningful_body_text(row["body"])
+    )
+
+
+def meaningful_body_text(body: str) -> str:
+    lines = []
+    for line in body.splitlines():
+        if re.match(r"^\s*#+\s+", line):
+            continue
+        lines.append(line.strip())
+    return "\n".join(lines).strip()

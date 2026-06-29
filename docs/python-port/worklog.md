@@ -48,6 +48,16 @@
   metadata/field flags, and full index rebuild clears stale topic rows.
   Re-verified with 14 passing tests, ruff, isolated live `show --body --meta`,
   and dogfood search in this repo.
+- Read Cosmic Python chapter 3 on abstractions before slice 3 and sent a
+  Relayforge Discord checkpoint. The applied lesson: keep interrogation,
+  decision, and mutation separate. Slice 3 therefore adds read-only
+  `topics`/`health`; tag/frontmatter mutation stays out of scope.
+- Added slice-3 read-only topics and health: `topics`, `topics show`,
+  `topics show --descendants`, `health`, and `health --json`.
+- Verified slice 3 with 17 passing tests, ruff, isolated live topics/health,
+  and dogfood `codealmanac topics` plus `codealmanac health` in this repo.
+  Dogfood health currently reports dead refs to archived TypeScript paths,
+  which is expected product signal after the Python rewrite archive move.
 
 ## Current Hypothesis
 

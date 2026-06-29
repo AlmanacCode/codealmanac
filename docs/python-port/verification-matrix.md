@@ -54,3 +54,13 @@ means the goal remains active.
 | Tests | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run pytest` | 14 passed |
 | Isolated live CLI precedence | temp repo `show auth-flow --body --meta` | body output passed |
 | Dogfood search | `uv run codealmanac search python --limit 3` in this repo | passed |
+
+## Gates For Slice 3 Topics And Health
+
+| Gate | Command | 2026-06-29 result |
+|---|---|
+| Formatting/lint | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run ruff check .` | passed |
+| Tests | `UV_CACHE_DIR=/private/tmp/usealmanac-uv-cache uv run pytest` | 17 passed |
+| Isolated live topics/health | temp repo `topics`, `topics show auth`, `health --json` | passed |
+| Dogfood topics | `uv run codealmanac topics` in this repo | passed |
+| Dogfood health | `uv run codealmanac health` in this repo | passed; reports expected dead refs to archived TypeScript paths |

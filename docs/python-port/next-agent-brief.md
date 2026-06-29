@@ -44,20 +44,24 @@ Updated: 2026-06-29
   - ruff
   - isolated live `show --body --meta`
   - dogfood `codealmanac search python --limit 3`
+- Slice-3 topics/health passed:
+  - 17 tests
+  - ruff
+  - isolated live `topics`, `topics show`, `health --json`
+  - dogfood `topics` and `health` in this repo
 
 ## Dirty/Staged Files
 
-At this checkpoint, only the slice-2 review fix should be dirty until
+At this checkpoint, slice-3 topics/health files should be dirty until
 committed. Re-run `git diff --check`, pytest, ruff, isolated live smoke, and
-dogfood search before committing.
+dogfood `topics`/`health` before committing.
 
 ## Next Move
 
-1. Review slice-2 boundaries before adding lifecycle commands.
-2. Decide whether to optimize index freshness now or defer until after
-   `topics`/`health`; current read model rebuilds on every read command.
-3. Add `topics`/`health` on top of the existing index if the read model review
-   holds.
+1. Review slice-3 boundaries before adding mutation commands.
+2. Decide whether next slice is tag/untag frontmatter mutation or index
+   freshness optimization.
+3. Keep lifecycle/AI commands out until read and organization surfaces hold.
 4. Add an architecture test that CLI imports do not import concrete integration
    modules once integrations exist.
 
