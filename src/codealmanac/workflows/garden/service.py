@@ -26,6 +26,7 @@ from codealmanac.workflows.garden.requests import RunGardenRequest
 from codealmanac.workflows.lifecycle import (
     LifecycleMutationPolicy,
     first_line,
+    harness_output_message,
     validate_harness_result,
 )
 
@@ -106,13 +107,13 @@ class GardenWorkflow:
                 )
             )
             self.record_harness_transcript(request, started.run_id, harness)
+            self.record_harness(request, started.run_id, harness)
             safety = self.mutation_policy.validate(
                 preflight,
                 workspace,
                 harness.changed_files,
             )
             validate_harness_result(harness)
-            self.record_harness(request, started.run_id, harness)
             index_after = self.index.ensure_fresh(workspace.workspace_id)
             finished = self.runs.finish(
                 FinishRunRequest(
@@ -185,7 +186,7 @@ class GardenWorkflow:
             request,
             run_id,
             RunEventKind.OUTPUT,
-            f"{harness.kind.value} {harness.status.value}",
+            harness_output_message(harness),
         )
 
     def fail_run(

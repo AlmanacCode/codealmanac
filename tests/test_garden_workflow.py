@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from codealmanac.app import create_app
-from codealmanac.core.errors import ValidationFailed
+from codealmanac.core.errors import ExecutionFailed, ValidationFailed
 from codealmanac.core.models import AppConfig
 from codealmanac.services.harnesses.models import (
     HarnessKind,
@@ -68,6 +68,20 @@ class DirtyAppGardenHarnessAdapter(GardenWritingHarnessAdapter):
         result = super().run(request)
         (request.cwd / "src/app.py").write_text("agent mutation\n", encoding="utf-8")
         return result
+
+
+class FailedGardenHarnessAdapter(GardenWritingHarnessAdapter):
+    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
+        self.requests.append(request)
+        return HarnessRunResult(
+            kind=self.kind,
+            status=HarnessRunStatus.FAILED,
+            output_text="garden agent failed",
+            transcript=HarnessTranscriptRef(
+                kind=self.kind,
+                session_id="failed-garden-session",
+            ),
+        )
 
 
 def test_garden_workflow_runs_harness_and_refreshes_index(
@@ -155,6 +169,43 @@ def test_garden_workflow_rejects_harness_mutation_outside_almanac(
 
     assert run.status == RunStatus.FAILED
     assert run.error == "garden changed file outside almanac: src/app.py"
+
+
+def test_garden_workflow_records_failed_harness_output_before_error(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".almanac/registry.json"),
+        harness_adapters=(FailedGardenHarnessAdapter(),),
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
+
+    with pytest.raises(ExecutionFailed, match="harness codex failed"):
+        app.workflows.garden.run(
+            RunGardenRequest(
+                cwd=repo,
+                harness=HarnessKind.CODEX,
+            )
+        )
+
+    run = app.runs.list(ListRunsRequest(cwd=repo))[0]
+    log = app.runs.log(ReadRunLogRequest(cwd=repo, run_id=run.run_id))
+
+    assert run.status == RunStatus.FAILED
+    assert run.error == "harness codex failed with status failed: garden agent failed"
+    assert run.harness_transcript is not None
+    assert run.harness_transcript.session_id == "failed-garden-session"
+    assert tuple(entry.kind for entry in log)[-3:] == (
+        RunEventKind.OUTPUT,
+        RunEventKind.ERROR,
+        RunEventKind.STATUS,
+    )
+    assert log[-3].message == "codex failed: garden agent failed"
 
 
 def initialize_git(repo: Path) -> None:

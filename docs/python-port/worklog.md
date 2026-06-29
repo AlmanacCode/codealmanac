@@ -654,6 +654,11 @@ registry hygiene: stale temp entries made `list` hard to use, while read
 commands should not silently prune them. `WorkspacesService` now owns registry
 status plus explicit drop/drop-missing use cases, and the CLI exposes
 `list --json`, `list --drop <selector>`, and `list --drop-missing`.
+Slice 54 hardens lifecycle run logs. `ingest` and `garden` now record the
+returned harness status and first output line before mutation-safety validation
+and harness success validation. Failed harness runs now leave an `output` event
+before the terminal `error`, including the case where a failed harness also
+mutates a non-wiki file and the run error correctly remains the safety failure.
 
 ## Next Hypothesis
 

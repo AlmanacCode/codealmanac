@@ -38,6 +38,7 @@ from codealmanac.workflows.ingest.requests import (
 from codealmanac.workflows.lifecycle import (
     LifecycleMutationPolicy,
     first_line,
+    harness_output_message,
     validate_harness_result,
 )
 
@@ -142,18 +143,18 @@ class IngestWorkflow:
                 )
             )
             self.record_harness_transcript(request, run_id, harness)
+            self.record(
+                request,
+                run_id,
+                RunEventKind.OUTPUT,
+                harness_output_message(harness),
+            )
             safety = self.mutation_policy.validate(
                 preflight,
                 workspace,
                 harness.changed_files,
             )
             validate_harness_result(harness)
-            self.record(
-                request,
-                run_id,
-                RunEventKind.OUTPUT,
-                f"{harness.kind.value} {harness.status.value}",
-            )
             index = self.index.ensure_fresh(workspace.workspace_id)
             finished = self.runs.finish(
                 FinishRunRequest(

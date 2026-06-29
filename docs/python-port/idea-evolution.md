@@ -5,6 +5,33 @@ Updated: 2026-06-29
 Record hypothesis changes here. Do not rewrite history; append a new entry when
 evidence changes the shape.
 
+## 2026-06-29 - Harness Results Are Run Facts Before Validation
+
+Old hypothesis:
+Lifecycle workflows could record harness output only after mutation safety and
+success validation passed, because successful wiki updates were the main
+observable outcome.
+
+New hypothesis:
+The returned harness result is itself a run-log fact. Workflows should record
+its status and first output line before later validation so failed agent work
+remains inspectable through `jobs logs`.
+
+Evidence that forced the change:
+A failed harness can also mutate a file outside the configured Almanac root.
+The terminal run error should remain the mutation-safety violation, but without
+an earlier output event the run log loses the direct evidence that the harness
+returned `failed`.
+
+Code or product assumption affected:
+`ingest` and `garden` now call `harness_output_message(...)` immediately after
+the harness returns and before mutation-safety validation. `validate_harness_result`
+still owns the command failure contract.
+
+Follow-up test:
+Keep workflow tests that assert failed harness runs record `output` before
+terminal `error` for both normal failed status and failed-plus-unsafe mutation.
+
 ## 2026-06-29 - Scheduled Sync Is A Command Source
 
 Old hypothesis:

@@ -89,6 +89,12 @@ def validate_harness_result(result: HarnessRunResult) -> None:
         )
 
 
+def harness_output_message(result: HarnessRunResult) -> str:
+    suffix = first_line(result.output_text)
+    details = f": {suffix}" if suffix else ""
+    return f"{result.kind.value} {result.status.value}{details}"
+
+
 def first_line(value: str) -> str:
     return value.splitlines()[0] if value.splitlines() else value
 

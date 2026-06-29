@@ -461,11 +461,18 @@ def test_ingest_workflow_fails_when_harness_returns_failed_status(
         )
 
     run = app.runs.list(ListRunsRequest(cwd=repo))[0]
+    log = app.runs.log(ReadRunLogRequest(cwd=repo, run_id=run.run_id))
 
     assert run.status == RunStatus.FAILED
     assert run.error == "harness codex failed with status failed: agent failed"
     assert run.harness_transcript is not None
     assert run.harness_transcript.session_id == "failed-ingest-session"
+    assert tuple(entry.kind for entry in log)[-3:] == (
+        RunEventKind.OUTPUT,
+        RunEventKind.ERROR,
+        RunEventKind.STATUS,
+    )
+    assert log[-3].message == "codex failed: agent failed"
 
 
 def test_ingest_workflow_checks_mutations_before_failed_harness_status(
@@ -495,9 +502,16 @@ def test_ingest_workflow_checks_mutations_before_failed_harness_status(
         )
 
     run = app.runs.list(ListRunsRequest(cwd=repo))[0]
+    log = app.runs.log(ReadRunLogRequest(cwd=repo, run_id=run.run_id))
 
     assert run.status == RunStatus.FAILED
     assert run.error == "ingest changed file outside almanac: src/app.py"
+    assert tuple(entry.kind for entry in log)[-3:] == (
+        RunEventKind.OUTPUT,
+        RunEventKind.ERROR,
+        RunEventKind.STATUS,
+    )
+    assert log[-3].message == "codex failed: agent failed after mutation"
 
 
 def test_ingest_workflow_allows_preexisting_dirty_app_files_when_unchanged(
