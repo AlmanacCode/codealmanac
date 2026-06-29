@@ -22,8 +22,8 @@ It is the constraint document for future agents.
   command and packaging policy exist.
 - 2026-06-29: Source input has four local layers:
   `SourceAddress -> SourceRef -> SourceBrief -> SourceRuntime`. Git source
-  runtime uses the Git CLI through a source-runtime adapter; GitHub source
-  runtime should reuse the same port later.
+  runtime uses the Git CLI through a source-runtime adapter. GitHub PR/issue
+  runtime uses GitHub CLI through the same port.
 
 ## Product Frame
 
@@ -308,11 +308,11 @@ subprocess.run(["codealmanac", "show", "..."])
 | Workspace | nearest repo resolution, local registry, path containment |
 | Wiki | pages, frontmatter, topics, wikilinks, file/folder refs |
 | Index | SQLite read model, FTS search, mentions, backlinks, health |
-| Sources | transcript/path/PR/diff input contracts and local source observations |
+| Sources | transcript/path/Git/GitHub input contracts, local observations, and runtime snapshots |
 | Runs | durable ledger, events, outputs, foreground/background jobs |
 | Harnesses | Codex and Claude behind normalized ports |
 | Workflows | `build`, `ingest`, `sync`, `garden` |
-| Automation | local scheduled sync/garden/update checks |
+| Automation | local scheduled sync/garden |
 | CLI | thin local command surface |
 | Serve | local read-only wiki viewer |
 

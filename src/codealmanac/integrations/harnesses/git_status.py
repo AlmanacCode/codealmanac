@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 
-from codealmanac.integrations.harnesses.command import CommandRunner
+from codealmanac.integrations.command import CommandRunner
 
 
 def git_status_snapshot(

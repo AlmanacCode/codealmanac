@@ -2,12 +2,12 @@ import subprocess
 from pathlib import Path
 
 from codealmanac.app import create_app
+from codealmanac.integrations.command import CommandResult
 from codealmanac.integrations.harnesses.claude.adapter import (
     CLAUDE_ALLOWED_TOOLS,
     ClaudeCliHarnessAdapter,
     claude_print_args,
 )
-from codealmanac.integrations.harnesses.command import CommandResult
 from codealmanac.integrations.harnesses.git_status import (
     parse_git_status_paths,
 )

@@ -139,9 +139,19 @@ class FailedDirtyFileMutatingHarnessAdapter(WritingHarnessAdapter):
 
 class FakeSourceRuntimeAdapter:
     def supports(self, ref: SourceRef) -> bool:
-        return ref.kind == SourceKind.GIT_DIFF
+        return ref.kind in {
+            SourceKind.GIT_DIFF,
+            SourceKind.GITHUB_PULL_REQUEST,
+        }
 
     def inspect(self, request: InspectSourceRuntimeRequest) -> SourceRuntime:
+        if request.ref.kind == SourceKind.GITHUB_PULL_REQUEST:
+            return SourceRuntime(
+                ref=request.ref,
+                status=SourceRuntimeStatus.AVAILABLE,
+                title="Fake GitHub PR",
+                content="PR comment says preserve the auth decision history.",
+            )
         return SourceRuntime(
             ref=request.ref,
             status=SourceRuntimeStatus.AVAILABLE,
@@ -235,6 +245,35 @@ def test_ingest_prompt_includes_git_source_runtime(
     assert result.source_runtime[0].status == SourceRuntimeStatus.AVAILABLE
     assert "Fake Git diff" in adapter.requests[0].prompt
     assert "new auth invariant" in adapter.requests[0].prompt
+
+
+def test_ingest_prompt_includes_github_source_runtime(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    adapter = WritingHarnessAdapter()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".almanac/registry.json"),
+        harness_adapters=(adapter,),
+        source_runtime_adapters=(FakeSourceRuntimeAdapter(),),
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
+
+    result = app.workflows.ingest.run(
+        RunIngestRequest(
+            cwd=repo,
+            inputs=("https://github.com/acme/project/pull/42",),
+            harness=HarnessKind.CODEX,
+        )
+    )
+
+    assert result.source_runtime[0].status == SourceRuntimeStatus.AVAILABLE
+    assert "Fake GitHub PR" in adapter.requests[0].prompt
+    assert "preserve the auth decision history" in adapter.requests[0].prompt
 
 
 def test_ingest_workflow_fails_run_when_harness_is_missing(

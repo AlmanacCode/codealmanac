@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from codealmanac.app import create_app
 from codealmanac.core.errors import ValidationFailed
-from codealmanac.integrations.harnesses.command import CommandResult
+from codealmanac.integrations.command import CommandResult
 from codealmanac.integrations.sources.git import GitSourceRuntimeAdapter
 from codealmanac.services.sources.models import (
     SourceKind,

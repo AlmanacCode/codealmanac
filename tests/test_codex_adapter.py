@@ -3,11 +3,11 @@ import subprocess
 from pathlib import Path
 
 from codealmanac.app import create_app
+from codealmanac.integrations.command import CommandResult
 from codealmanac.integrations.harnesses.codex.adapter import (
     CodexCliHarnessAdapter,
     codex_exec_args,
 )
-from codealmanac.integrations.harnesses.command import CommandResult
 from codealmanac.services.harnesses.models import HarnessKind, HarnessRunStatus
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 

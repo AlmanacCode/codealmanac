@@ -19,7 +19,8 @@ Updated: 2026-06-29
   inspection stays under `codealmanac jobs`.
 - `services/sources` owns source input contracts: raw addresses, parsed refs,
   source briefs, local path observations, file fingerprints, transcript
-  discovery ports, typed transcript candidates, and Pydantic URL validation.
+  discovery ports, typed transcript candidates, source runtime snapshots, and
+  Pydantic URL validation.
 - `services/harnesses` owns normalized Codex/Claude task, readiness, and result
   contracts plus provider transcript refs and the adapter port. Claude CLI and
   Codex CLI are both concrete adapters wired by default.
@@ -43,7 +44,7 @@ Updated: 2026-06-29
 - App workflow entrypoints now live under `app.workflows.build`,
   `app.workflows.ingest`, `app.workflows.garden`, and
   `app.workflows.sync`. `create_app()` wires the default Claude and Codex
-  harness adapters plus transcript discovery adapters.
+  harness adapters plus transcript discovery and source runtime adapters.
 - Lifecycle writes now require Git change tracking, clean `.almanac/`
   preflight, and no non-wiki mutation during harness execution. Dirty app files
   are allowed as source material if they remain unchanged.
@@ -51,7 +52,8 @@ Updated: 2026-06-29
   `ensure_fresh`; `reindex` remains the explicit forced rebuild command.
 - Current implemented CLI commands are `init`, `build`, `list`, `search`,
   `show`, `topics`, `health`, `reindex`, `doctor`, `jobs`, `serve`, `tag`,
-  `untag`, `ingest`, `garden`, and `sync status`.
+  `untag`, `ingest`, `garden`, `sync`, `sync status`, and
+  `automation install|status|uninstall`.
 - Public `codealmanac ingest` is a thin CLI adapter over
   `app.workflows.ingest.run(...)`. It supports `--using claude|codex`, `--wiki`,
   `--title`, and `--guidance`.
@@ -269,38 +271,53 @@ Updated: 2026-06-29
   - full ruff
   - diff hygiene
   - temp-repo real Git runtime dogfood with dirty `git:diff` and fake harness
+- Slice-25 GitHub source runtime checks passed so far:
+  - focused GitHub runtime, source service, ingest workflow, and architecture
+    tests
+  - focused ruff over integrations/sources/tests
+  - 124 full tests
+  - full ruff
+  - diff hygiene
+  - temp-repo real `gh` dogfood with public `cli/cli` PR #1 and issue #2
 
 ## Dirty/Staged Files
 
-Slice 24 is ready to commit if the current worktree still only contains:
+Slice 25 is ready to commit if the current worktree still only contains:
 
+- `src/codealmanac/integrations/command.py`
 - `src/codealmanac/services/sources/`
 - `src/codealmanac/integrations/sources/`
 - `src/codealmanac/workflows/ingest/`
 - `src/codealmanac/app.py`
 - `src/codealmanac/prompts/operations/ingest.md`
+- harness adapter imports updated from `integrations.harnesses.command` to
+  `integrations.command`
+- `tests/test_github_source_runtime.py`
 - `tests/test_sources_service.py`
 - `tests/test_ingest_workflow.py`
-- `docs/python-port/slice-24-git-source-runtime.md`
+- `tests/test_claude_adapter.py`
+- `tests/test_codex_adapter.py`
+- `docs/python-port/slice-25-github-source-runtime.md`
 - steering docs under `docs/python-port/`
 
-Before committing slice 24, re-run if any code changes:
+Before committing slice 25, re-run if any code changes:
 
-- focused source/runtime, ingest, CLI ingest, and architecture tests
+- focused GitHub runtime, source service, ingest workflow, and architecture
+  tests
 - full pytest
 - ruff
 - `git diff --check`
-- a Git source runtime dogfood in a temp repo
+- a GitHub source runtime dogfood in a temp repo
 
 ## Next Move
 
-1. Commit slice 24 after a final `git status` check.
-2. Decide whether GitHub PR/issue source runtime or `codealmanac update` is the
-   next highest-pressure local product gap.
+1. Commit slice 25 after a final `git status` check.
+2. Decide whether web/transcript source runtime, `codealmanac update`, or viewer
+   source/file route hardening is the next highest-pressure local product gap.
 3. If background sync pending state becomes necessary, add the durable owner
    and reconciliation loop before changing sync cursor semantics.
-4. Decide whether the viewer needs source/file route hardening before more
-   lifecycle commands.
+4. Do not add scheduled update automation before the Python `update` command
+   exists.
 5. Keep AI execution behind workflow and harness seams; do not put it in CLI.
 6. If provider runtime requirements expand to streaming, usage accounting,
    structured output, or subagents, revisit the archived Codex app-server

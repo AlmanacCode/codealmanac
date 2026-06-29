@@ -30,5 +30,4 @@ alive while rebuilding in Python.
 | Background sync reconciliation | Foreground `codealmanac sync` now runs Ingest and commits the cursor after success. Background/scheduled sync still needs pending cursor fields, a durable owner, stale recovery, and reconciliation before unattended automation. |
 | Update/self-update behavior | Keep command surface, but avoid npm-era assumptions when packaging Python. Do not schedule update automation until the Python `update` command exists. |
 | Legacy automation migration | The Python rewrite does not port TypeScript capture-sweep migration in the first automation slice. Add only if real installed legacy jobs must be migrated. |
-| GitHub source runtime | `github:pr` and `github:issue` parse as source refs, but runtime fetching is still pending. Use the existing `SourceRuntimeAdapter` port rather than adding prompt branches inside Ingest. |
 | Index refresh cost | `ensure_fresh` skips unchanged projection writes using source signatures, but still parses page markdown to compute them. Optimize only after real large-repo dogfood shows this is too slow. |

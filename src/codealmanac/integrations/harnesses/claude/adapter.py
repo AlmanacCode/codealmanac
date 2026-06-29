@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from codealmanac.core.text import required_text
-from codealmanac.integrations.harnesses.command import (
+from codealmanac.integrations.command import (
     CommandResult,
     CommandRunner,
     SubprocessCommandRunner,

@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from codealmanac.core.paths import normalize_path
-from codealmanac.integrations.harnesses.command import (
+from codealmanac.integrations.command import (
     CommandRunner,
     SubprocessCommandRunner,
     first_line,

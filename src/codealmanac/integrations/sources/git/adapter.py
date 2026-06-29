@@ -2,11 +2,11 @@ import subprocess
 from pathlib import Path
 
 from codealmanac.core.errors import ExecutionFailed
-from codealmanac.integrations.harnesses.command import (
-    CommandResult,
-    CommandRunner,
-    SubprocessCommandRunner,
-    first_line,
+from codealmanac.integrations.command import CommandRunner, SubprocessCommandRunner
+from codealmanac.integrations.sources.runtime import (
+    bounded_text,
+    source_runtime_section,
+    surface_process_error,
 )
 from codealmanac.services.sources.models import (
     SourceKind,
@@ -48,15 +48,15 @@ class GitSourceRuntimeAdapter:
     def _inspect_range(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
         revision_range = require_revision_range(ref)
         sections = (
-            git_section(
+            source_runtime_section(
                 "commits",
                 self._git(cwd, ("log", "--oneline", "--decorate", revision_range)),
             ),
-            git_section(
+            source_runtime_section(
                 "stat",
                 self._git(cwd, ("diff", "--stat", revision_range)),
             ),
-            git_section(
+            source_runtime_section(
                 "diff",
                 self._git(cwd, ("diff", "--no-ext-diff", revision_range)),
             ),
@@ -74,28 +74,31 @@ class GitSourceRuntimeAdapter:
         target = require_revision_range(ref)
         if target == "working-tree":
             sections = (
-                git_section("status", self._git(cwd, ("status", "--short"))),
-                git_section("unstaged stat", self._git(cwd, ("diff", "--stat"))),
-                git_section(
+                source_runtime_section("status", self._git(cwd, ("status", "--short"))),
+                source_runtime_section(
+                    "unstaged stat",
+                    self._git(cwd, ("diff", "--stat")),
+                ),
+                source_runtime_section(
                     "unstaged diff",
                     self._git(cwd, ("diff", "--no-ext-diff")),
                 ),
-                git_section(
+                source_runtime_section(
                     "staged stat",
                     self._git(cwd, ("diff", "--cached", "--stat")),
                 ),
-                git_section(
+                source_runtime_section(
                     "staged diff",
                     self._git(cwd, ("diff", "--cached", "--no-ext-diff")),
                 ),
             )
         else:
             sections = (
-                git_section(
+                source_runtime_section(
                     "stat",
                     self._git(cwd, ("diff", "--stat", target)),
                 ),
-                git_section(
+                source_runtime_section(
                     "diff",
                     self._git(cwd, ("diff", "--no-ext-diff", target)),
                 ),
@@ -127,24 +130,3 @@ def require_revision_range(ref: SourceRef) -> str:
     if ref.revision_range is None or ref.revision_range.strip() == "":
         raise ExecutionFailed(f"Git source missing revision range: {ref.identity}")
     return ref.revision_range
-
-
-def git_section(name: str, body: str) -> str:
-    if body.strip() == "":
-        return f"## {name}\n\n(no output)"
-    return f"## {name}\n\n{body.strip()}"
-
-
-def bounded_text(value: str, max_chars: int) -> tuple[str, bool]:
-    if len(value) <= max_chars:
-        return value, False
-    return value[:max_chars].rstrip() + "\n\n[truncated]", True
-
-
-def surface_process_error(result: CommandResult) -> str:
-    message = first_line(result.stderr, result.stdout)
-    if message == "":
-        return f"exit {result.returncode}"
-    if len(message) > 500:
-        return f"{message[:500]}..."
-    return message

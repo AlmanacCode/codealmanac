@@ -506,3 +506,29 @@ Git CLI. `IngestWorkflow` renders source runtime alongside source briefs.
 Follow-up test:
 Add GitHub PR/issue source runtime through the same port and test that a PR ref
 does not become a one-off Ingest prompt branch.
+
+## 2026-06-29 - GitHub Runtime Is A Local Adapter, Not Hosted Capture
+
+Old hypothesis:
+GitHub source refs could stay as prompt hints until a hosted GitHub integration
+exists.
+
+New hypothesis:
+Local v1 should read GitHub PR and issue material through `gh` behind
+`SourceRuntimeAdapter`. The adapter turns `gh --json` output into Pydantic
+models and renders bounded source text before the harness starts.
+
+Evidence that forced the change:
+`github:pr` and `github:issue` were already valid selected source refs, but
+Ingest only supplied their identifiers to the agent. GitHub CLI is available in
+the local environment, accepts PR and issue URLs, returns structured JSON for
+`view`, and returns PR patch text through `pr diff --patch --color never`.
+
+Code or product assumption affected:
+`integrations/sources/github` is now a peer of `integrations/sources/git`.
+Both implement the same source-runtime port. Ingest remains source-kind neutral,
+and hosted GitHub app behavior remains out of scope.
+
+Follow-up test:
+If GitHub runtime needs review threads, checks, linked issues, or pagination,
+extend the GitHub adapter contract and tests before changing Ingest.

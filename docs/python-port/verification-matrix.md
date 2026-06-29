@@ -315,3 +315,15 @@ means the goal remains active.
 | Full lint | `uv run ruff check src tests` | passed |
 | Diff hygiene | `git diff --check` | passed |
 | Git source runtime dogfood | temp Git repo, dirty `src/auth.py`, real Git runtime adapter, fake harness, `app.workflows.ingest.run(inputs=("git:diff",))`, search readback | passed; prompt contained `diff --git` and changed text, run `done`, search found `git-runtime-dogfood` |
+
+## Gates For Slice 25 GitHub Source Runtime
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused GitHub/source/ingest tests | `uv run pytest tests/test_github_source_runtime.py tests/test_sources_service.py tests/test_ingest_workflow.py tests/test_architecture.py` | 22 passed |
+| Focused lint | `uv run ruff check src/codealmanac/integrations src/codealmanac/services/sources tests/test_github_source_runtime.py tests/test_sources_service.py tests/test_ingest_workflow.py` | passed |
+| Full tests | `uv run pytest` | 124 passed |
+| Full lint | `uv run ruff check src tests` | passed |
+| Diff hygiene | `git diff --check` | passed |
+| Package build | `uv build --out-dir /tmp/codealmanac-build-slice25` | passed; wheel includes `integrations/command.py` and `integrations/sources/github/adapter.py` |
+| GitHub runtime dogfood | temp Git repo, real `gh` adapter, public `cli/cli` PR #1 and issue #2, fake harness, `app.workflows.ingest.run(...)`, search readback | passed; two available runtime snapshots, prompt contained PR title, issue title, and `diff --git`, search found `github-runtime-dogfood` |

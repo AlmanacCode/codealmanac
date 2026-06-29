@@ -91,11 +91,12 @@ Git implementation lives in `integrations/workspaces/git/`. Ingest policy
 decides what mutations are allowed; the Git integration only reports observed
 state.
 
-`integrations/harnesses/command.py` and
-`integrations/harnesses/git_status.py` hold shared harness-adapter machinery:
-captured subprocess execution and Git porcelain changed-file snapshots. They
-are integration helpers, not service ports, because they describe local
-provider-process mechanics shared by Claude and Codex adapters.
+`integrations/command.py` holds captured subprocess execution shared by local
+integration adapters. It is not a service port because it describes local
+process mechanics, not a product contract.
+
+`integrations/harnesses/git_status.py` holds Git porcelain changed-file
+snapshots shared by Claude and Codex harness adapters.
 
 `services/sources/ports.py` owns `TranscriptDiscoveryAdapter`, the port used by
 sync to observe local transcript stores. Concrete Codex and Claude JSONL
@@ -105,9 +106,9 @@ decide quiet windows, cursor state, or whether ingest should run.
 
 The same source service owns `SourceRuntimeAdapter`, the port used by Ingest to
 turn selected source refs into bounded readable material before harness
-execution. The first implementation is `integrations/sources/git/`, which uses
-Git CLI commands for local `git:diff` and `git:range` refs. GitHub PR/issue
-runtime should plug into this port later instead of branching inside Ingest.
+execution. `integrations/sources/git/` uses Git CLI commands for local
+`git:diff` and `git:range` refs. `integrations/sources/github/` uses GitHub CLI
+for PR and issue refs. Ingest does not branch on source kind.
 
 `services/automation/ports.py` owns `SchedulerAdapter`, the port used by local
 automation install/status/uninstall. The launchd implementation lives in
