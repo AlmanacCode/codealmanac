@@ -420,6 +420,8 @@ Behavior:
   checks
 - Slice 47 focused server/viewer tests, focused server ruff, nested asset route
   tests, and package-data preparation for wheel inspection
+- Slice-47 review fix focused server/viewer tests, focused server ruff, diff
+  check, and browser-harness malformed-hash dogfood
 
 ## Next Move
 

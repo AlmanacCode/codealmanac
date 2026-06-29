@@ -39,14 +39,14 @@ async function loadOverview(elements) {
 
 async function route(elements) {
   if (!state.overview) return;
-  const routeState = parseHash(window.location.hash);
-  setActiveNav(elements, routeState.kind);
   const context = {
     elements,
     overview: state.overview,
-    setRouteTitle,
+    setRouteTitle: (title) => setRouteTitle(elements, title),
   };
   try {
+    const routeState = parseHash(window.location.hash);
+    setActiveNav(elements, routeState.kind);
     if (routeState.kind === RouteKind.PAGE && routeState.value) {
       await renderPage(context, routeState.value);
       return;
@@ -102,7 +102,7 @@ function setActiveNav(elements, kind) {
   }
 }
 
-function setRouteTitle(title) {
+function setRouteTitle(elements, title) {
   document.title = `${title} | CodeAlmanac`;
-  document.getElementById("route-title").textContent = title;
+  elements.routeTitle.textContent = title;
 }

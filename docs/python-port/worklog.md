@@ -557,6 +557,10 @@
   222 passing full tests, full ruff, `git diff --check`, `uv build`, wheel
   inspection for nested viewer modules, and browser-harness desktop/mobile
   checks that loaded `/app.js` plus `/assets/viewer/*.js`.
+- Slice-47 review fixed malformed hash handling. Route parsing now runs inside
+  the viewer error boundary, and title updates use cached DOM elements instead
+  of re-querying the document. The branch-head package build still includes all
+  nested viewer modules.
 
 ## Current Hypothesis
 

@@ -596,3 +596,13 @@ means the goal remains active.
 | Package build | `uv build --out-dir /tmp/codealmanac-build-slice47`; wheel inspection | passed; wheel includes `server/assets/viewer/*.js` |
 | Static asset contract | `tests/test_server.py` | covers nested module serving, missing asset 404, traversal validation, unsupported extension validation, and module script tag |
 | Browser module dogfood | temp repo, live `codealmanac serve`, browser-harness page/search/file/wikilink navigation and module fetch checks | passed; `/app.js`, `/assets/viewer/main.js`, and `/assets/viewer/api.js` loaded as JavaScript |
+
+## Gates For Slice-47 Review Fix
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused server/viewer tests | `uv run pytest tests/test_server.py tests/test_viewer_service.py tests/test_viewer_renderer.py` | 12 passed |
+| Focused server lint | `uv run ruff check src/codealmanac/server tests/test_server.py` | passed |
+| Diff hygiene | `git diff --check` | passed |
+| Browser malformed-hash dogfood | temp repo, live `codealmanac serve`, browser-harness route to `#/page/%` | passed; viewer rendered the error state instead of breaking module execution |
+| Package build | `uv build --out-dir /tmp/codealmanac-build-slice47-final`; wheel inspection | passed; wheel includes updated nested viewer modules |
