@@ -1,4 +1,8 @@
+import shutil
+import subprocess
 from pathlib import Path
+
+import pytest
 
 from codealmanac.app import create_app
 from codealmanac.integrations.sources.filesystem import FilesystemSourceRuntimeAdapter
@@ -88,12 +92,55 @@ def test_filesystem_source_runtime_reads_directory_with_ignores(tmp_path: Path):
 
     assert runtime.status == SourceRuntimeStatus.AVAILABLE
     assert runtime.title == "Directory ."
+    assert "listing_source: walk" in (runtime.content or "")
     assert "src/app.py" in (runtime.content or "")
     assert "AUTH_RULE = 'keep'" in (runtime.content or "")
     assert "ignored.md" not in (runtime.content or "")
     assert "generated" not in (runtime.content or "")
     assert "node_modules" not in (runtime.content or "")
     assert ".almanac/pages/wiki.md" not in (runtime.content or "")
+
+
+def test_filesystem_source_runtime_uses_git_directory_listing(
+    tmp_path: Path,
+):
+    if shutil.which("git") is None:
+        pytest.skip("git is required for this integration test")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run_git(repo, "init", "-q")
+    (repo / ".gitignore").write_text("root-ignored.md\n", encoding="utf-8")
+    (repo / "src").mkdir()
+    (repo / "src/.gitignore").write_text("nested-secret.txt\n", encoding="utf-8")
+    (repo / "src/keep.py").write_text("TRACKED = True\n", encoding="utf-8")
+    (repo / "src/new-note.md").write_text("untracked source\n", encoding="utf-8")
+    (repo / "src/nested-secret.txt").write_text("ignored nested\n", encoding="utf-8")
+    (repo / ".almanac/pages").mkdir(parents=True)
+    (repo / ".almanac/pages/wiki.md").write_text("wiki\n", encoding="utf-8")
+    (repo / ".env").write_text("SECRET=1\n", encoding="utf-8")
+    (repo / "root-ignored.md").write_text("ignored root\n", encoding="utf-8")
+    run_git(repo, "add", "src/keep.py")
+    app = create_app(
+        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=10),)
+    )
+    (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=repo, inputs=("src",)))
+
+    runtime = app.sources.inspect_runtime(
+        InspectSourceRuntimeRequest(cwd=repo, ref=brief.ref)
+    )
+
+    content = runtime.content or ""
+    assert runtime.status == SourceRuntimeStatus.AVAILABLE
+    assert "listing_source: git" in content
+    assert "src/keep.py" in content
+    assert "TRACKED = True" in content
+    assert "src/new-note.md" in content
+    assert "untracked source" in content
+    assert "nested-secret.txt" not in content
+    assert ".gitignore" not in content
+    assert ".almanac/pages/wiki.md" not in content
+    assert "SECRET=1" not in content
+    assert "root-ignored.md" not in content
 
 
 def test_filesystem_source_runtime_bounds_directory_files(tmp_path: Path):
@@ -136,3 +183,13 @@ def test_filesystem_source_runtime_truncates_large_file(tmp_path: Path):
     assert runtime.status == SourceRuntimeStatus.AVAILABLE
     assert runtime.truncated is True
     assert "bytes_truncated: true" in (runtime.content or "")
+
+
+def run_git(repo: Path, *args: str) -> None:
+    subprocess.run(
+        ("git", *args),
+        cwd=repo,
+        text=True,
+        capture_output=True,
+        check=True,
+    )

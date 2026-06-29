@@ -675,3 +675,33 @@ exposes `/api/file` as a query route. The frontend links page rail file refs to
 Follow-up test:
 Keep service and server tests that prove file and folder refs use index mention
 semantics and that parent traversal is rejected before querying.
+
+## 2026-06-29 - Filesystem Directory Runtime Should Ask Git First
+
+Old hypothesis:
+Filesystem directory runtime could use a Python walk plus root `.gitignore`
+patterns for v1, then tune only if dogfood showed noise.
+
+New hypothesis:
+When the selected directory is inside a Git worktree, the runtime should ask
+Git for tracked files plus untracked non-ignored files, then apply
+CodeAlmanac's default private/generated skips. The Python/pathspec walk remains
+the non-Git fallback.
+
+Evidence that forced the change:
+The current adapter only applied root `.gitignore` patterns, while real repos
+use nested `.gitignore`, `.git/info/exclude`, and global excludes. Git's
+`ls-files --cached --others --exclude-standard` already owns that contract.
+Cosmic Python chapter 13 also supports explicit dependency injection here:
+the adapter takes a `CommandRunner` rather than hardcoding subprocess mechanics
+inside product code.
+
+Code or product assumption affected:
+`FilesystemSourceRuntimeAdapter` now has a Git-backed directory listing path
+for `SourceKind.PATH_DIRECTORY`. It does not add a new source kind, change
+Ingest, or make services aware of Git mechanics.
+
+Follow-up test:
+If large directories remain noisy, add ranking or selection rules inside the
+filesystem integration after dogfood proves which files are wrong, rather than
+teaching Ingest to branch on directory shape.

@@ -32,3 +32,4 @@ alive while rebuilding in Python.
 | Legacy automation migration | The Python rewrite does not port TypeScript capture-sweep migration in the first automation slice. Add only if real installed legacy jobs must be migrated. |
 | Index refresh cost | `ensure_fresh` skips unchanged projection writes using source signatures, but still parses page markdown to compute them. Optimize only after real large-repo dogfood shows this is too slow. |
 | Viewer source-code preview | Not a v1 viewer feature. The restored file route lists wiki pages mentioning a file/folder reference; source-content reading belongs to source runtime snapshots used by lifecycle workflows. |
+| Filesystem directory ranking | Directory runtime now uses Git listing when available and respects nested ignore semantics, but it still takes the first bounded files in deterministic order. Add semantic or recency ranking only after dogfood shows selected directories are too noisy. |

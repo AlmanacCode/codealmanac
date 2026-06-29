@@ -1,3 +1,4 @@
+import subprocess
 from collections.abc import Iterator
 from contextlib import suppress
 from enum import StrEnum
@@ -9,6 +10,11 @@ from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
+from codealmanac.integrations.command import (
+    CommandRunner,
+    SubprocessCommandRunner,
+    first_line,
+)
 from codealmanac.integrations.sources.runtime import (
     bounded_text,
     source_runtime_section,
@@ -24,6 +30,7 @@ from codealmanac.services.sources.requests import InspectSourceRuntimeRequest
 DEFAULT_MAX_FILE_BYTES = 200_000
 DEFAULT_MAX_DIRECTORY_FILES = 25
 DEFAULT_MAX_CHARS = 60_000
+GIT_DIRECTORY_LIST_TIMEOUT_SECONDS = 10
 DEFAULT_IGNORE_PATTERNS = (
     ".git/",
     ".almanac/",
@@ -45,6 +52,11 @@ DEFAULT_IGNORE_PATTERNS = (
 class FilesystemRuntimeKind(StrEnum):
     FILE = "file"
     DIRECTORY = "directory"
+
+
+class FilesystemDirectoryListingSource(StrEnum):
+    GIT = "git"
+    WALK = "walk"
 
 
 class FilesystemTextDocument(CodeAlmanacModel):
@@ -71,6 +83,7 @@ class FilesystemTextDocument(CodeAlmanacModel):
 class FilesystemDirectoryDocument(CodeAlmanacModel):
     path: Path
     display_path: str
+    listing_source: FilesystemDirectoryListingSource
     files: tuple[FilesystemTextDocument, ...]
     skipped_count: int = 0
     file_list_truncated: bool = False
@@ -95,13 +108,17 @@ class UnreadableTextError(Exception):
 class FilesystemSourceRuntimeAdapter:
     def __init__(
         self,
+        runner: CommandRunner | None = None,
         max_file_bytes: int = DEFAULT_MAX_FILE_BYTES,
         max_directory_files: int = DEFAULT_MAX_DIRECTORY_FILES,
         max_chars: int = DEFAULT_MAX_CHARS,
+        git_timeout_seconds: int = GIT_DIRECTORY_LIST_TIMEOUT_SECONDS,
     ):
+        self.runner = runner or SubprocessCommandRunner()
         self.max_file_bytes = max_file_bytes
         self.max_directory_files = max_directory_files
         self.max_chars = max_chars
+        self.git_timeout_seconds = git_timeout_seconds
 
     def supports(self, ref: SourceRef) -> bool:
         return ref.kind in {
@@ -184,6 +201,8 @@ class FilesystemSourceRuntimeAdapter:
             cwd,
             self.max_file_bytes,
             self.max_directory_files,
+            self.runner,
+            self.git_timeout_seconds,
         )
         content, truncated = bounded_text(
             "\n\n".join(
@@ -254,12 +273,20 @@ def read_directory_document(
     cwd: Path,
     max_file_bytes: int,
     max_directory_files: int,
+    runner: CommandRunner,
+    git_timeout_seconds: int,
 ) -> FilesystemDirectoryDocument:
     ignore_spec = ignore_spec_for(root, cwd)
+    listing_source = FilesystemDirectoryListingSource.WALK
+    paths: Iterator[Path] = walk_files(root, cwd, ignore_spec)
+    git_paths = git_directory_files(root, cwd, runner, git_timeout_seconds)
+    if git_paths is not None:
+        listing_source = FilesystemDirectoryListingSource.GIT
+        paths = iter(git_paths)
     files: list[FilesystemTextDocument] = []
     skipped_count = 0
     file_list_truncated = False
-    for path in walk_files(root, cwd, ignore_spec):
+    for path in paths:
         if len(files) >= max_directory_files:
             file_list_truncated = True
             break
@@ -270,6 +297,7 @@ def read_directory_document(
     return FilesystemDirectoryDocument(
         path=root,
         display_path=display_path(root, cwd),
+        listing_source=listing_source,
         files=tuple(files),
         skipped_count=skipped_count,
         file_list_truncated=file_list_truncated,
@@ -298,6 +326,89 @@ def sorted_children(path: Path) -> tuple[Path, ...]:
         return tuple(sorted(path.iterdir(), key=lambda child: child.name.casefold()))
     except OSError:
         return ()
+
+
+def git_directory_files(
+    root: Path,
+    cwd: Path,
+    runner: CommandRunner,
+    timeout_seconds: int,
+) -> tuple[Path, ...] | None:
+    repo_root = git_repo_root(root, runner, timeout_seconds)
+    if repo_root is None:
+        return None
+    try:
+        pathspec = root.relative_to(repo_root).as_posix()
+    except ValueError:
+        return None
+    if pathspec == ".":
+        pathspec = "."
+    result = run_git(
+        runner,
+        repo_root,
+        (
+            "ls-files",
+            "-z",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "--full-name",
+            "--",
+            pathspec,
+        ),
+        timeout_seconds,
+    )
+    if result is None:
+        return None
+    default_spec = GitIgnoreSpec.from_lines(DEFAULT_IGNORE_PATTERNS)
+    paths: list[Path] = []
+    seen: set[Path] = set()
+    for value in result.stdout.split("\0"):
+        if not value:
+            continue
+        path = repo_root / value
+        if path in seen:
+            continue
+        if not is_relative_to(path, root):
+            continue
+        if should_skip_path(path, cwd, root, default_spec):
+            continue
+        if path.is_file():
+            seen.add(path)
+            paths.append(path)
+    return tuple(sorted(paths, key=lambda path: display_path(path, cwd).casefold()))
+
+
+def git_repo_root(
+    root: Path,
+    runner: CommandRunner,
+    timeout_seconds: int,
+) -> Path | None:
+    result = run_git(runner, root, ("rev-parse", "--show-toplevel"), timeout_seconds)
+    if result is None:
+        return None
+    text = first_line(result.stdout)
+    if not text:
+        return None
+    repo_root = Path(text).expanduser().resolve(strict=False)
+    if not is_relative_to(root, repo_root):
+        return None
+    return repo_root
+
+
+def run_git(
+    runner: CommandRunner,
+    cwd: Path,
+    args: tuple[str, ...],
+    timeout_seconds: int,
+):
+    try:
+        result = runner.run("git", args, cwd, timeout_seconds)
+    except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    return result
 
 
 def should_skip_path(
@@ -340,6 +451,7 @@ def render_directory_metadata(document: FilesystemDirectoryDocument) -> str:
         (
             f"kind: {FilesystemRuntimeKind.DIRECTORY.value}",
             f"path: {document.display_path}",
+            f"listing_source: {document.listing_source.value}",
             f"files_included: {len(document.files)}",
             f"files_skipped: {document.skipped_count}",
             f"file_list_truncated: {str(document.file_list_truncated).lower()}",

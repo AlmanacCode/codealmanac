@@ -410,6 +410,14 @@
   old viewer graph-navigation behavior without reading repo source contents.
 - Verified slice 30 focused behavior with viewer service/server tests and
   focused ruff before full verification.
+- Added slice-31 Git-backed filesystem directory listing. Directory runtime now
+  asks Git for `--cached --others --exclude-standard` files when the selected
+  directory is inside a worktree, then falls back to the bounded Python/pathspec
+  walk when Git cannot answer. Runtime metadata records `listing_source: git`
+  or `listing_source: walk`.
+- Sent a Relayforge Discord checkpoint for the Cosmic Python chapter 13 pattern
+  applied in slice 31: explicit dependency on a `CommandRunner` abstraction
+  instead of hardcoded subprocess calls or monkeypatching.
 
 ## Current Hypothesis
 
@@ -432,15 +440,15 @@ GitHub, transcript, web URL, and local path source refs now produce bounded
 runtime snapshots before Ingest starts the harness. Manual `update` now exists
 as a conservative package-manager command and does not install scheduled update
 automation. The viewer file route is now graph navigation over indexed file
-references, not source-code preview.
+references, not source-code preview. Filesystem directory runtime now uses Git
+listing inside worktrees before falling back to Python/pathspec traversal.
 
 ## Next Hypothesis
 
 The next automation or sync slice should add background/pending semantics only
 if it first adds a durable background owner and reconciliation loop. Scheduled
 update checks should wait for real non-editable install dogfood. The remaining
-source-runtime pressure is large-repo tuning for directory inputs: more exact
-`.gitignore` semantics, nested ignore files, and smarter file selection if
-dogfood shows the current bounded traversal is too noisy. The remaining serve
-risks are markdown wikilink rewriting inside code spans and browser-harness
-verification once Chrome allows remote debugging.
+source-runtime pressure is smarter file selection or ranking if dogfood shows
+Git-listed directory inputs are still too noisy. The remaining serve risks are
+markdown wikilink rewriting inside code spans and browser-harness verification
+once Chrome allows remote debugging.

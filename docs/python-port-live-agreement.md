@@ -30,6 +30,10 @@ It is the constraint document for future agents.
 - 2026-06-29: The local viewer's file route is a wiki-reference route:
   `/api/file?path=src/foo.py` returns pages that mention the file or folder
   reference. It does not read or preview repo file contents.
+- 2026-06-29: Filesystem directory source runtime uses Git listing when the
+  selected directory is inside a Git worktree, then falls back to the bounded
+  Python/pathspec walk when Git cannot answer. This is runtime material
+  selection, not a new source kind or source catalog.
 
 ## Product Frame
 

@@ -6,7 +6,7 @@ Updated: 2026-06-29
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
-- Latest committed slice: `feat(slice-30): add viewer file route`.
+- Latest committed slice: `feat(slice-31): add git-aware filesystem listing`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
 - Latest verified source-runtime direction: selected local material becomes
@@ -23,6 +23,8 @@ Updated: 2026-06-29
   mentioning the reference and does not read repo source contents.
 - Source runtime covers filesystem paths, Git, GitHub, transcripts, and web
   URLs behind `services/sources/ports.py::SourceRuntimeAdapter`.
+- Filesystem directory runtime uses Git listing inside worktrees, then falls
+  back to the bounded Python/pathspec walk outside Git.
 - Ingest remains source-kind agnostic. It resolves `SourceBrief` values, asks
   `SourcesService.inspect_runtime(...)` for snapshots, renders typed runtime
   JSON into the prompt, calls the selected harness, validates `.almanac/`
@@ -76,6 +78,19 @@ Behavior:
 - parent traversal such as `../secret.txt` is rejected before querying
 - the route is graph navigation, not source-code preview
 
+Slice 31 added Git-backed filesystem directory listing.
+
+Behavior:
+
+- directory runtime runs `git ls-files -z --cached --others --exclude-standard`
+  when the selected directory is inside a Git worktree
+- nested `.gitignore`, `.git/info/exclude`, and global Git excludes are handled
+  by Git rather than copied into Python
+- CodeAlmanac still filters private/generated defaults such as `.almanac/`,
+  `.env`, and `.gitignore`
+- non-Git directories keep the old bounded Python/pathspec walk
+- runtime metadata includes `listing_source: git` or `listing_source: walk`
+
 ## Verification To Preserve
 
 - Focused filesystem/source/ingest/architecture tests
@@ -95,11 +110,13 @@ Behavior:
 - Slice 30 focused viewer/server tests, full pytest, full ruff, diff check,
   package build asset inspection, and live `serve` API dogfood for file,
   folder, traversal rejection, and frontend asset wiring
+- Slice 31 focused filesystem/source/ingest/architecture tests and focused ruff
 
 ## Next Move
 
 1. Likely next pressure points:
-   - large-repo tuning for filesystem directory runtime
+   - smarter directory file selection/ranking if Git-listed directory runtime
+     is still too noisy in dogfood
    - background sync pending/reconciliation only if a durable owner is added
    - scheduled update automation only after non-editable update dogfood
    - browser-harness visual verification for `serve` once Chrome remote

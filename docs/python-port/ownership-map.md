@@ -110,9 +110,9 @@ decide quiet windows, cursor state, or whether ingest should run.
 The same source service owns `SourceRuntimeAdapter`, the port used by Ingest to
 turn selected source refs into bounded readable material before harness
 execution. `integrations/sources/filesystem/` reads explicit local files and
-bounded directory material, using `pathspec` for gitignore-style filtering and
-`charset-normalizer` for text decoding. `integrations/sources/git/` uses Git
-CLI commands for local
+bounded directory material, using Git-backed directory listing inside worktrees,
+`pathspec` as the non-Git fallback, and `charset-normalizer` for text decoding.
+`integrations/sources/git/` uses Git CLI commands for local
 `git:diff` and `git:range` refs. `integrations/sources/github/` uses GitHub CLI
 for PR and issue refs. `integrations/sources/transcripts/` reads provider JSONL
 transcripts with `jsonlines`, validates known Codex and Claude shapes with
