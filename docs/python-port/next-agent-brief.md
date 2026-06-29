@@ -6,7 +6,7 @@ Updated: 2026-06-29
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `codex/python-port-archive-existing-code`.
-- Latest committed implementation slice: `refactor(slice-40): split cli edge`.
+- Latest committed implementation slice: `feat(slice-42): pass source runtime context`.
 - Latest product-direction commit: `docs: record configurable almanac root`.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
@@ -26,11 +26,17 @@ Updated: 2026-06-29
   project config lives under `<almanac-root>/config.toml`, run logs and sync
   ledgers live under `<almanac-root>/jobs/`, and prompts/manual text refers to
   the configured Almanac root.
+- Slice 42 completes the configured-root source-runtime follow-through:
+  Ingest passes `workspace.almanac_root` through `SourceRuntimeContext`, and
+  filesystem directory runtime applies that context for both Git listing and
+  Python/pathspec walking. The adapter no longer hard-codes Almanac root names.
 - The local viewer now exposes `/api/file?path=...` and frontend
   `#/file/<path>` for wiki file/folder reference navigation. It lists pages
   mentioning the reference and does not read repo source contents.
 - Source runtime covers filesystem paths, Git, GitHub, transcripts, and web
   URLs behind `services/sources/ports.py::SourceRuntimeAdapter`.
+  `InspectSourceRuntimeRequest.context` carries workflow-owned runtime policy
+  such as ignored workspace directories.
 - `codealmanac.database` owns SQLite connection setup and migration
   application. `IndexStore` owns the first typed store migration for the
   derived `index.db` read model.
@@ -262,6 +268,18 @@ Behavior:
 - index health receives the true repo root rather than assuming
   `almanac_path.parent`
 
+Slice 42 adds source runtime context.
+
+Behavior:
+
+- `SourceRuntimeContext` carries repo-relative ignored directories into source
+  runtime inspection
+- Ingest sets that context from `workspace.almanac_root`
+- filesystem directory runtime applies the ignored directories in both Git and
+  non-Git traversal
+- filesystem runtime no longer treats `almanac/`, `docs/almanac/`, or
+  `.almanac/` as universal ignore names
+
 ## Verification To Preserve
 
 - Focused filesystem/source/ingest/architecture tests
@@ -306,14 +324,14 @@ Behavior:
 - Slice 41 focused root/config/sync/lifecycle/CLI tests, full pytest, full
   ruff, diff check, package build, and temp build/search dogfood with default
   `almanac/`
+- Slice 42 focused filesystem/source/ingest tests, full pytest, full ruff,
+  diff check, package build, and custom-root source-runtime dogfood
 
 ## Next Move
 
 1. Likely next pressure points:
    - semantic diversity or recency ranking for clean large directories if
      Git-listed unchanged files are still too noisy in dogfood
-   - arbitrary custom Almanac roots in filesystem source runtime only if
-     dogfood shows custom roots being included as source material
    - background sync owner/retry policy now that foreground sync can reconcile
      pending run ids against local run state
    - scheduled update automation only after non-editable update dogfood

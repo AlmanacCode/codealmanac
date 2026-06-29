@@ -26,7 +26,10 @@ from codealmanac.services.sources.models import (
     SourceRuntime,
     SourceRuntimeStatus,
 )
-from codealmanac.services.sources.requests import InspectSourceRuntimeRequest
+from codealmanac.services.sources.requests import (
+    InspectSourceRuntimeRequest,
+    ResolveSourcesRequest,
+)
 from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
 from codealmanac.workflows.ingest.requests import RunIngestRequest
 
@@ -159,6 +162,23 @@ class FakeSourceRuntimeAdapter:
             status=SourceRuntimeStatus.AVAILABLE,
             title="Fake Git diff",
             content="diff --git a/src/auth.py b/src/auth.py\n+new auth invariant",
+        )
+
+
+class RecordingPathSourceRuntimeAdapter:
+    def __init__(self):
+        self.requests: list[InspectSourceRuntimeRequest] = []
+
+    def supports(self, ref: SourceRef) -> bool:
+        return ref.kind == SourceKind.PATH_DIRECTORY
+
+    def inspect(self, request: InspectSourceRuntimeRequest) -> SourceRuntime:
+        self.requests.append(request)
+        return SourceRuntime(
+            ref=request.ref,
+            status=SourceRuntimeStatus.AVAILABLE,
+            title="Fake directory",
+            content="captured directory runtime",
         )
 
 
@@ -324,6 +344,30 @@ def test_ingest_prompt_includes_web_source_runtime(
     assert result.source_runtime[0].status == SourceRuntimeStatus.AVAILABLE
     assert "Retention Decisions" in adapter.requests[0].prompt
     assert "Keep pricing context in the wiki." in adapter.requests[0].prompt
+
+
+def test_ingest_workflow_passes_configured_almanac_root_to_source_runtime(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    runtime = RecordingPathSourceRuntimeAdapter()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".almanac/registry.json"),
+        source_runtime_adapters=(runtime,),
+    )
+    app.workflows.build.initialize(
+        InitializeWorkspaceRequest(path=repo, almanac_root=Path("knowledge"))
+    )
+    workspace = app.workspaces.resolve(repo)
+    sources = app.sources.resolve(ResolveSourcesRequest(cwd=repo, inputs=(".",)))
+
+    result = app.workflows.ingest.inspect_source_runtime(workspace, sources)
+
+    assert result[0].status == SourceRuntimeStatus.AVAILABLE
+    assert runtime.requests[0].cwd == repo
+    assert runtime.requests[0].context.ignored_directories == (Path("knowledge"),)
 
 
 def test_ingest_workflow_fails_run_when_harness_is_missing(

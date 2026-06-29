@@ -5,6 +5,29 @@ Updated: 2026-06-29
 Record hypothesis changes here. Do not rewrite history; append a new entry when
 evidence changes the shape.
 
+## 2026-06-29 - Source Runtime Context Carries Workspace Ignores
+
+Old hypothesis:
+Filesystem source runtime could exclude a small list of common wiki roots:
+`almanac/`, `docs/almanac/`, and `.almanac/`.
+
+New hypothesis:
+The adapter should not know CodeAlmanac root names. Ingest resolves the
+workspace, then passes `workspace.almanac_root` in `SourceRuntimeContext`.
+
+Evidence that forced the change:
+The product now allows arbitrary repo-relative roots. Adding more global ignore
+guesses would make adapter behavior drift from the workspace registry.
+
+Code or product assumption affected:
+`InspectSourceRuntimeRequest.context.ignored_directories` is the service-owned
+runtime policy. `integrations/sources/filesystem/` applies it for both Git
+listing and Python/pathspec walking.
+
+Follow-up test:
+Keep coverage for a custom root such as `knowledge/` so directory ingest never
+includes the repo wiki as source material.
+
 ## 2026-06-29 - Configured Root Is A Workspace Fact
 
 Old hypothesis:

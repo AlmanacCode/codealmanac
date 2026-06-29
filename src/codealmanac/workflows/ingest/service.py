@@ -24,6 +24,7 @@ from codealmanac.services.sources.models import SourceBrief, SourceRuntime
 from codealmanac.services.sources.requests import (
     InspectSourceRuntimeRequest,
     ResolveSourcesRequest,
+    SourceRuntimeContext,
 )
 from codealmanac.services.sources.service import SourcesService
 from codealmanac.services.workspaces.models import Workspace
@@ -226,6 +227,9 @@ class IngestWorkflow:
                 InspectSourceRuntimeRequest(
                     cwd=workspace.root_path,
                     ref=source.ref,
+                    context=SourceRuntimeContext(
+                        ignored_directories=(workspace.almanac_root,)
+                    ),
                 )
             )
             for source in sources

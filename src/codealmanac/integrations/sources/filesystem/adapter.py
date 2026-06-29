@@ -40,9 +40,6 @@ DEFAULT_MAX_CHARS = 60_000
 GIT_DIRECTORY_LIST_TIMEOUT_SECONDS = 10
 DEFAULT_IGNORE_PATTERNS = (
     ".git/",
-    "almanac/",
-    "docs/almanac/",
-    ".almanac/",
     "node_modules/",
     ".venv/",
     "venv/",
@@ -157,7 +154,11 @@ class FilesystemSourceRuntimeAdapter:
         if request.ref.kind == SourceKind.PATH_FILE:
             return self._inspect_file(request.cwd, request.ref)
         if request.ref.kind == SourceKind.PATH_DIRECTORY:
-            return self._inspect_directory(request.cwd, request.ref)
+            return self._inspect_directory(
+                request.cwd,
+                request.ref,
+                request.context.ignored_directories,
+            )
         if request.ref.kind == SourceKind.PATH_UNKNOWN:
             return unavailable_runtime(
                 request.ref,
@@ -208,7 +209,12 @@ class FilesystemSourceRuntimeAdapter:
             truncated=truncated or document.bytes_truncated,
         )
 
-    def _inspect_directory(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
+    def _inspect_directory(
+        self,
+        cwd: Path,
+        ref: SourceRef,
+        ignored_directories: tuple[Path, ...],
+    ) -> SourceRuntime:
         path = ref.path
         if path is None:
             return unavailable_runtime(
@@ -229,6 +235,7 @@ class FilesystemSourceRuntimeAdapter:
             self.max_directory_files,
             self.runner,
             self.git_timeout_seconds,
+            ignored_directories,
         )
         content, truncated = bounded_text(
             "\n\n".join(
@@ -309,12 +316,19 @@ def read_directory_document(
     max_directory_files: int,
     runner: CommandRunner,
     git_timeout_seconds: int,
+    ignored_directories: tuple[Path, ...],
 ) -> FilesystemDirectoryDocument:
-    ignore_spec = ignore_spec_for(root, cwd)
+    ignore_spec = ignore_spec_for(root, cwd, ignored_directories)
     listing_source = FilesystemDirectoryListingSource.WALK
     selection_policy = FilesystemDirectorySelectionPolicy.PATH_ORDER
     candidates = tuple(walk_file_candidates(root, cwd, ignore_spec))
-    git_candidates = git_directory_candidates(root, cwd, runner, git_timeout_seconds)
+    git_candidates = git_directory_candidates(
+        root,
+        cwd,
+        runner,
+        git_timeout_seconds,
+        ignore_spec,
+    )
     if git_candidates is not None:
         listing_source = FilesystemDirectoryListingSource.GIT
         selection_policy = FilesystemDirectorySelectionPolicy.CHANGED_FIRST
@@ -396,6 +410,7 @@ def git_directory_candidates(
     cwd: Path,
     runner: CommandRunner,
     timeout_seconds: int,
+    ignore_spec: GitIgnoreSpec,
 ) -> tuple[FilesystemDirectoryCandidate, ...] | None:
     repo_root = git_repo_root(root, runner, timeout_seconds)
     if repo_root is None:
@@ -430,7 +445,6 @@ def git_directory_candidates(
         runner,
         timeout_seconds,
     )
-    default_spec = GitIgnoreSpec.from_lines(DEFAULT_IGNORE_PATTERNS)
     candidates: list[FilesystemDirectoryCandidate] = []
     seen: set[Path] = set()
     for value in result.stdout.split("\0"):
@@ -441,7 +455,7 @@ def git_directory_candidates(
             continue
         if not is_relative_to(path, root):
             continue
-        if should_skip_path(path, cwd, root, default_spec):
+        if should_skip_path(path, cwd, root, ignore_spec):
             continue
         if path.is_file():
             seen.add(path)
@@ -554,13 +568,26 @@ def ignore_key(path: Path, cwd: Path, root: Path) -> str:
     return path.relative_to(base).as_posix()
 
 
-def ignore_spec_for(root: Path, cwd: Path) -> GitIgnoreSpec:
+def ignore_spec_for(
+    root: Path,
+    cwd: Path,
+    ignored_directories: tuple[Path, ...],
+) -> GitIgnoreSpec:
     lines = list(DEFAULT_IGNORE_PATTERNS)
+    lines.extend(ignored_directory_patterns(ignored_directories))
     gitignore = cwd / ".gitignore" if is_relative_to(root, cwd) else root / ".gitignore"
     if gitignore.is_file():
         with suppress(OSError):
             lines.extend(gitignore.read_text(encoding="utf-8").splitlines())
     return GitIgnoreSpec.from_lines(lines)
+
+
+def ignored_directory_patterns(
+    ignored_directories: tuple[Path, ...],
+) -> tuple[str, ...]:
+    return tuple(
+        f"{directory.as_posix().rstrip('/')}/" for directory in ignored_directories
+    )
 
 
 def render_file_metadata(document: FilesystemTextDocument) -> str:

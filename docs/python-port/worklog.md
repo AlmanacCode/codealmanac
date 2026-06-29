@@ -518,6 +518,12 @@
   configured root, run log references use the configured root, prompts/manual
   say "configured Almanac root", and index health no longer assumes
   `almanac_path.parent` is the repo root.
+- Added slice-42 source runtime context. `InspectSourceRuntimeRequest` now
+  carries `SourceRuntimeContext`, Ingest fills it from
+  `workspace.almanac_root`, and filesystem directory runtime applies those
+  ignored directories for both Git listing and Python/pathspec traversal. The
+  filesystem adapter no longer hard-codes `almanac/`, `docs/almanac/`, or
+  `.almanac/` as product roots.
 
 ## Current Hypothesis
 
@@ -561,7 +567,9 @@ The CLI edge now follows the same parser/dispatch/render package shape as the
 sibling Almanac CLI, with architecture tests preventing `main.py` and parser
 root from growing back into all-purpose modules. The configured-root slice now
 implements the new default `almanac/` root across setup, registry, index,
-manual, runs, sync ledger, config, prompts, and lifecycle safety.
+manual, runs, sync ledger, config, prompts, and lifecycle safety. Source
+runtime now receives configured wiki-root ignore policy from Ingest rather than
+guessing root names inside the filesystem adapter.
 
 ## Next Hypothesis
 
@@ -571,8 +579,6 @@ policy only if it builds on the durable pending claim and run lifecycle
 reconciliation already in foreground sync. Scheduled update checks should wait
 for real non-editable install dogfood. The remaining source-runtime pressure is
 semantic diversity or recency ranking for clean large directories if dogfood
-shows unchanged inputs are still too noisy; arbitrary custom Almanac roots also
-need to be passed into filesystem source runtime only if dogfood shows those
-directories being ingested. The remaining serve risks are markdown wikilink
-rewriting inside code spans and browser-harness verification once Chrome allows
-remote debugging.
+shows unchanged inputs are still too noisy. The remaining serve risks are
+markdown wikilink rewriting inside code spans and browser-harness verification
+once Chrome allows remote debugging.

@@ -143,6 +143,9 @@ execution. `integrations/sources/filesystem/` reads explicit local files and
 bounded directory material, using Git-backed directory listing inside worktrees,
 Git porcelain status for changed-first directory selection, `pathspec` as the
 non-Git fallback, and `charset-normalizer` for text decoding.
+`InspectSourceRuntimeRequest.context.ignored_directories` carries workflow-owned
+runtime policy such as the resolved `workspace.almanac_root`; filesystem
+adapters apply those ignores but do not hard-code Almanac root names.
 `integrations/sources/git/` uses Git CLI commands for local
 `git:diff` and `git:range` refs. `integrations/sources/github/` uses GitHub CLI
 for PR and issue refs. `integrations/sources/transcripts/` reads provider JSONL

@@ -522,3 +522,15 @@ means the goal remains active.
 | Diff hygiene | `git diff --check` | passed |
 | Package build | `uv build --out-dir /tmp/codealmanac-build-slice41` | passed; wheel includes `services/workspaces/roots.py` |
 | Live configurable-root dogfood | isolated temp `HOME`; default `codealmanac build`, write/search page under `almanac/`; configured `codealmanac init --root docs/almanac`, plain `codealmanac build`, write/search page under `docs/almanac/`; `codealmanac list` | passed; searches returned `root-dogfood` and `configured-root-dogfood`; plain build reported `built docs-root`; list showed `default-root ... almanac` and `docs-root ... docs/almanac` |
+
+## Gates For Slice 42 Source Runtime Context
+
+| Gate | Command | 2026-06-29 result |
+|---|---|---|
+| Focused filesystem/source/ingest tests | `uv run pytest tests/test_filesystem_source_runtime.py tests/test_ingest_workflow.py tests/test_sources_service.py` | 36 passed |
+| Focused lint | `uv run ruff check src/codealmanac/services/sources/requests.py src/codealmanac/integrations/sources/filesystem/adapter.py src/codealmanac/workflows/ingest/service.py tests/test_filesystem_source_runtime.py tests/test_ingest_workflow.py` | passed |
+| Full tests | `uv run pytest` | 213 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+| Package build | `uv build --out-dir /tmp/codealmanac-build-slice42`; wheel inspection | passed; wheel includes source request, filesystem runtime, and ingest workflow modules |
+| Custom-root dogfood | isolated temp `HOME`; `codealmanac init <repo> --root knowledge`; Git repo with `src/app.py` and `knowledge/pages/runtime-wiki.md`; `app.workflows.ingest.inspect_source_runtime(...)` | passed; runtime included `src/app.py` and excluded `knowledge/pages/runtime-wiki.md` |

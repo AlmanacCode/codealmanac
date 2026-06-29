@@ -3,6 +3,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from codealmanac.app import create_app
 from codealmanac.integrations.sources.filesystem import FilesystemSourceRuntimeAdapter
@@ -10,6 +11,7 @@ from codealmanac.services.sources.models import SourceRuntimeStatus
 from codealmanac.services.sources.requests import (
     InspectSourceRuntimeRequest,
     ResolveSourcesRequest,
+    SourceRuntimeContext,
 )
 
 
@@ -87,7 +89,11 @@ def test_filesystem_source_runtime_reads_directory_with_ignores(tmp_path: Path):
     (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=tmp_path, inputs=(".",)))
 
     runtime = app.sources.inspect_runtime(
-        InspectSourceRuntimeRequest(cwd=tmp_path, ref=brief.ref)
+        InspectSourceRuntimeRequest(
+            cwd=tmp_path,
+            ref=brief.ref,
+            context=SourceRuntimeContext(ignored_directories=(Path("almanac"),)),
+        )
     )
 
     assert runtime.status == SourceRuntimeStatus.AVAILABLE
@@ -99,6 +105,52 @@ def test_filesystem_source_runtime_reads_directory_with_ignores(tmp_path: Path):
     assert "generated" not in (runtime.content or "")
     assert "node_modules" not in (runtime.content or "")
     assert "almanac/pages/wiki.md" not in (runtime.content or "")
+
+
+def test_filesystem_source_runtime_uses_configured_wiki_root_ignore(
+    tmp_path: Path,
+):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/app.py").write_text("AUTH_RULE = 'keep'\n", encoding="utf-8")
+    (tmp_path / "knowledge/pages").mkdir(parents=True)
+    (tmp_path / "knowledge/pages/wiki.md").write_text("wiki\n", encoding="utf-8")
+    app = create_app(
+        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=5),),
+    )
+    (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=tmp_path, inputs=(".",)))
+
+    runtime = app.sources.inspect_runtime(
+        InspectSourceRuntimeRequest(
+            cwd=tmp_path,
+            ref=brief.ref,
+            context=SourceRuntimeContext(ignored_directories=(Path("knowledge"),)),
+        )
+    )
+
+    content = runtime.content or ""
+    assert runtime.status == SourceRuntimeStatus.AVAILABLE
+    assert "src/app.py" in content
+    assert "AUTH_RULE = 'keep'" in content
+    assert "knowledge/pages/wiki.md" not in content
+
+
+def test_filesystem_source_runtime_does_not_hard_code_wiki_root_names(
+    tmp_path: Path,
+):
+    (tmp_path / "almanac/pages").mkdir(parents=True)
+    (tmp_path / "almanac/pages/wiki.md").write_text("wiki\n", encoding="utf-8")
+    app = create_app(
+        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=5),),
+    )
+    (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=tmp_path, inputs=(".",)))
+
+    runtime = app.sources.inspect_runtime(
+        InspectSourceRuntimeRequest(cwd=tmp_path, ref=brief.ref)
+    )
+
+    content = runtime.content or ""
+    assert runtime.status == SourceRuntimeStatus.AVAILABLE
+    assert "almanac/pages/wiki.md" in content
 
 
 def test_filesystem_source_runtime_uses_git_directory_listing(
@@ -145,6 +197,40 @@ def test_filesystem_source_runtime_uses_git_directory_listing(
     assert "almanac/pages/wiki.md" not in content
     assert "SECRET=1" not in content
     assert "root-ignored.md" not in content
+
+
+def test_filesystem_source_runtime_uses_configured_wiki_root_ignore_with_git(
+    tmp_path: Path,
+):
+    if shutil.which("git") is None:
+        pytest.skip("git is required for this integration test")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run_git(repo, "init", "-q")
+    (repo / "src").mkdir()
+    (repo / "src/app.py").write_text("AUTH_RULE = 'keep'\n", encoding="utf-8")
+    (repo / "knowledge/pages").mkdir(parents=True)
+    (repo / "knowledge/pages/wiki.md").write_text("wiki\n", encoding="utf-8")
+    run_git(repo, "add", "src/app.py", "knowledge/pages/wiki.md")
+    app = create_app(
+        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=5),),
+    )
+    (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=repo, inputs=(".",)))
+
+    runtime = app.sources.inspect_runtime(
+        InspectSourceRuntimeRequest(
+            cwd=repo,
+            ref=brief.ref,
+            context=SourceRuntimeContext(ignored_directories=(Path("knowledge"),)),
+        )
+    )
+
+    content = runtime.content or ""
+    assert runtime.status == SourceRuntimeStatus.AVAILABLE
+    assert "listing_source: git" in content
+    assert "src/app.py" in content
+    assert "AUTH_RULE = 'keep'" in content
+    assert "knowledge/pages/wiki.md" not in content
 
 
 def test_filesystem_source_runtime_prioritizes_git_changes_when_bounded(
@@ -225,6 +311,25 @@ def test_filesystem_source_runtime_truncates_large_file(tmp_path: Path):
     assert runtime.status == SourceRuntimeStatus.AVAILABLE
     assert runtime.truncated is True
     assert "bytes_truncated: true" in (runtime.content or "")
+
+
+def test_source_runtime_context_normalizes_ignored_directories():
+    context = SourceRuntimeContext(
+        ignored_directories=(Path("almanac"), Path("almanac/"))
+    )
+
+    assert context.ignored_directories == (Path("almanac"),)
+
+
+@pytest.mark.parametrize(
+    "directory",
+    (Path("/tmp/wiki"), Path("."), Path("../wiki"), Path("docs/../wiki")),
+)
+def test_source_runtime_context_rejects_unsafe_ignored_directories(
+    directory: Path,
+):
+    with pytest.raises(ValidationError):
+        SourceRuntimeContext(ignored_directories=(directory,))
 
 
 def run_git(repo: Path, *args: str) -> None:

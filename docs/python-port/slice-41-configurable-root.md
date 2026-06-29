@@ -70,9 +70,8 @@ Added or updated coverage for:
 - source-directory ignores for `almanac/` and `docs/almanac/`
 - architecture guard that root discovery is workspace-owned
 
-## Remaining Risk
+## Follow-up Landed In Slice 42
 
-Filesystem directory source runtime ignores the default/common wiki roots
-(`almanac/`, `docs/almanac/`, `.almanac/`). A fully arbitrary configured root
-is not passed into the source runtime adapter yet. Add that only if real
-dogfood shows arbitrary custom roots are being ingested as source material.
+Slice 42 removed the common-root shortcut. Ingest now passes the configured
+`workspace.almanac_root` into source runtime through `SourceRuntimeContext`, and
+filesystem runtime applies that context for both Git listing and Python walking.
