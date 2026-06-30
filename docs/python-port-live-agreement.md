@@ -12,8 +12,10 @@ It is the constraint document for future agents.
   not as product direction for this rewrite.
 - 2026-06-29: The old TypeScript/Node implementation is archived under
   `archive/code/`. Use it as behavior reference, not as code to preserve.
-- 2026-06-29: Public command and package language is `codealmanac`. Do not add
-  public `almanac` or `alm` aliases for compatibility.
+- 2026-06-29: Public command, package, and user-state language is
+  `codealmanac`. Do not call the product Codex Almanac, and do not add public
+  `almanac` or `alm` aliases for compatibility. Python identifiers may use
+  normal class-name casing such as `CodeAlmanac`.
 - 2026-06-29: The Python rewrite targets new CodeAlmanac users. Do not keep
   TypeScript-era backward compatibility, legacy aliases, legacy root
   migrations, or old frontmatter repair paths unless the user explicitly
@@ -32,6 +34,11 @@ It is the constraint document for future agents.
   logs use the product-specific hidden directory.
 - 2026-06-29: Follow Almanac's Python style: service symmetry, explicit request
   models, service-owned verbs, store-owned persistence, thin CLI edges.
+- 2026-06-30: Validation belongs at product boundaries. Use Pydantic request,
+  settings, and domain models for shaped data; use enums or literals for finite
+  choices; reject invalid user/product input with explicit errors. Adapter-local
+  tolerance can use small built-in parsers that return `None` for loose
+  outside-world state, such as reading an existing launchd plist.
 - 2026-06-29: Public-release readiness is now evidence-gated in
   `docs/python-port/public-release-readiness.md`. Further work should bias
   toward clean-install proof, real lifecycle dogfood, prompt quality, package
@@ -169,10 +176,11 @@ It is the constraint document for future agents.
   section to mention that slice, so future agents do not resume from a stale
   checkpoint after compaction.
 - 2026-06-30: Public beta release judgment lives in
-  `docs/python-port/public-beta-gate-audit.md`. The current remaining release
-  work is one more real lifecycle dogfood pass against a non-toy project source
-  shape, not new hosted machinery, aliases, SDK/MCP surfaces, or speculative
-  architecture seams. Slice 69 passed current-head package rehearsal.
+  `docs/python-port/public-beta-gate-audit.md`. Slice 70 passed the remaining
+  non-toy lifecycle dogfood pass, and slice 71 reran current-head package proof
+  after the state-path change. Current remaining release work is operational:
+  version, changelog, PyPI credentials, publish ownership, and the human
+  publish decision.
 
 ## Product Frame
 

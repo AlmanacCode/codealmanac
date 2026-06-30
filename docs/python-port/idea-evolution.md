@@ -1719,3 +1719,29 @@ and the human publish decision.
 Follow-up test:
 Rerun package/install smoke if package metadata, README, prompts, manual docs,
 or server assets change before publish.
+
+## 2026-06-30 - Package Proof Must Follow State Path Changes
+
+Old hypothesis:
+After slice 70, the implementation gates were covered and release operations
+were next.
+
+New hypothesis:
+Because slice 70 changed README metadata and installed default state behavior,
+package proof needed one more current-head rerun before the implementation
+could be treated as complete.
+
+Evidence that forced the change:
+The package audit itself says package/install smoke should be rerun when README,
+package data, or installed behavior changes before publishing. Slice 70 changed
+README package metadata and moved default registry/config paths to
+`~/.codealmanac/`.
+
+Code or product assumption affected:
+Slice 71 built fresh wheel/sdist artifacts, installed each into clean Python
+3.12.9 environments, and proved installed `init` writes
+`~/.codealmanac/registry.json` without creating `~/.almanac/registry.json`.
+
+Follow-up test:
+Only rerun package smoke again if package metadata, README, prompts, manual
+docs, server assets, or installed behavior changes before publish.

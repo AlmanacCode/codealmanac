@@ -10,11 +10,11 @@ Claude ingest, real non-toy source-shape ingest, real sync, and final viewer
 browser proof now have dogfood evidence.
 
 The gate audit in `docs/python-port/public-beta-gate-audit.md` is the current
-release-readiness checkpoint. Slice 69 passed current-head package rehearsal.
-Slice 70 passed the remaining lifecycle prompt-quality dogfood and fixed the
-user-state path issue it exposed. Remaining public-release work is release
-operations: PyPI credentials, version/changelog, and the human publish
-decision.
+release-readiness checkpoint. Slice 70 passed the remaining lifecycle
+prompt-quality dogfood and fixed the user-state path issue it exposed. Slice 71
+reran current-head package/install proof after that change. Remaining
+public-release work is release operations: PyPI credentials, version/changelog,
+and the human publish decision.
 
 ## Public Beta Gate
 
@@ -111,10 +111,15 @@ decision.
   `source-runtime-flow.md`, left health clean, and produced readable job logs.
 - Slice 70 also moved default user/global state from `~/.almanac/` to
   `~/.codealmanac/`, while preserving the repo wiki root as `almanac/`.
+- Slice 71 reran current-head package proof after the slice 70 state-path and
+  README changes. Wheel and sdist artifacts passed `twine check`, package
+  inspection confirmed the updated README/state-root metadata and package data,
+  clean Python 3.12.9 installs passed installed CLI smoke, `serve` HTTP checks
+  passed, and both artifacts wrote registry state under `~/.codealmanac/`.
 
 ## Next Useful Pressure Tests
 
 1. Prepare release operations: version/changelog, PyPI credentials, and human
    publish decision.
-2. Rerun package/install smoke if metadata, README, prompts, manual, or server
-   assets change before publishing.
+2. Rerun package/install smoke again only if metadata, README, prompts, manual,
+   server assets, or installed behavior change before publishing.

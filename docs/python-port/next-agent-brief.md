@@ -4,10 +4,13 @@ Updated: 2026-06-30
 
 ## Current State
 
-- Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
+- Python local-product implementation goal is complete against
+  `docs/python-port/completion-audit.md`. Next work is release operations:
+  version/changelog, PyPI credentials, publish ownership, and the human publish
+  decision.
 - Branch: `dev`.
-- Latest implementation slice: slice 70 real source-shape lifecycle dogfood and
-  `~/.codealmanac/` state path.
+- Latest implementation slice: slice 71 current-head package smoke after the
+  `~/.codealmanac/` state-path change.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -40,6 +43,11 @@ Updated: 2026-06-30
 - Slice 70 moves default user/global state to `~/.codealmanac/`. The repo-local
   wiki root remains `almanac/`; registry, user config, and automation logs now
   use the product-specific hidden directory.
+- Slice 71 reran current-head package proof after the slice 70 state-path and
+  README changes. Fresh wheel and sdist artifacts passed `twine check`,
+  metadata/package-data inspection, clean Python 3.12.9 installs, installed CLI
+  smoke, live `serve` HTTP checks, and explicit `~/.codealmanac/registry.json`
+  state-path assertions.
 - Slice 42 completes the configured-root source-runtime follow-through:
   Ingest passes `workspace.almanac_root` through `SourceRuntimeContext`, and
   filesystem directory runtime applies that context for both Git listing and

@@ -197,8 +197,8 @@ def test_public_beta_gate_audit_records_current_package_rehearsal():
     )
     table = markdown_section(audit, "## Gate Audit")
 
-    assert "| Fresh install | Ready | Slice 69" in table
-    assert "| Package metadata | Ready | Slice 69" in table
+    assert "| Fresh install | Ready | Slice 71" in table
+    assert "| Package metadata | Ready | Slice 71" in table
     assert "Needs final rerun" not in table
 
 

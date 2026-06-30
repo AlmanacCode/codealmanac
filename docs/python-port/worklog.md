@@ -779,6 +779,16 @@ The dogfood also exposed that default user config still pointed at
 `~/.almanac/config.toml`, where this machine had stale old-product `[agent]`
 config. The fix moves default user/global state to `~/.codealmanac/` while
 keeping repo wiki roots under `almanac/`.
+Slice 71 reruns current-head package proof after the slice 70 README and
+state-path changes. `uv build` produced wheel and sdist artifacts under
+`/tmp/codealmanac-release-slice71`; `twine check` passed; package inspection
+confirmed Apache-2.0 metadata, `>=3.12`, README metadata containing
+`~/.codealmanac/`, server assets, manual docs, prompts, and `core/paths.py`.
+Clean Python 3.12.9 wheel and sdist installs ran installed CLI smoke for
+`--help`, `init`, `search`, `show`, `topics`, `health`, `jobs`, `sync status`,
+`doctor`, `update --check`, and live `serve` HTTP routes. Both installed
+artifacts wrote registry state under `~/.codealmanac/registry.json` and did not
+create `~/.almanac/registry.json` in the temp homes.
 
 ## Next Hypothesis
 
@@ -810,7 +820,9 @@ After slice 68, release judgment is recorded in
 another architecture seam; it is current-head package rehearsal plus one more
 real lifecycle dogfood run.
 After slice 69, current-head package rehearsal is done. After slice 70, the
-remaining public-beta implementation gate is also covered. The next pressure is
-release operations: version/changelog, PyPI credentials, and the human publish
-decision. Any package data, prompt, manual, README, or server asset change
-before publish should trigger another package/install smoke.
+remaining public-beta implementation gate is also covered. After slice 71,
+package proof is current again after the state-path change. The next pressure
+is release operations: version/changelog, PyPI credentials, and the human
+publish decision. Any package data, prompt, manual, README, server asset, or
+installed-behavior change before publish should trigger another package/install
+smoke.
