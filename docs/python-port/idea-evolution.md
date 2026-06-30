@@ -1535,3 +1535,29 @@ Follow-up test:
 Keep public-contract tests close to user-facing claims, not only forbidden
 words. When a README section describes command effects, add a guard for the
 actual file or command contract.
+
+## 2026-06-30 - Quickstarts Are Executable Use Cases
+
+Old hypothesis:
+After the README scaffold tree was fixed, remaining public-doc work was likely
+only wording polish.
+
+New hypothesis:
+Treat quickstarts as runnable use cases. A public README command sequence is
+wrong if it exits successfully but teaches a new user an empty first result.
+
+Evidence that forced the change:
+A temp repo initialized with `codealmanac init` returned `# 0 results` for the
+README's `codealmanac search "auth"` command. The same starter wiki returned
+`getting-started` for `codealmanac search "getting"` and rendered
+`# Getting Started` through `codealmanac show getting-started --lead`.
+
+Code or product assumption affected:
+The README quickstart now uses a search term that matches the starter wiki.
+Public-contract tests guard the quickstart section directly instead of only
+checking that the README mentions `codealmanac search`.
+
+Follow-up test:
+For future public examples, distinguish runnable quickstart commands from
+illustrative daily-use commands. Runnable examples should be dogfooded in a
+fresh temp repo.

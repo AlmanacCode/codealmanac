@@ -45,7 +45,7 @@ Inside a repository:
 
 ```bash
 codealmanac init
-codealmanac search "auth"
+codealmanac search "getting"
 codealmanac show getting-started
 codealmanac serve
 ```

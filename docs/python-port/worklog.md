@@ -733,6 +733,12 @@ A live temp-repo `codealmanac init` created `.gitignore`, `README.md`,
 `config.toml`, `jobs/`, or `index.db`. The README now separates
 `What Gets Created By Init` from `Runtime State`, and public-contract tests
 guard that the init section stays source-only.
+Slice 65 dogfoods the README quickstart itself. A fresh temp repo proved that
+`codealmanac search "auth"` returns zero results immediately after `init`,
+because the starter wiki contains `getting-started`, not an auth page. The
+quickstart now uses `codealmanac search "getting"` so a new user sees the
+starter page on the first search. Public-contract tests guard the quickstart
+section against drifting back to a non-starter search term.
 
 ## Next Hypothesis
 

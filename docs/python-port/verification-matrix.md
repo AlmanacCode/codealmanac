@@ -803,3 +803,15 @@ means the goal remains active.
 | Full tests | `uv run pytest` | 243 passed |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 65 README Quickstart Dogfood
+
+| Gate | Command | 2026-06-30 result |
+|---|---|---|
+| Quickstart mismatch repro | isolated temp `HOME`; temp repo; `codealmanac init`; `codealmanac search "auth"`; `codealmanac search "getting"`; `codealmanac show getting-started --lead` | passed; `search "auth"` returned `# 0 results`, while `search "getting"` returned `getting-started` and `show --lead` rendered `# Getting Started` |
+| Public contract tests | `uv run pytest tests/test_public_contract.py -q` | 18 passed; quickstart section now guards `search "getting"` and rejects `search "auth"` |
+| Fixed quickstart dogfood | isolated temp `HOME`; temp repo; `codealmanac init`; `codealmanac search "getting"`; `codealmanac show getting-started --lead` | passed; search returned `getting-started` and show rendered `# Getting Started` |
+| Cosmic note relay | `doppler run --project almanac --config dev -- relayforge reply --config ../relayforge/relay.config.json --binding rohan-almanac-main ...` | passed; sent the Chapter 4 Service Layer note and how it maps to README quickstart as a public use case |
+| Full tests | `uv run pytest` | 244 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |

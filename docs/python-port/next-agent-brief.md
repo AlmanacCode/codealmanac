@@ -561,6 +561,9 @@ Behavior:
   recreate a deleted configured root
 - Slice 64 README scaffold accuracy, public-contract guard for init-created
   source files versus derived runtime state, and live temp `init` tree dogfood
+- Slice 65 README quickstart dogfood, public-contract guard for the starter
+  search term, and live temp proof that `search "getting"` returns
+  `getting-started` after init
 
 ## Next Move
 

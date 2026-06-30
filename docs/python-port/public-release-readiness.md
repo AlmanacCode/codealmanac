@@ -84,6 +84,9 @@ unless a gate below exposes a boundary problem.
   dogfood showed it mixed initialized wiki source files with later runtime
   state. The README now separates init-created source files from derived
   `index.db`/`jobs/` state, and public-contract tests guard the distinction.
+- Slice 65 dogfooded the README quickstart in a fresh temp repo. The old
+  `search "auth"` example returned zero results after `init`; the quickstart
+  now searches `getting`, which returns the starter `getting-started` page.
 
 ## Next Useful Pressure Tests
 

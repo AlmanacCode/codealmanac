@@ -27,7 +27,7 @@ README_REQUIRED_FRAGMENTS = (
     "Python 3.12+",
     "uv tool install codealmanac",
     "codealmanac init",
-    "codealmanac search",
+    'codealmanac search "getting"',
     "codealmanac serve",
     "## What Gets Created By Init",
     "Derived local state appears when commands need it:",
@@ -116,6 +116,16 @@ def test_readme_keeps_init_scaffold_separate_from_runtime_state():
     assert "almanac/index.db" not in init_section
     assert "almanac/jobs/" not in init_section
     assert "config.toml" not in init_section
+
+
+def test_readme_quickstart_uses_search_that_works_after_init():
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+
+    quickstart = readme_section(readme, "## Quickstart")
+
+    assert 'codealmanac search "getting"' in quickstart
+    assert 'codealmanac show getting-started' in quickstart
+    assert 'codealmanac search "auth"' not in quickstart
 
 
 def test_release_guide_documents_python_package_release_surface():
