@@ -6,9 +6,10 @@ Updated: 2026-06-30
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `dev`.
-- Latest implementation slice: slice 67 next-agent brief freshness.
+- Latest implementation slice: slice 68 public beta gate audit.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
+- Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
 - Latest verified source-runtime direction: selected local material becomes
   `SourceAddress -> SourceRef -> SourceBrief -> SourceRuntime` before Ingest
@@ -568,13 +569,16 @@ Behavior:
 - Slice 67 next-agent brief freshness guard; public-contract tests now require
   this brief's current-state section to mention the newest
   `docs/python-port/slice-N-*.md` file
+- Slice 68 public beta gate audit; every public beta gate now has status,
+  evidence, and remaining risk recorded in
+  `docs/python-port/public-beta-gate-audit.md`, with a public-contract guard
+  that the audit covers every gate row
 
 ## Next Move
 
 1. Likely next pressure points:
-   - release review against `docs/python-port/public-release-readiness.md`
-     before any publish attempt
-   - more lifecycle dogfood for prompt quality and real project behavior; add
+   - current-head package rehearsal before any publish attempt
+   - one more lifecycle dogfood for prompt quality and real project behavior; add
      source-runtime ranking/recency only after a failing case proves current
      diversity is insufficient
    - scheduled update automation only after non-editable update dogfood

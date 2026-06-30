@@ -166,6 +166,20 @@ def test_next_agent_brief_tracks_latest_python_port_slice():
     assert f"Latest implementation slice: slice {latest_slice}" in current_state
 
 
+def test_public_beta_gate_audit_covers_release_gate_areas():
+    readiness = (
+        PROJECT_ROOT / "docs/python-port/public-release-readiness.md"
+    ).read_text(encoding="utf-8")
+    audit = (PROJECT_ROOT / "docs/python-port/public-beta-gate-audit.md").read_text(
+        encoding="utf-8"
+    )
+
+    gate_areas = markdown_table_first_column(readiness, "## Public Beta Gate")
+    audit_areas = markdown_table_first_column(audit, "## Gate Audit")
+
+    assert audit_areas == gate_areas
+
+
 def test_release_guide_documents_python_package_release_surface():
     release_guide = (PROJECT_ROOT / "RELEASE.md").read_text(encoding="utf-8")
 
@@ -231,3 +245,17 @@ def latest_python_port_slice_number() -> int:
         if len(parts) >= 2 and parts[1].isdigit():
             numbers.append(int(parts[1]))
     return max(numbers)
+
+
+def markdown_table_first_column(markdown: str, heading: str) -> tuple[str, ...]:
+    section = markdown_section(markdown, heading)
+    rows = []
+    for line in section.splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        first = cells[0]
+        if first in {"Area", "---"} or set(first) == {"-"}:
+            continue
+        rows.append(first)
+    return tuple(rows)

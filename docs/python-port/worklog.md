@@ -751,6 +751,14 @@ The brief had lagged behind the actual slice trail: its top checkpoint still
 said slice 62 after slices 63 through 66 had landed. Public-contract tests now
 discover the newest `docs/python-port/slice-N-*.md` file and require the
 brief's current-state section to mention that slice number.
+Slice 68 turns the public beta gate into a concrete audit. The new
+`docs/python-port/public-beta-gate-audit.md` records status, evidence, and
+remaining risk for every row in `public-release-readiness.md`. The audit says
+the local product gates are mostly covered, but public beta should still wait
+for a current-head package rehearsal and one more real lifecycle dogfood pass
+against a non-toy project source shape. Public-contract tests now compare the
+gate areas in the readiness doc against the audit so the audit cannot silently
+fall out of coverage.
 
 ## Next Hypothesis
 
@@ -777,3 +785,7 @@ After slice 61, public release should be measured against
 `docs/python-port/public-release-readiness.md`: package proof has passed, so
 remaining work is release judgment and prompt-quality review from more real
 source shapes.
+After slice 68, release judgment is recorded in
+`docs/python-port/public-beta-gate-audit.md`. The next product pressure is not
+another architecture seam; it is current-head package rehearsal plus one more
+real lifecycle dogfood run.

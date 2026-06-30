@@ -1614,3 +1614,30 @@ compaction.
 Follow-up test:
 Future slices that add a new slice note must update the next-agent brief before
 `tests/test_public_contract.py` passes.
+
+## 2026-06-30 - Public Beta Gate Needs An Audited Outcome
+
+Old hypothesis:
+The next useful pressure test was "release review against the public beta gate,"
+but the result could live in the readiness doc and worklog.
+
+New hypothesis:
+The public beta gate needs its own audit artifact with one status, one evidence
+summary, and one remaining-risk statement per gate. Otherwise future agents keep
+re-deciding what "release review" means.
+
+Evidence that forced the change:
+`public-release-readiness.md` had a clear gate table and evidence list, but did
+not classify each gate as ready, needing final rerun, or needing more dogfood.
+The actual remaining work was discoverable only by reading several slice notes.
+
+Code or product assumption affected:
+`docs/python-port/public-beta-gate-audit.md` now records the current release
+judgment. Public-contract tests compare the audit's gate areas against the
+release gate's gate areas, so adding or changing a gate requires updating the
+audit.
+
+Follow-up test:
+Before any publish attempt, rerun the package rehearsal from current HEAD and
+run one more real lifecycle dogfood pass against a non-toy project source
+shape.

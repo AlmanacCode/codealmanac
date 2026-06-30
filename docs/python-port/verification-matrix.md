@@ -1,6 +1,6 @@
 # Python Port Verification Matrix
 
-Updated: 2026-06-29
+Updated: 2026-06-30
 
 This matrix tracks evidence for the full active goal. Empty or weak evidence
 means the goal remains active.
@@ -836,5 +836,17 @@ means the goal remains active.
 | Focused lint | `uv run ruff check tests/test_public_contract.py` | passed |
 | Cosmic note relay | `doppler run --project almanac --config dev -- relayforge reply --config ../relayforge/relay.config.json --binding rohan-almanac-main ...` | passed; sent the Chapter 4 service-layer testing note and how it maps to the next-agent brief contract |
 | Full tests | `uv run pytest` | 246 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 68 Public Beta Gate Audit
+
+| Gate | Command | 2026-06-30 result |
+|---|---|---|
+| Audit coverage contract | `uv run pytest tests/test_public_contract.py::test_public_beta_gate_audit_covers_release_gate_areas -q` | 1 passed |
+| Public contract tests | `uv run pytest tests/test_public_contract.py -q` | 21 passed |
+| Focused lint | `uv run ruff check tests/test_public_contract.py` | passed |
+| Cosmic note relay | `doppler run --project almanac --config dev -- relayforge reply --config ../relayforge/relay.config.json --binding rohan-almanac-main ...` | passed; sent the Chapter 10 commands-vs-events note and how it maps to public beta gate audit coverage |
+| Full tests | `uv run pytest` | 247 passed |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |

@@ -164,6 +164,11 @@ It is the constraint document for future agents.
   `docs/python-port/slice-N-*.md` file and require the brief's current-state
   section to mention that slice, so future agents do not resume from a stale
   checkpoint after compaction.
+- 2026-06-30: Public beta release judgment lives in
+  `docs/python-port/public-beta-gate-audit.md`. The current remaining release
+  work is current-head package rehearsal and one more real lifecycle dogfood
+  pass against a non-toy project source shape, not new hosted machinery,
+  aliases, SDK/MCP surfaces, or speculative architecture seams.
 
 ## Product Frame
 

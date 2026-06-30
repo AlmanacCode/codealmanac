@@ -1,6 +1,6 @@
 # Public Release Readiness
 
-Date: 2026-06-29
+Date: 2026-06-30
 
 ## Current Read
 
@@ -8,8 +8,10 @@ CodeAlmanac is usable as an internal local alpha. Clean wheel install, final
 wheel/sdist package rehearsal, real Codex ingest, real Claude ingest, real
 sync, and final viewer browser proof now have dogfood evidence.
 
-The main remaining work is public-release judgment, prompt quality, and
-real-world dogfood. More generic architecture seams are diminishing returns
+The gate audit in `docs/python-port/public-beta-gate-audit.md` is the current
+release-readiness checkpoint. The main remaining work is final current-head
+package rehearsal and one more real lifecycle dogfood pass against a non-toy
+project source shape. More generic architecture seams are diminishing returns
 unless a gate below exposes a boundary problem.
 
 ## Public Beta Gate
@@ -94,8 +96,12 @@ unless a gate below exposes a boundary problem.
 - Slice 67 made the next-agent brief an executable continuation contract.
   Public-contract tests now require the brief's current-state section to track
   the newest `docs/python-port/slice-N-*.md` file.
+- Slice 68 audited every public beta gate in
+  `docs/python-port/public-beta-gate-audit.md` and added a public-contract
+  test that forces the audit to cover every row in the release gate table.
 
 ## Next Useful Pressure Tests
 
-1. Product/release review against this gate before any publish attempt.
-2. More lifecycle prompt-quality dogfood against real project source shapes.
+1. Repeat current-head package rehearsal before any publish attempt.
+2. Run one more real lifecycle prompt-quality dogfood pass against a non-toy
+   project source shape.

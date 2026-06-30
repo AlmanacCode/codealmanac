@@ -11,6 +11,8 @@ Read these before implementing a slice:
 - `idea-evolution.md` - hypothesis changes and the evidence that changed them
 - `worklog.md` - compact running log for the long rewrite
 - `verification-matrix.md` - requirement-to-evidence tracker
+- `public-beta-gate-audit.md` - current public beta gate status and remaining
+  release work
 - `next-agent-brief.md` - current state and next move after checkpoints
 
 The current rewrite uses the local Markdown copy of Architecture Patterns with
