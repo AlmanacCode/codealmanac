@@ -9,10 +9,10 @@ wheel/sdist package rehearsal, real Codex ingest, real Claude ingest, real
 sync, and final viewer browser proof now have dogfood evidence.
 
 The gate audit in `docs/python-port/public-beta-gate-audit.md` is the current
-release-readiness checkpoint. The main remaining work is final current-head
-package rehearsal and one more real lifecycle dogfood pass against a non-toy
-project source shape. More generic architecture seams are diminishing returns
-unless a gate below exposes a boundary problem.
+release-readiness checkpoint. Slice 69 passed current-head package rehearsal.
+The main remaining product work is one more real lifecycle dogfood pass against
+a non-toy project source shape. More generic architecture seams are diminishing
+returns unless a gate below exposes a boundary problem.
 
 ## Public Beta Gate
 
@@ -99,9 +99,12 @@ unless a gate below exposes a boundary problem.
 - Slice 68 audited every public beta gate in
   `docs/python-port/public-beta-gate-audit.md` and added a public-contract
   test that forces the audit to cover every row in the release gate table.
+- Slice 69 reran current-head package rehearsal. Wheel and sdist artifacts
+  passed `twine check`, metadata/package-data inspection, clean Python 3.12.9
+  installs, installed CLI smoke, live `serve` HTTP checks, and installed
+  `update --check`.
 
 ## Next Useful Pressure Tests
 
-1. Repeat current-head package rehearsal before any publish attempt.
-2. Run one more real lifecycle prompt-quality dogfood pass against a non-toy
+1. Run one more real lifecycle prompt-quality dogfood pass against a non-toy
    project source shape.

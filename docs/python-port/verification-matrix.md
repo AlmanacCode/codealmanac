@@ -850,3 +850,21 @@ means the goal remains active.
 | Full tests | `uv run pytest` | 247 passed |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 69 Current Head Package Rehearsal
+
+| Gate | Command | 2026-06-30 result |
+|---|---|---|
+| Package build | `uv build --out-dir /tmp/codealmanac-release-slice69` | passed; built `codealmanac-0.1.0-py3-none-any.whl` and `codealmanac-0.1.0.tar.gz` |
+| Twine metadata check | `uvx twine check /tmp/codealmanac-release-slice69/*` | passed for wheel and sdist |
+| Metadata/package-data inspection | stdlib `zipfile`/`tarfile`/`email.parser` inspection of built artifacts | passed; README, Apache-2.0 license metadata, license file, server assets, viewer modules, manual docs, and prompt docs present |
+| Clean wheel install | `uv venv --python 3.12 /tmp/codealmanac-wheel-slice69` then `uv pip install --python ... codealmanac-0.1.0-py3-none-any.whl` | passed; installed into CPython 3.12.9 environment |
+| Clean sdist install | `uv venv --python 3.12 /tmp/codealmanac-sdist-slice69` then `uv pip install --python ... codealmanac-0.1.0.tar.gz` | passed; built and installed into CPython 3.12.9 environment |
+| Installed CLI smoke | wheel and sdist venvs ran `--help`, `init`, `search getting`, `show getting-started --lead`, `topics`, `health --json`, `jobs`, `sync status --from codex --quiet 0s`, `doctor --json`, and live `serve` HTTP checks for `/api/overview` plus `/app.js` | passed |
+| Installed update check | wheel and sdist venvs ran `codealmanac update --check --json` | passed; reported non-editable uv-package update plans |
+| Public audit guard | `uv run pytest tests/test_public_contract.py -q` | 22 passed |
+| Focused lint | `uv run ruff check tests/test_public_contract.py` | passed |
+| Cosmic note relay | `doppler run --project almanac --config dev -- relayforge reply --config ../relayforge/relay.config.json --binding rohan-almanac-main ...` | passed; sent the project-structure packaging note and current-head package rehearsal commands |
+| Full tests | `uv run pytest` | 248 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |

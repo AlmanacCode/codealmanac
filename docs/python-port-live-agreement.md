@@ -166,9 +166,9 @@ It is the constraint document for future agents.
   checkpoint after compaction.
 - 2026-06-30: Public beta release judgment lives in
   `docs/python-port/public-beta-gate-audit.md`. The current remaining release
-  work is current-head package rehearsal and one more real lifecycle dogfood
-  pass against a non-toy project source shape, not new hosted machinery,
-  aliases, SDK/MCP surfaces, or speculative architecture seams.
+  work is one more real lifecycle dogfood pass against a non-toy project source
+  shape, not new hosted machinery, aliases, SDK/MCP surfaces, or speculative
+  architecture seams. Slice 69 passed current-head package rehearsal.
 
 ## Product Frame
 

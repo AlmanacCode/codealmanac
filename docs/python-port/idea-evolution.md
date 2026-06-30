@@ -1641,3 +1641,28 @@ Follow-up test:
 Before any publish attempt, rerun the package rehearsal from current HEAD and
 run one more real lifecycle dogfood pass against a non-toy project source
 shape.
+
+## 2026-06-30 - Package Proof Is Now Current-Head Evidence
+
+Old hypothesis:
+Public beta still needed current-head package rehearsal and real lifecycle
+dogfood before the gate audit could move forward.
+
+New hypothesis:
+Current-head package rehearsal is now complete. The remaining product blocker
+is prompt-quality dogfood against a non-toy source shape.
+
+Evidence that forced the change:
+Slice 69 built current-head wheel and sdist artifacts, passed `twine check`,
+inspected wheel/sdist package data, installed both artifacts into clean
+uv-managed Python 3.12.9 environments, ran installed read-path and serve smoke,
+and checked installed `update --check`.
+
+Code or product assumption affected:
+`public-beta-gate-audit.md` now marks `Fresh install` and `Package metadata`
+ready. Public-contract tests guard those rows so the audit cannot keep claiming
+the package rerun is missing after slice 69.
+
+Follow-up test:
+Run one real lifecycle dogfood pass against a non-toy project source shape and
+judge the produced wiki diff, links, topics, health, and `jobs` readability.

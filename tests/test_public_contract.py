@@ -180,6 +180,17 @@ def test_public_beta_gate_audit_covers_release_gate_areas():
     assert audit_areas == gate_areas
 
 
+def test_public_beta_gate_audit_records_current_package_rehearsal():
+    audit = (PROJECT_ROOT / "docs/python-port/public-beta-gate-audit.md").read_text(
+        encoding="utf-8"
+    )
+    table = markdown_section(audit, "## Gate Audit")
+
+    assert "| Fresh install | Ready | Slice 69" in table
+    assert "| Package metadata | Ready | Slice 69" in table
+    assert "Needs final rerun" not in table
+
+
 def test_release_guide_documents_python_package_release_surface():
     release_guide = (PROJECT_ROOT / "RELEASE.md").read_text(encoding="utf-8")
 

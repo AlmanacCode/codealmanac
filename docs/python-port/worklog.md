@@ -759,6 +759,14 @@ for a current-head package rehearsal and one more real lifecycle dogfood pass
 against a non-toy project source shape. Public-contract tests now compare the
 gate areas in the readiness doc against the audit so the audit cannot silently
 fall out of coverage.
+Slice 69 completes the current-head package rehearsal. `uv build` produced a
+wheel and sdist under `/tmp/codealmanac-release-slice69`; `twine check` passed;
+stdlib package inspection confirmed README, Apache-2.0 license metadata,
+license file, server assets, manual files, and prompt files. Clean uv-managed
+Python 3.12.9 environments installed both artifacts and ran installed CLI smoke
+for `--help`, `init`, `search`, `show`, `topics`, `health`, `jobs`,
+`sync status`, `doctor`, `serve`, and `update --check`. The shell did not have
+`python3.12`, so the smoke used `uv venv --python 3.12`.
 
 ## Next Hypothesis
 
@@ -789,3 +797,6 @@ After slice 68, release judgment is recorded in
 `docs/python-port/public-beta-gate-audit.md`. The next product pressure is not
 another architecture seam; it is current-head package rehearsal plus one more
 real lifecycle dogfood run.
+After slice 69, current-head package rehearsal is done. The next product
+pressure is one more real lifecycle dogfood run against a non-toy source shape
+to judge prompt quality.

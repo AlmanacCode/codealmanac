@@ -6,7 +6,7 @@ Updated: 2026-06-30
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `dev`.
-- Latest implementation slice: slice 68 public beta gate audit.
+- Latest implementation slice: slice 69 current-head package rehearsal.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -573,11 +573,14 @@ Behavior:
   evidence, and remaining risk recorded in
   `docs/python-port/public-beta-gate-audit.md`, with a public-contract guard
   that the audit covers every gate row
+- Slice 69 current-head package rehearsal; wheel and sdist artifacts built
+  from current HEAD, passed `twine check`, package-data inspection, clean
+  Python 3.12.9 installs, installed CLI smoke, live `serve` HTTP checks, and
+  installed `update --check`
 
 ## Next Move
 
 1. Likely next pressure points:
-   - current-head package rehearsal before any publish attempt
    - one more lifecycle dogfood for prompt quality and real project behavior; add
      source-runtime ranking/recency only after a failing case proves current
      diversity is insufficient
