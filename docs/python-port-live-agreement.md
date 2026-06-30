@@ -159,6 +159,11 @@ It is the constraint document for future agents.
   Runtime artifacts such as `index.db`, WAL files, and `jobs/` are derived
   state. They must not make registry status, root discovery, `doctor`, or read
   commands treat an otherwise missing root as available.
+- 2026-06-30: `docs/python-port/next-agent-brief.md` is a load-bearing
+  continuation artifact. Public-contract tests discover the newest
+  `docs/python-port/slice-N-*.md` file and require the brief's current-state
+  section to mention that slice, so future agents do not resume from a stale
+  checkpoint after compaction.
 
 ## Product Frame
 

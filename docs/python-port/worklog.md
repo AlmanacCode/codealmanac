@@ -746,6 +746,11 @@ path in this checkout because `docs/adr.md` does not exist. The README now uses
 `path.file`, while `github:pr:123` remains valid as the supported GitHub PR
 shorthand. Public-contract tests now parse the lifecycle examples and resolve
 the documented source refs through `SourcesService`.
+Slice 67 makes the next-agent brief part of the public continuation contract.
+The brief had lagged behind the actual slice trail: its top checkpoint still
+said slice 62 after slices 63 through 66 had landed. Public-contract tests now
+discover the newest `docs/python-port/slice-N-*.md` file and require the
+brief's current-state section to mention that slice number.
 
 ## Next Hypothesis
 

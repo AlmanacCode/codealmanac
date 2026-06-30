@@ -1588,3 +1588,29 @@ Follow-up test:
 When public docs describe source inputs, use source-resolution tests rather
 than only forbidden-word checks. This keeps examples aligned with the current
 source grammar and runtime expectations.
+
+## 2026-06-30 - Continuation Briefs Need Executable Freshness
+
+Old hypothesis:
+The next-agent brief could be kept current through the normal steering-doc
+habit.
+
+New hypothesis:
+The next-agent brief is load-bearing enough that freshness needs a cheap test.
+If it lags the slice trail, future agents can resume from a stale checkpoint
+even when the worklog and verification matrix contain the newer facts.
+
+Evidence that forced the change:
+After slice 66 landed, `docs/python-port/next-agent-brief.md` still described
+slice 62 as the latest implementation slice. The rest of the steering trail had
+advanced, so the problem was the recovery summary itself.
+
+Code or product assumption affected:
+Public-contract tests now discover the highest
+`docs/python-port/slice-N-*.md` number and require the brief's current-state
+section to mention it. This keeps the long-running goal recoverable after
+compaction.
+
+Follow-up test:
+Future slices that add a new slice note must update the next-agent brief before
+`tests/test_public_contract.py` passes.

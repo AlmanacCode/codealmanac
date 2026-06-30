@@ -826,3 +826,15 @@ means the goal remains active.
 | Full tests | `uv run pytest` | 245 passed |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 67 Next Agent Brief Freshness
+
+| Gate | Command | 2026-06-30 result |
+|---|---|---|
+| Continuation contract test | `uv run pytest tests/test_public_contract.py::test_next_agent_brief_tracks_latest_python_port_slice -q` | 1 passed |
+| Public contract tests | `uv run pytest tests/test_public_contract.py -q` | 20 passed |
+| Focused lint | `uv run ruff check tests/test_public_contract.py` | passed |
+| Cosmic note relay | `doppler run --project almanac --config dev -- relayforge reply --config ../relayforge/relay.config.json --binding rohan-almanac-main ...` | passed; sent the Chapter 4 service-layer testing note and how it maps to the next-agent brief contract |
+| Full tests | `uv run pytest` | 246 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |

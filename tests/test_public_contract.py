@@ -156,6 +156,16 @@ def test_readme_lifecycle_examples_parse_and_resolve_public_sources():
     assert pr_brief.ref.number == 123
 
 
+def test_next_agent_brief_tracks_latest_python_port_slice():
+    latest_slice = latest_python_port_slice_number()
+    brief = (PROJECT_ROOT / "docs/python-port/next-agent-brief.md").read_text(
+        encoding="utf-8"
+    )
+    current_state = markdown_section(brief, "## Current State")
+
+    assert f"Latest implementation slice: slice {latest_slice}" in current_state
+
+
 def test_release_guide_documents_python_package_release_surface():
     release_guide = (PROJECT_ROOT / "RELEASE.md").read_text(encoding="utf-8")
 
@@ -203,8 +213,21 @@ def no_path_component(paths: set[Path], component: str) -> bool:
 
 
 def readme_section(readme: str, heading: str) -> str:
-    start = readme.index(heading)
-    next_heading = readme.find("\n## ", start + len(heading))
+    return markdown_section(readme, heading)
+
+
+def markdown_section(markdown: str, heading: str) -> str:
+    start = markdown.index(heading)
+    next_heading = markdown.find("\n## ", start + len(heading))
     if next_heading == -1:
-        return readme[start:]
-    return readme[start:next_heading]
+        return markdown[start:]
+    return markdown[start:next_heading]
+
+
+def latest_python_port_slice_number() -> int:
+    numbers = []
+    for path in (PROJECT_ROOT / "docs/python-port").glob("slice-*.md"):
+        parts = path.stem.split("-", 2)
+        if len(parts) >= 2 and parts[1].isdigit():
+            numbers.append(int(parts[1]))
+    return max(numbers)

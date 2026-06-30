@@ -1,14 +1,12 @@
 # Next Agent Brief
 
-Updated: 2026-06-29
+Updated: 2026-06-30
 
 ## Current State
 
 - Goal remains active: rebuild CodeAlmanac from scratch as a Python codebase.
 - Branch: `dev`.
-- Latest implementation slice:
-  slice 62 Python release guide.
-- Latest committed product-direction slice: `docs: record viewer design correction`.
+- Latest implementation slice: slice 67 next-agent brief freshness.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Cosmic Python local guide: `docs/reference/cosmic-python/CODEALMANAC.md`.
@@ -567,6 +565,9 @@ Behavior:
 - Slice 66 README lifecycle source-example check, public-contract guard that
   examples parse and resolve `README.md` as a real file plus `github:pr:123`
   as a PR source
+- Slice 67 next-agent brief freshness guard; public-contract tests now require
+  this brief's current-state section to mention the newest
+  `docs/python-port/slice-N-*.md` file
 
 ## Next Move
 

@@ -91,6 +91,9 @@ unless a gate below exposes a boundary problem.
   The local-file ingest example now uses `README.md`, which resolves as a real
   file in this repo, while the GitHub PR shorthand remains parser/source
   supported.
+- Slice 67 made the next-agent brief an executable continuation contract.
+  Public-contract tests now require the brief's current-state section to track
+  the newest `docs/python-port/slice-N-*.md` file.
 
 ## Next Useful Pressure Tests
 
