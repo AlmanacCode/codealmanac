@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 136 real Codex app-server dogfood.
+- Latest implementation slice: slice 137 real Claude SDK dogfood.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -142,6 +142,13 @@ Updated: 2026-07-01
   `ingest-20260701163042-e849c0e6` as `done`, search found the page, and health
   was clean. Focused Codex/public-contract tests, full `uv run pytest`
   (`353 passed`), full Ruff, and diff hygiene passed.
+- Slice 137 dogfooded the real installed `claude-agent-sdk` / Claude CLI auth
+  path through the default Python Claude harness and `IngestWorkflow`. The run
+  used `create_app(AppConfig(registry_path=<tmp>))` with real HOME/Claude auth,
+  wrote `release-package-smoke.md`, finished
+  `ingest-20260701163930-cf193a0e` as `done`, search found the page, and health
+  was clean. The normalized harness event stream included provider session,
+  text, text deltas, tool use/results, context usage, warning, and done.
 - Slice 99 makes page source target parsing tolerant at the frontmatter
   boundary: type-specific fields such as `path:` and `url:` remain preferred,
   and generic `target:` is a fallback that normalizes into
@@ -1139,11 +1146,11 @@ Behavior:
 ## Next Move
 
 1. Likely next pressure points:
-   - real-provider dogfood for the richer Claude SDK transport, once model-call
-     cost is acceptable; real Codex app-server dogfood passed in slice 136
    - final publish operations: version/changelog, PyPI credentials, and human
      publish decision; slice 93 fixed the stale GitHub npm automation, but the
      publish workflow is intentionally disabled until a PyPI policy is chosen
+   - rerun package/install smoke if docs, package metadata, prompts, manual
+     resources, or server assets change before publishing
    - one more lifecycle dogfood for prompt quality and real project behavior; add
      source-runtime ranking/recency only after a failing case proves current
      diversity is insufficient

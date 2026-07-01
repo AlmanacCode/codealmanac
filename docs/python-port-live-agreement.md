@@ -221,6 +221,14 @@ It is the constraint document for future agents.
   (`setting_sources=[]`, `strict_mcp_config=True`, `mcp_servers={}`,
   `permission_mode="dontAsk"`) and map typed SDK messages into normalized
   provider-session, text, tool, usage, helper-agent, error, and done events.
+- 2026-07-01: Real Claude SDK dogfood proved the installed SDK and Claude CLI
+  auth path can drive a full local Ingest lifecycle through the Python harness.
+  The service-level run used `create_app(AppConfig(registry_path=<tmp>))`,
+  real HOME/Claude auth, and a temp repo; run
+  `ingest-20260701163930-cf193a0e` finished `done`, created
+  `release-package-smoke.md`, search found the page, and health was clean.
+  Normalized harness events included provider session, text, text deltas,
+  tool use/results, context usage, warning, and done.
 - 2026-07-01: The default lifecycle harness is Codex. Docs, config defaults,
   setup recommendations, and no-flag lifecycle behavior must agree on that.
 - 2026-06-29: Sync pending claims store the run id plus claimed byte/line

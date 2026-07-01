@@ -1379,3 +1379,10 @@ temp registry with the real HOME/Codex auth, finished
 `webhook-idempotency-invariant.md`, search found the page, and all health
 counts were zero. Focused Codex/public-contract tests, full pytest
 (`353 passed`), full Ruff, and diff hygiene passed.
+Slice 137 runs the real installed `claude-agent-sdk` and Claude CLI auth path
+through the default Python Claude harness and `IngestWorkflow`. The run used a
+temp registry with real HOME/Claude auth and a temp Git repo, finished
+`ingest-20260701163930-cf193a0e` as `done`, created
+`release-package-smoke.md`, search found the page, and all health counts were
+zero. The run recorded 73 events and normalized provider session, text, text
+delta, tool use/result, context usage, warning, and done harness events.

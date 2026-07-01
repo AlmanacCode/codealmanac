@@ -6,10 +6,11 @@ Date: 2026-06-30
 
 CodeAlmanac's local Python implementation has public-beta gate coverage. Clean
 wheel install, final wheel/sdist package rehearsal, real Codex ingest, real
-Claude ingest, real non-toy source-shape ingest, real sync, and final viewer
-browser proof now have dogfood evidence. Slice 93 also aligns GitHub CI,
-package-check, disabled publish placeholders, and issue/PR templates with the
-Python/PyPI surface.
+Claude ingest, real Codex app-server harness dogfood, real Claude SDK harness
+dogfood, real non-toy source-shape ingest, real sync, and final viewer browser
+proof now have evidence. Slice 93 also aligns GitHub CI, package-check,
+disabled publish placeholders, and issue/PR templates with the Python/PyPI
+surface.
 
 The gate audit in `docs/python-port/public-beta-gate-audit.md` is the current
 release-readiness checkpoint. Slice 70 passed the remaining lifecycle
@@ -125,6 +126,12 @@ and the human publish decision.
   real app-server; the provider edge now drops blank deltas before constructing
   `HarnessEvent`, and the rerun finished `done`, created a page, search found
   it, and health was clean.
+- Slice 137 ran the default real Claude SDK harness through `IngestWorkflow`.
+  The run used real HOME/Claude auth with a temp registry and temp repo,
+  finished `ingest-20260701163930-cf193a0e` as `done`, created
+  `release-package-smoke.md`, search found the page, health was clean, and the
+  normalized event stream included provider session, text, text deltas, tool
+  use/results, context usage, warning, and done.
 
 ## Next Useful Pressure Tests
 
