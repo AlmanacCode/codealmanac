@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 118 server route boundaries.
+- Latest implementation slice: slice 119 wiki topic YAML boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -231,6 +231,13 @@ Updated: 2026-07-01
   CodeAlmanac/Pydantic exception mapping to HTTP JSON. Architecture tests keep
   route bodies, package resource reads, viewer request models, and error
   mapping out of `server/app.py`.
+- Slice 119 keeps `topics.yaml` behavior unchanged while splitting
+  `services/wiki/topics.py` by persistence path. `topic_models.py` owns
+  `TopicDefinition`, `TopicsYaml`, and title defaults; `topic_read.py` owns the
+  forgiving PyYAML read path for index refresh; `topic_file.py` owns strict
+  ruamel round-trip mutation and temporary-file writes; and `topics.py` is only
+  an import facade. Architecture tests keep the facade small and keep tolerant
+  reads, round-trip mutation, and topic models separate.
 - Slice 116 keeps `SourcesService.resolve(...)` behavior unchanged while
   splitting source-address parsing by family. `address_resolution.py` is now a
   small dispatcher; `address_git.py`, `address_github.py`, `address_web.py`,

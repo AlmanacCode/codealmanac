@@ -347,6 +347,14 @@ differences from bundled docs. `app.py` constructs it once and injects it into
 v1. Manual drift is diagnostic: `doctor` can ask the user to review changed
 files, but build/init do not overwrite local manual edits.
 
+`services/wiki/topic_models.py` owns the parsed `topics.yaml` topic model and
+title defaults. `topic_read.py` owns the forgiving read path used by index
+refresh: invalid or missing topic files collapse to an empty topic set.
+`topic_file.py` owns the strict round-trip mutation path used by topic
+organization commands: it preserves comments, quotes, and line endings while
+writing through a temporary file. `services/wiki/topics.py` is only an import
+facade for existing callers.
+
 ## First Slice Boundary
 
 The first Python implementation slice should prove:

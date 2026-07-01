@@ -218,6 +218,12 @@ It is the constraint document for future agents.
   owns current-repo vs explicit-`--wiki` workspace selection. Do not move graph
   traversal, read-model lookup helpers, or `SelectWorkspaceRequest` handling
   back into `service.py`.
+- 2026-07-01: Wiki topic YAML handling is split by persistence path.
+  `services/wiki/topic_models.py` owns parsed topic models and title defaults;
+  `topic_read.py` owns forgiving PyYAML reads for index refresh;
+  `topic_file.py` owns ruamel round-trip loading, mutation helpers, and atomic
+  writes; and `topics.py` is only the import facade. Do not mix read/index
+  tolerance, round-trip mutation mechanics, and topic models in one module.
 - 2026-06-29: Source input has four local layers:
   `SourceAddress -> SourceRef -> SourceBrief -> SourceRuntime`. Git source
   runtime uses the Git CLI through a source-runtime adapter. GitHub PR/issue

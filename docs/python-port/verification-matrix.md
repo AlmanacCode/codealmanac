@@ -19,6 +19,17 @@ means the goal remains active.
 | Frequent review | slice-1 review fix hardened registry temp writes and typed selector helpers | `uv run pytest`, `uv run ruff check .`, live temp `init`/`list` passed after review fix | Need the same checkpoint discipline after each meaningful slice. |
 | No hosted CLI/MCP/SDK/aliases | live agreement records exclusion; `tests/test_public_contract.py` guards entry points, forbidden commands, package module names, README, release guide, GitHub automation/templates, package metadata, next-agent freshness, beta-audit coverage, and `~/.codealmanac/` user-state defaults | `uv run pytest tests/test_public_contract.py` passed with 26 tests on 2026-07-01; full `uv run pytest` and `uv run ruff check .` passed on 2026-07-01 | Future CLI, docs, or project automation expansion must keep the public-contract guard current. |
 
+## Gates For Slice 119 Wiki Topic YAML Boundaries
+
+| Gate | Command | 2026-07-01 result |
+|---|---|---|
+| Focused behavior and architecture tests | `uv run pytest tests/test_topics_mutation.py tests/test_topics_health.py tests/test_read_model.py tests/test_architecture.py::test_wiki_topics_yaml_stays_split_by_read_and_mutation -q` | 27 passed |
+| Focused lint | `uv run ruff check src/codealmanac/services/wiki src/codealmanac/services/topics tests/test_topics_mutation.py tests/test_topics_health.py tests/test_read_model.py tests/test_architecture.py` | passed |
+| Isolated topic command dogfood | temp `HOME`; temp repo; `codealmanac init`; `topics create/link/show/rename/delete`; `health --json` | passed; strict shell run verified parent links, rename slug, delete cleanup, and empty-topic health cleanup |
+| Full tests | `uv run pytest` | 340 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+
 ## Gates For Slice 118 Server Route Boundaries
 
 | Gate | Command | 2026-07-01 result |

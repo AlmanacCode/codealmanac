@@ -6,6 +6,14 @@
   proof: keep applying Cosmic Python, `MANUAL.md`, the live agreement, and
   useful `../almanac` patterns until remaining cleanup is genuinely
   diminishing returns.
+- Added slice-119 wiki-topic YAML boundary plan after rereading Cosmic Python
+  chapter 2. The applied lesson is that `topics.yaml` persistence has a
+  forgiving read/index path and a strict round-trip mutation path, and those
+  mechanics should not live beside the topic Pydantic model in one module.
+- Split `services/wiki/topics.py` into `topic_models.py`, `topic_read.py`, and
+  `topic_file.py`, keeping `topics.py` as a small import facade.
+- Added an architecture guard that keeps PyYAML reads, ruamel round-trip
+  mutation, `CommentedMap`, and topic model definitions in their owning modules.
 - Added slice-118 server-route boundary plan after rereading the live
   agreement, `MANUAL.md`, `.almanac/README.md`, and Cosmic Python chapters 4
   and 13. The applied lesson is that `server/app.py` should be the FastAPI

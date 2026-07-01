@@ -5,6 +5,40 @@ Updated: 2026-07-01
 Record hypothesis changes here. Do not rewrite history; append a new entry when
 evidence changes the shape.
 
+## 2026-07-01 - Topic YAML Has Separate Read And Mutation Paths
+
+Old hypothesis:
+`services/wiki/topics.py` could own the topic Pydantic model, forgiving
+`topics.yaml` reads for index refresh, ruamel round-trip file loading,
+mutation helpers, temporary-file writes, parent normalization, and title
+defaults because all of those concerns touch `topics.yaml`.
+
+New hypothesis:
+Topic data models, read/index tolerance, and round-trip mutation mechanics are
+separate reasons to change. `topic_models.py` owns `TopicDefinition`,
+`TopicsYaml`, and `title_for_slug`; `topic_read.py` owns the forgiving PyYAML
+read path; `topic_file.py` owns strict ruamel round-trip mutation and writes;
+`topics.py` remains only an import facade.
+
+Evidence that forced the change:
+`services/wiki/topics.py` reached 266 lines and mixed Pydantic validation,
+PyYAML tolerant reads, ruamel comment-preserving mutation, atomic writes, and
+topic graph parent-list helpers. Cosmic Python chapter 2 frames repositories as
+a boundary over persistence details; this module had two persistence paths and
+the model in one place.
+
+Code or product assumption affected:
+Slice 119 keeps topic command and index behavior unchanged. Invalid topic YAML
+still becomes an empty topic set for index refresh, while organization commands
+still raise validation errors and preserve comments, quotes, and line endings
+when rewriting `topics.yaml`.
+
+Follow-up test:
+Future `topics.yaml` schema or mutation changes should add topic/read-model
+tests and land in the module for that path: parsed shape in `topic_models.py`,
+index reads in `topic_read.py`, and round-trip organization writes in
+`topic_file.py`.
+
 ## 2026-07-01 - Serve Server App Is A Composition Root
 
 Old hypothesis:

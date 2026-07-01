@@ -296,6 +296,52 @@ def test_topics_service_keeps_graph_and_workspace_boundaries():
     assert "codealmanac.services.index" not in workspace_text
 
 
+def test_wiki_topics_yaml_stays_split_by_read_and_mutation():
+    wiki_root = SRC_ROOT / "services/wiki"
+    facade_text = (wiki_root / "topics.py").read_text(encoding="utf-8")
+    models_text = (wiki_root / "topic_models.py").read_text(encoding="utf-8")
+    read_text = (wiki_root / "topic_read.py").read_text(encoding="utf-8")
+    file_text = (wiki_root / "topic_file.py").read_text(encoding="utf-8")
+    forbidden_facade_fragments = (
+        "class TopicDefinition",
+        "class TopicsYamlFile",
+        "def load_topics_yaml",
+        "def load_topics_file",
+        "CommentedMap",
+        "YAML(",
+        "safe_load",
+    )
+
+    assert {
+        "topic_file.py",
+        "topic_models.py",
+        "topic_read.py",
+    } <= {path.name for path in wiki_root.glob("*.py")}
+    assert len(facade_text.splitlines()) <= 30
+    assert len(models_text.splitlines()) <= 80
+    assert len(read_text.splitlines()) <= 60
+    assert len(file_text.splitlines()) <= 220
+    assert [
+        fragment for fragment in forbidden_facade_fragments if fragment in facade_text
+    ] == []
+
+    assert "class TopicDefinition" in models_text
+    assert "class TopicsYaml" in models_text
+    assert "def title_for_slug(" in models_text
+    assert "safe_load" not in models_text
+    assert "CommentedMap" not in models_text
+
+    assert "pyyaml.safe_load" in read_text
+    assert "TopicsYaml.model_validate" in read_text
+    assert "CommentedMap" not in read_text
+
+    assert "class TopicsYamlFile" in file_text
+    assert "def load_topics_file(" in file_text
+    assert "YAML(typ=\"rt\")" in file_text
+    assert "CommentedMap" in file_text
+    assert "pyyaml.safe_load" not in file_text
+
+
 def test_harness_contract_models_stay_split_by_meaning():
     harness_root = SRC_ROOT / "services/harnesses"
     models_text = (harness_root / "models.py").read_text(encoding="utf-8")
