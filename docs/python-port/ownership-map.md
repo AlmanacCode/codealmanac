@@ -184,6 +184,9 @@ ledger. `services/runs/paths.py` owns run-id validation and file naming,
 `services/runs/io.py` owns JSON record/spec and JSONL event file mechanics,
 `services/runs/locks.py` owns worker lock ownership, and
 `services/runs/transitions.py` owns grouped record-plus-event transition writes.
+`services/runs/factory.py` owns run-id and initial `RunRecord` construction.
+`services/runs/queries.py` owns sorted record listing and oldest spec-backed
+queued-run selection.
 Callers should not hand-pair record rewrites with status event appends outside
 the transition writer.
 

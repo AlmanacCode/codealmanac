@@ -1,9 +1,9 @@
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from uuid import uuid4
 
 from codealmanac.core.errors import ConflictError, NotFoundError
 from codealmanac.services.harnesses.models import HarnessEvent, HarnessTranscriptRef
+from codealmanac.services.runs.factory import new_run_record
 from codealmanac.services.runs.io import RunLedgerIO
 from codealmanac.services.runs.locks import RunWorkerLease, acquire_worker_lock
 from codealmanac.services.runs.models import (
@@ -18,7 +18,10 @@ from codealmanac.services.runs.models import (
     RunSpec,
     RunStatus,
 )
-from codealmanac.services.runs.paths import run_log_reference_path
+from codealmanac.services.runs.queries import (
+    list_run_records,
+    next_spec_backed_queued_run,
+)
 from codealmanac.services.runs.transitions import RunTransitionWriter
 
 
@@ -69,14 +72,7 @@ class RunStore:
         return record
 
     def list(self, almanac_path: Path, limit: int | None) -> tuple[RunRecord, ...]:
-        records = sorted(
-            self.ledger.iter_records(almanac_path),
-            key=lambda record: (record.created_at, record.run_id),
-            reverse=True,
-        )
-        if limit is not None:
-            return tuple(records[:limit])
-        return tuple(records)
+        return list_run_records(self.ledger, almanac_path, limit)
 
     def read(self, almanac_path: Path, run_id: str) -> RunRecord:
         record = self.ledger.read_record(almanac_path, run_id)
@@ -89,18 +85,7 @@ class RunStore:
         return self.ledger.read_spec(almanac_path, run_id)
 
     def next_queued(self, almanac_path: Path) -> QueuedRun | None:
-        records = sorted(
-            self.ledger.iter_records(almanac_path),
-            key=lambda record: (record.created_at, record.run_id),
-        )
-        for record in records:
-            if record.status != RunStatus.QUEUED:
-                continue
-            spec = self.ledger.read_spec(almanac_path, record.run_id)
-            if spec is None:
-                continue
-            return QueuedRun(record=record, spec=spec)
-        return None
+        return next_spec_backed_queued_run(self.ledger, almanac_path)
 
     def acquire_worker_lock(
         self,
@@ -244,28 +229,3 @@ class RunStore:
             message=RunStatus.CANCELLED.value,
         )
         return RunCancelResult(record=cancelled, changed=True)
-
-
-def new_run_id(operation: RunOperation, now: datetime) -> str:
-    stamp = now.strftime("%Y%m%d%H%M%S")
-    return f"{operation.value}-{stamp}-{uuid4().hex[:8]}"
-
-
-def new_run_record(
-    almanac_root: Path,
-    workspace_id: str,
-    operation: RunOperation,
-    title: str | None,
-    now: datetime,
-) -> RunRecord:
-    run_id = new_run_id(operation, now)
-    return RunRecord(
-        run_id=run_id,
-        workspace_id=workspace_id,
-        operation=operation,
-        status=RunStatus.QUEUED,
-        title=title,
-        created_at=now,
-        updated_at=now,
-        log_path=run_log_reference_path(almanac_root, run_id),
-    )

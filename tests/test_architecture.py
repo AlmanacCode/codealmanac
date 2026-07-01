@@ -1258,8 +1258,10 @@ def test_run_ledger_persistence_stays_split_by_responsibility():
     runs_root = SRC_ROOT / "services/runs"
     module_names = {path.name for path in runs_root.glob("*.py")}
     store_text = (runs_root / "store.py").read_text(encoding="utf-8")
+    factory_text = (runs_root / "factory.py").read_text(encoding="utf-8")
     io_text = (runs_root / "io.py").read_text(encoding="utf-8")
     locks_text = (runs_root / "locks.py").read_text(encoding="utf-8")
+    queries_text = (runs_root / "queries.py").read_text(encoding="utf-8")
     transitions_text = (runs_root / "transitions.py").read_text(encoding="utf-8")
     forbidden_store_fragments = (
         "write_json_atomically",
@@ -1269,17 +1271,35 @@ def test_run_ledger_persistence_stays_split_by_responsibility():
         'open("a"',
         ".open(\"a\"",
         "RUN_ID_ADAPTER",
+        "uuid4",
+        "strftime",
+        "run_log_reference_path",
+        "key=lambda record",
+        "ledger.iter_records",
     )
 
-    assert {"paths.py", "io.py", "locks.py", "transitions.py"} <= module_names
-    assert len(store_text.splitlines()) <= 280
+    assert {
+        "factory.py",
+        "io.py",
+        "locks.py",
+        "paths.py",
+        "queries.py",
+        "transitions.py",
+    } <= module_names
+    assert len(store_text.splitlines()) <= 240
     assert [
         fragment for fragment in forbidden_store_fragments if fragment in store_text
     ] == []
+    assert "def new_run_record(" in factory_text
+    assert "uuid4" in factory_text
+    assert "run_log_reference_path" in factory_text
     assert "write_json_atomically" in io_text
     assert "model_validate_json" in io_text
     assert "worker_lock_owner_path" in locks_text
     assert "process_is_alive" in locks_text
+    assert "def list_run_records(" in queries_text
+    assert "def next_spec_backed_queued_run(" in queries_text
+    assert "ledger.iter_records" in queries_text
     assert "write_record_with_event" in transitions_text
 
 

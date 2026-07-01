@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 119 wiki topic YAML boundaries.
+- Latest implementation slice: slice 120 run store factory and query boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -238,6 +238,14 @@ Updated: 2026-07-01
   ruamel round-trip mutation and temporary-file writes; and `topics.py` is only
   an import facade. Architecture tests keep the facade small and keep tolerant
   reads, round-trip mutation, and topic models separate.
+- Slice 120 keeps run-ledger behavior unchanged while splitting `RunStore`
+  factory/query mechanics. `services/runs/factory.py` owns run-id and initial
+  `RunRecord` construction. `services/runs/queries.py` owns sorted record
+  listing and oldest spec-backed queued-run selection. `store.py` remains the
+  service-facing repository facade over IO, transitions, locks, factory, and
+  queries. Architecture tests keep `uuid4`, `strftime`, log-path construction,
+  direct record sorting, and `ledger.iter_records` query mechanics out of
+  `store.py`.
 - Slice 116 keeps `SourcesService.resolve(...)` behavior unchanged while
   splitting source-address parsing by family. `address_resolution.py` is now a
   small dispatcher; `address_git.py`, `address_github.py`, `address_web.py`,

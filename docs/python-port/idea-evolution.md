@@ -5,6 +5,42 @@ Updated: 2026-07-01
 Record hypothesis changes here. Do not rewrite history; append a new entry when
 evidence changes the shape.
 
+## 2026-07-01 - RunStore Should Not Own Factory Or Query Mechanics
+
+Old hypothesis:
+`RunStore` could own run-id generation, initial `RunRecord` construction,
+record listing sort order, spec-backed queued-run selection, worker lock
+delegation, JSON IO delegation, and lifecycle transition methods because all of
+those behaviors support the run ledger.
+
+New hypothesis:
+`RunStore` should remain the service-facing repository facade, but factory and
+read-query mechanics should be named. `factory.py` owns run-id and initial
+record construction. `queries.py` owns sorted record listing and oldest
+spec-backed queued-run selection. `store.py` coordinates those helpers with
+`io.py`, `transitions.py`, and `locks.py`.
+
+Evidence that forced the change:
+`services/runs/store.py` was the largest production file after slice 119 at 271
+lines. It already had dedicated modules for paths, IO, worker locks, and
+transition writes, but still mixed repository verbs with `uuid4`, `strftime`,
+log-path construction, record sorting, and queue membership selection. Cosmic
+Python chapter 6 frames repositories/unit-of-work objects as the boundary over
+persistent state; that boundary is clearer when low-level construction and
+query mechanics have names.
+
+Code or product assumption affected:
+Slice 120 keeps run behavior unchanged. Foreground starts still create queued
+records without specs; background queueing still writes a durable spec and
+selects the oldest spec-backed queued run; cancellation, attach, logs, and
+terminal transitions keep the same event sequence.
+
+Follow-up test:
+Future run-ledger changes should add behavior tests through `RunsService` or
+`RunQueueWorkflow`. Run-id/log-path creation belongs in `factory.py`; queue and
+list ordering belongs in `queries.py`; record-plus-event atomicity belongs in
+`transitions.py`; file mechanics belong in `io.py`.
+
 ## 2026-07-01 - Topic YAML Has Separate Read And Mutation Paths
 
 Old hypothesis:

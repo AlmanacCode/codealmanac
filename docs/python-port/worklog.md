@@ -6,6 +6,17 @@
   proof: keep applying Cosmic Python, `MANUAL.md`, the live agreement, and
   useful `../almanac` patterns until remaining cleanup is genuinely
   diminishing returns.
+- Added slice-120 run-store factory/query boundary plan after rereading Cosmic
+  Python chapter 6 and the run-ledger live agreement. The applied lesson is
+  that `RunStore` is the repository facade over durable run state, while
+  run-id construction and queue/list selection are mechanics with separate
+  reasons to change.
+- Split `services/runs/factory.py` for run-id and initial `RunRecord`
+  construction and `services/runs/queries.py` for sorted record listing plus
+  oldest spec-backed queued-run selection.
+- Tightened the run-ledger architecture guard so `store.py` cannot regrow
+  `uuid4`, `strftime`, `run_log_reference_path`, record sorting, or direct
+  `ledger.iter_records` query mechanics.
 - Added slice-119 wiki-topic YAML boundary plan after rereading Cosmic Python
   chapter 2. The applied lesson is that `topics.yaml` persistence has a
   forgiving read/index path and a strict round-trip mutation path, and those
