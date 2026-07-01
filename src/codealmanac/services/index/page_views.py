@@ -13,8 +13,7 @@ from codealmanac.services.wiki.models import PageSourceType
 def get_page_view(connection: SQLiteConnection, slug: str) -> PageView | None:
     row = connection.execute(
         """
-        SELECT slug, title, summary, file_path, updated_at, archived_at,
-               superseded_by, body
+        SELECT slug, title, summary, file_path, updated_at, body
         FROM pages
         WHERE slug = ?
         """,
@@ -33,8 +32,6 @@ def page_view_from_row(connection: SQLiteConnection, row: SQLiteRow) -> PageView
         summary=row["summary"],
         file_path=Path(row["file_path"]),
         updated_at=row["updated_at"],
-        archived_at=row["archived_at"],
-        superseded_by=row["superseded_by"],
         topics=topics_for_page(connection, slug),
         sources=page_sources_for_page(connection, slug),
         file_refs=file_refs_for_page(connection, slug),

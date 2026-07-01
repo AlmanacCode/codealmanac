@@ -47,7 +47,6 @@ def viewer_page_changes(changes: PageChangeSet | None) -> ViewerJobPageChanges |
     return ViewerJobPageChanges(
         created=changes.created,
         updated=changes.updated,
-        archived=changes.archived,
         deleted=changes.deleted,
     )
 

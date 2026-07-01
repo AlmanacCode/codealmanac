@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 126 CLI admin parser boundaries.
+- Latest implementation slice: slice 127 remove page archive lineage.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -85,6 +85,10 @@ Updated: 2026-07-01
   `show --json`, and viewer page APIs, and reports missing citations, unused
   sources, and duplicate source ids through health. This is page evidence,
   not the source-runtime input model.
+- Slice 127 removes archive/supersede page lineage from the active Python
+  product. The derived index and viewer model no longer store page archive
+  state, obsolete `archived_at` and `superseded_by` frontmatter keys are
+  ignored, and `search --include-archive` / `search --archived` are invalid.
 - Slice 99 makes page source target parsing tolerant at the frontmatter
   boundary: type-specific fields such as `path:` and `url:` remain preferred,
   and generic `target:` is a fallback that normalizes into
@@ -1012,6 +1016,11 @@ Behavior:
   pytest, full ruff, and diff check
 - Slice 85 review fix focused Claude adapter and architecture tests, focused
   ruff, full pytest, full ruff, and diff check
+- Slice 127 removes page archive lineage from the active Python product model:
+  no active `archived_at` / `superseded_by` page fields, no archive search
+  flags, no index archive columns, and no viewer archive markers. Focused
+  wiki parsing, CLI, index architecture, isolated CLI dogfood, full pytest,
+  full Ruff, and diff hygiene passed.
 - Slice 93 GitHub Python automation, public-contract guards, package build
   artifact ignore, wheel build dogfood, full pytest, full ruff, and diff check
 - Slice 94 GitHub workflow parse/command contract guard, exact `uv sync
@@ -1069,6 +1078,10 @@ Behavior:
 ## Next Move
 
 1. Likely next pressure points:
+   - investigate the local wiki dogfood failure where `uv run codealmanac
+     search ...` tried `/Users/rohan/Desktop/Projects/almanac` as the Almanac
+     root before searching this repo; likely registry/current-selection
+     behavior, not part of slice 127
    - real-provider dogfood for the richer Codex app-server and Claude SDK
      transports, once model-call cost is acceptable
    - final publish operations: version/changelog, PyPI credentials, and human

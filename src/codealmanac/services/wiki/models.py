@@ -68,8 +68,6 @@ class ParsedFrontmatter(CodeAlmanacModel):
     topics: tuple[str, ...] = ()
     files: tuple[str, ...] = ()
     sources: tuple[PageSource, ...] = ()
-    archived_at: int | None = None
-    superseded_by: str | None = None
     body: str
 
 
@@ -81,8 +79,6 @@ class PageDocument(CodeAlmanacModel):
     relative_path: str
     content_hash: str
     updated_at: int
-    archived_at: int | None
-    superseded_by: str | None
     topics: tuple[str, ...]
     sources: tuple[PageSource, ...]
     file_refs: tuple[FileReference, ...]

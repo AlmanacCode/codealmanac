@@ -53,7 +53,6 @@ def page_summary_from_search(page: SearchPageResult) -> ViewerPageSummary:
         title=page.title,
         summary=page.summary,
         topics=page.topics,
-        archived=page.archived_at is not None,
     )
 
 
@@ -63,5 +62,4 @@ def page_summary_from_view(page: PageView) -> ViewerPageSummary:
         title=page.title,
         summary=page.summary,
         topics=page.topics,
-        archived=page.archived_at is not None,
     )

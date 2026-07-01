@@ -166,6 +166,25 @@ def test_index_store_keeps_write_side_responsibilities_split():
     assert "SCHEMA_DDL" not in projection
 
 
+def test_active_python_model_has_no_page_archive_lineage():
+    forbidden_fragments = (
+        "archived_at",
+        "superseded_by",
+        "supersedes",
+        "include_archive",
+        '"--include-archive"',
+        '"--archived"',
+    )
+    offenders = []
+    for path in SRC_ROOT.rglob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        found = [fragment for fragment in forbidden_fragments if fragment in text]
+        if found:
+            offenders.append(f"{path.relative_to(PROJECT_ROOT)}:{', '.join(found)}")
+
+    assert offenders == []
+
+
 def test_serve_css_does_not_scale_type_with_viewport_width():
     css = (SRC_ROOT / "server/assets/app.css").read_text(encoding="utf-8")
 

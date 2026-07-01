@@ -52,8 +52,6 @@ def load_page_document(page_path: Path, pages_path: Path) -> PageDocument | None
         relative_path=relative_path,
         content_hash=sha256(raw.encode("utf-8")).hexdigest(),
         updated_at=int(page_path.stat().st_mtime),
-        archived_at=frontmatter.archived_at,
-        superseded_by=frontmatter.superseded_by,
         topics=tuple(to_kebab_case(topic) for topic in frontmatter.topics),
         sources=frontmatter.sources,
         file_refs=dedupe_file_refs(file_refs),

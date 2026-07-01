@@ -22,8 +22,6 @@ class SearchPageResult(CodeAlmanacModel):
     title: str | None
     summary: str | None
     updated_at: int
-    archived_at: int | None
-    superseded_by: str | None
     topics: tuple[str, ...]
 
 
@@ -52,8 +50,6 @@ class PageView(CodeAlmanacModel):
     summary: str | None
     file_path: Path
     updated_at: int
-    archived_at: int | None
-    superseded_by: str | None
     topics: tuple[str, ...]
     sources: tuple[PageSourceReference, ...]
     file_refs: tuple[PageFileReference, ...]

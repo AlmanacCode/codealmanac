@@ -21,7 +21,6 @@ class ViewerPageSummary(CodeAlmanacModel):
     title: str | None
     summary: str | None
     topics: tuple[str, ...]
-    archived: bool
 
 
 class ViewerTopicSummary(CodeAlmanacModel):
@@ -96,7 +95,6 @@ class ViewerTopic(CodeAlmanacModel):
 class ViewerJobPageChanges(CodeAlmanacModel):
     created: tuple[str, ...] = ()
     updated: tuple[str, ...] = ()
-    archived: tuple[str, ...] = ()
     deleted: tuple[str, ...] = ()
 
 

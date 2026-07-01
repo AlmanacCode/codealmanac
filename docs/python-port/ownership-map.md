@@ -117,7 +117,8 @@ own SQL schema text and write/query semantics.
 
 `services/index/store.py` is the service-facing `IndexStore` facade.
 `services/index/schema.py` owns derived `index.db` schema, migrations, and the
-index connection helper. `services/index/sources.py` owns page/topic source
+index connection helper. The `pages` table stores the current page read model;
+it does not store archive or supersede lineage. `services/index/sources.py` owns page/topic source
 loading and freshness signatures. `services/index/projection.py` owns
 replacement writes and stored source signatures. `services/index/views.py` is a
 small read facade. `services/index/search_views.py` owns FTS and file-mention

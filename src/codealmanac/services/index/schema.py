@@ -7,7 +7,7 @@ from codealmanac.database import (
     connect_sqlite,
 )
 
-SCHEMA_VERSION = 20260701
+SCHEMA_VERSION = 2026070101
 
 SCHEMA_DDL = """
 CREATE TABLE IF NOT EXISTS pages (
@@ -17,8 +17,6 @@ CREATE TABLE IF NOT EXISTS pages (
   file_path     TEXT NOT NULL,
   content_hash  TEXT NOT NULL,
   updated_at    INTEGER NOT NULL,
-  archived_at   INTEGER,
-  superseded_by TEXT,
   body          TEXT NOT NULL
 );
 
@@ -114,4 +112,3 @@ def connect_index(path: Path) -> SQLiteConnection:
     connection = connect_sqlite(path)
     apply_migrations(connection, INDEX_MIGRATIONS)
     return connection
-

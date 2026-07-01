@@ -39,8 +39,7 @@ def orphan_pages(connection: SQLiteConnection) -> tuple[OrphanPage, ...]:
         """
         SELECT p.slug
         FROM pages p
-        WHERE p.archived_at IS NULL
-          AND NOT EXISTS (
+        WHERE NOT EXISTS (
             SELECT 1 FROM page_topics pt WHERE pt.page_slug = p.slug
           )
         ORDER BY p.slug
@@ -58,7 +57,6 @@ def dead_file_refs(
         SELECT p.slug, r.original_path, r.is_dir
         FROM pages p
         JOIN file_refs r ON r.page_slug = p.slug
-        WHERE p.archived_at IS NULL
         ORDER BY p.slug, r.original_path
         """
     ).fetchall()
@@ -80,8 +78,7 @@ def broken_page_links(connection: SQLiteConnection) -> tuple[BrokenPageLink, ...
         FROM wikilinks w
         JOIN pages source ON source.slug = w.source_slug
         LEFT JOIN pages target ON target.slug = w.target_slug
-        WHERE source.archived_at IS NULL
-          AND target.slug IS NULL
+        WHERE target.slug IS NULL
         ORDER BY w.source_slug, w.target_slug
         """
     ).fetchall()
@@ -103,7 +100,6 @@ def broken_cross_wiki_links(
         SELECT x.source_slug, x.target_wiki, x.target_slug
         FROM cross_wiki_links x
         JOIN pages source ON source.slug = x.source_slug
-        WHERE source.archived_at IS NULL
         ORDER BY x.source_slug, x.target_wiki, x.target_slug
         """
     ).fetchall()
@@ -127,7 +123,7 @@ def empty_topics(connection: SQLiteConnection) -> tuple[EmptyTopic, ...]:
           SELECT 1
           FROM page_topics pt
           JOIN pages p ON p.slug = pt.page_slug
-          WHERE pt.topic_slug = t.slug AND p.archived_at IS NULL
+          WHERE pt.topic_slug = t.slug
         )
         ORDER BY t.slug
         """
@@ -140,7 +136,6 @@ def empty_pages(connection: SQLiteConnection) -> tuple[EmptyPage, ...]:
         """
         SELECT slug, body
         FROM pages
-        WHERE archived_at IS NULL
         ORDER BY slug
         """
     ).fetchall()
@@ -183,7 +178,6 @@ def duplicate_sources(connection: SQLiteConnection) -> tuple[DuplicatePageSource
         SELECT p.slug, s.source_id
         FROM page_sources s
         JOIN pages p ON p.slug = s.page_slug
-        WHERE p.archived_at IS NULL
         GROUP BY p.slug, s.source_id
         HAVING COUNT(*) > 1
         ORDER BY p.slug, s.source_id
@@ -200,7 +194,6 @@ def source_health_pages(connection: SQLiteConnection) -> tuple[SQLiteRow, ...]:
         """
         SELECT slug, body
         FROM pages
-        WHERE archived_at IS NULL
         ORDER BY slug
         """
     ).fetchall()

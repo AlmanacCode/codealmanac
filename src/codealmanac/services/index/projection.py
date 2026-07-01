@@ -52,10 +52,9 @@ def insert_document(connection: SQLiteConnection, document: PageDocument) -> Non
     connection.execute(
         """
         INSERT INTO pages (
-          slug, title, summary, file_path, content_hash, updated_at,
-          archived_at, superseded_by, body
+          slug, title, summary, file_path, content_hash, updated_at, body
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (
             document.slug,
@@ -64,8 +63,6 @@ def insert_document(connection: SQLiteConnection, document: PageDocument) -> Non
             str(document.file_path),
             document.content_hash,
             document.updated_at,
-            document.archived_at,
-            document.superseded_by,
             document.body,
         ),
     )
@@ -156,4 +153,3 @@ def insert_topic_definition(
             """,
             (topic.slug, parent),
         )
-

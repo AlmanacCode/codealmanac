@@ -48,8 +48,6 @@ def dispatch_wiki(args: argparse.Namespace, app: CodeAlmanac) -> int:
                 query=args.query,
                 topics=tuple(args.topic),
                 mentions=args.mentions,
-                include_archive=args.include_archive,
-                archived=args.archived,
                 limit=args.limit,
             )
         )

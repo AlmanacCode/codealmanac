@@ -27,10 +27,6 @@ def search_pages(
 def search_sql(request: SearchIndexRequest) -> tuple[str, tuple[object, ...]]:
     where_clauses: list[str] = []
     params: list[object] = []
-    if request.archived:
-        where_clauses.append("p.archived_at IS NOT NULL")
-    elif not request.include_archive:
-        where_clauses.append("p.archived_at IS NULL")
 
     for topic in request.topics:
         topic_slug = to_kebab_case(topic)
@@ -54,8 +50,7 @@ def search_sql(request: SearchIndexRequest) -> tuple[str, tuple[object, ...]]:
         params.insert(0, build_fts_query(query))
         return (
             f"""
-            SELECT p.slug, p.title, p.summary, p.updated_at, p.archived_at,
-                   p.superseded_by
+            SELECT p.slug, p.title, p.summary, p.updated_at
             FROM pages p
             JOIN fts_pages f ON f.slug = p.slug
             WHERE {" AND ".join(where_clauses)}
@@ -69,8 +64,7 @@ def search_sql(request: SearchIndexRequest) -> tuple[str, tuple[object, ...]]:
     )
     return (
         f"""
-        SELECT p.slug, p.title, p.summary, p.updated_at, p.archived_at,
-               p.superseded_by
+        SELECT p.slug, p.title, p.summary, p.updated_at
         FROM pages p
         {where_sql}
         ORDER BY p.updated_at DESC, p.slug ASC
@@ -145,7 +139,5 @@ def search_result_from_row(
         title=row["title"],
         summary=row["summary"],
         updated_at=row["updated_at"],
-        archived_at=row["archived_at"],
-        superseded_by=row["superseded_by"],
         topics=topics_for_page(connection, row["slug"]),
     )

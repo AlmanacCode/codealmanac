@@ -11,8 +11,6 @@ class SearchPagesRequest(CodeAlmanacModel):
     query: str | None = None
     topics: tuple[str, ...] = ()
     mentions: str | None = None
-    include_archive: bool = False
-    archived: bool = False
     limit: int | None = None
 
     @field_validator("limit")

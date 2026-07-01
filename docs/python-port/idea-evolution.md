@@ -3140,3 +3140,29 @@ Follow-up test:
 Future admin flags should land in the parser module that owns the command
 family. Architecture tests should keep `add_parser(...)` command construction
 and flag strings out of `cli/parser/admin.py`.
+
+## 2026-07-01 - Git History Is The Page Archive
+
+Old hypothesis:
+The Python port could keep archive-era page lineage fields in the read model
+while leaving the UI mostly focused on current pages.
+
+New hypothesis:
+Page archive lineage is not part of the Python v1 product model. The active
+index, page DTOs, viewer summaries, and search flags should model only current
+wiki pages; git history is the archive.
+
+Evidence that forced the change:
+The live agreement explicitly removed `archived_at`, `superseded_by`,
+`supersedes`, `--include-archive`, and `--archived`, but active Python source
+still stored archive columns and exposed public archive search flags.
+
+Code or product assumption affected:
+Slice 127 removes the active fields and flags. Obsolete archive keys in
+frontmatter are ignored as extra metadata rather than projected into product
+state. Run page-change summaries now use created/updated/deleted only.
+
+Follow-up test:
+Future page-lifecycle work should add a new explicit product decision before
+adding archive-like fields. `test_active_python_model_has_no_page_archive_lineage`
+guards active Python source against silent reintroduction.

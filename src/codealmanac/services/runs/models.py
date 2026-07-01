@@ -46,7 +46,6 @@ class RunEventKind(StrEnum):
 class PageChangeSet(CodeAlmanacModel):
     created: tuple[str, ...] = ()
     updated: tuple[str, ...] = ()
-    archived: tuple[str, ...] = ()
     deleted: tuple[str, ...] = ()
 
 

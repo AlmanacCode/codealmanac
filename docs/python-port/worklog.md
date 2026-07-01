@@ -1339,3 +1339,11 @@ by command family. `admin.py` is now a facade; `setup.py` owns setup/uninstall
 flags, `diagnostics.py` owns doctor flags, `updates.py` owns update flags,
 `jobs.py` owns jobs flags, and `automation.py` owns automation flags and task
 choices. Architecture tests keep command flag construction out of the facade.
+Slice 127 removes archive/supersede page lineage from the active Python product
+model. Frontmatter parsing ignores obsolete `archived_at` and `superseded_by`
+keys, `PageDocument`, `SearchPageResult`, and `PageView` no longer carry page
+lineage fields, the derived index schema drops archive columns, search no
+longer exposes `--include-archive` or `--archived`, topic/health queries treat
+every indexed page as current, and viewer page summaries no longer expose an
+archive marker. Architecture tests keep active Python source from regrowing
+page archive lineage fragments.

@@ -13,6 +13,7 @@ topics:
 files:
   - Src/Auth/
 archived_at: 2026-01-02
+superseded_by: old-auth
 ignored: true
 ---
 # Body
@@ -23,7 +24,8 @@ ignored: true
     assert parsed.summary == "Login path."
     assert parsed.topics == ("Auth",)
     assert parsed.files == ("Src/Auth/",)
-    assert parsed.archived_at is not None
+    assert "archived_at" not in parsed.model_dump()
+    assert "superseded_by" not in parsed.model_dump()
     assert parsed.body == "# Body"
 
 

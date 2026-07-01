@@ -1395,3 +1395,16 @@ means the goal remains active.
 | Full tests | `uv run pytest` | passed; 336 tests |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 127 Page Archive Lineage Removal
+
+| Gate | Command | 2026-07-01 result |
+|---|---|---|
+| Focused parsing/CLI/index architecture tests | `uv run pytest tests/test_wiki_parsing.py tests/test_cli.py::test_cli_search_and_show_read_current_repo_wiki tests/test_cli.py::test_cli_search_rejects_removed_archive_flags tests/test_architecture.py::test_active_python_model_has_no_page_archive_lineage tests/test_architecture.py::test_index_read_views_are_separate_from_projection_writes tests/test_architecture.py::test_index_read_views_are_split_by_query_family tests/test_architecture.py::test_index_store_keeps_write_side_responsibilities_split` | passed; 12 tests |
+| Broader touched-surface tests | `uv run pytest tests/test_wiki_parsing.py tests/test_cli.py tests/test_read_model.py tests/test_viewer_service.py tests/test_server.py tests/test_runs_service.py tests/test_architecture.py -q` | passed; 129 tests |
+| Focused lint | `uv run ruff check src/codealmanac tests/test_wiki_parsing.py tests/test_cli.py tests/test_read_model.py tests/test_viewer_service.py tests/test_server.py tests/test_runs_service.py tests/test_architecture.py` | passed |
+| Public-contract freshness | `uv run pytest tests/test_public_contract.py` | passed; 27 tests |
+| Isolated CLI dogfood | temp `HOME` and repo with obsolete `archived_at` / `superseded_by` frontmatter; `codealmanac build`, `search login`, `show auth-flow --json`, `health --json`, and rejected `search --archived` | passed; obsolete keys stayed out of JSON output and removed flag failed |
+| Full tests | `uv run pytest` | passed; 347 tests |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |

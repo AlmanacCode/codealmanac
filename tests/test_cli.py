@@ -1298,6 +1298,22 @@ Login reads [[src/auth/session.py]]. [@auth-folder]
     assert empty_output.err == "# 0 results\n"
 
 
+def test_cli_search_rejects_removed_archive_flags(capsys):
+    with pytest.raises(SystemExit) as include_archive:
+        main(["search", "--include-archive"])
+    include_output = capsys.readouterr()
+
+    assert include_archive.value.code == 2
+    assert "unrecognized arguments: --include-archive" in include_output.err
+
+    with pytest.raises(SystemExit) as archived:
+        main(["search", "--archived"])
+    archive_output = capsys.readouterr()
+
+    assert archived.value.code == 2
+    assert "unrecognized arguments: --archived" in archive_output.err
+
+
 def test_cli_topics_and_health_read_current_repo_wiki(
     tmp_path: Path,
     isolated_home: Path,

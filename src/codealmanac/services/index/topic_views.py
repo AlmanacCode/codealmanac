@@ -9,7 +9,7 @@ def list_topic_summaries(connection: SQLiteConnection) -> tuple[TopicSummary, ..
                COUNT(p.slug) AS page_count
         FROM topics t
         LEFT JOIN page_topics pt ON pt.topic_slug = t.slug
-        LEFT JOIN pages p ON p.slug = pt.page_slug AND p.archived_at IS NULL
+        LEFT JOIN pages p ON p.slug = pt.page_slug
         GROUP BY t.slug, t.title, t.description
         ORDER BY t.slug
         """
@@ -79,8 +79,7 @@ def pages_for_topics(
         SELECT DISTINCT p.slug
         FROM pages p
         JOIN page_topics pt ON pt.page_slug = p.slug
-        WHERE p.archived_at IS NULL
-          AND pt.topic_slug IN ({placeholders})
+        WHERE pt.topic_slug IN ({placeholders})
         ORDER BY p.slug
         """,
         topic_slugs,

@@ -1,5 +1,5 @@
 import re
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import Any
 
 import frontmatter
@@ -37,8 +37,6 @@ def parse_frontmatter(raw: str) -> ParsedFrontmatter:
         topics=fields.topics,
         files=fields.files,
         sources=fields.sources,
-        archived_at=fields.archived_at,
-        superseded_by=fields.superseded_by,
         body=post.content,
     )
 
@@ -64,10 +62,8 @@ class FrontmatterFields(BaseModel):
     topics: tuple[str, ...] = ()
     files: tuple[str, ...] = ()
     sources: tuple[PageSource, ...] = ()
-    archived_at: int | None = None
-    superseded_by: str | None = None
 
-    @field_validator("page_id", "title", "summary", "superseded_by", mode="before")
+    @field_validator("page_id", "title", "summary", mode="before")
     @classmethod
     def optional_text(cls, value: Any) -> str | None:
         if isinstance(value, str) and value.strip():
@@ -96,31 +92,6 @@ class FrontmatterFields(BaseModel):
             if source is not None:
                 sources.append(source)
         return tuple(sources)
-
-    @field_validator("archived_at", mode="before")
-    @classmethod
-    def epoch_seconds(cls, value: Any) -> int | None:
-        if isinstance(value, datetime):
-            return timestamp_seconds(value)
-        if isinstance(value, date):
-            return timestamp_seconds(
-                datetime(value.year, value.month, value.day, tzinfo=UTC)
-            )
-        if isinstance(value, int | float):
-            return int(value)
-        if isinstance(value, str) and value.strip():
-            try:
-                parsed = datetime.fromisoformat(value.strip())
-            except ValueError:
-                return None
-            return timestamp_seconds(parsed)
-        return None
-
-
-def timestamp_seconds(value: datetime) -> int:
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=UTC)
-    return int(value.timestamp())
 
 
 def parse_source_item(value: Any) -> PageSource | None:

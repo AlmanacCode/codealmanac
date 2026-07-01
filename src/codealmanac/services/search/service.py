@@ -24,8 +24,6 @@ class SearchService:
                 query=request.query,
                 topics=request.topics,
                 mentions=request.mentions,
-                include_archive=request.include_archive,
-                archived=request.archived,
                 limit=request.limit,
             ),
         )
