@@ -123,8 +123,7 @@ It is the constraint document for future agents.
   `HarnessEvent` can carry structured tool display, actor attribution, usage,
   provider session, failure metadata, agent trace, and raw JSON fields, and
   `RunLogEvent` persists an optional nested `harness_event` payload beside the
-  readable log row. The richer Claude SDK adapter remains required follow-up
-  transport work.
+  readable log row.
 - 2026-07-01: The default Python Codex harness now uses
   `codex app-server --listen stdio://`, not `codex exec`. The adapter keeps
   readiness probing at `codex login status`, but lifecycle execution goes
@@ -132,6 +131,13 @@ It is the constraint document for future agents.
   threads, noninteractive approval/user-input responses, workspace-write
   sandboxing with network disabled, root-turn completion, helper-turn error
   isolation, usage parsing, and normalized text/tool/warning/error/done events.
+- 2026-07-01: The default Python Claude harness now uses `claude-agent-sdk` for
+  lifecycle execution, not `claude -p --output-format json`. The adapter keeps
+  readiness probing at `claude auth status` with `ANTHROPIC_API_KEY` fallback
+  when the CLI exists but is not logged in. Runs use isolated SDK options
+  (`setting_sources=[]`, `strict_mcp_config=True`, `mcp_servers={}`,
+  `permission_mode="dontAsk"`) and map typed SDK messages into normalized
+  provider-session, text, tool, usage, helper-agent, error, and done events.
 - 2026-07-01: The default lifecycle harness is Codex. Docs, config defaults,
   setup recommendations, and no-flag lifecycle behavior must agree on that.
 - 2026-06-29: Sync pending claims store the run id plus claimed byte/line

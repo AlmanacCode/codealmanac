@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
   "beautifulsoup4>=4.15.0",
   "charset-normalizer>=3.4.7",
+  "claude-agent-sdk>=0.2.110",
   "fastapi>=0.138.1",
   "httpx>=0.28.1",
   "humanfriendly>=10.0",

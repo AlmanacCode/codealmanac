@@ -90,6 +90,22 @@
   ephemeral thread, workspace-write/no-network sandbox, noninteractive approval
   responses, ChatGPT token-refresh refusal, base64 output decoding, usage
   parsing, root/helper turn handling, and startup/turn timeouts.
+- Added slice-84 Claude SDK harness after rereading the live agreement,
+  `MANUAL.md`, `.almanac/README.md`, the codebase-wiki spec, Cosmic Python
+  chapters 4 and 13, the current harness port/model, Codex app-server adapter,
+  and the archived TypeScript Claude SDK provider.
+- Added `claude-agent-sdk` as an internal runtime dependency. The default
+  Claude adapter now wraps `ClaudeSdkClient` for execution and keeps Git
+  changed-file accounting in the adapter, matching the Codex app-server split.
+- The Claude SDK client runs with `setting_sources=[]`, `strict_mcp_config=True`,
+  `mcp_servers={}`, `permission_mode="dontAsk"`, partial-message streaming, and
+  the local edit/search tool set. It maps SDK dataclasses into normalized
+  provider-session, text-delta, text, tool-use, tool-result, usage, helper
+  agent, error, and done events.
+- Focused slice-84 tests use typed fake SDK streams to verify SDK option
+  isolation, provider session recording, tool display, helper completion,
+  usage, failure classification, timeout handling, API-key readiness fallback,
+  changed-file wrapping, and default app wiring.
 
 ## 2026-06-29
 

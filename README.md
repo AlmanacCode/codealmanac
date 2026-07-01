@@ -150,7 +150,8 @@ terminal status.
 
 ## Providers
 
-CodeAlmanac currently supports local Codex and Claude CLI harnesses.
+CodeAlmanac currently supports local Codex app-server and Claude Agent SDK
+harnesses.
 
 ```bash
 codex login

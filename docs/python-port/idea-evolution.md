@@ -635,9 +635,10 @@ Claude adapter can exercise the `HarnessAdapter` port without importing
 provider details into workflows.
 
 Code or product assumption affected:
-`create_app()` now wires `ClaudeCliHarnessAdapter` by default. CLI, services,
-and workflows are guarded by an architecture test that forbids direct imports
-from `codealmanac.integrations`.
+Slice 14 wired `ClaudeCliHarnessAdapter` by default to prove the harness port.
+Slice 84 replaced that runtime path with `ClaudeSdkHarnessAdapter` while keeping
+CLI, services, and workflows guarded by architecture tests that forbid direct
+imports from `codealmanac.integrations`.
 
 Follow-up test:
 Before public `codealmanac ingest`, add stronger dirty-worktree or sandbox

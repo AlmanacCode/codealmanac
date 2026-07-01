@@ -1,1 +1,1 @@
-"""Claude Code CLI harness adapter."""
+"""Claude Agent SDK harness adapter."""

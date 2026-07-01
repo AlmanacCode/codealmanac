@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 83 Codex app-server harness.
+- Latest implementation slice: slice 84 Claude SDK harness.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -21,10 +21,10 @@ Updated: 2026-07-01
 - Current Python product surface includes CLI/app composition, workspace
   registry, configurable Almanac root, SQLite read model, search/show/topics/health,
   tag/untag/topic mutation, reindex, doctor, serve, runs/jobs, ingest, garden,
-  foreground sync, sync status, local automation, Codex/Claude harness adapters,
-  transcript discovery, source runtime adapters, bundled manual resources
-  materialized into `<almanac-root>/manual/`, and a conservative package update
-  command.
+  foreground sync, sync status, local automation, Codex app-server and Claude
+  SDK harness adapters, transcript discovery, source runtime adapters, bundled
+  manual resources materialized into `<almanac-root>/manual/`, and a
+  conservative package update command.
 - There is no public or hidden cloud capture surface. `codealmanac update`
   updates the installed CLI package only. `sync` scans local transcripts and
   runs local ingest. `automation` schedules local `sync`/`garden`.
@@ -116,8 +116,14 @@ Updated: 2026-07-01
   approval/user-input/token-refresh requests noninteractively, runs
   workspace-write with network disabled, maps app-server notifications into
   normalized harness events, preserves root/helper turn attribution, and keeps
-  changed-file accounting around the run. Claude SDK streaming remains the next
-  harness parity gap.
+  changed-file accounting around the run.
+- Slice 84 makes the default Claude lifecycle harness use `claude-agent-sdk`
+  instead of `claude -p --output-format json`. The SDK client isolates ambient
+  Claude settings with `setting_sources=[]`, `strict_mcp_config=True`, and
+  `mcp_servers={}`, runs with `permission_mode="dontAsk"`, maps typed SDK
+  dataclasses into normalized provider-session/text/tool/usage/helper/error/done
+  events, and keeps changed-file accounting in the adapter. The slice uses fake
+  SDK streams for verification; no paid real-Claude model dogfood was run.
 - Source runtime covers filesystem paths, Git, GitHub, transcripts, and web
   URLs behind `services/sources/ports.py::SourceRuntimeAdapter`.
   `InspectSourceRuntimeRequest.context` carries workflow-owned runtime policy
@@ -250,10 +256,10 @@ Updated: 2026-07-01
   later validation. `PageRunWorkflow` writes returned `HarnessEvent` values as
   soon as the harness returns, so failed harness runs remain visible in
   `jobs logs` even when the terminal run error is a mutation-safety failure.
-  Codex now uses app-server notifications for richer normalized events. Claude
-  still uses the one-shot CLI adapter, so the active rewrite goal still needs
-  the richer Claude SDK/event harness model before the harness contract is
-  genuinely restored for both providers.
+  Codex now uses app-server notifications and Claude now uses SDK message
+  streams for richer normalized events. The active rewrite goal still needs
+  real-provider dogfood for both richer transports before the harness contract
+  is release-proven against paid/live model runs.
 - Foreground `sync` writes a durable pending ledger claim before invoking
   Ingest, skips active pending transcript ranges, reports stale pending ranges
   as needs-attention, stores linked run ids plus cursor snapshots, reconciles
@@ -679,10 +685,18 @@ Behavior:
   installed `update --check`
 - Slice 81 focused viewer/server tests, focused ruff, full pytest, full ruff,
   diff check, and live multi-wiki serve API dogfood
+- Slice 83 focused Codex adapter/app-server tests, focused architecture/harness
+  tests, focused ruff, fake app-server protocol dogfood, full pytest, full
+  ruff, and diff check
+- Slice 84 focused Claude adapter SDK-stream tests, neighboring harness/workflow
+  tests, focused ruff, full pytest after docs freshness update, full ruff, and
+  diff check
 
 ## Next Move
 
 1. Likely next pressure points:
+   - real-provider dogfood for the richer Codex app-server and Claude SDK
+     transports, once model-call cost is acceptable
    - one more lifecycle dogfood for prompt quality and real project behavior; add
      source-runtime ranking/recency only after a failing case proves current
      diversity is insufficient
