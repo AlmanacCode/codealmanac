@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 137 real Claude SDK dogfood.
+- Latest implementation slice: slice 138 current-head release smoke.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -149,6 +149,14 @@ Updated: 2026-07-01
   `ingest-20260701163930-cf193a0e` as `done`, search found the page, and health
   was clean. The normalized harness event stream included provider session,
   text, text deltas, tool use/results, context usage, warning, and done.
+- Slice 138 reran current-head release smoke after the real Codex app-server
+  and Claude SDK dogfood slices. `uv build` produced
+  `codealmanac-0.1.0.dev0` wheel and sdist artifacts under
+  `/tmp/codealmanac-release-slice138`; `twine check` passed; package inspection
+  found expected metadata and package data; clean uv-managed Python 3.12.9
+  installs from both artifacts passed installed CLI smoke for init/read/health/
+  jobs/sync status/doctor/update/serve, wrote registry state under
+  `~/.codealmanac/`, and did not create `~/.almanac/registry.json`.
 - Slice 99 makes page source target parsing tolerant at the frontmatter
   boundary: type-specific fields such as `path:` and `url:` remain preferred,
   and generic `target:` is a fallback that normalizes into
@@ -1149,8 +1157,9 @@ Behavior:
    - final publish operations: version/changelog, PyPI credentials, and human
      publish decision; slice 93 fixed the stale GitHub npm automation, but the
      publish workflow is intentionally disabled until a PyPI policy is chosen
-   - rerun package/install smoke if docs, package metadata, prompts, manual
-     resources, or server assets change before publishing
+   - rerun package/install smoke only if package metadata, README, prompts,
+     manual resources, server assets, or installed behavior changes before
+     publishing; slice 138 is current after the latest provider-proof slices
    - one more lifecycle dogfood for prompt quality and real project behavior; add
      source-runtime ranking/recency only after a failing case proves current
      diversity is insufficient

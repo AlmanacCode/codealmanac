@@ -5,10 +5,10 @@ Date: 2026-06-30
 ## Current Read
 
 CodeAlmanac's local Python implementation has public-beta gate coverage. Clean
-wheel install, final wheel/sdist package rehearsal, real Codex ingest, real
-Claude ingest, real Codex app-server harness dogfood, real Claude SDK harness
-dogfood, real non-toy source-shape ingest, real sync, and final viewer browser
-proof now have evidence. Slice 93 also aligns GitHub CI, package-check,
+wheel install, current-head wheel/sdist package rehearsal, real Codex ingest,
+real Claude ingest, real Codex app-server harness dogfood, real Claude SDK
+harness dogfood, real non-toy source-shape ingest, real sync, and final viewer
+browser proof now have evidence. Slice 93 also aligns GitHub CI, package-check,
 disabled publish placeholders, and issue/PR templates with the Python/PyPI
 surface.
 
@@ -132,6 +132,12 @@ and the human publish decision.
   `release-package-smoke.md`, search found the page, health was clean, and the
   normalized event stream included provider session, text, text deltas, tool
   use/results, context usage, warning, and done.
+- Slice 138 reran current-head package proof after the default rich harnesses
+  were dogfooded. `uv build` produced `0.1.0.dev0` wheel and sdist artifacts,
+  `twine check` passed, package inspection found expected metadata/resources,
+  clean uv-managed Python 3.12.9 installs from both artifacts passed installed
+  CLI smoke, `serve` returned `/api/overview`, and both smokes wrote registry
+  state under isolated `~/.codealmanac/`.
 
 ## Next Useful Pressure Tests
 

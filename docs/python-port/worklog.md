@@ -1386,3 +1386,11 @@ temp registry with real HOME/Claude auth and a temp Git repo, finished
 `release-package-smoke.md`, search found the page, and all health counts were
 zero. The run recorded 73 events and normalized provider session, text, text
 delta, tool use/result, context usage, warning, and done harness events.
+Slice 138 reruns current-head package proof after the rich provider dogfood
+slices. `uv build` produced `codealmanac-0.1.0.dev0` wheel and sdist artifacts
+under `/tmp/codealmanac-release-slice138`; `twine check` passed for both;
+package inspection found expected metadata and bundled resources; clean
+uv-managed Python 3.12.9 installs from both artifacts passed installed CLI
+smoke for init, read commands, health, jobs, sync status, doctor, update check,
+and serve. The installed smokes wrote registry state under isolated
+`~/.codealmanac/` homes and did not create `~/.almanac/registry.json`.
