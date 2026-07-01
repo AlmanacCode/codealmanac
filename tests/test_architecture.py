@@ -949,12 +949,31 @@ def test_cli_dispatch_files_stay_small():
 
 def test_page_run_workflow_owns_shared_lifecycle_execution():
     page_run_service = SRC_ROOT / "workflows/page_run/service.py"
+    lifecycle = SRC_ROOT / "workflows/lifecycle.py"
+    lifecycle_harness = SRC_ROOT / "workflows/lifecycle_harness.py"
+    lifecycle_mutation = SRC_ROOT / "workflows/lifecycle_mutation.py"
     page_run_text = page_run_service.read_text(encoding="utf-8")
+    lifecycle_text = lifecycle.read_text(encoding="utf-8")
+    lifecycle_harness_text = lifecycle_harness.read_text(encoding="utf-8")
+    lifecycle_mutation_text = lifecycle_mutation.read_text(encoding="utf-8")
 
     assert page_run_service.is_file()
+    assert lifecycle_harness.is_file()
+    assert lifecycle_mutation.is_file()
     assert "RunHarnessRequest" in page_run_text
     assert "RecordRunHarnessTranscriptRequest" in page_run_text
     assert "validate_harness_result" in page_run_text
+    assert len(lifecycle_text.splitlines()) <= 40
+    assert "from codealmanac.workflows.lifecycle_harness import" in lifecycle_text
+    assert "from codealmanac.workflows.lifecycle_mutation import" in lifecycle_text
+    assert "class LifecycleMutationPolicy" not in lifecycle_text
+    assert "def validate_harness_result(" not in lifecycle_text
+    assert "def changed_paths(" not in lifecycle_text
+    assert "class LifecycleMutationPolicy" in lifecycle_mutation_text
+    assert "def changed_paths(" in lifecycle_mutation_text
+    assert "def validate_reported_changes(" in lifecycle_mutation_text
+    assert "def validate_harness_result(" in lifecycle_harness_text
+    assert "def harness_run_event_kind(" in lifecycle_harness_text
 
     operation_services = (
         SRC_ROOT / "workflows/ingest/service.py",

@@ -154,6 +154,13 @@ It is the constraint document for future agents.
   recording, mutation validation, index refresh, terminal success, and failure
   recording to the page-run workflow. Do not move this harness/run plumbing
   back into individual operation workflows.
+- 2026-07-01: Shared lifecycle helper responsibilities are split behind the
+  import-compatible `workflows/lifecycle.py` facade. `lifecycle_mutation.py`
+  owns Git/workspace mutation preflight, reported-change validation, path-diff
+  comparison, and Almanac-root safety checks. `lifecycle_harness.py` owns
+  harness result validation, terminal fallback events, harness-event to
+  run-event classification, and first-line failure summaries. Do not regrow
+  mutation mechanics or harness classification inside the facade.
 - 2026-06-29: Lifecycle workflows record returned harness status/output before
   mutation-safety validation and harness success validation. A failed harness
   run should leave an `output` event in `jobs logs` even when the terminal run

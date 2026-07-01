@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 133 topic mutation boundaries.
+- Latest implementation slice: slice 134 lifecycle helper boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -120,6 +120,11 @@ Updated: 2026-07-01
   rename/delete entrypoints; `services/topics/mutations.py` owns topic YAML
   loading, graph validation, page topic frontmatter rewrites, topic-file
   writes, and index refresh after writes.
+- Slice 134 splits shared page-writing lifecycle helpers behind the stable
+  `workflows/lifecycle.py` facade. `lifecycle_mutation.py` owns Git/workspace
+  mutation preflight, reported-change validation, path diffing, and Almanac-root
+  safety checks; `lifecycle_harness.py` owns harness result validation,
+  fallback terminal events, run-event classification, and first-line summaries.
 - Slice 99 makes page source target parsing tolerant at the frontmatter
   boundary: type-specific fields such as `path:` and `url:` remain preferred,
   and generic `target:` is a fallback that normalizes into
