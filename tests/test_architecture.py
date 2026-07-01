@@ -207,6 +207,46 @@ def test_page_writing_workflow_services_stay_small():
     assert oversized == []
 
 
+def test_claude_sdk_event_mapper_stays_split_by_responsibility():
+    claude_root = SRC_ROOT / "integrations/harnesses/claude"
+    expected_modules = {
+        "actors.py",
+        "events.py",
+        "message_events.py",
+        "raw.py",
+        "result.py",
+        "sdk_messages.py",
+        "state.py",
+        "stream.py",
+        "task_events.py",
+        "tool_events.py",
+        "usage.py",
+    }
+    module_names = {path.name for path in claude_root.glob("*.py")}
+    oversized = []
+    for path in claude_root.glob("*.py"):
+        line_count = len(path.read_text(encoding="utf-8").splitlines())
+        if line_count > 220:
+            oversized.append(f"{path.name}:{line_count}")
+    event_dispatch = (claude_root / "events.py").read_text(encoding="utf-8")
+    dispatch_leaks = [
+        fragment
+        for fragment in (
+            "ToolUseBlock",
+            "ToolResultBlock",
+            "TextBlock",
+            "HarnessAgentTrace",
+            "json_value",
+            "asdict",
+        )
+        if fragment in event_dispatch
+    ]
+
+    assert expected_modules <= module_names
+    assert oversized == []
+    assert dispatch_leaks == []
+
+
 def test_run_queue_workflow_stays_operation_dispatch_only():
     text = (SRC_ROOT / "workflows/run_queue/service.py").read_text(encoding="utf-8")
 

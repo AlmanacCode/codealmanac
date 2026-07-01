@@ -20,7 +20,35 @@ sources:
   - id: events
     type: file
     path: src/codealmanac/integrations/harnesses/claude/events.py
-    note: SDK message to normalized HarnessEvent mapping.
+    note: Thin SDK message dispatch and re-export surface.
+  - id: messages
+    type: file
+    path: src/codealmanac/integrations/harnesses/claude/message_events.py
+    note: Assistant, user, and result SDK message mapping.
+  - id: tools
+    type: file
+    path: src/codealmanac/integrations/harnesses/claude/tool_events.py
+    note: Tool block and helper-agent trace mapping.
+  - id: tasks
+    type: file
+    path: src/codealmanac/integrations/harnesses/claude/task_events.py
+    note: SDK task lifecycle message mapping.
+  - id: stream
+    type: file
+    path: src/codealmanac/integrations/harnesses/claude/stream.py
+    note: Stream delta mapping.
+  - id: state
+    type: file
+    path: src/codealmanac/integrations/harnesses/claude/state.py
+    note: Mutable run state for Claude SDK event normalization.
+  - id: actors
+    type: file
+    path: src/codealmanac/integrations/harnesses/claude/actors.py
+    note: Root/helper actor attribution for Claude SDK messages.
+  - id: raw
+    type: file
+    path: src/codealmanac/integrations/harnesses/claude/raw.py
+    note: Raw SDK dataclass to JSON-compatible conversion.
   - id: display
     type: file
     path: src/codealmanac/integrations/harnesses/claude/display.py
@@ -64,10 +92,14 @@ snapshots.
 CodeAlmanac lifecycle runs isolated from ambient Claude project settings and
 MCP servers.
 
-`[[src/codealmanac/integrations/harnesses/claude/events.py]]` maps typed SDK
-dataclasses into normalized `HarnessEvent` records. It emits provider session,
-text delta, assistant text, tool use, tool result, context usage, helper-agent,
-error, and done events. Raw SDK payloads are attached only after conversion to
+`[[src/codealmanac/integrations/harnesses/claude/events.py]]` dispatches typed
+SDK dataclasses into focused mapper modules and preserves the import surface
+used by `ClaudeSdkClient`. `[[src/codealmanac/integrations/harnesses/claude/message_events.py]]`
+maps assistant, user, and result messages. `[[src/codealmanac/integrations/harnesses/claude/tool_events.py]]`
+maps tool blocks and helper-agent traces. `[[src/codealmanac/integrations/harnesses/claude/task_events.py]]`
+maps SDK task lifecycle messages. `[[src/codealmanac/integrations/harnesses/claude/stream.py]]`
+maps text deltas. Raw SDK payloads are attached only after
+`[[src/codealmanac/integrations/harnesses/claude/raw.py]]` converts them to
 JSON-compatible values.
 
 The helper-agent mapping follows the archived TypeScript behavior in

@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 84 Claude SDK harness.
+- Latest implementation slice: slice 85 Claude SDK event-boundary split.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -124,6 +124,13 @@ Updated: 2026-07-01
   dataclasses into normalized provider-session/text/tool/usage/helper/error/done
   events, and keeps changed-file accounting in the adapter. The slice uses fake
   SDK streams for verification; no paid real-Claude model dogfood was run.
+- Slice 85 splits the Claude SDK event mapper by provider-edge responsibility.
+  `events.py` is now a 77-line dispatcher/re-export surface, while SDK union
+  typing, mutable run state, actor attribution, raw JSON conversion, final
+  result handling, assistant/user/result message mapping, stream deltas, tool
+  block mapping, and task lifecycle messages live in separate modules. An
+  architecture test keeps Claude harness modules below 220 lines and prevents
+  `events.py` from regrowing block mapping or raw conversion logic.
 - Source runtime covers filesystem paths, Git, GitHub, transcripts, and web
   URLs behind `services/sources/ports.py::SourceRuntimeAdapter`.
   `InspectSourceRuntimeRequest.context` carries workflow-owned runtime policy
@@ -691,6 +698,8 @@ Behavior:
 - Slice 84 focused Claude adapter SDK-stream tests, neighboring harness/workflow
   tests, focused ruff, full pytest after docs freshness update, full ruff, and
   diff check
+- Slice 85 focused Claude adapter and architecture tests, focused ruff, full
+  pytest, full ruff, and diff check
 
 ## Next Move
 

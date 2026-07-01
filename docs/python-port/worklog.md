@@ -106,6 +106,16 @@
   isolation, provider session recording, tool display, helper completion,
   usage, failure classification, timeout handling, API-key readiness fallback,
   changed-file wrapping, and default app wiring.
+- Added slice-85 Claude event-boundary split after rereading the live
+  agreement, `MANUAL.md`, `.almanac/README.md`, and Cosmic Python chapters 4
+  and 13. The service-facing harness port stayed unchanged; `events.py` became
+  a thin SDK-message dispatcher and re-export surface.
+- Split Claude SDK event normalization into explicit provider-edge modules:
+  `sdk_messages.py`, `state.py`, `actors.py`, `result.py`, `message_events.py`,
+  `stream.py`, `tool_events.py`, `task_events.py`, and `raw.py`.
+- Added an architecture test that keeps Claude harness modules below 220 lines
+  and prevents `events.py` from regrowing block mapping or raw conversion
+  logic.
 
 ## 2026-06-29
 
