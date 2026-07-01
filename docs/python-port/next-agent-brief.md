@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 132 sync evaluation boundaries.
+- Latest implementation slice: slice 133 topic mutation boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -115,6 +115,11 @@ Updated: 2026-07-01
   decisions, work-item construction, and summary assembly; and
   `workflows/sync/execution.py` remains the only sync module that starts
   foreground or background Ingest runs.
+- Slice 133 splits topic mutation mechanics from the topics facade.
+  `TopicsService` still owns public list/show/create/describe/link/unlink/
+  rename/delete entrypoints; `services/topics/mutations.py` owns topic YAML
+  loading, graph validation, page topic frontmatter rewrites, topic-file
+  writes, and index refresh after writes.
 - Slice 99 makes page source target parsing tolerant at the frontmatter
   boundary: type-specific fields such as `path:` and `url:` remain preferred,
   and generic `target:` is a fallback that normalizes into

@@ -235,6 +235,12 @@ It is the constraint document for future agents.
   queueing, worker-spawn failure handling, pending/failed/absorbed ledger
   writes, and started summary rows. Do not move lifecycle execution effects
   into `service.py` or `evaluation.py`.
+- 2026-07-01: Topic read orchestration and topic mutation mechanics are
+  separate. `TopicsService` remains the service-facing facade for list/show and
+  mutation verbs. `services/topics/mutations.py` owns topic file loading,
+  graph invariant checks, page frontmatter topic rewrites, topic-file writes,
+  and index refresh after topic writes. Do not move topic YAML or page
+  frontmatter rewrite mechanics back into `services/topics/service.py`.
 - 2026-07-01: Diagnostics is split by check family. `DiagnosticsService`
   remains the service-facing `doctor` facade. `diagnostics/install.py` owns
   install/runtime/manual-package checks, `diagnostics/wiki.py` owns selected

@@ -290,10 +290,14 @@ def test_workspace_service_keeps_identity_selection_and_status_boundaries():
 def test_topics_service_keeps_graph_and_workspace_boundaries():
     topics_root = SRC_ROOT / "services/topics"
     service_text = (topics_root / "service.py").read_text(encoding="utf-8")
+    mutations_text = (topics_root / "mutations.py").read_text(encoding="utf-8")
     graph_text = (topics_root / "graph.py").read_text(encoding="utf-8")
     read_model_text = (topics_root / "read_model.py").read_text(encoding="utf-8")
     workspace_text = (topics_root / "workspace.py").read_text(encoding="utf-8")
     forbidden_service_fragments = (
+        "ConflictError",
+        "ValidationFailed",
+        "TopicMutationAction",
         "TopicDefinition",
         "SelectWorkspaceRequest",
         "def existing_topic_slugs(",
@@ -304,12 +308,31 @@ def test_topics_service_keeps_graph_and_workspace_boundaries():
         "def ancestors_of(",
         "def resolve_workspace(",
         "def resolve_topic_workspace(",
+        "existing_topic_slugs(",
+        "validate_parents_exist(",
+        "require_topics(",
+        "validate_not_self_parent(",
+        "reject_cycle(",
+        "load_topics_file(",
+        "title_for_slug(",
+        "plan_page_topic_rewrites(",
+        "apply_page_topic_rewrites(",
+        "frontmatter_rewrite",
+        "codealmanac.services.wiki.topics",
     )
 
-    assert {"graph.py", "read_model.py", "workspace.py"} <= {
+    assert {"graph.py", "mutations.py", "read_model.py", "workspace.py"} <= {
         path.name for path in topics_root.glob("*.py")
     }
-    assert len(service_text.splitlines()) <= 250
+    assert len(service_text.splitlines()) <= 90
+    assert len(mutations_text.splitlines()) <= 260
+    assert "TopicMutationExecutor(" in service_text
+    assert "class TopicMutationExecutor" in mutations_text
+    assert "load_topics_file(" in mutations_text
+    assert "plan_page_topic_rewrites(" in mutations_text
+    assert "apply_page_topic_rewrites(" in mutations_text
+    assert "reject_cycle(" in mutations_text
+    assert "existing_topic_slugs(" in mutations_text
     assert [
         fragment
         for fragment in forbidden_service_fragments
