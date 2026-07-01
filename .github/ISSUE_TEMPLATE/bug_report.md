@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report something broken or surprising in Almanac
+about: Report something broken or surprising in CodeAlmanac
 title: "bug: "
 labels: bug
 assignees: ""
@@ -23,10 +23,11 @@ Describe what you expected Almanac to do.
 ## Environment
 
 - OS:
-- Node version:
-- Almanac version:
-- Install method: `npx`, `npm install -g`, local checkout, or other
+- Python version:
+- CodeAlmanac version:
+- Install method: `uv tool`, `pip`, local checkout, or other
 - Agent provider, if relevant: Codex, Claude, Cursor, or none
+- Almanac root, if relevant: `almanac/`, `docs/almanac/`, `.almanac/`, or custom
 
 ## Logs or output
 
@@ -36,4 +37,5 @@ Paste relevant output here.
 
 ## Extra context
 
-Add anything else that might help explain the issue, such as whether the repo already had a `.almanac/` directory or whether automation was enabled.
+Add anything else that might help explain the issue, such as whether the repo
+already had a CodeAlmanac wiki or whether automation was enabled.

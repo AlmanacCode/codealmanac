@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 92 shared run-id validation.
+- Latest implementation slice: slice 93 GitHub Python automation.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -175,6 +175,12 @@ Updated: 2026-07-01
   `TypeAdapter(RunId)`. Path-shaped or dotted public job ids now fail request
   validation before `RunStore` constructs `<almanac-root>/jobs/{run_id}.*`
   paths, and direct store calls cannot use unsafe ids.
+- Slice 93 removes the remaining Node/npm GitHub automation and template
+  surface. `.github/workflows/ci.yml` now runs the Python uv gates, package
+  check builds wheel/sdist artifacts and runs `twine check`, the disabled
+  publish workflow names the future PyPI policy instead of npm tokens, GitHub
+  issue/PR templates ask for Python/CodeAlmanac details, and public-contract
+  tests reject npm-era `.github/` wording.
 - Source runtime covers filesystem paths, Git, GitHub, transcripts, and web
   URLs behind `services/sources/ports.py::SourceRuntimeAdapter`.
   `InspectSourceRuntimeRequest.context` carries workflow-owned runtime policy
@@ -746,12 +752,17 @@ Behavior:
   pytest, full ruff, and diff check
 - Slice 85 review fix focused Claude adapter and architecture tests, focused
   ruff, full pytest, full ruff, and diff check
+- Slice 93 GitHub Python automation, public-contract guards, package build
+  artifact ignore, wheel build dogfood, full pytest, full ruff, and diff check
 
 ## Next Move
 
 1. Likely next pressure points:
    - real-provider dogfood for the richer Codex app-server and Claude SDK
      transports, once model-call cost is acceptable
+   - final publish operations: version/changelog, PyPI credentials, and human
+     publish decision; slice 93 fixed the stale GitHub npm automation, but the
+     publish workflow is intentionally disabled until a PyPI policy is chosen
    - one more lifecycle dogfood for prompt quality and real project behavior; add
      source-runtime ranking/recency only after a failing case proves current
      diversity is insufficient

@@ -1065,3 +1065,11 @@ request validation for service, CLI, viewer, server, and direct-store
 boundaries. Isolated CLI dogfood initialized a temp repo and confirmed
 `jobs show ../secret` and `jobs logs run.json` exit with validation errors
 before any `almanac/jobs/` files are created.
+Slice 93 removes the remaining Node/npm GitHub project surface. CI now sets up
+Python 3.12 and uv, runs `uv sync --locked`, `ruff`, `pytest`,
+`codealmanac --help`, and `git diff --check`. Package check builds Python
+artifacts with `uv build --out-dir dist` and validates them with
+`uvx twine check dist/*`. The disabled publish workflow now names the future
+PyPI policy instead of npm tokens, the PR/issue templates ask for Python and
+CodeAlmanac details, `.gitignore` ignores package `build/`, and
+public-contract tests reject npm-era `.github/` language.

@@ -17,7 +17,7 @@ means the goal remains active.
 | Prompts/manual surfaces | `src/codealmanac/prompts/` package resources, `PromptRenderer`, `src/codealmanac/manual/` package resources, `<almanac-root>/manual/` build materialization, and doctor manual checks | prompt/manual tests; build and diagnostics tests; ingest and garden workflow prompt assertions; wheel inspection confirmed prompt and manual Markdown packaged; isolated live build/doctor dogfood passed; slice 70 source-runtime page passed health and manual review | Prompt and manual quality should keep improving through dogfood, but public-beta evidence is now sufficient. |
 | Tests and live verification | pytest/ruff configured in `pyproject.toml` | `uv run pytest`, `uv run ruff check .`, `uv run codealmanac --help`, live temp `init`/`list`/`search`/`show`, dogfood search, dogfood serve API, viewer renderer token-safety tests, browser-harness desktop/mobile serve verification, and final wheel/sdist installed CLI smoke passed through slice 71 | Keep using browser-harness for future visual changes. |
 | Frequent review | slice-1 review fix hardened registry temp writes and typed selector helpers | `uv run pytest`, `uv run ruff check .`, live temp `init`/`list` passed after review fix | Need the same checkpoint discipline after each meaningful slice. |
-| No hosted CLI/MCP/SDK/aliases | live agreement records exclusion; `tests/test_public_contract.py` guards entry points, forbidden commands, package module names, README, release guide, package metadata, next-agent freshness, beta-audit coverage, and `~/.codealmanac/` user-state defaults | `uv run pytest tests/test_public_contract.py -q` passed with 23 tests on 2026-06-30; full `uv run pytest` and `uv run ruff check .` passed on 2026-06-30 | Future CLI expansion must keep the public-contract guard current. |
+| No hosted CLI/MCP/SDK/aliases | live agreement records exclusion; `tests/test_public_contract.py` guards entry points, forbidden commands, package module names, README, release guide, GitHub automation/templates, package metadata, next-agent freshness, beta-audit coverage, and `~/.codealmanac/` user-state defaults | `uv run pytest tests/test_public_contract.py` passed with 26 tests on 2026-07-01; full `uv run pytest` and `uv run ruff check .` passed on 2026-07-01 | Future CLI, docs, or project automation expansion must keep the public-contract guard current. |
 
 ## Gates For First Slice
 
@@ -1058,5 +1058,19 @@ means the goal remains active.
 | Focused lint | `uv run ruff check src/codealmanac/services/runs src/codealmanac/services/viewer/requests.py src/codealmanac/workflows/ingest/requests.py src/codealmanac/workflows/garden/requests.py src/codealmanac/workflows/page_run tests/test_runs_service.py tests/test_viewer_service.py tests/test_server.py tests/test_cli.py tests/test_architecture.py` | passed |
 | CLI invalid-id dogfood | isolated temp `HOME` and initialized repo; `codealmanac jobs show ../secret`; `codealmanac jobs logs run.json` | passed; both exited 1 with Pydantic pattern validation and no `almanac/jobs/` files were created |
 | Full tests | `uv run pytest` | passed; 309 tests |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 93 GitHub Python Automation
+
+| Gate | Command | 2026-07-01 result |
+|---|---|---|
+| Focused public contract before steering updates | `uv run pytest tests/test_public_contract.py` | failed only because `next-agent-brief.md` still reported slice 92 as latest; 25 tests passed |
+| Focused public contract | `uv run pytest tests/test_public_contract.py` | passed; 26 tests |
+| Focused lint | `uv run ruff check tests/test_public_contract.py` | passed |
+| GitHub stale-surface search | `rg -n "npm\|npx\|Node\|NPM\|package-lock\|actions/setup-node" .github` | passed; no matches |
+| Package build dogfood | `uv build --wheel --no-build-logs --out-dir /tmp/codealmanac-build-slice93` | passed; wheel built without relying on editable checkout state |
+| Build artifact ignore proof | `git check-ignore build/` | passed; `build/` is ignored |
+| Full tests | `uv run pytest` | passed; 311 tests |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |

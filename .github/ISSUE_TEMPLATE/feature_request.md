@@ -8,7 +8,7 @@ assignees: ""
 
 ## Problem
 
-What are you trying to do, and where does Almanac get in the way?
+What are you trying to do, and where does CodeAlmanac get in the way?
 
 ## Proposed shape
 

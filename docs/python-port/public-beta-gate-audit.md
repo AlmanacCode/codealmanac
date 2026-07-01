@@ -7,9 +7,10 @@ Date: 2026-06-30
 CodeAlmanac's local Python implementation has public-beta gate coverage. Slice
 70 ran the remaining real lifecycle dogfood pass against a non-toy project
 source shape and fixed the user-state path issue it exposed. Slice 71 reran
-current-head package/install proof after that change. Remaining work is release
-operations: PyPI credentials, versioning, changelog, and the human publish
-decision.
+current-head package/install proof after that change. Slice 93 aligned GitHub
+CI, package-check, disabled publish placeholders, and issue/PR templates with
+the Python/PyPI surface. Remaining work is release operations: PyPI credentials,
+versioning, changelog, and the human publish decision.
 
 ## Gate Audit
 
@@ -19,6 +20,7 @@ decision.
 | Package metadata | Ready | Slice 71 ran `uv build`, `uvx twine check`, wheel metadata inspection, sdist inspection, and package-data assertions for README, Apache-2.0 license metadata, license file, server assets, manual files, prompts, and `core/paths.py`. The wheel README metadata includes `~/.codealmanac/`. | No current implementation blocker; re-run if package metadata changes before publish. |
 | Public docs | Ready with guard | `tests/test_public_contract.py` rejects Node/npm install language, `almanac` aliases, hosted dashboard language, `absorb`, stale README examples, and old `~/.almanac` user-state language. Slices 64-66 dogfooded README scaffold, quickstart, and lifecycle source examples. Slice 70 documents `~/.codealmanac/` as the user state root. | Future docs edits must keep the public-contract guard current. |
 | Release guide | Ready with guard | Slice 62 replaced the npm release guide with the Python/PyPI release flow and added public-contract tests rejecting npm release commands. | Final publish still needs the human release decision and PyPI credentials. |
+| GitHub automation | Ready with guard | Slice 93 replaced Node/npm CI with Python 3.12 plus uv, pytest, ruff, CLI smoke, and diff hygiene. Package check now runs `uv build --out-dir dist` and `uvx twine check dist/*`. The disabled publish workflow names future PyPI policy instead of npm tokens, and GitHub templates ask for Python/CodeAlmanac details. | The publish workflow remains intentionally disabled until PyPI credentials, Trusted Publishing, and release provenance are decided. |
 | Local wiki read path | Ready | Slice 61 clean-installed artifacts ran `init`, `search`, `show`, `topics`, `health`, `jobs`, `sync status`, `doctor`, and `serve`. Slices 64 and 65 dogfooded the README init/search/read path in fresh temp repos. | No current blocker; rerun clean install smoke before publish. |
 | Lifecycle write path | Ready | Slice 57 ran real Codex ingest and fixed prompt/manual guidance after broken wikilinks. Slice 58 ran real Claude ingest and produced a health-clean wiki page with readable `jobs logs`. Slice 70 ran real Claude-backed `codealmanac ingest` against a focused temp repo containing source-runtime, filesystem adapter, ingest workflow, prompt, and live-agreement files; it created `source-runtime-flow.md`, left health clean, and produced readable job logs. | More real-project dogfood will keep improving prompts, but no current implementation blocker remains for public beta. |
 | Sync path | Ready | Slice 59 discovered a real temp Codex transcript, claimed it, ran real Claude-backed ingest, advanced the ledger, skipped unchanged transcript content on the second status run, and left CLI readback readable. | More transcript-provider diversity can improve confidence later, but the required local sync path has evidence. |

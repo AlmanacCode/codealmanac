@@ -7,7 +7,9 @@ Date: 2026-06-30
 CodeAlmanac's local Python implementation has public-beta gate coverage. Clean
 wheel install, final wheel/sdist package rehearsal, real Codex ingest, real
 Claude ingest, real non-toy source-shape ingest, real sync, and final viewer
-browser proof now have dogfood evidence.
+browser proof now have dogfood evidence. Slice 93 also aligns GitHub CI,
+package-check, disabled publish placeholders, and issue/PR templates with the
+Python/PyPI surface.
 
 The gate audit in `docs/python-port/public-beta-gate-audit.md` is the current
 release-readiness checkpoint. Slice 70 passed the remaining lifecycle
@@ -24,6 +26,7 @@ and the human publish decision.
 | Package metadata | Wheel metadata includes README and Apache-2.0 license text; package data includes server assets, manual files, and prompts. |
 | Public docs | `README.md` describes only the Python `codealmanac` local surface: no Node/npm install path, no `almanac` alias, no hosted dashboard happy path. |
 | Release guide | `RELEASE.md` describes the Python/PyPI release path, clean artifact install smoke, and no npm/Node release flow. |
+| GitHub automation | GitHub workflows and templates use Python 3.12, uv, pytest, ruff, package build, `twine check`, and PyPI language, with no npm/Node/npx automation path. |
 | Local wiki read path | A new repo can initialize, search, show a page, inspect topics, run health, and serve the local viewer. |
 | Lifecycle write path | Real Codex or Claude ingest writes useful wiki changes under the configured Almanac root and leaves readable `jobs logs`. |
 | Sync path | A synthetic and a real local transcript can be discovered, claimed, ingested, and skipped on a second run. |

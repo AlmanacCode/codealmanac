@@ -1,20 +1,34 @@
-name: pack-check
+name: package-check
 
-# Dry-run npm pack on every push to main so publish config drift (extra files,
-# missing files, renamed entrypoints) surfaces before a release is cut.
+# Builds Python package artifacts and validates metadata so publish config drift
+# surfaces before a release is cut.
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
+  pull_request:
 
 jobs:
-  pack:
+  package:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: npm pack --dry-run
+          python-version: "3.12"
+
+      - name: Install dependencies
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync environment
+        run: uv sync --locked
+
+      - name: Build artifacts
+        run: uv build --out-dir dist
+
+      - name: Check artifacts
+        run: uvx twine check dist/*

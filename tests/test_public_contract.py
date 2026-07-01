@@ -81,6 +81,30 @@ RELEASE_FORBIDDEN_FRAGMENTS = (
     "npx",
 )
 
+GITHUB_REQUIRED_FRAGMENTS = (
+    "uv sync --locked",
+    "uv run pytest",
+    "uv run ruff check .",
+    "git diff --check",
+    "uv build --out-dir dist",
+    "uvx twine check dist/*",
+    "CodeAlmanac version",
+    "Python version",
+    "Install method: `uv tool`, `pip`, local checkout, or other",
+)
+
+GITHUB_FORBIDDEN_FRAGMENTS = (
+    "npm ci",
+    "npm test",
+    "npm run build",
+    "npm pack",
+    "NPM_TOKEN",
+    "npx",
+    "Node version",
+    "actions/setup-node",
+    "package-lock",
+)
+
 
 def test_public_entry_point_is_codealmanac_only():
     pyproject = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
@@ -242,6 +266,35 @@ def test_release_guide_documents_python_package_release_surface():
 
     for fragment in RELEASE_FORBIDDEN_FRAGMENTS:
         assert fragment not in release_guide
+
+
+def test_github_automation_and_templates_use_python_public_surface():
+    github_files = {
+        path.relative_to(PROJECT_ROOT).as_posix(): path.read_text(encoding="utf-8")
+        for path in (PROJECT_ROOT / ".github").rglob("*")
+        if path.is_file()
+    }
+    github_text = "\n".join(github_files.values())
+
+    for fragment in GITHUB_REQUIRED_FRAGMENTS:
+        assert fragment in github_text
+
+    for fragment in GITHUB_FORBIDDEN_FRAGMENTS:
+        assert fragment not in github_text
+
+    assert "uv build --out-dir dist" in github_files[
+        ".github/workflows/pack-check.yml"
+    ]
+    assert "Local publish follows RELEASE.md with uv build and twine." in github_files[
+        ".github/workflows/publish.yml"
+    ]
+
+
+def test_package_build_artifacts_are_ignored():
+    gitignore = (PROJECT_ROOT / ".gitignore").read_text(encoding="utf-8")
+
+    assert "\ndist/\n" in gitignore
+    assert "\nbuild/\n" in gitignore
 
 
 @pytest.mark.parametrize("command", FORBIDDEN_TOP_LEVEL_COMMANDS)

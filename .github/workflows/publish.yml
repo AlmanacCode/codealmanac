@@ -1,27 +1,25 @@
 name: publish
 
-# Intentionally disabled. Releases happen locally via the publishcodealmanac
-# Claude skill (parallels publishmcp), using the npm token in ~/.npmrc.
+# Intentionally disabled. Releases happen locally through the Python/PyPI flow
+# in RELEASE.md until CI publishing, release provenance, and PyPI credential
+# ownership are explicitly decided.
 #
 # Why local, not CI:
-# - Matches the existing publishmcp flow for the OpenAlmanac MCP package
-# - Avoids rotating a GitHub NPM_TOKEN secret every 90 days (npm's granular
-#   token cap) or maintaining a broader classic token
-# - One less piece of infrastructure to keep healthy
+# - Keeps PyPI credentials with the maintainer until ownership is settled
+# - Avoids a half-configured release path that can publish the wrong artifact
+# - Keeps the release operation aligned with RELEASE.md
 #
 # Why the file still exists:
-# - If we ever want CI-signed provenance attestation (npm's Sigstore signing),
-#   we flip the trigger below from `workflow_dispatch` back to tags + add the
-#   NPM_TOKEN secret
-# - Keeps the workflow as runnable reference rather than lost tribal knowledge
+# - If we choose PyPI Trusted Publishing later, this is the workflow to enable
+# - Keeps the disabled release entrypoint visible instead of tribal knowledge
 #
-# To re-enable: change the trigger back to `push: tags: ["v*"]`, add NPM_TOKEN
-# to repo secrets, remove this header comment. Full history of the original
-# setup is in git at `196d423`.
+# To re-enable: add the PyPI publishing policy, configure Trusted Publishing or
+# a secret-backed upload path, and replace the refusal step with the checked
+# build/upload sequence from RELEASE.md.
 
 on:
-  # Manual-only trigger. Do not add tag-based triggers without adding the
-  # NPM_TOKEN secret first, or the publish step will hang / error.
+  # Manual-only trigger. Do not add tag-based triggers until the PyPI publish
+  # policy and credentials are configured.
   workflow_dispatch:
 
 jobs:
@@ -33,8 +31,8 @@ jobs:
       id-token: write
 
     steps:
-      - name: Refuse to run until NPM_TOKEN is wired up
+      - name: Refuse to run until PyPI publishing is wired up
         run: |
           echo "This workflow is intentionally disabled. See the header comment."
-          echo "Local publish happens via the publishcodealmanac skill."
+          echo "Local publish follows RELEASE.md with uv build and twine."
           exit 1

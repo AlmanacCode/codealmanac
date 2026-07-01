@@ -10,9 +10,11 @@ What problem does this solve?
 
 ```bash
 # Paste commands run, for example:
-# npm run build
-# npx tsc --noEmit
-# npm test
+# uv run pytest
+# uv run ruff check .
+# git diff --check
+# uv build --out-dir dist
+# uvx twine check dist/*
 ```
 
 ## Docs and wiki

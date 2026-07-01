@@ -2129,3 +2129,30 @@ would need its own migration/read-tolerance decision.
 Follow-up test:
 If future code adds a public request with an existing run id, import `RunId`
 instead of adding a local `field_validator` or string character set.
+
+## 2026-07-01 - GitHub Automation Is A Public Product Surface
+
+Old hypothesis:
+The Python release guide and README were enough to guard public packaging
+language after slice 62 removed the npm release guide.
+
+New hypothesis:
+GitHub workflows and templates are public entrypoints too. They must run or ask
+for the same uv/PyPI gates as local docs, and public-contract tests should
+reject npm-era GitHub wording.
+
+Evidence that forced the change:
+`.github/workflows/ci.yml` still ran Node 20/22, `npm ci`, `npm run build`,
+`npx tsc`, and `npm test`. `pack-check.yml` still ran `npm pack --dry-run`.
+`publish.yml` still discussed `NPM_TOKEN`, and the templates still asked for
+Node or npm details.
+
+Code or product assumption affected:
+Slice 93 rewrites GitHub CI/package-check/publish placeholders and GitHub
+templates for the Python local product. The publish workflow stays disabled
+until PyPI credentials, Trusted Publishing, and release provenance are
+explicitly decided.
+
+Follow-up test:
+Any future `.github/` edit should keep `tests/test_public_contract.py` green
+and should not introduce npm/Node/npx language outside archived reference docs.
