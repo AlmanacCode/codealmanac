@@ -5,10 +5,15 @@ from codealmanac.core.slug import to_kebab_case
 from codealmanac.services.index.models import PageView, SearchPageResult
 from codealmanac.services.index.requests import SearchIndexRequest
 from codealmanac.services.index.service import IndexService
+from codealmanac.services.runs.requests import AttachRunRequest, ListRunsRequest
+from codealmanac.services.runs.service import RunsService
+from codealmanac.services.viewer.jobs import viewer_job_event, viewer_job_run
 from codealmanac.services.viewer.models import (
     ViewerFile,
     ViewerFileKind,
     ViewerFileReference,
+    ViewerJob,
+    ViewerJobs,
     ViewerOverview,
     ViewerPage,
     ViewerPageSource,
@@ -21,6 +26,8 @@ from codealmanac.services.viewer.models import (
 from codealmanac.services.viewer.renderer import MarkdownRenderer
 from codealmanac.services.viewer.requests import (
     ViewerFileRequest,
+    ViewerJobRequest,
+    ViewerJobsRequest,
     ViewerOverviewRequest,
     ViewerPageRequest,
     ViewerSearchRequest,
@@ -37,10 +44,12 @@ class ViewerService:
         self,
         workspaces: WorkspacesService,
         index: IndexService,
+        runs: RunsService,
         renderer: MarkdownRenderer,
     ):
         self.workspaces = workspaces
         self.index = index
+        self.runs = runs
         self.renderer = renderer
 
     def overview(self, request: ViewerOverviewRequest) -> ViewerOverview:
@@ -157,6 +166,35 @@ class ViewerService:
             parents=topic.parents,
             children=topic.children,
             pages=pages,
+        )
+
+    def jobs(self, request: ViewerJobsRequest) -> ViewerJobs:
+        workspace = self.select_workspace(request.cwd, request.wiki)
+        runs = self.runs.list(
+            ListRunsRequest(
+                cwd=request.cwd,
+                wiki=workspace.workspace_id,
+                limit=request.limit,
+            )
+        )
+        return ViewerJobs(
+            workspace=viewer_workspace(workspace),
+            runs=tuple(viewer_job_run(record) for record in runs),
+        )
+
+    def job(self, request: ViewerJobRequest) -> ViewerJob:
+        workspace = self.select_workspace(request.cwd, request.wiki)
+        snapshot = self.runs.attach(
+            AttachRunRequest(
+                cwd=request.cwd,
+                wiki=workspace.workspace_id,
+                run_id=request.run_id,
+            )
+        )
+        return ViewerJob(
+            workspace=viewer_workspace(workspace),
+            run=viewer_job_run(snapshot.record),
+            events=tuple(viewer_job_event(event) for event in snapshot.events),
         )
 
     def select_workspace(self, cwd: Path, wiki: str | None) -> Workspace:

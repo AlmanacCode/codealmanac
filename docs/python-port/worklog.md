@@ -1036,3 +1036,9 @@ flags in slice 87. README now documents explicit setup automation commands and
 Admin group and names their scheduler behavior; public-contract tests require
 the new examples and reject the stale "does not install scheduled automation"
 wording.
+Slice 89 restores the first read-only jobs surface in the local viewer.
+`ViewerService` now maps `RunRecord` and `RunLogEvent` values into viewer DTOs,
+`serve` exposes `/api/jobs` and `/api/jobs/{run_id}`, and the static viewer
+renders `#/jobs` plus job detail pages with normalized harness event summaries.
+The slice keeps browser run control out of scope and adds an architecture test
+that prevents viewer jobs code from importing run mutation requests.

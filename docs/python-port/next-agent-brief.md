@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 88 setup automation docs.
+- Latest implementation slice: slice 89 serve jobs view.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -153,6 +153,12 @@ Updated: 2026-07-01
   `--keep-automation`; `docs/concepts.md` includes setup/uninstall in Admin;
   public-contract tests guard against the old "does not install scheduled
   automation" wording returning.
+- Slice 89 restores a read-only jobs surface in `serve`. `ViewerService` now
+  exposes jobs list/detail DTOs over `RunsService`, FastAPI serves `/api/jobs`
+  and `/api/jobs/{run_id}`, and the static viewer renders `#/jobs` plus
+  `#/jobs/<run-id>` with normalized harness event details. Browser write
+  controls remain out of scope; CLI `jobs attach` and `jobs cancel` still own
+  run control.
 - Source runtime covers filesystem paths, Git, GitHub, transcripts, and web
   URLs behind `services/sources/ports.py::SourceRuntimeAdapter`.
   `InspectSourceRuntimeRequest.context` carries workflow-owned runtime policy

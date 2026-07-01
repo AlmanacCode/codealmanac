@@ -10,6 +10,8 @@ from codealmanac.app import CodeAlmanac
 from codealmanac.core.errors import CodeAlmanacError, ConflictError, NotFoundError
 from codealmanac.services.viewer.models import (
     ViewerFile,
+    ViewerJob,
+    ViewerJobs,
     ViewerOverview,
     ViewerPage,
     ViewerSearch,
@@ -17,6 +19,8 @@ from codealmanac.services.viewer.models import (
 )
 from codealmanac.services.viewer.requests import (
     ViewerFileRequest,
+    ViewerJobRequest,
+    ViewerJobsRequest,
     ViewerOverviewRequest,
     ViewerPageRequest,
     ViewerSearchRequest,
@@ -159,6 +163,36 @@ def create_server_app(
                     wiki=selected_wiki(scope_wiki, wiki),
                     slug=slug,
                     include_descendants=descendants,
+                )
+            )
+        except ValidationError as error:
+            raise validation_error(error) from error
+        except CodeAlmanacError as error:
+            raise http_error(error) from error
+
+    @server.get("/api/jobs", response_model=ViewerJobs)
+    def jobs(limit: int | None = None, wiki: str | None = None) -> ViewerJobs:
+        try:
+            return codealmanac.viewer.jobs(
+                ViewerJobsRequest(
+                    cwd=cwd,
+                    wiki=selected_wiki(scope_wiki, wiki),
+                    limit=limit,
+                )
+            )
+        except ValidationError as error:
+            raise validation_error(error) from error
+        except CodeAlmanacError as error:
+            raise http_error(error) from error
+
+    @server.get("/api/jobs/{run_id}", response_model=ViewerJob)
+    def job(run_id: str, wiki: str | None = None) -> ViewerJob:
+        try:
+            return codealmanac.viewer.job(
+                ViewerJobRequest(
+                    cwd=cwd,
+                    wiki=selected_wiki(scope_wiki, wiki),
+                    run_id=run_id,
                 )
             )
         except ValidationError as error:

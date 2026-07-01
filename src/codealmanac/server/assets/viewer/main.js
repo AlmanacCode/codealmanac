@@ -1,5 +1,6 @@
 import { viewerApi } from "./api.js";
 import { navLink } from "./components.js";
+import { renderJob, renderJobs } from "./jobs.js";
 import {
   renderError,
   renderFile,
@@ -71,6 +72,14 @@ async function route(elements) {
       await renderFile(context, routeState.value);
       return;
     }
+    if (routeState.kind === RouteKind.JOBS) {
+      await renderJobs(context);
+      return;
+    }
+    if (routeState.kind === RouteKind.JOB && routeState.value) {
+      await renderJob(context, routeState.value);
+      return;
+    }
     renderHome(context);
   } catch (error) {
     renderError(context, error);
@@ -126,10 +135,7 @@ function renderNav(elements, overview) {
 }
 
 function setActiveNav(elements, routeState) {
-  const active =
-    routeState.kind === RouteKind.HOME || routeState.kind === RouteKind.SEARCH
-      ? routeState.kind
-      : "";
+  const active = activeNavKind(routeState);
   for (const item of elements.navItems) {
     item.classList.toggle("is-active", item.dataset.navKind === active);
   }
@@ -139,6 +145,20 @@ function setActiveNav(elements, routeState) {
       link.dataset.railValue === routeState.value;
     link.classList.toggle("is-active", routeMatches);
   }
+}
+
+function activeNavKind(routeState) {
+  if (
+    routeState.kind === RouteKind.HOME ||
+    routeState.kind === RouteKind.SEARCH ||
+    routeState.kind === RouteKind.JOBS
+  ) {
+    return routeState.kind;
+  }
+  if (routeState.kind === RouteKind.JOB) {
+    return RouteKind.JOBS;
+  }
+  return "";
 }
 
 function setRouteTitle(elements, title) {

@@ -127,8 +127,8 @@ def create_app(
         instruction_installer or FileInstructionInstaller(),
         automation,
     )
-    viewer = ViewerService(workspaces, index, MarkdownRenderer())
     runs = RunsService(workspaces, RunStore())
+    viewer = ViewerService(workspaces, index, runs, MarkdownRenderer())
     sources = SourcesService(
         default_transcript_discovery_adapters()
         if transcript_discovery_adapters is None

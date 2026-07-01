@@ -1009,3 +1009,16 @@ means the goal remains active.
 | Full tests | `uv run pytest` | passed; 299 tests |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 89 Serve Jobs View
+
+| Gate | Command | 2026-07-01 result |
+|---|---|---|
+| Focused viewer/server/architecture tests | `uv run pytest tests/test_viewer_service.py tests/test_server.py tests/test_architecture.py::test_viewer_jobs_surface_stays_read_only` | passed; 18 tests |
+| Focused lint | `uv run ruff check src/codealmanac/app.py src/codealmanac/services/viewer src/codealmanac/server tests/test_viewer_service.py tests/test_server.py tests/test_architecture.py` | passed |
+| ES module syntax | `node --input-type=module --check < ...` for changed viewer modules | passed |
+| Live serve jobs dogfood | temp repo, synthetic run log, current-checkout `codealmanac serve`, `curl /api/jobs`, `curl /api/jobs/{run_id}`, browser-harness `#/jobs` and `#/jobs/{run_id}` | passed; API returned the run and normalized `harness_event`, browser rendered list/detail without desktop overflow |
+| Package asset proof | `uv build --wheel --no-build-logs --out-dir /tmp/codealmanac-build-slice89` plus stdlib wheel inspection | passed; wheel includes `codealmanac/server/assets/viewer/jobs.js` |
+| Full tests | `uv run pytest` | passed; 304 tests |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |

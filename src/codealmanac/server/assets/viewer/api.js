@@ -18,6 +18,14 @@ export const viewerApi = {
   file(path, wiki) {
     return getJson(withQuery("/api/file", { path, wiki }));
   },
+
+  jobs(wiki) {
+    return getJson(withQuery("/api/jobs", { wiki }));
+  },
+
+  job(runId, wiki) {
+    return getJson(withQuery(`/api/jobs/${encodeURIComponent(runId)}`, { wiki }));
+  },
 };
 
 function withQuery(path, params) {

@@ -4,6 +4,14 @@ from fastapi.testclient import TestClient
 
 from codealmanac.app import CodeAlmanac
 from codealmanac.server.app import create_server_app
+from codealmanac.services.harnesses.models import HarnessEvent, HarnessEventKind
+from codealmanac.services.runs.models import RunEventKind, RunOperation, RunStatus
+from codealmanac.services.runs.requests import (
+    FinishRunRequest,
+    MarkRunRunningRequest,
+    RecordRunEventRequest,
+    StartRunRequest,
+)
 from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
 
 
@@ -23,11 +31,13 @@ def test_server_serves_static_assets_and_viewer_api(
     module = client.get("/assets/viewer/main.js")
     renderers_module = client.get("/assets/viewer/renderers.js")
     api_module = client.get("/assets/viewer/api.js")
+    jobs_module = client.get("/assets/viewer/jobs.js")
 
     assert index.status_code == 200
     assert "CodeAlmanac" in index.text
     assert "repo-owned wiki" in index.text
     assert "Local knowledge graph" in index.text
+    assert 'data-nav-kind="jobs"' in index.text
     assert 'type="module"' in index.text
     assert javascript.status_code == 200
     assert 'import { startViewer } from "/assets/viewer/main.js";' in javascript.text
@@ -40,6 +50,8 @@ def test_server_serves_static_assets_and_viewer_api(
     assert "Sources" in renderers_module.text
     assert api_module.status_code == 200
     assert "withQuery" in api_module.text
+    assert jobs_module.status_code == 200
+    assert "renderJob" in jobs_module.text
     assert overview.json()["workspace"]["name"] == "repo"
     assert overview.json()["workspaces"][0]["name"] == "repo"
     assert page.json()["slug"] == "auth-flow"
@@ -53,6 +65,28 @@ def test_server_serves_static_assets_and_viewer_api(
         "auth-flow",
         "session-store",
     ]
+
+
+def test_server_serves_jobs_api_with_normalized_harness_events(
+    viewer_repo: tuple[Path, CodeAlmanac],
+):
+    repo, app = viewer_repo
+    record = create_server_run(repo, app)
+    client = TestClient(create_server_app(app, repo))
+
+    jobs = client.get("/api/jobs")
+    detail = client.get(f"/api/jobs/{record.run_id}")
+
+    assert jobs.status_code == 200
+    assert jobs.json()["workspace"]["name"] == "repo"
+    assert [run["run_id"] for run in jobs.json()["runs"]] == [record.run_id]
+    assert jobs.json()["runs"][0]["status"] == "done"
+    assert detail.status_code == 200
+    assert detail.json()["run"]["summary"] == "updated wiki"
+    assert detail.json()["events"][2]["harness_event"]["kind"] == "text"
+    assert detail.json()["events"][2]["harness_event"]["message"] == (
+        "Created auth-flow.md"
+    )
 
 
 def test_server_viewer_api_switches_between_registered_wikis(
@@ -161,7 +195,50 @@ def test_server_rejects_invalid_static_asset_paths(
     assert unsupported.json()["detail"]["code"] == "validation_failed"
 
 
+def test_server_rejects_path_shaped_job_ids(
+    viewer_repo: tuple[Path, CodeAlmanac],
+):
+    repo, app = viewer_repo
+    client = TestClient(create_server_app(app, repo))
+
+    response = client.get("/api/jobs/..secret")
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "validation_failed"
+
+
 def write_server_page(repo: Path, name: str, body: str) -> None:
     path = repo / "almanac/pages" / name
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body, encoding="utf-8")
+
+
+def create_server_run(repo: Path, app: CodeAlmanac):
+    record = app.runs.start(
+        StartRunRequest(
+            cwd=repo,
+            operation=RunOperation.INGEST,
+            title="Digest auth note",
+        )
+    )
+    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=record.run_id))
+    app.runs.record_event(
+        RecordRunEventRequest(
+            cwd=repo,
+            run_id=record.run_id,
+            kind=RunEventKind.OUTPUT,
+            message="Created auth-flow.md",
+            harness_event=HarnessEvent(
+                kind=HarnessEventKind.TEXT,
+                message="Created auth-flow.md",
+            ),
+        )
+    )
+    return app.runs.finish(
+        FinishRunRequest(
+            cwd=repo,
+            run_id=record.run_id,
+            status=RunStatus.DONE,
+            summary="updated wiki",
+        )
+    )

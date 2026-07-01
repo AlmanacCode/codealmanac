@@ -2,6 +2,7 @@ from enum import StrEnum
 from pathlib import Path
 
 from codealmanac.core.models import CodeAlmanacModel
+from codealmanac.services.harnesses.models import HarnessEvent
 
 
 class ViewerFileKind(StrEnum):
@@ -90,3 +91,51 @@ class ViewerTopic(CodeAlmanacModel):
     parents: tuple[str, ...]
     children: tuple[str, ...]
     pages: tuple[ViewerPageSummary, ...]
+
+
+class ViewerJobPageChanges(CodeAlmanacModel):
+    created: tuple[str, ...] = ()
+    updated: tuple[str, ...] = ()
+    archived: tuple[str, ...] = ()
+    deleted: tuple[str, ...] = ()
+
+
+class ViewerJobTranscript(CodeAlmanacModel):
+    kind: str
+    session_id: str | None
+    transcript_path: Path | None
+
+
+class ViewerJobRun(CodeAlmanacModel):
+    run_id: str
+    operation: str
+    status: str
+    title: str | None
+    summary: str | None
+    error: str | None
+    created_at: str
+    updated_at: str
+    started_at: str | None
+    finished_at: str | None
+    log_path: Path
+    page_changes: ViewerJobPageChanges | None
+    harness_transcript: ViewerJobTranscript | None
+
+
+class ViewerJobEvent(CodeAlmanacModel):
+    sequence: int
+    timestamp: str
+    kind: str
+    message: str
+    harness_event: HarnessEvent | None
+
+
+class ViewerJobs(CodeAlmanacModel):
+    workspace: ViewerWorkspace
+    runs: tuple[ViewerJobRun, ...]
+
+
+class ViewerJob(CodeAlmanacModel):
+    workspace: ViewerWorkspace
+    run: ViewerJobRun
+    events: tuple[ViewerJobEvent, ...]

@@ -9,6 +9,12 @@ from codealmanac.services.wiki.paths import (
     normalize_reference_path_preserving_case,
 )
 
+SAFE_RUN_ID_CHARACTERS = set(
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "0123456789-_"
+)
+
 
 class ViewerOverviewRequest(CodeAlmanacModel):
     cwd: Path
@@ -85,3 +91,30 @@ class ViewerTopicRequest(CodeAlmanacModel):
     @classmethod
     def require_slug(cls, value: str) -> str:
         return required_text(value, "topic slug")
+
+
+class ViewerJobsRequest(CodeAlmanacModel):
+    cwd: Path
+    wiki: str | None = None
+    limit: int | None = None
+
+    @field_validator("limit")
+    @classmethod
+    def non_negative_limit(cls, value: int | None) -> int | None:
+        if value is not None and value < 0:
+            raise ValueError("limit must be non-negative")
+        return value
+
+
+class ViewerJobRequest(CodeAlmanacModel):
+    cwd: Path
+    run_id: str
+    wiki: str | None = None
+
+    @field_validator("run_id")
+    @classmethod
+    def require_safe_run_id(cls, value: str) -> str:
+        run_id = required_text(value, "run id")
+        if any(character not in SAFE_RUN_ID_CHARACTERS for character in run_id):
+            raise ValueError("run id contains an invalid character")
+        return run_id

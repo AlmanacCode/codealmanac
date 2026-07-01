@@ -264,6 +264,30 @@ def test_run_queue_workflow_stays_operation_dispatch_only():
     assert [fragment for fragment in forbidden_fragments if fragment in text] == []
 
 
+def test_viewer_jobs_surface_stays_read_only():
+    paths = (
+        SRC_ROOT / "services/viewer/service.py",
+        SRC_ROOT / "services/viewer/jobs.py",
+        SRC_ROOT / "server/app.py",
+    )
+    forbidden_fragments = (
+        "CancelRunRequest",
+        "FinishRunRequest",
+        "MarkRunRunningRequest",
+        "QueueRunRequest",
+        "RecordRunEventRequest",
+        "StartRunRequest",
+    )
+    offenders = [
+        f"{path.relative_to(SRC_ROOT)}:{fragment}"
+        for path in paths
+        for fragment in forbidden_fragments
+        if fragment in path.read_text(encoding="utf-8")
+    ]
+
+    assert offenders == []
+
+
 def test_repo_almanac_root_is_workspace_owned():
     from codealmanac.services.workspaces.roots import DEFAULT_ALMANAC_ROOT
 
