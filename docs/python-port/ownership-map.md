@@ -153,10 +153,17 @@ Ingest. Scheduled sync uses the same workflow/policy split.
 The same source service owns `SourceRuntimeAdapter`, the port used by Ingest to
 turn selected source refs into bounded readable material before harness
 execution. `integrations/sources/filesystem/` reads explicit local files and
-bounded directory material, using Git-backed directory listing inside worktrees,
-Git porcelain status for changed-first directory selection, adapter-local
-semantic diversity for clean directory selection, `pathspec` as the non-Git
-fallback, and `charset-normalizer` for text decoding.
+bounded directory material. `adapter.py` implements the service-owned
+`SourceRuntimeAdapter` port and delegates to module-level responsibilities:
+`documents.py` owns text document models, file byte bounds, and
+`charset-normalizer` decoding; `listing.py` owns ignore specs, Git-backed
+directory listing inside worktrees, Git porcelain status for changed-first
+directory selection, Python walking through `pathspec`, and directory document
+assembly; `selection.py` owns semantic diversity for clean directory
+selection; `rendering.py` owns prompt-facing runtime text; `paths.py` owns
+shared display/relative path helpers. The adapter normalizes the request `cwd`
+before delegating because source refs are already normalized; this keeps
+symlinked and macOS alias paths rendered relative to the selected workspace.
 `InspectSourceRuntimeRequest.context.ignored_directories` carries workflow-owned
 runtime policy such as the resolved `workspace.almanac_root`; filesystem
 adapters apply those ignores but do not hard-code Almanac root names.

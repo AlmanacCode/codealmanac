@@ -250,6 +250,37 @@ def test_claude_sdk_event_mapper_stays_split_by_responsibility():
     assert dispatch_leaks == []
 
 
+def test_filesystem_source_runtime_stays_split_by_responsibility():
+    filesystem_root = SRC_ROOT / "integrations/sources/filesystem"
+    adapter = filesystem_root / "adapter.py"
+    adapter_text = adapter.read_text(encoding="utf-8")
+    module_names = {path.name for path in filesystem_root.glob("*.py")}
+    forbidden_adapter_fragments = (
+        "charset_normalizer",
+        "GitIgnoreSpec",
+        "field_validator",
+        "parse_git_status_z",
+        "def walk_files(",
+        "def render_file_metadata(",
+        "class FilesystemTextDocument",
+    )
+
+    assert {
+        "adapter.py",
+        "documents.py",
+        "listing.py",
+        "paths.py",
+        "rendering.py",
+        "selection.py",
+    } <= module_names
+    assert len(adapter_text.splitlines()) <= 220
+    assert [
+        fragment
+        for fragment in forbidden_adapter_fragments
+        if fragment in adapter_text
+    ] == []
+
+
 def test_run_queue_workflow_stays_operation_dispatch_only():
     text = (SRC_ROOT / "workflows/run_queue/service.py").read_text(encoding="utf-8")
 

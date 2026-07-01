@@ -1088,3 +1088,15 @@ reconciliation, skip rows, and sync ingest cursor guidance. Focused sync and
 architecture tests passed after the move, and an architecture guard now
 prevents the service from regrowing cursor helpers or policy from importing
 orchestration services.
+Slice 96 splits the filesystem source-runtime adapter by reason to change.
+`adapter.py` is now the `SourceRuntimeAdapter` implementation;
+`documents.py` owns text document models, byte bounds, and charset detection;
+`listing.py` owns ignore rules, Git listing, Python walking, status parsing,
+and directory document assembly; `selection.py` keeps diversity ranking;
+`rendering.py` owns prompt-facing filesystem runtime text; and `paths.py`
+owns display/relative path helpers. Dogfood exposed that normalized source
+refs could render absolute paths when `cwd` arrived through a symlink or macOS
+`/var` alias; the adapter now normalizes `cwd` before delegated document or
+listing work, and a symlink regression covers repo-relative display. Focused
+filesystem runtime, directory selection, architecture tests, and lint passed
+after the move.

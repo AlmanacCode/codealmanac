@@ -153,6 +153,34 @@ def test_filesystem_source_runtime_does_not_hard_code_wiki_root_names(
     assert "almanac/pages/wiki.md" in content
 
 
+def test_filesystem_source_runtime_normalizes_display_base(
+    tmp_path: Path,
+):
+    real = tmp_path / "real"
+    real.mkdir()
+    alias = tmp_path / "alias"
+    try:
+        alias.symlink_to(real, target_is_directory=True)
+    except OSError:
+        pytest.skip("directory symlinks are not supported")
+    (real / "src").mkdir()
+    (real / "src/service.py").write_text("VALUE = 42\n", encoding="utf-8")
+    app = create_app(
+        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=5),),
+    )
+    (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=alias, inputs=("src",)))
+
+    runtime = app.sources.inspect_runtime(
+        InspectSourceRuntimeRequest(cwd=alias, ref=brief.ref)
+    )
+
+    content = runtime.content or ""
+    assert runtime.status == SourceRuntimeStatus.AVAILABLE
+    assert runtime.title == "Directory src"
+    assert "path: src" in content
+    assert "src/service.py" in content
+
+
 def test_filesystem_source_runtime_uses_git_directory_listing(
     tmp_path: Path,
 ):

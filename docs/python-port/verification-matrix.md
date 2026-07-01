@@ -30,6 +30,17 @@ means the goal remains active.
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
 
+## Gates For Slice 96 Filesystem Runtime Boundaries
+
+| Gate | Command | 2026-07-01 result |
+|---|---|---|
+| Focused lint | `uv run ruff check src/codealmanac/integrations/sources/filesystem tests/test_filesystem_source_runtime.py tests/test_filesystem_directory_selection.py tests/test_architecture.py` | passed |
+| Focused behavior and architecture tests | `uv run pytest tests/test_filesystem_source_runtime.py tests/test_filesystem_directory_selection.py tests/test_architecture.py` | 41 passed |
+| Source runtime dogfood | temp app-service source runtime inspection for `src/service.py` through `FilesystemSourceRuntimeAdapter` | passed; rendered `Directory src` and repo-relative file content |
+| Full tests | `uv run pytest` | 315 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+
 ## Gates For First Slice
 
 | Gate | Command | 2026-06-29 result |

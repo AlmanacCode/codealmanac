@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 95 sync policy extraction.
+- Latest implementation slice: slice 96 filesystem runtime boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -194,6 +194,16 @@ Updated: 2026-07-01
   transitions, pending-run reconciliation, skip rows, and generated cursor
   guidance. Architecture tests prevent the policy helpers from regrowing in
   `service.py` and prevent policy from importing orchestration services.
+- Slice 96 splits the filesystem source-runtime integration by responsibility.
+  `integrations/sources/filesystem/adapter.py` remains the 191-line
+  `SourceRuntimeAdapter` implementation, while `documents.py` owns text
+  models/charset decoding, `listing.py` owns ignore/Git/walk directory
+  material selection, `selection.py` owns diversity ranking, `rendering.py`
+  owns prompt-facing runtime text, and `paths.py` owns shared path display
+  helpers. The adapter normalizes `cwd` before delegation so symlinked temp or
+  macOS `/var` paths still render repo-relative runtime paths. Architecture
+  tests prevent charset, pathspec/Git walking, document Pydantic models, or
+  rendering helpers from regrowing in `adapter.py`.
 - Source runtime covers filesystem paths, Git, GitHub, transcripts, and web
   URLs behind `services/sources/ports.py::SourceRuntimeAdapter`.
   `InspectSourceRuntimeRequest.context` carries workflow-owned runtime policy

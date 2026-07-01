@@ -5,6 +5,35 @@ Updated: 2026-07-01
 Record hypothesis changes here. Do not rewrite history; append a new entry when
 evidence changes the shape.
 
+## 2026-07-01 - Filesystem Runtime Is A Small Adapter Plus Modules
+
+Old hypothesis:
+The filesystem source-runtime adapter could own path support end to end:
+adapter dispatch, text decoding, ignore rules, Git listing, Python walking,
+selection, rendering, and path display helpers.
+
+New hypothesis:
+`FilesystemSourceRuntimeAdapter` should only implement the service-owned
+`SourceRuntimeAdapter` port and assemble `SourceRuntime` values. Text document
+decoding, directory material listing, selection ranking, rendering, and path
+display are separate filesystem-integration modules.
+
+Evidence that forced the change:
+`integrations/sources/filesystem/adapter.py` reached 685 lines and had several
+independent reasons to change. The source-runtime contract is stable, but the
+inside of the filesystem adapter mixes provider-like Git mechanics,
+prompt-facing rendering, document parsing, and directory traversal policy.
+
+Code or product assumption affected:
+Architecture tests now require `documents.py`, `listing.py`, `paths.py`,
+`rendering.py`, and `selection.py`, keep `adapter.py` under 220 lines, and
+prevent charset decoding, pathspec/Git walking, document models, and rendering
+helpers from regrowing in the adapter.
+
+Follow-up test:
+Future filesystem behavior changes should test the module that owns the
+behavior directly, then keep one source-runtime test proving public output.
+
 ## 2026-07-01 - Sync Needs A Policy Module
 
 Old hypothesis:

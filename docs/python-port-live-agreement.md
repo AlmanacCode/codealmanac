@@ -212,6 +212,13 @@ It is the constraint document for future agents.
   interleaves directory groups and prefers role-bearing files such as
   `service.py`, `adapter.py`, `app.py`, and `main.py`. Do not add a source
   pool, durable candidate object, or Ingest branching for this.
+- 2026-07-01: Filesystem source runtime is split by integration
+  responsibility. `adapter.py` implements the `SourceRuntimeAdapter` port;
+  `documents.py` owns text document models and charset decoding; `listing.py`
+  owns ignore rules, Git listing, Python walking, and directory document
+  assembly; `rendering.py` owns prompt-facing runtime text; `paths.py` owns
+  shared display/relative path helpers. Keep source selection policy local to
+  the filesystem integration unless a second adapter needs the same behavior.
 - 2026-06-29: `manual/` is a local support package, not a public CLI surface.
   It contains bundled wiki-maintenance doctrine. `init` and `build` copy
   missing files into `<almanac-root>/manual/`, prompts tell lifecycle agents to
