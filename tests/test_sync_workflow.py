@@ -14,17 +14,24 @@ from codealmanac.services.harnesses.models import (
     HarnessTranscriptRef,
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
-from codealmanac.services.runs.models import RunOperation, RunStatus
+from codealmanac.services.runs.models import (
+    RunOperation,
+    RunStatus,
+    RunWorkerSpawnResult,
+)
 from codealmanac.services.runs.requests import (
     FinishRunRequest,
     MarkRunRunningRequest,
     RecordRunHarnessTranscriptRequest,
+    ShowRunRequest,
+    SpawnRunWorkerRequest,
     StartRunRequest,
 )
 from codealmanac.services.sources.models import TranscriptApp, TranscriptCandidate
 from codealmanac.services.sources.requests import DiscoverTranscriptsRequest
 from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
 from codealmanac.workflows.sync.models import (
+    SyncExecution,
     SyncLedger,
     SyncLedgerEntry,
     SyncLedgerStatus,
@@ -109,6 +116,21 @@ class LedgerObservingHarnessAdapter(SyncWritingHarnessAdapter):
         )
         self.observed_entry = ledger.sessions[sync_ledger_key(self.candidate)]
         return super().run(request)
+
+
+class SyncWorkerSpawner:
+    def __init__(self, error: Exception | None = None):
+        self.error = error
+        self.requests: list[SpawnRunWorkerRequest] = []
+
+    def spawn(self, request: SpawnRunWorkerRequest) -> RunWorkerSpawnResult:
+        self.requests.append(request)
+        if self.error is not None:
+            raise self.error
+        return RunWorkerSpawnResult(
+            child_pid=6262,
+            command=("fake-sync-worker",),
+        )
 
 
 def test_sync_status_reports_ready_transcript_ranges(
@@ -236,6 +258,101 @@ def test_sync_run_ingests_ready_transcripts_and_advances_ledger(
     )
     assert status.eligible == 0
     assert status.skipped[0].reason == "unchanged"
+
+
+def test_sync_background_queues_ingest_and_leaves_pending_claim(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    transcript = write_transcript(tmp_path, "one\ntwo\n")
+    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
+    harness = SyncWritingHarnessAdapter()
+    spawner = SyncWorkerSpawner()
+    app = app_with_candidates(
+        isolated_home,
+        (candidate,),
+        harness=harness,
+        worker_spawner=spawner,
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+
+    summary = app.workflows.sync.run(
+        RunSyncRequest(
+            cwd=repo,
+            apps=(TranscriptApp.CODEX,),
+            quiet=timedelta(),
+            harness=HarnessKind.CODEX,
+            execution=SyncExecution.BACKGROUND,
+            now=current_time(),
+            claim_owner="background-sync-owner",
+        )
+    )
+
+    ledger = SyncLedger.model_validate_json(
+        (repo / "almanac/jobs/sync-ledger.json").read_text(encoding="utf-8")
+    )
+    entry = ledger.sessions[sync_ledger_key(candidate)]
+    run = app.runs.show(ShowRunRequest(cwd=repo, run_id=summary.started[0].run_id))
+
+    assert summary.eligible == 1
+    assert summary.started[0].from_line == 1
+    assert summary.started[0].to_line == 2
+    assert run.status == RunStatus.QUEUED
+    assert run.operation == RunOperation.INGEST
+    assert entry.status == SyncLedgerStatus.PENDING
+    assert entry.pending_owner == "background-sync-owner"
+    assert entry.pending_run_id == run.run_id
+    assert entry.pending_to_size == transcript.stat().st_size
+    assert entry.pending_prefix_hash == sha256_text("one\ntwo\n")
+    assert harness.requests == []
+    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
+    assert (repo / "almanac/jobs" / f"{run.run_id}.spec.json").is_file()
+
+
+def test_sync_background_spawn_failure_marks_run_and_ledger_failed(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    transcript = write_transcript(tmp_path, "one\ntwo\n")
+    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
+    spawner = SyncWorkerSpawner(error=RuntimeError("spawn denied"))
+    app = app_with_candidates(
+        isolated_home,
+        (candidate,),
+        harness=SyncWritingHarnessAdapter(),
+        worker_spawner=spawner,
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+
+    summary = app.workflows.sync.run(
+        RunSyncRequest(
+            cwd=repo,
+            apps=(TranscriptApp.CODEX,),
+            quiet=timedelta(),
+            harness=HarnessKind.CODEX,
+            execution=SyncExecution.BACKGROUND,
+            now=current_time(),
+        )
+    )
+
+    ledger = SyncLedger.model_validate_json(
+        (repo / "almanac/jobs/sync-ledger.json").read_text(encoding="utf-8")
+    )
+    entry = ledger.sessions[sync_ledger_key(candidate)]
+    run = app.runs.show(ShowRunRequest(cwd=repo, run_id=entry.last_job_id or ""))
+
+    assert summary.started == ()
+    assert summary.needs_attention[0].reason == "worker-spawn-failed"
+    assert run.status == RunStatus.FAILED
+    assert run.error == "spawn denied"
+    assert entry.status == SyncLedgerStatus.FAILED
+    assert entry.failed_attempts == 1
+    assert entry.last_error == "spawn denied"
+    assert entry.pending_run_id is None
 
 
 def test_sync_run_writes_pending_claim_before_ingest(
@@ -890,11 +1007,13 @@ def app_with_candidates(
     isolated_home: Path,
     candidates: tuple[TranscriptCandidate, ...],
     harness: SyncWritingHarnessAdapter | None = None,
+    worker_spawner: SyncWorkerSpawner | None = None,
 ):
     return create_app(
         AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
         harness_adapters=() if harness is None else (harness,),
         transcript_discovery_adapters=(FakeTranscriptDiscoveryAdapter(candidates),),
+        worker_spawner=worker_spawner,
     )
 
 

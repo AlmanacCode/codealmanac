@@ -105,12 +105,14 @@ and runs ordinary local ingest for eligible transcript ranges.
 ```bash
 codealmanac sync status --from codex
 codealmanac sync --from codex --using codex
+codealmanac sync --from codex --using codex --background
 codealmanac automation install sync --every 5h --quiet 30m
 codealmanac automation status
 ```
 
 Scheduled automation launches foreground `sync` or `garden` commands with
 explicit unattended policy. It is local scheduler state, not cloud sync.
+Use `sync --background` for manual queue-and-worker execution.
 
 ## Jobs
 

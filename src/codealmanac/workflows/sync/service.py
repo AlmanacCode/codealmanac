@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from codealmanac.core.paths import normalize_path
 from codealmanac.services.runs.models import RunRecord, RunStatus
-from codealmanac.services.runs.requests import ListRunsRequest
+from codealmanac.services.runs.requests import FinishRunRequest, ListRunsRequest
 from codealmanac.services.runs.service import RunsService
 from codealmanac.services.sources.models import TranscriptCandidate
 from codealmanac.services.sources.requests import DiscoverTranscriptsRequest
@@ -18,10 +18,12 @@ from codealmanac.workflows.ingest.requests import (
     RunIngestWithRunRequest,
 )
 from codealmanac.workflows.ingest.service import IngestWorkflow
+from codealmanac.workflows.run_queue.service import RunQueueWorkflow
 from codealmanac.workflows.sync.models import (
     SyncCursorDecision,
     SyncDecisionKind,
     SyncEvaluation,
+    SyncExecution,
     SyncLedger,
     SyncLedgerEntry,
     SyncLedgerStatus,
@@ -50,12 +52,14 @@ class SyncWorkflow:
         sources: SourcesService,
         runs: RunsService,
         ingest: IngestWorkflow,
+        queue: RunQueueWorkflow,
         ledger_store: SyncLedgerStore,
     ):
         self.workspaces = workspaces
         self.sources = sources
         self.runs = runs
         self.ingest = ingest
+        self.queue = queue
         self.ledger_store = ledger_store
 
     def status(self, request: RunSyncStatusRequest) -> SyncSummary:
@@ -78,6 +82,42 @@ class SyncWorkflow:
                 title=sync_ingest_title(item.candidate),
                 guidance=sync_ingest_guidance(item),
             )
+            if request.execution == SyncExecution.BACKGROUND:
+                run = self.queue.queue_ingest(ingest_request)
+                pending = pending_entry(item.entry, item, now, claim_owner, run.run_id)
+                ledger.sessions[item.ledger_key] = pending
+                ledger = self.ledger_store.save(
+                    item.candidate.almanac_path,
+                    ledger,
+                    now,
+                )
+                ledgers[item.candidate.repo_root] = ledger
+                try:
+                    self.queue.spawn_worker(item.candidate.repo_root, request.wiki)
+                except Exception as error:
+                    self.runs.finish(
+                        FinishRunRequest(
+                            cwd=item.candidate.repo_root,
+                            wiki=request.wiki,
+                            run_id=run.run_id,
+                            status=RunStatus.FAILED,
+                            error=first_error_line(error),
+                        )
+                    )
+                    ledger.sessions[item.ledger_key] = failed_entry(
+                        pending,
+                        error,
+                        run.run_id,
+                    )
+                    self.ledger_store.save(
+                        item.candidate.almanac_path,
+                        ledger,
+                        now,
+                    )
+                    needs_attention.append(skip(item.candidate, "worker-spawn-failed"))
+                    continue
+                started.append(sync_started(item, run.run_id))
+                continue
             run = self.ingest.start(ingest_request)
             pending = pending_entry(item.entry, item, now, claim_owner, run.run_id)
             ledger.sessions[item.ledger_key] = pending
@@ -124,17 +164,7 @@ class SyncWorkflow:
                 ledger,
                 now,
             )
-            started.append(
-                SyncStarted(
-                    app=item.candidate.app,
-                    session_id=item.candidate.session_id,
-                    transcript_path=item.candidate.transcript_path,
-                    repo_root=item.candidate.repo_root,
-                    run_id=result.run.run_id,
-                    from_line=item.from_line,
-                    to_line=item.to_line,
-                )
-            )
+            started.append(sync_started(item, result.run.run_id))
         return evaluation.summary.model_copy(
             update={
                 "started": tuple(started),
@@ -627,6 +657,18 @@ def skip(candidate: TranscriptCandidate, reason: str) -> SyncSkipped:
         transcript_path=candidate.transcript_path,
         repo_root=candidate.repo_root,
         reason=reason,
+    )
+
+
+def sync_started(item: SyncWorkItem, run_id: str) -> SyncStarted:
+    return SyncStarted(
+        app=item.candidate.app,
+        session_id=item.candidate.session_id,
+        transcript_path=item.candidate.transcript_path,
+        repo_root=item.candidate.repo_root,
+        run_id=run_id,
+        from_line=item.from_line,
+        to_line=item.to_line,
     )
 
 

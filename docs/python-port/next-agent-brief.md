@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 76 background worker spawn.
+- Latest implementation slice: slice 77 sync background enqueue.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -133,6 +133,12 @@ Updated: 2026-07-01
   entrypoint rather than an internal API. Plain `ingest` and `garden` still run
   foreground until the default-mode product decision is made explicitly. Sync
   still runs foreground ingest in-process.
+- Slice 77 adds explicit background sync mode. `sync --background` keeps sync
+  responsible for transcript discovery, cursor decisions, and pending ledger
+  claims, then queues an Ingest spec through `RunQueueWorkflow`, saves the
+  pending claim linked to the queued run id, and only then spawns a worker.
+  Plain `sync` remains foreground, and local automation still schedules
+  foreground sync until unattended background policy is reopened.
 - Filesystem directory runtime uses Git listing inside worktrees, then falls
   back to the bounded Python/pathspec walk outside Git.
 - Directory runtime ranks changed and untracked files before unchanged files,

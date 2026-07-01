@@ -927,6 +927,67 @@ def test_cli_sync_runs_ingest_for_ready_transcripts(
     assert (repo / "almanac/jobs/sync-ledger.json").is_file()
 
 
+def test_cli_sync_background_queues_ingest_for_ready_transcripts(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    transcript = tmp_path / "codex.jsonl"
+    transcript.write_text('{"timestamp":"2026-01-01T00:00:00Z"}\n', encoding="utf-8")
+    candidate = TranscriptCandidate(
+        app=TranscriptApp.CODEX,
+        session_id="codex-session",
+        transcript_path=transcript,
+        cwd=repo,
+        repo_root=repo,
+        almanac_path=repo / "almanac",
+        modified_at=datetime(2026, 1, 1, tzinfo=UTC),
+        size_bytes=transcript.stat().st_size,
+    )
+    transcript_adapter = CliTranscriptDiscoveryAdapter((candidate,))
+    harness = CliWritingHarnessAdapter()
+    spawner = CliWorkerSpawner()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
+        harness_adapters=(harness,),
+        transcript_discovery_adapters=(transcript_adapter,),
+        worker_spawner=spawner,
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert (
+        main(
+            [
+                "sync",
+                "--from",
+                "codex",
+                "--quiet",
+                "0s",
+                "--using",
+                "codex",
+                "--background",
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr()
+    run = app.runs.list(ListRunsRequest(cwd=repo))[0]
+
+    assert "sync:\n" in output.out
+    assert "started: 1\n" in output.out
+    assert f"started codex codex-session: {run.run_id}" in output.out
+    assert run.status == RunStatus.QUEUED
+    assert harness.requests == []
+    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
+    assert (repo / "almanac/jobs" / f"{run.run_id}.spec.json").is_file()
+
+
 def test_cli_automation_install_status_and_uninstall(
     tmp_path: Path,
     isolated_home: Path,

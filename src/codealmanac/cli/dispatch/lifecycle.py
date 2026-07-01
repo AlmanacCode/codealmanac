@@ -22,6 +22,7 @@ from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
 from codealmanac.workflows.garden.requests import RunGardenRequest
 from codealmanac.workflows.ingest.requests import RunIngestRequest
 from codealmanac.workflows.run_queue import DrainRunQueueRequest
+from codealmanac.workflows.sync.models import SyncExecution
 from codealmanac.workflows.sync.requests import (
     DEFAULT_SYNC_MAX_FAILED_ATTEMPTS,
     RunSyncRequest,
@@ -135,6 +136,7 @@ def dispatch_lifecycle(args: argparse.Namespace, app: CodeAlmanac) -> int:
                 pending_timeout=resolve_pending_timeout(args.pending_timeout),
                 max_failed_attempts=sync_max_failed_attempts(args),
                 harness=resolve_harness(args.using, cli_config),
+                execution=sync_execution(args),
                 claim_owner=args.claim_owner,
             )
         )
@@ -147,6 +149,12 @@ def sync_max_failed_attempts(args: argparse.Namespace) -> int:
     if args.max_failed_attempts is not None:
         return args.max_failed_attempts
     return DEFAULT_SYNC_MAX_FAILED_ATTEMPTS
+
+
+def sync_execution(args: argparse.Namespace) -> SyncExecution:
+    if args.background:
+        return SyncExecution.BACKGROUND
+    return SyncExecution.FOREGROUND
 
 
 def parse_sync_apps(value: str | None) -> tuple[TranscriptApp, ...]:

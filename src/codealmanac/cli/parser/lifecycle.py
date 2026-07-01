@@ -54,6 +54,9 @@ def add_lifecycle_commands(subcommands: argparse._SubParsersAction) -> None:
     sync.add_argument("--pending-timeout")
     sync.add_argument("--max-failed-attempts", type=int)
     sync.add_argument("--claim-owner")
+    sync_mode = sync.add_mutually_exclusive_group()
+    sync_mode.add_argument("--background", action="store_true")
+    sync_mode.add_argument("--foreground", action="store_true")
     sync.add_argument(
         "--using",
         choices=tuple(kind.value for kind in HarnessKind),

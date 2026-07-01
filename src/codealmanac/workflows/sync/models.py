@@ -14,6 +14,11 @@ class SyncMode(StrEnum):
     SYNC = "sync"
 
 
+class SyncExecution(StrEnum):
+    FOREGROUND = "foreground"
+    BACKGROUND = "background"
+
+
 class SyncLedgerStatus(StrEnum):
     DONE = "done"
     PENDING = "pending"

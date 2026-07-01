@@ -1936,3 +1936,29 @@ behavior intact.
 Follow-up test:
 When deciding defaults, update README/manual/CLI tests together and dogfood the
 chosen default from an installed CLI, not only through the app API.
+
+## 2026-07-01 - Sync Can Enqueue Without Changing Automation Defaults
+
+Old hypothesis:
+Sync could stay purely foreground until the default background policy was
+settled.
+
+New hypothesis:
+Manual sync needs explicit background mode because sync owns transcript
+discovery, cursors, and pending ledger claims, but scheduled automation should
+keep its current foreground behavior until unattended background policy is
+decided.
+
+Evidence that forced the change:
+Background workers need durable Ingest specs, but sync also needs to remember
+which transcript ranges have been claimed. The pending ledger claim must be
+saved with the queued run id before a worker is spawned, otherwise a worker
+failure or retry can leave transcript progress ambiguous.
+
+Code or product assumption affected:
+Slice 77 adds `SyncExecution` and `codealmanac sync --background`. Plain
+`sync` and installed automation still run foreground.
+
+Follow-up test:
+If automation defaults change later, update the scheduler command contract,
+README/manual text, and sync ledger tests in the same slice.

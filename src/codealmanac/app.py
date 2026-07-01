@@ -166,7 +166,7 @@ def create_app(
         garden,
         worker_spawner or SubprocessRunWorkerSpawner(),
     )
-    sync = SyncWorkflow(workspaces, sources, runs, ingest, SyncLedgerStore())
+    sync = SyncWorkflow(workspaces, sources, runs, ingest, queue, SyncLedgerStore())
     workflows = CodeAlmanacWorkflows(
         build=build,
         ingest=ingest,

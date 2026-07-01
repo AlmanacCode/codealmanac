@@ -7,6 +7,7 @@ from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
 from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.services.sources.models import TranscriptApp
+from codealmanac.workflows.sync.models import SyncExecution
 
 DEFAULT_SYNC_PENDING_TIMEOUT = timedelta(hours=24)
 DEFAULT_SYNC_MAX_FAILED_ATTEMPTS = 3
@@ -53,6 +54,7 @@ class RunSyncStatusRequest(SyncSelectionRequest):
 
 class RunSyncRequest(SyncSelectionRequest):
     harness: HarnessKind
+    execution: SyncExecution = SyncExecution.FOREGROUND
     claim_owner: str | None = None
 
     @field_validator("claim_owner")

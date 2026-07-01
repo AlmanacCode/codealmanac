@@ -896,3 +896,17 @@ the hidden worker command against an empty temp wiki and then ran public
 `garden --background --json` in a non-Git temp repo; the public command queued a
 run, spawned a child process, and the worker finalized the run as `failed` at
 Git preflight without invoking a provider harness.
+Slice 77 adds manual background sync. `RunSyncRequest` now carries
+`SyncExecution`, `codealmanac sync --background` queues eligible transcript
+ingests through `RunQueueWorkflow`, saves pending ledger claims before spawning
+workers, and leaves plain `sync` foreground. Focused tests cover background
+pending claims, queued run specs, no parent-process harness execution, spawn
+failure cleanup, and CLI dispatch. Local automation still schedules foreground
+sync until unattended background policy is explicitly reopened.
+Focused pytest passed with 76 targeted tests, full pytest passed with 271 tests,
+full Ruff passed, and `git diff --check` passed. Dogfood used an isolated HOME
+with a fake Codex transcript and project-pinned `uv run`; public
+`sync --background` discovered one transcript, queued one ingest, spawned a
+worker, and the worker failed at non-Git preflight before any provider harness.
+A follow-up foreground sync reconciled the pending claim into an `ingest-failed`
+ledger entry.

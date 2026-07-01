@@ -96,6 +96,11 @@ It is the constraint document for future agents.
   `RunQueueWorkflow.drain(...)`; it is not a public command and it does not
   contain lifecycle business logic. Plain `ingest` and `garden` still run
   foreground until the default-mode product decision is made explicitly.
+- 2026-07-01: `sync --background` enqueues eligible transcript ingests and
+  saves pending ledger claims linked to queued run ids before spawning local
+  workers. Plain `sync` remains foreground, and scheduled automation still
+  launches foreground `sync` until unattended background policy is reopened
+  explicitly.
 - 2026-07-01: Shared page-writing lifecycle execution belongs to
   `PageRunWorkflow`. Operation workflows such as `ingest` and `garden` prepare
   operation-specific context and prompts, then delegate running-state
