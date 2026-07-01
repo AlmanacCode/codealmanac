@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 111 web source runtime boundaries.
+- Latest implementation slice: slice 112 workspace service boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -289,6 +289,15 @@ Updated: 2026-07-01
   `errors.py` owns unavailable diagnostics. Architecture tests prevent the
   adapter from regrowing HTTP streaming, Pydantic models, parsing, and
   rendering helpers.
+- Slice 112 splits workspace service mechanics while preserving configured-root
+  and registry behavior. `services/workspaces/service.py` remains the use-case
+  facade for initialization targets, registration, selection, resolution,
+  validation, listing, and explicit drops. `identity.py` owns workspace names
+  and ids, `selection.py` owns selector matching and path containment,
+  `status.py` owns marker-based registry availability, and `store.py` owns
+  registry JSON persistence without importing back from `service.py`.
+  Architecture tests prevent id generation, selector mechanics, and
+  marker-status policy from regrowing in `service.py`.
 - Slice 97 splits run-ledger persistence by responsibility. `RunStore` remains
   the `RunsService` repository facade, while `services/runs/paths.py` owns
   run-id validation and path construction, `io.py` owns JSON record/spec and
@@ -947,6 +956,10 @@ Behavior:
 - Slice 111 web source runtime boundary split, focused web runtime, Ingest, and
   architecture tests, focused Ruff over web runtime modules, service-level
   `SourcesService` web dogfood with `httpx.MockTransport`, then full pytest,
+  full Ruff, and diff check
+- Slice 112 workspace service boundary split, focused workspace/build/read
+  model/architecture tests, focused Ruff over workspace modules, service-level
+  workspace dogfood for configured-root init/select/drop, then full pytest,
   full Ruff, and diff check
 
 ## Next Move

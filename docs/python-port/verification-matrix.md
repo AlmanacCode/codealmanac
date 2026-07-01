@@ -1230,3 +1230,14 @@ means the goal remains active.
 | Full tests | `uv run pytest` | passed; 333 tests |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 112 Workspace Service Boundaries
+
+| Gate | Command | 2026-07-01 result |
+|---|---|---|
+| Focused workspace/build/read-model/architecture tests | `uv run pytest tests/test_build_workflow.py tests/test_workspace_registry_store.py tests/test_read_model.py tests/test_architecture.py::test_workspace_service_keeps_identity_selection_and_status_boundaries -q` | passed; 25 tests |
+| Focused lint | `uv run ruff check src/codealmanac/services/workspaces tests/test_build_workflow.py tests/test_workspace_registry_store.py tests/test_read_model.py tests/test_architecture.py` | passed |
+| Service-level workspace dogfood | `uv run python - <<'PY' ...` with isolated registry, configured-root init, relative-path select, path validation, drop-missing, and explicit drop | passed |
+| Full tests | `uv run pytest` | passed; 334 tests |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |

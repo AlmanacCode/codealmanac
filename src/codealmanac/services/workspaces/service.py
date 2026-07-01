@@ -1,17 +1,17 @@
 from datetime import UTC, datetime
-from hashlib import sha256
 from pathlib import Path
 
-from codealmanac.core.errors import ConflictError, NotFoundError, ValidationFailed
+from codealmanac.core.errors import NotFoundError, ValidationFailed
 from codealmanac.core.paths import normalize_path
-from codealmanac.core.slug import to_kebab_case
+from codealmanac.services.workspaces.identity import (
+    workspace_id_for,
+    workspace_name_for,
+)
 from codealmanac.services.workspaces.models import (
     DropWorkspaceResult,
     Workspace,
     WorkspaceListItem,
     WorkspaceListResult,
-    WorkspaceRegistryEntry,
-    WorkspaceRegistryStatus,
 )
 from codealmanac.services.workspaces.requests import (
     DropWorkspaceRequest,
@@ -21,8 +21,18 @@ from codealmanac.services.workspaces.requests import (
 from codealmanac.services.workspaces.roots import (
     DEFAULT_ALMANAC_ROOT,
     AlmanacRootMatch,
-    is_initialized_almanac_root,
     nearest_almanac_root,
+)
+from codealmanac.services.workspaces.selection import (
+    containing_workspace,
+    contains_path,
+    entry_by_exact_path,
+    select_registry_entry,
+)
+from codealmanac.services.workspaces.status import (
+    available_registry_entries,
+    unavailable_registry_entries,
+    workspace_registry_status,
 )
 from codealmanac.services.workspaces.store import WorkspaceRegistryStore
 
@@ -90,13 +100,7 @@ class WorkspacesService:
 
     def select(self, request: SelectWorkspaceRequest) -> Workspace:
         entries = self.store.list()
-        selected = entry_by_workspace_id(request.selector, entries)
-        if selected is not None:
-            return selected.to_workspace()
-        selected = entry_by_name(request.selector, entries)
-        if selected is not None:
-            return selected.to_workspace()
-        selected = entry_by_path(request, entries)
+        selected = select_registry_entry(request, entries)
         if selected is not None:
             return selected.to_workspace()
         raise NotFoundError("workspace", request.selector)
@@ -162,16 +166,9 @@ class WorkspacesService:
         entries = self.store.list()
         dropped = tuple(
             entry.to_workspace()
-            for entry in entries
-            if workspace_registry_status(entry.to_workspace())
-            != WorkspaceRegistryStatus.AVAILABLE
+            for entry in unavailable_registry_entries(entries)
         )
-        remaining = [
-            entry
-            for entry in entries
-            if workspace_registry_status(entry.to_workspace())
-            == WorkspaceRegistryStatus.AVAILABLE
-        ]
+        remaining = available_registry_entries(entries)
         self.store.replace(remaining)
         return DropWorkspaceResult(dropped=dropped)
 
@@ -185,119 +182,3 @@ class WorkspacesService:
     @property
     def registry_path(self) -> Path:
         return self.store.path
-
-
-def workspace_name_for(root_path: Path, requested_name: str | None) -> str:
-    name = to_kebab_case(requested_name or root_path.name)
-    if not name:
-        raise ValidationFailed("could not derive a workspace name; pass --name")
-    return name
-
-
-def workspace_id_for(root_path: Path) -> str:
-    digest = sha256(str(root_path).encode("utf-8")).hexdigest()[:16]
-    return f"w_{digest}"
-
-
-def entry_by_workspace_id(
-    selector: str,
-    entries: list[WorkspaceRegistryEntry],
-) -> WorkspaceRegistryEntry | None:
-    for entry in entries:
-        if entry.workspace_id == selector:
-            return entry
-    return None
-
-
-def entry_by_name(
-    selector: str,
-    entries: list[WorkspaceRegistryEntry],
-) -> WorkspaceRegistryEntry | None:
-    matches = [
-        entry
-        for entry in entries
-        if entry.name.casefold() == selector.casefold()
-    ]
-    if len(matches) > 1:
-        raise ConflictError(f"workspace selector is ambiguous: {selector}")
-    if len(matches) == 1:
-        return matches[0]
-    return None
-
-
-def entry_by_path(
-    request: SelectWorkspaceRequest,
-    entries: list[WorkspaceRegistryEntry],
-) -> WorkspaceRegistryEntry | None:
-    selector_path = explicit_selector_path(request)
-    if selector_path is None:
-        return None
-    for entry in entries:
-        if same_path(entry.path, selector_path):
-            return entry
-    return None
-
-
-def select_registry_entry(
-    request: SelectWorkspaceRequest,
-    entries: list[WorkspaceRegistryEntry],
-) -> WorkspaceRegistryEntry | None:
-    selected = entry_by_workspace_id(request.selector, entries)
-    if selected is not None:
-        return selected
-    selected = entry_by_name(request.selector, entries)
-    if selected is not None:
-        return selected
-    return entry_by_path(request, entries)
-
-
-def entry_by_exact_path(
-    path: Path,
-    entries: list[WorkspaceRegistryEntry],
-) -> WorkspaceRegistryEntry | None:
-    for entry in entries:
-        if same_path(entry.path, path):
-            return entry
-    return None
-
-
-def explicit_selector_path(request: SelectWorkspaceRequest) -> Path | None:
-    if not is_path_selector(request.selector):
-        return None
-    path = Path(request.selector).expanduser()
-    if path.is_absolute():
-        return normalize_path(path)
-    if request.base_path is None:
-        return None
-    return normalize_path(request.base_path / path)
-
-
-def is_path_selector(selector: str) -> bool:
-    return selector.startswith(("/", "~", ".")) or "/" in selector
-
-
-def containing_workspace(path: Path, workspaces: list[Workspace]) -> Workspace | None:
-    matches = [
-        workspace
-        for workspace in workspaces
-        if contains_path(workspace.root_path, path)
-    ]
-    if len(matches) == 0:
-        return None
-    return max(matches, key=lambda workspace: len(workspace.root_path.parts))
-
-
-def contains_path(root_path: Path, path: Path) -> bool:
-    return path == root_path or root_path in path.parents
-
-
-def same_path(left: Path, right: Path) -> bool:
-    return normalize_path(left) == normalize_path(right)
-
-
-def workspace_registry_status(workspace: Workspace) -> WorkspaceRegistryStatus:
-    if not workspace.root_path.is_dir():
-        return WorkspaceRegistryStatus.MISSING_REPO
-    if not is_initialized_almanac_root(workspace.almanac_path):
-        return WorkspaceRegistryStatus.MISSING_ALMANAC
-    return WorkspaceRegistryStatus.AVAILABLE

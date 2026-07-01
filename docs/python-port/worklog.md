@@ -1216,3 +1216,12 @@ metadata/content rendering; and `errors.py` owns unavailable diagnostics.
 Focused web runtime, Ingest web-source prompt, architecture, and lint checks
 passed, and service-level dogfood inspected a mock web URL through
 `SourcesService`.
+Slice 112 keeps workspace behavior unchanged while splitting workspace service
+mechanics. `services/workspaces/service.py` remains the initialization,
+registration, selection, resolution, validation, listing, and drop use-case
+facade. `identity.py` owns workspace names and ids, `selection.py` owns
+selector matching and path containment, `status.py` owns registry availability
+policy, and `store.py` now imports identity directly instead of importing back
+from `service.py`. Focused workspace/build/read-model/architecture tests and
+lint passed, and service-level dogfood covered configured-root init,
+relative-path selection, path validation, missing-wiki drop, and explicit drop.

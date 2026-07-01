@@ -135,6 +135,10 @@ command edge. There is no public `config` command in v1.
 nearest-root discovery. `DEFAULT_ALMANAC_ROOT` is `almanac/`. The registry
 stores each workspace's repo-relative `almanac_root`; downstream services use
 `workspace.almanac_path` instead of concatenating a literal path.
+`services/workspaces/service.py` is the use-case facade. `identity.py` owns
+workspace name/id generation, `selection.py` owns selector matching and path
+containment, `status.py` owns marker-based registry availability, and
+`store.py` owns registry JSON persistence.
 
 `integrations/harnesses/git_status.py` holds Git porcelain changed-file
 snapshots shared by Claude and Codex harness adapters.

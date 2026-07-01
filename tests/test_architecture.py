@@ -209,6 +209,53 @@ def test_viewer_service_keeps_scope_and_projection_boundaries():
     assert "def page_summary_from_view(" in projections_text
 
 
+def test_workspace_service_keeps_identity_selection_and_status_boundaries():
+    workspace_root = SRC_ROOT / "services/workspaces"
+    service_text = (workspace_root / "service.py").read_text(encoding="utf-8")
+    identity_text = (workspace_root / "identity.py").read_text(encoding="utf-8")
+    selection_text = (workspace_root / "selection.py").read_text(encoding="utf-8")
+    status_text = (workspace_root / "status.py").read_text(encoding="utf-8")
+    store_text = (workspace_root / "store.py").read_text(encoding="utf-8")
+
+    assert {
+        "identity.py",
+        "selection.py",
+        "status.py",
+    } <= {path.name for path in workspace_root.glob("*.py")}
+    assert len(service_text.splitlines()) <= 200
+    assert [
+        fragment
+        for fragment in (
+            "sha256",
+            "to_kebab_case",
+            "ConflictError",
+            "WorkspaceRegistryEntry",
+            "WorkspaceRegistryStatus",
+            "is_initialized_almanac_root",
+            "def entry_by_",
+            "def select_registry_entry(",
+            "def explicit_selector_path(",
+            "def is_path_selector(",
+            "def containing_workspace(",
+            "def contains_path(",
+            "def same_path(",
+            "def workspace_registry_status(",
+        )
+        if fragment in service_text
+    ] == []
+
+    assert "def workspace_name_for(" in identity_text
+    assert "def workspace_id_for(" in identity_text
+    assert "sha256" in identity_text
+    assert "def select_registry_entry(" in selection_text
+    assert "def containing_workspace(" in selection_text
+    assert "ConflictError" in selection_text
+    assert "def workspace_registry_status(" in status_text
+    assert "def available_registry_entries(" in status_text
+    assert "WorkspaceRegistryStatus.AVAILABLE" in status_text
+    assert "from codealmanac.services.workspaces.service import" not in store_text
+
+
 def test_cli_main_stays_as_thin_entrypoint():
     main = SRC_ROOT / "cli/main.py"
     text = main.read_text(encoding="utf-8")

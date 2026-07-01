@@ -358,6 +358,15 @@ It is the constraint document for future agents.
   local wiki registry surface; `list --json` exposes availability status, and
   `list --drop <selector>` / `list --drop-missing` remove entries only when the
   user asks. Read commands do not silently prune missing workspaces.
+- 2026-07-01: Workspace service boundaries are split by workspace mechanic.
+  `services/workspaces/service.py` remains the use-case facade for
+  initialization targets, register/get/select/resolve, path validation,
+  registry listing, and explicit drops. `identity.py` owns workspace names and
+  ids; `selection.py` owns selector matching and path containment; `status.py`
+  owns registry availability policy; `roots.py` owns configured-root
+  validation and nearest-root discovery; and `store.py` owns registry JSON
+  persistence. Do not move selector mechanics, id generation, or marker-based
+  status checks back into `service.py`.
 - 2026-06-30: An initialized Almanac root is identified by wiki markers
   (`README.md`, `topics.yaml`, or `pages/`), not by directory existence.
   Runtime artifacts such as `index.db`, WAL files, and `jobs/` are derived

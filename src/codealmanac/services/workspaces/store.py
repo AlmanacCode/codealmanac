@@ -9,10 +9,12 @@ from pydantic import TypeAdapter, ValidationError
 
 from codealmanac.core.errors import ValidationFailed
 from codealmanac.core.paths import normalize_path
+from codealmanac.services.workspaces.identity import workspace_id_for
 from codealmanac.services.workspaces.models import (
     Workspace,
     WorkspaceRegistryEntry,
 )
+from codealmanac.services.workspaces.selection import same_path
 
 
 class WorkspaceRegistryStore:
@@ -118,10 +120,4 @@ def entries_adapter() -> TypeAdapter[Sequence[WorkspaceRegistryEntry]]:
 
 
 def workspace_id_for_path(path: Path) -> str:
-    from codealmanac.services.workspaces.service import workspace_id_for
-
     return workspace_id_for(path)
-
-
-def same_path(left: Path, right: Path) -> bool:
-    return normalize_path(left) == normalize_path(right)

@@ -2687,3 +2687,36 @@ Future web runtime changes should land in the module that owns the mechanism:
 HTTP behavior in `client.py`, parsed document behavior in `documents.py`,
 prompt text in `rendering.py`, and source-runtime port behavior in
 `adapter.py`.
+
+## 2026-07-01 - Workspace Service Should Not Own Every Workspace Mechanic
+
+Old hypothesis:
+`WorkspacesService` could own registration, resolution, selector matching,
+path containment, workspace name/id generation, and marker-based registry
+status because all of those mechanics support the workspace product surface.
+
+New hypothesis:
+`WorkspacesService` should be the workspace use-case facade. Workspace identity
+belongs in `identity.py`, selector and containment mechanics belong in
+`selection.py`, and marker-based registry availability belongs in `status.py`.
+`store.py` should import identity directly instead of reaching back into the
+service module.
+
+Evidence that forced the change:
+After slice 111, `services/workspaces/service.py` was the largest production
+file at 303 lines. It mixed initialization-target logic, registration,
+resolve/select/drop verbs, `sha256` id generation, kebab-case name generation,
+ambiguous-name conflict handling, relative path selector expansion, path
+containment checks, and `topics.yaml` + `pages/` availability status checks.
+
+Code or product assumption affected:
+Slice 112 keeps the configured-root and registry behavior unchanged. New repos
+still default to `almanac/`, registered roots are preserved, unavailable
+registry entries are not auto-dropped, and explicit `drop` / `drop_missing`
+remain the only cleanup verbs.
+
+Follow-up test:
+Future workspace changes should land in the module that owns the mechanic:
+identity in `identity.py`, selector/path rules in `selection.py`, marker/status
+rules in `status.py`, root discovery in `roots.py`, and use-case orchestration
+in `service.py`.
