@@ -380,6 +380,13 @@ It is the constraint document for future agents.
   navigation ordering; `projections.py` owns conversion from index/workspace
   models to viewer DTOs. Do not move registry filtering or DTO construction
   back into `service.py`.
+- 2026-07-01: Server adapter boundaries are split by HTTP-edge
+  responsibility. `server/app.py` is the FastAPI composition root only;
+  `api_routes.py` owns viewer API route request construction;
+  `static_routes.py` owns browser-shell route registration;
+  `static_assets.py` owns package asset validation and reads; and `errors.py`
+  owns product/Pydantic exception mapping. Do not move route bodies, asset
+  loading, or HTTP error mapping back into `app.py`.
 - 2026-06-29: The CLI edge is allowed to split by command domain as pressure
   appears. `doctor`, `update`, `jobs`, and `automation` now live under the
   admin dispatch/render edge; the root dispatcher delegates to that edge and

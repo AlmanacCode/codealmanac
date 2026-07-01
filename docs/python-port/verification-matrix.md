@@ -19,6 +19,17 @@ means the goal remains active.
 | Frequent review | slice-1 review fix hardened registry temp writes and typed selector helpers | `uv run pytest`, `uv run ruff check .`, live temp `init`/`list` passed after review fix | Need the same checkpoint discipline after each meaningful slice. |
 | No hosted CLI/MCP/SDK/aliases | live agreement records exclusion; `tests/test_public_contract.py` guards entry points, forbidden commands, package module names, README, release guide, GitHub automation/templates, package metadata, next-agent freshness, beta-audit coverage, and `~/.codealmanac/` user-state defaults | `uv run pytest tests/test_public_contract.py` passed with 26 tests on 2026-07-01; full `uv run pytest` and `uv run ruff check .` passed on 2026-07-01 | Future CLI, docs, or project automation expansion must keep the public-contract guard current. |
 
+## Gates For Slice 118 Server Route Boundaries
+
+| Gate | Command | 2026-07-01 result |
+|---|---|---|
+| Focused behavior and architecture tests | `uv run pytest tests/test_server.py tests/test_architecture.py::test_server_app_stays_composition_root tests/test_architecture.py::test_viewer_jobs_surface_stays_read_only -q` | 10 passed |
+| Focused lint | `uv run ruff check src/codealmanac/server tests/test_server.py tests/test_architecture.py` | passed |
+| Live serve API dogfood | temp `HOME`; temp repo; current-checkout `codealmanac serve`; `curl /`, `/api/overview`, `/api/search?q=getting`, `/assets/viewer/main.js` | passed; initialized temp wiki, served shell, overview, search result, and nested viewer module |
+| Full tests | `uv run pytest` | 339 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+
 ## Gates For Slice 117 Automation Service Boundaries
 
 | Gate | Command | 2026-07-01 result |

@@ -6,6 +6,17 @@
   proof: keep applying Cosmic Python, `MANUAL.md`, the live agreement, and
   useful `../almanac` patterns until remaining cleanup is genuinely
   diminishing returns.
+- Added slice-118 server-route boundary plan after rereading the live
+  agreement, `MANUAL.md`, `.almanac/README.md`, and Cosmic Python chapters 4
+  and 13. The applied lesson is that `server/app.py` should be the FastAPI
+  composition root, while HTTP route bodies, static package asset mechanics,
+  and exception mapping get named modules.
+- Split `server/app.py` into `api_routes.py`, `static_routes.py`,
+  `static_assets.py`, and `errors.py` while preserving `serve` API/static
+  behavior.
+- Added an architecture guard that keeps route decorators, package resource
+  reads, viewer request models, `CodeAlmanacError`, `ValidationError`, and
+  HTTP response/error mechanics out of `server/app.py`.
 - Added slice-117 automation-service boundary plan after rereading the live
   agreement, `MANUAL.md`, `.almanac/README.md`, and Cosmic Python chapter 4.
 - Split automation internals into `services/automation/selection.py` for task

@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 117 automation service boundaries.
+- Latest implementation slice: slice 118 server route boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -223,6 +223,14 @@ Updated: 2026-07-01
   including command argv, launch PATH, plist path, interval, and working
   directory. Architecture tests keep those mechanics out of
   `services/automation/service.py`.
+- Slice 118 keeps `serve` behavior unchanged while splitting the FastAPI
+  server adapter by HTTP-edge responsibility. `server/app.py` is now the small
+  composition root; `api_routes.py` owns viewer API request construction;
+  `static_routes.py` owns browser-shell route registration; `static_assets.py`
+  owns package asset validation and reads; and `errors.py` owns
+  CodeAlmanac/Pydantic exception mapping to HTTP JSON. Architecture tests keep
+  route bodies, package resource reads, viewer request models, and error
+  mapping out of `server/app.py`.
 - Slice 116 keeps `SourcesService.resolve(...)` behavior unchanged while
   splitting source-address parsing by family. `address_resolution.py` is now a
   small dispatcher; `address_git.py`, `address_github.py`, `address_web.py`,

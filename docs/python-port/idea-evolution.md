@@ -5,6 +5,36 @@ Updated: 2026-07-01
 Record hypothesis changes here. Do not rewrite history; append a new entry when
 evidence changes the shape.
 
+## 2026-07-01 - Serve Server App Is A Composition Root
+
+Old hypothesis:
+`server/app.py` could own FastAPI creation, viewer API route bodies, static
+asset validation, package-resource reads, selected-wiki precedence, and
+exception mapping because all of those details support `codealmanac serve`.
+
+New hypothesis:
+`server/app.py` should only compose the local viewer server. API route request
+construction belongs in `server/api_routes.py`, browser-shell route
+registration belongs in `server/static_routes.py`, asset validation/reads
+belong in `server/static_assets.py`, and product/Pydantic exception mapping
+belongs in `server/errors.py`.
+
+Evidence that forced the change:
+`server/app.py` reached 271 lines and mixed composition-root work with unrelated
+HTTP-edge mechanics. Cosmic Python chapter 13 describes a bootstrapper as the
+place that wires dependencies together; route bodies and package-resource reads
+are not dependency wiring.
+
+Code or product assumption affected:
+Slice 118 keeps `serve` behavior unchanged. Default multi-wiki browsing,
+`serve --wiki` narrowing, jobs API reads, static ES modules, asset validation,
+and JSON error bodies stay covered by the existing server tests.
+
+Follow-up test:
+Future server endpoints should land in `api_routes.py` only when they adapt a
+viewer-service use case. Static file behavior belongs in `static_routes.py` or
+`static_assets.py`, and HTTP error mapping belongs in `errors.py`.
+
 ## 2026-07-01 - Automation Needs Selection And Job Construction Modules
 
 Old hypothesis:

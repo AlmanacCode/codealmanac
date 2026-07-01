@@ -1118,6 +1118,7 @@ def test_viewer_jobs_surface_stays_read_only():
         SRC_ROOT / "services/viewer/service.py",
         SRC_ROOT / "services/viewer/jobs.py",
         SRC_ROOT / "server/app.py",
+        SRC_ROOT / "server/api_routes.py",
     )
     forbidden_fragments = (
         "CancelRunRequest",
@@ -1135,6 +1136,56 @@ def test_viewer_jobs_surface_stays_read_only():
     ]
 
     assert offenders == []
+
+
+def test_server_app_stays_composition_root():
+    server_root = SRC_ROOT / "server"
+    app_text = (server_root / "app.py").read_text(encoding="utf-8")
+    api_text = (server_root / "api_routes.py").read_text(encoding="utf-8")
+    static_routes_text = (server_root / "static_routes.py").read_text(
+        encoding="utf-8"
+    )
+    static_assets_text = (server_root / "static_assets.py").read_text(
+        encoding="utf-8"
+    )
+    errors_text = (server_root / "errors.py").read_text(encoding="utf-8")
+    forbidden_app_fragments = (
+        "@server.get",
+        "resources.files",
+        "HTTPException",
+        "JSONResponse",
+        "ValidationError",
+        "CodeAlmanacError",
+        "ViewerOverviewRequest",
+        "StaticAssetRequest",
+        "read_asset_text",
+    )
+
+    assert len(app_text.splitlines()) <= 40
+    assert [
+        fragment for fragment in forbidden_app_fragments if fragment in app_text
+    ] == []
+    assert "register_error_handlers(server)" in app_text
+    assert "register_api_routes(" in app_text
+    assert "register_static_routes(server)" in app_text
+
+    assert "@server.get(\"/api/overview\"" in api_text
+    assert "ViewerOverviewRequest(" in api_text
+    assert "context.codealmanac.viewer" in api_text
+    assert "resources.files" not in api_text
+    assert "CodeAlmanacError" not in api_text
+
+    assert "@server.get(\"/assets/{asset_path:path}\"" in static_routes_text
+    assert "asset_response(asset_path)" in static_routes_text
+    assert "ViewerOverviewRequest" not in static_routes_text
+
+    assert "class StaticAssetRequest" in static_assets_text
+    assert "resources.files(\"codealmanac.server.assets\")" in static_assets_text
+    assert "ViewerOverviewRequest" not in static_assets_text
+
+    assert "CodeAlmanacError" in errors_text
+    assert "ValidationError" in errors_text
+    assert "ViewerOverviewRequest" not in errors_text
 
 
 def test_run_id_validation_is_owned_by_runs_models():

@@ -311,6 +311,15 @@ page, topic, search, file-reference graph routes, and read-only page viewing.
 Hosted UseAlmanac account, billing, settings, and hosted wiki-search flows do
 not belong in this local viewer.
 
+`server/app.py` is the local viewer server composition root. It creates the
+FastAPI app and registers error handlers, viewer API routes, and static routes.
+`server/api_routes.py` owns HTTP request construction for `services/viewer`.
+`server/static_routes.py` owns browser-shell route registration.
+`server/static_assets.py` owns package asset validation and reads.
+`server/errors.py` owns CodeAlmanac/Pydantic exception mapping to HTTP JSON.
+No route body, package-resource read, or product-error mapping belongs back in
+`server/app.py`.
+
 `cli/render/root.py` is a re-export facade over domain render modules so
 dispatch imports stay stable. `cli/render/lifecycle.py` owns
 build/ingest/garden/sync/job-start output, `wiki.py` owns
