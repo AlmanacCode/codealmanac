@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 99 source target fallback.
+- Latest implementation slice: slice 100 Codex event boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -123,6 +123,12 @@ Updated: 2026-07-01
   workspace-write with network disabled, maps app-server notifications into
   normalized harness events, preserves root/helper turn attribution, and keeps
   changed-file accounting around the run.
+- Slice 100 splits Codex app-server event normalization by provider-edge
+  responsibility. `events.py` dispatches notifications; `state.py` owns mutable
+  run state; `actors.py` owns root/helper attribution; `item_events.py` owns
+  item/output mapping; `agent_events.py` owns helper traces; and `result.py`
+  owns usage, provider-session, turn-completion, and done events. Architecture
+  tests now prevent the dispatch module from regrowing the old event monolith.
 - Slice 84 makes the default Claude lifecycle harness use `claude-agent-sdk`
   instead of `claude -p --output-format json`. The SDK client isolates ambient
   Claude settings with `setting_sources=[]`, `strict_mcp_config=True`, and
@@ -293,6 +299,9 @@ Updated: 2026-07-01
 - Slice 99 keeps `sources[type=file].target` from silently losing file-aware
   retrieval by accepting generic `target:` as a parser fallback after the
   type-specific source fields.
+- Slice 100 keeps Codex app-server behavior unchanged while splitting the
+  provider-event mapper into named modules and adding an architecture guard for
+  the new boundary.
 - Filesystem directory runtime uses Git listing inside worktrees, then falls
   back to the bounded Python/pathspec walk outside Git.
 - Directory runtime ranks changed and untracked files before unchanged files,
@@ -807,6 +816,9 @@ Behavior:
   pytest, focused ruff, isolated CLI dogfood proving
   `sources[type=file].target` powers `search --mentions` and `show --json`,
   full pytest, full ruff, and diff check
+- Slice 100 Codex event-boundary split, focused Codex app-server/Codex adapter
+  and architecture tests, focused Ruff over Codex harness and architecture
+  tests, fake app-server client dogfood, then full pytest/full Ruff/diff check
 
 ## Next Move
 

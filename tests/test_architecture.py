@@ -299,6 +299,48 @@ def test_claude_sdk_event_mapper_stays_split_by_responsibility():
     assert dispatch_leaks == []
 
 
+def test_codex_app_server_event_mapper_stays_split_by_responsibility():
+    codex_root = SRC_ROOT / "integrations/harnesses/codex"
+    expected_modules = {
+        "actors.py",
+        "agent_events.py",
+        "events.py",
+        "item_events.py",
+        "result.py",
+        "state.py",
+    }
+    module_names = {path.name for path in codex_root.glob("*.py")}
+    oversized = []
+    for module_name in expected_modules:
+        line_count = len(
+            (codex_root / module_name).read_text(encoding="utf-8").splitlines()
+        )
+        if line_count > 220:
+            oversized.append(f"{module_name}:{line_count}")
+    event_dispatch = (codex_root / "events.py").read_text(encoding="utf-8")
+    dispatch_leaks = [
+        fragment
+        for fragment in (
+            "import base64",
+            "import binascii",
+            "class CodexRunState",
+            "from dataclasses",
+            "dataclass",
+            "codex_item_display",
+            "tool_use_event",
+            "HarnessAgentTrace",
+            "HarnessToolStatus",
+            "helper_label",
+            "parse_codex_app_server_usage",
+        )
+        if fragment in event_dispatch
+    ]
+
+    assert expected_modules <= module_names
+    assert oversized == []
+    assert dispatch_leaks == []
+
+
 def test_filesystem_source_runtime_stays_split_by_responsibility():
     filesystem_root = SRC_ROOT / "integrations/sources/filesystem"
     adapter = filesystem_root / "adapter.py"

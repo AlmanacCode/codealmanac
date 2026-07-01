@@ -1109,3 +1109,14 @@ read-model tests now prove `sources[type=file].target` is projected into
 CLI dogfood initialized a temp repo with isolated `HOME`, authored a page with
 `sources[type=file].target`, and proved public `search --mentions` plus
 `show --json` see the source target and derived file ref.
+Slice 100 splits the Codex app-server event mapper by provider-edge
+responsibility. `events.py` is now a small notification dispatcher; `state.py`
+owns mutable run state; `actors.py` owns root/helper attribution;
+`item_events.py` owns item completion and output-delta decoding;
+`agent_events.py` owns helper-agent spawn/wait traces; and `result.py` owns
+usage, provider-session, turn-completion, and done events. The app-server client
+keeps importing the same dispatcher and result symbols, so public harness
+behavior is unchanged. Focused Codex app-server, Codex adapter, architecture,
+and Ruff checks passed after the split. A fake app-server dogfood run outside
+pytest used `CodexAppServerClient` against a temporary fake `codex` binary and
+produced the expected provider-session, tool, text, usage, and done events.

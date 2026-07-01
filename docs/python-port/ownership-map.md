@@ -140,6 +140,12 @@ Harness adapters translate provider output into `HarnessEvent` values before
 workflows persist anything to run logs. Raw provider transcript files are not a
 workflow contract; they are optional provider evidence for exclusion and
 debugging.
+Codex app-server event normalization is split by provider-edge reason to
+change: `events.py` dispatches notifications, `state.py` stores mutable run
+state, `actors.py` assigns root/helper attribution, `item_events.py` maps tool
+items and output deltas, `agent_events.py` maps helper-agent lifecycle traces,
+and `result.py` maps usage, provider-session, turn completion, and final done
+events.
 
 `services/runs/store.py` is the service-facing repository facade for the run
 ledger. `services/runs/paths.py` owns run-id validation and file naming,

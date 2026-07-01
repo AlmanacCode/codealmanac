@@ -2326,3 +2326,34 @@ branch on raw frontmatter spellings.
 Follow-up test:
 If a new source type is added, add its type-specific address fields to
 `SOURCE_TARGET_FIELDS` and keep generic `target:` as the last fallback.
+
+## 2026-07-01 - Codex App-Server Events Need The Same Boundary As Claude
+
+Old hypothesis:
+The Codex app-server event mapper could stay in one file because the transport
+had only recently replaced `codex exec`, and tests covered the event payloads.
+
+New hypothesis:
+Codex app-server is the default lifecycle harness, so its provider-event edge
+needs the same named boundaries as the Claude SDK edge. Dispatch, mutable run
+state, actor attribution, item mapping, helper-agent traces, and final result
+events have different reasons to change.
+
+Evidence that forced the change:
+After slice 99, the largest remaining production module was
+`integrations/harnesses/codex/events.py` at 460 lines. Claude's mapper had
+already been split and guarded in slice 85, while Codex still mixed state,
+dispatch, base64 output decoding, tool display result construction, helper
+agent lifecycle traces, usage messages, and done events.
+
+Code or product assumption affected:
+Slice 100 keeps `CodexAppServerClient` and the service-facing `HarnessAdapter`
+contract unchanged. The split is entirely inside
+`integrations/harnesses/codex/`, and the architecture guard now prevents the
+Codex event dispatch module from regrowing item, actor, trace, usage, or output
+decoding responsibilities.
+
+Follow-up test:
+If a future Codex app-server notification type adds a new event family, add a
+named mapper module when the responsibility is not already owned by
+`item_events.py`, `agent_events.py`, or `result.py`.

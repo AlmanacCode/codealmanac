@@ -138,6 +138,12 @@ It is the constraint document for future agents.
   threads, noninteractive approval/user-input responses, workspace-write
   sandboxing with network disabled, root-turn completion, helper-turn error
   isolation, usage parsing, and normalized text/tool/warning/error/done events.
+- 2026-07-01: Codex app-server event normalization is split by provider-edge
+  responsibility. `events.py` remains the small notification dispatcher;
+  `state.py` owns mutable run state; `actors.py` owns root/helper attribution;
+  `item_events.py` owns item and output mapping; `agent_events.py` owns helper
+  lifecycle traces; and `result.py` owns provider-session, usage, turn
+  completion, and done events. Do not regrow one Codex event monolith.
 - 2026-07-01: The default Python Claude harness now uses `claude-agent-sdk` for
   lifecycle execution, not `claude -p --output-format json`. The adapter keeps
   readiness probing at `claude auth status` with `ANTHROPIC_API_KEY` fallback
