@@ -201,6 +201,15 @@ It is the constraint document for future agents.
   install/runtime/manual-package checks, `diagnostics/wiki.py` owns selected
   wiki readiness checks, and `diagnostics/messages.py` owns shared doctor
   message formatting. Do not move `doctor` mechanics back into `service.py`.
+- 2026-07-01: Topic service orchestration is split from topic graph mechanics.
+  `TopicsService` remains the service-facing use-case entrypoint for list,
+  show, create, describe, link, unlink, rename, and delete.
+  `services/topics/graph.py` owns topic existence checks, self-parent
+  validation, and DAG cycle traversal; `services/topics/read_model.py` owns
+  topic slug lookup through the derived index; `services/topics/workspace.py`
+  owns current-repo vs explicit-`--wiki` workspace selection. Do not move graph
+  traversal, read-model lookup helpers, or `SelectWorkspaceRequest` handling
+  back into `service.py`.
 - 2026-06-29: Source input has four local layers:
   `SourceAddress -> SourceRef -> SourceBrief -> SourceRuntime`. Git source
   runtime uses the Git CLI through a source-runtime adapter. GitHub PR/issue

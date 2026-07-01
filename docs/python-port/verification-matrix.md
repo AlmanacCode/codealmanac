@@ -19,6 +19,17 @@ means the goal remains active.
 | Frequent review | slice-1 review fix hardened registry temp writes and typed selector helpers | `uv run pytest`, `uv run ruff check .`, live temp `init`/`list` passed after review fix | Need the same checkpoint discipline after each meaningful slice. |
 | No hosted CLI/MCP/SDK/aliases | live agreement records exclusion; `tests/test_public_contract.py` guards entry points, forbidden commands, package module names, README, release guide, GitHub automation/templates, package metadata, next-agent freshness, beta-audit coverage, and `~/.codealmanac/` user-state defaults | `uv run pytest tests/test_public_contract.py` passed with 26 tests on 2026-07-01; full `uv run pytest` and `uv run ruff check .` passed on 2026-07-01 | Future CLI, docs, or project automation expansion must keep the public-contract guard current. |
 
+## Gates For Slice 115 Topic Service Boundaries
+
+| Gate | Command | 2026-07-01 result |
+|---|---|---|
+| Focused lint | `uv run ruff check src/codealmanac/services/topics tests/test_topics_mutation.py tests/test_topics_health.py tests/test_architecture.py` | passed |
+| Focused behavior and architecture tests | `uv run pytest tests/test_topics_mutation.py tests/test_topics_health.py tests/test_architecture.py::test_topics_service_keeps_graph_and_workspace_boundaries` | 18 passed |
+| Isolated CLI dogfood | temp `HOME` and temp repo with `init`, topic create/link/show/rename/delete | passed; corrected `topics --wiki <name> ...` placement and verified create/link/show/rename/delete/health |
+| Full tests | `uv run pytest` | 337 passed |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |
+
 ## Gates For Slice 95 Sync Policy Extraction
 
 | Gate | Command | 2026-07-01 result |

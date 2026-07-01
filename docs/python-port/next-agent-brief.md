@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 114 diagnostics boundaries.
+- Latest implementation slice: slice 115 topic service boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -216,6 +216,15 @@ Updated: 2026-07-01
   install/runtime/manual-package readiness, `wiki.py` owns selected-wiki
   registry/index/manual/health readiness, and `messages.py` owns shared doctor
   formatting. Architecture tests keep `service.py` facade-only.
+- Slice 115 keeps topic command behavior unchanged while splitting graph and
+  workspace mechanics out of `TopicsService`. `services/topics/graph.py` owns
+  topic existence checks, self-parent validation, and cycle traversal;
+  `services/topics/read_model.py` owns topic slug lookup through the derived
+  index; `services/topics/workspace.py` owns current-repo vs explicit `--wiki`
+  resolution. Architecture tests keep `TopicDefinition`,
+  `SelectWorkspaceRequest`, graph helper definitions, read-model helper
+  definitions, and workspace helper definitions out of
+  `services/topics/service.py`.
 - Slice 95 splits deterministic sync policy out of `SyncWorkflow`.
   `workflows/sync/service.py` is now a 308-line orchestration surface that
   discovers candidates, scopes wikis, loads run records and ledgers, starts or

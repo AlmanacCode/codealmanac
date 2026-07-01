@@ -5,6 +5,34 @@ Updated: 2026-07-01
 Record hypothesis changes here. Do not rewrite history; append a new entry when
 evidence changes the shape.
 
+## 2026-07-01 - Topic Commands Need A Graph Boundary
+
+Old hypothesis:
+`TopicsService` could own topic command orchestration, workspace selection,
+topic existence checks, self-parent validation, and DAG cycle traversal in one
+file because all of those behaviors support one CLI command group.
+
+New hypothesis:
+`TopicsService` should stay the service-facing use-case entrypoint, while
+`services/topics/graph.py` owns topic graph rules,
+`services/topics/read_model.py` owns topic slug lookup through the derived
+index, and `services/topics/workspace.py` owns selected-wiki resolution.
+
+Evidence that forced the change:
+`services/topics/service.py` reached 297 lines and mixed public topic verbs with
+mechanical DAG traversal and workspace request construction. Cosmic Python's
+service-layer guidance keeps service methods as the entrypoint to use cases,
+not as the home for every internal helper those use cases need.
+
+Code or product assumption affected:
+Architecture tests now keep `TopicDefinition`, `SelectWorkspaceRequest`, graph
+helper definitions, read-model helper definitions, and workspace helper
+definitions out of `service.py`.
+
+Follow-up test:
+Future topic changes should add behavior tests around the public topic verb and
+keep graph traversal tests or architecture checks near `services/topics/graph.py`.
+
 ## 2026-07-01 - Index Reads Need Query-Family Modules
 
 Old hypothesis:

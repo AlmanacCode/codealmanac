@@ -2,12 +2,19 @@ from codealmanac.core.errors import ConflictError, NotFoundError, ValidationFail
 from codealmanac.core.slug import to_kebab_case
 from codealmanac.services.index.models import TopicDetail, TopicSummary
 from codealmanac.services.index.service import IndexService
+from codealmanac.services.topics.graph import (
+    reject_cycle,
+    require_topics,
+    validate_not_self_parent,
+    validate_parents_exist,
+)
 from codealmanac.services.topics.models import (
     TopicEdgeMutationResult,
     TopicMutationAction,
     TopicMutationResult,
     TopicRewriteMutationResult,
 )
+from codealmanac.services.topics.read_model import existing_topic_slugs
 from codealmanac.services.topics.requests import (
     CreateTopicRequest,
     DeleteTopicRequest,
@@ -18,16 +25,15 @@ from codealmanac.services.topics.requests import (
     ShowTopicRequest,
     UnlinkTopicRequest,
 )
+from codealmanac.services.topics.workspace import resolve_topic_workspace
 from codealmanac.services.wiki.frontmatter_rewrite import (
     apply_page_topic_rewrites,
     plan_page_topic_rewrites,
 )
 from codealmanac.services.wiki.topics import (
-    TopicDefinition,
     load_topics_file,
     title_for_slug,
 )
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
 from codealmanac.services.workspaces.service import WorkspacesService
 
 
@@ -37,7 +43,7 @@ class TopicsService:
         self.index = index
 
     def list(self, request: ListTopicsRequest) -> tuple[TopicSummary, ...]:
-        workspace = resolve_workspace(
+        workspace = resolve_topic_workspace(
             self.workspaces,
             request.cwd,
             request.wiki,
@@ -45,7 +51,7 @@ class TopicsService:
         return self.index.list_topics(workspace.workspace_id)
 
     def show(self, request: ShowTopicRequest) -> TopicDetail:
-        workspace = resolve_workspace(
+        workspace = resolve_topic_workspace(
             self.workspaces,
             request.cwd,
             request.wiki,
@@ -61,7 +67,7 @@ class TopicsService:
         return topic
 
     def create(self, request: CreateTopicRequest) -> TopicMutationResult:
-        workspace = resolve_workspace(
+        workspace = resolve_topic_workspace(
             self.workspaces,
             request.cwd,
             request.wiki,
@@ -99,7 +105,7 @@ class TopicsService:
         )
 
     def describe(self, request: DescribeTopicRequest) -> TopicMutationResult:
-        workspace = resolve_workspace(
+        workspace = resolve_topic_workspace(
             self.workspaces,
             request.cwd,
             request.wiki,
@@ -122,7 +128,7 @@ class TopicsService:
         )
 
     def link(self, request: LinkTopicRequest) -> TopicEdgeMutationResult:
-        workspace = resolve_workspace(
+        workspace = resolve_topic_workspace(
             self.workspaces,
             request.cwd,
             request.wiki,
@@ -149,7 +155,7 @@ class TopicsService:
         )
 
     def unlink(self, request: UnlinkTopicRequest) -> TopicEdgeMutationResult:
-        workspace = resolve_workspace(
+        workspace = resolve_topic_workspace(
             self.workspaces,
             request.cwd,
             request.wiki,
@@ -170,7 +176,7 @@ class TopicsService:
         )
 
     def rename(self, request: RenameTopicRequest) -> TopicRewriteMutationResult:
-        workspace = resolve_workspace(
+        workspace = resolve_topic_workspace(
             self.workspaces,
             request.cwd,
             request.wiki,
@@ -211,7 +217,7 @@ class TopicsService:
         )
 
     def delete(self, request: DeleteTopicRequest) -> TopicRewriteMutationResult:
-        workspace = resolve_workspace(
+        workspace = resolve_topic_workspace(
             self.workspaces,
             request.cwd,
             request.wiki,
@@ -235,63 +241,3 @@ class TopicsService:
             slug=request.slug,
             pages_updated=pages_updated,
         )
-
-
-def resolve_workspace(workspaces: WorkspacesService, cwd, wiki):
-    if wiki is None:
-        return workspaces.resolve(cwd)
-    return workspaces.select(SelectWorkspaceRequest(selector=wiki, base_path=cwd))
-
-
-def existing_topic_slugs(index: IndexService, workspace_id: str) -> set[str]:
-    return {topic.slug for topic in index.list_topics(workspace_id)}
-
-
-def validate_parents_exist(
-    child: str,
-    parents: tuple[str, ...],
-    existing: set[str],
-) -> None:
-    for parent in parents:
-        validate_not_self_parent(child, parent)
-        if parent not in existing:
-            raise NotFoundError("topic", parent)
-
-
-def require_topics(existing: set[str], *slugs: str) -> None:
-    for slug in slugs:
-        if slug not in existing:
-            raise NotFoundError("topic", slug)
-
-
-def validate_not_self_parent(child: str, parent: str) -> None:
-    if child == parent:
-        raise ValidationFailed("topic cannot be its own parent")
-
-
-def reject_cycle(
-    definitions: tuple[TopicDefinition, ...],
-    child: str,
-    parent: str,
-) -> None:
-    if child in ancestors_of(definitions, parent):
-        raise ConflictError(
-            f"adding {parent} as parent of {child} would create a cycle"
-        )
-
-
-def ancestors_of(definitions: tuple[TopicDefinition, ...], slug: str) -> set[str]:
-    parents_by_child = {
-        definition.slug: set(definition.parents) for definition in definitions
-    }
-    ancestors: set[str] = set()
-    frontier = list(parents_by_child.get(slug, set()))
-    depth = 0
-    while frontier and depth < 32:
-        depth += 1
-        parent = frontier.pop()
-        if parent in ancestors:
-            continue
-        ancestors.add(parent)
-        frontier.extend(parents_by_child.get(parent, set()))
-    return ancestors

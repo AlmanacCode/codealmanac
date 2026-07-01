@@ -6,6 +6,18 @@
   proof: keep applying Cosmic Python, `MANUAL.md`, the live agreement, and
   useful `../almanac` patterns until remaining cleanup is genuinely
   diminishing returns.
+- Added slice-115 topic-service boundary plan after rereading
+  `.almanac/README.md`, `MANUAL.md`, the live agreement, and Cosmic Python
+  chapter 4. The service-layer lesson applied here is that `TopicsService`
+  should stay the use-case entrypoint while graph mechanics and workspace
+  selection get named homes.
+- Split topic internals into `services/topics/graph.py` for existence,
+  self-parent, and DAG-cycle rules, `services/topics/read_model.py` for derived
+  index topic-slug lookup, and `services/topics/workspace.py` for current-repo
+  vs explicit `--wiki` resolution.
+- Added an architecture test to keep `TopicDefinition`, `SelectWorkspaceRequest`,
+  graph helper definitions, read-model helper definitions, and workspace helper
+  definitions out of `services/topics/service.py`.
 - Added slice-73 page-run workflow plan after comparing current
   `ingest`/`garden` duplication with `../almanac`'s page-run workflow shape.
 - Extracted `workflows/page_run/` so shared page-writing lifecycle execution

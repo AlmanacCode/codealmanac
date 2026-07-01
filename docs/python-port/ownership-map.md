@@ -29,6 +29,7 @@ that root instead of constructing stores or adapters themselves.
 | `workspaces` | repo root detection, configurable Almanac root, registry, nearest-root discovery, path containment, local wiki selection, explicit registry cleanup | `init`, `list`, current-repo queries, `--wiki` lookup |
 | `wiki` | page files, frontmatter, topics, wikilinks, page writes, health inputs | `init`, `show`, page parsing for index |
 | `index` | SQLite derived read model, projection refresh/write facade, read-only query views, FTS, mentions, backlinks, health projections | `search`, `show --links`, `health` |
+| `topics` | topic use cases, topic DAG validation, topic workspace selection | `topics`, `topics show`, `topics create/describe/link/unlink/rename/delete` |
 | `sources` | source observations, source refs, address resolution, fingerprints, local source state, source runtime snapshots, transcript discovery ports and typed transcript candidates | `SourceAddress`/`SourceRef`/`SourceBrief`/`SourceRuntime`, `SourceRuntimeAdapter`, `TranscriptDiscoveryAdapter`, `TranscriptCandidate`, ingest and sync inputs |
 | `runs` | run ledger, events, outputs, lifecycle state transitions, persisted harness transcript identity | `jobs` read surface, lifecycle workflows, future sync exclusion and reconciliation |
 | `harnesses` | normalized Codex/Claude run contracts, provider transcript refs, provider-neutral harness events, and ports | `HarnessKind`/`RunHarnessRequest`/`HarnessRunResult`/`HarnessTranscriptRef`/`HarnessEvent`/`HarnessAdapter`, later `build`, `ingest`, `garden` |
@@ -135,6 +136,13 @@ command edge. There is no public `config` command in v1.
 install/runtime/manual-package readiness checks, `wiki.py` owns selected-wiki
 registry/index/manual/health readiness checks, and `messages.py` owns shared
 doctor message formatting.
+
+`services/topics/service.py` is the use-case facade for topic commands.
+`services/topics/graph.py` owns topic existence checks, self-parent validation,
+and cycle traversal over `TopicDefinition` values.
+`services/topics/read_model.py` owns topic slug lookup through the derived
+index. `services/topics/workspace.py` owns current-repo vs explicit-`--wiki`
+selection through `WorkspacesService`.
 
 `services/workspaces/roots.py` owns repo-local Almanac root validation and
 nearest-root discovery. `DEFAULT_ALMANAC_ROOT` is `almanac/`. The registry

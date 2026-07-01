@@ -256,6 +256,46 @@ def test_workspace_service_keeps_identity_selection_and_status_boundaries():
     assert "from codealmanac.services.workspaces.service import" not in store_text
 
 
+def test_topics_service_keeps_graph_and_workspace_boundaries():
+    topics_root = SRC_ROOT / "services/topics"
+    service_text = (topics_root / "service.py").read_text(encoding="utf-8")
+    graph_text = (topics_root / "graph.py").read_text(encoding="utf-8")
+    read_model_text = (topics_root / "read_model.py").read_text(encoding="utf-8")
+    workspace_text = (topics_root / "workspace.py").read_text(encoding="utf-8")
+    forbidden_service_fragments = (
+        "TopicDefinition",
+        "SelectWorkspaceRequest",
+        "def existing_topic_slugs(",
+        "def validate_parents_exist(",
+        "def require_topics(",
+        "def validate_not_self_parent(",
+        "def reject_cycle(",
+        "def ancestors_of(",
+        "def resolve_workspace(",
+        "def resolve_topic_workspace(",
+    )
+
+    assert {"graph.py", "read_model.py", "workspace.py"} <= {
+        path.name for path in topics_root.glob("*.py")
+    }
+    assert len(service_text.splitlines()) <= 250
+    assert [
+        fragment
+        for fragment in forbidden_service_fragments
+        if fragment in service_text
+    ] == []
+    assert "def reject_cycle(" in graph_text
+    assert "def ancestors_of(" in graph_text
+    assert "depth < 32" in graph_text
+    assert "codealmanac.services.index" not in graph_text
+    assert "codealmanac.services.workspaces" not in graph_text
+    assert "def existing_topic_slugs(" in read_model_text
+    assert "IndexService" in read_model_text
+    assert "def resolve_topic_workspace(" in workspace_text
+    assert "SelectWorkspaceRequest(" in workspace_text
+    assert "codealmanac.services.index" not in workspace_text
+
+
 def test_harness_contract_models_stay_split_by_meaning():
     harness_root = SRC_ROOT / "services/harnesses"
     models_text = (harness_root / "models.py").read_text(encoding="utf-8")
