@@ -196,6 +196,11 @@ It is the constraint document for future agents.
   queueing, worker-spawn failure handling, pending/failed/absorbed ledger
   writes, and started summary rows. Do not move lifecycle execution effects
   back into `service.py`.
+- 2026-07-01: Diagnostics is split by check family. `DiagnosticsService`
+  remains the service-facing `doctor` facade. `diagnostics/install.py` owns
+  install/runtime/manual-package checks, `diagnostics/wiki.py` owns selected
+  wiki readiness checks, and `diagnostics/messages.py` owns shared doctor
+  message formatting. Do not move `doctor` mechanics back into `service.py`.
 - 2026-06-29: Source input has four local layers:
   `SourceAddress -> SourceRef -> SourceBrief -> SourceRuntime`. Git source
   runtime uses the Git CLI through a source-runtime adapter. GitHub PR/issue

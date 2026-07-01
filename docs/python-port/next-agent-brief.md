@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 113 harness contract boundaries.
+- Latest implementation slice: slice 114 diagnostics boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -210,6 +210,12 @@ Updated: 2026-07-01
   behavior prompt, and public-contract tests parse `.github/workflows/*.yml`
   with `ruamel-yaml` before asserting the CI/package-check Python gate
   commands.
+- Slice 114 keeps `doctor` behavior unchanged while splitting diagnostics by
+  check family. `services/diagnostics/service.py` is now a small facade over
+  `install_checks(...)` and `wiki_checks(...)`; `install.py` owns
+  install/runtime/manual-package readiness, `wiki.py` owns selected-wiki
+  registry/index/manual/health readiness, and `messages.py` owns shared doctor
+  formatting. Architecture tests keep `service.py` facade-only.
 - Slice 95 splits deterministic sync policy out of `SyncWorkflow`.
   `workflows/sync/service.py` is now a 308-line orchestration surface that
   discovers candidates, scopes wikis, loads run records and ledgers, starts or

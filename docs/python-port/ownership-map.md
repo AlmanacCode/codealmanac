@@ -131,6 +131,11 @@ precedence order: selected project `<almanac-root>/config.toml`, then user
 config, then model defaults. CLI flags remain the final override at the
 command edge. There is no public `config` command in v1.
 
+`services/diagnostics/service.py` is the `doctor` facade. `install.py` owns
+install/runtime/manual-package readiness checks, `wiki.py` owns selected-wiki
+registry/index/manual/health readiness checks, and `messages.py` owns shared
+doctor message formatting.
+
 `services/workspaces/roots.py` owns repo-local Almanac root validation and
 nearest-root discovery. `DEFAULT_ALMANAC_ROOT` is `almanac/`. The registry
 stores each workspace's repo-relative `almanac_root`; downstream services use

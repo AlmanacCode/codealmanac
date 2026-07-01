@@ -2752,3 +2752,34 @@ extend `results.py`.
 Follow-up test:
 Architecture tests should keep `models.py` facade-only and keep the focused
 harness contract modules below their size bounds.
+
+## 2026-07-01 - Doctor Checks Are Check Families, Not One Service Method
+
+Old hypothesis:
+`DiagnosticsService` could own install checks, wiki checks, manual checks,
+index summaries, health summaries, workspace selection, registry checks, and
+message formatting because all of those facts appear in one `doctor` report.
+
+New hypothesis:
+`DiagnosticsService` should stay the service-facing `doctor` facade. Install
+readiness belongs in `diagnostics/install.py`, selected-wiki readiness belongs
+in `diagnostics/wiki.py`, and shared doctor message formatting belongs in
+`diagnostics/messages.py`.
+
+Evidence that forced the change:
+After slice 113, `services/diagnostics/service.py` was the third-largest
+production module at 283 lines. It mixed package/runtime checks with workspace
+selection, registry status, index rebuild handling, workspace manual drift,
+wiki health, pluralization, and error-line formatting. The command is a public
+readiness surface, so adding future doctor checks would have kept growing one
+service file.
+
+Code or product assumption affected:
+Slice 114 keeps public `codealmanac doctor` output unchanged. The split only
+changes ownership: install checks do not know wiki status, wiki checks do not
+know package inventory, and the service remains the single public use-case
+entrypoint.
+
+Follow-up test:
+Future doctor expansion should add a focused check-family module or extend the
+existing family module, while architecture tests keep `service.py` facade-only.

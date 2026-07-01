@@ -291,6 +291,56 @@ def test_harness_contract_models_stay_split_by_meaning():
     assert "def terminal_harness_event(" in results_text
 
 
+def test_diagnostics_service_stays_facade():
+    diagnostics_root = SRC_ROOT / "services/diagnostics"
+    service_text = (diagnostics_root / "service.py").read_text(encoding="utf-8")
+    install_text = (diagnostics_root / "install.py").read_text(encoding="utf-8")
+    wiki_text = (diagnostics_root / "wiki.py").read_text(encoding="utf-8")
+    messages_text = (diagnostics_root / "messages.py").read_text(encoding="utf-8")
+
+    assert {
+        "install.py",
+        "messages.py",
+        "service.py",
+        "wiki.py",
+    } <= {path.name for path in diagnostics_root.glob("*.py")}
+    assert len(service_text.splitlines()) <= 80
+    assert "install_checks(" in service_text
+    assert "wiki_checks(" in service_text
+    assert [
+        fragment
+        for fragment in (
+            "CodeAlmanacError",
+            "NotFoundError",
+            "WorkspaceRegistryStatus",
+            "SelectWorkspaceRequest",
+            "HealthReport",
+            "IndexSummary",
+            "def _install",
+            "def _wiki",
+            "def _manual",
+            "def _select",
+            "def _index",
+            "def _health",
+            "def registered_check(",
+            "def health_problem_count(",
+            "def index_message(",
+            "def first_line(",
+        )
+        if fragment in service_text
+    ] == []
+
+    assert "def install_checks(" in install_text
+    assert "manual.inventory()" in install_text
+    assert "workspace_status(" not in install_text
+    assert "def wiki_checks(" in wiki_text
+    assert "workspace_status(" in wiki_text
+    assert "health_report(" in wiki_text
+    assert "manual.inventory()" not in wiki_text
+    assert "def index_message(" in messages_text
+    assert "def health_problem_count(" in messages_text
+
+
 def test_cli_main_stays_as_thin_entrypoint():
     main = SRC_ROOT / "cli/main.py"
     text = main.read_text(encoding="utf-8")

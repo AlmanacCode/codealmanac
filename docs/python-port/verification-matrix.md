@@ -1252,3 +1252,14 @@ means the goal remains active.
 | Full tests | `uv run pytest` | passed; 335 tests |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 114 Diagnostics Boundaries
+
+| Gate | Command | 2026-07-01 result |
+|---|---|---|
+| Focused diagnostics/CLI/architecture tests | `uv run pytest tests/test_diagnostics.py tests/test_cli.py::test_cli_doctor_json_reports_no_wiki tests/test_cli.py::test_cli_doctor_reports_manual_drift tests/test_architecture.py::test_diagnostics_service_stays_facade -q` | passed; 8 tests |
+| Focused lint | `uv run ruff check src/codealmanac/services/diagnostics tests/test_diagnostics.py tests/test_cli.py tests/test_architecture.py` | passed |
+| Isolated CLI doctor dogfood | temp `HOME` and repo; `codealmanac doctor --json`; `codealmanac init <repo> --name doctor-dogfood`; `codealmanac doctor --wiki doctor-dogfood --json` | passed; no-wiki reported `wiki.none`, initialized wiki reported registered/index/manual/health OK |
+| Full tests | `uv run pytest` | passed; 336 tests |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |

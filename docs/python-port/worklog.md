@@ -1232,3 +1232,11 @@ attribution models, `events.py` owns normalized transcript event payloads, and
 `results.py` owns readiness, transcript refs, run results, and terminal helper
 events. Focused harness service, ingest event recording, run event persistence,
 Codex app-server, Claude SDK, architecture, and lint checks passed.
+Slice 114 keeps `doctor` behavior unchanged while splitting diagnostics by
+check family. `DiagnosticsService` is now a 49-line facade over
+`install_checks(...)` and `wiki_checks(...)`. `install.py` owns
+install/runtime/manual-package checks, `wiki.py` owns selected-wiki registry,
+index, workspace manual, and health checks, and `messages.py` owns shared
+doctor message formatting. Focused diagnostics/CLI/architecture tests and lint
+passed, and isolated CLI dogfood covered no-wiki plus initialized-wiki
+`doctor --json`.
