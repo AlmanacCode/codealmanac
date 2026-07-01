@@ -1241,3 +1241,14 @@ means the goal remains active.
 | Full tests | `uv run pytest` | passed; 334 tests |
 | Full lint | `uv run ruff check .` | passed |
 | Diff hygiene | `git diff --check` | passed |
+
+## Gates For Slice 113 Harness Contract Boundaries
+
+| Gate | Command | 2026-07-01 result |
+|---|---|---|
+| Focused harness/event/architecture tests | `uv run pytest tests/test_harnesses_service.py tests/test_ingest_workflow.py::test_ingest_workflow_records_normalized_harness_events tests/test_runs_service.py::test_runs_service_records_job_and_events tests/test_codex_app_server_adapter.py tests/test_claude_adapter.py tests/test_architecture.py::test_harness_contract_models_stay_split_by_meaning -q` | passed; 22 tests |
+| Focused lint | `uv run ruff check src/codealmanac/services/harnesses tests/test_harnesses_service.py tests/test_ingest_workflow.py tests/test_runs_service.py tests/test_codex_app_server_adapter.py tests/test_claude_adapter.py tests/test_architecture.py` | passed |
+| Service-level harness contract dogfood | `uv run python - <<'PY' ...` with isolated registry, build initialization, new-module `HarnessEvent`, facade `HarnessEvent.model_validate(...)`, run-log persistence, and log readback | passed |
+| Full tests | `uv run pytest` | passed; 335 tests |
+| Full lint | `uv run ruff check .` | passed |
+| Diff hygiene | `git diff --check` | passed |

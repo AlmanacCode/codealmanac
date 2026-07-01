@@ -256,6 +256,41 @@ def test_workspace_service_keeps_identity_selection_and_status_boundaries():
     assert "from codealmanac.services.workspaces.service import" not in store_text
 
 
+def test_harness_contract_models_stay_split_by_meaning():
+    harness_root = SRC_ROOT / "services/harnesses"
+    models_text = (harness_root / "models.py").read_text(encoding="utf-8")
+    kinds_text = (harness_root / "kinds.py").read_text(encoding="utf-8")
+    actors_text = (harness_root / "actors.py").read_text(encoding="utf-8")
+    events_text = (harness_root / "events.py").read_text(encoding="utf-8")
+    results_text = (harness_root / "results.py").read_text(encoding="utf-8")
+
+    assert {
+        "actors.py",
+        "events.py",
+        "kinds.py",
+        "models.py",
+        "results.py",
+    } <= {path.name for path in harness_root.glob("*.py")}
+    assert len(models_text.splitlines()) <= 50
+    assert len(actors_text.splitlines()) <= 80
+    assert len(events_text.splitlines()) <= 220
+    assert len(results_text.splitlines()) <= 100
+    assert "class " not in models_text
+    assert "def " not in models_text
+    assert "field_validator" not in models_text
+    assert "JsonValue" not in models_text
+
+    assert "class HarnessKind" in kinds_text
+    assert "class HarnessRunStatus" in kinds_text
+    assert "class HarnessRunActor" in actors_text
+    assert "class HarnessActorRole" in actors_text
+    assert "class HarnessEvent" in events_text
+    assert "class HarnessUsage" in events_text
+    assert "class HarnessFailure" in events_text
+    assert "class HarnessRunResult" in results_text
+    assert "def terminal_harness_event(" in results_text
+
+
 def test_cli_main_stays_as_thin_entrypoint():
     main = SRC_ROOT / "cli/main.py"
     text = main.read_text(encoding="utf-8")

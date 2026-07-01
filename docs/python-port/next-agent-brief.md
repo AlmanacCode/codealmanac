@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 112 workspace service boundaries.
+- Latest implementation slice: slice 113 harness contract boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -116,6 +116,13 @@ Updated: 2026-07-01
   `RunLogEvent` stores the readable `kind`/`message` plus optional nested
   `harness_event` JSON, so text `jobs logs` remains stable while JSON logs can
   serve as the inspectable transcript surface.
+- Slice 113 splits the service-owned harness contract by meaning without
+  changing behavior. `services/harnesses/models.py` is now only a small
+  import-compatible facade; `kinds.py` owns provider/status enums, `actors.py`
+  owns root/helper attribution, `events.py` owns normalized event payloads, and
+  `results.py` owns readiness, transcript refs, run results, and terminal
+  helper events. Architecture tests keep the facade small and the contract
+  modules bounded.
 - Slice 83 makes the default Codex lifecycle harness use
   `codex app-server --listen stdio://` instead of `codex exec`. The adapter
   isolates MCP config with `mcp_servers={}`, creates ephemeral threads, declines

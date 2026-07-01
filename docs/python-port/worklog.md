@@ -1225,3 +1225,10 @@ policy, and `store.py` now imports identity directly instead of importing back
 from `service.py`. Focused workspace/build/read-model/architecture tests and
 lint passed, and service-level dogfood covered configured-root init,
 relative-path selection, path validation, missing-wiki drop, and explicit drop.
+Slice 113 keeps harness behavior unchanged while splitting the service-owned
+harness contract by meaning. `models.py` is now a 44-line import-compatible
+facade. `kinds.py` owns provider/status enums, `actors.py` owns root/helper
+attribution models, `events.py` owns normalized transcript event payloads, and
+`results.py` owns readiness, transcript refs, run results, and terminal helper
+events. Focused harness service, ingest event recording, run event persistence,
+Codex app-server, Claude SDK, architecture, and lint checks passed.

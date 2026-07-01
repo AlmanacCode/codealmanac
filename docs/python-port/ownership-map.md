@@ -147,6 +147,11 @@ Harness adapters translate provider output into `HarnessEvent` values before
 workflows persist anything to run logs. Raw provider transcript files are not a
 workflow contract; they are optional provider evidence for exclusion and
 debugging.
+`services/harnesses/models.py` is a facade for the service-owned harness
+contracts. `kinds.py` owns provider/status enums, `actors.py` owns root/helper
+attribution models, `events.py` owns normalized event payloads, and
+`results.py` owns readiness, transcript references, run results, and terminal
+event helpers.
 Codex app-server event normalization is split by provider-edge reason to
 change: `events.py` dispatches notifications, `state.py` stores mutable run
 state, `actors.py` assigns root/helper attribution, `item_events.py` maps tool

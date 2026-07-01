@@ -136,6 +136,12 @@ It is the constraint document for future agents.
   provider session, failure metadata, agent trace, and raw JSON fields, and
   `RunLogEvent` persists an optional nested `harness_event` payload beside the
   readable log row.
+- 2026-07-01: The service-owned harness contract is split by product meaning.
+  `kinds.py` owns provider/status enums, `actors.py` owns root/helper
+  attribution, `events.py` owns normalized transcript event payloads, and
+  `results.py` owns readiness, transcript refs, run results, and terminal
+  helper events. `models.py` is only an import-compatible facade; do not regrow
+  the old mixed model module.
 - 2026-07-01: The default Python Codex harness now uses
   `codex app-server --listen stdio://`, not `codex exec`. The adapter keeps
   readiness probing at `codex login status`, but lifecycle execution goes

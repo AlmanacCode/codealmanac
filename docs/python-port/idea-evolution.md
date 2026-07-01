@@ -2720,3 +2720,35 @@ Future workspace changes should land in the module that owns the mechanic:
 identity in `identity.py`, selector/path rules in `selection.py`, marker/status
 rules in `status.py`, root discovery in `roots.py`, and use-case orchestration
 in `service.py`.
+
+## 2026-07-01 - Harness Models Are A Contract Family, Not One Model File
+
+Old hypothesis:
+`services/harnesses/models.py` could own all normalized harness data because
+provider adapters, workflows, runs, and the viewer all needed the same public
+objects.
+
+New hypothesis:
+The service-owned harness contract should be split by product meaning, with
+`models.py` kept only as a compatibility facade. Provider/status enums belong
+in `kinds.py`, root/helper attribution belongs in `actors.py`, normalized
+transcript event payloads belong in `events.py`, and readiness/transcript/result
+objects plus terminal helper events belong in `results.py`.
+
+Evidence that forced the change:
+After slice 112, `services/harnesses/models.py` was the largest production file
+at 302 lines. It mixed provider identity, run status, actor confidence, tool
+display, usage accounting, failure metadata, agent trace payloads, event
+records, run results, readiness, transcript refs, and terminal-message helpers.
+The live agreement now treats normalized harness events as the inspectable
+transcript surface, so this contract needs durable names and regression guards.
+
+Code or product assumption affected:
+Slice 113 keeps the old `services.harnesses.models` import path working for
+callers, but the owning definitions now live in focused modules. Future provider
+event fields should extend `events.py`; future result/readiness fields should
+extend `results.py`.
+
+Follow-up test:
+Architecture tests should keep `models.py` facade-only and keep the focused
+harness contract modules below their size bounds.
