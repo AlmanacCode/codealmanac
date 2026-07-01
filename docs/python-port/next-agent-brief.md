@@ -10,7 +10,7 @@ Updated: 2026-07-01
   useful `../almanac` patterns until further cleanup is genuinely diminishing
   returns.
 - Branch: `dev`.
-- Latest implementation slice: slice 130 setup instruction boundaries.
+- Latest implementation slice: slice 131 setup service boundaries.
 - Live contract: `docs/python-port-live-agreement.md`.
 - Public release gate: `docs/python-port/public-release-readiness.md`.
 - Public beta audit: `docs/python-port/public-beta-gate-audit.md`.
@@ -103,6 +103,11 @@ Updated: 2026-07-01
   Codex AGENTS block writes/removal; `claude.py` owns Claude guide/import
   files; `managed_blocks.py` owns marker text transforms; and `guide.py` owns
   packaged guide loading.
+- Slice 131 splits setup service orchestration from planning and automation
+  policy. `services/setup/service.py` remains the `SetupService` facade;
+  `planning.py` owns `SetupPlan`, automation recommendation rows, and
+  next-step commands; and `automation.py` owns setup automation selection plus
+  `InstallAutomationRequest` conversion.
 - Slice 99 makes page source target parsing tolerant at the frontmatter
   boundary: type-specific fields such as `path:` and `url:` remain preferred,
   and generic `target:` is a fallback that normalizes into

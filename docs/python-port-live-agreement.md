@@ -378,6 +378,14 @@ It is the constraint document for future agents.
   `guide.py` owns package resource loading; and `text_files.py` owns narrow
   UTF-8 file reads. Do not move provider marker surgery, package resource
   reads, or target-specific file writes back into `instructions.py`.
+- 2026-07-01: Setup service orchestration is split from setup planning and
+  automation-policy helpers. `services/setup/service.py` remains the
+  `SetupService` facade that calls instruction and automation ports;
+  `planning.py` owns `SetupPlan`, automation recommendations, and next-step
+  command construction; and `automation.py` owns setup automation selection and
+  `InstallAutomationRequest` conversion. Do not move duration formatting,
+  automation recommendation construction, or setup automation request conversion
+  back into `service.py`.
 - 2026-07-01: The archive's `review` command family is not required for now.
   The archive's `migrate` command family is not needed unless a concrete
   migration path is reopened.
