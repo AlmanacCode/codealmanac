@@ -20,4 +20,7 @@ Status: active.
 
 - Which Python CLI auto-update library should be used?
 - Which compatibility commands remain hidden aliases during the CLI migration?
-- Which shared rate-limit backend should cloud use?
+
+## Future Work
+
+- Which shared rate-limit backend should cloud use before broad public scale?

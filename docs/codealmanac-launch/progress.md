@@ -8,7 +8,8 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 49 token-storage hardening local verification.
+Sent: 2026-07-02 after Slice 51 launch-state reconciliation and route-guard
+verification.
 
 Route:
 
@@ -19,19 +20,19 @@ doppler run --project almanac --config dev -- \
   --binding rohan-almanac-main "..."
 ```
 
-Note: Slice 49 was not deployed immediately. Deployment is intentionally
-batched with the next infrastructure/deploy gate so database migration and
-backend rollout happen together.
+Note: rate limits were postponed. PyPI publish is still blocked on a package
+token or trusted publishing setup; the built `0.1.0` artifacts were tested but
+PyPI still shows `0.1.0.dev0`.
 
 ## Percentages
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 95% | 95% | Slice 49 is hosted token-storage work; local worker behavior is unchanged. |
-| CodeAlmanac CLI/public UX | 91% | 91% | No CLI change after Slice 45 retry. |
-| CodeAlmanac-hosted backend/auth/API | 95% | 94% | GitHub provider tokens are encrypted at rest with Fernet/MultiFernet, store/service decrypt failures are mapped, and migration guards prevent plaintext rename into ciphertext. |
-| Hosted frontend/onboarding | 60% | 60% | No frontend behavior change after Slice 47 setup summary. |
-| Infra/deploy rename | 90% | 89% | `GITHUB_TOKEN_ENCRYPTION_KEYS` is set in Doppler `codealmanac/prd`; migration/deploy intentionally deferred for a batched rollout. |
+| CodeAlmanac backend/local | 95% | 95% | Local engine and control surfaces are unchanged in Slice 51. |
+| CodeAlmanac CLI/public UX | 93% | 91% | `0.1.0` Python artifacts were built and locally install-tested; PyPI publish is still blocked on token/trusted publishing. |
+| CodeAlmanac-hosted backend/auth/API | 96% | 95% | WorkOS/AuthKit boundary, GitHub provider-token encryption, and callback hardening are implemented; rate limits are postponed. |
+| Hosted frontend/onboarding | 72% | 60% | `/setup` is the cloud setup hub, login is GitHub-only, and route guards cover setup/login copy. Deeper branch/delivery/capture consent UX remains. |
+| Infra/deploy rename | 94% | 90% | Render/Vercel are renamed/deployed for current hosted work; PyPI publish and final provider cleanup remain. |
 
 ## Update Rule
 

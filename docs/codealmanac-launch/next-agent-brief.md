@@ -8,129 +8,55 @@ Updated: 2026-07-02.
 Build the launch in substantial slices. Each slice needs a plan, code, focused
 verification, launch-folder updates, commit, push, and RelayForge update.
 
-## Last Completed Slice
+Cloud remains the primary product path. Local remains a free/dev surface with a
+parallel conceptual model where it is useful, but not a reason to muddy the
+cloud setup flow.
 
-Slice 49 hardened hosted GitHub provider-token storage.
+## Last Completed Work
 
-Implemented:
+Slice 50 added the browser-owned cloud setup entry:
 
-- hosted worktree at
-  `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
-- hosted branch `codex/workos-authkit-api-foundation`
-- `users.oauth_token` / `users.refresh_token` became
-  `oauth_token_ciphertext` / `refresh_token_ciphertext`
-- `backend/src/almanac/services/identity/users/secrets.py` defines the
-  Fernet/MultiFernet token-cipher boundary
-- `UsersStore` encrypts provider tokens on write and decrypts them when
-  hydrating the domain `User`
-- `backend/src/almanac/app.py` wires the concrete cipher from
-  `Settings.github_token_encryption_keys`
-- WorkOS issuer normalization now uses the documented slash form
-  `https://api.workos.com/`
-- Supabase migrations invalidate/drop legacy plaintext token columns instead
-  of renaming them into ciphertext columns
-- Modal Doppler hydration and `frontend/package.json` backend smoke both know
-  `GITHUB_TOKEN_ENCRYPTION_KEYS`
-- production Doppler `codealmanac/prd` has `GITHUB_TOKEN_ENCRYPTION_KEYS`
-  created; the key value was not printed
-- hosted commit `0f9850c refactor: encrypt github provider tokens` is pushed to
-  `origin/codex/workos-authkit-api-foundation`
-- hosted `main` was not fast-forwarded and no deploy was triggered for Slice 49
+- hosted `/setup` is the cloud setup hub
+- `/setup` requires a WorkOS/AuthKit browser session
+- missing GitHub App installation shows an install CTA
+- connected accounts show GitHub repository access and links into repository
+  setup surfaces
+- the local machine command is Python/PyPI-shaped:
+  `uv tool install codealmanac` then `codealmanac setup`
 
-Verified:
+Slice 51 reconciles launch state and guardrails:
 
-```text
-cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence/backend
-uv run pytest tests/test_capture_upload_api_contract.py tests/test_hosted_conversation_sync_contract.py tests/test_identity_auth_contract.py tests/test_store_timestamps_contract.py tests/test_architecture_contract.py -q
-uv run ruff check .
-uv run pytest -q
-uv run python -m compileall src modal_app -q
-uv run ruff format --check <touched Python files>
+- launch login is GitHub-only
+- email/password, magic link, and email verification are WorkOS/AuthKit
+  misconfiguration paths, not alternate launch flows
+- hosted route tests guard login and `/setup` against email-auth and npm/npx
+  regressions
+- rate limits are explicitly postponed; they remain future abuse-control work,
+  not a current launch blocker
 
-cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence/frontend
-npm run test:routes
-npm run lint
-npm run backend:smoke
-```
+## Current Repo State
 
-Counts for Slice 49: focused backend tests `99 passed, 1 warning`; full
-backend tests `361 passed, 1 warning`; frontend routes `27 passed`; focused
-Modal hydration test `1 passed`; backend smoke succeeded. Full repo
-`uv run ruff format --check .` still reports a pre-existing unrelated format
-drift in `src/almanac/services/updates/service.py`; touched Python files pass
-format check.
+CodeAlmanac:
 
-## Next Pressure Test
+- repo: `/Users/rohan/Desktop/Projects/codealmanac`
+- branch: `dev`
+- current Slice 51 docs commit: the commit containing this brief
+- previous `origin/dev` before Slice 51 push: `ae4f4c78`
+- `origin/main`: `6d69c53b`
+- package version in `pyproject.toml`: `0.1.0`
+- PyPI live version checked on 2026-07-02: `0.1.0.dev0`
 
-Choose a coherent next batch before any deploy. Good candidates are real
-authenticated browser verification, provider cleanup, Supabase migration
-application plus Render/Vercel deployment, or setup CTA refinement.
+Hosted:
 
-Pressure points:
-
-- Do not apply the Slice 49 Supabase migration without deploying the backend
-  that understands `oauth_token_ciphertext`; migration and backend rollout
-  should land in the same batched deploy gate.
-- Rohan explicitly asked not to deploy too frequently. Deploy after a larger
-  verified infrastructure/functionality batch, not after every small fix.
-- new steering rule: concept hierarchy and dependency direction are part of
-  correctness; do not flatten browser sessions, API bearer tokens, CLI tokens,
-  and capture credentials into one vague auth bucket
-- the repository setup summary is live, but it has not been exercised through a
-  real signed-in production browser session in this slice
-- setup CTAs may need one more pass so browser setup and CLI setup do not feel
-  like competing paths
-- old inline-message conversation routes should remain compatibility-only
-- old Modal app `usealmanac-updates` is still deployed; retire it only in an
-  explicit provider cleanup step
-- dirty `/Users/rohan/Desktop/Projects/usealmanac` still exists and should not
-  be used for launch work until cleaned or renamed
-
-## Known Repo State
-
-The CodeAlmanac branch is `dev`. Slice 31 is pushed to `origin/dev` at
-`f20e928d feat: expose maintenance package api`; Slice 36 is pushed to
-origin at `8ca50e0f feat: mirror cloud repository triggers in CLI`; Slice 37
-is pushed to origin at `bc177cf2 feat: inspect cloud runs from CLI`; Slice 38
-is pushed to origin at `117b36db feat: open cloud pages from CLI`; Slice 39
-is pushed to origin at `0e3879e1 feat: start cloud runs from CLI`; Slice 44 is
-pushed to origin at `a7cbc7d5 feat: cancel cloud runs from CLI`; the latest
-cloud-run retry commit is `af7953c6 feat: retry cloud runs from CLI`.
-
-The hosted auth branch is
-`/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
-on `codex/workos-authkit-api-foundation`. Slice 27 is pushed to origin at
-`c91e162 feat: add v1 CLI auth routes`; Slice 28 is pushed to origin at
-`36211ba feat: add capture credential API`; Slice 29 is pushed to origin at
-`5644a65 feat: add capture transcript upload`; Slice 30 is pushed to origin at
-`191d8d8 feat: materialize capture source refs`; Slice 31 is pushed to origin
-at `51c2cb2 feat: call codealmanac maintenance api`; Slice 32 is pushed to
-origin at `12cfc08 feat: persist hosted run events`; Slice 33 is pushed to
-origin at `9098b65 feat: record stale delivery outcomes`; Slice 34 is pushed
-to origin at `4e4c94b feat: expose run event timeline`; Slice 35 is pushed to
-origin at `1b00b63 feat: add repository trigger policies`; Slice 36 is pushed
-to origin at `fbf8b5a feat: add CLI repository trigger routes`; Slice 37 is
-pushed to origin at `168f9b2 feat: add CLI run read routes`; Slice 38 is
-pushed to origin at `ed7e765 feat: add cloud route handoff`; Slice 39 is
-pushed to origin at `14caf8b feat: start cloud runs from CLI`; Slice 40 is
-pushed to origin at `8795849 feat: emit terminal run events`; Slice 41 is
-pushed to origin at `a781e51 chore: align hosted product identity`; Slice 42 is
-pushed to origin at `97564f7 feat: publish terminal run checks`; Slice 43 is
-pushed to origin at `eafe60c feat: align cloud setup copy`; Slice 44 is pushed
-to origin at `0e17a34 feat: cancel cloud update runs`; Slice 45 is pushed to
-origin at `b3535cd feat: retry cloud update runs`; Slice 46 is pushed to
-origin at `7b35cc9 feat: add dashboard run actions`; Slice 47 is pushed to
-origin at `2102d38 feat: add repository setup summary`; Slice 48 is pushed to
-origin at `c68d448 refactor: align workos auth boundary`; Slice 49 is pushed
-to origin at `0f9850c refactor: encrypt github provider tokens`. Hosted `main`
-is still fast-forwarded only to `c68d448`, Render service
-`srv-d8g8nb37uimc739vnnsg` is live on deploy
-`dep-d93a2c6k1jcs73ab8qg0`, and Vercel production is live at
-`https://www.codealmanac.com` from deployment
-`https://codealmanac-hosted-qejqttlne-thealmanac.vercel.app`.
-
-CodeAlmanac Slice 45 is pushed to `origin/dev` at
-`af7953c6 feat: retry cloud runs from CLI`.
+- repo: `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
+- branch: `codex/workos-authkit-api-foundation`
+- current Slice 51 commit: `8052be0`
+- previous `origin/codex/workos-authkit-api-foundation` before Slice 51 push:
+  `0683c78`
+- `origin/main`: `a8ebe9e`
+- production frontend: `https://www.codealmanac.com`
+- hosted main has the setup/auth hardening through `a8ebe9e`; Slice 51's hosted
+  change is test-only
 
 The local wiki command currently fails on this checkout with:
 
@@ -140,3 +66,41 @@ almanac: table pages has no column named archived_at
 
 Use source files and launch docs as the authority until the wiki index health is
 repaired.
+
+## Verified Recently
+
+- Hosted route tests passed after the GitHub-only login guard:
+  `npm run test:routes` -> `27 passed`.
+- Browser-harness verified `https://www.codealmanac.com/login` renders only
+  `Continue with GitHub` and no email/password inputs.
+- Vercel production auth logs checked after latest deploy had no recent
+  error-level entries; an older `/auth/callback` error from
+  `2026-07-02T18:56:34Z` was from a pre-hardening deployment.
+- CodeAlmanac `0.1.0` artifacts were built and locally install-tested earlier,
+  but PyPI publish failed because no PyPI token/trusted publishing credential was
+  available.
+
+## Next Pressure Tests
+
+- Publish CodeAlmanac `0.1.0` to PyPI once a PyPI token or trusted publishing is
+  available, then test `uv tool install codealmanac` from PyPI.
+- Do a real signed-in production browser pass through:
+  `/login` -> GitHub AuthKit -> `/setup` -> GitHub App install/config ->
+  repository settings.
+- Keep setup simple. The user should not see email verification, email/password,
+  or generic SSO as part of launch.
+- Do not implement rate limits now unless Rohan explicitly reopens that work.
+- Do not deploy every small guardrail. Batch deploys after real functionality or
+  infrastructure changes.
+- If WorkOS/AuthKit Hosted UI still shows email paths, fix the WorkOS dashboard
+  authentication methods; the installed AuthKit Next.js helper routes to
+  AuthKit and does not expose a code-level force-GitHub provider option.
+
+## Remaining Launch Gaps
+
+- PyPI package publish and fresh install smoke from PyPI.
+- Final provider cleanup and branch/main convergence for both repos.
+- Live production browser verification with a signed-in user.
+- Deeper browser UX for maintained branches, per-branch delivery, capture
+  consent, and billing/plan gates.
+- Future abuse-control/rate-limit slice before broad public scale.

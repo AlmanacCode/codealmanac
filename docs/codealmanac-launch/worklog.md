@@ -2,6 +2,21 @@
 
 ## 2026-07-02
 
+- Planned Slice 51 in
+  `docs/plans/2026-07-02-slice-51-launch-state-reconciliation.md`.
+- Reconciled launch state after Slice 50 and the GitHub-only auth guard. The
+  launch folder now records that `/setup` is the browser-owned cloud setup hub,
+  PyPI still serves `codealmanac` `0.1.0.dev0`, and rate limits are postponed
+  future abuse-control work rather than a current product blocker.
+- Added hosted route guards for `/setup`: it must show cloud setup, GitHub App
+  setup, `uv tool install codealmanac` plus `codealmanac setup`, and no
+  `npx`, `almanac login`, email verification, password, or magic-link copy.
+- Verified Slice 51 with hosted `npm run test:routes` (`27 passed`), hosted
+  `npm run lint`, CodeAlmanac `git diff --check`, and hosted `git diff --check`.
+- Sent the Slice 51 RelayForge update and recorded progress as:
+  CodeAlmanac backend/local 95%, CLI/public UX 93%,
+  CodeAlmanac-hosted backend/auth/API 96%, hosted frontend/onboarding 72%, and
+  infra/deploy rename 94%.
 - Rechecked the cloud login decision after a cofounder hit an email-style
   verification path. Launch login remains GitHub-only: `codealmanac setup`
   opens browser login, the user continues with GitHub, then installs/configures

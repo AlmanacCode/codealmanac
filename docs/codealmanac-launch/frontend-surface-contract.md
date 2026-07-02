@@ -66,6 +66,21 @@ the backend, and redirect into the existing account-scoped dashboard routes.
 `target=github` redirects directly to the GitHub repository. `target=github-app`
 resolves the account and redirects to GitHub's installation settings page.
 
+Implemented in Slice 50:
+
+```text
+/setup
+```
+
+`/setup` is the browser-owned cloud setup hub. It requires a WorkOS/AuthKit
+browser session, presents GitHub App installation when needed, lists connected
+GitHub accounts when available, and shows the Python CLI command:
+
+```text
+uv tool install codealmanac
+codealmanac setup
+```
+
 ## Repo Settings
 
 Each maintained branch has one policy row:

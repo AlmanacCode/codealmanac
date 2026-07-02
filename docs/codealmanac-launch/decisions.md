@@ -102,9 +102,8 @@ Status: active.
   Supabase, Modal, Doppler, PostHog, Autumn, and GitHub.
 - Supabase migrations can be rewritten/collapsed/repaired during this launch
   because there are no external customers yet.
-- Public API routes need launch rate limits; frontend throttling is not enough.
-- Rate limits should use a low-level API/shared counter backend rather than
-  only provider/frontend throttling.
+- Rate limits are postponed. They remain necessary before broad public scale,
+  but they are not part of the current product-first launch slice.
 - `codealmanac-hosted` should initially pin `codealmanac` by git SHA.
 - Cloud workers must call the model/engine API directly, not the human CLI.
 - `codealmanac-hosted` is a literal rename/evolution of `usealmanac`.

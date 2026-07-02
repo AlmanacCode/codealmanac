@@ -531,7 +531,12 @@ tokens, or short-lived run tokens. They do not use human CLI tokens.
 
 ## Rate Limiting
 
-Public API routes need rate limits before launch.
+Rate limits are future work, not a launch blocker for the current product-first
+push. Rohan explicitly postponed this work on 2026-07-02 so implementation
+should stay focused on hosted setup, auth, repository automation, run delivery,
+and verified deployments.
+
+Before broad public scale, public API routes still need abuse limits.
 
 Minimum policy:
 
@@ -564,7 +569,9 @@ Autumn for paid entitlement/runs caps, not raw API abuse limits
 
 Do not rely only on frontend throttling.
 
-Decision: use a low-level shared counter API/backend for launch rate limits.
+Current decision: postpone rate-limit implementation. When reopened, prefer a
+trusted shared-counter or provider-backed library over custom counting logic,
+and keep Autumn for paid entitlement/run caps rather than raw API-abuse limits.
 
 ## Authorization Rule
 
@@ -576,5 +583,5 @@ state, or browser route alone.
 
 - Exact WorkOS CLI/device auth endpoint shape.
 - Exact WorkOS primitive for capture hooks.
-- Exact rate-limit backend provider.
+- Future broad-scale rate-limit backend provider.
 - Exact token storage implementation on macOS/Linux.

@@ -10,8 +10,6 @@ Must prove:
 - `codealmanac login` opens browser/device auth, stores local auth under
   `~/.codealmanac/`, and `codealmanac whoami` succeeds from a fresh shell.
 - Public API routes verify WorkOS-backed credentials.
-- Auth, capture, run-start, and wiki-read endpoints return `429` with
-  `Retry-After` under configured abuse tests.
 - Capture hooks use a narrow capture credential, not an unrestricted human
   token.
 
@@ -101,6 +99,10 @@ Current evidence:
 - Slice 49 set `GITHUB_TOKEN_ENCRYPTION_KEYS` in Doppler `codealmanac/prd`.
   Supabase migration application and Render/Vercel deploy were intentionally
   deferred to the next batched deploy gate.
+- Rate limits were explicitly postponed on 2026-07-02. They remain future
+  abuse-control work before broad public scale, but current launch verification
+  should not claim `429` behavior for auth, capture, run-start, or wiki-read
+  endpoints.
 - Slice 29 added capture-token upload routes:
   `POST /v1/capture/artifacts` and `POST /v1/capture/turns`.
 - `backend/tests/test_capture_upload_api_contract.py` proves capture tokens can
@@ -708,10 +710,10 @@ Current evidence:
   frontend route tests (`27 passed`), frontend component tests (`44 passed`),
   `npm run lint`, `npm run build`, and `git diff --check`. The frontend build
   retained the known non-blocking CSS optimizer warning about `m-* utility`.
-- Slice 43 aligned hosted setup copy with the cloud-first CLI contract:
-  `/dashboard/local-agent-access` presents `npx codealmanac@latest setup`,
-  explains browser sign-in and capture consent, and no longer advertises
-  `almanac login`.
+- Slice 43 aligned hosted setup copy with the cloud-first CLI contract and was
+  later superseded by the Python package command in Slice 50. Current public
+  setup copy should use `uv tool install codealmanac` and `codealmanac setup`,
+  not `npx codealmanac`.
 - Slice 43 updated `/cli-login` to use `codealmanac login` for expired login
   links and `CodeAlmanac CLI` in the visible page copy.
 - `frontend/tests/routes.test.mjs` proves the setup page, CLI login page, and
@@ -815,6 +817,16 @@ Current evidence:
   (`15 passed, 1 warning`), full backend tests (`356 passed, 1 warning`),
   route tests (`27 passed`), frontend component tests (`52 passed`), backend
   ruff/compileall, frontend lint/build, and `git diff --check`.
+- Slice 50 added hosted `/setup` as the browser-owned cloud setup hub. The page
+  requires a WorkOS/AuthKit browser session, shows the GitHub App installation
+  path when needed, lists connected GitHub accounts when available, and presents
+  the Python CLI setup command.
+- Slice 51 route guards prove `/setup` keeps the current cloud setup contract:
+  it names cloud setup, asks the user to connect GitHub and choose repositories,
+  links the GitHub App path, shows `uv tool install codealmanac` followed by
+  `codealmanac setup`, links to the local agent access guide, and does not
+  mention `npx codealmanac`, `almanac login`, email verification, passwords, or
+  magic links.
 - Remaining hosted worker risks: authenticated production browser verification,
   setup CTA refinement, provider-library alignment, and provider cleanup still
   need launch-hardening.
