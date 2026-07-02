@@ -10,53 +10,39 @@ verification, launch-folder updates, commit, push, and RelayForge update.
 
 ## Last Completed Slice
 
-Slice 39 added manual cloud run start.
+Slice 40 added hosted terminal run events.
 
 Implemented:
 
 - hosted worktree at
   `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
 - hosted branch `codex/workos-authkit-api-foundation`
-- hosted CLI-token run start route:
-  `POST /v1/repositories/{repo_id}/runs`
-- hosted `ManualBranchRuns` service
-- hosted manual-start semantics:
-  `Action.APPROVE_UPDATE`, GitHub-resolved branch head, branch delivery policy
-  when present, default `commit` delivery otherwise, duplicate-head idempotency
-- CodeAlmanac cloud runs service/client start method
-- CodeAlmanac `CloudRunsWorkflow.start`
-- public CLI command:
-  `codealmanac runs start --branch <branch>`
+- hosted `RunFailed` domain event
+- hosted `RunStale` domain event
+- `UpdateCompletion` dispatches `RunFailed` after failed or blocked worker
+  completion
+- `UpdateCompletion` dispatches `RunStale` after delivery detects that the
+  expected branch head moved
+- failed/stale run events carry repo id, account id, repo full name, source
+  head sha, and reason; stale events also carry expected and actual head shas
 - pushed hosted commit
-  `14caf8b feat: start cloud runs from CLI`
-- pushed CodeAlmanac commit
-  `0e3879e1 feat: start cloud runs from CLI`
+  `8795849 feat: emit terminal run events`
+- CodeAlmanac product code was unchanged; local launch docs record this slice
+  in a follow-up docs commit.
 
 Verified:
 
 ```text
 cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence/backend
-uv run pytest tests/test_updates_contract.py tests/test_cli_runs_api_contract.py -q
+uv run pytest tests/test_events_contract.py tests/test_updates_contract.py tests/test_architecture_contract.py -q
 uv run ruff check .
 uv run python -m compileall src modal_app -q
-uv run pytest -q
-
-cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence/frontend
-npm run test:routes
-npm run lint
-
-cd /Users/rohan/Desktop/Projects/codealmanac
-uv run pytest tests/test_cloud_runs_service.py tests/test_cloud_runs_workflow.py tests/test_cli.py tests/test_architecture.py -q
-uv run ruff check .
-uv run python -m compileall src -q
 uv run pytest -q
 git diff --check
 ```
 
-Counts so far: hosted backend focused `37 passed, 1 warning`; hosted
-backend full `333 passed, 1 warning`; hosted frontend route tests `27 passed`;
-hosted frontend lint passed; CodeAlmanac focused `123 passed`; CodeAlmanac
-full `496 passed`.
+Counts so far: hosted backend focused `108 passed`; hosted backend full
+`334 passed, 1 warning`; hosted ruff, compileall, and diff-check passed.
 
 ## Next Pressure Test
 
@@ -67,7 +53,7 @@ deployment/provider rename checks.
 Pressure points:
 
 - terminal failed/stale runs still do not have a dedicated `RunFailed` or
-  `RunStale` domain-event fanout for GitHub check updates
+  `RunStale` GitHub Check subscriber
 - CLI commands list/show/log/start cloud runs, but do not cancel/retry them
 - `runs cancel` needs a real Modal/provider cancellation primitive before it
   should be public
@@ -100,7 +86,8 @@ origin at `1b00b63 feat: add repository trigger policies`; Slice 36 is pushed
 to origin at `fbf8b5a feat: add CLI repository trigger routes`; Slice 37 is
 pushed to origin at `168f9b2 feat: add CLI run read routes`; Slice 38 is
 pushed to origin at `ed7e765 feat: add cloud route handoff`; Slice 39 is
-pushed to origin at `14caf8b feat: start cloud runs from CLI`.
+pushed to origin at `14caf8b feat: start cloud runs from CLI`; Slice 40 is
+pushed to origin at `8795849 feat: emit terminal run events`.
 
 The local wiki command currently fails on this checkout with:
 

@@ -624,7 +624,18 @@ Current evidence:
   (`333 passed, 1 warning`), frontend route tests (`27 passed`),
   `npm run lint`, `uv run ruff check .`,
   `uv run python -m compileall src modal_app -q`, and `git diff --check`.
-- Remaining hosted worker risks: terminal failed/stale GitHub check fanout,
+- Slice 40 added typed `RunFailed` and `RunStale` domain events. `UpdateCompletion`
+  dispatches them when a worker fails/blocks or delivery detects a stale branch
+  head.
+- `backend/tests/test_events_contract.py` proves terminal run events carry
+  repo/head facts.
+- `backend/tests/test_updates_contract.py` proves failed and stale completions
+  dispatch `run_failed` and `run_stale` events after terminal run state is
+  written.
+- Slice 40 hosted verification passed with focused tests (`108 passed`), full
+  hosted backend tests (`334 passed, 1 warning`), `uv run ruff check .`,
+  `uv run python -m compileall src modal_app -q`, and `git diff --check`.
+- Remaining hosted worker risks: terminal failed/stale GitHub check subscriber,
   cloud run cancel/retry, and richer production setup/onboarding screens
   still need launch-hardening.
 

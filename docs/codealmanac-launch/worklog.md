@@ -979,3 +979,22 @@
 - Recorded progress as: CodeAlmanac backend/local 95%, CLI/public UX 87%,
   CodeAlmanac-hosted backend/auth/API 84%, hosted frontend/onboarding 35%, and
   infra/deploy rename 15%.
+- Planned Slice 40 in
+  `docs/plans/2026-07-02-slice-40-run-terminal-events.md`.
+- Added hosted `RunFailed` and `RunStale` domain events.
+- Updated hosted `UpdateCompletion` so failed/blocked worker completions
+  dispatch `RunFailed` and stale delivery completions dispatch `RunStale`.
+- Kept GitHub Check publishing out of Slice 40 because no check publisher
+  exists yet; this slice creates the fanout seam that a later publisher can
+  subscribe to.
+- Pushed hosted commit `8795849 feat: emit terminal run events` to
+  `origin/codex/workos-authkit-api-foundation`.
+- Verified hosted focused behavior with
+  `uv run pytest tests/test_events_contract.py tests/test_updates_contract.py tests/test_architecture_contract.py -q`
+  (`108 passed`).
+- Verified hosted backend full behavior with `uv run pytest -q`
+  (`334 passed, 1 warning`), `uv run ruff check .`,
+  `uv run python -m compileall src modal_app -q`, and `git diff --check`.
+- Recorded progress as: CodeAlmanac backend/local 95%, CLI/public UX 87%,
+  CodeAlmanac-hosted backend/auth/API 85%, hosted frontend/onboarding 35%, and
+  infra/deploy rename 15%.

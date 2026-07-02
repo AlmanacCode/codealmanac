@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 39 cloud run start.
+Sent: 2026-07-02 after Slice 40 terminal run events.
 
 Route:
 
@@ -26,10 +26,10 @@ It was not present in `codealmanac/prd` when checked.
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 95% | 95% | Slice 39 adds cloud-run API plumbing only; local worker behavior is unchanged. |
-| CodeAlmanac CLI/public UX | 87% | 84% | `codealmanac runs start --branch <branch>` now starts a cloud run from the current checkout. |
-| CodeAlmanac-hosted backend/auth/API | 84% | 81% | Hosted adds the CLI-token manual branch run route and service semantics. |
-| Hosted frontend/onboarding | 35% | 35% | Slice 39 does not change hosted UI; richer onboarding screens remain. |
+| CodeAlmanac backend/local | 95% | 95% | Slice 40 is hosted-only; local worker behavior is unchanged. |
+| CodeAlmanac CLI/public UX | 87% | 87% | Slice 40 adds no public CLI verbs. |
+| CodeAlmanac-hosted backend/auth/API | 85% | 84% | Hosted now emits typed `RunFailed` and `RunStale` domain events for terminal run fanout. |
+| Hosted frontend/onboarding | 35% | 35% | Slice 40 does not change hosted UI; richer onboarding screens remain. |
 | Infra/deploy rename | 15% | 15% | Slice 35 changes Supabase schema but does not change provider deployment naming/configuration. |
 
 ## Update Rule
