@@ -1,3 +1,5 @@
+import json
+from datetime import datetime
 from pathlib import Path
 
 from pydantic import Field, field_validator
@@ -8,6 +10,7 @@ from codealmanac.services.control.models import (
     ControlDeliveryMode,
     ControlRunEventKind,
     ControlRunStatus,
+    SessionProvider,
     TriggerEventKind,
     TriggerEventStatus,
 )
@@ -42,6 +45,15 @@ class GetControlRunRequest(CodeAlmanacModel):
     @classmethod
     def require_run_id(cls, value: str) -> str:
         return required_text(value, "run id")
+
+
+class ListBranchSessionsRequest(CodeAlmanacModel):
+    branch_id: str
+
+    @field_validator("branch_id")
+    @classmethod
+    def require_branch_id(cls, value: str) -> str:
+        return required_text(value, "branch id")
 
 
 class UpsertRepositoryRequest(CodeAlmanacModel):
@@ -224,6 +236,88 @@ class AppendControlRunEventRequest(CodeAlmanacModel):
     @classmethod
     def require_message(cls, value: str) -> str:
         return required_text(value, "run event message")
+
+
+class UpsertSessionRequest(CodeAlmanacModel):
+    provider: SessionProvider
+    provider_session_id: str
+    source_ref: str
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+
+    @field_validator("provider_session_id")
+    @classmethod
+    def require_provider_session_id(cls, value: str) -> str:
+        return required_text(value, "provider session id")
+
+    @field_validator("source_ref")
+    @classmethod
+    def require_source_ref(cls, value: str) -> str:
+        return required_text(value, "session source ref")
+
+
+class UpsertTurnRequest(CodeAlmanacModel):
+    session_id: str
+    sequence: int
+    provider_turn_id: str | None = None
+    created_at: datetime | None = None
+    metadata_json: str = "{}"
+
+    @field_validator("session_id")
+    @classmethod
+    def require_session_id(cls, value: str) -> str:
+        return required_text(value, "turn session id")
+
+    @field_validator("sequence")
+    @classmethod
+    def require_positive_sequence(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("turn sequence must be positive")
+        return value
+
+    @field_validator("provider_turn_id")
+    @classmethod
+    def require_optional_provider_turn_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return required_text(value, "provider turn id")
+
+    @field_validator("metadata_json")
+    @classmethod
+    def require_json_object(cls, value: str) -> str:
+        metadata = json.loads(required_text(value, "turn metadata json"))
+        if not isinstance(metadata, dict):
+            raise ValueError("turn metadata_json must be a JSON object")
+        return value
+
+
+class LinkTurnBranchRequest(CodeAlmanacModel):
+    turn_id: str
+    branch_id: str
+    confidence: float = 1.0
+    detector: str
+
+    @field_validator("turn_id")
+    @classmethod
+    def require_turn_id(cls, value: str) -> str:
+        return required_text(value, "turn id")
+
+    @field_validator("branch_id")
+    @classmethod
+    def require_branch_id(cls, value: str) -> str:
+        return required_text(value, "branch id")
+
+    @field_validator("confidence")
+    @classmethod
+    def validate_confidence(cls, value: float) -> float:
+        if value < 0 or value > 1:
+            raise ValueError("turn branch confidence must be between 0 and 1")
+        return value
+
+    @field_validator("detector")
+    @classmethod
+    def require_detector(cls, value: str) -> str:
+        return required_text(value, "turn branch detector")
 
 
 class ListControlRunEventsRequest(CodeAlmanacModel):

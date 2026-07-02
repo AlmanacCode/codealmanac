@@ -14,8 +14,10 @@ from codealmanac.services.control.models import (
     ControlSchemaStatus,
     RecordTriggerEventResult,
     RepositoryRecord,
+    SessionRecord,
     TriggerEventRecord,
     TriggerEventStatus,
+    TurnRecord,
 )
 from codealmanac.services.control.records import (
     branch_from_row,
@@ -25,8 +27,12 @@ from codealmanac.services.control.records import (
     control_run_id,
     repository_from_row,
     repository_id_for,
+    session_from_row,
+    session_id_for,
     trigger_event_from_row,
     trigger_event_id,
+    turn_from_row,
+    turn_id_for,
 )
 from codealmanac.services.control.requests import (
     AppendControlRunEventRequest,
@@ -35,6 +41,8 @@ from codealmanac.services.control.requests import (
     GetBranchRequest,
     GetControlRunRequest,
     GetRepositoryRequest,
+    LinkTurnBranchRequest,
+    ListBranchSessionsRequest,
     ListControlRunEventsRequest,
     ListTriggerEventsRequest,
     RecordLocalTriggerRequest,
@@ -42,6 +50,8 @@ from codealmanac.services.control.requests import (
     SetBranchPolicyRequest,
     UpdateControlRunRequest,
     UpsertRepositoryRequest,
+    UpsertSessionRequest,
+    UpsertTurnRequest,
 )
 from codealmanac.services.control.schema import CONTROL_TABLES, connect_control
 
@@ -81,6 +91,28 @@ class ControlStore:
     def get_run(self, request: GetControlRunRequest) -> ControlRunRecord:
         with connect_control(self.path) as connection:
             return self.run_by_id(connection, request.run_id)
+
+    def list_sessions_for_branch(
+        self,
+        request: ListBranchSessionsRequest,
+    ) -> tuple[SessionRecord, ...]:
+        with connect_control(self.path) as connection:
+            self.branch_by_id(connection, request.branch_id)
+            rows = connection.execute(
+                """
+                SELECT DISTINCT sessions.*
+                FROM sessions
+                JOIN turns ON turns.session_id = sessions.id
+                JOIN turn_branches ON turn_branches.turn_id = turns.id
+                WHERE turn_branches.branch_id = ?
+                ORDER BY
+                  COALESCE(sessions.started_at, sessions.created_at),
+                  sessions.provider,
+                  sessions.provider_session_id
+                """,
+                (request.branch_id,),
+            ).fetchall()
+        return tuple(session_from_row(row) for row in rows)
 
     def upsert_repository(
         self,
@@ -477,6 +509,111 @@ class ControlStore:
             )
             return self.run_event_by_sequence(connection, request.run_id, sequence)
 
+    def upsert_session(self, request: UpsertSessionRequest) -> SessionRecord:
+        session_id = session_id_for(request.provider.value, request.provider_session_id)
+        now = current_timestamp()
+        with connect_control(self.path) as connection:
+            connection.execute(
+                """
+                INSERT INTO sessions (
+                  id,
+                  provider,
+                  provider_session_id,
+                  source_ref,
+                  started_at,
+                  ended_at,
+                  created_at,
+                  updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                  source_ref = excluded.source_ref,
+                  started_at = COALESCE(excluded.started_at, sessions.started_at),
+                  ended_at = COALESCE(excluded.ended_at, sessions.ended_at),
+                  updated_at = excluded.updated_at
+                """,
+                (
+                    session_id,
+                    request.provider.value,
+                    request.provider_session_id,
+                    request.source_ref,
+                    request.started_at.isoformat()
+                    if request.started_at is not None
+                    else None,
+                    request.ended_at.isoformat()
+                    if request.ended_at is not None
+                    else None,
+                    now,
+                    now,
+                ),
+            )
+            return self.session_by_id(connection, session_id)
+
+    def upsert_turn(self, request: UpsertTurnRequest) -> TurnRecord:
+        turn_id = turn_id_for(request.session_id, request.sequence)
+        now = current_timestamp()
+        created_at = (
+            request.created_at.isoformat()
+            if request.created_at is not None
+            else now
+        )
+        with connect_control(self.path) as connection:
+            self.session_by_id(connection, request.session_id)
+            connection.execute(
+                """
+                INSERT INTO turns (
+                  id,
+                  session_id,
+                  provider_turn_id,
+                  sequence,
+                  created_at,
+                  metadata_json
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(session_id, sequence) DO UPDATE SET
+                  provider_turn_id = excluded.provider_turn_id,
+                  created_at = excluded.created_at,
+                  metadata_json = excluded.metadata_json
+                """,
+                (
+                    turn_id,
+                    request.session_id,
+                    request.provider_turn_id,
+                    request.sequence,
+                    created_at,
+                    request.metadata_json,
+                ),
+            )
+            return self.turn_by_id(connection, turn_id)
+
+    def link_turn_branch(self, request: LinkTurnBranchRequest) -> None:
+        now = current_timestamp()
+        with connect_control(self.path) as connection:
+            self.turn_by_id(connection, request.turn_id)
+            self.branch_by_id(connection, request.branch_id)
+            connection.execute(
+                """
+                INSERT INTO turn_branches (
+                  turn_id,
+                  branch_id,
+                  confidence,
+                  detector,
+                  created_at
+                )
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(turn_id, branch_id) DO UPDATE SET
+                  confidence = excluded.confidence,
+                  detector = excluded.detector
+                """,
+                (
+                    request.turn_id,
+                    request.branch_id,
+                    request.confidence,
+                    request.detector,
+                    now,
+                ),
+            )
+
     def list_run_events(
         self,
         request: ListControlRunEventsRequest,
@@ -658,6 +795,32 @@ class ControlStore:
         if row is None:
             raise NotFoundError("run", run_id)
         return control_run_from_row(row)
+
+    def session_by_id(
+        self,
+        connection: SQLiteConnection,
+        session_id: str,
+    ) -> SessionRecord:
+        row = connection.execute(
+            "SELECT * FROM sessions WHERE id = ?",
+            (session_id,),
+        ).fetchone()
+        if row is None:
+            raise NotFoundError("session", session_id)
+        return session_from_row(row)
+
+    def turn_by_id(
+        self,
+        connection: SQLiteConnection,
+        turn_id: str,
+    ) -> TurnRecord:
+        row = connection.execute(
+            "SELECT * FROM turns WHERE id = ?",
+            (turn_id,),
+        ).fetchone()
+        if row is None:
+            raise NotFoundError("turn", turn_id)
+        return turn_from_row(row)
 
     def run_event_by_sequence(
         self,

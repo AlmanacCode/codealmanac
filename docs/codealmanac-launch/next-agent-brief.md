@@ -10,22 +10,22 @@ verification, launch-folder updates, commit, and push.
 
 ## Last Completed Slice
 
-Slice 10 added branch-head staling.
+Slice 11 added source bundle materialization.
 
 Implemented:
 
-- `app.control.get_run(...)`
-- staling of queued/running runs when a newer trigger arrives for the same
-  branch with a different expected head
-- normalized stale run events
-- preservation of terminal runs
-- preservation of queued/running runs already targeting the new head
-- removal of unused `EnsureControlSchemaRequest`
+- control DB verbs for sessions, turns, turn-branch links, and branch session
+  selection
+- `app.source_bundles`
+- `sources/manifest.json`
+- copied full session files under `sources/sessions/<provider>/`
+- local run preparation that materializes source bundles before writing
+  `request.json`
 
 Verified:
 
 ```text
-uv run pytest tests/test_control_service.py tests/test_architecture.py
+uv run pytest tests/test_control_service.py tests/test_source_bundles_service.py tests/test_local_run_preparation_workflow.py tests/test_architecture.py
 uv run pytest
 uv run ruff check .
 git diff --check
@@ -38,7 +38,6 @@ Choose the next substantial slice from the launch plan. Good candidates:
 - local trigger event recording through Git hooks
 - public or hidden setup command that calls `app.local_hooks`
 - local run storage bridge from repo-local job files to the control DB
-- source bundle selection materialization for claimed runs
 - local model worker execution from prepared `EngineRunRequest`
 - delivery commit application from `EngineRunResult`
 
@@ -48,7 +47,7 @@ progress update, commit, and push.
 
 ## Known Repo State
 
-The branch is `dev`. At the start of Slice 10 it was clean and even with
+The branch is `dev`. At the start of Slice 11 it was clean and even with
 `origin/dev`.
 
 The local wiki command currently fails on this checkout with:

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from codealmanac.app import create_app
@@ -5,15 +6,19 @@ from codealmanac.core.models import AppConfig
 from codealmanac.services.control.models import (
     ControlRunEventKind,
     ControlRunStatus,
+    SessionProvider,
     TriggerEventKind,
     TriggerEventStatus,
 )
 from codealmanac.services.control.requests import (
+    LinkTurnBranchRequest,
     ListControlRunEventsRequest,
     ListTriggerEventsRequest,
     RecordTriggerEventRequest,
     SetBranchPolicyRequest,
     UpsertRepositoryRequest,
+    UpsertSessionRequest,
+    UpsertTurnRequest,
 )
 from codealmanac.services.worker_workspaces.models import GitWorktreeCheckout
 
@@ -55,6 +60,25 @@ def test_prepare_next_local_run_claims_trigger_and_prepares_engine_request(
     branch = app.control.set_branch_policy(
         SetBranchPolicyRequest(repository_id=repository.id, name="dev")
     )
+    transcript = tmp_path / "session.jsonl"
+    transcript.write_text('{"role":"user","content":"update docs"}\n', "utf-8")
+    session = app.control.upsert_session(
+        UpsertSessionRequest(
+            provider=SessionProvider.CODEX,
+            provider_session_id="codex-session",
+            source_ref=transcript.as_uri(),
+        )
+    )
+    turn = app.control.upsert_turn(
+        UpsertTurnRequest(session_id=session.id, sequence=1)
+    )
+    app.control.link_turn_branch(
+        LinkTurnBranchRequest(
+            turn_id=turn.id,
+            branch_id=branch.id,
+            detector="test",
+        )
+    )
     trigger = app.control.record_trigger_event(
         RecordTriggerEventRequest(
             repository_id=repository.id,
@@ -82,6 +106,19 @@ def test_prepare_next_local_run_claims_trigger_and_prepares_engine_request(
     assert result.worker_workspace.paths.repo_path.is_dir()
     assert result.worker_workspace.paths.sources_path.is_dir()
     assert result.worker_workspace.paths.run_path.is_dir()
+    assert result.source_bundle is not None
+    assert result.source_bundle.root_path == result.worker_workspace.paths.sources_path
+    assert result.source_bundle.session_count == 1
+    assert result.source_bundle.manifest_path.is_file()
+    bundle_session = result.source_bundle.manifest.sessions[0]
+    copied_session = result.source_bundle.root_path / bundle_session.path
+    manifest = json.loads(
+        result.source_bundle.manifest_path.read_text(encoding="utf-8")
+    )
+    assert copied_session.read_text("utf-8") == (
+        '{"role":"user","content":"update docs"}\n'
+    )
+    assert manifest["sessions"][0]["provider_session_id"] == "codex-session"
     assert result.engine_run is not None
     assert result.engine_run.paths.request_path.is_file()
     assert result.engine_run.request.repo_path == (
@@ -90,6 +127,7 @@ def test_prepare_next_local_run_claims_trigger_and_prepares_engine_request(
     assert result.engine_run.request.sources_path == (
         result.worker_workspace.paths.sources_path
     )
+    assert result.engine_run.request.source_bundle_ref == result.run.source_bundle_ref
 
     events = app.control.list_trigger_events(
         ListTriggerEventsRequest(statuses=(TriggerEventStatus.CLAIMED,))
@@ -99,9 +137,14 @@ def test_prepare_next_local_run_claims_trigger_and_prepares_engine_request(
     )
 
     assert tuple(event.id for event in events) == (trigger.event.id,)
-    assert tuple(event.kind for event in run_events) == (ControlRunEventKind.STATUS,)
-    assert run_events[0].message == "prepared local worker workspace"
-    assert run_events[0].artifact_ref == result.run.request_ref
+    assert tuple(event.kind for event in run_events) == (
+        ControlRunEventKind.STATUS,
+        ControlRunEventKind.STATUS,
+    )
+    assert run_events[0].message == "materialized local source bundle with 1 sessions"
+    assert run_events[0].artifact_ref == result.run.source_bundle_ref
+    assert run_events[1].message == "prepared local worker workspace"
+    assert run_events[1].artifact_ref == result.run.request_ref
 
 
 def test_prepare_next_local_run_marks_claimed_run_failed_without_local_root(

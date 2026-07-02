@@ -111,6 +111,15 @@ Current evidence:
   runs are preserved.
 - `tests/test_control_service.py` proves stale runs receive normalized status
   run events.
+- Slice 11 added branch session selection and source bundle materialization.
+- `tests/test_control_service.py` proves branch selection returns distinct full
+  sessions through `turn_branches`.
+- `tests/test_source_bundles_service.py` proves session source files are copied
+  into `sources/sessions/<provider>/` and recorded in `manifest.json`.
+- `tests/test_local_run_preparation_workflow.py` proves local run preparation
+  materializes the source bundle before writing the engine request.
+- `tests/test_architecture.py` proves source-bundle materialization remains a
+  separate service boundary.
 
 Commands:
 

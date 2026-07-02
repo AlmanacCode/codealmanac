@@ -40,7 +40,7 @@ nouns and execution shape, not a separate conceptual product.
 - Use commit subject format:
 
 ```text
-almanac: <summary>
+docs almanac: <summary>
 ```
 
 ## Target Shape
@@ -108,7 +108,7 @@ EngineRunRequest
   expected_head_sha
   operation
   almanac_root
-  commit_subject_style = "almanac: <summary>"
+  commit_subject_style = "docs almanac: <summary>"
 
 EngineRunResult
   status
@@ -141,7 +141,7 @@ Git hook fires
   -> publisher collects wiki patch
   -> publisher checks current branch still equals expected_head_sha
   -> publisher applies patch to real checkout
-  -> publisher commits "almanac: <summary>"
+  -> publisher commits "docs almanac: <summary>"
 ```
 
 Local workspace:

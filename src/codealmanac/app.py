@@ -47,6 +47,8 @@ from codealmanac.services.runs.store import RunStore
 from codealmanac.services.search.service import SearchService
 from codealmanac.services.setup.ports import InstructionInstaller
 from codealmanac.services.setup.service import SetupService
+from codealmanac.services.source_bundles.service import SourceBundlesService
+from codealmanac.services.source_bundles.store import SourceBundlesStore
 from codealmanac.services.sources.ports import (
     SourceRuntimeAdapter,
     TranscriptDiscoveryAdapter,
@@ -95,6 +97,7 @@ class CodeAlmanac:
     control: ControlService
     engine_runs: EngineRunsService
     local_hooks: LocalHooksService
+    source_bundles: SourceBundlesService
     worker_workspaces: WorkerWorkspacesService
     workspaces: WorkspacesService
     wiki: WikiService
@@ -138,6 +141,7 @@ def create_app(
         local_git_state_probe or GitLocalStateProbe(),
     )
     engine_runs = EngineRunsService(EngineRunsStore(app_config.run_artifacts_path))
+    source_bundles = SourceBundlesService(SourceBundlesStore())
     local_hooks = LocalHooksService(
         local_git_hook_manager or FileLocalGitHookManager(),
     )
@@ -214,6 +218,7 @@ def create_app(
     local_runs = LocalRunPreparationWorkflow(
         control,
         worker_workspaces,
+        source_bundles,
         engine_runs,
     )
     sync = SyncWorkflow(workspaces, sources, runs, ingest, queue, SyncLedgerStore())
@@ -231,6 +236,7 @@ def create_app(
         control=control,
         engine_runs=engine_runs,
         local_hooks=local_hooks,
+        source_bundles=source_bundles,
         worker_workspaces=worker_workspaces,
         workspaces=workspaces,
         wiki=wiki,

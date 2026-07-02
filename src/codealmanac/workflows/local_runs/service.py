@@ -1,22 +1,29 @@
-from pathlib import Path
-
 from codealmanac.core.errors import ValidationFailed
-from codealmanac.services.control.models import ControlRunEventKind, ControlRunStatus
 from codealmanac.services.control.requests import (
-    AppendControlRunEventRequest,
     ClaimNextTriggerRequest,
     GetBranchRequest,
     GetRepositoryRequest,
+    ListBranchSessionsRequest,
     UpdateControlRunRequest,
 )
 from codealmanac.services.control.service import ControlService
 from codealmanac.services.engine_runs.requests import PrepareEngineRunRequest
 from codealmanac.services.engine_runs.service import EngineRunsService
+from codealmanac.services.source_bundles.requests import MaterializeSourceBundleRequest
+from codealmanac.services.source_bundles.service import SourceBundlesService
 from codealmanac.services.worker_workspaces.requests import (
     PrepareWorkerWorkspaceRequest,
 )
 from codealmanac.services.worker_workspaces.service import WorkerWorkspacesService
+from codealmanac.workflows.local_runs.bundle_inputs import (
+    source_bundle_session_inputs,
+)
+from codealmanac.workflows.local_runs.events import (
+    append_prepared_events,
+    fail_claimed_run,
+)
 from codealmanac.workflows.local_runs.models import LocalRunPreparationResult
+from codealmanac.workflows.local_runs.refs import first_line, path_ref
 from codealmanac.workflows.local_runs.requests import PrepareNextLocalRunRequest
 
 
@@ -25,10 +32,12 @@ class LocalRunPreparationWorkflow:
         self,
         control: ControlService,
         worker_workspaces: WorkerWorkspacesService,
+        source_bundles: SourceBundlesService,
         engine_runs: EngineRunsService,
     ):
         self.control = control
         self.worker_workspaces = worker_workspaces
+        self.source_bundles = source_bundles
         self.engine_runs = engine_runs
 
     def prepare_next(
@@ -66,7 +75,18 @@ class LocalRunPreparationWorkflow:
                     expected_head_sha=claim.run.expected_head_sha,
                 )
             )
-            source_ref = path_ref(worker_workspace.paths.sources_path)
+            sessions = self.control.list_sessions_for_branch(
+                ListBranchSessionsRequest(branch_id=branch.id)
+            )
+            source_bundle = self.source_bundles.materialize(
+                MaterializeSourceBundleRequest(
+                    run_id=claim.run.id,
+                    branch_id=branch.id,
+                    target_path=worker_workspace.paths.sources_path,
+                    sessions=source_bundle_session_inputs(sessions),
+                )
+            )
+            source_ref = path_ref(source_bundle.root_path)
             engine_run = self.engine_runs.prepare(
                 PrepareEngineRunRequest(
                     run_id=claim.run.id,
@@ -88,14 +108,7 @@ class LocalRunPreparationWorkflow:
                     request_ref=path_ref(engine_run.paths.request_path),
                 )
             )
-            self.control.append_run_event(
-                AppendControlRunEventRequest(
-                    run_id=run.id,
-                    kind=ControlRunEventKind.STATUS,
-                    message="prepared local worker workspace",
-                    artifact_ref=run.request_ref,
-                )
-            )
+            append_prepared_events(self.control, run, source_bundle, source_ref)
             return LocalRunPreparationResult(
                 prepared=True,
                 repository=repository,
@@ -103,39 +116,15 @@ class LocalRunPreparationWorkflow:
                 trigger=claim.trigger,
                 run=run,
                 worker_workspace=worker_workspace,
+                source_bundle=source_bundle,
                 engine_run=engine_run,
             )
         except Exception as error:
             message = first_line(str(error)) or error.__class__.__name__
-            run = self.control.update_run(
-                UpdateControlRunRequest(
-                    run_id=claim.run.id,
-                    status=ControlRunStatus.FAILED,
-                    error=message,
-                )
-            )
-            self.control.append_run_event(
-                AppendControlRunEventRequest(
-                    run_id=run.id,
-                    kind=ControlRunEventKind.ERROR,
-                    message=message,
-                )
-            )
+            run = fail_claimed_run(self.control, claim.run.id, message)
             return LocalRunPreparationResult(
                 prepared=False,
                 reason="preparation_failed",
                 trigger=claim.trigger,
                 run=run,
             )
-
-
-def path_ref(path: Path) -> str:
-    return path.resolve(strict=False).as_uri()
-
-
-def first_line(value: str) -> str:
-    for line in value.splitlines():
-        stripped = line.strip()
-        if stripped:
-            return stripped
-    return ""

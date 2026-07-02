@@ -225,3 +225,21 @@
   `uv run pytest tests/test_control_service.py tests/test_architecture.py`.
 - Verified Slice 10 full gate with `uv run pytest` (`394 passed`),
   `uv run ruff check .`, and `git diff --check`.
+- Sent the Slice 10 RelayForge update and recorded progress as:
+  CodeAlmanac backend/local 50%, CLI/public UX 10%,
+  CodeAlmanac-hosted backend/auth/API 8%, hosted frontend/onboarding 5%, and
+  infra/deploy rename 5%.
+- Planned Slice 11 in
+  `docs/plans/2026-07-02-slice-11-source-bundle-materialization.md`.
+- Added control DB verbs for sessions, turns, turn-branch links, and distinct
+  branch session selection.
+- Added `app.source_bundles` with a manifest-backed local source bundle
+  materializer.
+- Wired local run preparation to materialize `sources/manifest.json` and copied
+  session files before writing the engine request.
+- Added architecture guards for the source-bundle service boundary.
+- Corrected the launch plan commit-subject example to `docs almanac:`.
+- Verified Slice 11 focused behavior with
+  `uv run pytest tests/test_control_service.py tests/test_source_bundles_service.py tests/test_local_run_preparation_workflow.py tests/test_architecture.py`.
+- Verified Slice 11 full gate with `uv run pytest` (`398 passed`),
+  `uv run ruff check .`, and `git diff --check`.

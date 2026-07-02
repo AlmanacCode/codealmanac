@@ -11,6 +11,7 @@ from codealmanac.services.control.models import (
     ControlRunEventKind,
     ControlRunStatus,
     LocalGitState,
+    SessionProvider,
     TriggerEventKind,
     TriggerEventStatus,
 )
@@ -19,6 +20,8 @@ from codealmanac.services.control.requests import (
     ClaimNextTriggerRequest,
     CreateControlRunRequest,
     GetControlRunRequest,
+    LinkTurnBranchRequest,
+    ListBranchSessionsRequest,
     ListControlRunEventsRequest,
     ListTriggerEventsRequest,
     ReadControlSchemaStatusRequest,
@@ -27,6 +30,8 @@ from codealmanac.services.control.requests import (
     SetBranchPolicyRequest,
     UpdateControlRunRequest,
     UpsertRepositoryRequest,
+    UpsertSessionRequest,
+    UpsertTurnRequest,
 )
 from codealmanac.services.control.schema import (
     CONTROL_SCHEMA_VERSION,
@@ -631,6 +636,70 @@ def test_claim_next_trigger_marks_trigger_claimed_and_creates_queued_run(
     assert claim.run.request_ref == "file:///request.json"
     assert second.claimed is False
     assert tuple(event.id for event in claimed_events) == (trigger.id,)
+
+
+def test_control_lists_distinct_full_sessions_for_branch(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    app = control_app(isolated_home)
+    repository = register_repository(app, tmp_path / "repo")
+    dev = app.control.set_branch_policy(
+        SetBranchPolicyRequest(repository_id=repository.id, name="dev")
+    )
+    main = app.control.set_branch_policy(
+        SetBranchPolicyRequest(repository_id=repository.id, name="main")
+    )
+    dev_session = app.control.upsert_session(
+        UpsertSessionRequest(
+            provider=SessionProvider.CODEX,
+            provider_session_id="codex-dev",
+            source_ref=(tmp_path / "codex-dev.jsonl").as_uri(),
+        )
+    )
+    other_session = app.control.upsert_session(
+        UpsertSessionRequest(
+            provider=SessionProvider.CLAUDE,
+            provider_session_id="claude-main",
+            source_ref=(tmp_path / "claude-main.jsonl").as_uri(),
+        )
+    )
+    dev_turn_1 = app.control.upsert_turn(
+        UpsertTurnRequest(session_id=dev_session.id, sequence=1)
+    )
+    dev_turn_2 = app.control.upsert_turn(
+        UpsertTurnRequest(session_id=dev_session.id, sequence=2)
+    )
+    main_turn = app.control.upsert_turn(
+        UpsertTurnRequest(session_id=other_session.id, sequence=1)
+    )
+    app.control.link_turn_branch(
+        LinkTurnBranchRequest(
+            turn_id=dev_turn_1.id,
+            branch_id=dev.id,
+            detector="test",
+        )
+    )
+    app.control.link_turn_branch(
+        LinkTurnBranchRequest(
+            turn_id=dev_turn_2.id,
+            branch_id=dev.id,
+            detector="test",
+        )
+    )
+    app.control.link_turn_branch(
+        LinkTurnBranchRequest(
+            turn_id=main_turn.id,
+            branch_id=main.id,
+            detector="test",
+        )
+    )
+
+    sessions = app.control.list_sessions_for_branch(
+        ListBranchSessionsRequest(branch_id=dev.id)
+    )
+
+    assert sessions == (dev_session,)
 
 
 def test_new_trigger_marks_active_runs_for_old_head_stale(

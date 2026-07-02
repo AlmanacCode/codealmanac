@@ -1,3 +1,4 @@
+from codealmanac.services.control.current_git import record_current_git_trigger
 from codealmanac.services.control.models import (
     BranchRecord,
     ClaimNextTriggerResult,
@@ -6,7 +7,9 @@ from codealmanac.services.control.models import (
     ControlSchemaStatus,
     RecordTriggerEventResult,
     RepositoryRecord,
+    SessionRecord,
     TriggerEventRecord,
+    TurnRecord,
 )
 from codealmanac.services.control.ports import LocalGitStateProbe
 from codealmanac.services.control.requests import (
@@ -16,15 +19,18 @@ from codealmanac.services.control.requests import (
     GetBranchRequest,
     GetControlRunRequest,
     GetRepositoryRequest,
+    LinkTurnBranchRequest,
+    ListBranchSessionsRequest,
     ListControlRunEventsRequest,
     ListTriggerEventsRequest,
     ReadControlSchemaStatusRequest,
     RecordCurrentGitTriggerRequest,
-    RecordLocalTriggerRequest,
     RecordTriggerEventRequest,
     SetBranchPolicyRequest,
     UpdateControlRunRequest,
     UpsertRepositoryRequest,
+    UpsertSessionRequest,
+    UpsertTurnRequest,
 )
 from codealmanac.services.control.store import ControlStore
 
@@ -53,6 +59,12 @@ class ControlService:
     def get_run(self, request: GetControlRunRequest) -> ControlRunRecord:
         return self.store.get_run(request)
 
+    def list_sessions_for_branch(
+        self,
+        request: ListBranchSessionsRequest,
+    ) -> tuple[SessionRecord, ...]:
+        return self.store.list_sessions_for_branch(request)
+
     def upsert_repository(
         self,
         request: UpsertRepositoryRequest,
@@ -75,26 +87,10 @@ class ControlService:
         self,
         request: RecordCurrentGitTriggerRequest,
     ) -> RecordTriggerEventResult:
-        state = self.local_git_state.read(request.cwd)
-        if (
-            not state.available
-            or state.repository_root is None
-            or state.branch_name is None
-            or state.head_sha is None
-        ):
-            return RecordTriggerEventResult(
-                recorded=False,
-                reason="git_state_unavailable",
-            )
-        return self.store.record_local_trigger(
-            RecordLocalTriggerRequest(
-                repository_root=state.repository_root,
-                branch_name=state.branch_name,
-                kind=request.kind,
-                head_sha=state.head_sha,
-                previous_head_sha=request.previous_head_sha,
-                payload_ref=request.payload_ref,
-            )
+        return record_current_git_trigger(
+            self.store,
+            self.local_git_state,
+            request,
         )
 
     def list_trigger_events(
@@ -115,6 +111,15 @@ class ControlService:
         request: AppendControlRunEventRequest,
     ) -> ControlRunEventRecord:
         return self.store.append_run_event(request)
+
+    def upsert_session(self, request: UpsertSessionRequest) -> SessionRecord:
+        return self.store.upsert_session(request)
+
+    def upsert_turn(self, request: UpsertTurnRequest) -> TurnRecord:
+        return self.store.upsert_turn(request)
+
+    def link_turn_branch(self, request: LinkTurnBranchRequest) -> None:
+        self.store.link_turn_branch(request)
 
     def list_run_events(
         self,

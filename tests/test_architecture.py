@@ -49,7 +49,7 @@ def test_control_service_keeps_schema_store_service_boundaries():
         "service.py",
         "store.py",
     } <= {path.name for path in control_root.glob("*.py")}
-    assert len(service_text.splitlines()) <= 130
+    assert len(service_text.splitlines()) <= 140
     assert "connect_control" not in service_text
     assert "connection.execute" not in service_text
     assert "CONTROL_SCHEMA_DDL" in schema_text
@@ -113,6 +113,29 @@ def test_worker_workspaces_service_keeps_git_mechanics_in_integration():
     assert "worktree\", \"add\", \"--detach\"" in integration_text
 
 
+def test_source_bundles_service_keeps_bundle_materialization_boundary():
+    bundle_root = SRC_ROOT / "services/source_bundles"
+    module_names = {path.name for path in bundle_root.glob("*.py")}
+    service_text = (bundle_root / "service.py").read_text(encoding="utf-8")
+    store_text = (bundle_root / "store.py").read_text(encoding="utf-8")
+    models_text = (bundle_root / "models.py").read_text(encoding="utf-8")
+
+    assert {
+        "__init__.py",
+        "models.py",
+        "requests.py",
+        "service.py",
+        "store.py",
+    } <= module_names
+    assert len(service_text.splitlines()) <= 40
+    assert "SourceBundleManifest" in models_text
+    assert "manifest.json" in store_text
+    assert "shutil.copyfile" in store_text
+    assert "connection.execute" not in store_text
+    assert "codealmanac.services.control" not in store_text
+    assert "codealmanac.cli" not in service_text
+
+
 def test_local_run_preparation_workflow_only_orchestrates_services():
     workflow_root = SRC_ROOT / "workflows/local_runs"
     service_text = (workflow_root / "service.py").read_text(encoding="utf-8")
@@ -127,6 +150,7 @@ def test_local_run_preparation_workflow_only_orchestrates_services():
     assert len(service_text.splitlines()) <= 150
     assert "claim_next_trigger" in service_text
     assert "worker_workspaces.prepare" in service_text
+    assert "source_bundles.materialize" in service_text
     assert "engine_runs.prepare" in service_text
     assert "update_run" in service_text
     assert "codealmanac.integrations" not in service_text

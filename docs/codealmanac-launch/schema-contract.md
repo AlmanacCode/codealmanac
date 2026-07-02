@@ -55,6 +55,8 @@ Local worker workspaces:
 ~/.codealmanac/workspaces/<run-id>/
   repo/
   sources/
+    manifest.json
+    sessions/
   run/
 ```
 

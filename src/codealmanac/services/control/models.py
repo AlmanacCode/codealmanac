@@ -46,6 +46,11 @@ class ControlRunEventKind(StrEnum):
     ERROR = "error"
 
 
+class SessionProvider(StrEnum):
+    CODEX = "codex"
+    CLAUDE = "claude"
+
+
 class RepositoryRecord(CodeAlmanacModel):
     id: str
     provider: str
@@ -220,6 +225,70 @@ class ControlRunEventRecord(CodeAlmanacModel):
     @classmethod
     def require_message(cls, value: str) -> str:
         return required_text(value, "run event message")
+
+
+class SessionRecord(CodeAlmanacModel):
+    id: str
+    provider: SessionProvider
+    provider_session_id: str
+    source_ref: str
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    @field_validator("id")
+    @classmethod
+    def require_id(cls, value: str) -> str:
+        return required_text(value, "session id")
+
+    @field_validator("provider_session_id")
+    @classmethod
+    def require_provider_session_id(cls, value: str) -> str:
+        return required_text(value, "provider session id")
+
+    @field_validator("source_ref")
+    @classmethod
+    def require_source_ref(cls, value: str) -> str:
+        return required_text(value, "session source ref")
+
+
+class TurnRecord(CodeAlmanacModel):
+    id: str
+    session_id: str
+    provider_turn_id: str | None = None
+    sequence: int
+    created_at: datetime
+    metadata_json: str
+
+    @field_validator("id")
+    @classmethod
+    def require_id(cls, value: str) -> str:
+        return required_text(value, "turn id")
+
+    @field_validator("session_id")
+    @classmethod
+    def require_session_id(cls, value: str) -> str:
+        return required_text(value, "turn session id")
+
+    @field_validator("provider_turn_id")
+    @classmethod
+    def require_optional_provider_turn_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return required_text(value, "provider turn id")
+
+    @field_validator("sequence")
+    @classmethod
+    def require_positive_sequence(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("turn sequence must be positive")
+        return value
+
+    @field_validator("metadata_json")
+    @classmethod
+    def require_metadata_json(cls, value: str) -> str:
+        return required_text(value, "turn metadata json")
 
 
 class ClaimNextTriggerResult(CodeAlmanacModel):
