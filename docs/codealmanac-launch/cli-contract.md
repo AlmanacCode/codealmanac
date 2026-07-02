@@ -143,8 +143,23 @@ codealmanac runs logs <run-id>
 
 `runs list` resolves the current checkout's GitHub `origin` before asking the
 cloud for that repository's runs. `runs show` and `runs logs` use the run id and
-do not need a current checkout. `runs start`, `runs cancel`, and `runs retry`
-are deferred until cloud worker queue semantics are explicit.
+do not need a current checkout.
+
+Implemented in Slice 39:
+
+```text
+codealmanac runs start --branch <branch>
+```
+
+`runs start` resolves the current checkout's GitHub `origin`, authenticates
+with the stored cloud CLI token, and asks the cloud to start a manual branch
+run. The branch head is read by the hosted service from GitHub; the local
+checkout SHA is not sent as source truth. The returned run is rendered through
+the same detail view as `runs show`.
+
+`runs cancel` and `runs retry` are still deferred. `cancel` needs a real worker
+provider cancellation primitive, and `retry` needs an explicit failed/stale
+source-head policy.
 
 ## Cloud Capture
 

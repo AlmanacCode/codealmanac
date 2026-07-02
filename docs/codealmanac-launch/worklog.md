@@ -946,3 +946,36 @@
 - Recorded progress as: CodeAlmanac backend/local 88%, CLI/public UX 40%,
   CodeAlmanac-hosted backend/auth/API 28%, hosted frontend/onboarding 15%, and
   infra/deploy rename 10%.
+- Planned Slice 39 in
+  `docs/plans/2026-07-02-slice-39-cloud-run-start.md`.
+- Added hosted manual cloud run start:
+  `POST /v1/repositories/{repo_id}/runs`.
+- Added hosted `ManualBranchRuns` so the `Updates` facade stays small and the
+  product verb owns authorization, GitHub branch-head resolution, delivery
+  policy lookup, duplicate-head idempotency, and worker start.
+- Added mirrored frontend `StartRunRequestDTO` to preserve backend/frontend DTO
+  parity.
+- Added CodeAlmanac `CloudRunsService.start_for_repo`,
+  `CloudRunsWorkflow.start`, and public
+  `codealmanac runs start --branch <branch>`.
+- Pushed hosted commit `14caf8b feat: start cloud runs from CLI` to
+  `origin/codex/workos-authkit-api-foundation`.
+- Pushed CodeAlmanac commit `0e3879e1 feat: start cloud runs from CLI` to
+  `origin/dev`.
+- Verified hosted focused behavior with
+  `uv run pytest tests/test_updates_contract.py tests/test_cli_runs_api_contract.py -q`
+  (`37 passed, 1 warning`).
+- Verified hosted backend full behavior with `uv run pytest -q`
+  (`333 passed, 1 warning`), `uv run ruff check .`, and
+  `uv run python -m compileall src modal_app -q`.
+- Verified hosted frontend DTO route/lint surface with `npm run test:routes`
+  (`27 passed`) and `npm run lint`.
+- Verified CodeAlmanac focused behavior with
+  `uv run pytest tests/test_cloud_runs_service.py tests/test_cloud_runs_workflow.py tests/test_cli.py tests/test_architecture.py -q`
+  (`123 passed`).
+- Verified CodeAlmanac full behavior with `uv run pytest -q` (`496 passed`),
+  `uv run ruff check .`, `uv run python -m compileall src -q`, and
+  `git diff --check`.
+- Recorded progress as: CodeAlmanac backend/local 95%, CLI/public UX 87%,
+  CodeAlmanac-hosted backend/auth/API 84%, hosted frontend/onboarding 35%, and
+  infra/deploy rename 15%.

@@ -110,6 +110,11 @@ Current evidence:
   authenticates with the browser session, resolves by `fullName`, uses
   `Action.VIEW_REPO`, and returns `repoId`, `accountId`, `fullName`, and
   `defaultBranch`.
+- Slice 39 added hosted CLI-token manual run start:
+  `POST /v1/repositories/{repo_id}/runs`.
+- `backend/tests/test_cli_runs_api_contract.py` proves the route
+  authenticates with the CLI token, accepts branch names in the JSON body, and
+  returns a `RunDTO`.
 
 ## CodeAlmanac Local Repo
 
@@ -411,6 +416,17 @@ Current evidence:
 - Slice 38 full CodeAlmanac verification passed with `uv run pytest -q`
   (`496 passed`), `uv run ruff check .`,
   `uv run python -m compileall src -q`, and `git diff --check`.
+- Slice 39 added `codealmanac runs start --branch <branch>`.
+- `tests/test_cloud_runs_service.py` proves the cloud runs service uses the
+  stored CLI token and calls `POST /v1/repositories/{repo_id}/runs`.
+- `tests/test_cloud_runs_workflow.py` proves the workflow resolves the current
+  GitHub checkout to a cloud repo before starting the branch run.
+- `tests/test_cli.py` proves the public CLI command preserves slash branch
+  names and renders the returned cloud run.
+- Slice 39 full CodeAlmanac verification passed with `uv run pytest -q`
+  (`496 passed`), focused cloud-runs/CLI/architecture tests (`123 passed`),
+  `uv run ruff check .`, `uv run python -m compileall src -q`, and
+  `git diff --check`.
 
 Commands:
 
@@ -596,8 +612,20 @@ Current evidence:
   `uv run ruff check .`, `uv run python -m compileall src modal_app -q`, and
   `git diff --check`. Build passed with the known CSS optimizer warning about
   `m-* utility`.
+- Slice 39 added hosted manual branch run start. `Updates.start_branch_run`
+  requires `Action.APPROVE_UPDATE`, reads the GitHub branch head, reuses branch
+  delivery policy when present, defaults delivery to `commit` otherwise, and
+  starts the hosted worker.
+- `backend/tests/test_updates_contract.py` proves manual run start permission,
+  default commit delivery, configured PR delivery, duplicate-head idempotency,
+  and out-of-capacity failure.
+- Slice 39 hosted verification passed with backend focused tests
+  (`37 passed, 1 warning`), full hosted backend tests
+  (`333 passed, 1 warning`), frontend route tests (`27 passed`),
+  `npm run lint`, `uv run ruff check .`,
+  `uv run python -m compileall src modal_app -q`, and `git diff --check`.
 - Remaining hosted worker risks: terminal failed/stale GitHub check fanout,
-  cloud run start/cancel/retry, and richer production setup/onboarding screens
+  cloud run cancel/retry, and richer production setup/onboarding screens
   still need launch-hardening.
 
 ## Provider / Deployment

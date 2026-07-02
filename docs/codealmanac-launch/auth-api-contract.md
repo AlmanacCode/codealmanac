@@ -368,6 +368,19 @@ GET /v1/runs/{run_id}
 GET /v1/runs/{run_id}/events
 ```
 
+Slice 39 implemented the CLI-token manual branch run route used by
+`codealmanac runs start --branch <branch>`:
+
+```text
+POST /v1/repositories/{repo_id}/runs  # body carries branch
+```
+
+Manual branch starts require `Action.APPROVE_UPDATE`. The hosted service reads
+the current GitHub branch head, creates a `BranchSource` run, selects delivery
+from the branch trigger policy when present, defaults to `commit` otherwise,
+and starts the hosted worker. Disabled trigger policy does not block manual
+start; trigger `enabled` controls automatic runs only.
+
 Slice 38 implemented the browser-session repository resolve route used by
 hosted redirectors opened from the CLI:
 
