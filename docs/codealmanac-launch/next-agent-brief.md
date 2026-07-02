@@ -28,7 +28,8 @@ Implemented:
   `codealmanac repo open [activity|settings|github|github-app]`
 - pushed hosted commit
   `ed7e765 feat: add cloud route handoff`
-- CodeAlmanac commit: pending
+- pushed CodeAlmanac commit
+  `117b36db feat: open cloud pages from CLI`
 
 Verified:
 
@@ -78,7 +79,8 @@ Pressure points:
 The CodeAlmanac branch is `dev`. Slice 31 is pushed to `origin/dev` at
 `f20e928d feat: expose maintenance package api`; Slice 36 is pushed to
 origin at `8ca50e0f feat: mirror cloud repository triggers in CLI`; Slice 37
-is pushed to origin at `bc177cf2 feat: inspect cloud runs from CLI`.
+is pushed to origin at `bc177cf2 feat: inspect cloud runs from CLI`; Slice 38
+is pushed to origin at `117b36db feat: open cloud pages from CLI`.
 
 The hosted auth branch is
 `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
@@ -93,7 +95,8 @@ origin at `9098b65 feat: record stale delivery outcomes`; Slice 34 is pushed
 to origin at `4e4c94b feat: expose run event timeline`; Slice 35 is pushed to
 origin at `1b00b63 feat: add repository trigger policies`; Slice 36 is pushed
 to origin at `fbf8b5a feat: add CLI repository trigger routes`; Slice 37 is
-pushed to origin at `168f9b2 feat: add CLI run read routes`.
+pushed to origin at `168f9b2 feat: add CLI run read routes`; Slice 38 is
+pushed to origin at `ed7e765 feat: add cloud route handoff`.
 
 The local wiki command currently fails on this checkout with:
 

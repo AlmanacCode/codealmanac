@@ -33,6 +33,14 @@
 - Verified Slice 38 hosted frontend gates with `npm run lint`,
   `npm run test:frontend` (`44 passed`), and `npm run build`. Build passed
   with the known CSS optimizer warning about `m-* utility`.
+- Pushed hosted commit `ed7e765 feat: add cloud route handoff` to
+  `origin/codex/workos-authkit-api-foundation`.
+- Pushed CodeAlmanac commit `117b36db feat: open cloud pages from CLI` to
+  `origin/dev`.
+- Sent the Slice 38 RelayForge update with progress as:
+  CodeAlmanac backend/local 95%, CLI/public UX 84%,
+  CodeAlmanac-hosted backend/auth/API 81%, hosted frontend/onboarding 35%, and
+  infra/deploy rename 15%.
 - Planned Slice 37 in
   `docs/plans/2026-07-02-slice-37-cloud-runs-cli.md`.
 - Added hosted CLI run read routes:

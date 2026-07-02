@@ -8,8 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Pending: Slice 38 cloud open handoff. Send after verification, commit, and
-push.
+Sent: 2026-07-02 after Slice 38 cloud open handoff.
 
 Route:
 
