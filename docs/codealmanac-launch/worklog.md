@@ -473,3 +473,26 @@
   CodeAlmanac backend/local 87%, CLI/public UX 35%,
   CodeAlmanac-hosted backend/auth/API 8%, hosted frontend/onboarding 5%, and
   infra/deploy rename 5%.
+- Planned Slice 23 in
+  `docs/plans/2026-07-02-slice-23-dev-lifecycle-cli.md`.
+- Added a hidden `codealmanac dev` parser and dispatch namespace.
+- Moved manual `ingest` and `garden` CLI access to
+  `codealmanac dev ingest` and `codealmanac dev garden`.
+- Removed top-level `ingest` and `garden` from lifecycle parser and dispatch.
+- Fixed root argparse help so commands registered with `argparse.SUPPRESS`
+  do not print as `==SUPPRESS==` in normal top-level help.
+- Updated README update examples to use public local commands:
+  `local setup`, `local update`, local trigger policy, and local jobs.
+- Verified Slice 23 focused behavior with
+  `uv run pytest tests/test_cli.py tests/test_architecture.py` (`113
+  passed`) and
+  `uv run pytest tests/test_public_contract.py tests/test_cli.py tests/test_architecture.py`
+  (`140 passed`).
+- Verified Slice 23 full gate with `uv run pytest` (`466 passed`),
+  `uv run ruff check .`, `git diff --check`, `uv run codealmanac --help`,
+  `uv run codealmanac dev ingest --help`, and
+  `uv run codealmanac dev garden --help`.
+- Sent the Slice 23 RelayForge update and recorded progress as:
+  CodeAlmanac backend/local 87%, CLI/public UX 40%,
+  CodeAlmanac-hosted backend/auth/API 8%, hosted frontend/onboarding 5%, and
+  infra/deploy rename 5%.
