@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 44 cloud run cancellation and production deploy.
+Sent: 2026-07-02 after Slice 45 cloud run retry and production deploy.
 
 Route:
 
@@ -26,11 +26,11 @@ It was not present in `codealmanac/prd` when checked.
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 95% | 95% | Slice 44 is cloud-run control; local worker behavior is unchanged. |
-| CodeAlmanac CLI/public UX | 90% | 90% | `codealmanac runs cancel <run-id>` is pushed to `origin/dev` at `a7cbc7d5`. |
-| CodeAlmanac-hosted backend/auth/API | 90% | 90% | Hosted cancellation is pushed to the launch branch and fast-forwarded to hosted `main` at `0e17a34`. |
-| Hosted frontend/onboarding | 43% | 43% | Frontend DTOs, status metadata, and BFF allowlist understand `cancelled`; visible cancel UI remains future work. |
-| Infra/deploy rename | 82% | 72% | Vercel production and Render backend are live on the Slice 44 code; hosted `main` now matches the launch branch. |
+| CodeAlmanac backend/local | 95% | 95% | Slice 45 is cloud-run control; local worker behavior is unchanged. |
+| CodeAlmanac CLI/public UX | 91% | 90% | `codealmanac runs retry <run-id>` is pushed to `origin/dev` at `af7953c6`. |
+| CodeAlmanac-hosted backend/auth/API | 92% | 90% | Hosted retry is pushed to the launch branch and hosted `main` at `b3535cd`. |
+| Hosted frontend/onboarding | 44% | 43% | Browser BFF/API helpers can retry runs; visible retry UI remains future work. |
+| Infra/deploy rename | 84% | 82% | Vercel production and Render backend are live on the Slice 45 code. |
 
 ## Update Rule
 

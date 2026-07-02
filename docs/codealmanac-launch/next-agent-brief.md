@@ -10,24 +10,21 @@ verification, launch-folder updates, commit, push, and RelayForge update.
 
 ## Last Completed Slice
 
-Slice 44 added real cloud run cancellation and exposed it through the
-CodeAlmanac CLI.
+Slice 45 added real cloud run retry and exposed it through the CodeAlmanac CLI.
 
 Implemented:
 
 - hosted worktree at
   `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
 - hosted branch `codex/workos-authkit-api-foundation`
-- hosted backend has `RunStatus.CANCELLED`, `UpdateCancellation`,
-  `Updates.cancel_run(...)`, and `POST /v1/runs/{run_id}/cancel`
-- browser backend has `POST /api/runs/{run_id}/cancel`
-- Modal cancellation uses the stored `worker_call_id` through
-  `modal.FunctionCall.from_id(call_id).cancel(terminate_containers=False)`
-- terminal `RunCancelled` events publish GitHub Checks with conclusion
-  `cancelled`
-- hosted frontend DTOs, status metadata, and BFF gateway accept `cancelled`
-  runs
-- CodeAlmanac has `codealmanac runs cancel <run-id>`
+- hosted backend has `UpdateRetry`, `Updates.retry_run(...)`, and
+  `POST /v1/runs/{run_id}/retry`
+- browser backend has `POST /api/runs/{run_id}/retry`
+- retry creates a new run, accepts `failed`, `stale`, and `cancelled`, rejects
+  active and delivered runs, refreshes current GitHub head, and preserves
+  conversation source refs by reference
+- hosted frontend BFF/server helpers and gateway allowlist accept retry
+- CodeAlmanac has `codealmanac runs retry <run-id>`
 
 Verified:
 
@@ -49,18 +46,18 @@ uv run ruff check .
 uv run python -m compileall src -q
 ```
 
-Counts so far: hosted backend `348 passed, 1 warning`; frontend routes
+Counts so far: hosted backend `355 passed, 1 warning`; frontend routes
 `27 passed`; frontend components `44 passed`; CodeAlmanac `496 passed`.
 Frontend build retained the known CSS optimizer warning about `m-* utility`.
 
 ## Next Pressure Test
 
-Choose the next launch-hardening slice between cloud run retry semantics,
-richer repository setup UI, and remaining provider cleanup.
+Choose the next launch-hardening slice between visible run actions in the
+dashboard, richer repository setup UI, and remaining provider cleanup.
 
 Pressure points:
 
-- `runs retry` needs an explicit failed/stale source-head policy
+- visible retry/cancel buttons need a dashboard interaction design
 - browser setup/onboarding entrypoints now have stable redirect URLs and setup
   copy, but richer repository setup UI still needs product design
 - old inline-message conversation routes should remain compatibility-only
@@ -78,7 +75,7 @@ is pushed to origin at `bc177cf2 feat: inspect cloud runs from CLI`; Slice 38
 is pushed to origin at `117b36db feat: open cloud pages from CLI`; Slice 39
 is pushed to origin at `0e3879e1 feat: start cloud runs from CLI`; Slice 44 is
 pushed to origin at `a7cbc7d5 feat: cancel cloud runs from CLI`; the latest
-docs-only launch state commit is `726e3fe6 docs: record slice 44 deployment`.
+cloud-run retry commit is `af7953c6 feat: retry cloud runs from CLI`.
 
 The hosted auth branch is
 `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
@@ -100,13 +97,14 @@ pushed to origin at `8795849 feat: emit terminal run events`; Slice 41 is
 pushed to origin at `a781e51 chore: align hosted product identity`; Slice 42 is
 pushed to origin at `97564f7 feat: publish terminal run checks`; Slice 43 is
 pushed to origin at `eafe60c feat: align cloud setup copy`; Slice 44 is pushed
-to origin at `0e17a34 feat: cancel cloud update runs`. Hosted `main` is also
-fast-forwarded to `0e17a34`, Render service `srv-d8g8nb37uimc739vnnsg` is live
-on deploy `dep-d93997dosiuc73cd9fig`, and Vercel production is live at
+to origin at `0e17a34 feat: cancel cloud update runs`; Slice 45 is pushed to
+origin at `b3535cd feat: retry cloud update runs`. Hosted `main` is also
+fast-forwarded to `b3535cd`, Render service `srv-d8g8nb37uimc739vnnsg` is live
+on deploy `dep-d939gveq1p3s73d1dt30`, and Vercel production is live at
 `https://www.codealmanac.com`.
 
-CodeAlmanac Slice 44 is pushed to `origin/dev` at
-`a7cbc7d5 feat: cancel cloud runs from CLI`.
+CodeAlmanac Slice 45 is pushed to `origin/dev` at
+`af7953c6 feat: retry cloud runs from CLI`.
 
 The local wiki command currently fails on this checkout with:
 

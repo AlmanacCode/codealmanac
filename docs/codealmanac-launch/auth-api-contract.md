@@ -339,6 +339,7 @@ POST /v1/repositories/{repo_id}/runs
 GET  /v1/runs/{run_id}
 GET  /v1/runs/{run_id}/events
 POST /v1/runs/{run_id}/cancel
+POST /v1/runs/{run_id}/retry
 
 GET  /v1/repositories/{repo_id}/wiki
 GET  /v1/repositories/{repo_id}/wiki/pages
@@ -391,6 +392,19 @@ Cancellation requires `Action.APPROVE_UPDATE` on the run's repository. Queued
 runs are marked `cancelled` directly. Running runs call Modal through the stored
 `worker_call_id`, then become `cancelled`. Delivered, failed, and stale runs
 return conflict.
+
+Slice 45 implemented the CLI-token cloud run retry route used by
+`codealmanac runs retry <run-id>`:
+
+```text
+POST /v1/runs/{run_id}/retry
+```
+
+Retry requires `Action.APPROVE_UPDATE` on the original run's repository. It
+creates a new run, does not mutate the original terminal run, accepts `failed`,
+`stale`, and `cancelled`, rejects `queued`, `running`, and `delivered`, refreshes
+the current GitHub head, and preserves captured conversation `source_refs` by
+reference.
 
 Slice 38 implemented the browser-session repository resolve route used by
 hosted redirectors opened from the CLI:

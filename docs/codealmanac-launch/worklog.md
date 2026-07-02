@@ -2,6 +2,51 @@
 
 ## 2026-07-02
 
+- Planned Slice 45 in
+  `docs/plans/2026-07-02-slice-45-cloud-run-retry.md`.
+- Added hosted `UpdateRetry` and `Updates.retry_run(...)`.
+- Added hosted CLI-token and browser-session retry routes:
+  `POST /v1/runs/{run_id}/retry` and `POST /api/runs/{run_id}/retry`.
+- Retry creates a new run instead of mutating the original terminal run,
+  accepts `failed`, `stale`, and `cancelled`, rejects active and already
+  delivered runs, refreshes the current GitHub head, and preserves conversation
+  batch `source_refs` by reference.
+- Added browser BFF/server helpers and gateway allowlist support for
+  `/api/dashboard/runs/<uuid>/retry`.
+- Added CodeAlmanac `codealmanac runs retry <run-id>`, backed by the stored CLI
+  token and cloud `/v1/runs/{run_id}/retry` route.
+- Verified Slice 45 focused hosted gates with backend update/API tests
+  (`61 passed, 1 warning`), frontend route tests (`27 passed`), and frontend
+  component tests (`44 passed`).
+- Verified Slice 45 full/hygiene gates with hosted backend `uv run pytest -q`
+  (`355 passed, 1 warning`), hosted backend `uv run ruff check .`, hosted
+  backend `uv run python -m compileall src modal_app -q`, CodeAlmanac
+  `uv run pytest -q` (`496 passed`), CodeAlmanac focused cloud-runs/CLI tests
+  (`123 passed`), CodeAlmanac `uv run ruff check .`, CodeAlmanac
+  `uv run python -m compileall src -q`, hosted frontend `npm run test:routes`,
+  `npm run test:frontend`, `npm run lint`, `npm run build`, and both
+  `git diff --check` commands. The frontend build retained the known CSS
+  optimizer warning about `m-* utility`.
+- Pushed hosted commit `b3535cd feat: retry cloud update runs` to
+  `origin/codex/workos-authkit-api-foundation` and fast-forwarded hosted
+  `main` to the same commit.
+- Pushed CodeAlmanac commit `af7953c6 feat: retry cloud runs from CLI` to
+  `origin/dev`.
+- Deployed the hosted frontend to Vercel production. Vercel produced
+  `https://codealmanac-hosted-g97a69ujf-thealmanac.vercel.app` and aliased it
+  to `https://www.codealmanac.com`.
+- Render auto-deployed service `srv-d8g8nb37uimc739vnnsg` at exact hosted
+  commit `b3535cdfda2cec1633be05fafd0ffd1ec7440e0b`; deploy
+  `dep-d939gveq1p3s73d1dt30` finished `live`.
+- Verified production smoke: `https://www.codealmanac.com` returned HTTP 200,
+  `https://codealmanac-backend-docker.onrender.com/api/health` returned
+  `{"status":"ok"}`, and unauthenticated
+  `POST /v1/runs/00000000-0000-0000-0000-000000000000/retry` returned the
+  expected `401 not_authenticated`, proving the retry route is live.
+- Sent the Slice 45 RelayForge update and recorded progress as:
+  CodeAlmanac backend/local 95%, CLI/public UX 91%,
+  CodeAlmanac-hosted backend/auth/API 92%, hosted frontend/onboarding 44%, and
+  infra/deploy rename 84%.
 - Planned Slice 44 in
   `docs/plans/2026-07-02-slice-44-cloud-run-cancel.md`.
 - Added hosted `RunStatus.CANCELLED`, `UpdatesStore.mark_cancelled(...)`,

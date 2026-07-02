@@ -441,6 +441,17 @@ Current evidence:
   (`496 passed`), focused cloud-runs/CLI/architecture tests (`123 passed`),
   `uv run ruff check .`, `uv run python -m compileall src -q`, and
   `git diff --check`.
+- Slice 45 added `codealmanac runs retry <run-id>`.
+- `tests/test_cloud_runs_service.py` proves retry uses the stored CLI token and
+  calls the cloud run retry client method.
+- `tests/test_cloud_runs_workflow.py` proves retry is run-id scoped and does
+  not require current-checkout repository resolution.
+- `tests/test_cli.py` proves the public CLI command renders the retried cloud
+  run.
+- Slice 45 full CodeAlmanac verification passed with `uv run pytest -q`
+  (`496 passed`), focused cloud-runs/CLI/architecture tests (`123 passed`),
+  `uv run ruff check .`, `uv run python -m compileall src -q`, and
+  `git diff --check`.
 
 Commands:
 
@@ -716,8 +727,25 @@ Current evidence:
   (`75 passed, 1 warning`), full backend tests (`348 passed, 1 warning`),
   route tests (`27 passed`), frontend component tests (`44 passed`), backend
   ruff/compileall, frontend lint/build, and `git diff --check`.
-- Remaining hosted worker risks: cloud run retry and richer production
-  setup/onboarding screens still need launch-hardening.
+- Slice 45 added hosted cloud run retry. Retry creates a new run, accepts
+  `failed`, `stale`, and `cancelled`, rejects `queued`, `running`, and
+  `delivered`, refreshes current GitHub head, and preserves conversation batch
+  source refs by reference.
+- `backend/tests/test_updates_contract.py` proves branch retry, PR retry,
+  conversation-batch retry, duplicate-head suppression, active-run conflict,
+  delivered-run conflict, authorization through `Action.APPROVE_UPDATE`, and
+  worker start behavior.
+- `backend/tests/test_cli_runs_api_contract.py` and
+  `backend/tests/test_repositories_api_contract.py` prove CLI-token and
+  browser-session retry routes call the same update service.
+- Frontend gateway tests prove the BFF allowlist accepts
+  `POST /api/dashboard/runs/<uuid>/retry` and rejects wrong methods.
+- Slice 45 hosted verification passed with focused backend tests
+  (`61 passed, 1 warning`), full backend tests (`355 passed, 1 warning`),
+  route tests (`27 passed`), frontend component tests (`44 passed`), backend
+  ruff/compileall, frontend lint/build, and `git diff --check`.
+- Remaining hosted worker risks: visible dashboard run actions and richer
+  production setup/onboarding screens still need launch-hardening.
 
 ## Provider / Deployment
 
@@ -790,3 +818,17 @@ Current evidence:
   `{"status":"ok"}`, and unauthenticated
   `POST /v1/runs/00000000-0000-0000-0000-000000000000/cancel` returned
   `401 not_authenticated`, proving the new cancel route is mounted.
+- Slice 45 fast-forwarded hosted `main` to
+  `b3535cdfda2cec1633be05fafd0ffd1ec7440e0b` so provider branch tracking uses
+  the launch code.
+- Slice 45 deployed the hosted frontend to Vercel production
+  `https://codealmanac-hosted-g97a69ujf-thealmanac.vercel.app`, aliased it to
+  `https://www.codealmanac.com`, and verified HTTP 200.
+- Slice 45 Render auto-deployed service `srv-d8g8nb37uimc739vnnsg` at exact
+  commit `b3535cdfda2cec1633be05fafd0ffd1ec7440e0b`; deploy
+  `dep-d939gveq1p3s73d1dt30` finished `live`.
+- Slice 45 backend production smoke passed:
+  `https://codealmanac-backend-docker.onrender.com/api/health` returned
+  `{"status":"ok"}`, and unauthenticated
+  `POST /v1/runs/00000000-0000-0000-0000-000000000000/retry` returned
+  `401 not_authenticated`, proving the new retry route is mounted.

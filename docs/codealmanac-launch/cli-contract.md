@@ -169,8 +169,17 @@ SQL, cancels running runs through the stored Modal function-call id, marks the
 run `cancelled`, records a run event, and returns the same detail view as
 `runs show`.
 
-`runs retry` is still deferred. Retry needs an explicit failed/stale
-source-head policy.
+Implemented in Slice 45:
+
+```text
+codealmanac runs retry <run-id>
+```
+
+`runs retry` uses the run id and does not need a current checkout. The hosted
+service authorizes the user through the original run's repository, creates a
+new run for `failed`, `stale`, or `cancelled` runs, rejects active and already
+delivered runs, refreshes the current GitHub head, and returns the retried run
+through the same detail view as `runs show`.
 
 ## Cloud Capture
 
