@@ -397,3 +397,25 @@
   CodeAlmanac backend/local 81%, CLI/public UX 26%,
   CodeAlmanac-hosted backend/auth/API 8%, hosted frontend/onboarding 5%, and
   infra/deploy rename 5%.
+- Planned Slice 20 in
+  `docs/plans/2026-07-02-slice-20-local-trigger-policy-commands.md`.
+- Added `app.control.list_branches(...)` for repository-scoped branch policy
+  reads.
+- Added `app.workflows.local_policy` for local trigger policy listing, trigger
+  enable/disable, and delivery mode updates.
+- Added public `codealmanac local triggers list`.
+- Added public `codealmanac local triggers enable <branch> [--delivery
+  commit|working-tree]`.
+- Added public `codealmanac local triggers disable <branch>`.
+- Added public `codealmanac local delivery set --branch <branch> --mode
+  commit|working-tree`.
+- Local policy commands mutate local control DB branch rows only; they do not
+  install hooks, spawn workers, or run updates.
+- Verified Slice 20 focused behavior with
+  `uv run pytest tests/test_control_service.py tests/test_local_policy_workflow.py tests/test_cli.py tests/test_architecture.py`.
+- Verified Slice 20 full gate with `uv run pytest` (`456 passed`),
+  `uv run ruff check .`, and `git diff --check`.
+- Sent the Slice 20 RelayForge update and recorded progress as:
+  CodeAlmanac backend/local 83%, CLI/public UX 30%,
+  CodeAlmanac-hosted backend/auth/API 8%, hosted frontend/onboarding 5%, and
+  infra/deploy rename 5%.
