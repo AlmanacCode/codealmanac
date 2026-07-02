@@ -502,8 +502,25 @@ Current evidence:
   `uv run ruff format --check .`, `python -m compileall src modal_app -q`,
   `git diff --check`, `npm run lint`, `npm run test:frontend` (`41 passed`),
   and `npm run test:routes` (`26 passed`).
-- Remaining hosted worker risks: frontend run-event display and terminal
-  failure/stale GitHub check fanout still need launch-hardening.
+- Slice 34 exposed persisted hosted run events through
+  `GET /api/runs/{run_id}/events` and dashboard row timelines.
+- `backend/tests/test_updates_contract.py` proves run-event reads authorize
+  through the run's repository before returning events.
+- `backend/tests/test_repositories_api_contract.py` proves the new route
+  returns the mirrored `RunEventDTO` payload shape.
+- `frontend/tests/frontend/gateway.test.ts` proves the BFF allowlist includes
+  `GET /api/dashboard/runs/<uuid>/events` while unknown paths remain rejected.
+- `frontend/tests/frontend/run-row.test.tsx` proves the dashboard renders event
+  kind, message, relative time, and normalized payload fields from
+  `RunEventDTO`.
+- Slice 34 verification passed with hosted backend focused tests
+  (`35 passed, 1 warning`), full hosted backend (`312 passed, 1 warning`),
+  `uv run ruff check .`, `uv run ruff format --check .`,
+  `python -m compileall src modal_app -q`, `git diff --check`,
+  `npm run lint`, `npm run test:frontend` (`43 passed`), and
+  `npm run test:routes` (`26 passed`).
+- Remaining hosted worker risks: terminal failed/stale GitHub check fanout and
+  production onboarding/configuration screens still need launch-hardening.
 
 ## Provider / Deployment
 

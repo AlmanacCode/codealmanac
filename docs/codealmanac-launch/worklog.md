@@ -2,6 +2,31 @@
 
 ## 2026-07-02
 
+- Planned Slice 34 in
+  `docs/plans/2026-07-02-slice-34-hosted-run-event-visibility.md`.
+- Added hosted `RunEventDTO` and
+  `GET /api/runs/{run_id}/events`.
+- Added `Updates.run_events_for_user(...)` and
+  `UpdateQueries.run_events_for_user(...)`, authorizing access through the
+  run's repository before returning ordered events.
+- Added frontend `RunEventDTO` parity, `listRunEvents(runId)`, and the
+  BFF allowlist path `GET /api/dashboard/runs/<uuid>/events`.
+- Added lazy dashboard run-event loading through an expandable `RunRow`
+  timeline that renders event kind, relative time, message, and normalized
+  payload fields.
+- Verified Slice 34 focused hosted backend gate with
+  `uv run pytest tests/test_updates_contract.py
+  tests/test_repositories_api_contract.py tests/test_update_run_events_contract.py -q`
+  (`35 passed, 1 warning`).
+- Verified Slice 34 hosted frontend gates with `npm run test:frontend`
+  (`43 passed`), `npm run test:routes` (`26 passed`), and `npm run lint`.
+- Verified Slice 34 hosted hygiene/full backend gates with
+  `uv run ruff check .`, `uv run ruff format --check .`,
+  `python -m compileall src modal_app -q`, `uv run pytest -q`
+  (`312 passed, 1 warning`), and `git diff --check`.
+- Pushed hosted commit
+  `4e4c94b feat: expose run event timeline` to
+  `origin/codex/workos-authkit-api-foundation`.
 - Planned Slice 33 in
   `docs/plans/2026-07-02-slice-33-hosted-delivery-stale-outcome.md`.
 - Added hosted `RunStatus.STALE` and `UpdateResult.stale(...)` for runs whose

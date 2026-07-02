@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 33 hosted stale delivery outcomes.
+Sent: 2026-07-02 after Slice 34 hosted run event visibility.
 
 Route:
 
@@ -26,11 +26,11 @@ It was not present in `codealmanac/prd` when checked.
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 92% | 92% | Slice 33 changed hosted delivery only; the local package API and local worker maturity are unchanged. |
-| CodeAlmanac CLI/public UX | 64% | 64% | Slice 33 does not add public CLI commands; cloud capture hook upload remains the latest CLI movement. |
-| CodeAlmanac-hosted backend/auth/API | 65% | 62% | Hosted expected-head drift now records a deterministic terminal `stale` run outcome with run-event evidence instead of bubbling delivery errors. |
-| Hosted frontend/onboarding | 17% | 15% | Frontend DTOs, run status metadata, and status icons now render the backend `stale` state; onboarding/configuration screens are still not implemented. |
-| Infra/deploy rename | 15% | 15% | Slice 33 does not change deployment naming or provider configuration. |
+| CodeAlmanac backend/local | 92% | 92% | Slice 34 changed hosted read/API/UI only; local package API and local worker maturity are unchanged. |
+| CodeAlmanac CLI/public UX | 64% | 64% | Slice 34 does not add public CLI commands; cloud capture hook upload remains the latest CLI movement. |
+| CodeAlmanac-hosted backend/auth/API | 68% | 65% | Hosted runs now expose persisted `run_events` through an authorized API route. |
+| Hosted frontend/onboarding | 20% | 17% | The dashboard can now inspect a run's event timeline from real DTOs; onboarding/configuration screens are still not implemented. |
+| Infra/deploy rename | 15% | 15% | Slice 34 does not change deployment naming or provider configuration. |
 
 ## Update Rule
 
