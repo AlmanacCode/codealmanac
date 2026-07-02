@@ -10,59 +10,59 @@ verification, launch-folder updates, commit, push, and RelayForge update.
 
 ## Last Completed Slice
 
-Slice 47 made repository setup understandable from the hosted dashboard without
-relying on CLI output alone.
+Slice 48 aligned the hosted WorkOS/AuthKit API boundary with provider
+documentation and the launch hierarchy rule.
 
 Implemented:
 
 - hosted worktree at
   `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
 - hosted branch `codex/workos-authkit-api-foundation`
-- `backend/src/almanac/server/capture_router.py` exposes browser-authenticated
-  `GET /api/capture/status`
-- the route returns `CaptureStatusDTO` and does not return raw capture tokens
-- `frontend/src/lib/api/server.ts` exposes `getCaptureStatus()`
-- `frontend/src/components/repositories/setup-summary.tsx` renders GitHub App
-  access, repository access, capture credential state, maintained branches, and
-  delivery readiness from real DTOs
-- the repository settings page fetches account, repo, branches, trigger
-  policies, and capture status before rendering the summary and existing form
-- hosted commit `2102d38 feat: add repository setup summary` is pushed to
+- `backend/src/almanac/server/deps.py` uses FastAPI `HTTPBearer` for bearer
+  parsing instead of hand-rolled `Authorization` header string parsing
+- `backend/src/almanac/integrations/workos/client.py` documents why this
+  boundary uses WorkOS JWKS + PyJWT rather than WorkOS Python sealed-session
+  helpers
+- `WorkOSClaims` mirrors the documented AuthKit access-token shape for
+  organization, role, permissions, entitlements, and feature flags
+- architecture tests now prevent regression to custom bearer parsing
+- hosted commit `c68d448 refactor: align workos auth boundary` is pushed to
   `origin/codex/workos-authkit-api-foundation` and hosted `main`
 
 Verified:
 
 ```text
 cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence/backend
-uv run pytest tests/test_capture_tokens_api_contract.py tests/test_repositories_api_contract.py -q
+uv run pytest tests/test_identity_auth_contract.py tests/test_api_error_contract.py tests/test_architecture_contract.py -q
 uv run ruff check .
 uv run pytest -q
 uv run python -m compileall src modal_app -q
 
 cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence/frontend
 npm run test:routes
-npm run test:frontend
 npm run lint
 npm run build
 ```
 
-Counts for Slice 47: focused backend tests `15 passed, 1 warning`; full backend
-tests `356 passed, 1 warning`; frontend routes `27 passed`; frontend
-components `52 passed`. Frontend build retained the known CSS optimizer warning
-about `m-* utility`.
+Counts for Slice 48: focused backend tests `86 passed, 1 warning`; full backend
+tests `357 passed, 1 warning`; frontend routes `27 passed`. Frontend build
+retained the known CSS optimizer warning about `m-* utility`.
 
 ## Next Pressure Test
 
-Choose the next launch-hardening slice between WorkOS/library alignment, setup
-CTA refinement, real authenticated browser verification, and provider cleanup.
+Choose the next launch-hardening slice between setup CTA refinement, real
+authenticated browser verification, provider cleanup, and token-storage
+hardening.
 
 Pressure points:
 
-- new steering rule: do not hand-roll a provider flow when a trusted public
-  library owns it; follow the provider documentation directly and avoid
-  parallel paths
+- new steering rule: concept hierarchy and dependency direction are part of
+  correctness; do not flatten browser sessions, API bearer tokens, CLI tokens,
+  and capture credentials into one vague auth bucket
 - the repository setup summary is live, but it has not been exercised through a
   real signed-in production browser session in this slice
+- GitHub OAuth/user tokens are still stored as product DB columns; token
+  storage hardening is a launch security pressure point
 - setup CTAs may need one more pass so browser setup and CLI setup do not feel
   like competing paths
 - old inline-message conversation routes should remain compatibility-only
@@ -105,11 +105,13 @@ pushed to origin at `eafe60c feat: align cloud setup copy`; Slice 44 is pushed
 to origin at `0e17a34 feat: cancel cloud update runs`; Slice 45 is pushed to
 origin at `b3535cd feat: retry cloud update runs`; Slice 46 is pushed to
 origin at `7b35cc9 feat: add dashboard run actions`; Slice 47 is pushed to
-origin at `2102d38 feat: add repository setup summary`. Hosted `main` is also
-fast-forwarded to `2102d38`, Render service `srv-d8g8nb37uimc739vnnsg` is live
-on deploy `dep-d939qpbtqb8s73fg7c9g`, and Vercel production is live at
+origin at `2102d38 feat: add repository setup summary`; Slice 48 is pushed to
+origin at `c68d448 refactor: align workos auth boundary`. Hosted `main` is
+also fast-forwarded to `c68d448`, Render service
+`srv-d8g8nb37uimc739vnnsg` is live on deploy
+`dep-d93a2c6k1jcs73ab8qg0`, and Vercel production is live at
 `https://www.codealmanac.com` from deployment
-`https://codealmanac-hosted-3wf3uccd1-thealmanac.vercel.app`.
+`https://codealmanac-hosted-qejqttlne-thealmanac.vercel.app`.
 
 CodeAlmanac Slice 45 is pushed to `origin/dev` at
 `af7953c6 feat: retry cloud runs from CLI`.

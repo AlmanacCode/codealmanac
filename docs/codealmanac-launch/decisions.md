@@ -35,6 +35,10 @@ Status: active.
   PostHog, Autumn, or another trusted public library owns a flow, CodeAlmanac
   should follow the documented library path and avoid parallel product-owned
   paths unless a documented provider gap forces a narrow adapter.
+- Concept hierarchy and dependency direction are part of correctness. A slice
+  should name which layer owns each concept and should avoid flattening distinct
+  concepts such as browser sessions, API bearer tokens, CLI tokens, and capture
+  credentials into one vague auth bucket.
 - GitHub provider OAuth tokens should be returned by WorkOS and captured in the
   AuthKit callback when present.
 - GitHub OAuth scopes stay narrow by default. `user:email` is required for

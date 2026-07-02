@@ -2,6 +2,47 @@
 
 ## 2026-07-02
 
+- Planned Slice 48 in
+  `docs/plans/2026-07-02-slice-48-workos-library-auth-boundary.md`.
+- Tightened the hosted WorkOS/AuthKit auth hierarchy. Browser sessions remain
+  owned by `@workos-inc/authkit-nextjs`; FastAPI API requests receive bearer
+  access tokens from the Next server layer; CLI tokens and capture credentials
+  remain separate product machine credentials.
+- Replaced hand-rolled `Authorization` header parsing in
+  `backend/src/almanac/server/deps.py` with FastAPI
+  `HTTPBearer(auto_error=False)`.
+- Documented the provider boundary in
+  `backend/src/almanac/integrations/workos/client.py`: WorkOS Python
+  sealed-session helpers are for direct `wos_session` cookie sessions, while
+  this app's FastAPI boundary validates AuthKit access-token JWTs via WorkOS
+  JWKS and PyJWT.
+- Expanded `WorkOSClaims` to mirror documented AuthKit access-token claims:
+  organization id, role, roles, permissions, entitlements, and feature flags.
+- Added architecture-test coverage that prevents regression to custom bearer
+  string parsing.
+- Verified Slice 48 with hosted focused backend tests
+  (`86 passed, 1 warning`), full hosted backend tests
+  (`357 passed, 1 warning`), backend `uv run ruff check .`, backend
+  `uv run python -m compileall src modal_app -q`, hosted frontend route tests
+  (`27 passed`), `npm run lint`, `npm run build`, and `git diff --check`. The
+  frontend build retained the known CSS optimizer warning about `m-* utility`.
+- Pushed hosted commit `c68d448 refactor: align workos auth boundary` to
+  `origin/codex/workos-authkit-api-foundation` and fast-forwarded hosted
+  `main` to exact commit `c68d448d87e7d3ffb6f1a239129b1885adf35641`.
+- Deployed the hosted frontend to Vercel production. Vercel produced
+  `https://codealmanac-hosted-qejqttlne-thealmanac.vercel.app`, reported it
+  ready as deployment `dpl_FNMruMmwmmv2d9xzk7eYkEErsb5j`, and aliased it to
+  `https://www.codealmanac.com`.
+- Render auto-deployed service `srv-d8g8nb37uimc739vnnsg` at exact hosted
+  commit `c68d448d87e7d3ffb6f1a239129b1885adf35641`; deploy
+  `dep-d93a2c6k1jcs73ab8qg0` finished `live`.
+- Verified production smoke: `https://www.codealmanac.com` returned HTTP 200,
+  `https://codealmanac-backend-docker.onrender.com/api/health` returned
+  `{"status":"ok"}`, and unauthenticated `GET /api/capture/status` returned
+  `401 not_authenticated`.
+- Recorded progress as: CodeAlmanac backend/local 95%, CLI/public UX 91%,
+  CodeAlmanac-hosted backend/auth/API 94%, hosted frontend/onboarding 60%, and
+  infra/deploy rename 89%.
 - Planned Slice 47 in
   `docs/plans/2026-07-02-slice-47-repository-setup-summary.md`.
 - Added browser-authenticated hosted `GET /api/capture/status`, returning

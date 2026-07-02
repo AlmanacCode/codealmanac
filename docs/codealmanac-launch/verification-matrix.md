@@ -63,6 +63,24 @@ Current evidence:
   `npm run test:frontend` (`41 passed`), hosted `npm run build`,
   `codealmanac` `uv run pytest -q` (`477 passed`), `codealmanac` ruff,
   `git diff --check`, and capture help checks.
+- Slice 48 aligned the hosted WorkOS/AuthKit API boundary with provider
+  documentation and the launch hierarchy rule.
+- `backend/src/almanac/server/deps.py` now uses FastAPI
+  `HTTPBearer(auto_error=False)` for bearer parsing instead of hand-rolled
+  `Authorization` header string parsing.
+- `backend/src/almanac/integrations/workos/client.py` documents that WorkOS
+  Python sealed-session helpers are for direct `wos_session` cookie sessions;
+  this app's FastAPI boundary receives AuthKit access-token JWTs from the Next
+  server layer and validates them with WorkOS JWKS plus PyJWT.
+- `WorkOSClaims` now carries the documented AuthKit access-token hierarchy:
+  WorkOS user id, session id, organization id, role, roles, permissions,
+  entitlements, and feature flags.
+- `backend/tests/test_architecture_contract.py` prevents regression to manual
+  bearer string parsing.
+- Slice 48 auth-focused verification passed with backend focused tests
+  (`86 passed, 1 warning`), full backend tests (`357 passed, 1 warning`),
+  route tests (`27 passed`), backend ruff/compileall, frontend lint/build, and
+  `git diff --check`.
 - Slice 29 added capture-token upload routes:
   `POST /v1/capture/artifacts` and `POST /v1/capture/turns`.
 - `backend/tests/test_capture_upload_api_contract.py` proves capture tokens can
@@ -896,3 +914,18 @@ Current evidence:
   `{"status":"ok"}`, and unauthenticated `GET /api/capture/status` returned
   `401 not_authenticated`, proving the new browser capture-status route is
   mounted.
+- Slice 48 fast-forwarded hosted `main` to
+  `c68d448d87e7d3ffb6f1a239129b1885adf35641` so provider branch tracking uses
+  the launch code.
+- Slice 48 deployed the hosted frontend to Vercel production
+  `https://codealmanac-hosted-qejqttlne-thealmanac.vercel.app`, deployment id
+  `dpl_FNMruMmwmmv2d9xzk7eYkEErsb5j`; Vercel aliased it to
+  `https://www.codealmanac.com` and reported status `Ready`.
+- Slice 48 Render auto-deployed service `srv-d8g8nb37uimc739vnnsg` at exact
+  commit `c68d448d87e7d3ffb6f1a239129b1885adf35641`; deploy
+  `dep-d93a2c6k1jcs73ab8qg0` finished `live`.
+- Slice 48 production smoke passed:
+  `https://www.codealmanac.com` returned HTTP 200,
+  `https://codealmanac-backend-docker.onrender.com/api/health` returned
+  `{"status":"ok"}`, and unauthenticated `GET /api/capture/status` returned
+  `401 not_authenticated`.

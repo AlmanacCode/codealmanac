@@ -233,6 +233,23 @@ Supabase role: database, migrations, storage only
 This foundation does not yet expose the full public `/v1` API surface, capture
 machine credentials, or onboarding configuration screens.
 
+Slice 48 tightened the auth boundary to match WorkOS documentation and the
+launch hierarchy rule:
+
+```text
+Browser session owner: `@workos-inc/authkit-nextjs`
+FastAPI bearer parsing: FastAPI `HTTPBearer(auto_error=False)`
+FastAPI access-token verification: WorkOS JWKS URL + PyJWT
+Provider gap: WorkOS Python sealed-session helpers are for direct `wos_session`
+cookie sessions, not this Next.js-to-FastAPI bearer boundary
+```
+
+FastAPI should not parse `Authorization` headers by hand. The only custom code
+at this boundary should map WorkOS/AuthKit claims into CodeAlmanac product
+identity: WorkOS `sub` becomes `workos_user_id`; missing linked GitHub user
+becomes `not_authenticated`; CLI and capture credentials remain separate narrow
+product machine credentials.
+
 Implemented Slice 27 CLI auth routes:
 
 ```text

@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 47 repository setup summary and production deploy.
+Sent: 2026-07-02 after Slice 48 WorkOS auth-boundary alignment and production deploy.
 
 Route:
 
@@ -26,11 +26,11 @@ It was not present in `codealmanac/prd` when checked.
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 95% | 95% | Slice 47 is hosted setup/status work; local worker behavior is unchanged. |
-| CodeAlmanac CLI/public UX | 91% | 91% | No CLI change after Slice 45 retry; browser setup now mirrors more cloud state. |
-| CodeAlmanac-hosted backend/auth/API | 93% | 92% | Browser-session capture status is exposed at `/api/capture/status`. |
-| Hosted frontend/onboarding | 60% | 52% | Repository settings now show GitHub access, capture, branches, and delivery readiness. |
-| Infra/deploy rename | 88% | 86% | Vercel production and Render backend are live on the Slice 47 commit. |
+| CodeAlmanac backend/local | 95% | 95% | Slice 48 is hosted auth-boundary work; local worker behavior is unchanged. |
+| CodeAlmanac CLI/public UX | 91% | 91% | No CLI change after Slice 45 retry. |
+| CodeAlmanac-hosted backend/auth/API | 94% | 93% | API bearer parsing now uses FastAPI `HTTPBearer`; WorkOS claims mirror documented AuthKit access-token shape. |
+| Hosted frontend/onboarding | 60% | 60% | No frontend behavior change after Slice 47 setup summary. |
+| Infra/deploy rename | 89% | 88% | Vercel production and Render backend are live on the Slice 48 commit. |
 
 ## Update Rule
 
