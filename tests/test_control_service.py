@@ -8,12 +8,14 @@ from codealmanac.core.models import AppConfig
 from codealmanac.core.paths import default_control_db_path
 from codealmanac.services.control.models import (
     ControlDeliveryMode,
+    LocalGitState,
     TriggerEventKind,
     TriggerEventStatus,
 )
 from codealmanac.services.control.requests import (
     ListTriggerEventsRequest,
     ReadControlSchemaStatusRequest,
+    RecordCurrentGitTriggerRequest,
     RecordTriggerEventRequest,
     SetBranchPolicyRequest,
     UpsertRepositoryRequest,
@@ -374,12 +376,109 @@ def test_new_trigger_supersedes_older_pending_event(
     assert tuple(event.head_sha for event in pending) == ("head-2",)
 
 
-def control_app(isolated_home: Path):
+def test_record_current_git_trigger_uses_probe_state(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo_path = tmp_path / "repo"
+    probe = FakeLocalGitStateProbe(
+        LocalGitState(
+            cwd=repo_path,
+            available=True,
+            repository_root=repo_path,
+            branch_name="dev",
+            head_sha="head-1",
+        )
+    )
+    app = control_app(isolated_home, probe)
+    repository = register_repository(app, repo_path)
+    app.control.set_branch_policy(
+        SetBranchPolicyRequest(
+            repository_id=repository.id,
+            name="dev",
+            trigger_enabled=True,
+            delivery_mode=ControlDeliveryMode.COMMIT,
+        )
+    )
+
+    result = app.control.record_current_git_trigger(
+        RecordCurrentGitTriggerRequest(
+            cwd=repo_path / "src",
+            kind=TriggerEventKind.LOCAL_POST_COMMIT,
+        )
+    )
+
+    assert result.recorded is True
+    assert result.event is not None
+    assert result.event.head_sha == "head-1"
+    assert probe.requests == [repo_path / "src"]
+
+
+def test_record_current_git_trigger_noops_when_git_state_unavailable(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo_path = tmp_path / "repo"
+    app = control_app(
+        isolated_home,
+        FakeLocalGitStateProbe(
+            LocalGitState(
+                cwd=repo_path,
+                available=False,
+                unavailable_reason="not a git repo",
+            )
+        ),
+    )
+
+    result = app.control.record_current_git_trigger(
+        RecordCurrentGitTriggerRequest(
+            cwd=repo_path,
+            kind=TriggerEventKind.LOCAL_POST_COMMIT,
+        )
+    )
+
+    assert result.recorded is False
+    assert result.reason == "git_state_unavailable"
+    assert app.control.list_trigger_events() == ()
+
+
+def test_record_current_git_trigger_noops_when_repo_is_not_configured(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo_path = tmp_path / "repo"
+    app = control_app(
+        isolated_home,
+        FakeLocalGitStateProbe(
+            LocalGitState(
+                cwd=repo_path,
+                available=True,
+                repository_root=repo_path,
+                branch_name="dev",
+                head_sha="head-1",
+            )
+        ),
+    )
+
+    result = app.control.record_current_git_trigger(
+        RecordCurrentGitTriggerRequest(
+            cwd=repo_path,
+            kind=TriggerEventKind.LOCAL_POST_COMMIT,
+        )
+    )
+
+    assert result.recorded is False
+    assert result.reason == "repository_not_configured"
+    assert app.control.list_trigger_events() == ()
+
+
+def control_app(isolated_home: Path, probe=None):
     return create_app(
         AppConfig(
             registry_path=isolated_home / ".codealmanac/registry.json",
             control_db_path=isolated_home / ".codealmanac/control.sqlite",
-        )
+        ),
+        local_git_state_probe=probe,
     )
 
 
@@ -396,3 +495,13 @@ def register_repository(app, repo_path: Path):
             local_root_path=repo_path,
         )
     )
+
+
+class FakeLocalGitStateProbe:
+    def __init__(self, state: LocalGitState):
+        self.state = state
+        self.requests: list[Path] = []
+
+    def read(self, cwd: Path) -> LocalGitState:
+        self.requests.append(cwd)
+        return self.state

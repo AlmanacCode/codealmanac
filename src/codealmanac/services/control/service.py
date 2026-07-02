@@ -5,10 +5,13 @@ from codealmanac.services.control.models import (
     RepositoryRecord,
     TriggerEventRecord,
 )
+from codealmanac.services.control.ports import LocalGitStateProbe
 from codealmanac.services.control.requests import (
     EnsureControlSchemaRequest,
     ListTriggerEventsRequest,
     ReadControlSchemaStatusRequest,
+    RecordCurrentGitTriggerRequest,
+    RecordLocalTriggerRequest,
     RecordTriggerEventRequest,
     SetBranchPolicyRequest,
     UpsertRepositoryRequest,
@@ -17,8 +20,9 @@ from codealmanac.services.control.store import ControlStore
 
 
 class ControlService:
-    def __init__(self, store: ControlStore):
+    def __init__(self, store: ControlStore, local_git_state: LocalGitStateProbe):
         self.store = store
+        self.local_git_state = local_git_state
 
     def ensure_ready(
         self,
@@ -51,6 +55,32 @@ class ControlService:
         request: RecordTriggerEventRequest,
     ) -> RecordTriggerEventResult:
         return self.store.record_trigger_event(request)
+
+    def record_current_git_trigger(
+        self,
+        request: RecordCurrentGitTriggerRequest,
+    ) -> RecordTriggerEventResult:
+        state = self.local_git_state.read(request.cwd)
+        if (
+            not state.available
+            or state.repository_root is None
+            or state.branch_name is None
+            or state.head_sha is None
+        ):
+            return RecordTriggerEventResult(
+                recorded=False,
+                reason="git_state_unavailable",
+            )
+        return self.store.record_local_trigger(
+            RecordLocalTriggerRequest(
+                repository_root=state.repository_root,
+                branch_name=state.branch_name,
+                kind=request.kind,
+                head_sha=state.head_sha,
+                previous_head_sha=request.previous_head_sha,
+                payload_ref=request.payload_ref,
+            )
+        )
 
     def list_trigger_events(
         self,

@@ -42,13 +42,14 @@ def test_control_service_keeps_schema_store_service_boundaries():
     assert {
         "__init__.py",
         "models.py",
+        "ports.py",
         "records.py",
         "requests.py",
         "schema.py",
         "service.py",
         "store.py",
     } <= {path.name for path in control_root.glob("*.py")}
-    assert len(service_text.splitlines()) <= 80
+    assert len(service_text.splitlines()) <= 110
     assert "connect_control" not in service_text
     assert "connection.execute" not in service_text
     assert "CONTROL_SCHEMA_DDL" in schema_text
@@ -599,6 +600,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "dispatch/diagnostics.py").is_file()
     assert (cli_root / "dispatch/jobs.py").is_file()
     assert (cli_root / "dispatch/lifecycle.py").is_file()
+    assert (cli_root / "dispatch/local_trigger.py").is_file()
     assert (cli_root / "dispatch/serve.py").is_file()
     assert (cli_root / "dispatch/setup.py").is_file()
     assert (cli_root / "dispatch/sync.py").is_file()

@@ -6,12 +6,12 @@ from codealmanac.core.paths import normalize_path
 from codealmanac.database import SQLiteConnection, user_version
 from codealmanac.services.control.models import (
     BranchRecord,
+    ControlSchemaStatus,
     RecordTriggerEventResult,
     RepositoryRecord,
     TriggerEventRecord,
     TriggerEventStatus,
 )
-from codealmanac.services.control.models import ControlSchemaStatus
 from codealmanac.services.control.records import (
     branch_from_row,
     branch_id_for,
@@ -22,6 +22,7 @@ from codealmanac.services.control.records import (
 )
 from codealmanac.services.control.requests import (
     ListTriggerEventsRequest,
+    RecordLocalTriggerRequest,
     RecordTriggerEventRequest,
     SetBranchPolicyRequest,
     UpsertRepositoryRequest,
@@ -161,91 +162,131 @@ class ControlStore:
     ) -> RecordTriggerEventResult:
         now = current_timestamp()
         with connect_control(self.path) as connection:
-            branch = self.branch_by_name(
+            return self.record_trigger_event_in_connection(
                 connection,
-                request.repository_id,
-                request.branch_name,
+                request,
+                now,
             )
-            if branch is None or not branch.trigger_enabled:
-                if branch is not None:
-                    self.update_branch_last_seen(
-                        connection,
-                        branch.id,
-                        request.head_sha,
-                        now,
-                    )
+
+    def record_local_trigger(
+        self,
+        request: RecordLocalTriggerRequest,
+    ) -> RecordTriggerEventResult:
+        now = current_timestamp()
+        with connect_control(self.path) as connection:
+            repository = self.repository_by_local_root_path(
+                connection,
+                request.repository_root,
+            )
+            if repository is None:
                 return RecordTriggerEventResult(
                     recorded=False,
-                    reason="branch_not_configured",
+                    reason="repository_not_configured",
                 )
-            if branch.last_triggered_head_sha == request.head_sha:
+            return self.record_trigger_event_in_connection(
+                connection,
+                RecordTriggerEventRequest(
+                    repository_id=repository.id,
+                    branch_name=request.branch_name,
+                    kind=request.kind,
+                    head_sha=request.head_sha,
+                    previous_head_sha=request.previous_head_sha,
+                    payload_ref=request.payload_ref,
+                ),
+                now,
+            )
+
+    def record_trigger_event_in_connection(
+        self,
+        connection: SQLiteConnection,
+        request: RecordTriggerEventRequest,
+        now: str,
+    ) -> RecordTriggerEventResult:
+        branch = self.branch_by_name(
+            connection,
+            request.repository_id,
+            request.branch_name,
+        )
+        if branch is None or not branch.trigger_enabled:
+            if branch is not None:
                 self.update_branch_last_seen(
                     connection,
                     branch.id,
                     request.head_sha,
                     now,
                 )
-                return RecordTriggerEventResult(
-                    recorded=False,
-                    reason="duplicate_head",
-                )
-            connection.execute(
-                """
-                UPDATE trigger_events
-                SET status = ?
-                WHERE branch_id = ?
-                  AND status = ?
-                  AND head_sha != ?
-                """,
-                (
-                    TriggerEventStatus.SUPERSEDED.value,
-                    branch.id,
-                    TriggerEventStatus.PENDING.value,
-                    request.head_sha,
-                ),
+            return RecordTriggerEventResult(
+                recorded=False,
+                reason="branch_not_configured",
             )
-            event_id = trigger_event_id()
-            connection.execute(
-                """
-                INSERT INTO trigger_events (
-                  id,
-                  repository_id,
-                  branch_id,
-                  kind,
-                  head_sha,
-                  previous_head_sha,
-                  payload_ref,
-                  status,
-                  created_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    event_id,
-                    request.repository_id,
-                    branch.id,
-                    request.kind.value,
-                    request.head_sha,
-                    request.previous_head_sha,
-                    request.payload_ref,
-                    TriggerEventStatus.PENDING.value,
-                    now,
-                ),
-            )
-            connection.execute(
-                """
-                UPDATE branches
-                SET last_seen_head_sha = ?,
-                    last_triggered_head_sha = ?,
-                    updated_at = ?
-                WHERE id = ?
-                """,
-                (request.head_sha, request.head_sha, now, branch.id),
+        if branch.last_triggered_head_sha == request.head_sha:
+            self.update_branch_last_seen(
+                connection,
+                branch.id,
+                request.head_sha,
+                now,
             )
             return RecordTriggerEventResult(
-                recorded=True,
-                event=self.trigger_event_by_id(connection, event_id),
+                recorded=False,
+                reason="duplicate_head",
             )
+        connection.execute(
+            """
+            UPDATE trigger_events
+            SET status = ?
+            WHERE branch_id = ?
+              AND status = ?
+              AND head_sha != ?
+            """,
+            (
+                TriggerEventStatus.SUPERSEDED.value,
+                branch.id,
+                TriggerEventStatus.PENDING.value,
+                request.head_sha,
+            ),
+        )
+        event_id = trigger_event_id()
+        connection.execute(
+            """
+            INSERT INTO trigger_events (
+              id,
+              repository_id,
+              branch_id,
+              kind,
+              head_sha,
+              previous_head_sha,
+              payload_ref,
+              status,
+              created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                event_id,
+                request.repository_id,
+                branch.id,
+                request.kind.value,
+                request.head_sha,
+                request.previous_head_sha,
+                request.payload_ref,
+                TriggerEventStatus.PENDING.value,
+                now,
+            ),
+        )
+        connection.execute(
+            """
+            UPDATE branches
+            SET last_seen_head_sha = ?,
+                last_triggered_head_sha = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (request.head_sha, request.head_sha, now, branch.id),
+        )
+        return RecordTriggerEventResult(
+            recorded=True,
+            event=self.trigger_event_by_id(connection, event_id),
+        )
 
     def list_trigger_events(
         self,
@@ -320,6 +361,23 @@ class ControlStore:
         if row is None:
             return None
         return branch_from_row(row)
+
+    def repository_by_local_root_path(
+        self,
+        connection: SQLiteConnection,
+        root_path: Path,
+    ) -> RepositoryRecord | None:
+        row = connection.execute(
+            """
+            SELECT *
+            FROM repositories
+            WHERE local_root_path = ?
+            """,
+            (str(normalize_path(root_path)),),
+        ).fetchone()
+        if row is None:
+            return None
+        return repository_from_row(row)
 
     def trigger_event_by_id(
         self,

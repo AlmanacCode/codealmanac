@@ -46,6 +46,12 @@ Current evidence:
 - `tests/test_control_service.py` proves disabled branches write no trigger
   rows, enabled branches create pending trigger rows, duplicate heads are
   ignored, and newer pending heads supersede older pending trigger rows.
+- Slice 3 added the hidden Git-hook dispatcher
+  `codealmanac __record-local-trigger`.
+- `tests/test_git_workspace_probe.py` proves the Git probe reads repository
+  root, branch, and HEAD SHA from a real temporary Git repository.
+- `tests/test_cli.py` proves the hidden dispatcher records a pending trigger
+  event through the control DB and is JSON-renderable for debugging.
 
 Commands:
 

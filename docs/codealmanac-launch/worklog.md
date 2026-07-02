@@ -129,3 +129,14 @@
 - Verified Slice 2 focused behavior with
   `uv run pytest tests/test_control_service.py tests/test_architecture.py` and
   `git diff --check`.
+- Planned Slice 3 in
+  `docs/plans/2026-07-02-slice-3-local-trigger-dispatch.md`.
+- Added the hidden local hook dispatcher
+  `codealmanac __record-local-trigger`.
+- Added a `LocalGitStateProbe` port and concrete Git probe that reads
+  repository root, current branch, and HEAD SHA.
+- Wired the Git probe through `create_app()` into `ControlService`; CLI dispatch
+  still does not import Git integrations.
+- Verified Slice 3 focused behavior with
+  `uv run pytest tests/test_control_service.py tests/test_git_workspace_probe.py tests/test_cli.py tests/test_architecture.py`,
+  `uv run ruff check .`, and `git diff --check`.

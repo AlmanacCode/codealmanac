@@ -47,6 +47,25 @@ def add_lifecycle_commands(subcommands: argparse._SubParsersAction) -> None:
     worker.add_argument("--cwd", required=True)
     worker.add_argument("--wiki")
 
+    local_trigger = subcommands.add_parser(
+        "__record-local-trigger",
+        help=argparse.SUPPRESS,
+    )
+    local_trigger.add_argument("--cwd", default=".")
+    local_trigger.add_argument(
+        "--kind",
+        required=True,
+        choices=(
+            "local_post_commit",
+            "local_post_merge",
+            "local_post_rewrite",
+            "manual",
+        ),
+    )
+    local_trigger.add_argument("--previous-head")
+    local_trigger.add_argument("--payload-ref")
+    local_trigger.add_argument("--json", action="store_true")
+
     sync = subcommands.add_parser("sync", help="sync quiet local transcripts")
     sync.add_argument("--wiki")
     sync.add_argument("--from", dest="source_apps")

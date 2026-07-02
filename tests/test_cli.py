@@ -18,6 +18,16 @@ from codealmanac.services.automation.models import (
     ScheduledJob,
     ScheduledJobStatus,
 )
+from codealmanac.services.control.models import (
+    ControlDeliveryMode,
+    LocalGitState,
+    TriggerEventStatus,
+)
+from codealmanac.services.control.requests import (
+    ListTriggerEventsRequest,
+    SetBranchPolicyRequest,
+    UpsertRepositoryRequest,
+)
 from codealmanac.services.harnesses.models import (
     HarnessKind,
     HarnessReadiness,
@@ -203,6 +213,16 @@ class CliUpdateRunner:
     def run(self, command: tuple[str, ...]) -> PackageCommandResult:
         self.commands.append(command)
         return self.result
+
+
+class CliLocalGitStateProbe:
+    def __init__(self, state: LocalGitState):
+        self.state = state
+        self.requests: list[Path] = []
+
+    def read(self, cwd: Path) -> LocalGitState:
+        self.requests.append(cwd)
+        return self.state
 
 
 def test_cli_init_creates_wiki_and_prints_name(
@@ -840,6 +860,77 @@ def test_cli_hidden_run_worker_drains_queued_run(
     assert run.status == RunStatus.DONE
     assert harness.requests[0].kind == HarnessKind.CODEX
     assert (repo / "almanac/pages/cli-ingest-note.md").is_file()
+
+
+def test_cli_hidden_record_local_trigger_records_pending_event(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    probe = CliLocalGitStateProbe(
+        LocalGitState(
+            cwd=repo,
+            available=True,
+            repository_root=repo,
+            branch_name="dev",
+            head_sha="head-1",
+        )
+    )
+    app = create_app(
+        AppConfig(
+            registry_path=isolated_home / ".codealmanac/registry.json",
+            control_db_path=isolated_home / ".codealmanac/control.sqlite",
+        ),
+        local_git_state_probe=probe,
+    )
+    repository = app.control.upsert_repository(
+        UpsertRepositoryRequest(
+            provider="github",
+            owner_login="AlmanacCode",
+            name="codealmanac",
+            full_name="AlmanacCode/codealmanac",
+            default_branch="dev",
+            almanac_root=Path("almanac"),
+            local_root_path=repo,
+        )
+    )
+    app.control.set_branch_policy(
+        SetBranchPolicyRequest(
+            repository_id=repository.id,
+            name="dev",
+            trigger_enabled=True,
+            delivery_mode=ControlDeliveryMode.COMMIT,
+        )
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert (
+        main(
+            [
+                "__record-local-trigger",
+                "--cwd",
+                str(repo / "src"),
+                "--kind",
+                "local_post_commit",
+                "--json",
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr()
+    data = json.loads(output.out)
+    pending = app.control.list_trigger_events(
+        ListTriggerEventsRequest(statuses=(TriggerEventStatus.PENDING,))
+    )
+
+    assert data["recorded"] is True
+    assert data["event"]["head_sha"] == "head-1"
+    assert tuple(event.head_sha for event in pending) == ("head-1",)
+    assert probe.requests == [repo / "src"]
 
 
 def test_cli_sync_status_reports_ready_transcripts(

@@ -97,3 +97,29 @@ class ListTriggerEventsRequest(CodeAlmanacModel):
     repository_id: str | None = None
     branch_id: str | None = None
     statuses: tuple[TriggerEventStatus, ...] = Field(default_factory=tuple)
+
+
+class RecordLocalTriggerRequest(CodeAlmanacModel):
+    repository_root: Path
+    branch_name: str
+    kind: TriggerEventKind
+    head_sha: str
+    previous_head_sha: str | None = None
+    payload_ref: str | None = None
+
+    @field_validator("branch_name")
+    @classmethod
+    def require_branch_name(cls, value: str) -> str:
+        return required_text(value, "local trigger branch_name")
+
+    @field_validator("head_sha")
+    @classmethod
+    def require_head_sha(cls, value: str) -> str:
+        return required_text(value, "local trigger head_sha")
+
+
+class RecordCurrentGitTriggerRequest(CodeAlmanacModel):
+    cwd: Path
+    kind: TriggerEventKind
+    previous_head_sha: str | None = None
+    payload_ref: str | None = None

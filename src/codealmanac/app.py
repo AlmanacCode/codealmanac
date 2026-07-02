@@ -15,13 +15,17 @@ from codealmanac.integrations.updates import (
     InstalledPackageMetadataProvider,
     SubprocessPackageCommandRunner,
 )
-from codealmanac.integrations.workspaces.git import GitWorkspaceChangeProbe
+from codealmanac.integrations.workspaces.git import (
+    GitLocalStateProbe,
+    GitWorkspaceChangeProbe,
+)
 from codealmanac.manual import ManualLibrary
 from codealmanac.prompts import PromptRenderer
 from codealmanac.services.automation.ports import SchedulerAdapter
 from codealmanac.services.automation.service import AutomationService
 from codealmanac.services.config.service import ConfigService
 from codealmanac.services.config.store import ConfigStore
+from codealmanac.services.control.ports import LocalGitStateProbe
 from codealmanac.services.control.service import ControlService
 from codealmanac.services.control.store import ControlStore
 from codealmanac.services.diagnostics.service import DiagnosticsService
@@ -108,11 +112,15 @@ def create_app(
     update_metadata: PackageInstallMetadataProvider | None = None,
     update_runner: PackageCommandRunner | None = None,
     instruction_installer: InstructionInstaller | None = None,
+    local_git_state_probe: LocalGitStateProbe | None = None,
 ) -> CodeAlmanac:
     app_config = config or AppConfig()
     workspaces = WorkspacesService(WorkspaceRegistryStore(app_config.registry_path))
     config_service = ConfigService(workspaces, ConfigStore(), app_config.config_path)
-    control = ControlService(ControlStore(app_config.control_db_path))
+    control = ControlService(
+        ControlStore(app_config.control_db_path),
+        local_git_state_probe or GitLocalStateProbe(),
+    )
     automation = AutomationService(workspaces, scheduler or LaunchdSchedulerAdapter())
     manual = ManualLibrary()
     wiki = WikiService(workspaces, manual)

@@ -10,21 +10,23 @@ verification, launch-folder updates, commit, and push.
 
 ## Last Completed Slice
 
-Slice 2 made local trigger policy writable in the control DB.
+Slice 3 added the hidden local trigger dispatcher that Git hooks will call.
 
 Implemented:
 
-- repository upsert through `app.control.upsert_repository`
-- branch policy through `app.control.set_branch_policy`
-- local trigger event recording through `app.control.record_trigger_event`
-- trigger event listing through `app.control.list_trigger_events`
-- disabled or unknown branches write no trigger event rows
-- newer pending heads supersede older pending trigger events for the same branch
+- `LocalGitStateProbe` control port
+- concrete Git probe for repository root, branch, and HEAD SHA
+- `ControlService.record_current_git_trigger`
+- repository-root lookup against `repositories.local_root_path`
+- hidden CLI command:
+  `codealmanac __record-local-trigger --kind local_post_commit --cwd "$PWD"`
+- silent default output and `--json` debug output
 
 Verified:
 
 ```text
-uv run pytest tests/test_control_service.py tests/test_architecture.py
+uv run pytest tests/test_control_service.py tests/test_git_workspace_probe.py tests/test_cli.py tests/test_architecture.py
+uv run ruff check .
 git diff --check
 ```
 
@@ -33,6 +35,8 @@ git diff --check
 Choose the next substantial slice from the launch plan. Good candidates:
 
 - local trigger event recording through Git hooks
+- Git hook installation/repair/removal for `post-commit`, `post-merge`, and
+  `post-rewrite`
 - local run storage bridge from repo-local job files to the control DB
 - engine request/result models used by local and hosted workers
 

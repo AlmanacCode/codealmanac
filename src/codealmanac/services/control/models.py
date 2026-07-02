@@ -135,6 +135,15 @@ class RecordTriggerEventResult(CodeAlmanacModel):
     event: TriggerEventRecord | None = None
 
 
+class LocalGitState(CodeAlmanacModel):
+    cwd: Path
+    available: bool
+    repository_root: Path | None = None
+    branch_name: str | None = None
+    head_sha: str | None = None
+    unavailable_reason: str | None = None
+
+
 class ControlSchemaStatus(CodeAlmanacModel):
     path: Path
     user_version: int

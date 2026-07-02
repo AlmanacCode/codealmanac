@@ -11,9 +11,11 @@ from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-
 LLMS_URL = "https://workos.com/docs/llms.txt"
-LINK_PATTERN = re.compile(r"^- \[(?P<title>[^\]]+)\]\((?P<url>[^)]+)\)(?:: (?P<description>.*))?$")
+LINK_PATTERN = re.compile(
+    r"^- \[(?P<title>[^\]]+)\]\((?P<url>[^)]+)\)"
+    r"(?:: (?P<description>.*))?$"
+)
 HEADING_PATTERN = re.compile(r"^(#{1,4})\s+(?P<title>.+)$")
 DEFAULT_HEADING_LIMIT = 80
 
@@ -65,7 +67,9 @@ def main() -> int:
     headings = {}
     failures = []
     if args.fetch_headings:
-        headings, failures = fetch_headings_for(priority_sources(sources)[: args.heading_limit])
+        headings, failures = fetch_headings_for(
+            priority_sources(sources)[: args.heading_limit]
+        )
 
     write_json(cache / "sources.json", [asdict(source) for source in sources])
     write_json(cache / "headings.json", headings)
@@ -143,7 +147,9 @@ def fetch_headings_for(
             text = fetch_text(source.url)
         except SystemExit as error:
             print(error, file=sys.stderr)
-            failures.append({"url": source.url, "title": source.title, "error": str(error)})
+            failures.append(
+                {"url": source.url, "title": source.title, "error": str(error)}
+            )
             continue
         extracted = []
         for line in text.splitlines():
@@ -156,7 +162,10 @@ def fetch_headings_for(
 
 
 def write_json(path: Path, value: object) -> None:
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(value, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def write_source_index(
@@ -190,7 +199,9 @@ def write_source_index(
     if failures:
         lines.extend(["## Heading fetch failures", ""])
         for failure in failures:
-            lines.append(f"- [{failure['title']}]({failure['url']}) - {failure['error']}")
+            lines.append(
+                f"- [{failure['title']}]({failure['url']}) - {failure['error']}"
+            )
         lines.append("")
     for section, section_sources in sections.items():
         lines.extend([f"## {section}", ""])
