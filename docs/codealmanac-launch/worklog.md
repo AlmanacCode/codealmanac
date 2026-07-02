@@ -2,6 +2,38 @@
 
 ## 2026-07-02
 
+- Planned Slice 42 in
+  `docs/plans/2026-07-02-slice-42-github-check-fanout.md`.
+- Added hosted typed GitHub Check Run models, resource adapter, and `checks`
+  capability under `backend/src/almanac/integrations/github/`.
+- Added `GitHubChecksFanout` under `backend/src/almanac/wiring/fanout/`.
+  It subscribes to `RunDelivered`, `RunFailed`, and `RunStale` without adding
+  GitHub provider logic to the update service.
+- Terminal check conclusions are deterministic: delivered runs with wiki file
+  changes publish `success`, delivered runs with no wiki changes publish
+  `neutral`, failed runs publish `failure`, and stale-head runs publish
+  `action_required`.
+- Check details URLs point to the existing hosted repository activity page:
+  `/dashboard/accounts/<account-id>/repositories/<repo-id>`.
+- Pushed hosted commit `97564f7 feat: publish terminal run checks` to
+  `origin/codex/workos-authkit-api-foundation`.
+- Deployed Render service `srv-d8g8nb37uimc739vnnsg` at exact hosted commit
+  `97564f7ea00c74614f8c45c081430e73bbd38090`; deploy
+  `dep-d938q30js32c73eqj80g` finished `live`.
+- Verified backend production smoke:
+  `https://codealmanac-backend-docker.onrender.com/api/health` returned HTTP
+  200 with `{"status":"ok"}`.
+- Verified Slice 42 focused backend gate with
+  `uv run pytest tests/test_github_checks_contract.py
+  tests/test_github_checks_fanout.py tests/test_events_contract.py
+  tests/test_updates_contract.py tests/test_architecture_contract.py -q`
+  (`114 passed`).
+- Verified Slice 42 hosted backend full/hygiene gates with
+  `uv run pytest -q` (`340 passed, 1 warning`), `uv run ruff check .`,
+  `uv run python -m compileall src modal_app -q`, and `git diff --check`.
+- Recorded progress as: CodeAlmanac backend/local 95%, CLI/public UX 87%,
+  CodeAlmanac-hosted backend/auth/API 88%, hosted frontend/onboarding 35%, and
+  infra/deploy rename 70%.
 - Planned Slice 41 in
   `docs/plans/2026-07-02-slice-41-hosted-rename-provider-convergence.md`.
 - Updated active hosted identity references from `usealmanac` to

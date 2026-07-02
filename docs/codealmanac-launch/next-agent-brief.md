@@ -10,59 +10,48 @@ verification, launch-folder updates, commit, push, and RelayForge update.
 
 ## Last Completed Slice
 
-Slice 41 converged hosted product identity and provider deployment naming.
+Slice 42 added GitHub Check fanout for terminal hosted run outcomes.
 
 Implemented:
 
 - hosted worktree at
   `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
 - hosted branch `codex/workos-authkit-api-foundation`
-- active hosted identity strings now say `codealmanac-hosted` in agent docs,
-  FastAPI metadata, loggers, domain-event session keys, frontend support
-  defaults, and the clean-slate Supabase migration comment
-- Vercel project id `prj_sBOdSIF82roDGnkFeYrh5qdg6epp` was renamed from
-  `thealmanac/usealmanac` to `thealmanac/codealmanac-hosted`
-- clean hosted frontend checkout was linked to the renamed Vercel project
-- hosted commit `a781e51 chore: align hosted product identity` was pushed
-- Vercel production deployed
-  `https://codealmanac-hosted-lasush9ur-thealmanac.vercel.app` and aliased it
-  to `https://www.codealmanac.com`
+- typed GitHub Check Run models, resource adapter, and `checks` capability
+- `GitHubChecksFanout` in `backend/src/almanac/wiring/fanout/github_checks.py`
+- fanout subscription for `RunDelivered`, `RunFailed`, and `RunStale`
+- check conclusions: changed delivered runs `success`, unchanged delivered runs
+  `neutral`, failed runs `failure`, stale-head runs `action_required`
+- check details URL points to the existing hosted repository page because no
+  run-detail page exists yet
+- hosted commit `97564f7 feat: publish terminal run checks` was pushed
 - Render service `srv-d8g8nb37uimc739vnnsg` deployed exact commit
-  `a781e5189da4403bcf8b31d7fb9129b3779aec01`; deploy
-  `dep-d938j4km0tmc73d6p3sg` is live
-- production smoke passed for `https://www.codealmanac.com` and
-  `https://codealmanac-backend-docker.onrender.com/api/health`
+  `97564f7ea00c74614f8c45c081430e73bbd38090`; deploy
+  `dep-d938q30js32c73eqj80g` is live
+- production backend health returned HTTP 200 with `{"status":"ok"}`
 
 Verified:
 
 ```text
 cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence/backend
-uv run pytest tests/test_events_contract.py tests/test_identity_auth_contract.py tests/test_architecture_contract.py -q
+uv run pytest tests/test_github_checks_contract.py tests/test_github_checks_fanout.py tests/test_events_contract.py tests/test_updates_contract.py tests/test_architecture_contract.py -q
 uv run ruff check .
 uv run python -m compileall src modal_app -q
 uv run pytest -q
 git diff --check
-cd ../frontend
-npm run test:routes
-npm run test:frontend
-npm run lint
-npm run build
 ```
 
-Counts so far: hosted backend focused `85 passed`; hosted backend full
-`334 passed, 1 warning`; frontend routes `27 passed`; frontend components
-`44 passed`; hosted ruff, compileall, lint, build, and diff-check passed.
+Counts so far: hosted backend focused `114 passed`; hosted backend full
+`340 passed, 1 warning`; hosted ruff, compileall, and diff-check passed.
 
 ## Next Pressure Test
 
-Choose the next launch-hardening slice between terminal run fanout,
-cloud run cancel/retry semantics, richer frontend onboarding pages, and
+Choose the next launch-hardening slice between cloud run cancel/retry
+semantics, richer frontend onboarding pages, live GitHub App check smoke, and
 remaining provider cleanup.
 
 Pressure points:
 
-- terminal failed/stale runs still do not have a dedicated `RunFailed` or
-  `RunStale` GitHub Check subscriber
 - CLI commands list/show/log/start cloud runs, but do not cancel/retry them
 - `runs cancel` needs a real Modal/provider cancellation primitive before it
   should be public
@@ -101,7 +90,8 @@ pushed to origin at `168f9b2 feat: add CLI run read routes`; Slice 38 is
 pushed to origin at `ed7e765 feat: add cloud route handoff`; Slice 39 is
 pushed to origin at `14caf8b feat: start cloud runs from CLI`; Slice 40 is
 pushed to origin at `8795849 feat: emit terminal run events`; Slice 41 is
-pushed to origin at `a781e51 chore: align hosted product identity`.
+pushed to origin at `a781e51 chore: align hosted product identity`; Slice 42 is
+pushed to origin at `97564f7 feat: publish terminal run checks`.
 
 The local wiki command currently fails on this checkout with:
 

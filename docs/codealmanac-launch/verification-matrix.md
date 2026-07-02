@@ -645,9 +645,29 @@ Current evidence:
   frontend route tests (`27 passed`), frontend component tests (`44 passed`),
   `npm run lint`, `npm run build`, and `git diff --check`. The frontend build
   retained the known non-blocking CSS optimizer warning about `m-* utility`.
-- Remaining hosted worker risks: terminal failed/stale GitHub check subscriber,
-  cloud run cancel/retry, and richer production setup/onboarding screens
-  still need launch-hardening.
+- Slice 42 added typed hosted GitHub Check Run models, resource adapter, and
+  `checks` capability backed by GitHub App installation tokens.
+- Slice 42 added `GitHubChecksFanout`, subscribing to `RunDelivered`,
+  `RunFailed`, and `RunStale` outside the update service.
+- `backend/tests/test_github_checks_contract.py` proves the Check Runs REST
+  body, endpoint path, installation-token use, and typed response parsing.
+- `backend/tests/test_github_checks_fanout.py` proves delivered runs publish
+  `success` or `neutral`, failed runs publish `failure`, stale runs publish
+  `action_required`, and details URLs point to the existing repository page.
+- Slice 42 pushed hosted commit
+  `97564f7 feat: publish terminal run checks` and deployed Render service
+  `srv-d8g8nb37uimc739vnnsg` at exact commit
+  `97564f7ea00c74614f8c45c081430e73bbd38090`; deploy
+  `dep-d938q30js32c73eqj80g` finished `live`.
+- Slice 42 backend production smoke passed:
+  `https://codealmanac-backend-docker.onrender.com/api/health` returned HTTP
+  200 with `{"status":"ok"}`.
+- Slice 42 hosted verification passed with focused backend tests
+  (`114 passed`), full backend tests (`340 passed, 1 warning`),
+  `uv run ruff check .`, `uv run python -m compileall src modal_app -q`, and
+  `git diff --check`.
+- Remaining hosted worker risks: cloud run cancel/retry and richer production
+  setup/onboarding screens still need launch-hardening.
 
 ## Provider / Deployment
 
@@ -684,6 +704,11 @@ Current evidence:
 - Slice 41 deployed Render service `srv-d8g8nb37uimc739vnnsg` at exact commit
   `a781e5189da4403bcf8b31d7fb9129b3779aec01`. Deploy
   `dep-d938j4km0tmc73d6p3sg` finished `live`, and
+  `https://codealmanac-backend-docker.onrender.com/api/health` returned HTTP
+  200 with `{"status":"ok"}`.
+- Slice 42 deployed Render service `srv-d8g8nb37uimc739vnnsg` at exact commit
+  `97564f7ea00c74614f8c45c081430e73bbd38090`. Deploy
+  `dep-d938q30js32c73eqj80g` finished `live`, and
   `https://codealmanac-backend-docker.onrender.com/api/health` returned HTTP
   200 with `{"status":"ok"}`.
 - Slice 41 verified Doppler project `codealmanac` configs
