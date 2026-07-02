@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 34 hosted run event visibility.
+Sent: 2026-07-02 after Slice 35 hosted trigger policies.
 
 Route:
 
@@ -26,11 +26,11 @@ It was not present in `codealmanac/prd` when checked.
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 92% | 92% | Slice 34 changed hosted read/API/UI only; local package API and local worker maturity are unchanged. |
-| CodeAlmanac CLI/public UX | 64% | 64% | Slice 34 does not add public CLI commands; cloud capture hook upload remains the latest CLI movement. |
-| CodeAlmanac-hosted backend/auth/API | 68% | 65% | Hosted runs now expose persisted `run_events` through an authorized API route. |
-| Hosted frontend/onboarding | 20% | 17% | The dashboard can now inspect a run's event timeline from real DTOs; onboarding/configuration screens are still not implemented. |
-| Infra/deploy rename | 15% | 15% | Slice 34 does not change deployment naming or provider configuration. |
+| CodeAlmanac backend/local | 92% | 92% | Slice 35 changed hosted trigger policy and dashboard behavior only; local package API and local worker maturity are unchanged. |
+| CodeAlmanac CLI/public UX | 64% | 64% | Slice 35 does not add public CLI commands; CLI trigger mirrors remain future work. |
+| CodeAlmanac-hosted backend/auth/API | 74% | 68% | Hosted now stores maintained-branch trigger policies and starts branch-push runs from enabled policies. |
+| Hosted frontend/onboarding | 28% | 20% | Repository settings now expose maintained branches and per-branch commit/PR delivery from real DTOs. |
+| Infra/deploy rename | 15% | 15% | Slice 35 changes Supabase schema but does not change provider deployment naming/configuration. |
 
 ## Update Rule
 

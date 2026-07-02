@@ -2,6 +2,39 @@
 
 ## 2026-07-02
 
+- Planned Slice 35 in
+  `docs/plans/2026-07-02-slice-35-hosted-trigger-policies.md`.
+- Added hosted `repository_trigger_policies`, keyed by `(repo_id, branch)`,
+  with `enabled` and cloud delivery mode `commit|pr`.
+- Added backend `RepositoryTriggerPolicy` models, table/store/service methods,
+  API DTOs, and account-scoped routes:
+  `GET /api/accounts/{account_id}/repositories/{repo_id}/triggers` and
+  `PUT /api/accounts/{account_id}/repositories/{repo_id}/triggers`.
+- Added branch-push update planning from normalized GitHub `BranchPushed`
+  events. A branch push starts an update only when the branch has an enabled
+  trigger policy.
+- Added deterministic policy-based branch delivery:
+  `commit` creates `CommitToBranch`; `pr` creates `OpenWikiPullRequest`.
+- Added the repository settings branch trigger UI. It reads real GitHub branch
+  DTOs, shows saved trigger policies, lets users toggle maintained branches,
+  and chooses commit vs PR delivery per branch.
+- Fixed the Atlas design-lab mock status metadata to include `stale`, which was
+  required for production TypeScript build after Slice 33.
+- Verified Slice 35 focused backend gate with
+  `uv run pytest tests/test_repositories_contract.py
+  tests/test_repositories_api_contract.py tests/test_updates_contract.py
+  tests/test_architecture_contract.py -q` (`118 passed, 1 warning`).
+- Verified Slice 35 hosted frontend gates with `npm run test:frontend`
+  (`44 passed`), `npm run test:routes` (`26 passed`), `npm run lint`, and
+  `npm run build`. Build passed with the known CSS optimizer warning about
+  `m-* utility`.
+- Verified Slice 35 hosted backend hygiene/full gates with
+  `uv run ruff check .`, `uv run ruff format --check .`,
+  `python -m compileall src modal_app -q`, `uv run pytest -q`
+  (`320 passed, 1 warning`), and `git diff --check`.
+- Pushed hosted commit
+  `1b00b63 feat: add repository trigger policies` to
+  `origin/codex/workos-authkit-api-foundation`.
 - Planned Slice 34 in
   `docs/plans/2026-07-02-slice-34-hosted-run-event-visibility.md`.
 - Added hosted `RunEventDTO` and

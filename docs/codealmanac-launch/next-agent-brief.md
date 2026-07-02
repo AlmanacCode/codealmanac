@@ -10,29 +10,31 @@ verification, launch-folder updates, commit, push, and RelayForge update.
 
 ## Last Completed Slice
 
-Slice 34 exposed hosted run-event visibility through the API and dashboard.
+Slice 35 added hosted maintained-branch trigger policies.
 
 Implemented:
 
 - hosted worktree at
   `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
 - hosted branch `codex/workos-authkit-api-foundation`
-- `RunEventDTO`
-- `GET /api/runs/{run_id}/events`
-- `Updates.run_events_for_user(...)` and
-  `UpdateQueries.run_events_for_user(...)`
-- repository authorization before run-event reads
-- frontend `RunEventDTO`, `listRunEvents(runId)`, and BFF allowlist path
-  `GET /api/dashboard/runs/<uuid>/events`
-- expandable dashboard `RunRow` event timeline with kind, relative time,
-  message, and normalized payload fields
-- pushed hosted commit `4e4c94b feat: expose run event timeline`
+- `repository_trigger_policies`, keyed by `(repo_id, branch)`
+- `RepositoryTriggerPolicy` models, table/store/service, API DTOs, and RLS
+- account-scoped trigger routes:
+  `GET /api/accounts/{account_id}/repositories/{repo_id}/triggers` and
+  `PUT /api/accounts/{account_id}/repositories/{repo_id}/triggers`
+- branch-push update planning from normalized GitHub `BranchPushed` events
+- policy-driven branch delivery: `commit` -> `CommitToBranch`; `pr` ->
+  `OpenWikiPullRequest`
+- repository settings UI for maintained branches and per-branch delivery mode
+- fixed the Atlas design-lab mock to include `stale` status so production build
+  passes
+- pushed hosted commit `1b00b63 feat: add repository trigger policies`
 
 Verified:
 
 ```text
 cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence/backend
-uv run pytest tests/test_updates_contract.py tests/test_repositories_api_contract.py tests/test_update_run_events_contract.py -q
+uv run pytest tests/test_repositories_contract.py tests/test_repositories_api_contract.py tests/test_updates_contract.py tests/test_architecture_contract.py -q
 uv run pytest -q
 uv run ruff check .
 uv run ruff format --check .
@@ -45,23 +47,25 @@ cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-converg
 npm run lint
 npm run test:frontend
 npm run test:routes
+npm run build
 ```
 
-Counts: hosted backend focused `35 passed, 1 warning`; hosted backend full
-`312 passed, 1 warning`; hosted frontend `43 passed` and route tests
-`26 passed`.
+Counts: hosted backend focused `118 passed, 1 warning`; hosted backend full
+`320 passed, 1 warning`; hosted frontend `44 passed`, route tests
+`26 passed`, and build passed with the known CSS optimizer warning about
+`m-* utility`.
 
 ## Next Pressure Test
 
-Choose the next launch-hardening slice between terminal run fanout and
-dashboard onboarding/configuration.
+Choose the next launch-hardening slice between CLI trigger mirrors, terminal
+run fanout, and setup/onboarding entrypoints.
 
 Pressure points:
 
 - terminal failed/stale runs still do not have a dedicated `RunFailed` or
   `RunStale` domain-event fanout for GitHub check updates
-- repository onboarding/configuration screens still need the new cloud setup
-  flow and branch/delivery controls
+- CLI commands do not yet mirror trigger policy reads/writes
+- browser setup/onboarding entrypoints still need the new cloud setup flow
 - old inline-message conversation routes should remain compatibility-only
 
 ## Known Repo State
@@ -79,7 +83,8 @@ on `codex/workos-authkit-api-foundation`. Slice 27 is pushed to origin at
 at `51c2cb2 feat: call codealmanac maintenance api`; Slice 32 is pushed to
 origin at `12cfc08 feat: persist hosted run events`; Slice 33 is pushed to
 origin at `9098b65 feat: record stale delivery outcomes`; Slice 34 is pushed
-to origin at `4e4c94b feat: expose run event timeline`.
+to origin at `4e4c94b feat: expose run event timeline`; Slice 35 is pushed to
+origin at `1b00b63 feat: add repository trigger policies`.
 
 The local wiki command currently fails on this checkout with:
 

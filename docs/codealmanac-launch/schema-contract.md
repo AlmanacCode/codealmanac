@@ -135,6 +135,7 @@ These tables exist in both local and cloud where the concept applies.
 ```text
 repositories
 branches
+repository_trigger_policies   # cloud Slice 35: stored maintained-branch policy
 sessions
 turns
 turn_branches
@@ -174,6 +175,11 @@ and delivery policy.
 
 User-facing noun: `triggers`.
 
+Cloud implementation note: Slice 35 does not mirror the full branch inventory
+into SQL. The cloud settings page reads live branch names from GitHub and stores
+only configured maintained-branch policy rows in
+`repository_trigger_policies`.
+
 Important fields:
 
 ```text
@@ -201,6 +207,30 @@ Local delivery modes:
 working_tree
 commit
 ```
+
+### `repository_trigger_policies`
+
+Cloud table for maintained-branch policy.
+
+Important fields:
+
+```text
+repo_id
+branch
+enabled
+delivery_mode          # commit | pr
+created_at
+updated_at
+```
+
+Primary key:
+
+```text
+(repo_id, branch)
+```
+
+Branch names are data, not URL structure. API writes send `branch` in the JSON
+body so names such as `release/1.4` do not require path parsing.
 
 ### `sessions`
 

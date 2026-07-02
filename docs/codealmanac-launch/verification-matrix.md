@@ -519,8 +519,28 @@ Current evidence:
   `python -m compileall src modal_app -q`, `git diff --check`,
   `npm run lint`, `npm run test:frontend` (`43 passed`), and
   `npm run test:routes` (`26 passed`).
-- Remaining hosted worker risks: terminal failed/stale GitHub check fanout and
-  production onboarding/configuration screens still need launch-hardening.
+- Slice 35 added SQL-backed `repository_trigger_policies`, with RLS policy in
+  launch security hardening.
+- `backend/tests/test_repositories_contract.py` proves trigger policy writes
+  preserve slash-containing branch names and require settings permission.
+- `backend/tests/test_repositories_api_contract.py` proves trigger policy list
+  and write routes are account scoped and use JSON body branch names.
+- `backend/tests/test_updates_contract.py` proves enabled branch-push trigger
+  policies start `BranchSource` runs and select `CommitToBranch` vs
+  `OpenWikiPullRequest` from delivery mode.
+- `frontend/tests/frontend/repository-settings.test.tsx` proves repository
+  settings render maintained branches, saved trigger state, and delivery
+  controls from DTOs.
+- Slice 35 verification passed with hosted backend focused tests
+  (`118 passed, 1 warning`), full hosted backend (`320 passed, 1 warning`),
+  `uv run ruff check .`, `uv run ruff format --check .`,
+  `python -m compileall src modal_app -q`, `git diff --check`,
+  `npm run lint`, `npm run test:frontend` (`44 passed`),
+  `npm run test:routes` (`26 passed`), and `npm run build`. Build passed with
+  the known CSS optimizer warning about `m-* utility`.
+- Remaining hosted worker risks: terminal failed/stale GitHub check fanout,
+  CLI trigger mirrors, and production setup/onboarding entrypoints still need
+  launch-hardening.
 
 ## Provider / Deployment
 
