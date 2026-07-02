@@ -5,7 +5,10 @@ from codealmanac import __version__
 from codealmanac.core.models import AppConfig
 from codealmanac.integrations.automation import LaunchdSchedulerAdapter
 from codealmanac.integrations.harnesses import default_harness_adapters
-from codealmanac.integrations.runs import SubprocessRunWorkerSpawner
+from codealmanac.integrations.runs import (
+    SubprocessLocalWorkerSpawner,
+    SubprocessRunWorkerSpawner,
+)
 from codealmanac.integrations.setup import FileInstructionInstaller
 from codealmanac.integrations.sources import (
     default_source_runtime_adapters,
@@ -80,7 +83,7 @@ from codealmanac.workflows.local_delivery import LocalDeliveryWorkflow
 from codealmanac.workflows.local_delivery.ports import LocalGitDeliveryManager
 from codealmanac.workflows.local_engine import LocalEngineWorkflow
 from codealmanac.workflows.local_runs import LocalRunPreparationWorkflow
-from codealmanac.workflows.local_worker import LocalWorkerWorkflow
+from codealmanac.workflows.local_worker import LocalWorkerSpawner, LocalWorkerWorkflow
 from codealmanac.workflows.page_run import PageRunWorkflow
 from codealmanac.workflows.run_queue import RunQueueWorkflow
 from codealmanac.workflows.sync.service import SyncWorkflow
@@ -125,6 +128,7 @@ class CodeAlmanac:
     runs: RunsService
     sources: SourcesService
     harnesses: HarnessesService
+    local_worker_spawner: LocalWorkerSpawner
     prompts: PromptRenderer
     manual: ManualLibrary
     workflows: CodeAlmanacWorkflows
@@ -137,6 +141,7 @@ def create_app(
     source_runtime_adapters: Sequence[SourceRuntimeAdapter] | None = None,
     scheduler: SchedulerAdapter | None = None,
     worker_spawner: RunWorkerSpawner | None = None,
+    local_worker_spawner: LocalWorkerSpawner | None = None,
     update_metadata: PackageInstallMetadataProvider | None = None,
     update_runner: PackageCommandRunner | None = None,
     instruction_installer: InstructionInstaller | None = None,
@@ -252,6 +257,9 @@ def create_app(
         local_engine,
         local_delivery,
     )
+    resolved_local_worker_spawner = (
+        local_worker_spawner or SubprocessLocalWorkerSpawner()
+    )
     sync = SyncWorkflow(workspaces, sources, runs, ingest, queue, SyncLedgerStore())
     workflows = CodeAlmanacWorkflows(
         build=build,
@@ -288,6 +296,7 @@ def create_app(
         runs=runs,
         sources=sources,
         harnesses=harnesses,
+        local_worker_spawner=resolved_local_worker_spawner,
         prompts=prompts,
         manual=manual,
         workflows=workflows,

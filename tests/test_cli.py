@@ -68,6 +68,7 @@ from codealmanac.workflows.local_delivery.models import (
     LocalDeliveryHead,
     LocalDeliveryPatch,
 )
+from codealmanac.workflows.local_worker.requests import SpawnLocalWorkerRequest
 from codealmanac.workflows.sync.models import (
     SyncLedger,
     SyncLedgerEntry,
@@ -158,6 +159,18 @@ class CliWorkerSpawner:
         return RunWorkerSpawnResult(
             child_pid=5151,
             command=("fake-codealmanac-worker",),
+        )
+
+
+class CliLocalWorkerSpawner:
+    def __init__(self):
+        self.requests: list[SpawnLocalWorkerRequest] = []
+
+    def spawn(self, request: SpawnLocalWorkerRequest) -> RunWorkerSpawnResult:
+        self.requests.append(request)
+        return RunWorkerSpawnResult(
+            child_pid=6262,
+            command=("fake-codealmanac-local-worker",),
         )
 
 
@@ -1014,6 +1027,145 @@ def test_cli_hidden_record_local_trigger_records_pending_event(
     assert data["event"]["head_sha"] == "head-1"
     assert tuple(event.head_sha for event in pending) == ("head-1",)
     assert probe.requests == [repo / "src"]
+
+
+def test_cli_hidden_record_local_trigger_spawns_worker_for_recorded_event(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    probe = CliLocalGitStateProbe(
+        LocalGitState(
+            cwd=repo,
+            available=True,
+            repository_root=repo,
+            branch_name="dev",
+            head_sha="head-1",
+        )
+    )
+    spawner = CliLocalWorkerSpawner()
+    app = create_app(
+        AppConfig(
+            registry_path=isolated_home / ".codealmanac/registry.json",
+            control_db_path=isolated_home / ".codealmanac/control.sqlite",
+        ),
+        local_git_state_probe=probe,
+        local_worker_spawner=spawner,
+    )
+    repository = app.control.upsert_repository(
+        UpsertRepositoryRequest(
+            provider="github",
+            owner_login="AlmanacCode",
+            name="codealmanac",
+            full_name="AlmanacCode/codealmanac",
+            default_branch="dev",
+            almanac_root=Path("almanac"),
+            local_root_path=repo,
+        )
+    )
+    branch = app.control.set_branch_policy(
+        SetBranchPolicyRequest(
+            repository_id=repository.id,
+            name="dev",
+            trigger_enabled=True,
+            delivery_mode=ControlDeliveryMode.COMMIT,
+        )
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert (
+        main(
+            [
+                "__record-local-trigger",
+                "--cwd",
+                str(repo),
+                "--kind",
+                "local_post_commit",
+                "--spawn-worker",
+                "--json",
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr()
+    data = json.loads(output.out)
+
+    assert data["recorded"] is True
+    assert data["worker"]["child_pid"] == 6262
+    assert spawner.requests == [
+        SpawnLocalWorkerRequest(
+            cwd=repo,
+            repository_id=repository.id,
+            branch_id=branch.id,
+        )
+    ]
+
+
+def test_cli_hidden_record_local_trigger_does_not_spawn_worker_when_ignored(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    probe = CliLocalGitStateProbe(
+        LocalGitState(
+            cwd=repo,
+            available=True,
+            repository_root=repo,
+            branch_name="dev",
+            head_sha="head-1",
+        )
+    )
+    spawner = CliLocalWorkerSpawner()
+    app = create_app(
+        AppConfig(
+            registry_path=isolated_home / ".codealmanac/registry.json",
+            control_db_path=isolated_home / ".codealmanac/control.sqlite",
+        ),
+        local_git_state_probe=probe,
+        local_worker_spawner=spawner,
+    )
+    app.control.upsert_repository(
+        UpsertRepositoryRequest(
+            provider="github",
+            owner_login="AlmanacCode",
+            name="codealmanac",
+            full_name="AlmanacCode/codealmanac",
+            default_branch="dev",
+            almanac_root=Path("almanac"),
+            local_root_path=repo,
+        )
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert (
+        main(
+            [
+                "__record-local-trigger",
+                "--cwd",
+                str(repo),
+                "--kind",
+                "local_post_commit",
+                "--spawn-worker",
+                "--json",
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr()
+    data = json.loads(output.out)
+
+    assert data["recorded"] is False
+    assert data["reason"] == "branch_not_configured"
+    assert "worker" not in data
+    assert spawner.requests == []
 
 
 def test_cli_hidden_run_local_worker_returns_json_noop(

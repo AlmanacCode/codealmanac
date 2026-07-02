@@ -10,21 +10,22 @@ verification, launch-folder updates, commit, and push.
 
 ## Last Completed Slice
 
-Slice 15 added the hidden local worker CLI entry point.
+Slice 16 connected local Git hooks to detached local worker spawning.
 
 Implemented:
 
-- hidden command `codealmanac __run-local-worker`
-- `--repository-id`, `--branch-id`, `--operation`, `--using`, `--title`, and
-  `--json` flags
-- dispatch to `app.workflows.local_worker.run_next(...)`
-- quiet default output for future hook/background usage
-- JSON debug output for tests and operators
+- `SpawnLocalWorkerRequest`
+- `LocalWorkerSpawner` port
+- `SubprocessLocalWorkerSpawner`
+- `codealmanac __record-local-trigger --spawn-worker`
+- Git hook blocks now include `--spawn-worker`
+- spawn path starts `codealmanac __run-local-worker` for the recorded
+  repository and branch
 
 Verified:
 
 ```text
-uv run pytest tests/test_cli.py tests/test_local_worker_workflow.py tests/test_architecture.py
+uv run pytest tests/test_cli.py tests/test_local_hooks.py tests/test_local_worker_spawner.py tests/test_architecture.py
 uv run pytest
 uv run ruff check .
 git diff --check
@@ -37,7 +38,7 @@ Choose the next substantial slice from the launch plan. Good candidates:
 - local trigger event recording through Git hooks
 - public or hidden setup command that calls `app.local_hooks`
 - local run storage bridge from repo-local job files to the control DB
-- background worker spawning from the local Git hook after trigger recording
+- setup/local command surface that installs hooks and branch policy
 - prompt restoration / first-build `init` path from
   `docs/codealmanac-launch/init-first-build-prompt-restoration.md`
 
@@ -47,7 +48,7 @@ progress update, commit, and push.
 
 ## Known Repo State
 
-The branch is `dev`. At the end of Slice 15 verification it was ready to
+The branch is `dev`. At the end of Slice 16 verification it was ready to
 commit on top of `origin/dev`.
 
 The local wiki command currently fails on this checkout with:

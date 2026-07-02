@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 15 verification.
+Sent: pending after Slice 16 verification.
 
 Route:
 
@@ -26,8 +26,8 @@ It was not present in `codealmanac/prd` when checked.
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 68% | 67% | Slice 15 exposed the local worker through a hidden CLI entry point. |
-| CodeAlmanac CLI/public UX | 12% | 10% | Hidden trigger and local-worker commands exist; launch public CLI surface is not rebuilt yet. |
+| CodeAlmanac backend/local | 72% | 68% | Slice 16 connected local Git hooks to detached local worker spawning after trigger recording. |
+| CodeAlmanac CLI/public UX | 13% | 12% | Hidden trigger and local-worker commands exist; trigger command can spawn the worker. Public CLI surface is not rebuilt yet. |
 | CodeAlmanac-hosted backend/auth/API | 8% | 8% | WorkOS/Doppler setup and hosted rename groundwork exist; public API migration is not implemented yet. |
 | Hosted frontend/onboarding | 5% | 5% | Existing frontend is deployed under CodeAlmanac; new onboarding/configuration screens are not implemented yet. |
 | Infra/deploy rename | 5% | 5% | GitHub rename, Modal, Render, Vercel production deploy, and health checks were exercised; durable cleanup remains. |

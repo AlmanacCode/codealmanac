@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
@@ -18,3 +20,19 @@ class RunNextLocalWorkerRequest(CodeAlmanacModel):
         if value is None:
             return None
         return required_text(value, "local worker request text")
+
+
+class SpawnLocalWorkerRequest(CodeAlmanacModel):
+    cwd: Path
+    repository_id: str
+    branch_id: str
+    operation: str = "update"
+    harness: HarnessKind = HarnessKind.CODEX
+    title: str | None = None
+
+    @field_validator("repository_id", "branch_id", "operation", "title")
+    @classmethod
+    def require_spawn_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return required_text(value, "local worker spawn text")

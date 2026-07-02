@@ -160,6 +160,14 @@ Current evidence:
 - `tests/test_cli.py` proves `codealmanac __run-local-worker --repository-id
   ... --branch-id ... --json` processes one trigger through preparation,
   engine execution, and delivery.
+- Slice 16 connected local Git hooks to detached local worker spawning.
+- `tests/test_cli.py` proves `codealmanac __record-local-trigger --spawn-worker
+  --json` spawns a local worker only when a trigger event is recorded.
+- `tests/test_cli.py` proves ignored trigger events do not spawn a worker.
+- `tests/test_local_hooks.py` proves installed Git hook blocks include
+  `--spawn-worker`.
+- `tests/test_local_worker_spawner.py` proves the subprocess command targets
+  the hidden `__run-local-worker` CLI with repository and branch filters.
 
 Commands:
 

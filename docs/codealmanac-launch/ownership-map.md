@@ -18,6 +18,7 @@ Owns:
 - local worker workspace creation
 - local engine execution
 - local worker orchestration
+- local worker background spawning
 - deterministic local delivery
 - auto-update client behavior
 

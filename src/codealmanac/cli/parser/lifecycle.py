@@ -79,6 +79,7 @@ def add_lifecycle_commands(subcommands: argparse._SubParsersAction) -> None:
     )
     local_trigger.add_argument("--previous-head")
     local_trigger.add_argument("--payload-ref")
+    local_trigger.add_argument("--spawn-worker", action="store_true")
     local_trigger.add_argument("--json", action="store_true")
 
     sync = subcommands.add_parser("sync", help="sync quiet local transcripts")

@@ -34,6 +34,7 @@ def test_local_hooks_install_default_git_trigger_hooks(tmp_path: Path):
         text = hook_path(repo, hook).read_text(encoding="utf-8")
         assert "__record-local-trigger" in text
         assert f"--kind {trigger_kind_for(hook)}" in text
+        assert "--spawn-worker" in text
         assert LOCAL_TRIGGER_START in text
         assert LOCAL_TRIGGER_END in text
         assert hook_path(repo, hook).stat().st_mode & stat.S_IXUSR

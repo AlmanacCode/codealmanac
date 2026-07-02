@@ -318,3 +318,18 @@
   CodeAlmanac backend/local 68%, CLI/public UX 12%,
   CodeAlmanac-hosted backend/auth/API 8%, hosted frontend/onboarding 5%, and
   infra/deploy rename 5%.
+- Planned Slice 16 in
+  `docs/plans/2026-07-02-slice-16-local-hook-worker-spawn.md`.
+- Added `SpawnLocalWorkerRequest` and a `LocalWorkerSpawner` port.
+- Added `SubprocessLocalWorkerSpawner`, which starts
+  `codealmanac __run-local-worker` in a detached process for a specific
+  repository and branch.
+- Added `codealmanac __record-local-trigger --spawn-worker`.
+- Updated installed local Git hook blocks to record triggers and request a
+  detached local worker spawn.
+- The hook path still records triggers synchronously and does not run the model
+  worker inline.
+- Verified Slice 16 focused behavior with
+  `uv run pytest tests/test_cli.py tests/test_local_hooks.py tests/test_local_worker_spawner.py tests/test_architecture.py`.
+- Verified Slice 16 full gate with `uv run pytest` (`422 passed`),
+  `uv run ruff check .`, and `git diff --check`.
