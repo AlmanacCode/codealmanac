@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 46 dashboard run actions and production deploy.
+Sent: 2026-07-02 after Slice 47 repository setup summary and production deploy.
 
 Route:
 
@@ -26,11 +26,11 @@ It was not present in `codealmanac/prd` when checked.
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 95% | 95% | Slice 46 is hosted-frontend only; local worker behavior is unchanged. |
-| CodeAlmanac CLI/public UX | 91% | 91% | No CLI change after Slice 45 retry; dashboard now exposes the same run controls. |
-| CodeAlmanac-hosted backend/auth/API | 92% | 92% | No backend API change after Slice 45; Slice 46 consumes existing BFF commands. |
-| Hosted frontend/onboarding | 52% | 44% | Repository activity rows now expose cancel/retry with pending and inline-error states. |
-| Infra/deploy rename | 86% | 84% | Vercel production and Render backend are live on the Slice 46 commit. |
+| CodeAlmanac backend/local | 95% | 95% | Slice 47 is hosted setup/status work; local worker behavior is unchanged. |
+| CodeAlmanac CLI/public UX | 91% | 91% | No CLI change after Slice 45 retry; browser setup now mirrors more cloud state. |
+| CodeAlmanac-hosted backend/auth/API | 93% | 92% | Browser-session capture status is exposed at `/api/capture/status`. |
+| Hosted frontend/onboarding | 60% | 52% | Repository settings now show GitHub access, capture, branches, and delivery readiness. |
+| Infra/deploy rename | 88% | 86% | Vercel production and Render backend are live on the Slice 47 commit. |
 
 ## Update Rule
 

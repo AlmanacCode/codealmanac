@@ -759,8 +759,27 @@ Current evidence:
 - Slice 46 hosted frontend verification passed with route tests (`27 passed`),
   frontend component tests (`50 passed`), `npm run lint`, `npm run build`, and
   `git diff --check`.
-- Remaining hosted worker risks: richer production setup/onboarding screens
-  still need launch-hardening.
+- Slice 47 added the repository setup summary on the hosted repository settings
+  page. It shows GitHub App access, repository access, browser-user capture
+  credential state, maintained branch trigger count, and delivery readiness.
+- Slice 47 added browser-authenticated `GET /api/capture/status`, returning
+  `CaptureStatusDTO` without raw capture token material.
+- `backend/tests/test_capture_tokens_api_contract.py` proves
+  `/api/capture/status` uses browser-session auth, not CLI-token auth, and does
+  not return raw capture tokens.
+- `frontend/tests/frontend/repository-setup-summary.test.tsx` proves the setup
+  summary renders connected capture state, GitHub configuration URLs, enabled
+  maintained branches, delivery modes, and empty/inactive states.
+- `frontend/tests/routes.test.mjs` proves the settings page and server API
+  client wire `RepositorySetupSummary`, `CaptureStatusDTO`, and
+  `getCaptureStatus()`.
+- Slice 47 verification passed with focused backend tests
+  (`15 passed, 1 warning`), full backend tests (`356 passed, 1 warning`),
+  route tests (`27 passed`), frontend component tests (`52 passed`), backend
+  ruff/compileall, frontend lint/build, and `git diff --check`.
+- Remaining hosted worker risks: authenticated production browser verification,
+  setup CTA refinement, provider-library alignment, and provider cleanup still
+  need launch-hardening.
 
 ## Provider / Deployment
 
@@ -861,3 +880,19 @@ Current evidence:
   `https://www.codealmanac.com` returned HTTP 200 and
   `https://codealmanac-backend-docker.onrender.com/api/health` returned
   `{"status":"ok"}`.
+- Slice 47 fast-forwarded hosted `main` to
+  `2102d38d17f66c32fb2e68a30ae9ddb3a1f8a34c` so provider branch tracking uses
+  the launch code.
+- Slice 47 deployed the hosted frontend to Vercel production
+  `https://codealmanac-hosted-3wf3uccd1-thealmanac.vercel.app`, deployment id
+  `dpl_DmcaJnx2j1vLBfFHuWFaiCDzUgax`; Vercel aliased it to
+  `https://www.codealmanac.com` and reported status `Ready`.
+- Slice 47 Render auto-deployed service `srv-d8g8nb37uimc739vnnsg` at exact
+  commit `2102d38d17f66c32fb2e68a30ae9ddb3a1f8a34c`; deploy
+  `dep-d939qpbtqb8s73fg7c9g` finished `live`.
+- Slice 47 production smoke passed:
+  `https://www.codealmanac.com` returned HTTP 200,
+  `https://codealmanac-backend-docker.onrender.com/api/health` returned
+  `{"status":"ok"}`, and unauthenticated `GET /api/capture/status` returned
+  `401 not_authenticated`, proving the new browser capture-status route is
+  mounted.

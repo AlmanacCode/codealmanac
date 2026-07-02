@@ -2,6 +2,42 @@
 
 ## 2026-07-02
 
+- Planned Slice 47 in
+  `docs/plans/2026-07-02-slice-47-repository-setup-summary.md`.
+- Added browser-authenticated hosted `GET /api/capture/status`, returning
+  `CaptureStatusDTO` without raw capture token material.
+- Added frontend `getCaptureStatus()` and the repository setup summary on the
+  repository settings page.
+- The setup summary renders GitHub App access, repository access, capture
+  credential state, maintained branch trigger count, and delivery readiness
+  from real backend DTOs.
+- Verified Slice 47 with hosted focused backend tests
+  (`15 passed, 1 warning`), full hosted backend tests
+  (`356 passed, 1 warning`), backend `uv run ruff check .`, backend
+  `uv run python -m compileall src modal_app -q`, hosted frontend route tests
+  (`27 passed`), hosted frontend component tests (`52 passed`),
+  `npm run lint`, `npm run build`, and `git diff --check`. The frontend build
+  retained the known CSS optimizer warning about `m-* utility`.
+- Pushed hosted commit `2102d38 feat: add repository setup summary` to
+  `origin/codex/workos-authkit-api-foundation` and fast-forwarded hosted
+  `main` to exact commit `2102d38d17f66c32fb2e68a30ae9ddb3a1f8a34c`.
+- Deployed the hosted frontend to Vercel production. Vercel produced
+  `https://codealmanac-hosted-3wf3uccd1-thealmanac.vercel.app`, reported it
+  ready as deployment `dpl_DmcaJnx2j1vLBfFHuWFaiCDzUgax`, and aliased it to
+  `https://www.codealmanac.com`.
+- Render auto-deployed service `srv-d8g8nb37uimc739vnnsg` at exact hosted
+  commit `2102d38d17f66c32fb2e68a30ae9ddb3a1f8a34c`; deploy
+  `dep-d939qpbtqb8s73fg7c9g` finished `live`.
+- Verified production smoke: `https://www.codealmanac.com` returned HTTP 200,
+  `https://codealmanac-backend-docker.onrender.com/api/health` returned
+  `{"status":"ok"}`, and unauthenticated `GET /api/capture/status` returned
+  `401 not_authenticated`, proving the browser capture-status route is mounted.
+- Recorded progress as: CodeAlmanac backend/local 95%, CLI/public UX 91%,
+  CodeAlmanac-hosted backend/auth/API 93%, hosted frontend/onboarding 60%, and
+  infra/deploy rename 88%.
+- Recorded the stricter launch steering rule: trusted public provider
+  libraries and documented APIs should be used instead of parallel hand-rolled
+  paths unless a provider gap is documented.
 - Planned Slice 46 in
   `docs/plans/2026-07-02-slice-46-dashboard-run-actions.md`.
 - Added hosted dashboard run actions for repository activity rows.

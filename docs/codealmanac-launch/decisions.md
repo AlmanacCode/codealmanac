@@ -30,6 +30,11 @@ Status: active.
 - Source material is passed by reference, never by value. Workers receive paths,
   storage refs, ids, and artifact handles; they do not receive copied source
   blobs embedded into request payloads.
+- Trusted provider libraries are preferred over hand-rolled implementations.
+  When WorkOS/AuthKit, GitHub, Vercel, Render, Supabase, Modal, Doppler,
+  PostHog, Autumn, or another trusted public library owns a flow, CodeAlmanac
+  should follow the documented library path and avoid parallel product-owned
+  paths unless a documented provider gap forces a narrow adapter.
 - GitHub provider OAuth tokens should be returned by WorkOS and captured in the
   AuthKit callback when present.
 - GitHub OAuth scopes stay narrow by default. `user:email` is required for

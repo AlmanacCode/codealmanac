@@ -271,6 +271,18 @@ the raw `cap_...` token once. Status returns summaries only and never returns
 raw token material. Upload endpoints authenticate with the capture token, not
 the human CLI token.
 
+Implemented Slice 47 browser capture status route:
+
+```text
+GET /api/capture/status
+```
+
+This route authenticates with the WorkOS/AuthKit browser-session bearer token
+and returns the same `CaptureStatusDTO` summary as the CLI-token status route.
+It exists so the repository setup page can show whether the signed-in user has
+issued hosted capture credentials. It never returns raw `cap_...` token
+material.
+
 Implemented Slice 29 capture upload routes:
 
 ```text
@@ -324,6 +336,7 @@ POST /v1/capture/artifacts
 POST /v1/capture/turns
 POST /v1/auth/token/refresh
 
+GET  /api/capture/status
 GET  /api/internal/source-artifacts?ref=<source-artifacts-ref>
 
 GET  /v1/repositories
