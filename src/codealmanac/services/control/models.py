@@ -222,6 +222,13 @@ class ControlRunEventRecord(CodeAlmanacModel):
         return required_text(value, "run event message")
 
 
+class ClaimNextTriggerResult(CodeAlmanacModel):
+    claimed: bool
+    reason: str | None = None
+    trigger: TriggerEventRecord | None = None
+    run: ControlRunRecord | None = None
+
+
 class ControlSchemaStatus(CodeAlmanacModel):
     path: Path
     user_version: int

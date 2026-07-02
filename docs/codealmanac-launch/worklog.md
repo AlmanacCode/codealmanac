@@ -158,3 +158,10 @@
 - Verified Slice 5 focused behavior with
   `uv run pytest tests/test_control_service.py tests/test_architecture.py`,
   `uv run ruff check .`, and `git diff --check`.
+- Planned Slice 6 in
+  `docs/plans/2026-07-02-slice-6-trigger-claim-run-handoff.md`.
+- Added `app.control.claim_next_trigger` to atomically claim pending trigger
+  events and create queued control run rows.
+- Verified Slice 6 focused behavior with
+  `uv run pytest tests/test_control_service.py tests/test_architecture.py`,
+  `uv run ruff check .`, and `git diff --check`.

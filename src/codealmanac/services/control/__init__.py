@@ -1,5 +1,6 @@
 from codealmanac.services.control.models import (
     BranchRecord,
+    ClaimNextTriggerResult,
     ControlDeliveryMode,
     ControlRunEventKind,
     ControlRunEventRecord,
@@ -18,6 +19,7 @@ from codealmanac.services.control.store import ControlStore
 
 __all__ = [
     "BranchRecord",
+    "ClaimNextTriggerResult",
     "ControlDeliveryMode",
     "ControlRunEventKind",
     "ControlRunEventRecord",

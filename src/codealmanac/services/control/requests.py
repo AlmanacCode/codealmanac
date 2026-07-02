@@ -193,3 +193,16 @@ class ListControlRunEventsRequest(CodeAlmanacModel):
     @classmethod
     def require_run_id(cls, value: str) -> str:
         return required_text(value, "run id")
+
+
+class ClaimNextTriggerRequest(CodeAlmanacModel):
+    repository_id: str | None = None
+    branch_id: str | None = None
+    operation: str = "update"
+    source_bundle_ref: str | None = None
+    request_ref: str | None = None
+
+    @field_validator("operation")
+    @classmethod
+    def require_operation(cls, value: str) -> str:
+        return required_text(value, "claim operation")

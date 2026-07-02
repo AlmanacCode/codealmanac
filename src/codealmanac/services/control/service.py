@@ -1,5 +1,6 @@
 from codealmanac.services.control.models import (
     BranchRecord,
+    ClaimNextTriggerResult,
     ControlRunEventRecord,
     ControlRunRecord,
     ControlSchemaStatus,
@@ -10,6 +11,7 @@ from codealmanac.services.control.models import (
 from codealmanac.services.control.ports import LocalGitStateProbe
 from codealmanac.services.control.requests import (
     AppendControlRunEventRequest,
+    ClaimNextTriggerRequest,
     CreateControlRunRequest,
     EnsureControlSchemaRequest,
     ListControlRunEventsRequest,
@@ -112,3 +114,10 @@ class ControlService:
         request: ListControlRunEventsRequest,
     ) -> tuple[ControlRunEventRecord, ...]:
         return self.store.list_run_events(request)
+
+    def claim_next_trigger(
+        self,
+        request: ClaimNextTriggerRequest | None = None,
+    ) -> ClaimNextTriggerResult:
+        resolved = request or ClaimNextTriggerRequest()
+        return self.store.claim_next_trigger(resolved)

@@ -61,6 +61,11 @@ Current evidence:
 - `tests/test_control_service.py` proves SQL-backed run rows, launch run
   statuses, run references, terminal timestamps, and ordered run event
   sequencing.
+- Slice 6 added `app.control.claim_next_trigger`.
+- `tests/test_control_service.py` proves pending trigger claiming marks the
+  trigger `claimed`, sets `claimed_at`, creates a queued run, copies
+  `head_sha` into `expected_head_sha`, and returns an empty result when no
+  pending trigger exists.
 
 Commands:
 

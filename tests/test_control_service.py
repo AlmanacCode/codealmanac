@@ -16,6 +16,7 @@ from codealmanac.services.control.models import (
 )
 from codealmanac.services.control.requests import (
     AppendControlRunEventRequest,
+    ClaimNextTriggerRequest,
     CreateControlRunRequest,
     ListControlRunEventsRequest,
     ListTriggerEventsRequest,
@@ -562,6 +563,73 @@ def test_control_run_ledger_creates_updates_and_logs_run_events(
     assert succeeded.commit_subject == "docs almanac: update dev wiki"
     assert succeeded.finished_at is not None
     assert tuple(event.sequence for event in events) == (1, 2)
+
+
+def test_claim_next_trigger_returns_empty_result_without_pending_trigger(
+    isolated_home: Path,
+):
+    app = control_app(isolated_home)
+
+    result = app.control.claim_next_trigger()
+
+    assert result.claimed is False
+    assert result.reason == "no_pending_trigger"
+    assert result.trigger is None
+    assert result.run is None
+
+
+def test_claim_next_trigger_marks_trigger_claimed_and_creates_queued_run(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    app = control_app(isolated_home)
+    repository = register_repository(app, tmp_path / "repo")
+    branch = app.control.set_branch_policy(
+        SetBranchPolicyRequest(
+            repository_id=repository.id,
+            name="dev",
+            trigger_enabled=True,
+            delivery_mode=ControlDeliveryMode.COMMIT,
+        )
+    )
+    trigger = app.control.record_trigger_event(
+        RecordTriggerEventRequest(
+            repository_id=repository.id,
+            branch_name="dev",
+            kind=TriggerEventKind.LOCAL_POST_COMMIT,
+            head_sha="head-1",
+        )
+    ).event
+    assert trigger is not None
+
+    claim = app.control.claim_next_trigger(
+        ClaimNextTriggerRequest(
+            branch_id=branch.id,
+            source_bundle_ref="file:///bundle",
+            request_ref="file:///request.json",
+        )
+    )
+    second = app.control.claim_next_trigger(
+        ClaimNextTriggerRequest(branch_id=branch.id)
+    )
+    claimed_events = app.control.list_trigger_events(
+        ListTriggerEventsRequest(statuses=(TriggerEventStatus.CLAIMED,))
+    )
+
+    assert claim.claimed is True
+    assert claim.trigger is not None
+    assert claim.trigger.id == trigger.id
+    assert claim.trigger.status is TriggerEventStatus.CLAIMED
+    assert claim.trigger.claimed_at is not None
+    assert claim.run is not None
+    assert claim.run.status is ControlRunStatus.QUEUED
+    assert claim.run.trigger_event_id == trigger.id
+    assert claim.run.branch_id == branch.id
+    assert claim.run.expected_head_sha == "head-1"
+    assert claim.run.source_bundle_ref == "file:///bundle"
+    assert claim.run.request_ref == "file:///request.json"
+    assert second.claimed is False
+    assert tuple(event.id for event in claimed_events) == (trigger.id,)
 
 
 def control_app(isolated_home: Path, probe=None):

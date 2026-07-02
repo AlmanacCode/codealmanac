@@ -6,6 +6,7 @@ from codealmanac.core.paths import normalize_path
 from codealmanac.database import SQLiteConnection, user_version
 from codealmanac.services.control.models import (
     BranchRecord,
+    ClaimNextTriggerResult,
     ControlRunEventRecord,
     ControlRunRecord,
     ControlRunStatus,
@@ -28,6 +29,7 @@ from codealmanac.services.control.records import (
 )
 from codealmanac.services.control.requests import (
     AppendControlRunEventRequest,
+    ClaimNextTriggerRequest,
     CreateControlRunRequest,
     ListControlRunEventsRequest,
     ListTriggerEventsRequest,
@@ -464,6 +466,84 @@ class ControlStore:
                 (request.run_id,),
             ).fetchall()
         return tuple(control_run_event_from_row(row) for row in rows)
+
+    def claim_next_trigger(
+        self,
+        request: ClaimNextTriggerRequest,
+    ) -> ClaimNextTriggerResult:
+        now = current_timestamp()
+        with connect_control(self.path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            clauses = ["status = ?"]
+            arguments = [TriggerEventStatus.PENDING.value]
+            if request.repository_id is not None:
+                clauses.append("repository_id = ?")
+                arguments.append(request.repository_id)
+            if request.branch_id is not None:
+                clauses.append("branch_id = ?")
+                arguments.append(request.branch_id)
+            row = connection.execute(
+                f"""
+                SELECT *
+                FROM trigger_events
+                WHERE {" AND ".join(clauses)}
+                ORDER BY created_at, id
+                LIMIT 1
+                """,
+                arguments,
+            ).fetchone()
+            if row is None:
+                return ClaimNextTriggerResult(
+                    claimed=False,
+                    reason="no_pending_trigger",
+                )
+            trigger = trigger_event_from_row(row)
+            connection.execute(
+                """
+                UPDATE trigger_events
+                SET status = ?,
+                    claimed_at = ?
+                WHERE id = ?
+                """,
+                (TriggerEventStatus.CLAIMED.value, now, trigger.id),
+            )
+            run_id = control_run_id()
+            connection.execute(
+                """
+                INSERT INTO runs (
+                  id,
+                  repository_id,
+                  branch_id,
+                  trigger_event_id,
+                  operation,
+                  status,
+                  expected_head_sha,
+                  source_bundle_ref,
+                  request_ref,
+                  created_at,
+                  updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    run_id,
+                    trigger.repository_id,
+                    trigger.branch_id,
+                    trigger.id,
+                    request.operation,
+                    ControlRunStatus.QUEUED.value,
+                    trigger.head_sha,
+                    request.source_bundle_ref,
+                    request.request_ref,
+                    now,
+                    now,
+                ),
+            )
+            return ClaimNextTriggerResult(
+                claimed=True,
+                trigger=self.trigger_event_by_id(connection, trigger.id),
+                run=self.run_by_id(connection, run_id),
+            )
 
     def repository_by_id(
         self,

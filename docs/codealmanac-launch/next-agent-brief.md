@@ -10,18 +10,16 @@ verification, launch-folder updates, commit, and push.
 
 ## Last Completed Slice
 
-Slice 5 added SQL-backed control run records and ordered run events.
+Slice 6 added trigger claiming into queued control runs.
 
 Implemented:
 
-- `app.control.create_run(...)`
-- `app.control.update_run(...)`
-- `app.control.append_run_event(...)`
-- `app.control.list_run_events(...)`
-- launch run statuses: `queued`, `running`, `succeeded`, `failed`, `stale`,
-  `cancelled`
-- launch run event kinds: `status`, `message`, `tool`, `output`, `error`
-- ordered per-run event sequences starting at `1`
+- `app.control.claim_next_trigger(...)`
+- pending trigger selection with optional repository/branch scope
+- trigger transition from `pending` to `claimed`
+- `claimed_at` timestamp
+- queued control run creation
+- `expected_head_sha` copied from the claimed trigger's `head_sha`
 
 Verified:
 
@@ -38,7 +36,7 @@ Choose the next substantial slice from the launch plan. Good candidates:
 - local trigger event recording through Git hooks
 - public or hidden setup command that calls `app.local_hooks`
 - local run storage bridge from repo-local job files to the control DB
-- trigger-event claim/lock behavior that creates or starts run rows
+- active-run cancellation/staling when branch head changes
 - engine request/result models used by local and hosted workers
 
 Before coding, write the next slice plan under `docs/plans/`, then implement
