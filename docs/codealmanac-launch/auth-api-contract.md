@@ -204,6 +204,20 @@ when an expiry timestamp is set, which misses invalid no-expiry tokens.
 The browser, CLI, capture hooks, and future SDK-like clients need a versioned
 API. Use `/v1` for externally callable endpoints.
 
+Implemented Slice 26 auth foundation:
+
+```text
+Next.js browser session: WorkOS/AuthKit
+Frontend -> FastAPI auth: WorkOS access token bearer auth
+FastAPI verification: WorkOS JWKS, `sub` mapped to `workos_user_id`
+Hosted user primary key: `workos_user_id text`
+Supabase role: database, migrations, storage only
+```
+
+This foundation does not yet expose the full public `/v1` API surface, CLI
+login/device auth, capture machine credentials, or onboarding configuration
+screens.
+
 Core endpoints:
 
 ```text

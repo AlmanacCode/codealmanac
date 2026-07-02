@@ -10,18 +10,23 @@ verification, launch-folder updates, commit, and push.
 
 ## Last Completed Slice
 
-Slice 25 converged the hosted baseline for the `codealmanac-hosted` rename.
+Slice 26 implemented the hosted WorkOS/AuthKit API foundation.
 
 Implemented:
 
-- clean hosted worktree at
+- hosted worktree at
   `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
-- hosted branch `codex/hosted-baseline-convergence`
-- current `origin/main` baseline with hosted conversation-sync work preserved
-- hosted rename/deploy-surface commit
-  `1d237db chore: rename hosted deploy surfaces`
-- CodeAlmanac-hosted package/deploy defaults in backend, frontend, Modal
-  runtime defaults, and deploy workflow files
+- hosted branch `codex/workos-authkit-api-foundation`
+- Next.js AuthKit session ownership through `AuthKitProvider`, AuthKit proxy
+  composition, `/sign-in`, `handleAuth(...)` callback, and POST server-action
+  sign-out
+- frontend server auth helpers that forward WorkOS access tokens to FastAPI
+- backend WorkOS bearer-token verification through JWKS
+- hosted user ids stored as `workos_user_id text` instead of
+  `supabase_user_id uuid`
+- CLI token, conversation-source, events, analytics, and migration surfaces
+  updated to use WorkOS user ids
+- active Supabase Auth helper/client paths removed from hosted auth wiring
 
 Verified:
 
@@ -30,7 +35,8 @@ cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-converg
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .
-uv run pytest tests/test_modal_worker_contract.py
+uv run pytest tests/test_identity_auth_contract.py tests/test_identity_api_contract.py tests/test_hosted_conversation_sync_contract.py tests/test_store_timestamps_contract.py tests/test_analytics_contract.py -q
+uv run pytest tests/test_architecture_contract.py tests/test_repositories_api_contract.py tests/test_wiki_api_contract.py tests/test_repositories_contract.py tests/test_updates_contract.py tests/test_wiki_contract.py -q
 
 cd /Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence/frontend
 npm run test:routes
@@ -38,13 +44,17 @@ npm run test:frontend
 npm run build
 ```
 
+`npm run build` still prints the known non-blocking CSS optimizer warning about
+a comment containing `m-* utility`.
+
 ## Next Pressure Test
 
-The next substantial slice should start the WorkOS/AuthKit and public API
-foundation in `codealmanac-hosted`.
+The next substantial slice should either:
 
-Use the hosted convergence branch/worktree as the clean base, or merge that
-branch first and start from updated hosted main.
+- build the versioned public API and CLI login/capture credential flow on top
+  of the WorkOS bearer-token foundation, or
+- build hosted worker/run storage parity: SQL-backed `runs`, `run_events`,
+  bundle/result storage by reference, and cloud/local naming parity.
 
 Before coding, write the next slice plan under `docs/plans/`, then implement
 the full slice, update this brief, update `progress.md`, send a RelayForge
@@ -52,12 +62,17 @@ progress update, commit, and push.
 
 ## Known Repo State
 
-The CodeAlmanac branch is `dev`. Slice 24 implementation commit `38423978` and
-bookkeeping commit `d9a55b9e` are pushed to `origin/dev`.
+The CodeAlmanac branch is `dev`. Slice 24 implementation commit `38423978`,
+Slice 24 bookkeeping commit `d9a55b9e`, and Slice 25 bookkeeping commit
+`ad5792d7` are pushed to `origin/dev`.
 
-The hosted convergence branch is
+The hosted auth branch is
 `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
-on `codex/hosted-baseline-convergence`, pushed to origin at commit `1d237db`.
+on `codex/workos-authkit-api-foundation`, pushed to origin at commit
+`5858ae1 feat: migrate hosted auth to WorkOS`.
+
+Slice 25 hosted convergence branch `codex/hosted-baseline-convergence` is
+pushed to origin at commit `1d237db`.
 
 The local wiki command currently fails on this checkout with:
 

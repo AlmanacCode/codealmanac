@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 25 hosted baseline convergence.
+Sent: 2026-07-02 after Slice 26 WorkOS/AuthKit API foundation.
 
 Route:
 
@@ -26,11 +26,11 @@ It was not present in `codealmanac/prd` when checked.
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 88% | 88% | Slice 25 changed the hosted baseline only. |
-| CodeAlmanac CLI/public UX | 40% | 40% | Slice 25 changed the hosted baseline only. |
-| CodeAlmanac-hosted backend/auth/API | 8% | 8% | WorkOS/Doppler setup and hosted rename groundwork exist; public API migration is not implemented yet. |
-| Hosted frontend/onboarding | 5% | 5% | Existing frontend is deployed under CodeAlmanac; new onboarding/configuration screens are not implemented yet. |
-| Infra/deploy rename | 10% | 5% | Slice 25 reapplied the hosted rename/deploy-surface changes on top of current `origin/main` without losing hosted conversation-sync work. |
+| CodeAlmanac backend/local | 88% | 88% | Slice 26 changed hosted auth only. |
+| CodeAlmanac CLI/public UX | 40% | 40% | Slice 26 changed hosted auth only. |
+| CodeAlmanac-hosted backend/auth/API | 28% | 8% | WorkOS/AuthKit frontend session handling and FastAPI bearer-token verification are implemented; public API, CLI auth, capture credentials, worker/run storage, and onboarding APIs still remain. |
+| Hosted frontend/onboarding | 15% | 5% | AuthKit login/callback/session plumbing is implemented; browser onboarding/configuration screens are still not implemented. |
+| Infra/deploy rename | 10% | 10% | Slice 26 changed hosted auth only. |
 
 ## Update Rule
 

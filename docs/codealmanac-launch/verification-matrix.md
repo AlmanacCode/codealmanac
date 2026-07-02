@@ -336,6 +336,27 @@ Current evidence:
   (`41 passed`), and `npm run build`.
 - This evidence is branch-level. Slice 25 did not promote production
   deployment and did not implement WorkOS/AuthKit, public APIs, or onboarding.
+- Slice 26 created hosted branch `codex/workos-authkit-api-foundation` from
+  the Slice 25 hosted convergence worktree.
+- Slice 26 pushed hosted commit
+  `5858ae1 feat: migrate hosted auth to WorkOS`.
+- Slice 26 implements WorkOS/AuthKit browser auth, FastAPI WorkOS bearer-token
+  verification, and hosted `workos_user_id text` user identity storage.
+- Slice 26 removed the active Supabase Auth helper/client path from hosted auth
+  wiring while keeping Supabase as the database/migration/storage platform.
+- Hosted backend verification on the Slice 26 worktree:
+  `uv run pytest tests/test_identity_auth_contract.py tests/test_identity_api_contract.py tests/test_hosted_conversation_sync_contract.py tests/test_store_timestamps_contract.py tests/test_analytics_contract.py -q`
+  (`31 passed`),
+  `uv run pytest tests/test_architecture_contract.py tests/test_repositories_api_contract.py tests/test_wiki_api_contract.py tests/test_repositories_contract.py tests/test_updates_contract.py tests/test_wiki_contract.py -q`
+  (`126 passed`), `uv run pytest` (`286 passed`),
+  `uv run ruff check .`, and `uv run ruff format --check .`.
+- Hosted frontend verification on the Slice 26 worktree:
+  `npm run test:routes` (`26 passed`), `npm run test:frontend`
+  (`41 passed`), and `npm run build`.
+- Slice 26 build still has the known non-blocking CSS optimizer warning about
+  a comment containing `m-* utility`.
+- Slice 26 does not implement versioned public API, CLI login/capture
+  credentials, onboarding configuration screens, or hosted worker/run storage.
 
 ## Provider / Deployment
 

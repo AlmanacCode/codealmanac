@@ -539,3 +539,40 @@
   CodeAlmanac backend/local 88%, CLI/public UX 40%,
   CodeAlmanac-hosted backend/auth/API 8%, hosted frontend/onboarding 5%, and
   infra/deploy rename 10%.
+- Planned Slice 26 in
+  `docs/plans/2026-07-02-slice-26-workos-authkit-api-foundation.md`.
+- Created hosted branch `codex/workos-authkit-api-foundation` from the Slice
+  25 hosted convergence worktree.
+- Migrated hosted browser auth from Supabase Auth helpers to WorkOS/AuthKit:
+  `AuthKitProvider`, AuthKit proxy composition, `/sign-in`,
+  `handleAuth(...)` callback, WorkOS-backed server auth helpers, and POST
+  server-action sign-out.
+- Removed frontend Supabase auth packages and deleted
+  `frontend/src/lib/supabase/client.ts` and
+  `frontend/src/lib/supabase/server.ts`.
+- Added backend WorkOS token verification through JWKS and mapped access-token
+  `sub` to `workos_user_id`.
+- Removed the old backend Supabase Auth adapter from active auth wiring.
+- Changed hosted user identity storage from `supabase_user_id uuid` to
+  `workos_user_id text`, including CLI token, conversation-source, analytics,
+  events, and migration surfaces.
+- Kept repository reads/writes/PRs/commits on GitHub App/user tokens; WorkOS
+  now owns human identity and sessions only.
+- Verified Slice 26 backend focused behavior with
+  `uv run pytest tests/test_identity_auth_contract.py tests/test_identity_api_contract.py tests/test_hosted_conversation_sync_contract.py tests/test_store_timestamps_contract.py tests/test_analytics_contract.py -q`
+  (`31 passed`).
+- Verified Slice 26 backend expanded behavior with
+  `uv run pytest tests/test_architecture_contract.py tests/test_repositories_api_contract.py tests/test_wiki_api_contract.py tests/test_repositories_contract.py tests/test_updates_contract.py tests/test_wiki_contract.py -q`
+  (`126 passed`).
+- Verified Slice 26 full hosted backend gate with `uv run pytest` (`286
+  passed`), `uv run ruff check .`, and `uv run ruff format --check .`.
+- Verified Slice 26 hosted frontend with `npm run test:routes` (`26 passed`),
+  `npm run test:frontend` (`41 passed`), and `npm run build`.
+- `npm run build` still emits the known non-blocking CSS optimizer warning
+  about a comment containing `m-* utility`.
+- Pushed hosted commit `5858ae1 feat: migrate hosted auth to WorkOS` to
+  `origin/codex/workos-authkit-api-foundation`.
+- Sent the Slice 26 RelayForge update.
+- Recorded progress as: CodeAlmanac backend/local 88%, CLI/public UX 40%,
+  CodeAlmanac-hosted backend/auth/API 28%, hosted frontend/onboarding 15%, and
+  infra/deploy rename 10%.
