@@ -158,6 +158,20 @@ Current evidence:
 - Slice 43 verified production GitHub App permissions through GitHub's App
   API. App slug `almanac-bot` owned by `AlmanacCode` has `checks: write`,
   `contents: write`, and `pull_requests: write`.
+- Slice 57 hardened the browser sign-in path. Public CTAs now enter
+  `/login`, protected routes redirect to `/login?next=...`, and `/sign-in` is
+  the only WorkOS/AuthKit start endpoint.
+- Slice 57 changed the login button to a normal anchor so `/sign-in` owns the
+  WorkOS PKCE verifier cookie setup. Plain `/login` defaults to `/setup`.
+- Slice 57 changed the AuthKit callback to reject completed sessions that do
+  not include GitHub OAuth tokens and to map session-verifier failures back to
+  explicit GitHub-only login errors.
+- Slice 57 verification passed: hosted `npm run test:routes` (`27 passed`),
+  `npm run test:frontend` (`52 passed`), `npm run lint`, `npm run build`,
+  `git diff --check`, Vercel production deploy
+  `codealmanac-hosted-jaxnxk6oq-thealmanac.vercel.app`, production `/setup`
+  redirect smoke, production `/sign-in` verifier-cookie smoke,
+  browser-harness `/login` smoke, and Vercel error-log check.
 
 ## CodeAlmanac Local Repo
 

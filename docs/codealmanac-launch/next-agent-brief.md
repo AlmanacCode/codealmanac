@@ -83,16 +83,31 @@ Slice 56 completes PyPI publishing:
 - PyPI now serves `codealmanac` `0.1.0`
 - `uv tool install --python 3.12 codealmanac==0.1.0` works from a fresh tool dir
 
+Slice 57 hardens GitHub-only hosted sign-in:
+
+- public landing CTAs enter `/login` or `/login?next=...`, not protected
+  dashboard/setup routes directly
+- unauthenticated protected routes redirect to `/login?next=...`, not directly
+  to WorkOS/AuthKit
+- `/sign-in` is the only WorkOS/AuthKit start endpoint and owns the PKCE
+  verifier-cookie setup
+- plain `/login` defaults its GitHub CTA to `/sign-in?returnTo=%2Fsetup`
+- the AuthKit callback rejects completed sessions without GitHub OAuth tokens
+  and maps callback verifier failures to explicit GitHub-only login errors
+- Vercel production deployment
+  `https://codealmanac-hosted-jaxnxk6oq-thealmanac.vercel.app` is aliased to
+  `https://www.codealmanac.com`
+
 ## Current Repo State
 
 CodeAlmanac:
 
 - repo: `/Users/rohan/Desktop/Projects/codealmanac`
 - branch: `dev`
-- current launch-docs commit before Slice 56 docs:
-  `43ec4800311b2f66f6095bff231f5fde7740eb07`
+- current launch-docs commit before Slice 57 docs:
+  `deda8a4faf336b98431d95719978f72719ad88da`
 - `origin/dev` and `origin/main` both point at
-  `43ec4800311b2f66f6095bff231f5fde7740eb07`
+  `deda8a4faf336b98431d95719978f72719ad88da`
 - package version in `pyproject.toml`: `0.1.0`
 - PyPI live version checked on 2026-07-02: `0.1.0`
 
@@ -100,14 +115,13 @@ Hosted:
 
 - repo: `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
 - branch: `codex/workos-authkit-api-foundation`
-- current Slice 55 commit: `49afdce`
-- previous `origin/codex/workos-authkit-api-foundation` before Slice 51 push:
-  `0683c78`
-- `origin/main`: `49afdce`; previous `origin/main` before Slice 55 was
-  `8052be0`
+- current Slice 57 commit:
+  `041deb878edb3931121ad861659dff0568f23b99`
+- `origin/codex/workos-authkit-api-foundation` and `origin/main` both point at
+  `041deb878edb3931121ad861659dff0568f23b99`
 - production frontend: `https://www.codealmanac.com`
 - hosted main has the setup/auth hardening, route-test guardrails, and cloud
-  setup checklist through `49afdce`
+  setup checklist through `041deb8`
 
 The local wiki command currently fails on this checkout with:
 
@@ -159,6 +173,13 @@ repaired.
   codealmanac==0.1.0 --version` returned `0.1.0`, and isolated `uv tool install
   --python 3.12 codealmanac==0.1.0` installed an executable that returned
   `0.1.0`.
+- Slice 57 hosted auth verification passed: `npm run test:routes`
+  (`27 passed`), `npm run test:frontend` (`52 passed`), `npm run lint`,
+  `npm run build`, `git diff --check`, production `/setup?smoke=auth57b`
+  redirected to `/login?next=%2Fsetup%3Fsmoke%3Dauth57b`, production
+  `/sign-in` set a `wos-auth-verifier-*` cookie before redirecting to WorkOS,
+  browser-harness showed `/login` with `Continue with GitHub` and no inputs,
+  and Vercel had no recent error logs.
 
 ## Next Pressure Tests
 
@@ -173,15 +194,17 @@ repaired.
 - Do not implement rate limits now unless Rohan explicitly reopens that work.
 - Do not deploy every small guardrail. Batch deploys after real functionality or
   infrastructure changes.
-- If WorkOS/AuthKit Hosted UI still shows email paths, fix the WorkOS dashboard
-  authentication methods; the installed AuthKit Next.js helper routes to
-  AuthKit and does not expose a code-level force-GitHub provider option.
+- If WorkOS/AuthKit Hosted UI still shows email paths after `/sign-in`, fix the
+  WorkOS dashboard authentication methods; the installed AuthKit Next.js helper
+  routes to AuthKit and does not expose a code-level force-GitHub provider
+  option.
 
 ## Remaining Launch Gaps
 
 - Final provider cleanup. CodeAlmanac and hosted branch/main convergence are
   done as of Slice 53.
-- Live production browser verification with a signed-in user.
+- Live production browser verification with a signed-in user through the GitHub
+  Hosted UI and GitHub App install/config path.
 - Deeper browser UX for maintained branches, per-branch delivery, capture
   consent, and billing/plan gates.
 - Future abuse-control/rate-limit slice before broad public scale.

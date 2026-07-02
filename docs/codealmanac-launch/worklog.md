@@ -2,6 +2,35 @@
 
 ## 2026-07-02
 
+- Planned Slice 57 in
+  `docs/plans/2026-07-02-slice-57-authkit-signin-hardening.md`.
+- Hardened hosted sign-in so `/sign-in` is the only route that starts
+  WorkOS/AuthKit. Public landing CTAs now link to `/login` or
+  `/login?next=...`; unauthenticated protected routes redirect to local
+  `/login?next=...`, not directly to WorkOS.
+- Changed the login CTA to a normal anchor to `/sign-in`, so the server route
+  owns the WorkOS PKCE verifier cookie. Plain `/login` defaults to `/setup`.
+- Changed the AuthKit callback to reject completed sessions without GitHub
+  OAuth tokens and to map callback failures to GitHub-only login errors.
+- Verified hosted Slice 57 locally with `npm run test:routes` (`27 passed`),
+  `npm run test:frontend` (`52 passed`), `npm run lint`, `npm run build`, and
+  `git diff --check`. The Next build still reports the pre-existing CSS
+  optimizer warning about `m-* utility`.
+- Pushed hosted commits `2b68292` and `041deb8` to
+  `origin/codex/workos-authkit-api-foundation` and fast-forwarded hosted
+  `origin/main` to `041deb878edb3931121ad861659dff0568f23b99`.
+- Deployed the final hosted Slice 57 frontend to Vercel production at
+  `https://codealmanac-hosted-jaxnxk6oq-thealmanac.vercel.app`; Vercel aliased
+  it to `https://www.codealmanac.com`.
+- Production smoke passed: unauthenticated `/setup?smoke=auth57b` returns
+  `307 Location: /login?next=%2Fsetup%3Fsmoke%3Dauth57b`, `/sign-in` sets a
+  `wos-auth-verifier-*` cookie before redirecting to WorkOS, browser-harness
+  shows `/login` with only `Continue with GitHub` and no inputs, and Vercel had
+  no error logs in the latest check.
+- Sent the Slice 57 RelayForge update and recorded progress as:
+  CodeAlmanac backend/local 96%, CLI/public UX 98%,
+  CodeAlmanac-hosted backend/auth/API 97%, hosted frontend/onboarding 84%, and
+  infra/deploy rename 98%.
 - Planned Slice 55 in
   `docs/plans/2026-07-02-slice-55-cloud-setup-checklist.md`.
 - Updated hosted `/setup` so the browser-owned cloud setup hub shows an ordered

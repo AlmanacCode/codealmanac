@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 56 PyPI publish completion.
+Sent: 2026-07-02 after Slice 57 AuthKit sign-in hardening.
 
 Route:
 
@@ -19,19 +19,19 @@ doppler run --project almanac --config dev -- \
   --binding rohan-almanac-main "..."
 ```
 
-Note: rate limits were postponed. PyPI Trusted Publishing is now working for
-CodeAlmanac `0.1.0`; the package is public on PyPI and the `uv tool install`
-smoke passed with Python 3.12.
+Note: rate limits were postponed. PyPI Trusted Publishing is working for
+CodeAlmanac `0.1.0`. Hosted sign-in is now routed through the product login
+page first, with `/sign-in` as the only WorkOS/AuthKit start endpoint.
 
 ## Percentages
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 96% | 96% | CodeAlmanac local/backend unchanged in Slice 56. |
-| CodeAlmanac CLI/public UX | 98% | 95% | PyPI `0.1.0` is published and `uv tool install --python 3.12 codealmanac==0.1.0` works from a fresh tool dir. |
-| CodeAlmanac-hosted backend/auth/API | 96% | 96% | Hosted backend/auth/API unchanged in Slice 56; AuthKit callback issue remains the next active pressure test. |
-| Hosted frontend/onboarding | 78% | 78% | Hosted `/setup` remains verified unauthenticated; signed-in production walkthrough remains open. |
-| Infra/deploy rename | 98% | 96% | PyPI Trusted Publishing provider setup is complete; remaining infra work is provider cleanup and auth/onboarding live verification. |
+| CodeAlmanac backend/local | 96% | 96% | CodeAlmanac local/backend unchanged in Slice 57. |
+| CodeAlmanac CLI/public UX | 98% | 98% | PyPI `0.1.0` remains published and install-smoked; no CLI code changed in Slice 57. |
+| CodeAlmanac-hosted backend/auth/API | 97% | 96% | AuthKit callback now rejects non-GitHub-token completions and maps callback errors back to GitHub-only login states. |
+| Hosted frontend/onboarding | 84% | 78% | Public CTAs, protected redirects, login, `/sign-in`, and production `/setup` smoke now follow one GitHub-first setup path. |
+| Infra/deploy rename | 98% | 98% | Vercel production redeployed and aliased after Slice 57; remaining infra work is provider cleanup and signed-in walkthrough coverage. |
 
 ## Update Rule
 
