@@ -28,6 +28,11 @@ Required onboarding steps:
 8. Show billing or plan requirements when needed.
 9. Return a machine-readable setup result to the CLI.
 
+Slice 28 allows `codealmanac capture enable` to issue a capture credential when
+the user is already signed in and the API authorizes it. Browser onboarding
+still owns first-time capture consent, dashboard revocation, and account/repo
+policy.
+
 ## Primary Routes
 
 ```text

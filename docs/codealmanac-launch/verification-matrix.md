@@ -41,6 +41,28 @@ Current evidence:
   hosted backend `uv run pytest -q` (`289 passed`), hosted ruff and format
   checks, `codealmanac` `uv run pytest -q` (`474 passed`), `codealmanac` ruff,
   `git diff --check`, and `login/setup/whoami/logout --help`.
+- Slice 28 added hosted capture credential routes:
+  `POST /v1/capture/credentials`, `GET /v1/capture/status`, and
+  `POST /v1/capture/credentials/revoke`.
+- `backend/tests/test_capture_tokens_api_contract.py` proves capture
+  credential issue returns the raw `cap_...` token once, status returns
+  summaries only, revoke works through the CLI token, and capture tokens do not
+  authenticate `/v1/me`.
+- Slice 28 added local `~/.codealmanac/capture.json` mode `0600`,
+  `~/.codealmanac/capture-events/events.jsonl`, and public
+  `codealmanac capture status/enable/repair/disable`.
+- `tests/test_cloud_capture_service.py` proves capture credential storage,
+  cloud status checks, provider hook install/removal, and diagnostic hook event
+  recording.
+- `tests/test_cli.py` proves the public capture CLI path signs in, enables
+  capture, checks status with the cloud, records a hidden hook event, disables
+  capture, and revokes the stored capture token.
+- Slice 28 full gates passed:
+  hosted backend `uv run pytest -q` (`291 passed, 1 warning`), hosted ruff and
+  format checks, hosted frontend `npm run test:routes` (`26 passed`),
+  `npm run test:frontend` (`41 passed`), hosted `npm run build`,
+  `codealmanac` `uv run pytest -q` (`477 passed`), `codealmanac` ruff,
+  `git diff --check`, and capture help checks.
 
 ## CodeAlmanac Local Repo
 

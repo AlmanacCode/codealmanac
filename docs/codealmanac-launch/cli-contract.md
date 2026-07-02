@@ -101,13 +101,33 @@ Cloud uses `runs` because execution happens in the cloud control plane.
 
 ```text
 codealmanac capture status
-codealmanac capture enable
-codealmanac capture disable
-codealmanac capture repair
+codealmanac capture status [--json] [--check-cloud] [--api-url URL]
+codealmanac capture enable [--target all|codex|claude] [--json] [--api-url URL]
+codealmanac capture repair [--target all|codex|claude] [--json] [--api-url URL]
+codealmanac capture disable [--target all|codex|claude] [--keep-credential] [--json] [--api-url URL]
 ```
 
 Capture installation is explicit. CLI install must never silently install
 Codex/Claude hooks.
+
+Implemented in Slice 28:
+
+```text
+codealmanac capture status
+codealmanac capture enable
+codealmanac capture repair
+codealmanac capture disable
+codealmanac __capture-hook --provider codex|claude
+```
+
+`enable` requires cloud login, issues a narrow hosted `cap_...` capture
+credential, stores it in `~/.codealmanac/capture.json` mode `0600`, and
+installs selected provider Stop hooks. `status` is local by default and only
+calls the cloud when `--check-cloud` is passed. `disable` removes selected hooks
+and revokes the stored credential unless `--keep-credential` is passed.
+
+The hidden hook records a local diagnostic event and exits quickly. It does not
+upload transcripts or run the model in Slice 28.
 
 ## Local
 

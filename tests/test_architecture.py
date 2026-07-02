@@ -839,6 +839,7 @@ def test_cli_parser_is_split_by_command_domain():
         "__init__.py",
         "admin.py",
         "automation.py",
+        "capture.py",
         "cloud_auth.py",
         "dev.py",
         "diagnostics.py",
@@ -864,6 +865,10 @@ def test_cli_admin_parser_stays_split_by_command_family():
     admin = (parser_root / "admin.py").read_text(encoding="utf-8")
     module_expectations = {
         "automation.py": ("AutomationTask", "def add_automation_commands("),
+        "capture.py": (
+            "manage cloud conversation capture",
+            "def add_capture_commands(",
+        ),
         "cloud_auth.py": ('add_parser("login"', "def add_cloud_auth_commands("),
         "diagnostics.py": ('add_parser("doctor"', "def add_diagnostics_commands("),
         "jobs.py": ('add_parser("jobs"', "def add_jobs_commands("),
@@ -895,6 +900,7 @@ def test_cli_admin_parser_stays_split_by_command_family():
     ] == []
     assert "add_setup_commands(subcommands)" in admin
     assert "add_cloud_auth_commands(subcommands)" in admin
+    assert "add_capture_commands(subcommands)" in admin
     assert "add_diagnostics_commands(subcommands)" in admin
     assert "add_update_commands(subcommands)" in admin
     assert "add_jobs_commands(subcommands)" in admin
@@ -907,6 +913,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
 
     assert (cli_root / "parser/root.py").is_file()
     assert (cli_root / "parser/automation.py").is_file()
+    assert (cli_root / "parser/capture.py").is_file()
     assert (cli_root / "parser/dev.py").is_file()
     assert (cli_root / "parser/diagnostics.py").is_file()
     assert (cli_root / "parser/jobs.py").is_file()
@@ -916,6 +923,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "dispatch/root.py").is_file()
     assert (cli_root / "dispatch/admin.py").is_file()
     assert (cli_root / "dispatch/automation.py").is_file()
+    assert (cli_root / "dispatch/capture.py").is_file()
     assert (cli_root / "dispatch/dev.py").is_file()
     assert (cli_root / "dispatch/init.py").is_file()
     assert not (cli_root / "dispatch/build.py").exists()
@@ -935,6 +943,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "dispatch/workspaces.py").is_file()
     assert (cli_root / "render/root.py").is_file()
     assert (cli_root / "render/automation.py").is_file()
+    assert (cli_root / "render/capture.py").is_file()
     assert (cli_root / "render/common.py").is_file()
     assert (cli_root / "render/diagnostics.py").is_file()
     assert (cli_root / "render/health.py").is_file()
@@ -970,6 +979,7 @@ def test_cli_render_root_stays_facade():
     assert {
         "admin.py",
         "automation.py",
+        "capture.py",
         "common.py",
         "diagnostics.py",
         "lifecycle.py",
@@ -1133,6 +1143,7 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
     admin = (dispatch_path / "admin.py").read_text(encoding="utf-8")
     module_expectations = {
         "automation.py": ("InstallAutomationRequest", "def dispatch_automation("),
+        "capture.py": ("CaptureStatusRequest", "def dispatch_capture("),
         "diagnostics.py": ("DoctorRequest", "def dispatch_doctor("),
         "jobs.py": ("ShowRunRequest", "def dispatch_jobs("),
         "setup.py": ("RunSetupRequest", "def dispatch_setup("),
@@ -1166,6 +1177,7 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
         fragment for fragment in forbidden_admin_fragments if fragment in admin
     ] == []
     assert "dispatch_setup(args, app)" in admin
+    assert "dispatch_capture(args, app)" in admin
     assert "dispatch_uninstall(args, app)" in admin
     assert "dispatch_jobs(args, app)" in admin
     assert "dispatch_automation(args, app)" in admin

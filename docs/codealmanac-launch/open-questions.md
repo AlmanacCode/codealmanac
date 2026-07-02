@@ -6,10 +6,10 @@ Status: active.
 
 - Should `codealmanac repo delivery set` exist, or should delivery be changed
   only through `repo triggers ...` commands and the browser?
-- Should `codealmanac capture enable` be allowed without rerunning browser
-  onboarding, or should it always open the capture consent page?
 - What exact cloud route should bare `codealmanac` open first:
   `/wiki/github/<owner>/<repo>` or a dashboard resolver route?
+- What exact dashboard state should block `codealmanac capture enable` before
+  first-time capture consent is recorded?
 
 ## Local
 
@@ -21,4 +21,3 @@ Status: active.
 - Which Python CLI auto-update library should be used?
 - Which compatibility commands remain hidden aliases during the CLI migration?
 - Which shared rate-limit backend should cloud use?
-- Which WorkOS primitive should back capture hooks?

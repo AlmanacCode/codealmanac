@@ -3,6 +3,7 @@ import shutil
 import subprocess
 from datetime import UTC, datetime
 from hashlib import sha256
+from io import StringIO
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -20,6 +21,11 @@ from codealmanac.services.automation.models import (
     ScheduledJobStatus,
 )
 from codealmanac.services.cloud_auth.models import CloudIdentity, CloudLoginSession
+from codealmanac.services.cloud_capture.models import (
+    CaptureCloudStatus,
+    CaptureCredential,
+    CaptureCredentialIssue,
+)
 from codealmanac.services.control.models import (
     ControlDeliveryMode,
     ControlRunEventKind,
@@ -315,6 +321,57 @@ class CliCloudAuthClient:
 
     def logout(self, *, api_url: str, token: str) -> CloudIdentity:
         return self.me(api_url=api_url, token=token)
+
+
+class CliCloudCaptureClient:
+    def __init__(self):
+        self.issued: list[str] = []
+        self.revoked: list[str] = []
+
+    def issue_capture_credential(
+        self,
+        *,
+        api_url: str,
+        cli_token: str,
+        name: str,
+    ) -> CaptureCredentialIssue:
+        assert cli_token == "alm_secret"
+        self.issued.append(name)
+        return CaptureCredentialIssue(
+            credential=capture_credential(name=name),
+            token="cap_secret",
+        )
+
+    def capture_status(
+        self,
+        *,
+        api_url: str,
+        cli_token: str,
+    ) -> CaptureCloudStatus:
+        assert cli_token == "alm_secret"
+        return CaptureCloudStatus(
+            credentials=(capture_credential(name="CodeAlmanac capture"),)
+        )
+
+    def revoke_capture_credential(
+        self,
+        *,
+        api_url: str,
+        cli_token: str,
+        capture_token: str,
+    ) -> bool:
+        assert cli_token == "alm_secret"
+        self.revoked.append(capture_token)
+        return True
+
+
+def capture_credential(*, name: str) -> CaptureCredential:
+    return CaptureCredential(
+        id=uuid4(),
+        name=name,
+        created_at=datetime(2026, 7, 2, 12, tzinfo=UTC),
+        last_used_at=None,
+    )
 
 
 class CliUpdateMetadataProvider:
@@ -688,6 +745,124 @@ def test_cli_setup_is_cloud_first_without_repo_detection(
     assert "rohans0509" in output.out
     assert "Agent instructions" in output.out
     assert client.started == 1
+
+
+def test_cli_capture_enable_status_hook_and_disable(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    auth_client = CliCloudAuthClient()
+    capture_client = CliCloudCaptureClient()
+    app = create_app(
+        AppConfig(
+            auth_path=isolated_home / ".codealmanac/auth.json",
+            capture_path=isolated_home / ".codealmanac/capture.json",
+            capture_events_path=isolated_home / ".codealmanac/capture-events",
+        ),
+        cloud_auth_client=auth_client,
+        cloud_capture_client=capture_client,
+        browser_opener=CliBrowserOpener(),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert (
+        main(
+            [
+                "login",
+                "--api-url",
+                "https://api.example.test",
+                "--timeout",
+                "0",
+                "--poll-every",
+                "0",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "capture",
+                "enable",
+                "--target",
+                "codex",
+                "--api-url",
+                "https://api.example.test",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    enabled = json.loads(capsys.readouterr().out)
+
+    assert enabled["credential_present"] is True
+    assert enabled["providers"] == ["codex"]
+    assert capture_client.issued == ["CodeAlmanac capture"]
+    assert (isolated_home / ".codex/hooks.json").is_file()
+
+    assert (
+        main(
+            [
+                "capture",
+                "status",
+                "--check-cloud",
+                "--api-url",
+                "https://api.example.test",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    status = json.loads(capsys.readouterr().out)
+
+    assert status["signed_in"] is True
+    assert status["credential_present"] is True
+    assert status["hooks"][0]["installed"] is True
+    assert status["cloud_credentials"][0]["name"] == "CodeAlmanac capture"
+
+    monkeypatch.setattr(
+        "sys.stdin",
+        StringIO(
+            json.dumps(
+                {
+                    "session_id": "sess_1",
+                    "transcript_path": "/tmp/transcript.jsonl",
+                    "cwd": "/tmp/repo",
+                    "hook_event_name": "Stop",
+                    "turn_id": "turn_1",
+                }
+            )
+        ),
+    )
+
+    assert main(["__capture-hook", "--provider", "codex"]) == 0
+    hook = json.loads(capsys.readouterr().out)
+
+    assert hook["session_id"] == "sess_1"
+    assert (isolated_home / ".codealmanac/capture-events/events.jsonl").is_file()
+
+    assert (
+        main(
+            [
+                "capture",
+                "disable",
+                "--target",
+                "codex",
+                "--api-url",
+                "https://api.example.test",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    disabled = json.loads(capsys.readouterr().out)
+
+    assert disabled["credential_removed"] is True
+    assert disabled["revoked_remote"] is True
+    assert capture_client.revoked == ["cap_secret"]
 
 
 def test_cli_local_setup_registers_current_checkout(

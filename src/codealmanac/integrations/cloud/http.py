@@ -6,6 +6,11 @@ import httpx
 
 from codealmanac.core.errors import ExecutionFailed
 from codealmanac.services.cloud_auth.models import CloudIdentity, CloudLoginSession
+from codealmanac.services.cloud_capture.models import (
+    CaptureCloudStatus,
+    CaptureCredential,
+    CaptureCredentialIssue,
+)
 
 
 class HttpCloudAuthClient:
@@ -39,17 +44,66 @@ class HttpCloudAuthClient:
         )
         return identity(api_url, data)
 
+    def issue_capture_credential(
+        self,
+        *,
+        api_url: str,
+        cli_token: str,
+        name: str,
+    ) -> CaptureCredentialIssue:
+        data = self._request(
+            "POST",
+            f"{api_url}/v1/capture/credentials",
+            token=cli_token,
+            json_body={"name": name},
+        )
+        credential = capture_credential(data["credential"])
+        return CaptureCredentialIssue(credential=credential, token=str(data["token"]))
+
+    def capture_status(self, *, api_url: str, cli_token: str) -> CaptureCloudStatus:
+        data = self._request(
+            "GET",
+            f"{api_url}/v1/capture/status",
+            token=cli_token,
+        )
+        return CaptureCloudStatus(
+            credentials=tuple(
+                capture_credential(item) for item in data.get("credentials", [])
+            )
+        )
+
+    def revoke_capture_credential(
+        self,
+        *,
+        api_url: str,
+        cli_token: str,
+        capture_token: str,
+    ) -> bool:
+        data = self._request(
+            "POST",
+            f"{api_url}/v1/capture/credentials/revoke",
+            token=cli_token,
+            json_body={"token": capture_token},
+        )
+        return bool(data.get("revoked"))
+
     def _request(
         self,
         method: str,
         url: str,
         *,
         token: str | None = None,
+        json_body: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         headers = {"Authorization": f"Bearer {token}"} if token is not None else None
         try:
             with httpx.Client(timeout=self.timeout) as client:
-                response = client.request(method, url, headers=headers)
+                response = client.request(
+                    method,
+                    url,
+                    headers=headers,
+                    json=json_body,
+                )
         except httpx.HTTPError as error:
             raise ExecutionFailed(f"cloud request failed: {error}") from error
         if response.status_code >= 400:
@@ -85,3 +139,18 @@ def identity(api_url: str, data: dict[str, Any]) -> CloudIdentity:
         github_user_id=int(data["githubUserId"]),
         github_login=str(data["githubLogin"]),
     )
+
+
+def capture_credential(data: dict[str, Any]) -> CaptureCredential:
+    return CaptureCredential(
+        id=data["id"],
+        name=str(data["name"]),
+        created_at=parse_datetime(data.get("createdAt")),
+        last_used_at=parse_datetime(data.get("lastUsedAt")),
+    )
+
+
+def parse_datetime(value: Any) -> datetime | None:
+    if value is None:
+        return None
+    return datetime.fromisoformat(str(value).replace("Z", "+00:00"))

@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 27 cloud CLI auth.
+Sent: 2026-07-02 after Slice 28 cloud capture install.
 
 Route:
 
@@ -26,11 +26,11 @@ It was not present in `codealmanac/prd` when checked.
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 88% | 88% | Slice 27 changed cloud auth/CLI surface only; local trigger, run, workspace, delivery, init/update surfaces remain at prior maturity. |
-| CodeAlmanac CLI/public UX | 52% | 40% | `setup`, `login`, `whoami`, and `logout` now exist for cloud auth; repo, capture, runs, status, and open commands remain. |
-| CodeAlmanac-hosted backend/auth/API | 34% | 28% | `/v1` CLI auth aliases now exist on top of the WorkOS/AuthKit foundation; capture credentials, repo API, run storage, and worker APIs still remain. |
-| Hosted frontend/onboarding | 15% | 15% | Slice 27 changed backend/CLI auth only; browser onboarding/configuration screens are still not implemented. |
-| Infra/deploy rename | 10% | 10% | Slice 27 changed auth/API/CLI only. |
+| CodeAlmanac backend/local | 88% | 88% | Slice 28 added cloud capture state and hooks, but local trigger/run/workspace/delivery maturity stays unchanged. |
+| CodeAlmanac CLI/public UX | 62% | 52% | `capture status/enable/repair/disable` now exists; repo, runs, status, and open commands remain. |
+| CodeAlmanac-hosted backend/auth/API | 40% | 34% | Hosted now issues, lists, and revokes narrow capture credentials; repo API, run storage, worker APIs, and rate limits remain. |
+| Hosted frontend/onboarding | 15% | 15% | Slice 28 added DTO parity only; browser onboarding/configuration screens are still not implemented. |
+| Infra/deploy rename | 10% | 10% | Slice 28 changed capture/API/CLI only. |
 
 ## Update Rule
 

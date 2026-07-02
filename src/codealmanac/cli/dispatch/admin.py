@@ -2,6 +2,7 @@ import argparse
 
 from codealmanac.app import CodeAlmanac
 from codealmanac.cli.dispatch.automation import dispatch_automation
+from codealmanac.cli.dispatch.capture import dispatch_capture, dispatch_capture_hook
 from codealmanac.cli.dispatch.cloud_auth import (
     dispatch_login,
     dispatch_logout,
@@ -15,6 +16,8 @@ from codealmanac.cli.dispatch.updates import dispatch_update
 ADMIN_COMMANDS = frozenset(
     (
         "automation",
+        "__capture-hook",
+        "capture",
         "doctor",
         "jobs",
         "login",
@@ -38,6 +41,10 @@ def dispatch_admin(args: argparse.Namespace, app: CodeAlmanac) -> int:
         return dispatch_whoami(args, app)
     if args.command == "logout":
         return dispatch_logout(args, app)
+    if args.command == "capture":
+        return dispatch_capture(args, app)
+    if args.command == "__capture-hook":
+        return dispatch_capture_hook(args, app)
     if args.command == "setup":
         return dispatch_setup(args, app)
     if args.command == "uninstall":

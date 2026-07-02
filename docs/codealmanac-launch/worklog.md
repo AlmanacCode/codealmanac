@@ -2,6 +2,41 @@
 
 ## 2026-07-02
 
+- Planned Slice 28 in
+  `docs/plans/2026-07-02-slice-28-cloud-capture-install.md`.
+- Added hosted `capture_tokens` service/store/table boundary and `/v1`
+  capture credential routes:
+  `POST /v1/capture/credentials`, `GET /v1/capture/status`, and
+  `POST /v1/capture/credentials/revoke`.
+- Added hosted `cap_...` capture tokens hashed at rest and separated from
+  `alm_...` CLI tokens. Issue/status/revoke use the CLI token; future upload
+  endpoints use the capture token.
+- Pushed hosted commit `36211ba feat: add capture credential API` to
+  `origin/codex/workos-authkit-api-foundation`.
+- Added matching frontend capture DTO declarations so hosted backend/frontend
+  DTO names and fields stay mirrored.
+- Added local `~/.codealmanac/capture.json` mode `0600` and
+  `~/.codealmanac/capture-events/events.jsonl` diagnostic event storage.
+- Added public cloud capture commands:
+  `codealmanac capture status`, `codealmanac capture enable`,
+  `codealmanac capture repair`, and `codealmanac capture disable`.
+- Added hidden hook entrypoint
+  `codealmanac __capture-hook --provider codex|claude`.
+- Added Codex and Claude Stop hook installation/removal under
+  `~/.codex/hooks.json` and `~/.claude/settings.json`, preserving unrelated
+  provider settings.
+- Kept transcript parsing/upload and model runs out of Slice 28. Hooks only
+  record local diagnostic events until Slice 29.
+- Verified Slice 28 hosted backend with `uv run pytest -q` (`291 passed, 1
+  warning`), `uv run ruff check .`, and `uv run ruff format --check .`.
+- Verified Slice 28 hosted frontend with `npm run test:routes` (`26 passed`),
+  `npm run test:frontend` (`41 passed`), and `npm run build`.
+- `npm run build` still emits the known non-blocking CSS optimizer warning
+  about a comment containing `m-* utility`.
+- Verified Slice 28 `codealmanac` with `uv run pytest -q` (`477 passed`),
+  `uv run ruff check .`, `git diff --check`, and help checks for
+  `capture status`, `capture enable`, `capture repair`, and
+  `capture disable`.
 - Planned Slice 27 in
   `docs/plans/2026-07-02-slice-27-cloud-cli-auth.md`.
 - Added hosted `/v1` CLI auth aliases over the existing CLI token service:

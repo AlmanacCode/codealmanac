@@ -159,8 +159,17 @@ optional bound organization/repo set
 revocable from dashboard
 ```
 
-Use WorkOS' system directly for this if WorkOS provides a suitable primitive.
-Do not design a fallback token unless a concrete WorkOS limitation forces it.
+Implemented Slice 28 launch shape:
+
+```text
+WorkOS/AuthKit owns human identity and browser sessions.
+CodeAlmanac-hosted issues narrow `cap_...` capture credentials.
+CLI token auth gates capture credential issue/status/revoke.
+Capture credentials are product machine credentials, not WorkOS browser tokens.
+```
+
+If WorkOS later provides a better first-class machine credential primitive, the
+storage backend can change while preserving the public `cap_...` contract.
 
 ## GitHub OAuth Through WorkOS
 
@@ -249,6 +258,30 @@ POST /api/cli/logout
 `/v1/me` and `/v1/auth/logout` authenticate with the hosted CLI token issued by
 the poll response. The CLI must never print that token in text or JSON output.
 
+Implemented Slice 28 capture credential routes:
+
+```text
+POST /v1/capture/credentials
+GET  /v1/capture/status
+POST /v1/capture/credentials/revoke
+```
+
+Credential issue/status/revoke authenticate with the CLI token. Issue returns
+the raw `cap_...` token once. Status returns summaries only and never returns
+raw token material. Future upload endpoints authenticate with the capture token,
+not the human CLI token.
+
+Implemented Slice 28 local capture state:
+
+```text
+~/.codealmanac/capture.json mode 0600
+~/.codealmanac/capture-events/events.jsonl
+```
+
+`capture.json` stores the capture token separately from
+`~/.codealmanac/auth.json`. Hook diagnostics are local event records only until
+the transcript upload slice lands.
+
 Core endpoints:
 
 ```text
@@ -258,6 +291,9 @@ GET  /v1/auth/cli/sessions/{session_id}
 POST /v1/auth/cli/sessions/{session_id}/complete
 POST /v1/auth/cli/sessions/{session_id}/poll
 POST /v1/auth/logout
+POST /v1/capture/credentials
+GET  /v1/capture/status
+POST /v1/capture/credentials/revoke
 POST /v1/auth/token/refresh
 
 GET  /v1/repositories

@@ -12,7 +12,6 @@ PACKAGE_ROOT = PROJECT_ROOT / "src/codealmanac"
 
 FORBIDDEN_TOP_LEVEL_COMMANDS = (
     "absorb",
-    "capture",
     "connect",
     "mcp",
     "sdk",
@@ -32,6 +31,8 @@ README_REQUIRED_FRAGMENTS = (
     "codealmanac setup --yes",
     "codealmanac login",
     "codealmanac whoami",
+    "codealmanac capture status",
+    "codealmanac capture enable --target codex",
     "codealmanac setup --yes --install-automation",
     "codealmanac setup --yes --sync-every 5h --sync-quiet 45m",
     "codealmanac init",
@@ -47,7 +48,7 @@ README_REQUIRED_FRAGMENTS = (
     "Derived local state appears when commands need it:",
     "codealmanac uninstall --yes",
     "codealmanac uninstall --yes --keep-automation",
-    "Cloud commands: `setup`, `login`, `whoami`, `logout`.",
+    "Cloud commands: `setup`, `login`, `whoami`, `logout`, `capture`.",
 )
 
 README_FORBIDDEN_FRAGMENTS = (
@@ -145,6 +146,10 @@ def test_default_user_state_paths_are_product_specific(isolated_home: Path):
     assert config.registry_path == isolated_home / ".codealmanac/registry.json"
     assert config.config_path == isolated_home / ".codealmanac/config.toml"
     assert config.auth_path == isolated_home / ".codealmanac/auth.json"
+    assert config.capture_path == isolated_home / ".codealmanac/capture.json"
+    assert config.capture_events_path == (
+        isolated_home / ".codealmanac/capture-events"
+    )
 
 
 def test_readme_documents_python_local_public_surface():

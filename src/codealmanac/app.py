@@ -5,6 +5,7 @@ from codealmanac import __version__
 from codealmanac.core.models import AppConfig
 from codealmanac.integrations.automation import LaunchdSchedulerAdapter
 from codealmanac.integrations.browser import WebBrowserOpener
+from codealmanac.integrations.capture import FileCaptureHookManager
 from codealmanac.integrations.cloud import HttpCloudAuthClient
 from codealmanac.integrations.harnesses import default_harness_adapters
 from codealmanac.integrations.runs import (
@@ -35,6 +36,13 @@ from codealmanac.services.automation.service import AutomationService
 from codealmanac.services.cloud_auth.ports import CloudAuthClient
 from codealmanac.services.cloud_auth.service import CloudAuthService
 from codealmanac.services.cloud_auth.store import CloudAuthStore
+from codealmanac.services.cloud_capture.event_store import CaptureEventStore
+from codealmanac.services.cloud_capture.ports import (
+    CaptureHookManager,
+    CloudCaptureClient,
+)
+from codealmanac.services.cloud_capture.service import CloudCaptureService
+from codealmanac.services.cloud_capture.store import CaptureStateStore
 from codealmanac.services.config.service import ConfigService
 from codealmanac.services.config.store import ConfigStore
 from codealmanac.services.control.ports import LocalGitStateProbe
@@ -129,6 +137,7 @@ class CodeAlmanacWorkflows:
 class CodeAlmanac:
     automation: AutomationService
     cloud_auth: CloudAuthService
+    capture: CloudCaptureService
     config: ConfigService
     control: ControlService
     deliveries: DeliveriesService
@@ -169,6 +178,8 @@ def create_app(
     update_runner: PackageCommandRunner | None = None,
     instruction_installer: InstructionInstaller | None = None,
     cloud_auth_client: CloudAuthClient | None = None,
+    cloud_capture_client: CloudCaptureClient | None = None,
+    capture_hook_manager: CaptureHookManager | None = None,
     browser_opener: BrowserOpener | None = None,
     local_git_state_probe: LocalGitStateProbe | None = None,
     local_git_hook_manager: LocalGitHookManager | None = None,
@@ -182,6 +193,13 @@ def create_app(
     cloud_auth = CloudAuthService(
         CloudAuthStore(app_config.auth_path),
         cloud_auth_client or HttpCloudAuthClient(),
+    )
+    capture = CloudCaptureService(
+        auth=cloud_auth,
+        store=CaptureStateStore(app_config.capture_path),
+        events=CaptureEventStore(app_config.capture_events_path),
+        client=cloud_capture_client or HttpCloudAuthClient(),
+        hooks=capture_hook_manager or FileCaptureHookManager(),
     )
     control = ControlService(
         ControlStore(app_config.control_db_path),
@@ -363,6 +381,7 @@ def create_app(
     return CodeAlmanac(
         automation=automation,
         cloud_auth=cloud_auth,
+        capture=capture,
         config=config_service,
         control=control,
         deliveries=deliveries,

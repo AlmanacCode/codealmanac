@@ -53,6 +53,8 @@ codealmanac setup --yes --target codex
 codealmanac setup --yes --target claude
 codealmanac login
 codealmanac whoami
+codealmanac capture status
+codealmanac capture enable --target codex
 ```
 
 Use `--skip-login` when you only want local instruction files. Scheduled
@@ -252,7 +254,7 @@ narrow the viewer to one wiki.
 
 This rewrite has two public surfaces:
 
-- Cloud commands: `setup`, `login`, `whoami`, `logout`.
+- Cloud commands: `setup`, `login`, `whoami`, `logout`, `capture`.
 - Local commands: `local setup`, `local update`, `local triggers`, `local jobs`.
 - No public SDK or MCP package.
 - No compatibility aliases.
