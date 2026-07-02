@@ -10,12 +10,19 @@ from codealmanac.services.runs.models import (
 )
 from codealmanac.services.runs.store import RunStore
 
-TERMINAL_SETTLE_POLLS = 1
+TERMINAL_SETTLE_SECONDS = 1.0
 
 
 class RunAttachStreamer:
-    def __init__(self, store: RunStore):
+    def __init__(
+        self,
+        store: RunStore,
+        terminal_settle_seconds: float = TERMINAL_SETTLE_SECONDS,
+    ):
+        if terminal_settle_seconds < 0:
+            raise ValueError("terminal settle seconds must be non-negative")
         self.store = store
+        self.terminal_settle_seconds = terminal_settle_seconds
 
     def stream(
         self,
@@ -24,20 +31,24 @@ class RunAttachStreamer:
         poll_interval_seconds: float,
     ) -> Iterator[RunAttachUpdate]:
         last_sequence = 0
-        terminal_settle_polls = TERMINAL_SETTLE_POLLS
+        terminal_seen_at: float | None = None
         while True:
             snapshot = self.store.attach(almanac_path, run_id)
             if (
                 snapshot.terminal
-                and terminal_settle_polls > 0
                 and not terminal_status_event_seen(
                     snapshot.events,
                     snapshot.record.status,
                 )
             ):
-                terminal_settle_polls -= 1
-                time.sleep(poll_interval_seconds)
-                continue
+                now = time.monotonic()
+                if terminal_seen_at is None:
+                    terminal_seen_at = now
+                if now - terminal_seen_at < self.terminal_settle_seconds:
+                    time.sleep(poll_interval_seconds)
+                    continue
+            else:
+                terminal_seen_at = None
             events = events_after(snapshot.events, last_sequence)
             if len(events) > 0:
                 last_sequence = max(event.sequence for event in events)
