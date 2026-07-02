@@ -1,6 +1,6 @@
 # Slice 54: PyPI Release Execution
 
-Status: in progress.
+Status: implemented with external provider blocker.
 Date: 2026-07-02.
 
 ## Scope
@@ -96,4 +96,22 @@ Docs:
 
 ```text
 git diff --check
+```
+
+## Result
+
+First workflow run `28617718053` failed in tests and exposed a real local
+attach-stream race. Commit `a0c86bfe6bedfdd2cd7bd8ff21c252692a6c4eb6` fixes the
+race and is pushed to `dev` and `main`.
+
+Second workflow run `28617914312` passed the build job but failed in PyPI token
+exchange with `invalid-publisher`. PyPI still exposes only `0.1.0.dev0`, so the
+fresh install smoke is blocked until the PyPI trusted publisher entry matches:
+
+```text
+repository: AlmanacCode/codealmanac
+workflow: .github/workflows/publish.yml
+ref: refs/heads/main
+environment: pypi
+subject: repo:AlmanacCode/codealmanac:environment:pypi
 ```

@@ -2,6 +2,36 @@
 
 ## 2026-07-02
 
+- Planned Slice 54 in
+  `docs/plans/2026-07-02-slice-54-pypi-release-execution.md`.
+- Triggered the first `publish` workflow run on GitHub `main` with
+  `confirm_version=0.1.0`. Run `28617718053` failed in `uv run pytest` because
+  `test_runs_service_streams_attach_until_run_is_terminal` exposed a real
+  attach-stream race: the file-backed run ledger can expose a terminal record
+  before the terminal status event is visible.
+- Fixed the attach-stream race in `RunAttachStreamer` by waiting through a
+  bounded terminal-record/log-event settle window. Added a regression test that
+  waits through repeated terminal-log race snapshots.
+- Verified the fix locally with focused run-stream tests (`3 passed`), full
+  `uv run pytest` (`497 passed`), `uv run ruff check .`, and `git diff --check`.
+- Pushed fix commit `a0c86bfe6bedfdd2cd7bd8ff21c252692a6c4eb6` to
+  `origin/dev` and `origin/main`.
+- Triggered the second `publish` workflow run on GitHub `main` with
+  `confirm_version=0.1.0`. Run `28617914312` passed tests, lint, diff hygiene,
+  build, Twine artifact checks, and artifact upload, then failed in the PyPI
+  publish step with `invalid-publisher`.
+- The PyPI failure claims were:
+  `sub=repo:AlmanacCode/codealmanac:environment:pypi`,
+  `repository=AlmanacCode/codealmanac`,
+  `workflow_ref=AlmanacCode/codealmanac/.github/workflows/publish.yml@refs/heads/main`,
+  `ref=refs/heads/main`, and `environment=pypi`.
+- Confirmed PyPI still exposes only `codealmanac` `0.1.0.dev0`, so the fresh
+  PyPI install smoke remains blocked until the trusted publisher entry is added
+  in the PyPI dashboard.
+- Sent the Slice 54 RelayForge update and recorded progress as:
+  CodeAlmanac backend/local 96%, CLI/public UX 95%,
+  CodeAlmanac-hosted backend/auth/API 96%, hosted frontend/onboarding 73%, and
+  infra/deploy rename 96%.
 - Planned Slice 53 in
   `docs/plans/2026-07-02-slice-53-hosted-main-convergence.md`.
 - Verified hosted branch `codex/workos-authkit-api-foundation` with

@@ -999,3 +999,25 @@ Current evidence:
   `https://www.codealmanac.com/login` HTTP 200, and
   `https://codealmanac-backend-docker.onrender.com/api/health` returning
   `{"status":"ok"}`.
+- Slice 54 triggered CodeAlmanac publish workflow run `28617718053` on
+  `main`; it failed in `uv run pytest` because
+  `test_runs_service_streams_attach_until_run_is_terminal` exposed a real
+  terminal-record/log-event race in local run attach streaming.
+- Slice 54 fixed the race in `RunAttachStreamer` and pushed commit
+  `a0c86bfe6bedfdd2cd7bd8ff21c252692a6c4eb6` to `origin/dev` and
+  `origin/main`.
+- Slice 54 local gates after the fix passed: focused run-stream tests
+  (`3 passed`), full `uv run pytest` (`497 passed`),
+  `uv run ruff check .`, and `git diff --check`.
+- Slice 54 triggered CodeAlmanac publish workflow run `28617914312` on
+  `main`; the build job passed tests, lint, diff hygiene, artifact build, Twine
+  checks, and artifact upload.
+- Slice 54 publish run `28617914312` failed only at PyPI token exchange with
+  `invalid-publisher`. The OIDC claims were
+  `sub=repo:AlmanacCode/codealmanac:environment:pypi`,
+  `repository=AlmanacCode/codealmanac`,
+  `workflow_ref=AlmanacCode/codealmanac/.github/workflows/publish.yml@refs/heads/main`,
+  `ref=refs/heads/main`, and `environment=pypi`.
+- Slice 54 confirmed PyPI still exposes only `codealmanac` `0.1.0.dev0`; fresh
+  install from PyPI is blocked until the trusted publisher entry matches those
+  claims.

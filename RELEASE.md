@@ -89,6 +89,18 @@ Workflow filename: publish.yml
 Environment name: pypi
 ```
 
+If PyPI returns `invalid-publisher`, the failed workflow log prints the OIDC
+claims. The expected stable release claims are:
+
+```text
+sub: repo:AlmanacCode/codealmanac:environment:pypi
+repository: AlmanacCode/codealmanac
+repository_owner: AlmanacCode
+workflow_ref: AlmanacCode/codealmanac/.github/workflows/publish.yml@refs/heads/main
+ref: refs/heads/main
+environment: pypi
+```
+
 The GitHub workflow uses the `pypi` environment. Configure protection rules on
 that GitHub environment if releases should require manual approval inside
 GitHub Actions.

@@ -50,17 +50,29 @@ Slice 53 converges hosted `main`:
 - hosted route tests and lint passed before the fast-forward
 - public production frontend and backend smokes passed after the fast-forward
 
+Slice 54 executes the PyPI release path until the provider-side blocker:
+
+- first `publish` workflow run `28617718053` exposed a real local
+  attach-stream race in `tests/test_runs_service.py`
+- fix commit `a0c86bfe6bedfdd2cd7bd8ff21c252692a6c4eb6` stabilizes terminal
+  event streaming and is on CodeAlmanac `dev` and `main`
+- second `publish` workflow run `28617914312` passed tests, lint, diff hygiene,
+  build, Twine checks, and artifact upload
+- PyPI rejected the upload with `invalid-publisher`; the trusted publisher
+  entry is missing or does not match the GitHub OIDC claims
+
 ## Current Repo State
 
 CodeAlmanac:
 
 - repo: `/Users/rohan/Desktop/Projects/codealmanac`
 - branch: `dev`
-- current Slice 52 docs/workflow commit: the commit containing this brief
-- previous `origin/dev` before Slice 52 push: `8137a61b`
-- `origin/main`: fast-forwarded during Slice 52 so the manual publish workflow
-  exists on the release branch; previous `origin/main` before Slice 52 was
-  `6d69c53b`
+- current Slice 54 fix commit:
+  `a0c86bfe6bedfdd2cd7bd8ff21c252692a6c4eb6`
+- previous `origin/dev` before Slice 54 fix push:
+  `8e08deb88a15d712c2d7ce08bc48fd201d482b69`
+- `origin/main`: fast-forwarded during Slice 54 so the run-stream fix exists on
+  the release branch before publishing
 - package version in `pyproject.toml`: `0.1.0`
 - PyPI live version checked on 2026-07-02: `0.1.0.dev0`
 
@@ -106,12 +118,23 @@ repaired.
   (`27 passed`), hosted `npm run lint`, hosted remote refs both at `8052be0`,
   `https://www.codealmanac.com` HTTP 200, `https://www.codealmanac.com/login`
   HTTP 200, and backend health returned `{"status":"ok"}`.
+- Slice 54 local verification passed after the run-stream race fix:
+  focused run-stream tests (`3 passed`), full `uv run pytest` (`497 passed`),
+  `uv run ruff check .`, and `git diff --check`.
+- Slice 54 GitHub publish run `28617914312` passed the workflow's build job:
+  tests, lint, diff hygiene, artifact build, Twine checks, and artifact upload.
+  It failed only at PyPI token exchange with `invalid-publisher`.
 
 ## Next Pressure Tests
 
 - Add the PyPI trusted publisher entry for project `codealmanac`, owner
   `AlmanacCode`, repository `codealmanac`, workflow filename `publish.yml`,
   environment `pypi`.
+  The failed run's claims were
+  `sub=repo:AlmanacCode/codealmanac:environment:pypi`,
+  `repository=AlmanacCode/codealmanac`,
+  `workflow_ref=AlmanacCode/codealmanac/.github/workflows/publish.yml@refs/heads/main`,
+  `ref=refs/heads/main`, and `environment=pypi`.
 - Publish CodeAlmanac `0.1.0` by running the `publish` workflow on `main` with
   `confirm_version=0.1.0`, then test `uv tool install codealmanac` from PyPI.
 - Do a real signed-in production browser pass through:
@@ -129,7 +152,8 @@ repaired.
 ## Remaining Launch Gaps
 
 - PyPI trusted publisher setup, package publish, and fresh install smoke from
-  PyPI.
+  PyPI. The workflow build job is clean; PyPI currently rejects upload with
+  `invalid-publisher`.
 - Final provider cleanup. CodeAlmanac and hosted branch/main convergence are
   done as of Slice 53.
 - Live production browser verification with a signed-in user.
