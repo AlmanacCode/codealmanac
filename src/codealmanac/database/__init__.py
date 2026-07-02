@@ -4,6 +4,7 @@ from codealmanac.database.sqlite import (
     SQLiteRow,
     apply_migrations,
     connect_sqlite,
+    user_version,
 )
 
 __all__ = (
@@ -12,4 +13,5 @@ __all__ = (
     "SQLiteRow",
     "apply_migrations",
     "connect_sqlite",
+    "user_version",
 )

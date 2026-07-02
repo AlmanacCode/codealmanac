@@ -25,6 +25,18 @@ It is the constraint document for future agents.
   TypeScript-era backward compatibility, legacy aliases, legacy root
   migrations, or old frontmatter repair paths unless the user explicitly
   reopens that decision.
+- 2026-07-02: There is no public `codealmanac build` command in Python v1.
+  `codealmanac init` is the public first-build lifecycle command: it creates or
+  refreshes the configured Almanac root, installs the wiki manual, and runs the
+  initial agent-backed wiki construction. Use `codealmanac reindex` for derived
+  SQLite read-model refreshes. "Build" may remain an internal concept for the
+  first-build prompt/workflow only if it does not leak as a separate CLI verb.
+- 2026-07-02: Restore the archived prompt/manual doctrine closely. Port
+  `archive/code/prompts/base/*` and operation prompts into Python package
+  resources with only deliberate adaptations: product name `codealmanac`,
+  configured Almanac roots instead of hard-coded `.almanac/`, public `ingest`
+  instead of `absorb`, and explicitly dropped archive lineage fields. Do not
+  replace the archive prompt system with thin summaries.
 - 2026-07-01: The intentionally dropped archive-era surfaces are: public
   `almanac`/`alm` compatibility bins, hosted login/connect/upload/MCP/SDK
   surfaces, migration commands unless a migration need becomes concrete, and
@@ -70,11 +82,12 @@ It is the constraint document for future agents.
   into `dispatch/wiki.py`.
 - 2026-07-01: Lifecycle CLI dispatch follows the same command-family split.
   `cli/dispatch/lifecycle.py` remains the lifecycle-command facade;
-  `build.py` owns init/build request construction, `operations.py` owns
-  ingest/garden foreground/background dispatch, `sync.py` owns sync and sync
-  status request construction, and `worker.py` owns the hidden queue-drain
-  entrypoint. Do not move workflow request construction, sync source parsing,
-  or worker-drain request construction back into `dispatch/lifecycle.py`.
+  the init/first-build dispatcher owns init request construction,
+  `operations.py` owns ingest/garden foreground/background dispatch, `sync.py`
+  owns sync and sync status request construction, and `worker.py` owns the
+  hidden queue-drain entrypoint. Do not move workflow request construction,
+  sync source parsing, or worker-drain request construction back into
+  `dispatch/lifecycle.py`.
 - 2026-07-01: Admin CLI parser construction follows the same command-family
   split. `cli/parser/admin.py` remains the admin-parser facade; `setup.py`
   owns setup/uninstall flags, `diagnostics.py` owns doctor flags, `updates.py`
@@ -726,10 +739,10 @@ Workflows coordinate services. They do not own durable schema unless a service
 is missing.
 
 `init` creates or refreshes the initial local wiki in the configured Almanac
-root and may run the initial agent-backed wiki build. New installs default to
-`almanac/`. Do not split the user-facing first-build story into a surprising
-`init` scaffold plus unrelated `build` index refresh unless the CLI names make
-that distinction obvious.
+root, installs the wiki manual, and runs the initial agent-backed first-build
+pass. New installs default to `almanac/`. Do not split the user-facing
+first-build story into `init` scaffold plus a separate `build` command.
+`reindex` is the explicit read-model refresh command.
 
 `ingest` updates the wiki from selected local material such as paths, PR refs,
 diffs, commit ranges, notes, or transcript refs.
@@ -769,7 +782,7 @@ There is no durable `candidate` object in v1. Bundling is a run input selection,
 not a discovered product entity.
 
 Adding or discovering material does not imply a wiki update. Updating the wiki
-is a separate `ingest`, `build`, `sync`, or `garden` workflow.
+is a separate `init`, `ingest`, `sync`, or `garden` workflow.
 
 Page file/folder references belong to `wiki` and `index`, not to the source
 catalog. `[[src/foo.py]]` and `[[src/foo/]]` power mentions search and health.
@@ -867,7 +880,7 @@ subprocess.run(["codealmanac", "show", "..."])
 | Sources | transcript/path/Git/GitHub/web input contracts, local observations, and runtime snapshots |
 | Runs/jobs | durable ledger, events, outputs, foreground/background lifecycle state, attach/cancel |
 | Harnesses | Codex app-server and Claude SDK/event harnesses behind normalized ports |
-| Workflows | `build`, `ingest`, `sync`, `garden` |
+| Workflows | `init`, `ingest`, `sync`, `garden` |
 | Automation | local scheduled sync/garden |
 | CLI | thin local command surface |
 | Serve | local read-only wiki viewer |
@@ -882,6 +895,7 @@ subprocess.run(["codealmanac", "show", "..."])
 | SDK | No Python SDK package |
 | MCP | No MCP server |
 | Compatibility aliases | No public `almanac`, `alm`, or `absorb` |
+| Separate build command | No public `codealmanac build`; `init` owns first-build |
 | Archive lineage | No `archived_at` / `superseded_by` page state |
 | Semantic search | FTS and refs first |
 

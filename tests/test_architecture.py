@@ -33,6 +33,30 @@ def test_database_package_owns_sqlite_imports():
     assert offenders == []
 
 
+def test_control_service_keeps_schema_store_service_boundaries():
+    control_root = SRC_ROOT / "services/control"
+    service_text = (control_root / "service.py").read_text(encoding="utf-8")
+    store_text = (control_root / "store.py").read_text(encoding="utf-8")
+    schema_text = (control_root / "schema.py").read_text(encoding="utf-8")
+
+    assert {
+        "__init__.py",
+        "models.py",
+        "requests.py",
+        "schema.py",
+        "service.py",
+        "store.py",
+    } <= {path.name for path in control_root.glob("*.py")}
+    assert len(service_text.splitlines()) <= 40
+    assert "connect_control" not in service_text
+    assert "connection.execute" not in service_text
+    assert "CONTROL_SCHEMA_DDL" in schema_text
+    assert "CONTROL_MIGRATIONS" in schema_text
+    assert "def connect_control(" in schema_text
+    assert "ControlSchemaStatus(" in store_text
+    assert "connection.execute" in store_text
+
+
 def test_config_service_owns_toml_imports():
     offenders = [
         path

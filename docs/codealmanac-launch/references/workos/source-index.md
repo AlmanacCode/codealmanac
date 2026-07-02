@@ -1,0 +1,1987 @@
+# WorkOS source index
+
+Generated: 2026-06-26T19:12:41.566103+00:00
+
+Source: https://workos.com/docs/llms.txt
+
+This file is an index of official WorkOS documentation URLs and short
+descriptions. It is not a vendored copy of the documentation.
+
+## Counts
+
+- sources: 610
+- sections: 28
+- heading snapshots: 133
+- heading fetch failures: 7
+
+## Heading fetch failures
+
+- [authkit-tanstack-start](https://workos.com/docs/sdks/authkit-tanstack-start.md) - failed to fetch https://workos.com/docs/sdks/authkit-tanstack-start.md: HTTP Error 404: Not Found
+- [authkit-remix](https://workos.com/docs/sdks/authkit-remix.md) - failed to fetch https://workos.com/docs/sdks/authkit-remix.md: HTTP Error 404: Not Found
+- [authkit-react](https://workos.com/docs/sdks/authkit-react.md) - failed to fetch https://workos.com/docs/sdks/authkit-react.md: HTTP Error 404: Not Found
+- [authkit-react-router](https://workos.com/docs/sdks/authkit-react-router.md) - failed to fetch https://workos.com/docs/sdks/authkit-react-router.md: HTTP Error 404: Not Found
+- [authkit-nextjs](https://workos.com/docs/sdks/authkit-nextjs.md) - failed to fetch https://workos.com/docs/sdks/authkit-nextjs.md: HTTP Error 404: Not Found
+- [authkit-js](https://workos.com/docs/sdks/authkit-js.md) - failed to fetch https://workos.com/docs/sdks/authkit-js.md: HTTP Error 404: Not Found
+- [authkit-astro](https://workos.com/docs/sdks/authkit-astro.md) - failed to fetch https://workos.com/docs/sdks/authkit-astro.md: HTTP Error 404: Not Found
+
+## Getting started
+
+- [Auth](https://workos.com/auth.md) - Instructions for how agents can set up a new WorkOS account and start developing with the SDKs.
+
+## Pricing
+
+- [Pricing](https://workos.com/pricing.md) - WorkOS pricing details for AuthKit, SSO, Directory Sync, Audit Logs, Radar, and more.
+
+## Postman
+
+- [WorkOS Postman collection](https://workos.com/docs/postman.md) - Test the WorkOS API with Postman.
+
+## On prem deployment
+
+- [Using WorkOS with On-prem Customers](https://workos.com/docs/on-prem-deployment.md) - Best practices for using WorkOS with on-prem customers.
+
+## Migrate standalone sso
+
+- [Migrate from the standalone SSO API](https://workos.com/docs/migrate-standalone-sso.md) - Learn how to migrate your code from an existing WorkOS SSO integration.
+
+## Glossary
+
+- [Glossary](https://workos.com/docs/glossary.md) - Terminology and concepts used in the WorkOS documentation.
+
+## Email
+
+- [Email delivery](https://workos.com/docs/email.md) - Best practices for sending email with WorkOS.
+
+## Widgets
+
+- [User Sessions Widget](https://workos.com/docs/widgets/user-sessions.md) - A widget for displaying and managing user sessions in your application.
+  - `# User Sessions Widget`
+  - `#### Widget Token`
+  - `#### Access Token`
+  - `## API Reference`
+- [User Security Widget](https://workos.com/docs/widgets/user-security.md) - A widget for controlling user security settings in your application.
+  - `# User Security Widget`
+  - `#### Widget Token`
+  - `#### Access Token`
+  - `## API Reference`
+- [User Profile Widget](https://workos.com/docs/widgets/user-profile.md) - A widget for displaying and managing a user's profile in your application.
+  - `# User Profile Widget`
+  - `#### Widget Token`
+  - `#### Access Token`
+  - `## API Reference`
+- [User Management Widget](https://workos.com/docs/widgets/user-management.md) - A widget for displaying and managing users in your application.
+  - `# User Management Widget`
+  - `#### Widget Token`
+  - `#### Access Token`
+  - `## API Reference`
+- [Authorization Tokens](https://workos.com/docs/widgets/tokens.md) - Ensure Widgets have the appropriate permissions in your application.
+  - `# Authorization Tokens`
+- [Quick Start](https://workos.com/docs/widgets/quick-start.md) - A step-by-step guide for setting up WorkOS Widgets in your application.
+  - `# Quick Start`
+  - `## Installation`
+  - `## Styles`
+  - `#### CSS imports`
+  - `## Root component`
+  - `#### Root component`
+  - `## CORS configuration`
+- [Pipes Widget](https://workos.com/docs/widgets/pipes.md) - A widget for displaying and managing connected accounts with Pipes.
+  - `# Pipes Widget`
+  - `#### Widget Token`
+  - `#### Access Token`
+  - `## API Reference`
+- [Pipes Admin Widget](https://workos.com/docs/widgets/pipes-admin.md) - A widget for organization admins to manage their organization's Pipes connections — enabling providers, supplying OAuth credentials, and configuring scopes.
+  - `# Pipes Admin Widget`
+  - `#### Widget Token`
+  - `#### Access Token`
+  - `## API Reference`
+- [Organization Switcher Widget](https://workos.com/docs/widgets/organization-switcher.md) - A widget for switching between organizations in your application.
+  - `# Organization Switcher Widget`
+  - `### Switching Organizations`
+  - `#### React Library`
+  - `#### Backend Handling`
+  - `### Creating Organizations`
+  - `#### Create Organization`
+  - `## API Reference`
+- [Localization](https://workos.com/docs/widgets/localization.md) - Learn how to display Widgets in multiple languages.
+  - `# Localization`
+  - `## Installation`
+  - `## Setup`
+  - `## Detecting user locale`
+  - `## RTL language support`
+  - `## Supported locales`
+- [WorkOS Widgets](https://workos.com/docs/widgets.md) - Learn how to integrate WorkOS Widgets in your app.
+  - `# WorkOS Widgets`
+  - `## Introduction`
+- [Directory Sync Widget](https://workos.com/docs/widgets/directory-sync.md) - A widget for managing Directory Sync connections in the Admin Portal.
+  - `# Directory Sync Widget`
+  - `#### Widget Token`
+  - `## API Reference`
+- [Audit Log Streaming Widget](https://workos.com/docs/widgets/audit-log-streaming.md) - A widget for configuring and monitoring audit log streaming in the Admin Portal.
+  - `# Audit Log Streaming Widget`
+  - `#### Widget Token`
+  - `## API Reference`
+- [API Keys Widget](https://workos.com/docs/widgets/api-keys.md) - A widget for displaying and managing API keys.
+  - `# API Keys Widget`
+  - `## Organization API keys`
+  - `#### Widget Token`
+  - `#### Access Token`
+  - `## User API keys`
+  - `#### Widget Token`
+  - `#### Access Token`
+  - `## API Reference`
+- [SSO Connection Widget](https://workos.com/docs/widgets/admin-portal-sso-connection.md) - A widget for setting up SSO connections in the Admin Portal.
+  - `# SSO Connection Widget`
+  - `#### Widget Token`
+  - `## API Reference`
+- [Domain Verification Widget](https://workos.com/docs/widgets/admin-portal-domain-verification.md) - A widget for verifying domains in the Admin Portal.
+  - `# Domain Verification Widget`
+  - `#### Widget Token`
+  - `## API Reference`
+- [Theme Customization](https://workos.com/docs/widgets/styling/theme-customization.md) - Customize the look and feel of WorkOS Widgets using Radix Themes.
+  - `# Theme Customization`
+  - `## Using the `theme` prop`
+  - `#### CSS imports`
+  - `### `theme` properties`
+  - `## Using the `elements` prop`
+  - `#### Elements customization`
+  - `### `elements` properties`
+- [Styling](https://workos.com/docs/widgets/styling.md) - Customize the look and feel of WorkOS Widgets.
+  - `# Styling`
+  - `#### Theme customization`
+  - `## Using CSS`
+  - `#### CSS customization`
+- [CSS Customization](https://workos.com/docs/widgets/styling/css-customization.md) - Customize the look and feel of WorkOS Widgets using CSS.
+  - `# CSS Customization`
+  - `#### CSS imports`
+  - `## Universal selectors`
+  - `## Element selectors`
+  - `### Avatar`
+  - `### Badge`
+  - `### Button`
+  - `### Dialog`
+  - `### Dropdown`
+  - `### Icon Button`
+  - `### Label`
+  - `### Menu Item`
+
+## Vault
+
+- [Quick Start](https://workos.com/docs/vault/quick-start.md) - A step-by-step guide on how to start using Vault to manage encrypted objects.
+- [Key Context](https://workos.com/docs/vault/key-context.md) - User-managed cardinality for keys within Vault.
+- [Vault](https://workos.com/docs/vault.md) - Encrypt, store, and control access to sensitive data.
+- [Bring Your Own Key (BYOK)](https://workos.com/docs/vault/byok.md) - Allow your customers to use their own encryption keys with WorkOS Vault for enhanced security and compliance.
+
+## Single Sign-On
+
+- [Test SSO](https://workos.com/docs/sso/test-sso.md) - Learn how to test your Single Sign-On integration end-to-end.
+  - `# Test SSO`
+  - `## Testing with the Test Identity Provider`
+  - `### Getting started`
+  - `### Service provider-initiated SSO`
+  - `### Identity provider-initiated SSO`
+  - `### Guest email domain`
+  - `### Error response`
+  - `## Testing with other identity providers`
+  - `### (1) Create an organization`
+  - `### (2) Create a connection`
+  - `### Follow the Admin Portal instructions`
+- [Single Logout](https://workos.com/docs/sso/single-logout.md) - Learn how to implement Single Logout with WorkOS
+  - `# Single Logout`
+  - `## RP-initiated Logout`
+  - `## IdP-initiated Logout`
+- [SAML Signing Certificates](https://workos.com/docs/sso/signing-certificates.md) - Verify the authenticity of SAML responses and requests.
+  - `# SAML Signing Certificates`
+  - `## SAML Response Signing Certificate`
+  - `### Sample scenario`
+  - `### Verifying the SAML response`
+  - `### Planning considerations`
+  - `### Certificate expiration`
+  - `### Monitored metadata versus manual upload`
+  - `### Renewing certificates`
+  - `### Monitored metadata`
+  - `### Manual upload`
+  - `## SAML Request Signing Certificate`
+  - `### Sample scenario`
+- [Sign-in Consent](https://workos.com/docs/sso/sign-in-consent.md) - Learn about the sign-in consent screen, an extra layer of protection against login CSRF attacks and phishing attempts.
+  - `# Sign-in Consent`
+  - `## How it works`
+  - `## Enabling sign-in consent`
+  - `## Handling the `signin_consent_denied` error`
+  - `## When sign-in consent is displayed`
+  - `## Branding`
+  - `## Availability`
+- [SAML Security Considerations](https://workos.com/docs/sso/saml-security.md) - Learn about additional SAML features that WorkOS supports.
+  - `# SAML Security Considerations`
+  - `## SAML Binding Methods`
+  - `## SP to IdP security features`
+  - `### SAML request signing`
+  - `## IdP to SP security features`
+  - `### Signed response assertions`
+  - `### Signed response message envelope`
+  - `### Encrypted response assertion`
+  - `### Encrypted response attributes`
+  - `## Implementing SSO with WorkOS`
+- [Redirect URIs](https://workos.com/docs/sso/redirect-uris.md) - Learn what a redirect URI is and how it relates to Service Provider and Identity Provider initiated login flows.
+  - `# Redirect URIs`
+  - `## Introduction`
+  - `## Wildcard characters`
+  - `### Subdomains`
+  - `### Ports`
+  - `## Implementing SSO with WorkOS`
+- [Login Flows](https://workos.com/docs/sso/login-flows.md) - Learn the differences between SP‑initiated and IdP‑initiated SSO.
+  - `# Login Flows`
+  - `## SP-initiated SSO`
+  - `#### Get Authorization URL Call`
+  - `## IdP-initiated SSO`
+  - `### Configure IdP-initiated SSO`
+  - `### Disable IdP-initiated SSO (Beta)`
+  - `#### Callback Endpoint with IdP-Initiated error support`
+  - `## Implementing SSO with WorkOS`
+- [Launch Checklist](https://workos.com/docs/sso/launch-checklist.md) - Make sure you're ready to take your app to production.
+  - `# Launch Checklist`
+  - `## Implement complementary enterprise features`
+  - `### Before you start`
+  - `## Create an IP Allowlist`
+  - `## Go-live checklist`
+  - `## Frequently asked questions`
+  - `### How should an application handle the first time a user authenticates using WorkOS?`
+  - `### Can we add SSO authentication for a current user in an application?`
+  - `### How does WorkOS manage user attributes from an identity provider?`
+  - `### Is the user attribute mapping configurable in WorkOS?`
+  - `### What does the "Allow Profiles Outside Organization" option do?`
+  - `### What does "There are 0 profiles awaiting reconciliation" refer to?`
+- [Just-In-Time User Provisioning](https://workos.com/docs/sso/jit-provisioning.md) - Learn how to provision users in your app using Just-In-Time user provisioning.
+  - `# Just-In-Time User Provisioning`
+  - `## Introduction`
+  - `## Definitions`
+  - `## User provisioning strategies`
+  - `## What is JIT provisioning?`
+  - `### Sample scenario`
+  - `## JIT provisioning with WorkOS SSO`
+  - `### New account creation`
+  - `### Linking an existing user`
+  - `## Implementing SSO with WorkOS`
+- [FAQ for IT teams](https://workos.com/docs/sso/it-team-faq.md) - Answers to common questions from your customer's IT team.
+  - `# FAQ for IT teams`
+  - `## What is WorkOS?`
+  - `## What data does WorkOS store?`
+  - `## How do developer apps communicate with WorkOS?`
+  - `## What IP addresses does WorkOS use?`
+  - `## Is WorkOS certified for SOC 2 Type II, SOC 3 and SIG Lite?`
+  - `## Is WorkOS GDPR compliant?`
+- [Single Sign-On](https://workos.com/docs/sso.md) - Facilitate greater security, easier account management, and accelerated application onboarding and adoption.
+  - `# Single Sign-On`
+  - `## Choose your integration approach`
+  - `### (A) With the standalone SSO API`
+  - `### (B) Using WorkOS AuthKit`
+  - `## How Single Sign-On works`
+  - `## What you'll build`
+  - `## Before getting started`
+  - `## API object definitions`
+  - `## (1) Add SSO to your app`
+  - `### Install the WorkOS SDK`
+  - `### Set secrets`
+  - `### Add an endpoint to initiate SSO`
+- [Identity Provider Role Assignment](https://workos.com/docs/sso/identity-provider-role-assignment.md) - Learn how to map role data from identity providers to roles in your app with SSO.
+  - `# Identity Provider Role Assignment`
+  - `## Introduction`
+  - `## SSO group role assignment`
+  - `### Sample scenario`
+  - `### Multiple roles`
+  - `#### Use cases`
+  - `### Role assignment in Admin Portal`
+  - `## Considerations`
+  - `### Drawbacks`
+  - `### Directory group role assignment`
+- [Example Apps](https://workos.com/docs/sso/example-apps.md) - View sample Single Sign-On apps for each SDK.
+  - `# Example Apps`
+- [Domains](https://workos.com/docs/sso/domains.md) - Understand how Organization domains are used with SSO.
+  - `# Domains`
+  - `## Organizations`
+  - `## Email validation`
+  - `## Allowing any domain`
+  - `## Implement profile validation`
+  - `## Custom ACS domains`
+- [IdP Attributes](https://workos.com/docs/sso/attributes.md) - Configure how identity provider attributes map to SSO Profiles and Directory Users.
+  - `# IdP Attributes`
+  - `## Introduction`
+  - `## Definitions`
+  - `## Standard attributes`
+  - `## Custom attributes`
+  - `### Predefined attributes`
+  - `#### Enable or disable a predefined attribute`
+  - `### Custom attributes`
+  - `#### Create a custom attribute`
+  - `#### Delete a custom attribute`
+  - `#### Editing attribute mappings`
+  - `### Custom attribute mapping in Admin Portal`
+- [Sign-In UX](https://workos.com/docs/sso/ux/sign-in.md) - User experience considerations for Single Sign-On.
+  - `# Sign-In UX`
+  - `## Introduction`
+  - `### Implementing SSO with WorkOS`
+  - `## Separate SSO flow`
+  - `## Separate email and password fields`
+  - `## Auto-hide the password field`
+- [SSO Session Lifecycle](https://workos.com/docs/sso/ux/sessions.md) - Understanding SSO session statuses and their meaning.
+  - `# SSO Session Lifecycle`
+  - `## Introduction`
+  - `## Session Statuses`
+  - `### In progress`
+  - `### Success`
+  - `### Failed`
+  - `### Timed out`
+  - `## Test Sessions`
+  - `### Test successful`
+  - `### Test failed`
+  - `## Tracking SSO sessions`
+  - `## Monitoring SSO sessions with events`
+
+## Sdks
+
+- [rust](https://workos.com/docs/sdks/rust.md)
+- [ruby](https://workos.com/docs/sdks/ruby.md)
+- [python](https://workos.com/docs/sdks/python.md)
+- [php](https://workos.com/docs/sdks/php.md)
+- [node](https://workos.com/docs/sdks/node.md)
+- [laravel](https://workos.com/docs/sdks/laravel.md)
+- [java](https://workos.com/docs/sdks/java.md)
+- [go](https://workos.com/docs/sdks/go.md)
+- [elixir](https://workos.com/docs/sdks/elixir.md)
+- [dotnet](https://workos.com/docs/sdks/dotnet.md)
+- [authkit-tanstack-start](https://workos.com/docs/sdks/authkit-tanstack-start.md)
+- [authkit-remix](https://workos.com/docs/sdks/authkit-remix.md)
+- [authkit-react](https://workos.com/docs/sdks/authkit-react.md)
+- [authkit-react-router](https://workos.com/docs/sdks/authkit-react-router.md)
+- [authkit-nextjs](https://workos.com/docs/sdks/authkit-nextjs.md)
+- [authkit-js](https://workos.com/docs/sdks/authkit-js.md)
+- [authkit-astro](https://workos.com/docs/sdks/authkit-astro.md)
+
+## API Reference
+
+- [API Reference](https://workos.com/docs/reference.md)
+- [admin-portal](https://workos.com/docs/reference/admin-portal.md)
+- [admin-portal - portal-link](https://workos.com/docs/reference/admin-portal/portal-link.md)
+- [admin-portal - portal-link - generate](https://workos.com/docs/reference/admin-portal/portal-link/generate.md)
+- [admin-portal - provider-icons](https://workos.com/docs/reference/admin-portal/provider-icons.md)
+- [agents](https://workos.com/docs/reference/agents.md)
+- [agents - get-registration](https://workos.com/docs/reference/agents/get-registration.md)
+- [agents - validate-credential](https://workos.com/docs/reference/agents/validate-credential.md)
+- [api-authentication](https://workos.com/docs/reference/api-authentication.md)
+- [audit-logs](https://workos.com/docs/reference/audit-logs.md)
+- [audit-logs - configuration](https://workos.com/docs/reference/audit-logs/configuration.md)
+- [audit-logs - event](https://workos.com/docs/reference/audit-logs/event.md)
+- [audit-logs - event - create](https://workos.com/docs/reference/audit-logs/event/create.md)
+- [audit-logs - export](https://workos.com/docs/reference/audit-logs/export.md)
+- [audit-logs - export - create](https://workos.com/docs/reference/audit-logs/export/create.md)
+- [audit-logs - export - get](https://workos.com/docs/reference/audit-logs/export/get.md)
+- [audit-logs - retention](https://workos.com/docs/reference/audit-logs/retention.md)
+- [audit-logs - retention - get](https://workos.com/docs/reference/audit-logs/retention/get.md)
+- [audit-logs - retention - set](https://workos.com/docs/reference/audit-logs/retention/set.md)
+- [audit-logs - schema](https://workos.com/docs/reference/audit-logs/schema.md)
+- [audit-logs - schema - create](https://workos.com/docs/reference/audit-logs/schema/create.md)
+- [audit-logs - schema - list](https://workos.com/docs/reference/audit-logs/schema/list.md)
+- [audit-logs - schema - list-actions](https://workos.com/docs/reference/audit-logs/schema/list-actions.md)
+- [authkit](https://workos.com/docs/reference/authkit.md)
+- [authkit - agent-registration](https://workos.com/docs/reference/authkit/agent-registration.md)
+  - `# Agent Registration`
+  - `#### Agent Registration Object`
+  - `## Registration types`
+  - `# Complete a claim`
+  - `## Complete a claim`
+  - `#### Request`
+  - `#### Response`
+  - `### Error responses`
+  - `# View a claim`
+  - `## View a claim`
+  - `#### Request`
+  - `#### Response`
+- [authkit - agent-registration - claim](https://workos.com/docs/reference/authkit/agent-registration/claim.md) - Start a claim ceremony to bind an agent registration to a user.
+  - `# Agent Registration`
+  - `#### Agent Registration Object`
+  - `## Registration types`
+  - `# Complete a claim`
+  - `## Complete a claim`
+  - `#### Request`
+  - `#### Response`
+  - `### Error responses`
+  - `# View a claim`
+  - `## View a claim`
+  - `#### Request`
+  - `#### Response`
+- [authkit - agent-registration - claim-complete](https://workos.com/docs/reference/authkit/agent-registration/claim-complete.md) - Complete a claim ceremony by submitting the user code relayed from the user.
+  - `# Agent Registration`
+  - `#### Agent Registration Object`
+  - `## Registration types`
+  - `# Complete a claim`
+  - `## Complete a claim`
+  - `#### Request`
+  - `#### Response`
+  - `### Error responses`
+  - `# View a claim`
+  - `## View a claim`
+  - `#### Request`
+  - `#### Response`
+- [authkit - agent-registration - claim-view](https://workos.com/docs/reference/authkit/agent-registration/claim-view.md) - View claim details for a user who has signed in to the claim page.
+  - `# Agent Registration`
+  - `#### Agent Registration Object`
+  - `## Registration types`
+  - `# Complete a claim`
+  - `## Complete a claim`
+  - `#### Request`
+  - `#### Response`
+  - `### Error responses`
+  - `# View a claim`
+  - `## View a claim`
+  - `#### Request`
+  - `#### Response`
+- [authkit - agent-registration - register](https://workos.com/docs/reference/authkit/agent-registration/register.md) - Register an agent identity with one of the supported identity types.
+  - `# Agent Registration`
+  - `#### Agent Registration Object`
+  - `## Registration types`
+  - `# Complete a claim`
+  - `## Complete a claim`
+  - `#### Request`
+  - `#### Response`
+  - `### Error responses`
+  - `# View a claim`
+  - `## View a claim`
+  - `#### Request`
+  - `#### Response`
+- [authkit - api-keys](https://workos.com/docs/reference/authkit/api-keys.md)
+  - `# API Keys`
+  - `## Create organization API key`
+  - `#### Request`
+  - `#### Response`
+  - `## Create an API key for a user`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an API key`
+  - `#### Request`
+  - `## Expire an API key`
+  - `#### Request`
+  - `#### Response`
+- [authkit - api-keys - create-for-organization](https://workos.com/docs/reference/authkit/api-keys/create-for-organization.md)
+  - `# API Keys`
+  - `## Create organization API key`
+  - `#### Request`
+  - `#### Response`
+  - `## Create an API key for a user`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an API key`
+  - `#### Request`
+  - `## Expire an API key`
+  - `#### Request`
+  - `#### Response`
+- [authkit - api-keys - create-for-user](https://workos.com/docs/reference/authkit/api-keys/create-for-user.md)
+  - `# API Keys`
+  - `## Create organization API key`
+  - `#### Request`
+  - `#### Response`
+  - `## Create an API key for a user`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an API key`
+  - `#### Request`
+  - `## Expire an API key`
+  - `#### Request`
+  - `#### Response`
+- [authkit - api-keys - delete](https://workos.com/docs/reference/authkit/api-keys/delete.md)
+  - `# API Keys`
+  - `## Create organization API key`
+  - `#### Request`
+  - `#### Response`
+  - `## Create an API key for a user`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an API key`
+  - `#### Request`
+  - `## Expire an API key`
+  - `#### Request`
+  - `#### Response`
+- [authkit - api-keys - expire](https://workos.com/docs/reference/authkit/api-keys/expire.md)
+  - `# API Keys`
+  - `## Create organization API key`
+  - `#### Request`
+  - `#### Response`
+  - `## Create an API key for a user`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an API key`
+  - `#### Request`
+  - `## Expire an API key`
+  - `#### Request`
+  - `#### Response`
+- [authkit - api-keys - list-for-organization](https://workos.com/docs/reference/authkit/api-keys/list-for-organization.md)
+  - `# API Keys`
+  - `## Create organization API key`
+  - `#### Request`
+  - `#### Response`
+  - `## Create an API key for a user`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an API key`
+  - `#### Request`
+  - `## Expire an API key`
+  - `#### Request`
+  - `#### Response`
+- [authkit - api-keys - list-for-user](https://workos.com/docs/reference/authkit/api-keys/list-for-user.md)
+  - `# API Keys`
+  - `## Create organization API key`
+  - `#### Request`
+  - `#### Response`
+  - `## Create an API key for a user`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an API key`
+  - `#### Request`
+  - `## Expire an API key`
+  - `#### Request`
+  - `#### Response`
+- [authkit - api-keys - validate](https://workos.com/docs/reference/authkit/api-keys/validate.md) - Validate an API key and retrieve associated metadata.
+  - `# API Keys`
+  - `## Create organization API key`
+  - `#### Request`
+  - `#### Response`
+  - `## Create an API key for a user`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an API key`
+  - `#### Request`
+  - `## Expire an API key`
+  - `#### Request`
+  - `#### Response`
+- [authkit - authentication](https://workos.com/docs/reference/authkit/authentication.md)
+- [authkit - authentication-errors](https://workos.com/docs/reference/authkit/authentication-errors.md)
+- [authkit - authentication-errors - email-verification-required-error](https://workos.com/docs/reference/authkit/authentication-errors/email-verification-required-error.md)
+- [authkit - authentication-errors - mfa-challenge-error](https://workos.com/docs/reference/authkit/authentication-errors/mfa-challenge-error.md)
+- [authkit - authentication-errors - mfa-enrollment-error](https://workos.com/docs/reference/authkit/authentication-errors/mfa-enrollment-error.md)
+- [authkit - authentication-errors - organization-authentication-required-error](https://workos.com/docs/reference/authkit/authentication-errors/organization-authentication-required-error.md)
+  - `# Authentication errors`
+  - `## Email verification required error`
+  - `#### Email verification required error`
+  - `## MFA challenge error`
+  - `#### MFA challenge error`
+  - `## MFA enrollment error`
+  - `#### MFA enrollment error`
+  - `## Organization authentication required error`
+  - `#### Organization authentication required error`
+  - `## Organization selection required error`
+  - `#### Organization selection required error`
+  - `## SSO required error`
+- [authkit - authentication-errors - organization-selection-error](https://workos.com/docs/reference/authkit/authentication-errors/organization-selection-error.md)
+  - `# Authentication errors`
+  - `## Email verification required error`
+  - `#### Email verification required error`
+  - `## MFA challenge error`
+  - `#### MFA challenge error`
+  - `## MFA enrollment error`
+  - `#### MFA enrollment error`
+  - `## Organization authentication required error`
+  - `#### Organization authentication required error`
+  - `## Organization selection required error`
+  - `#### Organization selection required error`
+  - `## SSO required error`
+- [authkit - authentication-errors - sso-required-error](https://workos.com/docs/reference/authkit/authentication-errors/sso-required-error.md)
+  - `# Authentication errors`
+  - `## Email verification required error`
+  - `#### Email verification required error`
+  - `## MFA challenge error`
+  - `#### MFA challenge error`
+  - `## MFA enrollment error`
+  - `#### MFA enrollment error`
+  - `## Organization authentication required error`
+  - `#### Organization authentication required error`
+  - `## Organization selection required error`
+  - `#### Organization selection required error`
+  - `## SSO required error`
+- [authkit - authentication - code](https://workos.com/docs/reference/authkit/authentication/code.md)
+- [authkit - authentication - email-verification](https://workos.com/docs/reference/authkit/authentication/email-verification.md)
+- [authkit - authentication - get-authorization-url](https://workos.com/docs/reference/authkit/authentication/get-authorization-url.md)
+- [authkit - authentication - get-authorization-url - error-codes](https://workos.com/docs/reference/authkit/authentication/get-authorization-url/error-codes.md)
+- [authkit - authentication - get-authorization-url - pkce](https://workos.com/docs/reference/authkit/authentication/get-authorization-url/pkce.md)
+- [authkit - authentication - get-authorization-url - redirect-uri](https://workos.com/docs/reference/authkit/authentication/get-authorization-url/redirect-uri.md)
+- [authkit - authentication - magic-auth](https://workos.com/docs/reference/authkit/authentication/magic-auth.md)
+- [authkit - authentication - organization-selection](https://workos.com/docs/reference/authkit/authentication/organization-selection.md)
+  - `# Authentication`
+  - `## Authenticate with code`
+  - `#### Request`
+  - `#### Response`
+  - `## Authenticate with an email verification code`
+  - `#### Request`
+  - `#### Response`
+  - `## Authenticate with Magic Auth`
+  - `#### Request`
+  - `#### Response`
+  - `## Authenticate with organization selection`
+  - `#### Request`
+- [authkit - authentication - password](https://workos.com/docs/reference/authkit/authentication/password.md)
+- [authkit - authentication - refresh-and-seal-session-data](https://workos.com/docs/reference/authkit/authentication/refresh-and-seal-session-data.md)
+  - `# Authentication`
+  - `## Authenticate with code`
+  - `#### Request`
+  - `#### Response`
+  - `## Authenticate with an email verification code`
+  - `#### Request`
+  - `#### Response`
+  - `## Authenticate with Magic Auth`
+  - `#### Request`
+  - `#### Response`
+  - `## Authenticate with organization selection`
+  - `#### Request`
+- [authkit - authentication - refresh-token](https://workos.com/docs/reference/authkit/authentication/refresh-token.md)
+- [authkit - authentication - session-cookie](https://workos.com/docs/reference/authkit/authentication/session-cookie.md)
+  - `# Authentication`
+  - `## Authenticate with code`
+  - `#### Request`
+  - `#### Response`
+  - `## Authenticate with an email verification code`
+  - `#### Request`
+  - `#### Response`
+  - `## Authenticate with Magic Auth`
+  - `#### Request`
+  - `#### Response`
+  - `## Authenticate with organization selection`
+  - `#### Request`
+- [authkit - authentication - totp](https://workos.com/docs/reference/authkit/authentication/totp.md)
+- [authkit - cli-auth](https://workos.com/docs/reference/authkit/cli-auth.md)
+  - `# CLI Auth`
+  - `# Get a device authorization URL`
+  - `## Get device authorization URL`
+  - `#### Request`
+  - `#### Response`
+  - `# Device code`
+  - `## Device code`
+  - `#### Request`
+  - `#### Response`
+  - `### Error codes`
+  - `### Error response format`
+  - `### /user_management/authorize/device`
+- [authkit - cli-auth - device-authorization](https://workos.com/docs/reference/authkit/cli-auth/device-authorization.md) - Initiate the CLI Auth flow by obtaining a device code and verification URLs.
+  - `# CLI Auth`
+  - `# Get a device authorization URL`
+  - `## Get device authorization URL`
+  - `#### Request`
+  - `#### Response`
+  - `# Device code`
+  - `## Device code`
+  - `#### Request`
+  - `#### Response`
+  - `### Error codes`
+  - `### Error response format`
+  - `### /user_management/authorize/device`
+- [authkit - cli-auth - device-code](https://workos.com/docs/reference/authkit/cli-auth/device-code.md) - Exchange a device code for access and refresh tokens during the CLI Auth flow.
+  - `# CLI Auth`
+  - `# Get a device authorization URL`
+  - `## Get device authorization URL`
+  - `#### Request`
+  - `#### Response`
+  - `# Device code`
+  - `## Device code`
+  - `#### Request`
+  - `#### Response`
+  - `### Error codes`
+  - `### Error response format`
+  - `### /user_management/authorize/device`
+- [authkit - cli-auth - error-codes](https://workos.com/docs/reference/authkit/cli-auth/error-codes.md)
+  - `# CLI Auth`
+  - `# Get a device authorization URL`
+  - `## Get device authorization URL`
+  - `#### Request`
+  - `#### Response`
+  - `# Device code`
+  - `## Device code`
+  - `#### Request`
+  - `#### Response`
+  - `### Error codes`
+  - `### Error response format`
+  - `### /user_management/authorize/device`
+- [authkit - create](https://workos.com/docs/reference/authkit/create.md)
+- [authkit - create-cors-origin](https://workos.com/docs/reference/authkit/create-cors-origin.md)
+- [authkit - email-verification](https://workos.com/docs/reference/authkit/email-verification.md)
+- [authkit - email-verification - get](https://workos.com/docs/reference/authkit/email-verification/get.md)
+- [authkit - identity](https://workos.com/docs/reference/authkit/identity.md)
+- [authkit - identity - list](https://workos.com/docs/reference/authkit/identity/list.md)
+- [authkit - invitation](https://workos.com/docs/reference/authkit/invitation.md)
+  - `# Invitation`
+  - `## Accept an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## Find an invitation by token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## List invitations`
+  - `#### Request`
+- [authkit - invitation - accept](https://workos.com/docs/reference/authkit/invitation/accept.md)
+  - `# Invitation`
+  - `## Accept an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## Find an invitation by token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## List invitations`
+  - `#### Request`
+- [authkit - invitation - find-by-token](https://workos.com/docs/reference/authkit/invitation/find-by-token.md)
+  - `# Invitation`
+  - `## Accept an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## Find an invitation by token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## List invitations`
+  - `#### Request`
+- [authkit - invitation - get](https://workos.com/docs/reference/authkit/invitation/get.md)
+  - `# Invitation`
+  - `## Accept an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## Find an invitation by token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## List invitations`
+  - `#### Request`
+- [authkit - invitation - list](https://workos.com/docs/reference/authkit/invitation/list.md)
+  - `# Invitation`
+  - `## Accept an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## Find an invitation by token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## List invitations`
+  - `#### Request`
+- [authkit - invitation - resend](https://workos.com/docs/reference/authkit/invitation/resend.md)
+  - `# Invitation`
+  - `## Accept an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## Find an invitation by token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## List invitations`
+  - `#### Request`
+- [authkit - invitation - revoke](https://workos.com/docs/reference/authkit/invitation/revoke.md)
+  - `# Invitation`
+  - `## Accept an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## Find an invitation by token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## List invitations`
+  - `#### Request`
+- [authkit - invitation - send](https://workos.com/docs/reference/authkit/invitation/send.md)
+  - `# Invitation`
+  - `## Accept an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## Find an invitation by token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get an invitation`
+  - `#### Request`
+  - `#### Response`
+  - `## List invitations`
+  - `#### Request`
+- [authkit - jwt-template](https://workos.com/docs/reference/authkit/jwt-template.md)
+- [authkit - jwt-template - get](https://workos.com/docs/reference/authkit/jwt-template/get.md)
+- [authkit - jwt-template - update](https://workos.com/docs/reference/authkit/jwt-template/update.md)
+- [authkit - list-cors-origin](https://workos.com/docs/reference/authkit/list-cors-origin.md)
+- [authkit - list-redirect-uri](https://workos.com/docs/reference/authkit/list-redirect-uri.md)
+- [authkit - logout](https://workos.com/docs/reference/authkit/logout.md)
+- [authkit - logout - get-logout-url](https://workos.com/docs/reference/authkit/logout/get-logout-url.md)
+- [authkit - logout - get-logout-url-from-session-cookie](https://workos.com/docs/reference/authkit/logout/get-logout-url-from-session-cookie.md)
+  - `# Logout`
+  - `# Get logout URL from session cookie`
+  - `#### Request`
+  - `#### Response`
+  - `# Get logout URL`
+  - `#### Request`
+  - `#### Response`
+  - `### GET /user_management/sessions/logout`
+  - `#### Parameters`
+  - `#### Returns`
+- [authkit - magic-auth](https://workos.com/docs/reference/authkit/magic-auth.md)
+- [authkit - magic-auth - create](https://workos.com/docs/reference/authkit/magic-auth/create.md)
+- [authkit - magic-auth - get](https://workos.com/docs/reference/authkit/magic-auth/get.md)
+- [authkit - mfa](https://workos.com/docs/reference/authkit/mfa.md) - Enroll users in multi-factor authentication for an additional layer of security.
+- [authkit - mfa - authentication-challenge](https://workos.com/docs/reference/authkit/mfa/authentication-challenge.md)
+- [authkit - mfa - authentication-factor](https://workos.com/docs/reference/authkit/mfa/authentication-factor.md)
+- [authkit - mfa - enroll-auth-factor](https://workos.com/docs/reference/authkit/mfa/enroll-auth-factor.md)
+- [authkit - mfa - list-auth-factors](https://workos.com/docs/reference/authkit/mfa/list-auth-factors.md)
+- [authkit - organization-membership](https://workos.com/docs/reference/authkit/organization-membership.md)
+  - `# Organization membership`
+  - `## Create an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Deactivate an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an organization membership`
+  - `#### Request`
+  - `## Get an organization membership`
+  - `#### Request`
+  - `#### Response`
+- [authkit - organization-membership - create](https://workos.com/docs/reference/authkit/organization-membership/create.md)
+  - `# Organization membership`
+  - `## Create an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Deactivate an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an organization membership`
+  - `#### Request`
+  - `## Get an organization membership`
+  - `#### Request`
+  - `#### Response`
+- [authkit - organization-membership - deactivate](https://workos.com/docs/reference/authkit/organization-membership/deactivate.md)
+  - `# Organization membership`
+  - `## Create an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Deactivate an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an organization membership`
+  - `#### Request`
+  - `## Get an organization membership`
+  - `#### Request`
+  - `#### Response`
+- [authkit - organization-membership - delete](https://workos.com/docs/reference/authkit/organization-membership/delete.md)
+  - `# Organization membership`
+  - `## Create an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Deactivate an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an organization membership`
+  - `#### Request`
+  - `## Get an organization membership`
+  - `#### Request`
+  - `#### Response`
+- [authkit - organization-membership - get](https://workos.com/docs/reference/authkit/organization-membership/get.md)
+  - `# Organization membership`
+  - `## Create an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Deactivate an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an organization membership`
+  - `#### Request`
+  - `## Get an organization membership`
+  - `#### Request`
+  - `#### Response`
+- [authkit - organization-membership - list](https://workos.com/docs/reference/authkit/organization-membership/list.md)
+  - `# Organization membership`
+  - `## Create an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Deactivate an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an organization membership`
+  - `#### Request`
+  - `## Get an organization membership`
+  - `#### Request`
+  - `#### Response`
+- [authkit - organization-membership - list-groups](https://workos.com/docs/reference/authkit/organization-membership/list-groups.md)
+  - `# Organization membership`
+  - `## Create an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Deactivate an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an organization membership`
+  - `#### Request`
+  - `## Get an organization membership`
+  - `#### Request`
+  - `#### Response`
+- [authkit - organization-membership - reactivate](https://workos.com/docs/reference/authkit/organization-membership/reactivate.md)
+  - `# Organization membership`
+  - `## Create an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Deactivate an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an organization membership`
+  - `#### Request`
+  - `## Get an organization membership`
+  - `#### Request`
+  - `#### Response`
+- [authkit - organization-membership - update](https://workos.com/docs/reference/authkit/organization-membership/update.md)
+  - `# Organization membership`
+  - `## Create an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Deactivate an organization membership`
+  - `#### Request`
+  - `#### Response`
+  - `## Delete an organization membership`
+  - `#### Request`
+  - `## Get an organization membership`
+  - `#### Request`
+  - `#### Response`
+- [authkit - password-reset](https://workos.com/docs/reference/authkit/password-reset.md)
+- [authkit - password-reset - create](https://workos.com/docs/reference/authkit/password-reset/create.md)
+- [authkit - password-reset - get](https://workos.com/docs/reference/authkit/password-reset/get.md)
+- [authkit - password-reset - reset-password](https://workos.com/docs/reference/authkit/password-reset/reset-password.md)
+- [authkit - session](https://workos.com/docs/reference/authkit/session.md)
+  - `# Session`
+  - `## List sessions`
+  - `#### Request`
+  - `#### Response`
+  - `## Revoke Session`
+  - `#### Request`
+  - `### session`
+  - `### GET /user_management/users/{id}/sessions`
+  - `#### Parameters`
+  - `### /user_management/sessions/revoke`
+- [authkit - session-helpers](https://workos.com/docs/reference/authkit/session-helpers.md)
+  - `# Session helpers`
+  - `## Authenticate`
+  - `#### Authenticate`
+  - `## Get log out URL`
+  - `#### Get log out URL`
+  - `## Load sealed session`
+  - `#### Load sealed session`
+  - `## Refresh`
+  - `#### Refresh`
+- [authkit - session-helpers - authenticate](https://workos.com/docs/reference/authkit/session-helpers/authenticate.md)
+  - `# Session helpers`
+  - `## Authenticate`
+  - `#### Authenticate`
+  - `## Get log out URL`
+  - `#### Get log out URL`
+  - `## Load sealed session`
+  - `#### Load sealed session`
+  - `## Refresh`
+  - `#### Refresh`
+- [authkit - session-helpers - get-logout-url](https://workos.com/docs/reference/authkit/session-helpers/get-logout-url.md)
+  - `# Session helpers`
+  - `## Authenticate`
+  - `#### Authenticate`
+  - `## Get log out URL`
+  - `#### Get log out URL`
+  - `## Load sealed session`
+  - `#### Load sealed session`
+  - `## Refresh`
+  - `#### Refresh`
+- [authkit - session-helpers - load-sealed-session](https://workos.com/docs/reference/authkit/session-helpers/load-sealed-session.md)
+  - `# Session helpers`
+  - `## Authenticate`
+  - `#### Authenticate`
+  - `## Get log out URL`
+  - `#### Get log out URL`
+  - `## Load sealed session`
+  - `#### Load sealed session`
+  - `## Refresh`
+  - `#### Refresh`
+- [authkit - session-helpers - refresh](https://workos.com/docs/reference/authkit/session-helpers/refresh.md)
+  - `# Session helpers`
+  - `## Authenticate`
+  - `#### Authenticate`
+  - `## Get log out URL`
+  - `#### Get log out URL`
+  - `## Load sealed session`
+  - `#### Load sealed session`
+  - `## Refresh`
+  - `#### Refresh`
+- [authkit - session-tokens](https://workos.com/docs/reference/authkit/session-tokens.md)
+  - `# Session tokens`
+  - `## Access token`
+  - `#### Decoded access token`
+  - `## JWKS URL`
+  - `#### Request`
+  - `#### Response`
+  - `## Refresh token`
+  - `### /sso/jwks`
+- [authkit - session-tokens - access-token](https://workos.com/docs/reference/authkit/session-tokens/access-token.md)
+  - `# Session tokens`
+  - `## Access token`
+  - `#### Decoded access token`
+  - `## JWKS URL`
+  - `#### Request`
+  - `#### Response`
+  - `## Refresh token`
+  - `### /sso/jwks`
+- [authkit - session-tokens - jwks](https://workos.com/docs/reference/authkit/session-tokens/jwks.md)
+  - `# Session tokens`
+  - `## Access token`
+  - `#### Decoded access token`
+  - `## JWKS URL`
+  - `#### Request`
+  - `#### Response`
+  - `## Refresh token`
+  - `### /sso/jwks`
+- [authkit - session-tokens - refresh-token](https://workos.com/docs/reference/authkit/session-tokens/refresh-token.md)
+  - `# Session tokens`
+  - `## Access token`
+  - `#### Decoded access token`
+  - `## JWKS URL`
+  - `#### Request`
+  - `#### Response`
+  - `## Refresh token`
+  - `### /sso/jwks`
+- [authkit - session - list](https://workos.com/docs/reference/authkit/session/list.md)
+  - `# Session`
+  - `## List sessions`
+  - `#### Request`
+  - `#### Response`
+  - `## Revoke Session`
+  - `#### Request`
+  - `### session`
+  - `### GET /user_management/users/{id}/sessions`
+  - `#### Parameters`
+  - `### /user_management/sessions/revoke`
+- [authkit - session - revoke](https://workos.com/docs/reference/authkit/session/revoke.md)
+  - `# Session`
+  - `## List sessions`
+  - `#### Request`
+  - `#### Response`
+  - `## Revoke Session`
+  - `#### Request`
+  - `### session`
+  - `### GET /user_management/users/{id}/sessions`
+  - `#### Parameters`
+  - `### /user_management/sessions/revoke`
+- [authkit - user](https://workos.com/docs/reference/authkit/user.md)
+- [authkit - user - authorized-application - delete](https://workos.com/docs/reference/authkit/user/authorized-application/delete.md)
+- [authkit - user - authorized-application - list](https://workos.com/docs/reference/authkit/user/authorized-application/list.md)
+- [authkit - user - confirm-email-change](https://workos.com/docs/reference/authkit/user/confirm-email-change.md)
+- [authkit - user - create](https://workos.com/docs/reference/authkit/user/create.md)
+- [authkit - user - delete](https://workos.com/docs/reference/authkit/user/delete.md)
+- [authkit - user - email-verification](https://workos.com/docs/reference/authkit/user/email-verification.md)
+- [authkit - user - get](https://workos.com/docs/reference/authkit/user/get.md)
+- [authkit - user - get-by-external-id](https://workos.com/docs/reference/authkit/user/get-by-external-id.md)
+- [authkit - user - list](https://workos.com/docs/reference/authkit/user/list.md)
+- [authkit - user - send-email-change](https://workos.com/docs/reference/authkit/user/send-email-change.md)
+- [authkit - user - send-verification-email](https://workos.com/docs/reference/authkit/user/send-verification-email.md)
+- [authkit - user - update](https://workos.com/docs/reference/authkit/user/update.md)
+- [client-libraries](https://workos.com/docs/reference/client-libraries.md)
+- [client - issue](https://workos.com/docs/reference/client/issue.md)
+- [directory-sync](https://workos.com/docs/reference/directory-sync.md)
+- [directory-sync - directory](https://workos.com/docs/reference/directory-sync/directory.md)
+- [directory-sync - directory-group](https://workos.com/docs/reference/directory-sync/directory-group.md)
+- [directory-sync - directory-group - get](https://workos.com/docs/reference/directory-sync/directory-group/get.md)
+- [directory-sync - directory-group - list](https://workos.com/docs/reference/directory-sync/directory-group/list.md)
+- [directory-sync - directory-user](https://workos.com/docs/reference/directory-sync/directory-user.md)
+- [directory-sync - directory-user - get](https://workos.com/docs/reference/directory-sync/directory-user/get.md)
+- [directory-sync - directory-user - list](https://workos.com/docs/reference/directory-sync/directory-user/list.md)
+- [directory-sync - directory-user - list-by-group](https://workos.com/docs/reference/directory-sync/directory-user/list-by-group.md)
+- [directory-sync - directory - delete](https://workos.com/docs/reference/directory-sync/directory/delete.md)
+- [directory-sync - directory - get](https://workos.com/docs/reference/directory-sync/directory/get.md)
+- [directory-sync - directory - list](https://workos.com/docs/reference/directory-sync/directory/list.md)
+- [domain-verification](https://workos.com/docs/reference/domain-verification.md)
+- [domain-verification - create](https://workos.com/docs/reference/domain-verification/create.md)
+- [domain-verification - delete](https://workos.com/docs/reference/domain-verification/delete.md)
+- [domain-verification - get](https://workos.com/docs/reference/domain-verification/get.md)
+- [domain-verification - verify](https://workos.com/docs/reference/domain-verification/verify.md)
+- [errors](https://workos.com/docs/reference/errors.md)
+- [events](https://workos.com/docs/reference/events.md)
+- [events - list](https://workos.com/docs/reference/events/list.md)
+- [feature-flags](https://workos.com/docs/reference/feature-flags.md)
+- [feature-flags - flag](https://workos.com/docs/reference/feature-flags/flag.md)
+- [feature-flags - flag - disable](https://workos.com/docs/reference/feature-flags/flag/disable.md)
+- [feature-flags - flag - enable](https://workos.com/docs/reference/feature-flags/flag/enable.md)
+- [feature-flags - flag - get](https://workos.com/docs/reference/feature-flags/flag/get.md)
+- [feature-flags - flag - list](https://workos.com/docs/reference/feature-flags/flag/list.md)
+- [feature-flags - targeting](https://workos.com/docs/reference/feature-flags/targeting.md)
+- [feature-flags - targeting - add](https://workos.com/docs/reference/feature-flags/targeting/add.md)
+- [feature-flags - targeting - list-for-organization](https://workos.com/docs/reference/feature-flags/targeting/list-for-organization.md)
+- [feature-flags - targeting - list-for-user](https://workos.com/docs/reference/feature-flags/targeting/list-for-user.md)
+- [feature-flags - targeting - remove](https://workos.com/docs/reference/feature-flags/targeting/remove.md)
+- [fga](https://workos.com/docs/reference/fga.md)
+- [fga - access-check](https://workos.com/docs/reference/fga/access-check.md)
+- [fga - access-check - check](https://workos.com/docs/reference/fga/access-check/check.md)
+- [fga - access-check - list-effective-permissions](https://workos.com/docs/reference/fga/access-check/list-effective-permissions.md)
+- [fga - access-check - list-effective-permissions-by-external-id](https://workos.com/docs/reference/fga/access-check/list-effective-permissions-by-external-id.md)
+- [fga - access-check - list-memberships](https://workos.com/docs/reference/fga/access-check/list-memberships.md)
+- [fga - access-check - list-memberships-by-external-id](https://workos.com/docs/reference/fga/access-check/list-memberships-by-external-id.md)
+- [fga - access-check - list-resources](https://workos.com/docs/reference/fga/access-check/list-resources.md)
+- [fga - resource](https://workos.com/docs/reference/fga/resource.md)
+- [fga - resource - create](https://workos.com/docs/reference/fga/resource/create.md)
+- [fga - resource - delete](https://workos.com/docs/reference/fga/resource/delete.md)
+- [fga - resource - delete-by-external-id](https://workos.com/docs/reference/fga/resource/delete-by-external-id.md)
+- [fga - resource - get](https://workos.com/docs/reference/fga/resource/get.md)
+- [fga - resource - get-by-external-id](https://workos.com/docs/reference/fga/resource/get-by-external-id.md)
+- [fga - resource - list](https://workos.com/docs/reference/fga/resource/list.md)
+- [fga - resource - update](https://workos.com/docs/reference/fga/resource/update.md)
+- [fga - resource - update-by-external-id](https://workos.com/docs/reference/fga/resource/update-by-external-id.md)
+- [fga - role-assignment](https://workos.com/docs/reference/fga/role-assignment.md)
+  - `# Role assignment`
+  - `## Assign a role`
+  - `#### Request`
+  - `#### Response`
+  - `## Remove a role assignment by ID`
+  - `#### Request`
+  - `## Remove a role assignment`
+  - `#### Request`
+  - `## List role assignments for a resource by external ID`
+  - `#### Request`
+  - `#### Response`
+  - `## List role assignments for a resource`
+- [fga - role-assignment - create](https://workos.com/docs/reference/fga/role-assignment/create.md)
+  - `# Role assignment`
+  - `## Assign a role`
+  - `#### Request`
+  - `#### Response`
+  - `## Remove a role assignment by ID`
+  - `#### Request`
+  - `## Remove a role assignment`
+  - `#### Request`
+  - `## List role assignments for a resource by external ID`
+  - `#### Request`
+  - `#### Response`
+  - `## List role assignments for a resource`
+- [fga - role-assignment - delete](https://workos.com/docs/reference/fga/role-assignment/delete.md)
+  - `# Role assignment`
+  - `## Assign a role`
+  - `#### Request`
+  - `#### Response`
+  - `## Remove a role assignment by ID`
+  - `#### Request`
+  - `## Remove a role assignment`
+  - `#### Request`
+  - `## List role assignments for a resource by external ID`
+  - `#### Request`
+  - `#### Response`
+  - `## List role assignments for a resource`
+- [fga - role-assignment - delete-by-id](https://workos.com/docs/reference/fga/role-assignment/delete-by-id.md)
+  - `# Role assignment`
+  - `## Assign a role`
+  - `#### Request`
+  - `#### Response`
+  - `## Remove a role assignment by ID`
+  - `#### Request`
+  - `## Remove a role assignment`
+  - `#### Request`
+  - `## List role assignments for a resource by external ID`
+  - `#### Request`
+  - `#### Response`
+  - `## List role assignments for a resource`
+- [fga - role-assignment - list](https://workos.com/docs/reference/fga/role-assignment/list.md)
+  - `# Role assignment`
+  - `## Assign a role`
+  - `#### Request`
+  - `#### Response`
+  - `## Remove a role assignment by ID`
+  - `#### Request`
+  - `## Remove a role assignment`
+  - `#### Request`
+  - `## List role assignments for a resource by external ID`
+  - `#### Request`
+  - `#### Response`
+  - `## List role assignments for a resource`
+- [fga - role-assignment - list-for-resource](https://workos.com/docs/reference/fga/role-assignment/list-for-resource.md)
+  - `# Role assignment`
+  - `## Assign a role`
+  - `#### Request`
+  - `#### Response`
+  - `## Remove a role assignment by ID`
+  - `#### Request`
+  - `## Remove a role assignment`
+  - `#### Request`
+  - `## List role assignments for a resource by external ID`
+  - `#### Request`
+  - `#### Response`
+  - `## List role assignments for a resource`
+- [fga - role-assignment - list-for-resource-by-external-id](https://workos.com/docs/reference/fga/role-assignment/list-for-resource-by-external-id.md)
+  - `# Role assignment`
+  - `## Assign a role`
+  - `#### Request`
+  - `#### Response`
+  - `## Remove a role assignment by ID`
+  - `#### Request`
+  - `## Remove a role assignment`
+  - `#### Request`
+  - `## List role assignments for a resource by external ID`
+  - `#### Request`
+  - `#### Response`
+  - `## List role assignments for a resource`
+- [groups](https://workos.com/docs/reference/groups.md)
+- [groups - add-member](https://workos.com/docs/reference/groups/add-member.md)
+- [groups - create](https://workos.com/docs/reference/groups/create.md)
+- [groups - delete](https://workos.com/docs/reference/groups/delete.md)
+- [groups - get](https://workos.com/docs/reference/groups/get.md)
+- [groups - list](https://workos.com/docs/reference/groups/list.md)
+- [groups - list-members](https://workos.com/docs/reference/groups/list-members.md)
+- [groups - remove-member](https://workos.com/docs/reference/groups/remove-member.md)
+- [groups - role-assignment](https://workos.com/docs/reference/groups/role-assignment.md)
+- [groups - role-assignment - create](https://workos.com/docs/reference/groups/role-assignment/create.md)
+- [groups - role-assignment - get](https://workos.com/docs/reference/groups/role-assignment/get.md)
+- [groups - role-assignment - list](https://workos.com/docs/reference/groups/role-assignment/list.md)
+- [groups - role-assignment - remove-group-role-assignment](https://workos.com/docs/reference/groups/role-assignment/remove-group-role-assignment.md)
+- [groups - role-assignment - remove-group-role-assignments](https://workos.com/docs/reference/groups/role-assignment/remove-group-role-assignments.md)
+- [groups - role-assignment - replace-group-role-assignments](https://workos.com/docs/reference/groups/role-assignment/replace-group-role-assignments.md)
+- [groups - update](https://workos.com/docs/reference/groups/update.md)
+- [magic-link](https://workos.com/docs/reference/magic-link.md)
+- [magic-link - passwordless-session](https://workos.com/docs/reference/magic-link/passwordless-session.md)
+- [magic-link - passwordless-session - create](https://workos.com/docs/reference/magic-link/passwordless-session/create.md)
+- [magic-link - passwordless-session - send-email](https://workos.com/docs/reference/magic-link/passwordless-session/send-email.md)
+- [mfa](https://workos.com/docs/reference/mfa.md)
+- [mfa - challenge](https://workos.com/docs/reference/mfa/challenge.md)
+- [mfa - challenge - create](https://workos.com/docs/reference/mfa/challenge/create.md)
+- [mfa - challenge - verify](https://workos.com/docs/reference/mfa/challenge/verify.md)
+- [mfa - factor](https://workos.com/docs/reference/mfa/factor.md)
+- [mfa - factor - delete](https://workos.com/docs/reference/mfa/factor/delete.md)
+- [mfa - factor - enroll](https://workos.com/docs/reference/mfa/factor/enroll.md)
+- [mfa - factor - get](https://workos.com/docs/reference/mfa/factor/get.md)
+- [organization](https://workos.com/docs/reference/organization.md)
+- [organization - create](https://workos.com/docs/reference/organization/create.md)
+- [organization - delete](https://workos.com/docs/reference/organization/delete.md)
+- [organization - get](https://workos.com/docs/reference/organization/get.md)
+- [organization - get-by-external-id](https://workos.com/docs/reference/organization/get-by-external-id.md)
+- [organization - list](https://workos.com/docs/reference/organization/list.md)
+- [organization - update](https://workos.com/docs/reference/organization/update.md)
+- [pagination](https://workos.com/docs/reference/pagination.md)
+- [pipes](https://workos.com/docs/reference/pipes.md)
+- [pipes - access-token](https://workos.com/docs/reference/pipes/access-token.md)
+- [pipes - access-token - get](https://workos.com/docs/reference/pipes/access-token/get.md)
+- [pipes - connected-account](https://workos.com/docs/reference/pipes/connected-account.md)
+- [pipes - connected-account - delete](https://workos.com/docs/reference/pipes/connected-account/delete.md)
+- [pipes - connected-account - get](https://workos.com/docs/reference/pipes/connected-account/get.md)
+- [pipes - connected-account - get-authorize-url](https://workos.com/docs/reference/pipes/connected-account/get-authorize-url.md)
+- [pipes - provider](https://workos.com/docs/reference/pipes/provider.md)
+- [pipes - provider - configure](https://workos.com/docs/reference/pipes/provider/configure.md)
+- [pipes - provider - list](https://workos.com/docs/reference/pipes/provider/list.md)
+- [pipes - provider - list-for-organization](https://workos.com/docs/reference/pipes/provider/list-for-organization.md)
+- [radar](https://workos.com/docs/reference/radar.md)
+- [radar - attempts](https://workos.com/docs/reference/radar/attempts.md)
+- [radar - attempts - create](https://workos.com/docs/reference/radar/attempts/create.md)
+- [radar - attempts - update](https://workos.com/docs/reference/radar/attempts/update.md)
+- [radar - lists](https://workos.com/docs/reference/radar/lists.md)
+- [radar - lists - delete](https://workos.com/docs/reference/radar/lists/delete.md)
+- [radar - lists - update](https://workos.com/docs/reference/radar/lists/update.md)
+- [rate-limits](https://workos.com/docs/reference/rate-limits.md)
+- [roles](https://workos.com/docs/reference/roles.md)
+- [roles - custom-role](https://workos.com/docs/reference/roles/custom-role.md)
+- [roles - custom-role - add-permission](https://workos.com/docs/reference/roles/custom-role/add-permission.md)
+- [roles - custom-role - create](https://workos.com/docs/reference/roles/custom-role/create.md)
+- [roles - custom-role - delete](https://workos.com/docs/reference/roles/custom-role/delete.md)
+- [roles - custom-role - get](https://workos.com/docs/reference/roles/custom-role/get.md)
+- [roles - custom-role - list](https://workos.com/docs/reference/roles/custom-role/list.md)
+- [roles - custom-role - remove-permission](https://workos.com/docs/reference/roles/custom-role/remove-permission.md)
+- [roles - custom-role - set-permissions](https://workos.com/docs/reference/roles/custom-role/set-permissions.md)
+- [roles - custom-role - update](https://workos.com/docs/reference/roles/custom-role/update.md)
+- [roles - permission](https://workos.com/docs/reference/roles/permission.md)
+- [roles - permission - create](https://workos.com/docs/reference/roles/permission/create.md)
+- [roles - permission - delete](https://workos.com/docs/reference/roles/permission/delete.md)
+- [roles - permission - get](https://workos.com/docs/reference/roles/permission/get.md)
+- [roles - permission - list](https://workos.com/docs/reference/roles/permission/list.md)
+- [roles - permission - update](https://workos.com/docs/reference/roles/permission/update.md)
+- [roles - role](https://workos.com/docs/reference/roles/role.md)
+- [roles - role - add-permission](https://workos.com/docs/reference/roles/role/add-permission.md)
+- [roles - role - create](https://workos.com/docs/reference/roles/role/create.md)
+- [roles - role - get](https://workos.com/docs/reference/roles/role/get.md)
+- [roles - role - list](https://workos.com/docs/reference/roles/role/list.md)
+- [roles - role - set-permissions](https://workos.com/docs/reference/roles/role/set-permissions.md)
+- [roles - role - update](https://workos.com/docs/reference/roles/role/update.md)
+- [sso](https://workos.com/docs/reference/sso.md)
+- [sso - connection](https://workos.com/docs/reference/sso/connection.md)
+- [sso - connection - delete](https://workos.com/docs/reference/sso/connection/delete.md)
+- [sso - connection - get](https://workos.com/docs/reference/sso/connection/get.md)
+- [sso - connection - list](https://workos.com/docs/reference/sso/connection/list.md)
+  - `# Connection`
+  - `## Delete a Connection`
+  - `#### Request`
+  - `## Get a Connection`
+  - `#### Request`
+  - `#### Response`
+  - `## List Connections`
+  - `#### Request`
+  - `#### Response`
+  - `### connection`
+  - `### DELETE /connections/{id}`
+  - `#### Parameters`
+- [sso - get-authorization-url](https://workos.com/docs/reference/sso/get-authorization-url.md)
+  - `# Get an authorization URL`
+  - `#### Request`
+  - `#### Response`
+  - `### Error codes`
+  - `### Redirect URI`
+  - `#### Wildcards`
+  - `### GET /sso/authorize`
+  - `#### Parameters`
+  - `#### Returns`
+- [sso - get-authorization-url - error-codes](https://workos.com/docs/reference/sso/get-authorization-url/error-codes.md)
+  - `# Get an authorization URL`
+  - `#### Request`
+  - `#### Response`
+  - `### Error codes`
+  - `### Redirect URI`
+  - `#### Wildcards`
+  - `### GET /sso/authorize`
+  - `#### Parameters`
+  - `#### Returns`
+- [sso - get-authorization-url - redirect-uri](https://workos.com/docs/reference/sso/get-authorization-url/redirect-uri.md)
+  - `# Get an authorization URL`
+  - `#### Request`
+  - `#### Response`
+  - `### Error codes`
+  - `### Redirect URI`
+  - `#### Wildcards`
+  - `### GET /sso/authorize`
+  - `#### Parameters`
+  - `#### Returns`
+- [sso - json-web-key-set](https://workos.com/docs/reference/sso/json-web-key-set.md)
+  - `# Single Sign-On`
+  - `## Get JWKS`
+  - `#### Request`
+  - `#### Response`
+  - `### connection`
+  - `### GET /sso/jwks/{clientId}`
+  - `#### Parameters`
+  - `#### Returns`
+- [sso - logout](https://workos.com/docs/reference/sso/logout.md)
+  - `# Logout`
+  - `## Logout Authorize`
+  - `#### Request`
+  - `#### Response`
+  - `## Logout Redirect`
+  - `#### Request`
+  - `### /sso/logout/authorize`
+  - `### GET /sso/logout`
+  - `#### Parameters`
+- [sso - logout - authorize](https://workos.com/docs/reference/sso/logout/authorize.md)
+  - `# Logout`
+  - `## Logout Authorize`
+  - `#### Request`
+  - `#### Response`
+  - `## Logout Redirect`
+  - `#### Request`
+  - `### /sso/logout/authorize`
+  - `### GET /sso/logout`
+  - `#### Parameters`
+- [sso - logout - redirect](https://workos.com/docs/reference/sso/logout/redirect.md)
+  - `# Logout`
+  - `## Logout Authorize`
+  - `#### Request`
+  - `#### Response`
+  - `## Logout Redirect`
+  - `#### Request`
+  - `### /sso/logout/authorize`
+  - `### GET /sso/logout`
+  - `#### Parameters`
+- [sso - profile](https://workos.com/docs/reference/sso/profile.md)
+  - `# Profile`
+  - `## Get a Profile and Token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get a User Profile`
+  - `#### Request`
+  - `#### Response`
+  - `### profile`
+  - `### POST /sso/token`
+  - `#### Parameters`
+  - `#### Returns`
+- [sso - profile - get-profile-and-token](https://workos.com/docs/reference/sso/profile/get-profile-and-token.md)
+  - `# Profile`
+  - `## Get a Profile and Token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get a User Profile`
+  - `#### Request`
+  - `#### Response`
+  - `### profile`
+  - `### POST /sso/token`
+  - `#### Parameters`
+  - `#### Returns`
+- [sso - profile - get-user-profile](https://workos.com/docs/reference/sso/profile/get-user-profile.md)
+  - `# Profile`
+  - `## Get a Profile and Token`
+  - `#### Request`
+  - `#### Response`
+  - `## Get a User Profile`
+  - `#### Request`
+  - `#### Response`
+  - `### profile`
+  - `### POST /sso/token`
+  - `#### Parameters`
+  - `#### Returns`
+- [testing](https://workos.com/docs/reference/testing.md)
+- [vault](https://workos.com/docs/reference/vault.md)
+- [vault - key](https://workos.com/docs/reference/vault/key.md)
+- [vault - key - create-data-key](https://workos.com/docs/reference/vault/key/create-data-key.md)
+- [vault - key - decrypt-data](https://workos.com/docs/reference/vault/key/decrypt-data.md)
+- [vault - key - decrypt-data-key](https://workos.com/docs/reference/vault/key/decrypt-data-key.md)
+- [vault - key - encrypt-data](https://workos.com/docs/reference/vault/key/encrypt-data.md)
+- [vault - key - rekey-data-key](https://workos.com/docs/reference/vault/key/rekey-data-key.md)
+- [vault - object](https://workos.com/docs/reference/vault/object.md)
+- [vault - object - create](https://workos.com/docs/reference/vault/object/create.md)
+- [vault - object - delete](https://workos.com/docs/reference/vault/object/delete.md)
+- [vault - object - get](https://workos.com/docs/reference/vault/object/get.md)
+- [vault - object - get-by-name](https://workos.com/docs/reference/vault/object/get-by-name.md)
+- [vault - object - list](https://workos.com/docs/reference/vault/object/list.md)
+- [vault - object - metadata](https://workos.com/docs/reference/vault/object/metadata.md)
+- [vault - object - update](https://workos.com/docs/reference/vault/object/update.md)
+- [vault - object - version](https://workos.com/docs/reference/vault/object/version.md)
+- [vault - object - versions](https://workos.com/docs/reference/vault/object/versions.md)
+- [webhooks](https://workos.com/docs/reference/webhooks.md)
+- [webhooks - create](https://workos.com/docs/reference/webhooks/create.md)
+- [webhooks - delete](https://workos.com/docs/reference/webhooks/delete.md)
+- [webhooks - list](https://workos.com/docs/reference/webhooks/list.md)
+- [webhooks - update](https://workos.com/docs/reference/webhooks/update.md)
+- [widgets](https://workos.com/docs/reference/widgets.md)
+  - `# Widgets`
+  - `## Generate a widget token`
+  - `#### Request`
+  - `#### Response`
+  - `### /widgets/token`
+- [widgets - get-token](https://workos.com/docs/reference/widgets/get-token.md)
+  - `# Widgets`
+  - `## Generate a widget token`
+  - `#### Request`
+  - `#### Response`
+  - `### /widgets/token`
+- [workos-connect](https://workos.com/docs/reference/workos-connect.md)
+- [workos-connect - applications](https://workos.com/docs/reference/workos-connect/applications.md)
+- [workos-connect - applications - client-secrets](https://workos.com/docs/reference/workos-connect/applications/client-secrets.md)
+- [workos-connect - applications - client-secrets - create](https://workos.com/docs/reference/workos-connect/applications/client-secrets/create.md)
+- [workos-connect - applications - client-secrets - delete](https://workos.com/docs/reference/workos-connect/applications/client-secrets/delete.md)
+- [workos-connect - applications - client-secrets - list](https://workos.com/docs/reference/workos-connect/applications/client-secrets/list.md)
+- [workos-connect - applications - create](https://workos.com/docs/reference/workos-connect/applications/create.md)
+- [workos-connect - applications - delete](https://workos.com/docs/reference/workos-connect/applications/delete.md)
+- [workos-connect - applications - get](https://workos.com/docs/reference/workos-connect/applications/get.md)
+- [workos-connect - applications - list](https://workos.com/docs/reference/workos-connect/applications/list.md)
+- [workos-connect - applications - m2m](https://workos.com/docs/reference/workos-connect/applications/m2m.md)
+- [workos-connect - applications - oauth](https://workos.com/docs/reference/workos-connect/applications/oauth.md)
+- [workos-connect - applications - update](https://workos.com/docs/reference/workos-connect/applications/update.md)
+- [workos-connect - authorize](https://workos.com/docs/reference/workos-connect/authorize.md)
+- [workos-connect - cli-auth](https://workos.com/docs/reference/workos-connect/cli-auth.md)
+  - `# CLI Auth`
+  - `## Device code grant`
+  - `#### Request`
+  - `#### Response`
+  - `### POST /oauth2/token`
+  - `#### Parameters`
+  - `#### Returns`
+- [workos-connect - cli-auth - authorize-device](https://workos.com/docs/reference/workos-connect/cli-auth/authorize-device.md)
+  - `# Authorize device`
+  - `#### Request`
+  - `#### Response`
+  - `### POST /oauth2/device_authorization`
+  - `#### Parameters`
+  - `#### Returns`
+- [workos-connect - cli-auth - device-code-grant](https://workos.com/docs/reference/workos-connect/cli-auth/device-code-grant.md)
+  - `# CLI Auth`
+  - `## Device code grant`
+  - `#### Request`
+  - `#### Response`
+  - `### POST /oauth2/token`
+  - `#### Parameters`
+  - `#### Returns`
+- [workos-connect - introspection](https://workos.com/docs/reference/workos-connect/introspection.md)
+- [workos-connect - metadata](https://workos.com/docs/reference/workos-connect/metadata.md)
+- [workos-connect - metadata - oauth-authorization-server](https://workos.com/docs/reference/workos-connect/metadata/oauth-authorization-server.md)
+- [workos-connect - metadata - openid-configuration](https://workos.com/docs/reference/workos-connect/metadata/openid-configuration.md)
+- [workos-connect - standalone](https://workos.com/docs/reference/workos-connect/standalone.md)
+- [workos-connect - standalone - complete](https://workos.com/docs/reference/workos-connect/standalone/complete.md)
+- [workos-connect - standalone - user-consent-options](https://workos.com/docs/reference/workos-connect/standalone/user-consent-options.md)
+- [workos-connect - token](https://workos.com/docs/reference/workos-connect/token.md)
+- [workos-connect - token - authorization-code-grant](https://workos.com/docs/reference/workos-connect/token/authorization-code-grant.md)
+- [workos-connect - token - authorization-code-grant - access-token](https://workos.com/docs/reference/workos-connect/token/authorization-code-grant/access-token.md)
+- [workos-connect - token - authorization-code-grant - id-token](https://workos.com/docs/reference/workos-connect/token/authorization-code-grant/id-token.md)
+- [workos-connect - token - client-credentials-grant](https://workos.com/docs/reference/workos-connect/token/client-credentials-grant.md)
+- [workos-connect - token - client-credentials-grant - access-token](https://workos.com/docs/reference/workos-connect/token/client-credentials-grant/access-token.md)
+- [workos-connect - token - refresh-token-grant](https://workos.com/docs/reference/workos-connect/token/refresh-token-grant.md)
+- [workos-connect - userinfo](https://workos.com/docs/reference/workos-connect/userinfo.md)
+
+## RBAC
+
+- [Quick Start](https://workos.com/docs/rbac/quick-start.md) - Set up roles & permissions to model your authorization requirements. Then use the SDK to make access checks from your application.
+- [Integrating Role-Based Access Control](https://workos.com/docs/rbac/integration.md) - Utilize Role-Based Access Control across WorkOS products
+  - `# Integrating Role-Based Access Control`
+  - `## Configure roles and permissions`
+  - `## Integrating with AuthKit`
+  - `### Assigning roles`
+  - `### Single vs. multiple roles`
+  - `### Groups and group role assignments`
+  - `### Using roles and permissions in your app`
+  - `## Integrating with Directory Sync`
+  - `## Integrating with Single Sign-On (SSO)`
+- [Role-Based Access Control (RBAC)](https://workos.com/docs/rbac.md) - Assign roles and manage access for users and organizations
+  - `# Role-Based Access Control (RBAC)`
+  - `## Introduction`
+  - `## Key features`
+  - `## Additional resources`
+- [IdP Role Assignment](https://workos.com/docs/rbac/idp-role-assignment.md) - Map identity provider groups to roles to automatically assign roles to users
+  - `# IdP Role Assignment`
+  - `## Overview`
+  - `## Role assignment sources`
+  - `### Directory Sync`
+  - `### SSO`
+  - `## AuthKit integration`
+  - `## Priority order`
+  - `## Multiple roles`
+  - `### How multiple roles work with IdP assignment`
+  - `### Example scenario`
+  - `## Explicit vs. default role assignments`
+  - `## Role assignment in Admin Portal`
+- [Custom Roles](https://workos.com/docs/rbac/custom-roles.md) - Create and manage custom organization-scoped roles
+  - `# Custom Roles`
+  - `## Overview`
+  - `### Why might I use custom roles?`
+  - `### Creating custom roles`
+  - `#### Custom role slugs`
+  - `### Custom role configuration`
+  - `### Using custom roles`
+  - `### Deleting an environment role`
+- [Configuration](https://workos.com/docs/rbac/configuration.md) - Configure roles and permissions
+
+## Pipes
+
+- [Providers](https://workos.com/docs/pipes/providers.md) - Explore the third-party providers available for Pipes integrations.
+- [Organization-scoped providers](https://workos.com/docs/pipes/organization-scoped-providers.md) - Per-organization customization for a Pipe provider's scopes, credentials, and enablement.
+- [Pipes](https://workos.com/docs/pipes.md) - Enable your customers to connect their third-party accounts to your application.
+- [Custom providers](https://workos.com/docs/pipes/custom-providers.md) - Define your own OAuth provider in Pipes when the one you need isn't in the WorkOS catalog.
+
+## Migrations
+
+- [Migrate from Supabase Auth](https://workos.com/docs/migrate/supabase.md) - Learn how to migrate users from Supabase Auth.
+- [Migrate from Stytch](https://workos.com/docs/migrate/stytch.md) - Learn how to migrate users and organizations from Stytch.
+- [Migrate from other services](https://workos.com/docs/migrate/other-services.md) - Learn how to export and import users from your own data store.
+- [Migrate from Firebase](https://workos.com/docs/migrate/firebase.md) - Learn how to migrate users to WorkOS from Firebase.
+- [Migrate from Descope](https://workos.com/docs/migrate/descope.md) - Learn how to migrate users and organizations from Descope.
+- [Migrate from Clerk](https://workos.com/docs/migrate/clerk.md) - Learn how to migrate users and organizations from Clerk.
+- [Migrate from Better Auth](https://workos.com/docs/migrate/better-auth.md) - Learn how to migrate users and organizations from Better Auth.
+- [Migrate from AWS Cognito](https://workos.com/docs/migrate/aws-cognito.md) - Learn how to migrate users to WorkOS from AWS Cognito.
+- [Migrate from Auth0](https://workos.com/docs/migrate/auth0.md) - Learn how to migrate users, organizations, and enterprise connections from Auth0.
+
+## Multi-Factor Auth
+
+- [Multi-Factor Authentication](https://workos.com/docs/mfa.md) - A composable API for implementing multi-factor authentication.
+- [Example Apps](https://workos.com/docs/mfa/example-apps.md) - View sample Multi-Factor Auth apps for each SDK.
+- [Sign-In UX](https://workos.com/docs/mfa/ux/sign-in.md) - User experience considerations for MFA sign-in.
+- [Enrollment UX](https://workos.com/docs/mfa/ux/enrollment.md) - User experience considerations for MFA enrollment.
+
+## Magic Link
+
+- [Launch Checklist](https://workos.com/docs/magic-link/launch-checklist.md) - Make sure you're ready to take your app to production.
+- [Magic Link](https://workos.com/docs/magic-link.md) - The fastest way to securely enable authentication – passwordless sign-in via email in a couple lines of code.
+- [Example Apps](https://workos.com/docs/magic-link/example-apps.md) - View sample Magic Link apps for each SDK.
+
+## Integrations
+
+- [Xero OAuth](https://workos.com/docs/integrations/xero-oauth.md) - Learn how to set up OAuth with Xero
+- [Workday](https://workos.com/docs/integrations/workday.md) - Learn about syncing your user list with Workday.
+- [VMware](https://workos.com/docs/integrations/vmware-saml.md) - Learn how to configure a connection to VMware via SAML.
+- [Vercel OAuth](https://workos.com/docs/integrations/vercel-oauth.md) - Learn how to set up OAuth with Vercel
+- [Supabase + WorkOS SSO](https://workos.com/docs/integrations/supabase-sso.md) - Learn how to use WorkOS for SSO with your Supabase application.
+- [Supabase + AuthKit](https://workos.com/docs/integrations/supabase-authkit.md) - Learn how to use AuthKit with your Supabase application.
+- [Slack OAuth](https://workos.com/docs/integrations/slack-oauth.md) - Learn how to set up OAuth with Slack
+- [SimpleSAMLphp](https://workos.com/docs/integrations/simple-saml-php.md) - Learn how to configure a SimpleSAMLphp connection.
+- [Shibboleth Unsolicited SAML](https://workos.com/docs/integrations/shibboleth-unsolicited-saml.md) - Learn how to configure a Shibboleth Unsolicited connection via SAML.
+- [Shibboleth Generic SAML](https://workos.com/docs/integrations/shibboleth-generic-saml.md) - Learn how to configure a Shibboleth Generic connection via SAML.
+- [SFTP](https://workos.com/docs/integrations/sftp.md) - Learn about syncing users with an SFTP connection
+- [SCIM](https://workos.com/docs/integrations/scim.md) - Learn about syncing users with a custom SCIM provider
+- [SAML](https://workos.com/docs/integrations/saml.md) - Learn how to configure a new custom SAML connection
+- [Salesforce SAML](https://workos.com/docs/integrations/salesforce-saml.md) - Learn how to configure a connection to Salesforce via SAML.
+- [Salesforce OAuth](https://workos.com/docs/integrations/salesforce-oauth.md) - Learn how to set up OAuth with Salesforce.
+- [SailPoint SCIM](https://workos.com/docs/integrations/sailpoint-scim.md) - Learn about syncing users with SailPoint SCIM
+- [Rippling SCIM](https://workos.com/docs/integrations/rippling-scim.md) - Learn about syncing your user list with Rippling SCIM v2.0.
+- [Rippling SAML](https://workos.com/docs/integrations/rippling-saml.md) - Learn how to configure a connection to Rippling via SAML.
+- [React Native Expo](https://workos.com/docs/integrations/react-native-expo.md) - Learn how to integrate WorkOS SSO into a React Native Expo app.
+- [PingOne SAML](https://workos.com/docs/integrations/pingone-saml.md) - Learn how to configure a connection to PingOne via SAML.
+- [PingFederate SCIM](https://workos.com/docs/integrations/pingfederate-scim.md) - Learn about syncing your user list with PingFederate SCIM.
+- [PingFederate SAML](https://workos.com/docs/integrations/pingfederate-saml.md) - Learn how to configure a connection to PingFederate via SAML.
+- [Oracle SAML](https://workos.com/docs/integrations/oracle-saml.md) - Learn how to configure a connection to Oracle via SAML.
+- [OneLogin SCIM](https://workos.com/docs/integrations/onelogin-scim.md) - Learn about syncing your user list with OneLogin SCIM.
+- [OneLogin SAML](https://workos.com/docs/integrations/onelogin-saml.md) - Learn how to configure a connection to OneLogin via SAML.
+- [Okta SCIM](https://workos.com/docs/integrations/okta-scim.md) - Learn about syncing your user list with Okta SCIM.
+- [Okta SAML](https://workos.com/docs/integrations/okta-saml.md) - Learn how to configure a connection to Okta via SAML.
+- [Okta OIDC](https://workos.com/docs/integrations/okta-oidc.md) - Learn how to configure a connection to Okta via OIDC.
+- [OpenID Connect](https://workos.com/docs/integrations/oidc.md) - Learn how to configure a new generic OIDC connection
+- [NextAuth.js](https://workos.com/docs/integrations/next-auth.md) - Create a Next.js application with WorkOS SSO and NextAuth.js.
+- [NetIQ](https://workos.com/docs/integrations/net-iq-saml.md) - Learn how to configure a connection to NetIQ via SAML.
+- [miniOrange](https://workos.com/docs/integrations/miniorange-saml.md) - Learn how to configure a connection to miniOrange via SAML.
+- [Microsoft OAuth](https://workos.com/docs/integrations/microsoft-oauth.md) - Learn how to set up OAuth with Microsoft
+- [Microsoft AD FS SAML](https://workos.com/docs/integrations/microsoft-ad-fs-saml.md) - Configure a connection to Microsoft Active Directory Federation Services.
+- [Login.gov OpenID Connect](https://workos.com/docs/integrations/login-gov-oidc.md) - Learn how to configure a connection to Login.gov via OIDC.
+- [LinkedIn OAuth](https://workos.com/docs/integrations/linkedin-oauth.md) - Learn how to set up OAuth with LinkedIn
+- [LastPass](https://workos.com/docs/integrations/lastpass-saml.md) - Learn how to configure a connection to LastPass via SAML.
+- [Keycloak](https://workos.com/docs/integrations/keycloak-saml.md) - Learn how to configure a connection to Keycloak via SAML.
+- [JumpCloud SCIM](https://workos.com/docs/integrations/jumpcloud-scim.md) - Learn about syncing your user list with JumpCloud SCIM.
+- [JumpCloud SAML](https://workos.com/docs/integrations/jumpcloud-saml.md) - Learn how to configure a connection to JumpCloud via SAML.
+- [Intuit OAuth](https://workos.com/docs/integrations/intuit-oauth.md) - Learn how to set up OAuth with Intuit
+- [HiBob](https://workos.com/docs/integrations/hibob.md) - Learn about syncing your user list with HiBob.
+- [Google SAML](https://workos.com/docs/integrations/google-saml.md) - Learn how to configure a connection to Google Workspace via SAML.
+- [Google OIDC](https://workos.com/docs/integrations/google-oidc.md) - Learn how to configure a connection to Google via OIDC.
+- [Google OAuth](https://workos.com/docs/integrations/google-oauth.md) - Learn how to set up OAuth with Google Workspace
+- [Google Directory Sync](https://workos.com/docs/integrations/google-directory-sync.md) - Learn about syncing your user list with Google Workspace.
+- [GitLab OAuth](https://workos.com/docs/integrations/gitlab-oauth.md) - Learn how to set up OAuth with GitLab
+- [GitHub OAuth](https://workos.com/docs/integrations/github-oauth.md) - Learn how to set up OAuth with GitHub
+- [Fourth](https://workos.com/docs/integrations/fourth.md) - Learn about syncing your user list with Fourth.
+- [Firebase](https://workos.com/docs/integrations/firebase.md) - Add Single Sign-On to your Firebase application with WorkOS.
+- [Entra ID SCIM (formerly Azure AD)](https://workos.com/docs/integrations/entra-id-scim.md) - Learn about syncing your user list with Entra ID SCIM.
+- [Entra ID SAML (formerly Azure AD)](https://workos.com/docs/integrations/entra-id-saml.md) - Learn how to configure a connection to Entra ID via SAML.
+- [Entra ID OIDC (formerly Azure AD)](https://workos.com/docs/integrations/entra-id-oidc.md) - Learn how to configure a connection to Entra ID via OIDC.
+- [Duo](https://workos.com/docs/integrations/duo-saml.md) - Learn how to configure a connection to Duo via SAML.
+- [CyberArk SCIM](https://workos.com/docs/integrations/cyberark-scim.md) - Learn about syncing your user list with CyberArk SCIM.
+- [CyberArk SAML](https://workos.com/docs/integrations/cyberark-saml.md) - Learn how to configure a connection to CyberArk via SAML.
+- [Cloudflare](https://workos.com/docs/integrations/cloudflare-saml.md) - Learn how to configure a connection to Cloudflare via SAML.
+- [Clever OIDC](https://workos.com/docs/integrations/clever-oidc.md) - Learn how to configure a connection to Clever via OIDC.
+- [ClassLink](https://workos.com/docs/integrations/classlink-saml.md) - Learn how to configure a connection to ClassLink via SAML.
+- [Cezanne HR](https://workos.com/docs/integrations/cezanne.md) - Learn about syncing your user list with Cezanne HR.
+- [CAS SAML](https://workos.com/docs/integrations/cas-saml.md) - Learn how to configure a connection to CAS via SAML.
+- [Bubble Plugin](https://workos.com/docs/integrations/bubble.md) - Add WorkOS features to your Bubble application.
+- [Breathe HR](https://workos.com/docs/integrations/breathe-hr.md) - Learn about syncing your user list with Breathe HR.
+- [BambooHR](https://workos.com/docs/integrations/bamboohr.md) - Learn about syncing your user list with BambooHR.
+- [AWS Cognito](https://workos.com/docs/integrations/aws-cognito.md) - Learn how to use WorkOS with your existing AWS Cognito applications.
+- [Auth0](https://workos.com/docs/integrations/auth0-saml.md) - Learn how to configure a connection to Auth0 via SAML.
+- [Auth0 Enterprise Connection](https://workos.com/docs/integrations/auth0-enterprise-connection.md) - Learn how to use WorkOS with your existing Auth0 applications.
+- [Auth0 Directory Sync](https://workos.com/docs/integrations/auth0-directory-sync.md) - Learn how to use Directory Sync with your Auth0 applications.
+- [Apple](https://workos.com/docs/integrations/apple.md) - Learn how to set up "Sign in with Apple"
+- [ADP OpenID Connect](https://workos.com/docs/integrations/adp-oidc.md) - Learn how to configure a connection to ADP via OIDC.
+- [Access People HR](https://workos.com/docs/integrations/access-people-hr.md) - Learn about syncing your user list with Access People HR.
+
+## FGA
+
+- [Standalone Integration](https://workos.com/docs/fga/standalone-integration.md) - Use FGA with your own authentication system by managing users, organizations, and memberships via API.
+- [Roles and Permissions](https://workos.com/docs/fga/roles-and-permissions.md) - Define what users can do within specific resource types.
+  - `# Roles and Permissions`
+  - `## Introduction`
+  - `## Understanding permissions`
+  - `## Understanding roles`
+  - `## Permission inheritance`
+  - `## Seeing inheritance in action`
+  - `## How access is evaluated`
+  - `## Managing roles in the Dashboard`
+  - `## Custom resource-scoped roles`
+  - `### Creating a custom resource-scoped role`
+  - `### Assigning custom resource-scoped roles`
+  - `## Changing resource type scope`
+- [Resources](https://workos.com/docs/fga/resources.md) - Represent your application's entities in the FGA hierarchy.
+- [Resource Types](https://workos.com/docs/fga/resource-types.md) - Define the schema of your application's resource hierarchy in the WorkOS Dashboard.
+- [Resource Discovery](https://workos.com/docs/fga/resource-discovery.md) - Find which resources a user can access, or who has access to a resource.
+- [Quick Start](https://workos.com/docs/fga/quick-start.md) - Build a complete authorization model from resource types to access checks in minutes.
+- [Share Button](https://workos.com/docs/fga/model-your-app-share-button.md) - Build a share dialog that lists current members of a resource and grants or revokes access.
+- [Multi-level Inheritance](https://workos.com/docs/fga/model-your-app-multi-level-inheritance.md) - Model authorization for nested resources and permission-gated UI components.
+- [High-Cardinality Data](https://workos.com/docs/fga/model-your-app-high-cardinality-data.md) - Use FGA to authorize high-cardinality data like documents, files, and messages without syncing them as resources.
+- [Basic App](https://workos.com/docs/fga/model-your-app-basic.md) - Model authorization for a project management app with list and detail pages.
+- [Protecting API Endpoints](https://workos.com/docs/fga/model-your-app-api-endpoints.md) - Use the check endpoint to protect every CRUD operation in your REST API.
+- [Migrate from SpiceDB](https://workos.com/docs/fga/migration-spicedb.md) - Map your SpiceDB schema to WorkOS FGA resource types, roles, and permissions.
+- [Migrate from Oso Cloud](https://workos.com/docs/fga/migration-oso.md) - Map your Oso Cloud Polar policies to WorkOS FGA resource types, roles, and permissions.
+- [Migrate from OpenFGA](https://workos.com/docs/fga/migration-openfga.md) - Map your OpenFGA authorization model to WorkOS FGA resource types, roles, and permissions.
+- [Fine-Grained Authorization (FGA)](https://workos.com/docs/fga.md) - Scalable fine-grained authorization built for B2B SaaS.
+- [IdP Role Assignment](https://workos.com/docs/fga/idp-role-assignment.md) - Map identity provider groups to organization-scoped roles while preserving resource-scoped access.
+  - `# IdP Role Assignment`
+  - `## Introduction`
+  - `## How it works`
+  - `## Setting up IdP role assignment`
+  - `## Directory Sync vs. SSO`
+  - `## Combining with FGA`
+- [High-Cardinality Entities](https://workos.com/docs/fga/high-cardinality-entities.md) - Learn when to use FGA for authorization and when to handle access control in your application.
+- [AuthKit Integration](https://workos.com/docs/fga/authkit-integration.md) - Use FGA with AuthKit for role-aware sessions and seamless authorization.
+  - `# AuthKit Integration`
+  - `## Introduction`
+  - `## What's in the session token`
+  - `### Why only organization-scoped roles?`
+  - `## FGA and organization memberships`
+  - `## Two layers of authorization`
+  - `## Groups and group role assignments`
+  - `### Assigning a resource-scoped role to a group`
+  - `### How it integrates with access checks`
+  - `### Dynamic membership and assignments`
+  - `### Example: team-based resource access`
+  - `# 1. Create the group`
+- [Role Assignments](https://workos.com/docs/fga/assignments.md) - Grant users access to specific resources through role assignments.
+  - `# Role Assignments`
+  - `## Introduction`
+  - `## Creating assignments`
+  - `## How assignments work`
+  - `## Direct vs. inherited access`
+  - `## Multiple roles`
+  - `## Managing assignments`
+  - `## Cascading events`
+  - `## Combining with IdP role assignment`
+- [Access Checks](https://workos.com/docs/fga/access-checks.md) - Ask whether a user can perform an action on a resource.
+
+## Feature Flags
+
+- [Slack Notifications](https://workos.com/docs/feature-flags/slack-notifications.md) - Get notifications about feature flag changes in your Slack workspace.
+- [SDK Integration](https://workos.com/docs/feature-flags/sdk-integration.md) - Evaluate feature flags in your server-side Node.js application using the WorkOS runtime client.
+- [Feature Flags](https://workos.com/docs/feature-flags.md) - Manage rollout of new features for specific users and organizations with Feature Flags.
+
+## Events
+
+- [Events](https://workos.com/docs/events.md) - Respond to activity that occurs within WorkOS and third-party providers.
+- [Stream events to Datadog](https://workos.com/docs/events/observability/datadog.md) - Stream and analyze WorkOS activity in Datadog.
+- [Sync data with webhooks](https://workos.com/docs/events/data-syncing/webhooks.md) - A step-by-step guide on how to start syncing data using webhooks.
+- [Data syncing](https://workos.com/docs/events/data-syncing.md) - Keep your app in sync with WorkOS.
+- [Sync data using the events API](https://workos.com/docs/events/data-syncing/events-api.md) - A step-by-step guide on how to start syncing data using the API.
+- [Data reconciliation](https://workos.com/docs/events/data-syncing/data-reconciliation.md) - Keep your app in sync with WorkOS.
+
+## Domain Verification
+
+- [Domain Verification](https://workos.com/docs/domain-verification.md) - Self-serve domain verification
+- [API](https://workos.com/docs/domain-verification/api.md) - Programmatic domain verification
+
+## Directory Sync
+
+- [Understanding the Events Lifecycle](https://workos.com/docs/directory-sync/understanding-events.md) - Understand the lifecycle of the events that occur in Directory Sync.
+- [Quick Start](https://workos.com/docs/directory-sync/quick-start.md) - Set up a directory, install the SDK, and integrate Directory Sync.
+- [Directory Sync](https://workos.com/docs/directory-sync.md) - Build frictionless onboarding for organizations with real‑time user provisioning and deprovisioning.
+- [Identity Provider Role Assignment](https://workos.com/docs/directory-sync/identity-provider-role-assignment.md) - Learn how to map role data from identity providers to roles in your app with Directory Sync.
+  - `# Identity Provider Role Assignment`
+  - `## Introduction`
+  - `## Directory group role assignment`
+  - `### Sample scenario`
+  - `### Multiple roles`
+  - `#### Use cases`
+  - `### Role assignment in Admin Portal`
+  - `## Other forms of role assignment`
+  - `### SSO group role assignment`
+  - `### Attribute-based role`
+  - `## Common edge cases`
+  - `### A user is part of multiple groups`
+- [Handle Inactive Users](https://workos.com/docs/directory-sync/handle-inactive-users.md) - Learn why inactive users are deleted from directories by default and how to configure this behavior.
+- [Example Apps](https://workos.com/docs/directory-sync/example-apps.md) - View sample Directory Sync apps for each SDK.
+- [Unique Emails](https://workos.com/docs/directory-sync/email-uniqueness.md) - Learn why directory user emails must be unique among active users, and how to avoid conflicts.
+- [User Attributes](https://workos.com/docs/directory-sync/attributes.md) - Configure how attributes map from directory providers to Directory Users.
+
+## Deprecations
+
+- [Migrate from raw_attributes](https://workos.com/docs/deprecations/raw-attributes.md) - How to migrate from raw_attributes and legacy standard attributes to custom attributes.
+
+## Custom Domains
+
+- [Custom Domains](https://workos.com/docs/custom-domains.md) - Configure your integration to match your brand identity.
+- [Email Domain](https://workos.com/docs/custom-domains/email.md) - Guidance on configuring a custom domain for emails.
+- [AuthKit Domain](https://workos.com/docs/custom-domains/authkit.md) - Guidance on configuring a custom domain for AuthKit.
+- [Authentication API Domain](https://workos.com/docs/custom-domains/auth-api.md) - Guidance on configuring a custom domain for the Authentication API.
+- [Admin Portal Domain](https://workos.com/docs/custom-domains/admin-portal.md) - Guidance on configuring a custom domains for the Admin Portal.
+
+## AuthKit
+
+- [Waitlist](https://workos.com/docs/authkit/waitlist.md) - Review and approve signup requests before granting access to your application.
+- [Users and Organizations](https://workos.com/docs/authkit/users-organizations.md) - Flexible application modeling with user and membership features.
+  - `# Users and Organizations`
+  - `## Users`
+  - `### Authentication methods`
+  - `### Identity linking`
+  - `### Email verification`
+  - `### Domain verification`
+  - `## Organizations`
+  - `### Organization memberships`
+  - `### Organization access`
+  - `### Custom roles`
+  - `### Membership management`
+  - `### When to use deletion vs. deactivation`
+- [Single Sign-On](https://workos.com/docs/authkit/sso.md) - Facilitate greater security, easier account management, and accelerated application onboarding and adoption.
+  - `# Single Sign-On`
+  - `## Introduction`
+  - `## Getting started`
+  - `## (1) Enable SSO`
+  - `## (2) Test with the Test Identity Provider`
+  - `### Getting started`
+  - `### Service provider-initiated SSO`
+  - `### Identity provider-initiated SSO`
+  - `### Guest email domain`
+  - `### Error response`
+  - `## (3) Test with other identity providers`
+  - `### Create an organization`
+- [SSO with contractors](https://workos.com/docs/authkit/sso-with-contractors.md) - Enforcing organization SSO access with external contractors.
+  - `# SSO with contractors`
+  - `## Introduction`
+  - `## Goals & requirements`
+  - `## Integrating SSO`
+  - `### Enforcing SSO authentication`
+  - `### SSO authentication flow`
+  - `## Understanding authentication policies`
+  - `## Adding an authentication policy`
+  - `## Summary`
+- [Social Login](https://workos.com/docs/authkit/social-login.md) - Quickly and easily integrate with social OAuth providers.
+- [Sessions](https://workos.com/docs/authkit/sessions.md) - Learn more about integrating sessions.
+  - `# Sessions`
+  - `## Introduction`
+  - `## Integrating Sessions`
+  - `### Access Token`
+  - `### Refresh Token`
+  - `### Switching Organizations`
+  - `### Signing Out`
+  - `#### Example`
+  - `## Configuring Sessions`
+  - `### Sign-out redirect`
+  - `#### Wildcards`
+- [Roles and Permissions](https://workos.com/docs/authkit/roles-and-permissions.md) - Manage and assign roles and permissions to users.
+  - `# Roles and Permissions`
+  - `## Introduction`
+  - `### Standalone roles`
+  - `### Utilizing permissions with roles`
+  - `## Configure roles and permissions`
+  - `### Create permissions`
+  - `### Assign permissions to roles`
+  - `### Default role`
+  - `### Assign roles`
+  - `### Delete roles`
+  - `### Priority order`
+  - `## Multiple roles`
+- [AuthKit](https://workos.com/docs/authkit/remix.md) - Easy to use authentication platform designed to provide a flexible, secure, and fast integration.
+- [AuthKit](https://workos.com/docs/authkit/react.md) - Easy to use authentication platform designed to provide a flexible, secure, and fast integration.
+- [Radar](https://workos.com/docs/authkit/radar.md) - Protecting against bots, fraud and abuse.
+- [Pipes](https://workos.com/docs/authkit/pipes.md) - Enable your customers to connect their third-party accounts to your application.
+- [Passkeys](https://workos.com/docs/authkit/passkeys.md) - Configuring passkey authentication and enrollment.
+- [AuthKit](https://workos.com/docs/authkit/overview.md) - Easy to use authentication APIs designed to provide a flexible, secure, and fast integration.
+- [Organization Authentication Policies](https://workos.com/docs/authkit/organization-policies.md) - Customize available authentication methods for each organization.
+  - `# Organization Authentication Policies`
+  - `## Introduction`
+  - `## Domain policy`
+  - `### Requiring SSO by default`
+  - `## Organization policy`
+- [AuthKit](https://workos.com/docs/authkit/nextjs.md) - Easy to use authentication platform designed to provide a flexible, secure, and fast integration.
+- [Modeling Your App](https://workos.com/docs/authkit/modeling-your-app.md) - Learn how to architect your WorkOS integration
+- [Migrating to AuthKit](https://workos.com/docs/authkit/migrations.md) - Guidance on moving your existing users to WorkOS.
+- [Multi-Factor Authentication](https://workos.com/docs/authkit/mfa.md) - Add an additional layer of security to your application.
+- [Metadata and External IDs](https://workos.com/docs/authkit/metadata.md) - Store additional information about users and organizations.
+- [Model Context Protocol](https://workos.com/docs/authkit/mcp.md) - How to use AuthKit as the authorization server for your MCP server.
+- [Magic Auth](https://workos.com/docs/authkit/magic-auth.md) - Maximize user experience and security with passwordless authentication.
+- [Get started with AuthKit](https://workos.com/docs/authkit/landing.md) - Set up AuthKit in your app using either the AI Installer & CLI or a manual framework-specific guide.
+- [JWT Templates](https://workos.com/docs/authkit/jwt-templates.md) - Customize the claims in your application's access tokens.
+- [Just-in-time Provisioning](https://workos.com/docs/authkit/jit-provisioning.md) - Automatically provision users and memberships with JIT provisioning.
+- [Invite-only signup](https://workos.com/docs/authkit/invite-only-signup.md) - Modeling an invite-only application without a public signup page.
+- [Invitations](https://workos.com/docs/authkit/invitations.md) - Easily add users to your application or as members of an organization.
+  - `# Invitations`
+  - `## Introduction`
+  - `## Invitation flow`
+  - `### Inviting new users to an organization`
+  - `### Inviting existing users to an organization`
+  - `## Application-wide invitations`
+  - `## Sending invitations`
+  - `## Email address used to accept an invite`
+  - `### Without organization membership`
+  - `### With organization membership`
+- [Get started with AuthKit](https://workos.com/docs/authkit.md) - Set up AuthKit in your app using either the AI Installer & CLI or a manual framework-specific guide.
+- [Impersonation](https://workos.com/docs/authkit/impersonation.md) - Learn how to sign into your application as one of your users.
+- [Identity Linking](https://workos.com/docs/authkit/identity-linking.md) - Automatic deduplication of user credentials across identity providers.
+- [Hosted UI](https://workos.com/docs/authkit/hosted-ui.md) - Customizable sign-in UI that abstracts away all of the complexity associated with building secure authentication flows.
+- [Groups](https://workos.com/docs/authkit/groups.md) - Organize organization members into groups for easier management.
+- [Group Role Assignments](https://workos.com/docs/authkit/group-role-assignments.md) - Assign roles to groups so all members automatically inherit the role and its permissions.
+  - `# Group Role Assignments`
+  - `## Introduction`
+  - `## How it works`
+  - `## Assigning a role to a group`
+  - `## Resource-scoped assignments`
+  - `## Managing group role assignments`
+  - `### Listing assignments`
+  - `### Removing assignments`
+  - `## Single vs. multiple roles`
+  - `## Cascade behavior`
+  - `## Example: department-level roles`
+  - `## API reference`
+- [Example apps](https://workos.com/docs/authkit/example-apps.md) - View sample AuthKit apps.
+- [Staging vs. production environments](https://workos.com/docs/authkit/environments.md) - Understand the differences between staging and production environments, when to use each, and how to go live.
+- [Email Verification](https://workos.com/docs/authkit/email-verification.md) - Learn more about the email verification process.
+- [Email + Password](https://workos.com/docs/authkit/email-password.md) - Configuring email and password authentication and requirements.
+- [Domain Verification](https://workos.com/docs/authkit/domain-verification.md) - Verify organization domains for secure authentication and provisioning.
+- [Directory Provisioning](https://workos.com/docs/authkit/directory-provisioning.md) - Manage users and organization memberships via directory sync providers.
+  - `# Directory Provisioning`
+  - `## Introduction`
+  - `## Initial configuration`
+  - `### Supported directory providers`
+  - `## Provision users from a directory`
+  - `## Manage users from a directory`
+  - `## Custom attributes`
+  - `## Directory provisioning actions`
+  - `## Frequently asked questions`
+  - `### I am using directory provisioning, but some directory users aren't being provisioned in AuthKit. Why would a directory user not be provisioned in AuthKit?`
+  - `### If a user's email is changed in the directory, will this change be reflected on the user's email in WorkOS?`
+  - `### Why is there a distinction between domain-managed users and domain guest users?`
+- [Custom Emails](https://workos.com/docs/authkit/custom-emails.md) - Learn how to send your own emails for user lifecycle events.
+- [Custom Email Providers](https://workos.com/docs/authkit/custom-email-providers.md) - Learn how to send emails through your own email service provider.
+- [Connect](https://workos.com/docs/authkit/connect.md) - Enable other applications to access your users and their identities.
+- [AI Installer & CLI](https://workos.com/docs/authkit/cli-installer.md) - Integrate AuthKit with one command, manage resources, provision environments, and equip your coding agents — all from the WorkOS CLI.
+- [CLI Auth](https://workos.com/docs/authkit/cli-auth.md) - Quickly add authentication to your command-line application.
+  - `# CLI Auth`
+  - `## Introduction`
+  - `## (1) Request device authorization`
+  - `#### Request`
+  - `#### Response`
+  - `## (2) User confirms the code`
+  - `### (A) Manual code entry`
+  - `### (B) One-click confirmation`
+  - `## (3) Request tokens`
+  - `#### Request`
+  - `#### Response`
+  - `### Polling best practices`
+- [Branding](https://workos.com/docs/authkit/branding.md) - Customize AuthKit to fit natively with your app's unique design.
+- [Applications](https://workos.com/docs/authkit/applications.md) - Manage authentication across every surface your product runs on with a shared identity layer.
+- [API Keys](https://workos.com/docs/authkit/api-keys.md) - Provide secure, self-service API key management to your customers.
+  - `# API Keys`
+  - `## Introduction`
+  - `## Configuring API keys`
+  - `### Setting up role permissions`
+  - `### Configuring available permissions`
+  - `## API key management in your application`
+  - `### Using the API Keys Widget`
+  - `### Managing API keys via the API`
+  - `## Validating API keys`
+  - `#### Next.js`
+  - `#### Express`
+  - `#### Flask`
+- [Agent Registration](https://workos.com/docs/authkit/agent-auth.md) - How agents obtain identity and credentials from an AuthKit-powered service.
+  - `# Agent Registration`
+  - `## Introduction`
+  - `## How it works`
+  - `### Identity types`
+  - `### Choosing identity types`
+  - `### Registration flow`
+  - `## Discovery`
+  - `# Step 1 — Your API challenges with resource_metadata`
+  - `# Step 2 — Protected Resource Document points to the AS`
+  - `# Step 3 — AS metadata includes agent_auth`
+  - `### Hosting auth.md`
+  - `## Registering`
+- [Actions](https://workos.com/docs/authkit/actions.md) - Customize authentication flows with your own logic.
+- [AuthKit](https://workos.com/docs/authkit/vanilla/ruby.md) - Easy to use authentication platform designed to provide a flexible, secure, and fast integration.
+- [AuthKit](https://workos.com/docs/authkit/vanilla/python.md) - Easy to use authentication platform designed to provide a flexible, secure, and fast integration.
+- [AuthKit](https://workos.com/docs/authkit/vanilla/nodejs.md) - Easy to use authentication platform designed to provide a flexible, secure, and fast integration.
+- [Standalone Connect](https://workos.com/docs/authkit/connect/standalone.md) - Integrate Connect's OAuth API with your existing authentication stack.
+- [OAuth Applications](https://workos.com/docs/authkit/connect/oauth.md) - Integrate OAuth applications with WorkOS Connect for web and mobile authentication.
+- [M2M Applications](https://workos.com/docs/authkit/connect/m2m.md) - Implement machine-to-machine authentication with WorkOS Connect.
+- [Stripe](https://workos.com/docs/authkit/add-ons/stripe.md) - Connect your WorkOS account to Stripe to automatically provision access tokens with entitlements and sync organization seat counts.
+- [Segment](https://workos.com/docs/authkit/add-ons/segment.md) - Send AuthKit events to your Segment destinations.
+- [Google Analytics](https://workos.com/docs/authkit/add-ons/google-analytics.md) - Track user activity on AuthKit pages in Google Analytics.
+
+## Audit Logs
+
+- [Metadata Schema](https://workos.com/docs/audit-logs/metadata-schema.md) - Define strict JSON Schema for validating event metadata.
+- [Log Streams](https://workos.com/docs/audit-logs/log-streams.md) - Stream Audit Log Events to your customers' SIEM providers.
+- [Audit Logs](https://workos.com/docs/audit-logs.md) - Ingest and export Audit Log Events from your application.
+- [Exporting Events](https://workos.com/docs/audit-logs/exporting-events.md) - Export Audit Log Events through the WorkOS Dashboard and API.
+- [Editing Events](https://workos.com/docs/audit-logs/editing-events.md) - Modify existing event configuration with backwards compatibility.
+- [Admin Portal](https://workos.com/docs/audit-logs/admin-portal.md) - View Audit Log events for an organization in the WorkOS Admin Portal.
+
+## Admin Portal
+
+- [Bearer token rotation](https://workos.com/docs/admin-portal/token-rotation.md) - Create and revoke SCIM bearer tokens from the WorkOS Dashboard or Admin Portal.
+- [Admin Portal](https://workos.com/docs/admin-portal.md) - A first-class Single Sign-On and Directory Sync onboarding experience for IT contacts.
+- [Example Apps](https://workos.com/docs/admin-portal/example-apps.md) - View sample Admin Portal apps for each SDK.
+- [Custom Branding](https://workos.com/docs/admin-portal/custom-branding.md) - Use your own logo and colors in the Admin Portal.

@@ -21,5 +21,9 @@ def default_config_path() -> Path:
     return global_state_dir() / "config.toml"
 
 
+def default_control_db_path() -> Path:
+    return global_state_dir() / "control.sqlite"
+
+
 def normalize_path(path: Path) -> Path:
     return path.expanduser().resolve(strict=False)

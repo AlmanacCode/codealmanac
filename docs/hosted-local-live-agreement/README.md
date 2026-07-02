@@ -25,6 +25,12 @@ Related prior notes:
 - `docs/hosted-local-live-agreement/cloud-first-product-agreement-2026-07-01.md`
 - `docs/hosted-local-live-agreement/cloud-local-difference-map-2026-07-01.md`
 - `docs/hosted-local-live-agreement/mem0-two-product-rationale-2026-07-01.md`
+- `docs/hosted-local-live-agreement/local-cli-future-2026-07-01.md`
+- `docs/hosted-local-live-agreement/cloud-local-parallel-architecture-2026-07-02.md`
+- `docs/hosted-local-live-agreement/cloud-local-state-mirror-2026-07-02.md`
+- `docs/hosted-local-live-agreement/local-pipeline-architecture-2026-07-02.md`
+- `docs/hosted-local-live-agreement/cli-onboarding-launch-2026-07-02.md`
+- `docs/plans/2026-07-02-codealmanac-cloud-local-launch.md`
 
 ## Core Agreement
 
@@ -105,8 +111,15 @@ default unless a repo explicitly chooses that policy.
 
 Local and cloud finalization events are different because local Git state and
 GitHub state are different. Local can observe working tree changes, local
-commits, local merges, or local schedules. Cloud observes GitHub webhooks,
+commits, local merges, or local Git hook events. Cloud observes GitHub webhooks,
 branches, pull requests, commits, checks, and installation permissions.
+
+Current local trigger decision: no time-based local scheduling for the branch
+maintenance path. Local should use Git hook dispatchers such as `post-commit`,
+`post-merge`, and `post-rewrite`; the dispatcher records a trigger only when
+the current branch is configured as maintained for that repo. Git hooks are
+repo-level, so branch selectivity is a CodeAlmanac control-DB/config check, not
+a Git feature.
 
 ## Source Selection
 
@@ -252,9 +265,13 @@ still-open product PR is a separate policy because it changes the author's PR
 while it is under review.
 
 For local, delivery is not GitHub-native unless the user adds that behavior.
-The normal local delivery target is the working tree, with optional local commit
-behavior. A local merge and a GitHub PR merge are different events and should not
-share the same delivery code path by accident.
+For manual local commands, the normal delivery target can remain the working
+tree. For automatic branch maintenance, the local delivery target should be a
+Git commit to the maintained branch guarded by `expected_head_sha`. If the
+branch head has changed before delivery, mark the run stale/cancelled, do not
+apply the stale wiki diff, and enqueue a new trigger for the newer head. A local
+merge and a GitHub PR merge are different events and should not share the same
+delivery code path by accident.
 
 ## CLI Product Shape
 
@@ -270,23 +287,24 @@ should not proxy normal `search`, `show`, or `serve` reads through cloud APIs.
 Cloud can keep a copy or index for dashboard speed and remote browsing, but
 the committed repo wiki remains the shared artifact.
 
-The CLI install/setup flow should be cloud-first:
+The CLI setup flow should be cloud-first:
 
 ```bash
-almanac setup          # cloud walkthrough by default
-almanac setup --local  # local-only setup
+codealmanac setup        # cloud walkthrough by default
+codealmanac local setup  # local-only setup
 ```
 
-Agent/source-capture installation should be a separate explicit command, not a
-side effect of basic CLI installation:
+Conversation capture should never be installed silently during package
+installation. It can be a visible step inside `codealmanac setup` / browser
+onboarding, and it can also have explicit repair/status commands.
 
 ```bash
-almanac agents install          # cloud capture by default
-almanac agents install --local  # local lab capture, if supported
+codealmanac capture status
+codealmanac capture repair
 ```
 
-The exact command names are not final. The agreement is that capture/automation
-installation is a distinct user action.
+The exact command names are not final. The agreement is that `capture`, not
+`agents`, is the product noun for conversation capture.
 
 ## The Seamlessness Problem
 
@@ -302,12 +320,12 @@ codealmanac runs
   cloud:   show cloud control-plane runs from the server
 
 codealmanac sync / update
-  local:   scan local transcripts on a schedule or by command
+  local:   react to configured local Git hook triggers or explicit commands
   cloud:   react to GitHub branch/environment triggers
 
 conversation capture
-  local:   optional lab behavior for a single machine
-  cloud:   likely required source collection for team automation
+  local:   continuous local capture into local control state/storage
+  cloud:   continuous cloud capture into cloud APIs/storage
 ```
 
 This creates a split-attention risk. The open-source local product gives
@@ -429,3 +447,6 @@ problem.
     or does one agent hook installer need to support both modes?
 12. Should `runs` mean every run visible to the user across local and cloud, or
     only the active posture's runs?
+13. Should local manual commands and automatic branch-maintenance commands share
+    one delivery policy, or should manual commands keep working-tree delivery
+    while branch triggers use commit delivery?
