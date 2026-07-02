@@ -36,9 +36,12 @@
 - Pushed hosted commit
   `fbf8b5a feat: add CLI repository trigger routes` to
   `origin/codex/workos-authkit-api-foundation`.
-- Committed CodeAlmanac Slice 36 as
-  `feat: mirror cloud repository triggers in CLI`; record the final pushed hash
-  after push because amending this file changes the commit hash.
+- Pushed CodeAlmanac commit
+  `8ca50e0f feat: mirror cloud repository triggers in CLI` to `origin/dev`.
+- Sent the Slice 36 RelayForge update with progress as:
+  CodeAlmanac backend/local 93%, CLI/public UX 72%,
+  CodeAlmanac-hosted backend/auth/API 78%, hosted frontend/onboarding 28%, and
+  infra/deploy rename 15%.
 - Planned Slice 35 in
   `docs/plans/2026-07-02-slice-35-hosted-trigger-policies.md`.
 - Added hosted `repository_trigger_policies`, keyed by `(repo_id, branch)`,

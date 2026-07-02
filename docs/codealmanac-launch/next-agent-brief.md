@@ -32,6 +32,8 @@ Implemented:
   `codealmanac repo delivery set --branch <branch> --mode pr|commit`
 - pushed hosted commit
   `fbf8b5a feat: add CLI repository trigger routes`
+- pushed CodeAlmanac commit
+  `8ca50e0f feat: mirror cloud repository triggers in CLI`
 
 Verified:
 
@@ -72,9 +74,8 @@ Pressure points:
 ## Known Repo State
 
 The CodeAlmanac branch is `dev`. Slice 31 is pushed to `origin/dev` at
-`f20e928d feat: expose maintenance package api`. Slice 36 has been committed
-locally as `feat: mirror cloud repository triggers in CLI`; record the final
-pushed hash after push because amending this file changes the commit hash.
+`f20e928d feat: expose maintenance package api`; Slice 36 is pushed to
+origin at `8ca50e0f feat: mirror cloud repository triggers in CLI`.
 
 The hosted auth branch is
 `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
