@@ -1,6 +1,7 @@
 import argparse
 
 from codealmanac.services.control.models import ControlRunStatus
+from codealmanac.services.harnesses.models import HarnessKind
 
 LOCAL_DELIVERY_CHOICES = ("commit", "working-tree")
 LOCAL_JOB_STATUS_CHOICES = tuple(status.value for status in ControlRunStatus)
@@ -12,6 +13,14 @@ def add_local_commands(subcommands: argparse._SubParsersAction) -> None:
 
     status = local_subcommands.add_parser("status", help="show local setup status")
     status.add_argument("--json", action="store_true")
+
+    update = local_subcommands.add_parser("update", help="run a local update now")
+    update.add_argument(
+        "--using",
+        default=HarnessKind.CODEX.value,
+        choices=tuple(kind.value for kind in HarnessKind),
+    )
+    update.add_argument("--json", action="store_true")
 
     setup = local_subcommands.add_parser(
         "setup",

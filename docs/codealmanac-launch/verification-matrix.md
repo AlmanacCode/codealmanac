@@ -198,6 +198,20 @@ Current evidence:
   <run-id>` read SQL-backed local run rows and run events.
 - `tests/test_architecture.py` continues to prove CLI parser/dispatch/render
   boundaries stay split by command domain.
+- Slice 19 added public manual local update.
+- `tests/test_control_service.py` proves manual trigger events can replace a
+  pending same-head branch trigger without changing normal duplicate
+  hook-trigger behavior.
+- `tests/test_local_update_workflow.py` proves `local update` creates a manual
+  trigger, runs the local worker, commits with the `docs almanac:` subject
+  style, records the expected run-event stream, allows same-head reruns after a
+  completed job, refuses duplicate active branch jobs, and requires a
+  configured branch.
+- `tests/test_cli.py` proves `codealmanac local update --json` runs the manual
+  local worker path and returns typed trigger, worker, run, and delivery data.
+- `tests/test_architecture.py` proves local update only composes local status,
+  control trigger recording, and the local worker; it does not import Git,
+  harness, delivery, subprocess, or SQL internals directly.
 
 Commands:
 

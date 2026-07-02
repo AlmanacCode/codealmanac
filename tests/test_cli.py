@@ -593,6 +593,67 @@ def test_cli_local_jobs_list_show_and_logs(
     assert "1\tstatus\tdelivered local commit head-2\n" in logs_output.out
 
 
+def test_cli_local_update_runs_manual_local_worker(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    harness = CliLocalWorkerHarnessAdapter()
+    delivery = CliLocalDeliveryManager()
+    app = create_app(
+        AppConfig(
+            control_db_path=isolated_home / ".codealmanac/control.sqlite",
+            run_artifacts_path=isolated_home / ".codealmanac/runs",
+            worker_workspaces_path=isolated_home / ".codealmanac/workspaces",
+        ),
+        local_repository_probe=CliLocalRepositoryProbe(local_repository_state(repo)),
+        git_worktree_manager=CliGitWorktreeManager(),
+        harness_adapters=(harness,),
+        git_delivery_manager=delivery,
+    )
+    repository = app.control.upsert_repository(
+        UpsertRepositoryRequest(
+            provider="github",
+            owner_login="AlmanacCode",
+            name="codealmanac",
+            full_name="AlmanacCode/codealmanac",
+            default_branch="dev",
+            almanac_root=Path("almanac"),
+            local_root_path=repo,
+        )
+    )
+    app.control.set_branch_policy(
+        SetBranchPolicyRequest(
+            repository_id=repository.id,
+            name="dev",
+            trigger_enabled=True,
+            delivery_mode=ControlDeliveryMode.COMMIT,
+        )
+    )
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert main(["local", "update", "--json"]) == 0
+
+    output = capsys.readouterr()
+    data = json.loads(output.out)
+
+    assert data["started"] is True
+    assert data["trigger"]["kind"] == "manual"
+    assert data["worker"]["processed"] is True
+    assert data["worker"]["run"]["status"] == "succeeded"
+    assert harness.requests[0].cwd == (
+        isolated_home
+        / ".codealmanac/workspaces"
+        / data["worker"]["run"]["id"]
+        / "repo"
+    )
+    assert delivery.apply_calls[0][3] == "docs almanac: update local worker note"
+
+
 def test_cli_setup_skip_instructions_json(capsys):
     exit_code = main(["setup", "--yes", "--skip-instructions", "--json"])
 

@@ -132,6 +132,8 @@ class RecordTriggerEventRequest(CodeAlmanacModel):
     head_sha: str
     previous_head_sha: str | None = None
     payload_ref: str | None = None
+    allow_duplicate_head: bool = False
+    replace_pending: bool = False
 
     @field_validator("repository_id")
     @classmethod

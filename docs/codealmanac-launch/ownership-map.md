@@ -21,6 +21,7 @@ Owns:
 - local engine execution
 - local worker orchestration
 - local worker background spawning
+- public local manual update
 - deterministic local delivery
 - auto-update client behavior
 

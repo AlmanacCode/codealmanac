@@ -90,6 +90,7 @@ from codealmanac.workflows.local_setup import (
     LocalSetupWorkflow,
 )
 from codealmanac.workflows.local_status import LocalStatusWorkflow
+from codealmanac.workflows.local_update import LocalUpdateWorkflow
 from codealmanac.workflows.local_worker import LocalWorkerSpawner, LocalWorkerWorkflow
 from codealmanac.workflows.page_run import PageRunWorkflow
 from codealmanac.workflows.run_queue import RunQueueWorkflow
@@ -110,6 +111,7 @@ class CodeAlmanacWorkflows:
     local_engine: LocalEngineWorkflow
     local_delivery: LocalDeliveryWorkflow
     local_worker: LocalWorkerWorkflow
+    local_update: LocalUpdateWorkflow
     sync: SyncWorkflow
 
 
@@ -281,6 +283,11 @@ def create_app(
         local_engine,
         local_delivery,
     )
+    local_update = LocalUpdateWorkflow(
+        control,
+        local_status,
+        local_worker,
+    )
     resolved_local_worker_spawner = (
         local_worker_spawner or SubprocessLocalWorkerSpawner()
     )
@@ -297,6 +304,7 @@ def create_app(
         local_engine=local_engine,
         local_delivery=local_delivery,
         local_worker=local_worker,
+        local_update=local_update,
         sync=sync,
     )
     return CodeAlmanac(

@@ -288,6 +288,30 @@ def test_local_worker_workflow_only_composes_local_workflows():
     assert "CreateDeliveryRequest" not in service_text
 
 
+def test_local_update_workflow_only_records_manual_trigger_and_runs_worker():
+    workflow_root = SRC_ROOT / "workflows/local_update"
+    service_text = (workflow_root / "service.py").read_text(encoding="utf-8")
+    module_names = {path.name for path in workflow_root.glob("*.py")}
+
+    assert {
+        "__init__.py",
+        "models.py",
+        "requests.py",
+        "service.py",
+    } <= module_names
+    assert len(service_text.splitlines()) <= 130
+    assert "local_status.status" in service_text
+    assert "control.record_trigger_event" in service_text
+    assert "local_worker.run_next" in service_text
+    assert "allow_duplicate_head=True" in service_text
+    assert "replace_pending=True" in service_text
+    assert "codealmanac.integrations" not in service_text
+    assert "connect_control" not in service_text
+    assert "subprocess" not in service_text
+    assert "harnesses.run" not in service_text
+    assert "git_delivery" not in service_text
+
+
 def test_config_service_owns_toml_imports():
     offenders = [
         path

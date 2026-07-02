@@ -372,6 +372,55 @@ def test_duplicate_head_does_not_record_second_trigger_event(
     assert len(app.control.list_trigger_events()) == 1
 
 
+def test_manual_trigger_can_replace_pending_same_head_trigger(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    app = control_app(isolated_home)
+    repository = register_repository(app, tmp_path / "repo")
+    app.control.set_branch_policy(
+        SetBranchPolicyRequest(
+            repository_id=repository.id,
+            name="dev",
+            trigger_enabled=True,
+            delivery_mode=ControlDeliveryMode.COMMIT,
+        )
+    )
+    original = app.control.record_trigger_event(
+        RecordTriggerEventRequest(
+            repository_id=repository.id,
+            branch_name="dev",
+            kind=TriggerEventKind.LOCAL_POST_COMMIT,
+            head_sha="head-1",
+        )
+    ).event
+    assert original is not None
+
+    manual = app.control.record_trigger_event(
+        RecordTriggerEventRequest(
+            repository_id=repository.id,
+            branch_name="dev",
+            kind=TriggerEventKind.MANUAL,
+            head_sha="head-1",
+            allow_duplicate_head=True,
+            replace_pending=True,
+        )
+    )
+
+    events = app.control.list_trigger_events()
+    status_by_id = {event.id: event.status for event in events}
+    pending = app.control.list_trigger_events(
+        ListTriggerEventsRequest(statuses=(TriggerEventStatus.PENDING,))
+    )
+
+    assert manual.recorded is True
+    assert manual.event is not None
+    assert manual.event.kind is TriggerEventKind.MANUAL
+    assert manual.event.head_sha == "head-1"
+    assert status_by_id[original.id] is TriggerEventStatus.SUPERSEDED
+    assert tuple(event.id for event in pending) == (manual.event.id,)
+
+
 def test_new_trigger_supersedes_older_pending_event(
     tmp_path: Path,
     isolated_home: Path,

@@ -6,6 +6,7 @@ from codealmanac.workflows.local_jobs.models import (
     LocalJobSummary,
 )
 from codealmanac.workflows.local_status.models import LocalStatusResult
+from codealmanac.workflows.local_update.models import LocalUpdateResult
 
 
 def render_local_status(result: LocalStatusResult, json_output: bool) -> None:
@@ -81,3 +82,22 @@ def render_local_job_logs(
         return
     for event in result.events:
         print(f"{event.sequence}\t{event.kind.value}\t{event.message}")
+
+
+def render_local_update(result: LocalUpdateResult, json_output: bool) -> None:
+    if json_output:
+        print_json_model(result)
+        return
+    if not result.started:
+        print(f"local update: not started ({result.reason})")
+        if result.active_run is not None:
+            print(
+                f"active_job: {result.active_run.id} "
+                f"{result.active_run.status.value}"
+            )
+        return
+    assert result.worker is not None
+    assert result.worker.run is not None
+    print(f"local update: {result.worker.run.status.value} {result.worker.run.id}")
+    if result.worker.run.summary is not None:
+        print(f"summary: {result.worker.run.summary}")

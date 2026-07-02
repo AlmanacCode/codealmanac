@@ -116,8 +116,14 @@ selected branch policy in `~/.codealmanac/control.sqlite`, and installs local
 Git trigger hooks unless `--skip-hooks` is passed. The default delivery mode is
 `commit`; `working-tree` is the explicit no-commit mode.
 
-`local update` runs the local update pipeline now. It uses local capture and git
-state, builds a source bundle, runs the shared engine, and delivers locally.
+`local update` runs the local update pipeline now for the current checkout and
+current branch. The branch must already be configured by `local setup`.
+
+The command records a `manual` trigger event for the current HEAD, then runs the
+same local worker path used by Git hooks: source bundle, shared engine, and
+local delivery. Manual update can rerun on the same HEAD after a completed job
+because source/capture material can change without a code commit. It refuses to
+start when the branch already has a queued or running local job.
 
 ## Hidden / Private
 

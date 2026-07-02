@@ -300,7 +300,10 @@ class ControlStore:
                 recorded=False,
                 reason="branch_not_configured",
             )
-        if branch.last_triggered_head_sha == request.head_sha:
+        if (
+            branch.last_triggered_head_sha == request.head_sha
+            and not request.allow_duplicate_head
+        ):
             self.update_branch_last_seen(
                 connection,
                 branch.id,
@@ -317,12 +320,16 @@ class ControlStore:
             SET status = ?
             WHERE branch_id = ?
               AND status = ?
-              AND head_sha != ?
+              AND (
+                ? = 1
+                OR head_sha != ?
+              )
             """,
             (
                 TriggerEventStatus.SUPERSEDED.value,
                 branch.id,
                 TriggerEventStatus.PENDING.value,
+                int(request.replace_pending),
                 request.head_sha,
             ),
         )

@@ -52,6 +52,14 @@ Status: active.
 - Local default delivery mode is commit.
 - Public launch CLI should not expose `ingest` or `garden`.
 - Local public maintenance command is `codealmanac local update`.
+- `codealmanac local update` is a foreground manual update for the current
+  configured checkout and branch.
+- `codealmanac local update` records a `manual` trigger event and then runs the
+  same local worker path used by Git hook triggers.
+- Manual local update can rerun on the same HEAD because local capture/source
+  material can change without a Git commit.
+- Manual local update does not start a second job when the same branch already
+  has a queued or running local job.
 - CLI auto-update should happen without asking, using a safe background/next-run
   model.
 - Existing Python auto-update libraries must be researched before custom update

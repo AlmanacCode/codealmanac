@@ -8,8 +8,10 @@ from codealmanac.cli.render.local import (
     render_local_job_logs,
     render_local_jobs,
     render_local_status,
+    render_local_update,
 )
 from codealmanac.services.control.models import ControlDeliveryMode, ControlRunStatus
+from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.services.workspaces.roots import DEFAULT_ALMANAC_ROOT
 from codealmanac.workflows.local_jobs.requests import (
     ListLocalJobsRequest,
@@ -18,6 +20,7 @@ from codealmanac.workflows.local_jobs.requests import (
 )
 from codealmanac.workflows.local_setup.requests import RunLocalSetupRequest
 from codealmanac.workflows.local_status.requests import ReadLocalStatusRequest
+from codealmanac.workflows.local_update.requests import RunLocalUpdateRequest
 
 LOCAL_COMMANDS = frozenset(("local",))
 
@@ -29,6 +32,8 @@ def is_local_command(command: str | None) -> bool:
 def dispatch_local(args: argparse.Namespace, app: CodeAlmanac) -> int:
     if args.local_command == "status":
         return dispatch_local_status(args, app)
+    if args.local_command == "update":
+        return dispatch_local_update(args, app)
     if args.local_command == "setup":
         return dispatch_local_setup(args, app)
     if args.local_command == "jobs":
@@ -39,6 +44,17 @@ def dispatch_local(args: argparse.Namespace, app: CodeAlmanac) -> int:
 def dispatch_local_status(args: argparse.Namespace, app: CodeAlmanac) -> int:
     result = app.workflows.local_status.status(ReadLocalStatusRequest(cwd=Path.cwd()))
     render_local_status(result, json_output=args.json)
+    return 0
+
+
+def dispatch_local_update(args: argparse.Namespace, app: CodeAlmanac) -> int:
+    result = app.workflows.local_update.update(
+        RunLocalUpdateRequest(
+            cwd=Path.cwd(),
+            harness=HarnessKind(args.using),
+        )
+    )
+    render_local_update(result, json_output=args.json)
     return 0
 
 
