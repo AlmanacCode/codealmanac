@@ -442,3 +442,34 @@
   CodeAlmanac backend/local 84%, CLI/public UX 30%,
   CodeAlmanac-hosted backend/auth/API 8%, hosted frontend/onboarding 5%, and
   infra/deploy rename 5%.
+- Planned Slice 22 in
+  `docs/plans/2026-07-02-slice-22-init-runtime.md`.
+- Added `app.workflows.init` with `initialize_workspace(...)`, `run(...)`, and
+  `run_with_run(...)`.
+- Removed `app.workflows.build` and the public `codealmanac build` parser and
+  dispatcher path.
+- Added public first-build `codealmanac init` flags for harness selection,
+  foreground/background mode, `--force`, `--verbose`, `--guidance`, and
+  background JSON output.
+- Added `RunOperation.INIT` and durable init queue specs.
+- Added `RunQueueWorkflow.queue_init(...)` and
+  `RunQueueWorkflow.start_init_background(...)`.
+- Updated the hidden worker drain path so queued init jobs run through
+  `InitWorkflow.run_with_run(...)`.
+- Added init-specific mutation policy behavior:
+  `require_clean_almanac=False` allows init-created scaffold files while still
+  rejecting changes outside the configured Almanac root.
+- Updated diagnostics and starter README text from `codealmanac build` to
+  `codealmanac init`.
+- Migrated scaffold-only test setup to
+  `app.workflows.init.initialize_workspace(...)`.
+- Verified Slice 22 focused behavior with
+  `uv run pytest tests/test_init_workflow.py tests/test_cli.py tests/test_diagnostics.py tests/test_run_queue_workflow.py tests/test_runs_service.py tests/test_build_workflow.py tests/test_architecture.py`
+  (`158 passed`).
+- Verified Slice 22 full gate with `uv run pytest` (`465 passed`),
+  `uv run ruff check .`, `git diff --check`, `uv run codealmanac --help`, and
+  `uv run codealmanac init --help`.
+- Sent the Slice 22 RelayForge update and recorded progress as:
+  CodeAlmanac backend/local 87%, CLI/public UX 35%,
+  CodeAlmanac-hosted backend/auth/API 8%, hosted frontend/onboarding 5%, and
+  infra/deploy rename 5%.

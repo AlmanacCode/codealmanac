@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-02 after Slice 21 verification.
+Sent: 2026-07-02 after Slice 22 verification.
 
 Route:
 
@@ -26,8 +26,8 @@ It was not present in `codealmanac/prd` when checked.
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 84% | 83% | Slice 21 restored packaged prompt/manual resources for init-first-build, including `operations/init.md` and `manual/init.md`. |
-| CodeAlmanac CLI/public UX | 30% | 30% | No new public command in Slice 21; runtime init/build CLI behavior remains follow-up work. |
+| CodeAlmanac backend/local | 87% | 84% | Slice 22 added `InitWorkflow`, `RunOperation.INIT`, queued init specs, and shared page-run execution for first-build. |
+| CodeAlmanac CLI/public UX | 35% | 30% | `codealmanac init` is now the agent-backed first-build command and public `codealmanac build` is removed. |
 | CodeAlmanac-hosted backend/auth/API | 8% | 8% | WorkOS/Doppler setup and hosted rename groundwork exist; public API migration is not implemented yet. |
 | Hosted frontend/onboarding | 5% | 5% | Existing frontend is deployed under CodeAlmanac; new onboarding/configuration screens are not implemented yet. |
 | Infra/deploy rename | 5% | 5% | GitHub rename, Modal, Render, Vercel production deploy, and health checks were exercised; durable cleanup remains. |
