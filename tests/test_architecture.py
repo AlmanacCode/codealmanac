@@ -59,6 +59,33 @@ def test_control_service_keeps_schema_store_service_boundaries():
     assert "connection.execute" in store_text
 
 
+def test_engine_runs_service_keeps_worker_contract_boundary():
+    engine_root = SRC_ROOT / "services/engine_runs"
+    module_names = {path.name for path in engine_root.glob("*.py")}
+    models_text = (engine_root / "models.py").read_text(encoding="utf-8")
+    service_text = (engine_root / "service.py").read_text(encoding="utf-8")
+    store_text = (engine_root / "store.py").read_text(encoding="utf-8")
+
+    assert {
+        "__init__.py",
+        "models.py",
+        "requests.py",
+        "service.py",
+        "store.py",
+    } <= module_names
+    assert len(service_text.splitlines()) <= 90
+    assert "repo_path" in models_text
+    assert "sources_path" in models_text
+    assert "run_path" in models_text
+    assert "source_bundle_ref" in models_text
+    assert "request.json" in store_text
+    assert "result.json" in store_text
+    assert "connection.execute" not in store_text
+    assert "codealmanac.cli" not in service_text
+    assert "codealmanac.services.control" not in service_text
+    assert "codealmanac.services.control" not in store_text
+
+
 def test_config_service_owns_toml_imports():
     offenders = [
         path

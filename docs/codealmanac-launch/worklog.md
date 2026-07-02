@@ -165,3 +165,16 @@
 - Verified Slice 6 focused behavior with
   `uv run pytest tests/test_control_service.py tests/test_architecture.py`,
   `uv run ruff check .`, and `git diff --check`.
+- Sent the first RelayForge progress update through:
+  `doppler run --project almanac --config dev -- relayforge reply --config /Users/rohan/Desktop/Projects/relayforge/relay.config.json --binding rohan-almanac-main`.
+- Recorded launch progress percentages in `docs/codealmanac-launch/progress.md`.
+- Planned Slice 7 in
+  `docs/plans/2026-07-02-slice-7-engine-run-artifacts.md`.
+- Added `app.engine_runs` with file-backed shared engine request/result
+  artifacts under `~/.codealmanac/runs/<run-id>/`.
+- Added `EngineRunRequest`, `EngineRunResult`, typed changed-file records, and
+  commit subject validation for the `docs almanac:` style.
+- Verified Slice 7 focused behavior with
+  `uv run pytest tests/test_engine_runs_service.py tests/test_architecture.py`.
+- Verified Slice 7 full gate with `uv run pytest` (`383 passed`),
+  `uv run ruff check .`, and `git diff --check`.

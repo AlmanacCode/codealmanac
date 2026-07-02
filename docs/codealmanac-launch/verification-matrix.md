@@ -66,6 +66,18 @@ Current evidence:
   trigger `claimed`, sets `claimed_at`, creates a queued run, copies
   `head_sha` into `expected_head_sha`, and returns an empty result when no
   pending trigger exists.
+- Slice 7 added `app.engine_runs` and
+  `src/codealmanac/services/engine_runs/`.
+- `AppConfig.run_artifacts_path` defaults to `~/.codealmanac/runs`.
+- `tests/test_engine_runs_service.py` proves `request.json` and `result.json`
+  round-trip under `~/.codealmanac/runs/<run-id>/`.
+- `tests/test_engine_runs_service.py` proves `request.json` stores
+  `sources_path` and `source_bundle_ref`, not inline source/session/conversation
+  payloads.
+- `tests/test_engine_runs_service.py` proves engine result commit subjects use
+  the `docs almanac:` style.
+- `tests/test_architecture.py` proves `engine_runs` stays separate from CLI,
+  control DB, and integration concerns.
 
 Commands:
 

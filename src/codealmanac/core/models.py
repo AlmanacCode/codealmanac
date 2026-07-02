@@ -6,6 +6,7 @@ from codealmanac.core.paths import (
     default_config_path,
     default_control_db_path,
     default_registry_path,
+    default_run_artifacts_path,
 )
 
 
@@ -17,3 +18,4 @@ class AppConfig(CodeAlmanacModel):
     registry_path: Path = Field(default_factory=default_registry_path)
     config_path: Path = Field(default_factory=default_config_path)
     control_db_path: Path = Field(default_factory=default_control_db_path)
+    run_artifacts_path: Path = Field(default_factory=default_run_artifacts_path)

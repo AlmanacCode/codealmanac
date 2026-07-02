@@ -30,6 +30,8 @@ from codealmanac.services.control.ports import LocalGitStateProbe
 from codealmanac.services.control.service import ControlService
 from codealmanac.services.control.store import ControlStore
 from codealmanac.services.diagnostics.service import DiagnosticsService
+from codealmanac.services.engine_runs.service import EngineRunsService
+from codealmanac.services.engine_runs.store import EngineRunsStore
 from codealmanac.services.harnesses.ports import HarnessAdapter
 from codealmanac.services.harnesses.service import HarnessesService
 from codealmanac.services.health.service import HealthService
@@ -85,6 +87,7 @@ class CodeAlmanac:
     automation: AutomationService
     config: ConfigService
     control: ControlService
+    engine_runs: EngineRunsService
     local_hooks: LocalHooksService
     workspaces: WorkspacesService
     wiki: WikiService
@@ -126,6 +129,7 @@ def create_app(
         ControlStore(app_config.control_db_path),
         local_git_state_probe or GitLocalStateProbe(),
     )
+    engine_runs = EngineRunsService(EngineRunsStore(app_config.run_artifacts_path))
     local_hooks = LocalHooksService(
         local_git_hook_manager or FileLocalGitHookManager(),
     )
@@ -207,6 +211,7 @@ def create_app(
         automation=automation,
         config=config_service,
         control=control,
+        engine_runs=engine_runs,
         local_hooks=local_hooks,
         workspaces=workspaces,
         wiki=wiki,

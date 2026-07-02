@@ -10,21 +10,24 @@ verification, launch-folder updates, commit, and push.
 
 ## Last Completed Slice
 
-Slice 6 added trigger claiming into queued control runs.
+Slice 7 added the shared engine run artifact contract.
 
 Implemented:
 
-- `app.control.claim_next_trigger(...)`
-- pending trigger selection with optional repository/branch scope
-- trigger transition from `pending` to `claimed`
-- `claimed_at` timestamp
-- queued control run creation
-- `expected_head_sha` copied from the claimed trigger's `head_sha`
+- `AppConfig.run_artifacts_path`, defaulting to `~/.codealmanac/runs`
+- `app.engine_runs`
+- `src/codealmanac/services/engine_runs/`
+- typed `EngineRunRequest` and `EngineRunResult`
+- `request.json` and `result.json` under
+  `~/.codealmanac/runs/<run-id>/`
+- pass-by-reference source fields: `sources_path` and `source_bundle_ref`
+- `docs almanac:` commit subject validation
 
 Verified:
 
 ```text
-uv run pytest tests/test_control_service.py tests/test_architecture.py
+uv run pytest tests/test_engine_runs_service.py tests/test_architecture.py
+uv run pytest
 uv run ruff check .
 git diff --check
 ```
@@ -37,15 +40,18 @@ Choose the next substantial slice from the launch plan. Good candidates:
 - public or hidden setup command that calls `app.local_hooks`
 - local run storage bridge from repo-local job files to the control DB
 - active-run cancellation/staling when branch head changes
-- engine request/result models used by local and hosted workers
+- source bundle selection materialization for claimed runs
+- local worker workspace creation using `app.engine_runs`
+- delivery commit application from `EngineRunResult`
 
 Before coding, write the next slice plan under `docs/plans/`, then implement
-the full slice and update this brief.
+the full slice, update this brief, update `progress.md`, send a RelayForge
+progress update, commit, and push.
 
 ## Known Repo State
 
-The branch is `dev` and is behind `origin/dev` by one commit. Rebase or merge
-before pushing if Git requires it.
+The branch is `dev`. At the start of Slice 7 it was clean and even with
+`origin/dev`.
 
 The local wiki command currently fails on this checkout with:
 
