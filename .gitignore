@@ -27,3 +27,9 @@ AGENTS.md
 remotion-video/
 .agents/skills/remotion-best-practices/
 .npmrc
+
+# local research and generated analysis artifacts
+output/
+graphify-out/
+docs/research/deepwiki-codealmanac-*/
+docs/research/deepwiki-codealmanac-browser-*/
