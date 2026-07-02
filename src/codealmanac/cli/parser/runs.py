@@ -28,6 +28,11 @@ def add_runs_commands(subcommands: argparse._SubParsersAction) -> None:
     add_api_url(runs_cancel)
     runs_cancel.add_argument("--json", action="store_true")
 
+    runs_retry = runs_subcommands.add_parser("retry", help="retry one cloud run")
+    runs_retry.add_argument("run_id")
+    add_api_url(runs_retry)
+    runs_retry.add_argument("--json", action="store_true")
+
     runs_logs = runs_subcommands.add_parser("logs", help="show one cloud run log")
     runs_logs.add_argument("run_id")
     add_api_url(runs_logs)

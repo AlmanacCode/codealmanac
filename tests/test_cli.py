@@ -479,6 +479,7 @@ class CliCloudRunsClient:
         self.starts: list[tuple[int, str]] = []
         self.reads: list[UUID] = []
         self.cancels: list[UUID] = []
+        self.retries: list[UUID] = []
         self.logs: list[UUID] = []
 
     def list_repository_runs(
@@ -544,6 +545,24 @@ class CliCloudRunsClient:
             summary="cancelled by user",
             created_at=datetime(2026, 7, 2, 12, tzinfo=UTC),
             finished_at=datetime(2026, 7, 2, 12, 30, tzinfo=UTC),
+        )
+
+    def retry_run(
+        self,
+        *,
+        api_url: str,
+        cli_token: str,
+        run_id: UUID,
+    ) -> CloudRun:
+        assert cli_token == "alm_secret"
+        self.retries.append(run_id)
+        return CloudRun(
+            run_id=UUID(int=4),
+            repo_id=1,
+            source=CloudRunSource(kind="branch", label="branch main"),
+            status="running",
+            summary="retry started",
+            created_at=datetime(2026, 7, 2, 12, tzinfo=UTC),
         )
 
     def list_run_events(
@@ -1412,6 +1431,23 @@ def test_cli_cloud_runs_list_show_cancel_and_logs(
         main(
             [
                 "runs",
+                "retry",
+                str(UUID(int=2)),
+                "--api-url",
+                "https://api.example.test",
+            ]
+        )
+        == 0
+    )
+    retried = capsys.readouterr()
+    assert f"id: {UUID(int=4)}\n" in retried.out
+    assert "status: running\n" in retried.out
+    assert "summary: retry started\n" in retried.out
+
+    assert (
+        main(
+            [
+                "runs",
                 "logs",
                 str(UUID(int=2)),
                 "--api-url",
@@ -1428,6 +1464,7 @@ def test_cli_cloud_runs_list_show_cancel_and_logs(
     assert runs_client.starts == [(1, "release/1.4")]
     assert runs_client.reads == [UUID(int=2)]
     assert runs_client.cancels == [UUID(int=2)]
+    assert runs_client.retries == [UUID(int=2)]
     assert runs_client.logs == [UUID(int=2)]
 
 

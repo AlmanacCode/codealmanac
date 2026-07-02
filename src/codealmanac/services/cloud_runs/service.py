@@ -7,6 +7,7 @@ from codealmanac.services.cloud_runs.requests import (
     ListCloudRunEventsRequest,
     ListCloudRunsForRepoRequest,
     ReadCloudRunRequest,
+    RetryCloudRunRequest,
     StartCloudRunForRepoRequest,
 )
 
@@ -46,6 +47,14 @@ class CloudRunsService:
     def cancel(self, request: CancelCloudRunRequest) -> CloudRun:
         state = self.auth.require_state(CloudStatusRequest(api_url=request.api_url))
         return self.client.cancel_run(
+            api_url=request.api_url,
+            cli_token=state.token,
+            run_id=request.run_id,
+        )
+
+    def retry(self, request: RetryCloudRunRequest) -> CloudRun:
+        state = self.auth.require_state(CloudStatusRequest(api_url=request.api_url))
+        return self.client.retry_run(
             api_url=request.api_url,
             cli_token=state.token,
             run_id=request.run_id,

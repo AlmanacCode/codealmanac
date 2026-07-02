@@ -11,6 +11,7 @@ from codealmanac.workflows.cloud_runs.requests import (
     CancelCloudRunWorkflowRequest,
     ListCloudRunsRequest,
     ReadCloudRunLogRequest,
+    RetryCloudRunWorkflowRequest,
     ShowCloudRunRequest,
     StartCloudRunRequest,
 )
@@ -47,6 +48,12 @@ def dispatch_runs(args: argparse.Namespace, app: CodeAlmanac) -> int:
     if args.runs_command == "cancel":
         result = app.workflows.cloud_runs.cancel(
             CancelCloudRunWorkflowRequest(api_url=args.api_url, run_id=args.run_id)
+        )
+        render_cloud_run(result, json_output=args.json)
+        return 0
+    if args.runs_command == "retry":
+        result = app.workflows.cloud_runs.retry(
+            RetryCloudRunWorkflowRequest(api_url=args.api_url, run_id=args.run_id)
         )
         render_cloud_run(result, json_output=args.json)
         return 0

@@ -3,6 +3,7 @@ from codealmanac.services.cloud_runs.requests import (
     ListCloudRunEventsRequest,
     ListCloudRunsForRepoRequest,
     ReadCloudRunRequest,
+    RetryCloudRunRequest,
     StartCloudRunForRepoRequest,
 )
 from codealmanac.services.cloud_runs.service import CloudRunsService
@@ -20,6 +21,7 @@ from codealmanac.workflows.cloud_runs.requests import (
     CancelCloudRunWorkflowRequest,
     ListCloudRunsRequest,
     ReadCloudRunLogRequest,
+    RetryCloudRunWorkflowRequest,
     ShowCloudRunRequest,
     StartCloudRunRequest,
 )
@@ -74,6 +76,12 @@ class CloudRunsWorkflow:
     def cancel(self, request: CancelCloudRunWorkflowRequest) -> CloudRunDetailResult:
         run = self.cloud_runs.cancel(
             CancelCloudRunRequest(api_url=request.api_url, run_id=request.run_id)
+        )
+        return CloudRunDetailResult(run=run)
+
+    def retry(self, request: RetryCloudRunWorkflowRequest) -> CloudRunDetailResult:
+        run = self.cloud_runs.retry(
+            RetryCloudRunRequest(api_url=request.api_url, run_id=request.run_id)
         )
         return CloudRunDetailResult(run=run)
 
