@@ -30,6 +30,8 @@ Implemented:
   `codealmanac runs logs <run-id>`
 - pushed hosted commit
   `168f9b2 feat: add CLI run read routes`
+- pushed CodeAlmanac commit
+  `bc177cf2 feat: inspect cloud runs from CLI`
 
 Verified:
 
@@ -69,7 +71,8 @@ Pressure points:
 
 The CodeAlmanac branch is `dev`. Slice 31 is pushed to `origin/dev` at
 `f20e928d feat: expose maintenance package api`; Slice 36 is pushed to
-origin at `8ca50e0f feat: mirror cloud repository triggers in CLI`.
+origin at `8ca50e0f feat: mirror cloud repository triggers in CLI`; Slice 37
+is pushed to origin at `bc177cf2 feat: inspect cloud runs from CLI`.
 
 The hosted auth branch is
 `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`

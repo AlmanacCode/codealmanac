@@ -29,6 +29,12 @@
   (`326 passed, 1 warning`).
 - Pushed hosted commit `168f9b2 feat: add CLI run read routes` to
   `origin/codex/workos-authkit-api-foundation`.
+- Pushed CodeAlmanac commit `bc177cf2 feat: inspect cloud runs from CLI` to
+  `origin/dev`.
+- Sent the Slice 37 RelayForge update with progress as:
+  CodeAlmanac backend/local 94%, CLI/public UX 78%,
+  CodeAlmanac-hosted backend/auth/API 80%, hosted frontend/onboarding 28%, and
+  infra/deploy rename 15%.
 - Planned Slice 36 in
   `docs/plans/2026-07-02-slice-36-cloud-repo-trigger-cli.md`.
 - Added hosted CLI repository routes:
