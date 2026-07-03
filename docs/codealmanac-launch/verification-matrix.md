@@ -1284,3 +1284,11 @@ Current evidence:
   - `uv run ruff check .`
   - `python -m compileall backend/src -q`
   - `git diff --check`
+- Deploy and production smoke passed:
+  - Render deploy `dep-d93oj33rjlhs73abh3tg` is live on hosted commit
+    `a9a7ff8` (`feat: trigger source-bundle runs from branch pushes`).
+  - `https://api.codealmanac.com/api/health` and the Render service health URL
+    returned `{"status":"ok"}`.
+  - Fresh published CLI setup through real Chrome approved `/cli-login`, stored
+    auth in a temp HOME, and `whoami` returned `rohans0509` with cloud
+    `https://api.codealmanac.com`.

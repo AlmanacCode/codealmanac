@@ -423,10 +423,15 @@ repaired.
   tests (`61 passed`), broader adjacent tests (`172 passed`), full backend
   suite (`380 passed`, `1` warning), hosted ruff, compileall, and
   `git diff --check`.
+- Slice 67 is live on Render deploy `dep-d93oj33rjlhs73abh3tg` at hosted
+  commit `a9a7ff8`; canonical API health returned `{"status":"ok"}`.
+- Fresh published CLI setup was re-run through real Chrome from a temp HOME.
+  Chrome showed `CLI login approved`, setup completed as `rohans0509`, and
+  `whoami` returned cloud `https://api.codealmanac.com`.
 
 ## Next Pressure Tests
 
-- Deploy Slice 67, then run a production trigger smoke: captured source exists
+- Run a production trigger smoke: captured source exists
   for a repo/branch, enabling that branch trigger should create a
   `ConversationBatchSource` run on a qualifying push and use the branch delivery
   policy.

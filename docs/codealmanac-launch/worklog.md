@@ -1884,3 +1884,13 @@
   webhook/installation/worker/architecture tests (`172 passed`), full hosted
   backend suite (`380 passed`, `1` Starlette warning), hosted ruff,
   `python -m compileall backend/src -q`, and `git diff --check`.
+- Render deployed Slice 67 hosted commit `a9a7ff8` live as deploy
+  `dep-d93oj33rjlhs73abh3tg`; both `https://api.codealmanac.com/api/health`
+  and `https://codealmanac-backend-docker.onrender.com/api/health` returned
+  `{"status":"ok"}`.
+- Published CLI setup was re-run from fresh temp HOME
+  `/tmp/codealmanac-chrome-rerun.Q2tZan` through real Chrome. The CLI printed a
+  production `/cli-login` URL with code `DGNVDMWK`, Chrome rendered
+  `CLI login approved`, setup finished signed in as `rohans0509`, `whoami`
+  returned cloud `https://api.codealmanac.com`, and `capture status
+  --check-cloud --json` reached production with `signed_in: true`.
