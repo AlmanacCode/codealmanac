@@ -2,6 +2,43 @@
 
 ## 2026-07-03
 
+## 2026-07-03 Slice 87: Hosted package and worker namespace
+
+- Planned Slice 87 in
+  `/Users/rohan/Desktop/Projects/codealmanac-hosted/docs/plans/2026-07-03-slice-87-hosted-package-worker-namespace.md`.
+- Renamed the hosted backend package:
+  - `backend/src/almanac/` -> `backend/src/codealmanac_hosted/`
+  - `backend/modal_app/` -> `backend/src/codealmanac_hosted/worker/`
+- Updated backend imports, package discovery, Docker entrypoint, Makefile,
+  Render/Modal docs, architecture tests, live audit scripts, and migration path
+  comments to use `codealmanac_hosted`.
+- Added a real Modal smoke entrypoint. `make smoke-modal` now runs through
+  `uv` with `PYTHONPATH=src`, builds the worker image, hydrates Doppler in the
+  remote worker, and returns a small status payload without triggering a real
+  update run.
+- Focused hosted backend verification passed:
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run python -m compileall src -q`
+  - `uv run pytest tests/test_architecture_contract.py tests/test_modal_worker_contract.py -q`
+    (`92 passed`)
+- Full hosted backend verification passed:
+  - `uv run pytest -q` (`396 passed, 1 warning`)
+  - `make smoke-backend`
+  - `DOPPLER_CONFIG=prd make smoke-modal`
+  - `git diff --check`
+- Local Docker build could not run because the Docker daemon was not running.
+  Render's Docker deploy covered the Docker entrypoint against the live service.
+- Hosted commit `89d97c386900255cf4c5d33c471ec0c9f1d1ea61` was pushed to
+  `origin/codex/slice-80-hosted-convergence` and `origin/main`.
+- Render deploy `dep-d941j7m7r5hc73cd5ij0` is live on commit `89d97c3`.
+  `https://api.codealmanac.com/api/health` returned `{"status":"ok"}`.
+- Modal app `codealmanac-hosted-updates` deployed successfully from
+  `backend/src/codealmanac_hosted/worker/updates_worker.py`.
+- Vercel remains linked to project `thealmanac/codealmanac-hosted`; production
+  deployment `dpl_BNAWQDiWydrtXUXfM1D4f61FiwCB` is `Ready` and aliases
+  `www.codealmanac.com` plus `codealmanac.com`.
+
 ## 2026-07-03 Slice 82: CodeAlmanac wiki package boundary
 
 - Planned Slice 82 in

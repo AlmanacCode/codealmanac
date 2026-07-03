@@ -25,12 +25,12 @@ direction.
 ## Current Verified State
 
 - Hosted `main` includes
-  `cbe7ba5 fix(modal): run current codealmanac engine`.
+  `89d97c3 refactor(hosted): rename backend package`.
 - Render service `srv-d8g8nb37uimc739vnnsg` is live on deploy
-  `dep-d93s4im7r5hc73c8hh00`.
-- Modal app `codealmanac-hosted-updates` was redeployed after updating
-  `CODEALMANAC_GIT_REF` to the current `codealmanac` SHA. Modal image logs
-  showed `codealmanac 0.1.9`.
+  `dep-d941j7m7r5hc73cd5ij0` for commit `89d97c3`.
+- Modal app `codealmanac-hosted-updates` was redeployed from
+  `backend/src/codealmanac_hosted/worker/updates_worker.py` after the hosted
+  package rename. Modal image logs showed `codealmanac 0.1.9`.
 - Vercel production is linked to project `thealmanac/codealmanac-hosted`.
   Production deployment
   `https://codealmanac-hosted-mad8d5dhz-thealmanac.vercel.app` is aliased to
@@ -106,11 +106,33 @@ direction.
 - Slice 86 moved engine run artifacts and detached engine workspace management
   under `src/codealmanac/engine/` and added `app.engine.runs` /
   `app.engine.workspaces`.
-- The remaining CodeAlmanac cleanup is mostly hosted-facing or package-resource
-  judgment: decide whether `prompts/` / `manual/` should stay root package
-  resources, and continue the hosted package/worker/domain cleanup.
+- Slice 87 renamed hosted backend package ownership:
+  `backend/src/almanac/` -> `backend/src/codealmanac_hosted/`, and
+  `backend/modal_app/` -> `backend/src/codealmanac_hosted/worker/`.
+- The remaining cleanup is now mostly hosted-facing domain/edge work or
+  package-resource judgment: decide whether hosted `server/` should become
+  `web/`, split hosted `services/updates`, decide whether CodeAlmanac
+  `prompts/` / `manual/` should stay root package resources, and continue the
+  database cleanup.
 
 ## Last Completed Work
+
+Slice 87 creates the hosted package and worker namespace:
+
+- `backend/src/almanac/` moved to `backend/src/codealmanac_hosted/`
+- `backend/modal_app/` moved to `backend/src/codealmanac_hosted/worker/`
+- Docker, Makefile, Render, Modal, live-audit scripts, tests, and docs now use
+  `codealmanac_hosted`
+- Modal smoke now has a real remote `smoke_worker` and runs through
+  `PYTHONPATH=src uv run modal`
+- hosted commit `89d97c3` is on `origin/main`
+- focused verification passed (`92 passed`)
+- full hosted backend verification passed (`396 passed, 1 warning`)
+- `make smoke-backend`, `DOPPLER_CONFIG=prd make smoke-modal`, and
+  `git diff --check` passed
+- Render deploy `dep-d941j7m7r5hc73cd5ij0` is live on commit `89d97c3`
+- Modal `codealmanac-hosted-updates` deployed successfully from the new worker
+  path
 
 Slice 86 creates the CodeAlmanac engine runtime facade:
 

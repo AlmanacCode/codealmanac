@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-03 after Slice 86 CodeAlmanac engine runs/workspaces.
+Sent: 2026-07-03 after Slice 87 hosted package/worker namespace.
 
 Route:
 
@@ -19,13 +19,14 @@ doppler run --project almanac --config dev -- \
   --binding rohan-almanac-main "..."
 ```
 
-Slice 86 moved engine run artifacts into `src/codealmanac/engine/runs/` and
-detached engine workspace management into `src/codealmanac/engine/workspaces/`.
-The composition root now has `app.engine.runs` and `app.engine.workspaces`, and
-local run preparation/execution/delivery are wired through that engine facade.
-Focused verification passed with `96 passed`; full local verification passed
-with `uv run ruff check src tests`, `uv run pytest -q --tb=short`
-(`514 passed`), and `git diff --check`.
+Slice 87 renamed hosted backend package ownership from `almanac` to
+`codealmanac_hosted`, moved the Modal worker from `backend/modal_app/` to
+`backend/src/codealmanac_hosted/worker/`, and pushed hosted commit `89d97c3` to
+`main`. Verification passed with backend ruff, format check, compileall,
+architecture/worker focused tests (`92 passed`), full backend tests
+(`396 passed, 1 warning`), `make smoke-backend`, `make smoke-modal`, and
+`git diff --check`. Render deploy `dep-d941j7m7r5hc73cd5ij0` is live on commit
+`89d97c3`; Modal app `codealmanac-hosted-updates` deployed successfully.
 
 ## Latest Local Notes
 
@@ -57,16 +58,21 @@ with `uv run ruff check src tests`, `uv run pytest -q --tb=short`
   model-worker request/result artifacts now live under `src/codealmanac/engine/runs/`,
   detached engine workspaces live under `src/codealmanac/engine/workspaces/`,
   and local run workflows use the `app.engine` facade.
+- Slice 87 implemented the hosted package/worker namespace cleanup:
+  `backend/src/almanac/` is now `backend/src/codealmanac_hosted/`, Modal worker
+  code is now `backend/src/codealmanac_hosted/worker/`, Render is live on
+  commit `89d97c3`, and Modal `codealmanac-hosted-updates` deployed at the new
+  path.
 
 ## Percentages
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 100% | 99.9% | Slice 86 moved engine run artifacts/workspaces under `src/codealmanac/engine/`, added the `app.engine` facade, and passed focused/full gates. |
+| CodeAlmanac backend/local | 100% | 100% | No CodeAlmanac runtime change in Slice 87; Slice 86 remains the latest local backend evidence. |
 | CodeAlmanac CLI/public UX | 100% | 100% | Published CLI `0.1.9` passed public install smoke; root uninstall is now scoped to setup-owned artifacts, while automation teardown remains explicit. |
-| CodeAlmanac-hosted backend/auth/API | 100% | 100% | Slice 75 added production `/v1/repositories`; production repo list and repo status pass without per-repo permission fanout. |
+| CodeAlmanac-hosted backend/auth/API | 100% | 100% | Slice 87 renamed the hosted backend package to `codealmanac_hosted`, moved the worker under it, and passed full backend tests plus Render/Modal live checks. |
 | Hosted frontend/onboarding | 100% | 99% | Slice 76 shipped repository readiness, capture handoff, maintained branches, and per-branch delivery to Vercel; Chrome verified production with no console errors. |
-| Infra/deploy rename | 100% | 99% | Vercel now targets `thealmanac/codealmanac-hosted`, Render health is live, and Modal `codealmanac-hosted-updates` was redeployed with current `codealmanac` `0.1.9` engine logs. |
+| Infra/deploy rename | 100% | 100% | Vercel targets `thealmanac/codealmanac-hosted`, Render deploy `dep-d941j7m7r5hc73cd5ij0` is live on `89d97c3`, and Modal `codealmanac-hosted-updates` deployed from the new worker path. |
 
 ## Update Rule
 

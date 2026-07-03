@@ -22,6 +22,8 @@ Do not start broad moves until this map is stable.
 
 ## Slice B: Hosted Package Rename and Edge Split
 
+Status: partially complete.
+
 Goal:
 
 ```text
@@ -31,6 +33,18 @@ server -> codealmanac_hosted/web
 ```
 
 This is high blast radius but mostly mechanical.
+
+Completed in Slice 87:
+
+- `backend/src/almanac/` -> `backend/src/codealmanac_hosted/`
+- `backend/modal_app/` -> `backend/src/codealmanac_hosted/worker/`
+- Render and Modal deploy surfaces point at `codealmanac_hosted`
+
+Remaining:
+
+- decide whether the FastAPI edge should stay `server/` or become `web/`
+- if it becomes `web/`, do it as a separate behavior-preserving edge rename
+  after the package rename has settled
 
 Tests:
 
