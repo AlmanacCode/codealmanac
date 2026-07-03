@@ -127,6 +127,8 @@ Slice 59 fixes the CLI auth/setup contract:
   while reading old `token` files for migration
 - README and public-contract tests now describe the cloud-first setup plus the
   explicit `local` surface
+- GitHub Actions publish run `28640955934` published `codealmanac` `0.1.1` to
+  PyPI, and a fresh PyPI install verified the released CLI
 
 ## Current Repo State
 
@@ -134,14 +136,18 @@ CodeAlmanac:
 
 - repo: `/Users/rohan/Desktop/Projects/codealmanac`
 - branch: `dev`
-- current launch-docs commit after Slice 58 docs:
-  `dfc4ea478b0164144d668258dcd9dc3f2cd722b3`
-- `origin/dev` and `origin/main` both point at
-  `dfc4ea478b0164144d668258dcd9dc3f2cd722b3`
+- published Slice 59 artifact commit:
+  `571dedb7 fix(slice-59): align public docs contract`
+- later docs-only checkpoint commits may sit on top of that artifact commit;
+  do not assume rerunning the publish workflow for `0.1.1` is valid because
+  PyPI already has that version
 - package version in `pyproject.toml`: `0.1.1`
-- PyPI live version checked on 2026-07-02: `0.1.0`
-- Slice 59 is verified locally and pending commit/publish from this working
-  tree.
+- PyPI live version checked on 2026-07-03: `0.1.1`
+- Slice 59 is published and verified from a fresh PyPI install.
+- Local working tree note at handoff: a large `README.md` rewrite,
+  `docs/assets/`, and
+  `docs/plans/2026-07-03-github-webhook-contract-hardening.md` were
+  uncommitted and not part of the released `0.1.1` artifact.
 
 Hosted:
 
@@ -223,6 +229,10 @@ repaired.
   `uvx twine check dist/*`, isolated wheel install through `uv tool install`,
   installed `codealmanac --version` (`0.1.1`), and installed setup JSON showed
   `automation_mode: "none"`.
+- Slice 59 publish verification passed: GitHub Actions run `28640955934`
+  succeeded, PyPI JSON/simple index exposed `0.1.1`, and
+  `uv tool install --python 3.12 --no-cache codealmanac==0.1.1` installed a
+  CLI whose root setup JSON still showed `automation_mode: "none"`.
 
 ## Next Pressure Tests
 

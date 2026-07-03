@@ -1621,3 +1621,23 @@
   database is up to date.
 - `supabase migration list --linked` hit a temp-role SASL auth retry after the
   dry-run; the dry-run is the schema verification used for this reset.
+- Fixed the Slice 59 publish failure from GitHub Actions run `28640593179`.
+  The workflow failed because README public-contract tests still expected the
+  old local-first section names after the cloud-first README rewrite.
+- Commit `571dedb7 fix(slice-59): align public docs contract` updates the
+  README, `docs/concepts.md`, and public-contract assertions so root
+  `codealmanac setup` stays cloud-only and local automation stays behind the
+  explicit local/automation surface.
+- Verified CodeAlmanac locally after the fix with `uv run pytest -q`
+  (`499 passed`), `uv run ruff check .`, `git diff --check`,
+  `uv build --out-dir dist`, `uvx twine check dist/*`, and isolated wheel
+  install from `dist/`.
+- Pushed `571dedb7` to CodeAlmanac `origin/dev` and `origin/main`.
+- GitHub Actions publish run `28640955934` succeeded on `main` for version
+  `0.1.1`; both the build job and PyPI publish job completed.
+- Verified PyPI JSON and simple index expose `codealmanac` `0.1.1` with the
+  wheel and sdist.
+- Verified a fresh public install with
+  `UV_TOOL_DIR=<tmp> UV_TOOL_BIN_DIR=<tmp> uv tool install --python 3.12 --no-cache codealmanac==0.1.1`;
+  the installed executable returned `0.1.1`, and installed setup JSON showed
+  `automation_mode: "none"` with `automation: []`.
