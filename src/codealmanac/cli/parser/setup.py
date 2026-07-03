@@ -7,6 +7,11 @@ SETUP_HELP = "set up CodeAlmanac cloud and local agent instructions"
 
 
 def add_setup_commands(subcommands: argparse._SubParsersAction) -> None:
+    add_setup_command(subcommands)
+    add_uninstall_command(subcommands)
+
+
+def add_setup_command(subcommands: argparse._SubParsersAction) -> None:
     setup = subcommands.add_parser("setup", help=SETUP_HELP)
     add_api_url(setup)
     setup.add_argument(
@@ -41,6 +46,8 @@ def add_setup_commands(subcommands: argparse._SubParsersAction) -> None:
     )
     setup.add_argument("--json", action="store_true")
 
+
+def add_uninstall_command(subcommands: argparse._SubParsersAction) -> None:
     uninstall = subcommands.add_parser(
         "uninstall",
         help="remove setup-owned local artifacts",

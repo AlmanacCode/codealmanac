@@ -2,6 +2,37 @@
 
 ## 2026-07-03
 
+## 2026-07-03 Slice 78: Root cloud status
+
+- Planned Slice 78 in
+  `docs/plans/2026-07-03-slice-78-root-cloud-status.md`.
+- Added public `codealmanac status [--api-url URL] [--check-cloud] [--json]`.
+  The command validates the stored cloud identity, resolves the current checkout
+  to a cloud repository when signed in, and always reports local capture state.
+- Added `workflows/cloud_status` as a typed aggregate over existing
+  `CloudAuthService`, `CloudRepoWorkflow`, and `CloudCaptureService` status
+  providers. The CLI edge renders that aggregate; it does not duplicate repo or
+  capture status logic.
+- Root help now lists `status` directly after `setup` and before `uninstall`.
+- Updated README and CLI contract docs so `status` is part of the launch
+  cloud-first public surface.
+- Bumped the Python package version from `0.1.7` to `0.1.8`.
+- Focused local verification passed:
+  - `uv run pytest tests/test_cli.py::test_cli_root_status_reports_cloud_repo_and_capture tests/test_cli.py::test_cli_root_status_json_reports_signed_out_capture tests/test_cli.py::test_cli_help_is_cloud_first_and_hides_compatibility_commands tests/test_public_contract.py -q`
+    (`29 passed`)
+  - `uv run pytest tests/test_cli.py tests/test_public_contract.py -q`
+    (`88 passed`)
+  - `uv run ruff check src/codealmanac/cli src/codealmanac/workflows/cloud_status src/codealmanac/app.py tests/test_cli.py tests/test_public_contract.py`
+  - `git diff --check`
+- Distribution verification passed:
+  - `rm -rf dist && uv build --out-dir dist`
+  - `uvx twine check dist/*`
+  - isolated Python `3.12.9` venv installed
+    `dist/codealmanac-0.1.8-py3-none-any.whl`
+  - wheel smoke returned `codealmanac --version` = `0.1.8`
+  - wheel smoke showed root `status` in cloud-first help
+  - wheel smoke rendered signed-out human and JSON `codealmanac status` output
+
 ## 2026-07-03 Slice 77: CLI launch surface polish
 
 - Planned Slice 77 in

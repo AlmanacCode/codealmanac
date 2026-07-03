@@ -27,8 +27,8 @@ repository, written for your agents, and kept up to date from the work itself.
 - Default repo wiki root: `almanac/`
 - Custom repo wiki roots: any safe repo-relative directory via `--root`
 - User state root: `~/.codealmanac/`
-- Cloud commands: `setup`, `login`, `whoami`, `logout`, `capture`, `repo`,
-  and `runs`
+- Cloud commands: `setup`, `status`, `login`, `whoami`, `logout`,
+  `capture`, `repo`, and `runs`
 - Local commands live under `local`
 
 ## Get started
@@ -51,6 +51,7 @@ delivered back to the repo as commits or pull requests:
 
 ```bash
 codealmanac setup           # GitHub sign-in + agent instructions
+codealmanac status          # cloud identity, repo, and capture status
 codealmanac capture enable  # capture Codex/Claude sessions as source
 codealmanac repo setup      # configure the current repo in the browser
 ```
@@ -140,6 +141,7 @@ need no credentials.
 | `codealmanac` | Open the cloud wiki for the current checkout. |
 | `codealmanac open` | Open the cloud wiki for the current checkout. |
 | `codealmanac setup` | Cloud sign-in plus agent instructions. |
+| `codealmanac status` | Show cloud identity, current repo, and capture status. |
 | `codealmanac login` / `whoami` / `logout` | Manage cloud auth. |
 | `codealmanac capture status` | Show Codex/Claude capture status. |
 | `codealmanac capture enable --target codex` | Enable Codex session capture. |

@@ -31,6 +31,7 @@ README_REQUIRED_FRAGMENTS = (
     "Manual install: `uv tool install --python 3.12 codealmanac`",
     "codealmanac setup           # GitHub sign-in + agent instructions",
     "codealmanac setup --no-browser",
+    "codealmanac status",
     "codealmanac login",
     "codealmanac whoami",
     "codealmanac capture status",
@@ -53,7 +54,7 @@ README_REQUIRED_FRAGMENTS = (
     "Local schedules\nstay behind explicit local or automation commands.",
     "codealmanac uninstall --yes",
     "codealmanac uninstall --yes\n--keep-automation",
-    "Cloud commands: `setup`, `login`, `whoami`, `logout`, `capture`, `repo`,",
+    "Cloud commands: `setup`, `status`, `login`, `whoami`, `logout`,",
     "uv tool dir --bin",
 )
 

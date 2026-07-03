@@ -150,6 +150,18 @@ Setup output now uses the OpenAlmanac ANSI banner constants, diamond step
 markers, and boxed `Next steps` renderer instead of a generic Rich-styled
 layout. JSON output is unchanged.
 
+Implemented in Slice 78:
+
+```text
+codealmanac status [--api-url URL] [--check-cloud] [--json]
+```
+
+Root status is a cloud-first diagnostic aggregate. It validates the stored cloud
+identity, resolves the current checkout to a cloud repository only when signed
+in, and always reports local capture state. Plain status does not call remote
+capture credential APIs; `--check-cloud` adds that check when the CLI is signed
+in. It is read-only and does not install, repair, trigger, or deliver anything.
+
 ## Cloud Repo Configuration
 
 ```text

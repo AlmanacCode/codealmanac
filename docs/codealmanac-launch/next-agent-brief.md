@@ -41,6 +41,9 @@ cloud setup flow.
   `HOME`: `codealmanac login --force --no-browser` printed a fresh
   `/cli-login` URL, Chrome showed `CLI login approved`, `whoami` succeeded, and
   `repo status` resolved `AlmanacCode/codealmanac` on `dev` with `triggers: 3`.
+- Slice 78 added root `codealmanac status` in local code and bumped the package
+  to `0.1.8`. Local tests and wheel smoke pass; publish/public install evidence
+  should be recorded after the commit lands on `main`.
 - Fresh production branch push created run
   `773da5fb-9871-4f83-8797-ddf651c635ce`; it delivered with summary
   `No wiki changes made.`

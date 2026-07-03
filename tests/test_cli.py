@@ -1308,6 +1308,111 @@ def test_cli_capture_enable_status_hook_and_disable(
     assert capture_client.revoked == ["cap_secret"]
 
 
+def test_cli_root_status_reports_cloud_repo_and_capture(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    auth_client = CliCloudAuthClient()
+    capture_client = CliCloudCaptureClient()
+    repositories_client = CliCloudRepositoriesClient()
+    app = create_app(
+        AppConfig(
+            auth_path=isolated_home / ".codealmanac/auth.json",
+            capture_path=isolated_home / ".codealmanac/capture.json",
+            capture_events_path=isolated_home / ".codealmanac/capture-events",
+        ),
+        cloud_auth_client=auth_client,
+        cloud_capture_client=capture_client,
+        cloud_repositories_client=repositories_client,
+        browser_opener=CliBrowserOpener(),
+        local_repository_probe=CliLocalRepositoryProbe(local_repository_state(repo)),
+    )
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert (
+        main(
+            [
+                "login",
+                "--api-url",
+                "https://api.example.test",
+                "--timeout",
+                "0",
+                "--poll-every",
+                "0",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "capture",
+                "enable",
+                "--target",
+                "codex",
+                "--api-url",
+                "https://api.example.test",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "status",
+                "--check-cloud",
+                "--api-url",
+                "https://api.example.test",
+            ]
+        )
+        == 0
+    )
+    output = capsys.readouterr()
+
+    assert "Cloud: signed in as rohans0509\n" in output.out
+    assert "Repository: AlmanacCode/codealmanac dev\n" in output.out
+    assert "Triggers: 1\n" in output.out
+    assert "Capture: credential installed\n" in output.out
+    assert "Providers: codex\n" in output.out
+    assert "Capture cloud credentials: 1 active\n" in output.out
+    assert repositories_client.resolves == ["AlmanacCode/codealmanac"]
+    assert repositories_client.lists == [1]
+
+
+def test_cli_root_status_json_reports_signed_out_capture(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    app = create_app(
+        AppConfig(
+            auth_path=isolated_home / ".codealmanac/auth.json",
+            capture_path=isolated_home / ".codealmanac/capture.json",
+            capture_events_path=isolated_home / ".codealmanac/capture-events",
+        )
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert main(["status", "--api-url", "https://api.example.test", "--json"]) == 0
+    status = json.loads(capsys.readouterr().out)
+
+    assert status["auth"]["authenticated"] is False
+    assert status["auth"]["api_url"] == "https://api.example.test"
+    assert status["repo"] is None
+    assert status["capture"]["signed_in"] is False
+    assert status["capture"]["credential_present"] is False
+
+
 def test_cli_repo_status_triggers_and_delivery(
     tmp_path: Path,
     isolated_home: Path,
@@ -2266,8 +2371,10 @@ def test_cli_help_is_cloud_first_and_hides_compatibility_commands(capsys):
     output = capsys.readouterr()
     assert exit_info.value.code == 0
     assert "CodeAlmanac wikis for GitHub repositories" in output.out
-    assert output.out.index("setup") < output.out.index("local")
-    assert output.out.index("repo") < output.out.index("local")
+    assert output.out.index("\n    setup") < output.out.index("\n    local")
+    assert output.out.index("\n    setup") < output.out.index("\n    status")
+    assert output.out.index("\n    status") < output.out.index("\n    local")
+    assert output.out.index("\n    repo") < output.out.index("\n    local")
     assert "serve" in output.out
     assert "automation" in output.out
     assert "jobs" not in output.out
@@ -2278,6 +2385,7 @@ def test_cli_help_is_cloud_first_and_hides_compatibility_commands(capsys):
 
     parser.parse_args(["sync", "status"])
     parser.parse_args(["jobs"])
+    parser.parse_args(["status"])
 
 
 def test_cli_lifecycle_dev_commands_are_hidden_from_public_parser():

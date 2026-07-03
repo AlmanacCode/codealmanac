@@ -40,6 +40,15 @@ Current evidence:
   `28670450240`. A fresh public install with `uv tool install --python 3.12
   --refresh --no-cache --force codealmanac==0.1.7` returned version `0.1.7`,
   showed the cloud-first root help, and rendered the new setup output.
+- Slice 78 added root `codealmanac status`. Local tests prove signed-in status
+  aggregates validated cloud identity, current checkout repository, trigger
+  count, local capture credential, providers, and optional remote capture
+  credentials. Signed-out JSON status returns `auth.authenticated=false`,
+  `repo=null`, and local capture state without calling repo APIs.
+- Slice 78 wheel smoke installed
+  `dist/codealmanac-0.1.8-py3-none-any.whl` into an isolated Python `3.12.9`
+  venv. The binary returned version `0.1.8`, showed `status` in root help, and
+  rendered signed-out human and JSON `codealmanac status` output.
 - `tests/test_cloud_auth_service.py` proves `~/.codealmanac/auth.json`
   save/load/delete behavior, mode `0600`, malformed-file recovery, identity
   fetch, and logout.

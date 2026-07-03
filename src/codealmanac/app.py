@@ -105,6 +105,7 @@ from codealmanac.workflows.cloud_login.ports import BrowserOpener, CloudLoginInt
 from codealmanac.workflows.cloud_open import CloudOpenWorkflow
 from codealmanac.workflows.cloud_repo import CloudRepoWorkflow
 from codealmanac.workflows.cloud_runs import CloudRunsWorkflow
+from codealmanac.workflows.cloud_status import CloudStatusWorkflow
 from codealmanac.workflows.garden.service import GardenWorkflow
 from codealmanac.workflows.ingest.service import IngestWorkflow
 from codealmanac.workflows.init.service import InitWorkflow
@@ -134,6 +135,7 @@ class CodeAlmanacWorkflows:
     cloud_open: CloudOpenWorkflow
     cloud_repo: CloudRepoWorkflow
     cloud_runs: CloudRunsWorkflow
+    cloud_status: CloudStatusWorkflow
     init: InitWorkflow
     ingest: IngestWorkflow
     garden: GardenWorkflow
@@ -367,6 +369,11 @@ def create_app(
         cloud_runs,
         cloud_repo,
     )
+    cloud_status = CloudStatusWorkflow(
+        cloud_auth,
+        cloud_repo,
+        capture,
+    )
     local_status = LocalStatusWorkflow(
         control,
         resolved_local_repository_probe,
@@ -415,6 +422,7 @@ def create_app(
         cloud_open=cloud_open,
         cloud_repo=cloud_repo,
         cloud_runs=cloud_runs_workflow,
+        cloud_status=cloud_status,
         init=init,
         ingest=ingest,
         garden=garden,
