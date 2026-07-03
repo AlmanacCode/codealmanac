@@ -31,6 +31,13 @@
   - wheel smoke showed cloud-first root help with hidden `sync` / `jobs`
   - wheel smoke rendered the OpenAlmanac-style setup output with boxed
     `Next steps`
+- Published `codealmanac` `0.1.7` to PyPI through GitHub Actions run
+  `28670450240`. The run passed tests, lint, diff hygiene, build, Twine
+  checks, artifact upload, and PyPI upload.
+- Fresh public install smoke passed after bypassing the immediate PyPI index
+  cache with `uv tool install --python 3.12 --refresh --no-cache --force
+  codealmanac==0.1.7`. The installed binary returned version `0.1.7`, showed
+  cloud-first root help, and rendered the OpenAlmanac-style setup output.
 - Chrome production CLI-login retry passed from an isolated temp `HOME`.
   `codealmanac login --force --no-browser` printed a fresh
   `https://www.codealmanac.com/cli-login` URL, Chrome rendered

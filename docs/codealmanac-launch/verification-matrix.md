@@ -36,6 +36,10 @@ Current evidence:
 - Slice 77 CLI launch-surface verification proved root help is cloud-first,
   hidden compatibility parsers still parse `sync status` and `jobs`, and
   `setup --yes` stays in prompt-mode instead of silently opening the browser.
+- Slice 77 published PyPI `codealmanac` `0.1.7` through GitHub Actions run
+  `28670450240`. A fresh public install with `uv tool install --python 3.12
+  --refresh --no-cache --force codealmanac==0.1.7` returned version `0.1.7`,
+  showed the cloud-first root help, and rendered the new setup output.
 - `tests/test_cloud_auth_service.py` proves `~/.codealmanac/auth.json`
   save/load/delete behavior, mode `0600`, malformed-file recovery, identity
   fetch, and logout.

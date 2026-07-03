@@ -33,6 +33,10 @@ cloud setup flow.
   root help is cloud-first, `sync` and `jobs` are hidden compatibility
   entrypoints, setup uses OpenAlmanac-style output, and `setup --yes` no longer
   silently opens a browser.
+- PyPI `codealmanac` `0.1.7` is published from GitHub Actions run
+  `28670450240`; a fresh public `uv tool install --python 3.12 --refresh
+  --no-cache --force codealmanac==0.1.7` smoke passed for version, help, and
+  setup output.
 - Chrome verified the production CLI-login loop again from an isolated temp
   `HOME`: `codealmanac login --force --no-browser` printed a fresh
   `/cli-login` URL, Chrome showed `CLI login approved`, `whoami` succeeded, and
@@ -617,7 +621,13 @@ repaired.
 - Distribution gates passed: `uv build --out-dir dist`, `uvx twine check
   dist/*`, and an isolated Python `3.12.9` wheel install smoke for version,
   root help, and setup output.
+- GitHub Actions publish run `28670450240` published `codealmanac` `0.1.7`
+  to PyPI.
+- Fresh public install smoke passed with `uv tool install --python 3.12
+  --refresh --no-cache --force codealmanac==0.1.7`; the installed binary
+  returned `0.1.7`, showed cloud-first root help, and rendered the new setup
+  output.
 - Chrome production retry passed for `/cli-login`, `whoami`, `repo status`,
   and `/setup`, with no console errors on `/setup`.
-- Remaining work for the slice: publish `0.1.7` to PyPI through GitHub
-  Actions, smoke a fresh public install, then send the RelayForge update.
+- Remaining work for the slice: send the RelayForge update and continue into
+  the next substantial slice.
