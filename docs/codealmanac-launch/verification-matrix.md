@@ -103,6 +103,28 @@ Current evidence:
   abuse-control work before broad public scale, but current launch verification
   should not claim `429` behavior for auth, capture, run-start, or wiki-read
   endpoints.
+- Slice 74 handled upstream GitHub provider rate limits, not product abuse
+  limits. Production `codealmanac repo status` reached `/v1/repositories/resolve`
+  with a valid CLI token, then GitHub returned HTTP 403 with
+  `API rate limit exceeded` from the collaborator permission endpoint.
+- Hosted backend now maps GitHub `403/429` rate-limit responses to
+  provider-unavailable behavior. Focused hosted tests prove rate-limit mapping,
+  account-scoped provider failures, repository permission provider failures,
+  identity token-refresh behavior, and API error envelopes.
+- Slice 74 then removed the user-token hot path for repo-scoped authorization.
+  A live `codealmanac/prd` probe proved the GitHub App installation token can
+  read collaborator permission for `AlmanacCode/codealmanac` and `rohans0509`,
+  returning `admin`. Repository authorization now uses the repo installation
+  token, and account-scoped repo detail no longer calls the user-installations
+  lookup path.
+- Production retry after Render deploy `dep-d93s4im7r5hc73c8hh00` passed:
+  `codealmanac repo status` returned repo id `1212149375`, account id
+  `264516179`, branch `dev`, and `triggers: 3`. `codealmanac repo triggers
+  list`, `codealmanac capture status --check-cloud --json`, and
+  `https://api.codealmanac.com/api/health` also passed.
+- Gap: PyPI `0.1.5` does not expose `codealmanac repos list`; invoking it
+  returns an invalid-command error. Do not promise that command until the CLI
+  surface decision is made and implemented.
 - Slice 29 added capture-token upload routes:
   `POST /v1/capture/artifacts` and `POST /v1/capture/turns`.
 - `backend/tests/test_capture_upload_api_contract.py` proves capture tokens can

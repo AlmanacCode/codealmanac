@@ -2085,3 +2085,55 @@
 - Chrome verified production
   `/dashboard/local-agent-access?smoke=slice73` contains the same corrected
   setup/capture split.
+
+## Slice 74 GitHub Rate-Limit Provider Errors
+
+- Chrome + fresh public CLI retry proved WorkOS/AuthKit and CLI token auth work:
+  `codealmanac setup --no-browser --yes` approved through
+  `https://www.codealmanac.com/cli-login`, saved a CLI token, and
+  `codealmanac whoami` returned `Signed in as rohans0509`.
+- The same fresh token reproduced the remaining failure:
+  `codealmanac repo status` returned a backend 500 with ref `ca12707cb1e4`.
+- Render logs for `ca12707cb1e4` showed GitHub returning HTTP 403 with
+  `API rate limit exceeded` from
+  `/repos/AlmanacCode/codealmanac/collaborators/rohans0509/permission`.
+- Hosted backend now maps GitHub `403/429` rate-limit responses to
+  `GitHubUnavailable`, then repository/account services surface
+  `ProviderUnavailable` instead of leaking raw integration failures as 500s.
+- Focused hosted verification passed:
+  - `uv run pytest tests/test_github_errors_contract.py tests/test_repositories_contract.py tests/test_accounts_contract.py tests/test_identity_service_contract.py tests/test_api_error_contract.py`
+    (`31 passed, 1 warning`)
+  - `uv run ruff check` on touched hosted backend files
+  - hosted `git diff --check`
+- Hosted commit `f12d2fa4d1f2b8c07b331b2576be7e281af593f3` was pushed to
+  hosted `origin/codex/slice-74-github-rate-limit` and hosted `origin/main`.
+- Render deploy `dep-d93rvauk1jcs73e45dsg` went live from that commit.
+- Post-deploy retry changed the user-visible failure from a backend 500 to a
+  clean `502 provider_unavailable`, proving the error-envelope fix but also
+  showing the hot path still depended on rate-limited GitHub user OAuth calls.
+- Live GitHub probe against `codealmanac/prd` proved the GitHub App
+  installation token can read collaborator permission for
+  `AlmanacCode/codealmanac` and `rohans0509`; it returned `admin`.
+- Repository authorization now uses the repo's GitHub App installation token
+  for collaborator-permission checks. Account-scoped repo detail no longer
+  calls the user-installations lookup path.
+- Additional focused hosted verification passed:
+  - `uv run pytest tests/test_repositories_contract.py tests/test_cli_repositories_api_contract.py tests/test_github_errors_contract.py tests/test_accounts_contract.py tests/test_identity_service_contract.py tests/test_api_error_contract.py`
+    (`36 passed, 1 warning`)
+  - `uv run ruff check src/almanac/services/repositories/service.py tests/test_repositories_contract.py`
+  - hosted `git diff --check`
+- Hosted commit `45b3e054093368941f4e875bff8f0b3ec5fe71df` was pushed to
+  hosted `origin/codex/slice-74-github-rate-limit` and hosted `origin/main`.
+- Render deploy `dep-d93s4im7r5hc73c8hh00` went live from `45b3e05`.
+- Production CLI retry passed from a fresh `HOME`:
+  `codealmanac repo status` returned `AlmanacCode/codealmanac`, repo id
+  `1212149375`, account id `264516179`, branch `dev`, and `triggers: 3`.
+- Adjacent production CLI smoke passed:
+  - `codealmanac repo triggers list` returned the two disabled smoke branches
+    plus disabled `main`, all with commit delivery.
+  - `codealmanac capture status --check-cloud --json` returned signed-in cloud
+    state and no capture credential.
+  - `https://api.codealmanac.com/api/health` returned `{"status":"ok"}`.
+- Gap found during adjacent smoke: `codealmanac repos list` is not currently a
+  valid public CLI command in PyPI `0.1.5`; the command surface needs a decision
+  before docs or onboarding promise it.
