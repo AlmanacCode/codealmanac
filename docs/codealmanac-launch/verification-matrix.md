@@ -1292,3 +1292,43 @@ Current evidence:
   - Fresh published CLI setup through real Chrome approved `/cli-login`, stored
     auth in a temp HOME, and `whoami` returned `rohans0509` with cloud
     `https://api.codealmanac.com`.
+
+## Slice 68 Production Branch Trigger Smoke
+
+- Chrome verified signed-in production `/setup` for `rohans0509` and the
+  production repository dashboard for `AlmanacCode/codealmanac`.
+- Production GitHub App `push` webhook delivery is enabled.
+- Hosted commit `03c57f8` fixed branch pushes incorrectly mapping to first-wiki
+  initialization by introducing `InitialWikiSource` and mapping `BranchSource`
+  to CodeAlmanac ingest.
+- Hosted commit `eb8dba0` fixed branch-source worker checkout determinism:
+  branch-like runs now checkout the exact run `head_sha` and fetch
+  `before_sha` so `git:range:<before>..<head>` can be evaluated in the Modal
+  workspace.
+- Verification passed for `eb8dba0`:
+  - `uv run pytest tests/test_github_checkout_contract.py tests/test_modal_worker_contract.py -q`
+    (`23 passed`)
+  - `uv run pytest tests/test_architecture_contract.py tests/test_github_checkout_contract.py tests/test_modal_worker_contract.py tests/test_updates_contract.py tests/test_repositories_api_contract.py tests/test_cli_runs_api_contract.py -q`
+    (`165 passed`, `1` Starlette warning)
+  - `uv run ruff check src modal_app tests/test_github_checkout_contract.py tests/test_modal_worker_contract.py`
+  - real Git fetch-by-SHA smoke for the exact smoke `before_sha` and `head_sha`
+- Deploy and production smoke passed:
+  - Render deploy `dep-d93pp0eq1p3s73cuomp0` is live on hosted commit
+    `eb8dba042c80ed573ad53399f002126d2e14bc29`.
+  - Modal app `codealmanac-hosted-updates` was redeployed after the checkout
+    fix.
+  - Disposable branch push created run
+    `773da5fb-9871-4f83-8797-ddf651c635ce` with immutable source range
+    `d11d29b96dbfe334b2d9cb99fa5aafcc7893d98a..23a0a03209ff1804944eb094f589647dc13de47b`.
+  - The run delivered with summary `No wiki changes made.`
+  - Chrome refreshed the production dashboard and showed the delivered run at
+    the top.
+  - Cleanup completed: smoke trigger disabled, temp capture credential revoked,
+    remote smoke branch deleted, temp worktree removed.
+
+Known residue:
+
+- Older failed smoke runs remain visible and should be treated as historical
+  evidence.
+- Conversation-batch run `aeb55370-cbdd-4ded-af6a-5e0e22f0ef0a` is still
+  marked `running` from a stale pre-fix Modal image.

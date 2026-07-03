@@ -1894,3 +1894,31 @@
   `CLI login approved`, setup finished signed in as `rohans0509`, `whoami`
   returned cloud `https://api.codealmanac.com`, and `capture status
   --check-cloud --json` reached production with `signed_in: true`.
+- Slice 68 production branch-trigger smoke passed after two worker fixes.
+  Chrome verified signed-in `/setup` and the production repository dashboard
+  for `AlmanacCode/codealmanac`. GitHub App `push` delivery is enabled.
+- Slice 68 found the first worker bug through production: branch pushes were
+  being treated like first wiki initialization. Hosted commit `03c57f8`
+  introduced `InitialWikiSource` and mapped `BranchSource` to ingest.
+- Slice 68 found the second worker bug through production: branch-source
+  workers cloned the live branch at depth 1 instead of materializing the exact
+  run snapshot. Hosted commit `eb8dba0` makes branch-like runs checkout the
+  exact `head_sha` and fetch `before_sha` for `git:range`.
+- Verification for `eb8dba0` passed: hosted backend tests
+  `test_architecture_contract.py`, `test_github_checkout_contract.py`,
+  `test_modal_worker_contract.py`, `test_updates_contract.py`,
+  `test_repositories_api_contract.py`, and `test_cli_runs_api_contract.py`
+  (`165 passed`, `1` Starlette warning), hosted ruff, and a real Git
+  fetch-by-SHA smoke against the public CodeAlmanac repo.
+- Render deploy `dep-d93pp0eq1p3s73cuomp0` is live on hosted commit
+  `eb8dba0`. Modal app `codealmanac-hosted-updates` was redeployed from the
+  same checkout.
+- Fresh production push to disposable branch
+  `codealmanac-smoke/slice-68-20260703102325` created run
+  `773da5fb-9871-4f83-8797-ddf651c635ce` with
+  `before_sha=d11d29b96dbfe334b2d9cb99fa5aafcc7893d98a` and
+  `head_sha=23a0a03209ff1804944eb094f589647dc13de47b`. The run delivered with
+  summary `No wiki changes made.`
+- Chrome refreshed the production dashboard and showed the delivered run at the
+  top. Cleanup completed: smoke trigger disabled, temp capture credential
+  revoked, remote smoke branch deleted, temp worktree removed.

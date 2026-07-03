@@ -12,6 +12,24 @@ Cloud remains the primary product path. Local remains a free/dev surface with a
 parallel conceptual model where it is useful, but not a reason to muddy the
 cloud setup flow.
 
+## Current Verified State
+
+- Hosted repo branch `codex/workos-authkit-api-foundation` and hosted `main`
+  both include `eb8dba042c80ed573ad53399f002126d2e14bc29`.
+- Render service `srv-d8g8nb37uimc739vnnsg` is live on deploy
+  `dep-d93pp0eq1p3s73cuomp0`.
+- Modal app `codealmanac-hosted-updates` was redeployed after `eb8dba0`.
+- Chrome verified signed-in production `/setup` and the production repository
+  dashboard for `AlmanacCode/codealmanac`.
+- Fresh production branch push created run
+  `773da5fb-9871-4f83-8797-ddf651c635ce`; it delivered with summary
+  `No wiki changes made.`
+- Do not chase older failed smoke runs unless doing cleanup. The old failures
+  are historical evidence from stale worker images and pre-fix payloads.
+- The old conversation-batch run
+  `aeb55370-cbdd-4ded-af6a-5e0e22f0ef0a` still appears `running` from a stale
+  pre-fix Modal worker image.
+
 ## Last Completed Work
 
 Slice 50 added the browser-owned cloud setup entry:

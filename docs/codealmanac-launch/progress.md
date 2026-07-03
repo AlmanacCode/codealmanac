@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-03 after Slice 63 production setup pressure test.
+Sent: 2026-07-03 after Slice 68 production branch-trigger smoke.
 
 Route:
 
@@ -19,21 +19,21 @@ doppler run --project almanac --config dev -- \
   --binding rohan-almanac-main "..."
 ```
 
-Note: production Chrome verified setup, repository list, repository settings,
-reversible branch trigger/delivery save, and the CLI setup guide. Hosted
-frontend commit `47b1ada` is deployed to Vercel production at
-`codealmanac-hosted-gutvigm88-thealmanac.vercel.app` and aliased to
-`https://www.codealmanac.com`.
+Note: production Chrome verified setup and repository dashboard; Render is live
+on hosted commit `eb8dba0`; Modal `codealmanac-hosted-updates` is redeployed;
+a fresh GitHub branch push created run
+`773da5fb-9871-4f83-8797-ddf651c635ce`, which delivered with summary
+`No wiki changes made.`
 
 ## Percentages
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 96% | 96% | CodeAlmanac local/backend unchanged in Slice 63. |
-| CodeAlmanac CLI/public UX | 98% | 98% | PyPI `0.1.1` remains published and install-smoked; setup guide remains PyPI-shaped in production. |
-| CodeAlmanac-hosted backend/auth/API | 99% | 99% | Backend unchanged in Slice 63; production BFF trigger reads/writes succeeded through the frontend session. |
-| Hosted frontend/onboarding | 95% | 92% | Production Chrome verified setup, repository list, settings, live settings summary, reversible branch trigger save/restore, and CLI setup guide after Vercel deploy. |
-| Infra/deploy rename | 99% | 99% | Vercel production is live on `47b1ada`; Render remains live on `fdad34d`. |
+| CodeAlmanac backend/local | 96% | 96% | CodeAlmanac local/backend unchanged in Slice 68. |
+| CodeAlmanac CLI/public UX | 98% | 98% | Published CLI setup/capture were verified in earlier slices; Slice 68 used the CLI to disable the smoke trigger and revoke capture cleanup. |
+| CodeAlmanac-hosted backend/auth/API | 99% | 99% | Production branch push now creates an immutable branch-source run and worker completion delivered successfully. |
+| Hosted frontend/onboarding | 96% | 95% | Chrome verified signed-in `/setup` and repository dashboard after production fixes; dashboard showed delivered run. |
+| Infra/deploy rename | 99% | 99% | Render is live on `eb8dba0`; Modal app `codealmanac-hosted-updates` is redeployed; Vercel frontend unchanged. |
 
 ## Update Rule
 

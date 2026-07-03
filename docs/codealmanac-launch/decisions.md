@@ -166,6 +166,9 @@ Status: active.
   falls back to a `BranchSource` run.
 - Conversation-batch runs use the same per-branch delivery policy as branch
   runs. The old scheduler path must not hard-code commit delivery.
+- Branch-triggered cloud runs are immutable snapshots. The worker must
+  materialize the run's recorded `head_sha`, and when a range is needed it must
+  fetch the recorded `before_sha`; it must not run against the live branch tip.
 
 ## Naming
 
