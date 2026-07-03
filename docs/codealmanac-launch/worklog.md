@@ -32,6 +32,15 @@
   - wheel smoke returned `codealmanac --version` = `0.1.8`
   - wheel smoke showed root `status` in cloud-first help
   - wheel smoke rendered signed-out human and JSON `codealmanac status` output
+- First GitHub Actions publish attempt `28671496878` failed in tests because
+  `tests/test_architecture.py` explicitly whitelisted parser/dispatch/render
+  command-family modules. The fix updated those guardrails to include the new
+  `cloud_status` command family and the intentional split of setup/status/
+  uninstall root command ordering.
+- Post-fix full local verification passed:
+  - `uv run pytest` (`508 passed`)
+  - `uv run ruff check .`
+  - `git diff --check`
 
 ## 2026-07-03 Slice 77: CLI launch surface polish
 
