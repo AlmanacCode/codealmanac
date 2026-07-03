@@ -47,6 +47,21 @@ Status: active.
   credentials into one vague auth bucket.
 - GitHub provider OAuth tokens should be returned by WorkOS and captured in the
   AuthKit callback when present.
+- `codealmanac setup` and `codealmanac login` should use WorkOS CLI Auth through
+  a thin CodeAlmanac API wrapper. The wrapper exists so the CLI talks only to
+  CodeAlmanac product endpoints while the backend delegates device
+  authorization, token exchange, and refresh to WorkOS.
+- CodeAlmanac should not invent durable human CLI tokens, refresh-token logic, or
+  API-key storage when WorkOS provides the primitive. The CLI may store
+  WorkOS-issued access and refresh tokens locally, and the backend maps WorkOS
+  identity to CodeAlmanac product permissions.
+- Do not add a public API-key product surface unless a concrete launch workflow
+  needs it. If programmatic credentials are needed for capture, SDK, MCP, or
+  automation, prefer WorkOS API Keys or the closest WorkOS machine credential
+  primitive behind a CodeAlmanac API wrapper.
+- Capture credentials must be WorkOS-backed auth/machine credentials rather than
+  a separate long-term CodeAlmanac-owned token system. The capture surface may
+  still expose CodeAlmanac-shaped issue/status/revoke endpoints.
 - GitHub OAuth scopes stay narrow by default. `user:email` is required for
   sign-in identity; repo read/write operations should use GitHub App
   installation tokens and app permissions instead of broad user OAuth scopes.
@@ -63,6 +78,8 @@ Status: active.
 - The public CLI is not the worker API.
 - Bare `codealmanac` opens the cloud wiki for the current checkout.
 - `codealmanac setup` is cloud onboarding.
+- `codealmanac setup` must not install local scheduled automation; local
+  automation belongs under the explicit local surface.
 - `codealmanac local setup` is local maintenance setup.
 - `codealmanac local setup` detects the current GitHub checkout, writes the
   repository and branch trigger policy to the local control DB, and installs

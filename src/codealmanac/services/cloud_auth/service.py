@@ -34,11 +34,12 @@ class CloudAuthService:
         )
 
     def save_token(self, request: SaveCloudTokenRequest) -> CloudIdentity:
-        identity = self.client.me(api_url=request.api_url, token=request.token)
+        identity = self.client.me(api_url=request.api_url, token=request.access_token)
         self.store.save(
             CloudAuthState(
                 api_url=request.api_url,
-                token=request.token,
+                access_token=request.access_token,
+                refresh_token=request.refresh_token,
                 github_user_id=identity.github_user_id,
                 github_login=identity.github_login,
                 logged_in_at=request.logged_in_at,

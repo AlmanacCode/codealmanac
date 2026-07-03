@@ -1,5 +1,36 @@
 # Launch Worklog
 
+## 2026-07-03
+
+- Planned Slice 59 in
+  `docs/plans/2026-07-02-slice-59-cli-auth-setup-contract.md`.
+- Made root `codealmanac setup` cloud-first only. It no longer exposes
+  `--install-automation`, `--sync-every`, `--sync-quiet`, `--garden-every`, or
+  `--garden-off`; local scheduled automation stays behind explicit local or
+  automation commands.
+- Changed CLI login/setup browser behavior so interactive terminals ask before
+  opening the browser, `--no-browser` always prints the URL/code and polls
+  without opening, non-interactive runs never open a browser, and `--yes` only
+  opens when a TTY is present.
+- Added the WorkOS-shaped local auth token model in the CLI: stored auth now
+  writes `access_token` plus optional `refresh_token`, while still reading
+  legacy `token` auth files for migration.
+- Kept the human CLI above the service/workflow layer. Browser prompting lives
+  in `src/codealmanac/integrations/cloud_login.py`; the workflow receives an
+  interaction port and does not print or prompt directly.
+- Updated README/public-contract tests to the launch surface: `setup`/`login`
+  for cloud, `capture` for Codex/Claude capture, local update commands under
+  `local`, and runtime state documented separately from `init` scaffold files.
+- Bumped the CLI package from `0.1.0` to `0.1.1` because PyPI already serves
+  `0.1.0` and this slice needs a deployable CLI artifact.
+- Verified Slice 59 with `uv run pytest -q` (`499 passed`) and
+  `uv run ruff check .` (`All checks passed`).
+- Release-smoked Slice 59 with `git diff --check`, `uv build --out-dir dist`,
+  `uvx twine check dist/*`, isolated `uv tool install --python 3.12` from the
+  built wheel, installed `codealmanac --version` (`0.1.1`), and installed
+  `codealmanac setup --skip-login --skip-instructions --json`
+  (`automation_mode: "none"`).
+
 ## 2026-07-02
 
 - Planned Slice 58 in

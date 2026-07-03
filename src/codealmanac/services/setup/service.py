@@ -36,6 +36,7 @@ class SetupService:
                 RunCloudLoginRequest(
                     api_url=request.api_url,
                     no_browser=request.no_browser,
+                    browser_mode=request.login_browser_mode,
                     timeout_seconds=request.login_timeout_seconds,
                     poll_interval_seconds=request.login_poll_interval_seconds,
                 )

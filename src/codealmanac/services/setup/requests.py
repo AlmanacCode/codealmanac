@@ -10,6 +10,7 @@ from codealmanac.services.cloud_auth.models import (
     normalize_api_url,
 )
 from codealmanac.services.setup.models import SetupTarget
+from codealmanac.workflows.cloud_login.requests import CloudLoginBrowserMode
 
 DEFAULT_SETUP_TARGETS = (SetupTarget.CODEX, SetupTarget.CLAUDE)
 
@@ -20,6 +21,7 @@ class RunSetupRequest(CodeAlmanacModel):
     yes: bool = False
     api_url: str = DEFAULT_CLOUD_API_URL
     no_browser: bool = False
+    login_browser_mode: CloudLoginBrowserMode = "prompt"
     login_timeout_seconds: float = 120.0
     login_poll_interval_seconds: float = 2.0
     skip_login: bool = False

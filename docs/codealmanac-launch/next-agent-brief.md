@@ -116,6 +116,18 @@ Slice 58 repairs production AuthKit schema drift:
 - Browser-harness verified signed-in production `/setup` with `rohans0509`,
   `ReverieOne`, and `AlmanacCode`.
 
+Slice 59 fixes the CLI auth/setup contract:
+
+- root `codealmanac setup` is cloud setup only and no longer exposes local
+  scheduled automation flags
+- setup/login ask before opening a browser in interactive terminals
+- non-interactive runs and `--no-browser` print the verification URL/code and
+  poll without opening a browser
+- local auth state now writes `access_token` plus optional `refresh_token`
+  while reading old `token` files for migration
+- README and public-contract tests now describe the cloud-first setup plus the
+  explicit `local` surface
+
 ## Current Repo State
 
 CodeAlmanac:
@@ -126,8 +138,10 @@ CodeAlmanac:
   `dfc4ea478b0164144d668258dcd9dc3f2cd722b3`
 - `origin/dev` and `origin/main` both point at
   `dfc4ea478b0164144d668258dcd9dc3f2cd722b3`
-- package version in `pyproject.toml`: `0.1.0`
+- package version in `pyproject.toml`: `0.1.1`
 - PyPI live version checked on 2026-07-02: `0.1.0`
+- Slice 59 is verified locally and pending commit/publish from this working
+  tree.
 
 Hosted:
 
@@ -203,6 +217,12 @@ repaired.
   and refresh token ciphertext, Render live deploy `dep-d93h21h9rddc73a2q0g0`,
   backend health `{"status":"ok"}`, Vercel production Ready, and browser-harness
   signed-in `/setup` showing `rohans0509`, `ReverieOne`, and `AlmanacCode`.
+- Slice 59 local verification passed: `uv run pytest -q` (`499 passed`) and
+  `uv run ruff check .` (`All checks passed`).
+- Slice 59 package smoke passed: `uv build --out-dir dist`,
+  `uvx twine check dist/*`, isolated wheel install through `uv tool install`,
+  installed `codealmanac --version` (`0.1.1`), and installed setup JSON showed
+  `automation_mode: "none"`.
 
 ## Next Pressure Tests
 

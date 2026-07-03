@@ -15,7 +15,6 @@ from codealmanac.services.automation.models import (
 )
 from codealmanac.services.setup.models import (
     InstructionChange,
-    SetupAutomationMode,
     SetupResult,
     UninstallResult,
 )
@@ -40,7 +39,7 @@ def render_setup_text(result: SetupResult) -> None:
     console.print(
         setup_panel(
             "CodeAlmanac setup",
-            "Local repo wiki, maintained by coding agents.",
+            "Cloud onboarding and local agent support files.",
         )
     )
     console.print(plan_panel(result))
@@ -105,13 +104,8 @@ def plan_panel(result: SetupResult) -> Panel:
         "instruction targets",
         ", ".join(target.value for target in plan.instruction_targets),
     )
-    table.add_row("automation mode", plan.automation_mode.value)
     for recommendation in plan.automation:
-        label = (
-            f"{recommendation.task.value} automation"
-            if plan.automation_mode == SetupAutomationMode.RECOMMEND
-            else f"{recommendation.task.value} plan"
-        )
+        label = f"{recommendation.task.value} automation"
         table.add_row(
             label,
             shell_command(recommendation.command),

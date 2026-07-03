@@ -24,7 +24,7 @@ class CloudAuthStore:
 
     def save(self, state: CloudAuthState) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        payload = state.model_dump_json(indent=2)
+        payload = state.model_dump_json(indent=2, exclude_none=True)
         temp_path = self.path.with_suffix(self.path.suffix + ".tmp")
         fd = os.open(temp_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         try:

@@ -42,17 +42,8 @@ def test_setup_installs_codex_block_idempotently(home: Path):
     assert "codealmanac search" in body
     assert first.plan.default_harness.value == "codex"
     assert first.plan.instruction_targets == (SetupTarget.CODEX,)
-    assert first.plan.automation[0].command == (
-        "codealmanac",
-        "automation",
-        "install",
-        "sync",
-        "--every",
-        "5h",
-        "--quiet",
-        "45m",
-    )
-    assert first.plan.next_commands[-1].command == first.plan.automation[0].command
+    assert first.plan.automation == ()
+    assert first.plan.next_commands[-1].command == ("codealmanac", "open")
 
 
 def test_setup_uses_non_empty_codex_override(home: Path):

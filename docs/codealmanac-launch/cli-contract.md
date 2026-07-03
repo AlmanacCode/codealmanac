@@ -15,6 +15,12 @@ cloud-first. The local product is explicit under `local`.
 - Public commands are human UX, not the worker API.
 - Commands that mirror browser settings should still be useful from terminals
   and agents.
+- Setup/status screens should match the OpenAlmanac terminal aesthetic exactly:
+  reuse the hard-coded ANSI banner, white-to-silver gradient, blue/silver
+  accents, diamond step markers, selection controls, and next-steps box from
+  `/Users/rohan/Desktop/Projects/openalmanac/mcp/src/setup/tui.ts`. Do not
+  replace this with a different figlet package, color theme, or generic prompt
+  style.
 
 ## Open / Read
 
@@ -60,9 +66,32 @@ codealmanac whoami
 codealmanac logout
 ```
 
-`setup` is cloud-first and not repo-scoped. It logs in through the hosted
-browser flow when needed, stores the issued CLI token under
-`~/.codealmanac/auth.json`, and installs local support files.
+`setup` is cloud-first and not repo-scoped. It logs in through WorkOS-backed CLI
+Auth when needed, stores local auth state under `~/.codealmanac/auth.json`, and
+installs local support files.
+
+`setup` must feel like a CLI-led flow, not an abrupt browser redirect. It should
+first render the OpenAlmanac-style banner and setup checklist, then ask before
+opening the browser. The default interactive path is:
+
+```text
+Open browser to finish cloud setup? [Y/n]
+```
+
+If the user says yes, the CLI opens the WorkOS/browser setup URL, keeps polling
+in the terminal, and resumes local setup automatically after the browser approves
+the device session. If the user says no, or the process is non-interactive, the
+CLI prints the setup URL and device code and waits/polls without opening a
+browser.
+
+This must be agent-friendly. Agents installing CodeAlmanac should be able to run
+`codealmanac setup` in a non-interactive terminal, read the printed URL/code,
+hand it to the human, and continue once the browser-side approval completes.
+`--no-browser` should force this copy/paste mode. `--yes` may answer the setup
+prompt, but must not silently open a browser in non-interactive contexts.
+
+The browser completion page should say the user can return to the terminal; it
+should not make "go to dashboard" the primary action for a CLI-initiated setup.
 
 `setup --skip-login` is reserved for local-only support-file installation and
 CI. It is not the default user path.
@@ -71,6 +100,19 @@ Browser onboarding, capture consent, provider probing, and repo configuration
 remain dashboard/API work after this slice.
 
 `setup` does not run a wiki update.
+
+Implemented in Slice 59:
+
+```text
+codealmanac setup [--yes] [--no-browser] [--skip-login] [--skip-instructions]
+codealmanac login [--no-browser] [--force]
+```
+
+Root setup is cloud setup only. It no longer exposes local scheduled automation
+flags. Interactive setup asks before opening the browser; non-interactive setup
+prints the verification URL and user code and polls without opening anything.
+The workflow stores WorkOS-shaped `access_token` and optional `refresh_token`
+fields while reading older `token` auth files for migration.
 
 ## Cloud Repo Configuration
 

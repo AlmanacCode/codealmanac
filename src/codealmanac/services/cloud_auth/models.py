@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
@@ -21,10 +21,30 @@ CloudLoginResultStatus = Literal[
 
 class CloudAuthState(CodeAlmanacModel):
     api_url: str = Field(min_length=1)
-    token: str = Field(min_length=1)
+    access_token: str = Field(min_length=1)
+    refresh_token: str | None = Field(default=None, min_length=1)
     github_user_id: int
     github_login: str = Field(min_length=1)
     logged_in_at: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_token_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        values = dict(data)
+        if "access_token" not in values:
+            access_token = values.get("accessToken") or values.get("token")
+            if access_token is not None:
+                values["access_token"] = access_token
+        if "refresh_token" not in values:
+            refresh_token = values.get("refreshToken")
+            if refresh_token is not None:
+                values["refresh_token"] = refresh_token
+        values.pop("accessToken", None)
+        values.pop("refreshToken", None)
+        values.pop("token", None)
+        return values
 
     @field_validator("api_url")
     @classmethod
@@ -35,6 +55,10 @@ class CloudAuthState(CodeAlmanacModel):
     @classmethod
     def require_github_login(cls, value: str) -> str:
         return required_text(value, "GitHub login")
+
+    @property
+    def token(self) -> str:
+        return self.access_token
 
 
 class CloudIdentity(CodeAlmanacModel):
@@ -66,7 +90,31 @@ class CloudLoginSession(CodeAlmanacModel):
     verification_url: str
     expires_at: datetime
     status: CloudLoginStatus
-    token: str | None = None
+    access_token: str | None = None
+    refresh_token: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_token_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        values = dict(data)
+        if "access_token" not in values:
+            access_token = values.get("accessToken") or values.get("token")
+            if access_token is not None:
+                values["access_token"] = access_token
+        if "refresh_token" not in values:
+            refresh_token = values.get("refreshToken")
+            if refresh_token is not None:
+                values["refresh_token"] = refresh_token
+        values.pop("accessToken", None)
+        values.pop("refreshToken", None)
+        values.pop("token", None)
+        return values
+
+    @property
+    def token(self) -> str | None:
+        return self.access_token
 
 
 class CloudLoginResult(CodeAlmanacModel):

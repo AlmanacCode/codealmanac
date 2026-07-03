@@ -10,7 +10,10 @@ from codealmanac.services.cloud_auth.requests import (
     CloudLogoutRequest,
     CloudStatusRequest,
 )
-from codealmanac.workflows.cloud_login.requests import RunCloudLoginRequest
+from codealmanac.workflows.cloud_login.requests import (
+    CloudLoginBrowserMode,
+    RunCloudLoginRequest,
+)
 
 
 def dispatch_login(args: argparse.Namespace, app: CodeAlmanac) -> int:
@@ -18,6 +21,7 @@ def dispatch_login(args: argparse.Namespace, app: CodeAlmanac) -> int:
         RunCloudLoginRequest(
             api_url=args.api_url,
             no_browser=args.no_browser,
+            browser_mode=login_browser_mode(args),
             timeout_seconds=args.timeout,
             poll_interval_seconds=args.poll_every,
             force=args.force,
@@ -42,3 +46,11 @@ def dispatch_logout(args: argparse.Namespace, app: CodeAlmanac) -> int:
     result = app.cloud_auth.logout(CloudLogoutRequest(api_url=args.api_url))
     render_cloud_logout_result(result, json_output=args.json)
     return 0
+
+
+def login_browser_mode(args: argparse.Namespace) -> CloudLoginBrowserMode:
+    if args.json:
+        return "silent"
+    if args.no_browser:
+        return "never"
+    return "prompt"

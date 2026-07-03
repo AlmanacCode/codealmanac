@@ -17,8 +17,9 @@ memberships
 roles
 sessions
 CLI/device auth
-agent credentials where useful
-organization API keys where useful
+access token refresh
+machine credentials where useful
+organization API keys if a concrete workflow needs them
 ```
 
 CodeAlmanac owns:
@@ -96,19 +97,26 @@ homepage URL: https://www.codealmanac.com
 
 ## CLI Login
 
-`codealmanac login` and the login part of `codealmanac setup` use browser/device
-auth.
+`codealmanac login` and the login part of `codealmanac setup` use WorkOS CLI
+Auth through a thin CodeAlmanac API wrapper.
+
+The wrapper is intentional. The CLI should not know WorkOS SDK details, WorkOS
+environment ids, or provider-specific response shapes. The CLI talks to
+CodeAlmanac product endpoints; the CodeAlmanac backend delegates device
+authorization, token exchange, and refresh to WorkOS, then maps the resulting
+WorkOS identity into CodeAlmanac product permissions.
 
 Flow:
 
 ```text
 CLI -> POST /v1/auth/cli/start
-API -> creates a hosted CLI login session
-CLI -> opens verification URL and prints fallback code
+API -> WorkOS create_device / CLI Auth device authorization
+CLI -> opens WorkOS verification URL and prints fallback code
 user -> approves in browser
 CLI -> polls POST /v1/auth/cli/sessions/{session_id}/poll
-API -> returns the issued CLI token once
-CLI -> stores local CLI token state
+API -> WorkOS authenticate_with_device_code
+API -> returns WorkOS-backed access_token and refresh_token
+CLI -> stores local WorkOS-backed auth state
 ```
 
 Local auth state lives under `~/.codealmanac/`.
@@ -138,18 +146,32 @@ Stored state:
 api_url
 github_user_id
 github_login
-issued CLI token
+access_token
+refresh_token
+organization_id when present
 logged_in_at
 ```
 
-The local CLI does not store WorkOS browser session tokens.
+The local CLI does not store WorkOS browser session cookies.
+
+Implemented Slice 59 CLI behavior:
+
+```text
+auth.json writes: access_token, refresh_token when present
+auth.json reads: access_token, accessToken, token, refresh_token, refreshToken
+```
+
+The CLI still talks to CodeAlmanac product endpoints, not WorkOS directly. The
+stored token shape now matches the WorkOS-backed API response shape, while
+legacy `token` files remain readable so existing installs can migrate on the
+next login/status command.
 
 ## Capture Credentials
 
 Capture hooks should not use an unrestricted human browser token.
 
-After browser consent, the API should mint or return a narrow machine credential
-for capture:
+After browser consent, the API should create or return a narrow WorkOS-backed
+machine credential for capture:
 
 ```text
 scope: capture:write
@@ -163,13 +185,16 @@ Implemented Slice 28 launch shape:
 
 ```text
 WorkOS/AuthKit owns human identity and browser sessions.
-CodeAlmanac-hosted issues narrow `cap_...` capture credentials.
+CodeAlmanac-hosted currently issues narrow `cap_...` capture credentials.
 CLI token auth gates capture credential issue/status/revoke.
 Capture credentials are product machine credentials, not WorkOS browser tokens.
 ```
 
-If WorkOS later provides a better first-class machine credential primitive, the
-storage backend can change while preserving the public `cap_...` contract.
+This is no longer the desired long-term shape. Capture credentials should move
+to WorkOS API Keys or the closest WorkOS machine credential primitive. Keep
+CodeAlmanac issue/status/revoke endpoints as the product API wrapper, but do not
+maintain a separate durable token system unless WorkOS cannot express the needed
+scope, revocation, or audit behavior.
 
 ## GitHub OAuth Through WorkOS
 

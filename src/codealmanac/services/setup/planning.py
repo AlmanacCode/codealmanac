@@ -19,35 +19,41 @@ from codealmanac.services.setup.requests import RunSetupRequest
 
 
 def setup_plan(request: RunSetupRequest) -> SetupPlan:
-    automation = automation_recommendations(request)
+    install_automation = should_install_automation(request)
+    automation = automation_recommendations(request) if install_automation else ()
     mode = (
         SetupAutomationMode.INSTALL
-        if should_install_automation(request)
-        else SetupAutomationMode.RECOMMEND
+        if install_automation
+        else SetupAutomationMode.NONE
     )
     return SetupPlan(
         default_harness=DEFAULT_HARNESS,
         instruction_targets=request.targets,
         automation_mode=mode,
         automation=automation,
-        next_commands=next_commands(automation, mode),
+        next_commands=next_commands(mode),
     )
 
 
 def automation_recommendations(
     request: RunSetupRequest,
 ) -> tuple[SetupAutomationRecommendation, ...]:
-    sync_every = duration_text(
-        request.sync_every if request.sync_every is not None else DEFAULT_SYNC_INTERVAL
+    sync_every_value = (
+        request.sync_every
+        if request.sync_every is not None
+        else DEFAULT_SYNC_INTERVAL
     )
-    sync_quiet = duration_text(
+    sync_quiet_value = (
         request.sync_quiet if request.sync_quiet is not None else DEFAULT_SYNC_QUIET
     )
-    garden_every = duration_text(
+    garden_every_value = (
         request.garden_every
         if request.garden_every is not None
         else DEFAULT_GARDEN_INTERVAL
     )
+    sync_every = duration_text(sync_every_value)
+    sync_quiet = duration_text(sync_quiet_value)
+    garden_every = duration_text(garden_every_value)
     recommendations: list[SetupAutomationRecommendation] = []
     for task in recommendation_tasks(request):
         if task == AutomationTask.SYNC:
@@ -92,27 +98,24 @@ def garden_recommendation(garden_every: str) -> SetupAutomationRecommendation:
     )
 
 
-def next_commands(
-    automation: tuple[SetupAutomationRecommendation, ...],
-    mode: SetupAutomationMode,
-) -> tuple[SetupCommand, ...]:
-    automation_command = (
-        SetupCommand(
-            label="Check scheduled automation",
-            command=("codealmanac", "automation", "status"),
+def next_commands(mode: SetupAutomationMode) -> tuple[SetupCommand, ...]:
+    if mode == SetupAutomationMode.INSTALL:
+        return (
+            SetupCommand(label="Check cloud login", command=("codealmanac", "whoami")),
+            SetupCommand(
+                label="Check scheduled automation",
+                command=("codealmanac", "automation", "status"),
+            ),
         )
-        if mode == SetupAutomationMode.INSTALL
-        else SetupCommand(
-            label="Install scheduled transcript sync",
-            command=automation[0].command,
-        )
-    )
     return (
         SetupCommand(label="Check cloud login", command=("codealmanac", "whoami")),
-        SetupCommand(label="Initialize this repo", command=("codealmanac", "init")),
         SetupCommand(
-            label="Read the starter page",
-            command=("codealmanac", "search", "getting"),
+            label="Enable capture",
+            command=("codealmanac", "capture", "enable"),
         ),
-        automation_command,
+        SetupCommand(
+            label="Set up a repository",
+            command=("codealmanac", "repo", "setup"),
+        ),
+        SetupCommand(label="Open cloud wiki", command=("codealmanac", "open")),
     )

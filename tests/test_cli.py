@@ -16,7 +16,6 @@ from codealmanac.core.models import AppConfig
 from codealmanac.core.paths import default_jobs_path, normalize_path
 from codealmanac.integrations.setup.instructions import CODEALMANAC_START
 from codealmanac.services.automation.models import (
-    AutomationTask,
     ScheduledJob,
     ScheduledJobStatus,
 )
@@ -964,10 +963,9 @@ def test_cli_setup_and_uninstall_codex_instructions(
     assert "default agent" in captured.out
     assert "codex" in captured.out
     assert "Next steps" in captured.out
-    assert "codealmanac init" in captured.out
-    assert "codealmanac automation install sync --every 5h --quiet 45m" in (
-        captured.out
-    )
+    assert "codealmanac capture enable" in captured.out
+    assert "codealmanac repo setup" in captured.out
+    assert "codealmanac automation install" not in captured.out
     assert CODEALMANAC_START in agents_path.read_text(encoding="utf-8")
 
     second_exit = main(["setup", "--yes", "--skip-login", "--target", "codex"])
@@ -989,10 +987,11 @@ def test_cli_cloud_login_whoami_and_logout(
     capsys,
 ):
     client = CliCloudAuthClient()
+    browser = CliBrowserOpener()
     app = create_app(
         AppConfig(auth_path=isolated_home / ".codealmanac/auth.json"),
         cloud_auth_client=client,
-        browser_opener=CliBrowserOpener(),
+        browser_opener=browser,
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
 
@@ -1016,6 +1015,8 @@ def test_cli_cloud_login_whoami_and_logout(
     logout = capsys.readouterr()
 
     assert login_exit == 0
+    assert "Open: https://app.example.test/cli-login" in login.out
+    assert "Code: ABCD2345" in login.out
     assert "Signed in as rohans0509" in login.out
     assert whoami_exit == 0
     assert "Signed in as rohans0509" in whoami.out
@@ -1024,6 +1025,41 @@ def test_cli_cloud_login_whoami_and_logout(
     assert client.started == 1
     assert client.polled == [client.session_id]
     assert client.seen_tokens == ["alm_secret", "alm_secret", "alm_secret"]
+    assert browser.opened == []
+
+
+def test_cli_cloud_auth_store_migrates_legacy_token_field(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    auth_path = isolated_home / ".codealmanac/auth.json"
+    auth_path.parent.mkdir(parents=True)
+    auth_path.write_text(
+        json.dumps(
+            {
+                "api_url": "https://api.example.test",
+                "token": "legacy_secret",
+                "github_user_id": 10,
+                "github_login": "rohans0509",
+                "logged_in_at": "2026-07-02T12:00:00Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+    client = CliCloudAuthClient()
+    app = create_app(
+        AppConfig(auth_path=auth_path),
+        cloud_auth_client=client,
+        browser_opener=CliBrowserOpener(),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert main(["whoami", "--api-url", "https://api.example.test"]) == 0
+    output = capsys.readouterr()
+
+    assert "Signed in as rohans0509" in output.out
+    assert client.seen_tokens == ["legacy_secret"]
 
 
 def test_cli_setup_is_cloud_first_without_repo_detection(
@@ -1035,10 +1071,11 @@ def test_cli_setup_is_cloud_first_without_repo_detection(
     outside_repo = tmp_path / "outside"
     outside_repo.mkdir()
     client = CliCloudAuthClient()
+    browser = CliBrowserOpener()
     app = create_app(
         AppConfig(auth_path=isolated_home / ".codealmanac/auth.json"),
         cloud_auth_client=client,
-        browser_opener=CliBrowserOpener(),
+        browser_opener=browser,
     )
     monkeypatch.chdir(outside_repo)
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
@@ -1061,9 +1098,12 @@ def test_cli_setup_is_cloud_first_without_repo_detection(
     output = capsys.readouterr()
     assert exit_code == 0
     assert "Cloud" in output.out
+    assert "Open: https://app.example.test/cli-login" in output.out
+    assert "Code: ABCD2345" in output.out
     assert "rohans0509" in output.out
     assert "Agent instructions" in output.out
     assert client.started == 1
+    assert browser.opened == []
 
 
 def test_cli_capture_enable_status_hook_and_disable(
@@ -1813,73 +1853,28 @@ def test_cli_setup_skip_instructions_json(capsys):
     assert payload["changes"] == []
     assert payload["plan"]["default_harness"] == "codex"
     assert payload["plan"]["instruction_targets"] == ["codex", "claude"]
-    assert payload["plan"]["automation"][0]["command"] == [
-        "codealmanac",
-        "automation",
-        "install",
-        "sync",
-        "--every",
-        "5h",
-        "--quiet",
-        "45m",
+    assert payload["plan"]["automation"] == []
+    assert ["codealmanac", "capture", "enable"] in [
+        command["command"] for command in payload["plan"]["next_commands"]
     ]
 
 
-def test_cli_setup_installs_automation_with_explicit_flags(
-    tmp_path: Path,
-    isolated_home: Path,
-    monkeypatch,
-    capsys,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    scheduler = CliSchedulerAdapter()
-    app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
-        scheduler=scheduler,
-    )
-    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    monkeypatch.chdir(repo)
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+def test_cli_setup_rejects_root_automation_flags():
+    parser = build_parser()
 
-    assert (
-        main(
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(
             [
                 "setup",
                 "--yes",
                 "--skip-login",
-                "--target",
-                "codex",
                 "--install-automation",
                 "--sync-every",
                 "1m",
-                "--sync-quiet",
-                "1s",
-                "--garden-every",
-                "2m",
             ]
         )
-        == 0
-    )
 
-    output = capsys.readouterr()
-    assert "automation mode" in output.out
-    assert "install" in output.out
-    assert "Scheduled automation" in output.out
-    assert tuple(job.task for job in scheduler.installed) == (
-        AutomationTask.SYNC,
-        AutomationTask.GARDEN,
-    )
-    assert scheduler.installed[0].interval.total_seconds() == 60
-    assert scheduler.installed[1].interval.total_seconds() == 120
-
-    assert main(["uninstall", "--yes", "--target", "codex"]) == 0
-
-    capsys.readouterr()
-    assert tuple(job.task for job in scheduler.uninstalled) == (
-        AutomationTask.SYNC,
-        AutomationTask.GARDEN,
-    )
+    assert exit_info.value.code == 2
 
 
 def test_cli_list_outputs_registered_wikis(

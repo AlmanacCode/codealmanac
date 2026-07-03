@@ -39,28 +39,6 @@ def add_setup_commands(subcommands: argparse._SubParsersAction) -> None:
         action="store_true",
         help="skip global agent instruction installation",
     )
-    setup.add_argument(
-        "--install-automation",
-        action="store_true",
-        help="install scheduled sync and garden automation during setup",
-    )
-    setup.add_argument(
-        "--sync-every",
-        help="scheduled sync interval when setup installs automation",
-    )
-    setup.add_argument(
-        "--sync-quiet",
-        help="minimum quiet time before scheduled sync",
-    )
-    setup.add_argument(
-        "--garden-every",
-        help="scheduled Garden interval when setup installs automation",
-    )
-    setup.add_argument(
-        "--garden-off",
-        action="store_true",
-        help="install scheduled sync without scheduled Garden",
-    )
     setup.add_argument("--json", action="store_true")
 
     uninstall = subcommands.add_parser(

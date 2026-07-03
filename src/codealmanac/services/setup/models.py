@@ -20,6 +20,7 @@ class SetupTarget(StrEnum):
 
 
 class SetupAutomationMode(StrEnum):
+    NONE = "none"
     RECOMMEND = "recommend"
     INSTALL = "install"
 
@@ -73,7 +74,7 @@ class SetupAutomationRecommendation(CodeAlmanacModel):
 class SetupPlan(CodeAlmanacModel):
     default_harness: HarnessKind
     instruction_targets: tuple[SetupTarget, ...]
-    automation_mode: SetupAutomationMode = SetupAutomationMode.RECOMMEND
+    automation_mode: SetupAutomationMode = SetupAutomationMode.NONE
     automation: tuple[SetupAutomationRecommendation, ...]
     next_commands: tuple[SetupCommand, ...]
 

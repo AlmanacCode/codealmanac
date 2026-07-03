@@ -14,7 +14,7 @@ refactored for CodeAlmanac.
 
 Cloud onboarding should happen before the CLI performs local capture setup. If a
 user is already onboarded, the frontend should skip onboarding and return the
-user to the relevant dashboard state.
+user to the relevant setup continuation.
 
 Required onboarding steps:
 
@@ -27,6 +27,18 @@ Required onboarding steps:
 7. Consent to Codex/Claude capture.
 8. Show billing or plan requirements when needed.
 9. Return a machine-readable setup result to the CLI.
+
+When onboarding is started by `codealmanac setup`, the browser is a step inside a
+CLI-led flow. The success page should say that setup is complete in the browser
+and that the user can return to the terminal. A dashboard link can exist as a
+secondary action, but the primary action must not be "Continue to dashboard".
+The CLI remains open, polls for completion, stores auth, installs local support
+files, and prints the final next steps.
+
+The frontend must support agent-mediated setup. The CLI may be running in a
+non-interactive agent terminal, so browser setup URLs and device codes must be
+copyable and stable enough for an agent to present to a human. Browser-side
+completion should not assume that the same process opened the browser.
 
 Slice 28 allows `codealmanac capture enable` to issue a capture credential when
 the user is already signed in and the API authorizes it. Browser onboarding
@@ -80,6 +92,10 @@ GitHub accounts when available, and shows the Python CLI command:
 uv tool install codealmanac
 codealmanac setup
 ```
+
+For CLI-initiated setup, `/setup` must preserve a session/device context and end
+on a "return to terminal" completion state instead of redirecting into the normal
+dashboard onboarding path.
 
 ## Repo Settings
 

@@ -5,16 +5,18 @@ from uuid import UUID, uuid4
 from codealmanac.services.cloud_auth.models import CloudIdentity, CloudLoginSession
 from codealmanac.services.cloud_auth.service import CloudAuthService
 from codealmanac.services.cloud_auth.store import CloudAuthStore
+from codealmanac.workflows.cloud_login.ports import CloudLoginStartDecision
 from codealmanac.workflows.cloud_login.requests import RunCloudLoginRequest
 from codealmanac.workflows.cloud_login.service import CloudLoginWorkflow
 
 
-def test_cloud_login_opens_browser_polls_and_saves_token(tmp_path: Path) -> None:
+def test_cloud_login_uses_interaction_decision_to_open_browser(tmp_path: Path) -> None:
     client = FakeCloudAuthClient(statuses=("complete",))
     browser = FakeBrowser()
     workflow = CloudLoginWorkflow(
         CloudAuthService(CloudAuthStore(tmp_path / "auth.json"), client),
         browser,
+        FakeCloudLoginInteraction(open_browser=True),
     )
 
     result = workflow.run(
@@ -28,6 +30,30 @@ def test_cloud_login_opens_browser_polls_and_saves_token(tmp_path: Path) -> None
     assert result.status == "signed_in"
     assert result.github_login == "rohans0509"
     assert browser.opened == ["https://app.example.test/cli-login"]
+
+
+def test_cloud_login_default_interaction_does_not_open_browser(
+    tmp_path: Path,
+) -> None:
+    browser = FakeBrowser()
+    workflow = CloudLoginWorkflow(
+        CloudAuthService(
+            CloudAuthStore(tmp_path / "auth.json"),
+            FakeCloudAuthClient(statuses=("complete",)),
+        ),
+        browser,
+    )
+
+    result = workflow.run(
+        RunCloudLoginRequest(
+            api_url="https://api.example.test",
+            timeout_seconds=0,
+            poll_interval_seconds=0,
+        )
+    )
+
+    assert result.status == "signed_in"
+    assert browser.opened == []
 
 
 def test_cloud_login_no_browser_print_path_does_not_open_browser(
@@ -84,6 +110,18 @@ class FakeBrowser:
     def open(self, url: str) -> bool:
         self.opened.append(url)
         return True
+
+
+class FakeCloudLoginInteraction:
+    def __init__(self, open_browser: bool) -> None:
+        self.open_browser = open_browser
+
+    def started(
+        self,
+        session: CloudLoginSession,
+        request: RunCloudLoginRequest,
+    ) -> CloudLoginStartDecision:
+        return CloudLoginStartDecision(open_browser=self.open_browser)
 
 
 class FakeCloudAuthClient:

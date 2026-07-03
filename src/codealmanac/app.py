@@ -11,6 +11,7 @@ from codealmanac.integrations.capture import (
     GitCaptureRepositoryProbe,
 )
 from codealmanac.integrations.cloud import HttpCloudAuthClient
+from codealmanac.integrations.cloud_login import TerminalCloudLoginInteraction
 from codealmanac.integrations.harnesses import default_harness_adapters
 from codealmanac.integrations.runs import (
     SubprocessLocalWorkerSpawner,
@@ -100,7 +101,7 @@ from codealmanac.services.worker_workspaces.store import WorkerWorkspacesStore
 from codealmanac.services.workspaces.service import WorkspacesService
 from codealmanac.services.workspaces.store import WorkspaceRegistryStore
 from codealmanac.workflows.cloud_login import CloudLoginWorkflow
-from codealmanac.workflows.cloud_login.ports import BrowserOpener
+from codealmanac.workflows.cloud_login.ports import BrowserOpener, CloudLoginInteraction
 from codealmanac.workflows.cloud_open import CloudOpenWorkflow
 from codealmanac.workflows.cloud_repo import CloudRepoWorkflow
 from codealmanac.workflows.cloud_runs import CloudRunsWorkflow
@@ -203,6 +204,7 @@ def create_app(
     capture_transcript_parser: CaptureTranscriptParser | None = None,
     capture_repository_probe: CaptureRepositoryProbe | None = None,
     browser_opener: BrowserOpener | None = None,
+    cloud_login_interaction: CloudLoginInteraction | None = None,
     local_git_state_probe: LocalGitStateProbe | None = None,
     local_git_hook_manager: LocalGitHookManager | None = None,
     local_repository_probe: LocalRepositoryProbe | None = None,
@@ -265,6 +267,7 @@ def create_app(
     cloud_login = CloudLoginWorkflow(
         cloud_auth,
         resolved_browser_opener,
+        cloud_login_interaction or TerminalCloudLoginInteraction(),
     )
     setup = SetupService(
         instruction_installer or FileInstructionInstaller(),

@@ -351,8 +351,17 @@ def login_session(data: dict[str, Any]) -> CloudLoginSession:
             str(data["expiresAt"]).replace("Z", "+00:00")
         ),
         status=data["status"],
-        token=data.get("token"),
+        access_token=optional_text(data, "accessToken", "access_token", "token"),
+        refresh_token=optional_text(data, "refreshToken", "refresh_token"),
     )
+
+
+def optional_text(data: dict[str, Any], *keys: str) -> str | None:
+    for key in keys:
+        value = data.get(key)
+        if value is not None:
+            return str(value)
+    return None
 
 
 def identity(api_url: str, data: dict[str, Any]) -> CloudIdentity:
