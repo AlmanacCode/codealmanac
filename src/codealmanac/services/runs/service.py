@@ -31,9 +31,9 @@ from codealmanac.services.runs.requests import (
 )
 from codealmanac.services.runs.store import RunStore, RunWorkerLease
 from codealmanac.services.runs.streaming import RunAttachStreamer
-from codealmanac.services.workspaces.models import Workspace
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.wiki.workspaces.models import Workspace
+from codealmanac.wiki.workspaces.requests import SelectWorkspaceRequest
+from codealmanac.wiki.workspaces.service import WorkspacesService
 
 
 class RunsService:

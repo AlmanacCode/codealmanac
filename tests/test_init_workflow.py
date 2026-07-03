@@ -23,8 +23,8 @@ from codealmanac.services.runs.requests import (
     ReadRunLogRequest,
     SpawnRunWorkerRequest,
 )
-from codealmanac.services.search.requests import SearchPagesRequest
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.search.requests import SearchPagesRequest
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 from codealmanac.workflows.init.requests import RunInitRequest
 from codealmanac.workflows.run_queue.requests import DrainRunQueueRequest
 

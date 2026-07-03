@@ -5,7 +5,6 @@ from codealmanac.core.errors import ValidationFailed
 from codealmanac.services.harnesses.models import HarnessRunResult
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 from codealmanac.services.harnesses.service import HarnessesService
-from codealmanac.services.index.service import IndexService
 from codealmanac.services.runs.models import RunEventKind, RunStatus
 from codealmanac.services.runs.requests import (
     FinishRunRequest,
@@ -14,9 +13,10 @@ from codealmanac.services.runs.requests import (
     RecordRunHarnessTranscriptRequest,
 )
 from codealmanac.services.runs.service import RunsService
-from codealmanac.services.workspaces.models import Workspace
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.wiki.index.service import IndexService
+from codealmanac.wiki.workspaces.models import Workspace
+from codealmanac.wiki.workspaces.requests import SelectWorkspaceRequest
+from codealmanac.wiki.workspaces.service import WorkspacesService
 from codealmanac.workflows.lifecycle import (
     LifecycleMutationPolicy,
     LifecycleMutationPreflight,

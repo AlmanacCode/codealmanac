@@ -2,12 +2,12 @@ from pathlib import Path
 
 from codealmanac.core.errors import ValidationFailed
 from codealmanac.core.models import CodeAlmanacModel
-from codealmanac.services.workspaces.models import (
+from codealmanac.wiki.workspaces.models import (
     Workspace,
     WorkspaceChangeSnapshot,
     WorkspacePathChange,
 )
-from codealmanac.services.workspaces.ports import WorkspaceChangeProbe
+from codealmanac.wiki.workspaces.ports import WorkspaceChangeProbe
 
 
 class LifecycleMutationPreflight(CodeAlmanacModel):

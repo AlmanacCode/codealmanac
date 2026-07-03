@@ -1,7 +1,7 @@
 import sys
 
 from codealmanac.cli.render.common import print_json_model, print_json_rows
-from codealmanac.services.workspaces.models import (
+from codealmanac.wiki.workspaces.models import (
     DropWorkspaceResult,
     WorkspaceListResult,
 )

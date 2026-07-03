@@ -88,8 +88,8 @@ from codealmanac.services.updates.models import (
     PackageInstallMetadata,
 )
 from codealmanac.services.worker_workspaces.models import GitWorktreeCheckout
-from codealmanac.services.workspaces.identity import workspace_id_for
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.workspaces.identity import workspace_id_for
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 from codealmanac.workflows.ingest.requests import RunIngestRequest
 from codealmanac.workflows.local_delivery.models import (
     LocalDeliveryCommit,

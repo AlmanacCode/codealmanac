@@ -13,7 +13,7 @@ from codealmanac.services.sources.requests import (
     SourceRuntimeContext,
 )
 from codealmanac.services.sources.service import SourcesService
-from codealmanac.services.workspaces.models import Workspace
+from codealmanac.wiki.workspaces.models import Workspace
 from codealmanac.workflows.ingest.models import IngestPromptPayload, IngestResult
 from codealmanac.workflows.ingest.requests import (
     RunIngestRequest,

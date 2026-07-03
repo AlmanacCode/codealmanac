@@ -12,11 +12,11 @@ from codealmanac.cli.render.root import (
     render_search,
     render_tagging,
 )
-from codealmanac.services.health.requests import HealthCheckRequest
-from codealmanac.services.index.requests import ReindexRequest
-from codealmanac.services.pages.requests import ShowPageRequest
-from codealmanac.services.search.requests import SearchPagesRequest
 from codealmanac.services.tagging.requests import TagPageRequest, UntagPageRequest
+from codealmanac.wiki.health.requests import HealthCheckRequest
+from codealmanac.wiki.index.requests import ReindexRequest
+from codealmanac.wiki.pages.requests import ShowPageRequest
+from codealmanac.wiki.search.requests import SearchPagesRequest
 
 WIKI_COMMANDS = frozenset(
     (

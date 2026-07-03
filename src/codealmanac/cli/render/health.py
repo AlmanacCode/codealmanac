@@ -1,5 +1,5 @@
 from codealmanac.cli.render.common import print_json_model
-from codealmanac.services.index.models import HealthReport
+from codealmanac.wiki.index.models import HealthReport
 
 
 def render_health(report: HealthReport, json_output: bool) -> None:

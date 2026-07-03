@@ -14,7 +14,7 @@ from codealmanac.cli.render.local import (
 )
 from codealmanac.services.control.models import ControlDeliveryMode, ControlRunStatus
 from codealmanac.services.harnesses.models import HarnessKind
-from codealmanac.services.workspaces.roots import DEFAULT_ALMANAC_ROOT
+from codealmanac.wiki.workspaces.roots import DEFAULT_ALMANAC_ROOT
 from codealmanac.workflows.local_jobs.requests import (
     ListLocalJobsRequest,
     ReadLocalJobLogsRequest,

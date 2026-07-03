@@ -6,15 +6,15 @@ import pytest
 from codealmanac.app import create_app
 from codealmanac.core.errors import NotFoundError
 from codealmanac.core.models import AppConfig
-from codealmanac.services.health.requests import HealthCheckRequest
-from codealmanac.services.workspaces.models import WorkspaceRegistryStatus
-from codealmanac.services.workspaces.requests import (
+from codealmanac.wiki.health.requests import HealthCheckRequest
+from codealmanac.wiki.workspaces.models import WorkspaceRegistryStatus
+from codealmanac.wiki.workspaces.requests import (
     DropWorkspaceRequest,
     InitializeWorkspaceRequest,
     RegisterWorkspaceRequest,
     SelectWorkspaceRequest,
 )
-from codealmanac.services.workspaces.roots import is_initialized_almanac_root
+from codealmanac.wiki.workspaces.roots import is_initialized_almanac_root
 
 
 def test_initialize_creates_almanac_wiki_and_registry(

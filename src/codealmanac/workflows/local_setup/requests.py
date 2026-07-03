@@ -6,7 +6,7 @@ from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.services.control.models import (
     ControlDeliveryMode,
 )
-from codealmanac.services.workspaces.roots import (
+from codealmanac.wiki.workspaces.roots import (
     DEFAULT_ALMANAC_ROOT,
     validate_almanac_root_field,
 )

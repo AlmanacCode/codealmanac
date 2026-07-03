@@ -16,8 +16,8 @@ from codealmanac.services.harnesses.models import (
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 from codealmanac.services.runs.models import RunEventKind, RunStatus
 from codealmanac.services.runs.requests import ListRunsRequest, ReadRunLogRequest
-from codealmanac.services.search.requests import SearchPagesRequest
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.search.requests import SearchPagesRequest
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 from codealmanac.workflows.garden.requests import RunGardenRequest
 
 

@@ -78,10 +78,25 @@ cloud setup flow.
   `cloud / local / wiki / engine / integrations`.
 - Slice 81 implemented the first CodeAlmanac-side package cleanup:
   `services/cloud_* + workflows/cloud_* -> cloud/`. The CLI surface did not
-  change. The remaining CodeAlmanac repackaging work is `wiki/`, `engine/`, and
-  `local/`.
+  change.
+- Slice 82 implemented the next CodeAlmanac-side package cleanup: wiki files,
+  workspaces, index, search, pages, topics, health, and viewer now live under
+  `src/codealmanac/wiki/`. The CLI surface did not change. The remaining
+  CodeAlmanac repackaging work is mostly `engine/` and `local/`.
 
 ## Last Completed Work
+
+Slice 82 creates the CodeAlmanac wiki package boundary:
+
+- `src/codealmanac/wiki/` owns repo-wiki files, workspace registry/selection,
+  index, search, pages, topics, health, and viewer
+- tracked old wiki/read-model source files were removed from `services/`
+- the ambiguous root `wiki/topics.py` facade was deleted because it conflicted
+  with the new `wiki/topics/` command package
+- architecture tests now prevent old wiki service source modules from coming
+  back and keep `wiki/` behind the integration boundary
+- verification passed with `uv run ruff check src tests`,
+  `uv run pytest -q --tb=short` (`510 passed`), and `git diff --check`
 
 Slice 81 creates the CodeAlmanac cloud package boundary:
 

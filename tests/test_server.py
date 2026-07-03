@@ -12,7 +12,7 @@ from codealmanac.services.runs.requests import (
     RecordRunEventRequest,
     StartRunRequest,
 )
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 
 
 def test_server_serves_static_assets_and_viewer_api(

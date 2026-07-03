@@ -26,7 +26,7 @@ from codealmanac.services.automation.models import (
 )
 from codealmanac.services.automation.requests import InstallAutomationRequest
 from codealmanac.services.config.models import DEFAULT_SYNC_QUIET
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.wiki.workspaces.service import WorkspacesService
 
 
 class AutomationJobFactory:

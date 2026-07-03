@@ -72,16 +72,11 @@ from codealmanac.services.engine_runs.service import EngineRunsService
 from codealmanac.services.engine_runs.store import EngineRunsStore
 from codealmanac.services.harnesses.ports import HarnessAdapter
 from codealmanac.services.harnesses.service import HarnessesService
-from codealmanac.services.health.service import HealthService
-from codealmanac.services.index.service import IndexService
-from codealmanac.services.index.store import IndexStore
 from codealmanac.services.local_hooks.ports import LocalGitHookManager
 from codealmanac.services.local_hooks.service import LocalHooksService
-from codealmanac.services.pages.service import PagesService
 from codealmanac.services.runs.ports import RunWorkerSpawner
 from codealmanac.services.runs.service import RunsService
 from codealmanac.services.runs.store import RunStore
-from codealmanac.services.search.service import SearchService
 from codealmanac.services.setup.ports import InstructionInstaller
 from codealmanac.services.setup.service import SetupService
 from codealmanac.services.source_bundles.service import SourceBundlesService
@@ -92,20 +87,25 @@ from codealmanac.services.sources.ports import (
 )
 from codealmanac.services.sources.service import SourcesService
 from codealmanac.services.tagging.service import TaggingService
-from codealmanac.services.topics.service import TopicsService
 from codealmanac.services.updates.ports import (
     PackageCommandRunner,
     PackageInstallMetadataProvider,
 )
 from codealmanac.services.updates.service import UpdatesService
-from codealmanac.services.viewer.renderer import MarkdownRenderer
-from codealmanac.services.viewer.service import ViewerService
-from codealmanac.services.wiki.service import WikiService
 from codealmanac.services.worker_workspaces.ports import GitWorktreeManager
 from codealmanac.services.worker_workspaces.service import WorkerWorkspacesService
 from codealmanac.services.worker_workspaces.store import WorkerWorkspacesStore
-from codealmanac.services.workspaces.service import WorkspacesService
-from codealmanac.services.workspaces.store import WorkspaceRegistryStore
+from codealmanac.wiki.health.service import HealthService
+from codealmanac.wiki.index.service import IndexService
+from codealmanac.wiki.index.store import IndexStore
+from codealmanac.wiki.pages.service import PagesService
+from codealmanac.wiki.search.service import SearchService
+from codealmanac.wiki.service import WikiService
+from codealmanac.wiki.topics.service import TopicsService
+from codealmanac.wiki.viewer.renderer import MarkdownRenderer
+from codealmanac.wiki.viewer.service import ViewerService
+from codealmanac.wiki.workspaces.service import WorkspacesService
+from codealmanac.wiki.workspaces.store import WorkspaceRegistryStore
 from codealmanac.workflows.garden.service import GardenWorkflow
 from codealmanac.workflows.ingest.service import IngestWorkflow
 from codealmanac.workflows.init.service import InitWorkflow

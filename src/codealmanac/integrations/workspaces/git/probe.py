@@ -2,7 +2,7 @@ import hashlib
 import subprocess
 from pathlib import Path
 
-from codealmanac.services.workspaces.models import (
+from codealmanac.wiki.workspaces.models import (
     WorkspaceChangeSnapshot,
     WorkspacePathChange,
     WorkspacePathState,

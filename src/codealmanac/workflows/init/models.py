@@ -2,9 +2,9 @@ from pathlib import Path
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.services.harnesses.models import HarnessRunResult
-from codealmanac.services.index.models import IndexRefreshResult
 from codealmanac.services.runs.models import RunRecord
-from codealmanac.services.workspaces.models import Workspace
+from codealmanac.wiki.index.models import IndexRefreshResult
+from codealmanac.wiki.workspaces.models import Workspace
 from codealmanac.workflows.lifecycle import LifecycleMutationReport
 
 

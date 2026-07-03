@@ -41,8 +41,8 @@ from codealmanac.services.control.schema import (
     CONTROL_SCHEMA_VERSION,
     CONTROL_TABLES,
 )
-from codealmanac.services.index.schema import index_db_path
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.index.schema import index_db_path
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 
 
 def test_default_control_db_path_uses_codealmanac_home(isolated_home: Path):

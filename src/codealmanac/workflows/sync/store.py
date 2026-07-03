@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from codealmanac.services.workspaces.identity import workspace_id_for
+from codealmanac.wiki.workspaces.identity import workspace_id_for
 from codealmanac.workflows.sync.models import SyncLedger
 
 SYNC_LEDGER_VERSION = 1

@@ -1,4 +1,4 @@
-from codealmanac.services.viewer.renderer import MarkdownRenderer
+from codealmanac.wiki.viewer.renderer import MarkdownRenderer
 
 
 def test_markdown_renderer_rewrites_only_text_wikilinks():

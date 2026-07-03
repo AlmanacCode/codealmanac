@@ -14,3 +14,8 @@
 - Moved the local package's cloud-facing client surface from scattered `services/cloud_*` and `workflows/cloud_*` modules into first-class `src/codealmanac/cloud/`.
 - Added architecture coverage so the old cloud service/workflow source files cannot reappear and the new `cloud/` package stays behind the integration boundary.
 - Verified Slice 81 with `uv run ruff check src tests` and `uv run pytest -q --tb=short` (`509 passed`).
+- Planned and implemented Slice 82 in `docs/plans/2026-07-03-slice-82-codealmanac-wiki-package.md`.
+- Moved repo-wiki/read-model code into first-class `src/codealmanac/wiki/`: wiki files, workspaces, index, search, pages, topics, health, and viewer.
+- Removed the ambiguous root `wiki/topics.py` facade because it conflicted with the new `wiki/topics/` command package; callers now import topic-file helpers directly.
+- Added architecture coverage so the old wiki/read-model `services/` source files cannot reappear and the new `wiki/` package stays behind the integration boundary.
+- Verified Slice 82 with `uv run ruff check src tests`, `uv run pytest -q --tb=short` (`510 passed`), and `git diff --check`.

@@ -1,7 +1,8 @@
 # Target Architecture
 
 This is a partially implemented target. Slice 81 implemented the
-`codealmanac.cloud` package boundary. The broader local/wiki/engine and hosted
+`codealmanac.cloud` package boundary. Slice 82 implemented the
+`codealmanac.wiki` package boundary. The broader local/engine and hosted
 package refactors are still proposed.
 
 ## Shared Product Model
@@ -84,7 +85,9 @@ wiki/
   viewer/
 ```
 
-This groups the current `wiki`, `workspaces`, `index`, `search`, `pages`, `topics`, `health`, and `viewer` concepts.
+Implemented in Slice 82. This groups the old `services/wiki`,
+`services/workspaces`, `services/index`, `services/search`, `services/pages`,
+`services/topics`, `services/health`, and `services/viewer` concepts.
 
 ### `engine/`
 

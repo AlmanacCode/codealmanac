@@ -76,8 +76,14 @@ The event bus should coordinate side effects. It should not hide product policy.
 
 ## Slice E: Local Product-Area Repackaging
 
-Status: partially started. Slice 81 completed the cloud-client portion:
-`services/cloud_* + workflows/cloud_* -> cloud/`.
+Status: partially started.
+
+Completed:
+
+- Slice 81: `services/cloud_* + workflows/cloud_* -> cloud/`
+- Slice 82: `services/wiki`, `services/workspaces`, `services/index`,
+  `services/search`, `services/pages`, `services/topics`, `services/health`,
+  and `services/viewer` -> `wiki/`
 
 Goal:
 
@@ -92,7 +98,6 @@ Do this with import-move tooling and thin compatibility only inside the same sli
 
 Remaining work in this slice family:
 
-- `services/wiki/index/search/pages/topics/viewer/workspaces -> wiki/`
 - `services/source_bundles/sources/harnesses/worker_workspaces + lifecycle workflows -> engine/`
 - `control/deliveries/local_hooks/local_* workflows -> local/`
 

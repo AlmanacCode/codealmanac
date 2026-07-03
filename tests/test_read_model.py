@@ -6,10 +6,10 @@ import pytest
 from codealmanac.app import create_app
 from codealmanac.core.errors import NotFoundError
 from codealmanac.core.models import AppConfig
-from codealmanac.services.index.requests import ReindexRequest
-from codealmanac.services.pages.requests import ShowPageRequest
-from codealmanac.services.search.requests import SearchPagesRequest
-from codealmanac.services.workspaces.requests import (
+from codealmanac.wiki.index.requests import ReindexRequest
+from codealmanac.wiki.pages.requests import ShowPageRequest
+from codealmanac.wiki.search.requests import SearchPagesRequest
+from codealmanac.wiki.workspaces.requests import (
     InitializeWorkspaceRequest,
     RegisterWorkspaceRequest,
 )

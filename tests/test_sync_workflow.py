@@ -29,8 +29,8 @@ from codealmanac.services.runs.requests import (
 )
 from codealmanac.services.sources.models import TranscriptApp, TranscriptCandidate
 from codealmanac.services.sources.requests import DiscoverTranscriptsRequest
-from codealmanac.services.workspaces.identity import workspace_id_for
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.workspaces.identity import workspace_id_for
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 from codealmanac.workflows.sync.models import (
     SyncExecution,
     SyncLedger,

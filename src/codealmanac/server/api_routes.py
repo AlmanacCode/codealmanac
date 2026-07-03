@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from codealmanac.app import CodeAlmanac
-from codealmanac.services.viewer.models import (
+from codealmanac.wiki.viewer.models import (
     ViewerFile,
     ViewerJob,
     ViewerJobs,
@@ -13,7 +13,7 @@ from codealmanac.services.viewer.models import (
     ViewerSearch,
     ViewerTopic,
 )
-from codealmanac.services.viewer.requests import (
+from codealmanac.wiki.viewer.requests import (
     ViewerFileRequest,
     ViewerJobRequest,
     ViewerJobsRequest,

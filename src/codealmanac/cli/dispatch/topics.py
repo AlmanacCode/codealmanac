@@ -9,7 +9,7 @@ from codealmanac.cli.render.root import (
     render_topic_rewrite_mutation,
     render_topics,
 )
-from codealmanac.services.topics.requests import (
+from codealmanac.wiki.topics.requests import (
     CreateTopicRequest,
     DeleteTopicRequest,
     DescribeTopicRequest,

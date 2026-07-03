@@ -26,7 +26,7 @@ from codealmanac.services.automation.requests import (
     InstallAutomationRequest,
     UninstallAutomationRequest,
 )
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 
 
 class FakeSchedulerAdapter:

@@ -12,7 +12,7 @@ from codealmanac.services.harnesses.models import (
     HarnessKind,
     HarnessTranscriptRef,
 )
-from codealmanac.services.workspaces.roots import validate_almanac_root_field
+from codealmanac.wiki.workspaces.roots import validate_almanac_root_field
 
 RUN_ID_PATTERN = r"^[A-Za-z0-9_-]+$"
 RunId = Annotated[

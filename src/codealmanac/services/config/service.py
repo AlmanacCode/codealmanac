@@ -5,8 +5,8 @@ from codealmanac.core.paths import normalize_path
 from codealmanac.services.config.models import CodeAlmanacConfig
 from codealmanac.services.config.requests import LoadConfigRequest
 from codealmanac.services.config.store import ConfigStore
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.wiki.workspaces.requests import SelectWorkspaceRequest
+from codealmanac.wiki.workspaces.service import WorkspacesService
 
 PROJECT_CONFIG_NAME = "config.toml"
 

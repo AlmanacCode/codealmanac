@@ -2,7 +2,7 @@ import json
 
 from pydantic import BaseModel
 
-from codealmanac.services.index.models import IndexRefreshResult
+from codealmanac.wiki.index.models import IndexRefreshResult
 
 
 def print_json_model(model: BaseModel) -> None:

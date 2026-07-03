@@ -9,6 +9,7 @@ def test_cli_workflows_and_services_do_not_import_integrations():
     checked_roots = (
         SRC_ROOT / "cli",
         SRC_ROOT / "cloud",
+        SRC_ROOT / "wiki",
         SRC_ROOT / "workflows",
         SRC_ROOT / "services",
     )
@@ -260,6 +261,31 @@ def test_cloud_package_owns_cloud_client_surface():
     assert all(not any(root.glob("*.py")) for root in forbidden_roots)
 
 
+def test_wiki_package_owns_wiki_read_model_surface():
+    wiki_root = SRC_ROOT / "wiki"
+    forbidden_roots = (
+        SRC_ROOT / "services/wiki",
+        SRC_ROOT / "services/workspaces",
+        SRC_ROOT / "services/index",
+        SRC_ROOT / "services/search",
+        SRC_ROOT / "services/pages",
+        SRC_ROOT / "services/topics",
+        SRC_ROOT / "services/health",
+        SRC_ROOT / "services/viewer",
+    )
+
+    assert {
+        "health",
+        "index",
+        "pages",
+        "search",
+        "topics",
+        "viewer",
+        "workspaces",
+    } <= {path.name for path in wiki_root.iterdir() if path.is_dir()}
+    assert all(not any(root.glob("*.py")) for root in forbidden_roots)
+
+
 def test_local_run_preparation_workflow_only_orchestrates_services():
     workflow_root = SRC_ROOT / "workflows/local_runs"
     service_text = (workflow_root / "service.py").read_text(encoding="utf-8")
@@ -442,28 +468,28 @@ def test_rich_terminal_ui_stays_in_cli_render_edge():
 
 
 def test_index_read_views_are_separate_from_projection_writes():
-    store = SRC_ROOT / "services/index/store.py"
-    views = SRC_ROOT / "services/index/views.py"
+    store = SRC_ROOT / "wiki/index/store.py"
+    views = SRC_ROOT / "wiki/index/views.py"
     view_modules = (
         views,
-        SRC_ROOT / "services/index/search_views.py",
-        SRC_ROOT / "services/index/summary_views.py",
-        SRC_ROOT / "services/index/page_views.py",
-        SRC_ROOT / "services/index/topic_views.py",
-        SRC_ROOT / "services/index/health_views.py",
-        SRC_ROOT / "services/index/health_graph_views.py",
-        SRC_ROOT / "services/index/health_source_views.py",
+        SRC_ROOT / "wiki/index/search_views.py",
+        SRC_ROOT / "wiki/index/summary_views.py",
+        SRC_ROOT / "wiki/index/page_views.py",
+        SRC_ROOT / "wiki/index/topic_views.py",
+        SRC_ROOT / "wiki/index/health_views.py",
+        SRC_ROOT / "wiki/index/health_graph_views.py",
+        SRC_ROOT / "wiki/index/health_source_views.py",
     )
     views_text = views.read_text(encoding="utf-8")
 
     assert views.is_file()
     assert "search_pages(connection, request)" in store.read_text(encoding="utf-8")
     assert len(views_text.splitlines()) <= 40
-    assert "codealmanac.services.index.search_views import search_pages" in views_text
-    assert "codealmanac.services.index.summary_views import index_counts" in views_text
-    assert "codealmanac.services.index.page_views import get_page_view" in views_text
-    assert "codealmanac.services.index.topic_views import" in views_text
-    assert "codealmanac.services.index.health_views import" in views_text
+    assert "codealmanac.wiki.index.search_views import search_pages" in views_text
+    assert "codealmanac.wiki.index.summary_views import index_counts" in views_text
+    assert "codealmanac.wiki.index.page_views import get_page_view" in views_text
+    assert "codealmanac.wiki.index.topic_views import" in views_text
+    assert "codealmanac.wiki.index.health_views import" in views_text
     for path in view_modules:
         text = path.read_text(encoding="utf-8")
         assert "load_page_document" not in text
@@ -475,7 +501,7 @@ def test_index_read_views_are_separate_from_projection_writes():
 
 
 def test_index_read_views_are_split_by_query_family():
-    index_root = SRC_ROOT / "services/index"
+    index_root = SRC_ROOT / "wiki/index"
     expected = {
         "views.py",
         "search_views.py",
@@ -518,7 +544,7 @@ def test_index_read_views_are_split_by_query_family():
 
 
 def test_index_store_keeps_write_side_responsibilities_split():
-    index_root = SRC_ROOT / "services/index"
+    index_root = SRC_ROOT / "wiki/index"
     store = (index_root / "store.py").read_text(encoding="utf-8")
     schema = (index_root / "schema.py").read_text(encoding="utf-8")
     sources = (index_root / "sources.py").read_text(encoding="utf-8")
@@ -580,7 +606,7 @@ def test_serve_css_does_not_scale_type_with_viewport_width():
 
 
 def test_viewer_service_keeps_scope_and_projection_boundaries():
-    viewer_root = SRC_ROOT / "services/viewer"
+    viewer_root = SRC_ROOT / "wiki/viewer"
     service_text = (viewer_root / "service.py").read_text(encoding="utf-8")
     scope_text = (viewer_root / "workspace_scope.py").read_text(encoding="utf-8")
     projections_text = (viewer_root / "projections.py").read_text(encoding="utf-8")
@@ -616,7 +642,7 @@ def test_viewer_service_keeps_scope_and_projection_boundaries():
 
 
 def test_workspace_service_keeps_identity_selection_and_status_boundaries():
-    workspace_root = SRC_ROOT / "services/workspaces"
+    workspace_root = SRC_ROOT / "wiki/workspaces"
     service_text = (workspace_root / "service.py").read_text(encoding="utf-8")
     identity_text = (workspace_root / "identity.py").read_text(encoding="utf-8")
     selection_text = (workspace_root / "selection.py").read_text(encoding="utf-8")
@@ -659,11 +685,11 @@ def test_workspace_service_keeps_identity_selection_and_status_boundaries():
     assert "def workspace_registry_status(" in status_text
     assert "def available_registry_entries(" in status_text
     assert "WorkspaceRegistryStatus.AVAILABLE" in status_text
-    assert "from codealmanac.services.workspaces.service import" not in store_text
+    assert "from codealmanac.wiki.workspaces.service import" not in store_text
 
 
 def test_topics_service_keeps_graph_and_workspace_boundaries():
-    topics_root = SRC_ROOT / "services/topics"
+    topics_root = SRC_ROOT / "wiki/topics"
     service_text = (topics_root / "service.py").read_text(encoding="utf-8")
     mutations_text = (topics_root / "mutations.py").read_text(encoding="utf-8")
     graph_text = (topics_root / "graph.py").read_text(encoding="utf-8")
@@ -693,7 +719,6 @@ def test_topics_service_keeps_graph_and_workspace_boundaries():
         "plan_page_topic_rewrites(",
         "apply_page_topic_rewrites(",
         "frontmatter_rewrite",
-        "codealmanac.services.wiki.topics",
     )
 
     assert {"graph.py", "mutations.py", "read_model.py", "workspace.py"} <= {
@@ -716,13 +741,13 @@ def test_topics_service_keeps_graph_and_workspace_boundaries():
     assert "def reject_cycle(" in graph_text
     assert "def ancestors_of(" in graph_text
     assert "depth < 32" in graph_text
-    assert "codealmanac.services.index" not in graph_text
-    assert "codealmanac.services.workspaces" not in graph_text
+    assert "codealmanac.wiki.index" not in graph_text
+    assert "codealmanac.wiki.workspaces" not in graph_text
     assert "def existing_topic_slugs(" in read_model_text
     assert "IndexService" in read_model_text
     assert "def resolve_topic_workspace(" in workspace_text
     assert "SelectWorkspaceRequest(" in workspace_text
-    assert "codealmanac.services.index" not in workspace_text
+    assert "codealmanac.wiki.index" not in workspace_text
 
 
 def test_local_hooks_service_keeps_file_writes_in_git_integration():
@@ -747,33 +772,20 @@ def test_local_hooks_service_keeps_file_writes_in_git_integration():
 
 
 def test_wiki_topics_yaml_stays_split_by_read_and_mutation():
-    wiki_root = SRC_ROOT / "services/wiki"
-    facade_text = (wiki_root / "topics.py").read_text(encoding="utf-8")
+    wiki_root = SRC_ROOT / "wiki"
     models_text = (wiki_root / "topic_models.py").read_text(encoding="utf-8")
     read_text = (wiki_root / "topic_read.py").read_text(encoding="utf-8")
     file_text = (wiki_root / "topic_file.py").read_text(encoding="utf-8")
-    forbidden_facade_fragments = (
-        "class TopicDefinition",
-        "class TopicsYamlFile",
-        "def load_topics_yaml",
-        "def load_topics_file",
-        "CommentedMap",
-        "YAML(",
-        "safe_load",
-    )
 
     assert {
         "topic_file.py",
         "topic_models.py",
         "topic_read.py",
     } <= {path.name for path in wiki_root.glob("*.py")}
-    assert len(facade_text.splitlines()) <= 30
+    assert not (wiki_root / "topics.py").exists()
     assert len(models_text.splitlines()) <= 80
     assert len(read_text.splitlines()) <= 60
     assert len(file_text.splitlines()) <= 220
-    assert [
-        fragment for fragment in forbidden_facade_fragments if fragment in facade_text
-    ] == []
 
     assert "class TopicDefinition" in models_text
     assert "class TopicsYaml" in models_text
@@ -1983,7 +1995,7 @@ def test_sync_workflow_policy_stays_out_of_service_orchestration():
         "codealmanac.workflows.run_queue",
         "codealmanac.services.sources.service",
         "codealmanac.services.runs.service",
-        "codealmanac.services.workspaces.service",
+        "codealmanac.wiki.workspaces.service",
     )
 
     assert evaluation.is_file()
@@ -2089,8 +2101,8 @@ def test_sync_execution_effects_stay_out_of_service_orchestration():
 
 def test_viewer_jobs_surface_stays_read_only():
     paths = (
-        SRC_ROOT / "services/viewer/service.py",
-        SRC_ROOT / "services/viewer/jobs.py",
+        SRC_ROOT / "wiki/viewer/service.py",
+        SRC_ROOT / "wiki/viewer/jobs.py",
         SRC_ROOT / "server/app.py",
         SRC_ROOT / "server/api_routes.py",
     )
@@ -2169,7 +2181,7 @@ def test_run_id_validation_is_owned_by_runs_models():
     )
     runs_store = (SRC_ROOT / "services/runs/store.py").read_text(encoding="utf-8")
     runs_paths = (SRC_ROOT / "services/runs/paths.py").read_text(encoding="utf-8")
-    viewer_requests = (SRC_ROOT / "services/viewer/requests.py").read_text(
+    viewer_requests = (SRC_ROOT / "wiki/viewer/requests.py").read_text(
         encoding="utf-8"
     )
 
@@ -2240,12 +2252,12 @@ def test_run_ledger_persistence_stays_split_by_responsibility():
 
 
 def test_repo_almanac_root_is_workspace_owned():
-    from codealmanac.services.workspaces.roots import DEFAULT_ALMANAC_ROOT
+    from codealmanac.wiki.workspaces.roots import DEFAULT_ALMANAC_ROOT
 
     core_paths = (SRC_ROOT / "core/paths.py").read_text(encoding="utf-8")
 
     assert Path("almanac") == DEFAULT_ALMANAC_ROOT
-    assert (SRC_ROOT / "services/workspaces/roots.py").is_file()
+    assert (SRC_ROOT / "wiki/workspaces/roots.py").is_file()
     assert "nearest_almanac_root" not in core_paths
 
 

@@ -20,7 +20,7 @@ from codealmanac.services.automation.selection import (
     install_task_selection,
     status_task_selection,
 )
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.wiki.workspaces.service import WorkspacesService
 
 
 class AutomationService:

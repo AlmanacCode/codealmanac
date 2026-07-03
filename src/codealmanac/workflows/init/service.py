@@ -5,14 +5,14 @@ from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
 from codealmanac.services.runs.models import RunOperation
 from codealmanac.services.runs.requests import StartRunRequest
 from codealmanac.services.runs.service import RunsService
-from codealmanac.services.wiki.service import WikiService
-from codealmanac.services.workspaces.models import Workspace
-from codealmanac.services.workspaces.requests import (
+from codealmanac.wiki.service import WikiService
+from codealmanac.wiki.workspaces.models import Workspace
+from codealmanac.wiki.workspaces.requests import (
     InitializeWorkspaceRequest,
     RegisterWorkspaceRequest,
 )
-from codealmanac.services.workspaces.roots import AlmanacRootMatch
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.wiki.workspaces.roots import AlmanacRootMatch
+from codealmanac.wiki.workspaces.service import WorkspacesService
 from codealmanac.workflows.init.models import (
     InitPreparation,
     InitPromptPayload,

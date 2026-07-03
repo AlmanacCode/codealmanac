@@ -5,7 +5,7 @@ import pytest
 
 from codealmanac.app import CodeAlmanac, create_app
 from codealmanac.core.models import AppConfig
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 
 
 @pytest.fixture

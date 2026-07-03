@@ -45,8 +45,8 @@ from codealmanac.services.runs.requests import (
 )
 from codealmanac.services.runs.store import RunStore
 from codealmanac.services.runs.streaming import RunAttachStreamer
-from codealmanac.services.workspaces.identity import workspace_id_for
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.workspaces.identity import workspace_id_for
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 
 
 def workspace_jobs_path(repo: Path) -> Path:

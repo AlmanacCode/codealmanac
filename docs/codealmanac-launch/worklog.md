@@ -2,6 +2,37 @@
 
 ## 2026-07-03
 
+## 2026-07-03 Slice 82: CodeAlmanac wiki package boundary
+
+- Planned Slice 82 in
+  `docs/plans/2026-07-03-slice-82-codealmanac-wiki-package.md`.
+- Moved the repo-wiki/read-model surface into `src/codealmanac/wiki/`.
+- Removed tracked old wiki/read-model source modules from:
+  - `src/codealmanac/services/wiki`
+  - `src/codealmanac/services/workspaces`
+  - `src/codealmanac/services/index`
+  - `src/codealmanac/services/search`
+  - `src/codealmanac/services/pages`
+  - `src/codealmanac/services/topics`
+  - `src/codealmanac/services/health`
+  - `src/codealmanac/services/viewer`
+- Removed the ambiguous root `wiki/topics.py` facade. It conflicted with the
+  new `wiki/topics/` package; internal callers now import `topic_file`,
+  `topic_models`, and `topic_read` directly.
+- Kept the composition root in `src/codealmanac/app.py`; it wires the moved
+  wiki services exactly as before.
+- Added architecture coverage so:
+  - `src/codealmanac/wiki/` cannot import integrations;
+  - old tracked wiki/read-model service source files cannot come back;
+  - index/viewer/workspace/topic split-boundary tests point at the new package.
+- Focused local verification passed:
+  - `uv run pytest tests/test_read_model.py tests/test_wiki_parsing.py tests/test_topics_health.py tests/test_topics_mutation.py tests/test_viewer_renderer.py tests/test_viewer_service.py tests/test_workspace_registry_store.py tests/test_git_workspace_probe.py tests/test_build_workflow.py tests/test_init_workflow.py tests/test_cli.py tests/test_architecture.py -q --tb=short`
+    (`198 passed`)
+- Full local verification passed:
+  - `uv run ruff check src tests`
+  - `uv run pytest -q --tb=short` (`510 passed`)
+  - `git diff --check`
+
 ## 2026-07-03 Slice 81: CodeAlmanac cloud package boundary
 
 - Planned Slice 81 in

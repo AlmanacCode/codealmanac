@@ -2,8 +2,8 @@ from pathlib import Path
 
 from codealmanac.app import create_app
 from codealmanac.core.models import AppConfig
-from codealmanac.services.health.requests import HealthCheckRequest
-from codealmanac.services.topics.requests import ListTopicsRequest, ShowTopicRequest
+from codealmanac.wiki.health.requests import HealthCheckRequest
+from codealmanac.wiki.topics.requests import ListTopicsRequest, ShowTopicRequest
 
 
 def test_topics_list_and_show_descendants(tmp_path: Path, isolated_home: Path):

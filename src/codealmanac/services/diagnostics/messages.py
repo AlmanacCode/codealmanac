@@ -1,4 +1,4 @@
-from codealmanac.services.index.models import HealthReport, IndexSummary
+from codealmanac.wiki.index.models import HealthReport, IndexSummary
 
 
 def first_line(value: str) -> str:

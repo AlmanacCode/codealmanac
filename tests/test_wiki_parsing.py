@@ -1,6 +1,6 @@
-from codealmanac.services.wiki.frontmatter import parse_frontmatter
-from codealmanac.services.wiki.paths import escape_glob_meta, normalize_reference_path
-from codealmanac.services.wiki.wikilinks import classify_wikilink
+from codealmanac.wiki.frontmatter import parse_frontmatter
+from codealmanac.wiki.paths import escape_glob_meta, normalize_reference_path
+from codealmanac.wiki.wikilinks import classify_wikilink
 
 
 def test_frontmatter_uses_pydantic_validated_shape():

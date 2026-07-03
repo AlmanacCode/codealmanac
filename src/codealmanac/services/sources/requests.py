@@ -4,7 +4,7 @@ from pydantic import Field, field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.services.sources.models import SourceRef, TranscriptApp
-from codealmanac.services.workspaces.roots import (
+from codealmanac.wiki.workspaces.roots import (
     DEFAULT_ALMANAC_ROOT,
     normalized_almanac_roots,
 )

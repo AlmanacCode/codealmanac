@@ -5,7 +5,7 @@ from codealmanac.cli.render.common import (
     print_json_model,
     print_json_rows,
 )
-from codealmanac.services.index.models import IndexRefreshResult, SearchPageResult
+from codealmanac.wiki.index.models import IndexRefreshResult, SearchPageResult
 
 
 def render_search(rows: tuple[SearchPageResult, ...], json_output: bool) -> None:

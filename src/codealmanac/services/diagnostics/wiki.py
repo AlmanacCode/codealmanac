@@ -13,11 +13,11 @@ from codealmanac.services.diagnostics.models import (
     DoctorStatus,
 )
 from codealmanac.services.diagnostics.requests import DoctorRequest
-from codealmanac.services.index.service import IndexService
-from codealmanac.services.workspaces.models import Workspace, WorkspaceRegistryStatus
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
-from codealmanac.services.workspaces.service import WorkspacesService
-from codealmanac.services.workspaces.status import workspace_registry_status
+from codealmanac.wiki.index.service import IndexService
+from codealmanac.wiki.workspaces.models import Workspace, WorkspaceRegistryStatus
+from codealmanac.wiki.workspaces.requests import SelectWorkspaceRequest
+from codealmanac.wiki.workspaces.service import WorkspacesService
+from codealmanac.wiki.workspaces.status import workspace_registry_status
 
 
 def wiki_checks(

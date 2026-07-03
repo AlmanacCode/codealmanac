@@ -9,7 +9,7 @@ from codealmanac.integrations.workspaces.git.probe import (
     state_from_status,
 )
 from codealmanac.integrations.workspaces.git.state import GitLocalStateProbe
-from codealmanac.services.workspaces.models import WorkspacePathState
+from codealmanac.wiki.workspaces.models import WorkspacePathState
 
 
 def test_parse_git_status_handles_renames_and_untracked_paths():

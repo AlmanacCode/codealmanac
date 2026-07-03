@@ -19,7 +19,7 @@ from codealmanac.services.runs.requests import (
     RecordRunHarnessTranscriptRequest,
     StartRunRequest,
 )
-from codealmanac.services.viewer.requests import (
+from codealmanac.wiki.viewer.requests import (
     ViewerFileRequest,
     ViewerJobRequest,
     ViewerJobsRequest,
@@ -28,7 +28,7 @@ from codealmanac.services.viewer.requests import (
     ViewerSearchRequest,
     ViewerTopicRequest,
 )
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 
 
 def test_viewer_overview_search_and_topic_use_index_read_model(

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from codealmanac.services.workspaces.store import temporary_registry_path
+from codealmanac.wiki.workspaces.store import temporary_registry_path
 
 
 def test_temporary_registry_paths_are_unique(tmp_path: Path):

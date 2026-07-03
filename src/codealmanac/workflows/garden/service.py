@@ -1,12 +1,12 @@
 from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
-from codealmanac.services.health.requests import HealthCheckRequest
-from codealmanac.services.health.service import HealthService
-from codealmanac.services.index.models import HealthReport, IndexSummary
-from codealmanac.services.index.service import IndexService
 from codealmanac.services.runs.models import RunEventKind, RunOperation
 from codealmanac.services.runs.requests import StartRunRequest
 from codealmanac.services.runs.service import RunsService
-from codealmanac.services.workspaces.models import Workspace
+from codealmanac.wiki.health.requests import HealthCheckRequest
+from codealmanac.wiki.health.service import HealthService
+from codealmanac.wiki.index.models import HealthReport, IndexSummary
+from codealmanac.wiki.index.service import IndexService
+from codealmanac.wiki.workspaces.models import Workspace
 from codealmanac.workflows.garden.models import GardenPromptPayload, GardenResult
 from codealmanac.workflows.garden.requests import (
     RunGardenRequest,

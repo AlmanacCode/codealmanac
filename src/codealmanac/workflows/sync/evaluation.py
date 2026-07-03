@@ -9,8 +9,8 @@ from codealmanac.services.runs.service import RunsService
 from codealmanac.services.sources.models import TranscriptCandidate
 from codealmanac.services.sources.requests import DiscoverTranscriptsRequest
 from codealmanac.services.sources.service import SourcesService
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.wiki.workspaces.requests import SelectWorkspaceRequest
+from codealmanac.wiki.workspaces.service import WorkspacesService
 from codealmanac.workflows.sync.models import (
     SyncDecisionKind,
     SyncEvaluation,

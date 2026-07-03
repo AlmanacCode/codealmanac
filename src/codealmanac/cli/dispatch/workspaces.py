@@ -3,7 +3,7 @@ from pathlib import Path
 
 from codealmanac.app import CodeAlmanac
 from codealmanac.cli.render.root import render_workspace_drop, render_workspace_list
-from codealmanac.services.workspaces.requests import DropWorkspaceRequest
+from codealmanac.wiki.workspaces.requests import DropWorkspaceRequest
 
 
 def dispatch_workspaces(args: argparse.Namespace, app: CodeAlmanac) -> int:

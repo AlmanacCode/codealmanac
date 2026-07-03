@@ -1,7 +1,7 @@
 import json
 
 from codealmanac.cli.render.common import index_summary, print_json_model
-from codealmanac.services.index.models import HealthReport
+from codealmanac.wiki.index.models import HealthReport
 from codealmanac.workflows.garden.models import GardenResult
 from codealmanac.workflows.ingest.models import IngestResult
 from codealmanac.workflows.init.models import InitResult

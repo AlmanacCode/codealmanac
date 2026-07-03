@@ -1,7 +1,7 @@
 import argparse
 
 from codealmanac.cli.render.common import print_json_model, print_lines
-from codealmanac.services.index.models import PageView
+from codealmanac.wiki.index.models import PageView
 
 
 def render_page(page: PageView, args: argparse.Namespace) -> None:

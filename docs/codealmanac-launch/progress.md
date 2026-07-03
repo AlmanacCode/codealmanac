@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-03 after Slice 81 CodeAlmanac cloud package boundary.
+Sent: 2026-07-03 after Slice 82 CodeAlmanac wiki package boundary.
 
 Route:
 
@@ -19,11 +19,11 @@ doppler run --project almanac --config dev -- \
   --binding rohan-almanac-main "..."
 ```
 
-Slice 81 moved the local package's cloud-facing surface into
-`src/codealmanac/cloud/`, removed tracked old `services/cloud_*` and
-`workflows/cloud_*` source modules, and kept CLI behavior unchanged. Full local
-verification passed with `uv run ruff check src tests` and
-`uv run pytest -q --tb=short` (`509 passed`).
+Slice 82 moved the repo-wiki/read-model surface into `src/codealmanac/wiki/`,
+removed tracked old wiki/read-model service source modules, and kept CLI
+behavior unchanged. Full local verification passed with
+`uv run ruff check src tests`, `uv run pytest -q --tb=short` (`510 passed`),
+and `git diff --check`.
 
 ## Latest Local Notes
 
@@ -38,12 +38,15 @@ verification passed with `uv run ruff check src tests` and
   `docs/refactor-audit-2026-07-03-hosted-local-architecture/`.
 - Slice 81 implemented the first CodeAlmanac-side refactor from that audit:
   `services/cloud_* + workflows/cloud_* -> cloud/`.
+- Slice 82 implemented the next CodeAlmanac-side refactor from that audit:
+  wiki files, workspaces, index, search, pages, topics, health, and viewer now
+  live under `src/codealmanac/wiki/`.
 
 ## Percentages
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 98% | 97% | Slice 81 moved the cloud client surface into `src/codealmanac/cloud/`, added architecture guards, and passed full local gates. |
+| CodeAlmanac backend/local | 99% | 98% | Slice 82 moved the repo-wiki/read-model surface into `src/codealmanac/wiki/`, added architecture guards, and passed full local gates. |
 | CodeAlmanac CLI/public UX | 100% | 100% | Published CLI `0.1.9` passed public install smoke; root uninstall is now scoped to setup-owned artifacts, while automation teardown remains explicit. |
 | CodeAlmanac-hosted backend/auth/API | 100% | 100% | Slice 75 added production `/v1/repositories`; production repo list and repo status pass without per-repo permission fanout. |
 | Hosted frontend/onboarding | 100% | 99% | Slice 76 shipped repository readiness, capture handoff, maintained branches, and per-branch delivery to Vercel; Chrome verified production with no console errors. |

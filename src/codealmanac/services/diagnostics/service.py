@@ -6,8 +6,8 @@ from codealmanac.services.diagnostics.install import install_checks
 from codealmanac.services.diagnostics.models import DoctorReport
 from codealmanac.services.diagnostics.requests import DoctorRequest
 from codealmanac.services.diagnostics.wiki import wiki_checks
-from codealmanac.services.index.service import IndexService
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.wiki.index.service import IndexService
+from codealmanac.wiki.workspaces.service import WorkspacesService
 
 
 class DiagnosticsService:

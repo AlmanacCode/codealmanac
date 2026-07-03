@@ -4,7 +4,7 @@ from pathlib import Path
 
 from codealmanac.core.paths import normalize_path
 from codealmanac.services.sources.models import TranscriptApp, TranscriptCandidate
-from codealmanac.services.workspaces.roots import nearest_almanac_root
+from codealmanac.wiki.workspaces.roots import nearest_almanac_root
 
 
 def collect_jsonl(root: Path) -> tuple[Path, ...]:

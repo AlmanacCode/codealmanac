@@ -79,6 +79,12 @@ Current evidence:
   (`163 passed`). Full local verification then passed with
   `uv run ruff check src tests` and `uv run pytest -q --tb=short`
   (`509 passed`).
+- Slice 82 moved the repo-wiki/read-model surface into
+  `src/codealmanac/wiki/`. Local focused verification passed with read-model,
+  wiki parsing, topics, viewer, workspace, init/build, CLI, and architecture
+  tests (`198 passed`). Full local verification then passed with
+  `uv run ruff check src tests`, `uv run pytest -q --tb=short` (`510 passed`),
+  and `git diff --check`.
 - `tests/test_cloud_auth_service.py` proves `~/.codealmanac/auth.json`
   save/load/delete behavior, mode `0600`, malformed-file recovery, identity
   fetch, and logout.

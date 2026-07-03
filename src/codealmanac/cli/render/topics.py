@@ -1,6 +1,6 @@
 from codealmanac.cli.render.common import page_word
-from codealmanac.services.index.models import TopicDetail, TopicSummary
-from codealmanac.services.topics.models import (
+from codealmanac.wiki.index.models import TopicDetail, TopicSummary
+from codealmanac.wiki.topics.models import (
     TopicEdgeMutationResult,
     TopicMutationAction,
     TopicMutationResult,

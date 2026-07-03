@@ -8,7 +8,7 @@ from codealmanac.core.errors import ValidationFailed
 from codealmanac.core.models import AppConfig
 from codealmanac.services.config.requests import LoadConfigRequest
 from codealmanac.services.harnesses.models import HarnessKind
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
+from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 
 
 def test_config_service_returns_defaults_without_files(
