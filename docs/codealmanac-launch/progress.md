@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: pending after Slice 88 hosted updates domain split.
+Sent: 2026-07-03 after Slice 88 hosted updates domain split.
 
 Route:
 
