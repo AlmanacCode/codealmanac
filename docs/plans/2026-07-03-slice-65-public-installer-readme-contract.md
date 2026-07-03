@@ -1,6 +1,6 @@
 # Slice 65: Public Installer And README Contract
 
-Status: verified locally; deploy pending.
+Status: deployed and production-smoked.
 
 ## Intent
 
@@ -83,6 +83,27 @@ services remain the source of product behavior.
   `codealmanac==0.1.2` and correctly warned that the current shell resolves
   `codealmanac` to the stale Node binary at
   `/Users/rohan/.nvm/versions/node/v21.7.3/bin/codealmanac`.
-- `git diff --check` in both repos is still pending.
-- Production smoke after deploy is still pending:
-  `curl -fsSL https://www.codealmanac.com/install.sh | sed -n '1,80p'`
+- `git diff --check` passed in both repos before the slice commits.
+- CodeAlmanac commit `43a88a6e` was pushed to `origin/dev` and `origin/main`.
+- Hosted commit `3cb9462` was pushed to the hosted feature branch and hosted
+  `origin/main`.
+- Vercel production deploy `6RT9PwDsTAicKSHid57JjcmDkubA` is aliased to
+  `https://www.codealmanac.com`.
+- Production `https://www.codealmanac.com/install.sh` returns `HTTP/2 200`,
+  `content-type: application/x-sh`, and `x-matched-path: /install.sh`.
+- Production `install.sh` passes `sh -n`, is byte-for-byte identical to
+  `scripts/install.sh`, and contains the `uv tool install` path plus stale
+  `codealmanac` PATH-shadow detection.
+- Production homepage contains the curl installer and contains no
+  `npx codealmanac`, `codealmanac-backend-docker`, `vercel.app`, or
+  `render.com` strings.
+- Production API health returned `{"status":"ok"}`.
+- Chrome verified signed-in production `/setup` for `rohans0509`: the page
+  shows the cloud setup checklist, the curl installer, and no stale npm or old
+  backend host strings.
+- Chrome verified signed-in production `/dashboard/local-agent-access`: the
+  page shows `curl -fsSL https://www.codealmanac.com/install.sh | sh` plus
+  `codealmanac setup`, and no `npx`, old backend host, or Vercel URL.
+- Chrome verified both the source CLI and the published PyPI CLI can complete
+  the `/cli-login` handoff and save auth; `whoami` returned `rohans0509` with
+  cloud `https://api.codealmanac.com`.

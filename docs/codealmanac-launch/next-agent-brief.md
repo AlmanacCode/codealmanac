@@ -207,6 +207,20 @@ Slice 65 adds the public installer and curl-first onboarding:
 - local verification passed: CodeAlmanac full tests (`501 passed`), ruff,
   hosted route tests (`28 passed`), hosted frontend tests (`52 passed`),
   hosted lint, and hosted Next build
+- CodeAlmanac commit `43a88a6e` is on `origin/dev` and `origin/main`
+- hosted commit `3cb9462` is on the hosted feature branch and hosted
+  `origin/main`
+- Vercel production deployment `6RT9PwDsTAicKSHid57JjcmDkubA` is aliased to
+  `https://www.codealmanac.com`
+- production `/install.sh` returned `HTTP/2 200`, `content-type:
+  application/x-sh`, passed `sh -n`, and matched `scripts/install.sh`
+  byte-for-byte
+- production homepage, signed-in `/setup`, and signed-in
+  `/dashboard/local-agent-access` now show the curl installer and no stale
+  `npx`, old backend host, or Vercel URL strings
+- source CLI and published PyPI CLI setup handoffs were verified in Chrome:
+  `/cli-login` approved the one-time session, setup exited signed in as
+  `rohans0509`, and `whoami` returned cloud `https://api.codealmanac.com`
 
 ## Current Repo State
 
@@ -245,9 +259,9 @@ CodeAlmanac:
   `/Users/rohan/.local/bin/codealmanac` also reports stale `0.1.0.dev0` without
   cloud `setup`. Use `uv run codealmanac` inside this repo or a fresh
   `uv tool install` binary when verifying the Python package.
-- Local working tree note at handoff: Slice 65 currently owns the README
-  rewrite, `docs/assets/`, `scripts/install.sh`, public-contract tests, and
-  launch-folder updates. The pre-existing
+- Local working tree note at handoff: Slice 65 product/code changes are already
+  committed and pushed. Current dirty files should only be launch evidence
+  notes until the close-out docs commit lands. The pre-existing
   `docs/plans/2026-07-03-github-webhook-contract-hardening.md` remains
   untracked and should not be swept into the installer slice unless the next
   work intentionally resumes GitHub webhook planning.
@@ -256,18 +270,17 @@ Hosted:
 
 - repo: `/Users/rohan/.config/superpowers/worktrees/usealmanac/hosted-baseline-convergence`
 - branch: `codex/workos-authkit-api-foundation`
-- current Slice 63 artifact commit:
-  `47b1ada536b27a13b10eebe0878180542a01f8ba`
+- current Slice 65 artifact commit:
+  `3cb94624cacacffe2d75271080223bdc3b511b26`
 - `origin/codex/workos-authkit-api-foundation` and `origin/main` both point at
-  `47b1ada536b27a13b10eebe0878180542a01f8ba`
+  `3cb94624cacacffe2d75271080223bdc3b511b26`
 - production frontend: `https://www.codealmanac.com`
 - hosted main has setup/auth hardening, route-test guardrails, cloud setup
   checklist, production WorkOS identity schema repair, and capture-token
   storage repair, GitHub webhook event-header routing, branch-trigger delivery
-  loop protection, and Slice 63 frontend production fixes through `47b1ada`.
-- Slice 65 hosted worktree currently has frontend install-copy changes,
-  `frontend/public/install.sh`, and the product API fallback change. Commit,
-  push, deploy, and live `/install.sh` curl smoke are still pending.
+  loop protection, Slice 63 frontend production fixes, and Slice 65
+  curl-first installer/onboarding changes through `3cb9462`.
+- Slice 65 is deployed and production-smoked. The hosted worktree is clean.
 
 The local wiki command currently fails on this checkout with:
 
@@ -364,6 +377,10 @@ repaired.
   `codealmanac-hosted-gutvigm88-thealmanac.vercel.app`, production Chrome setup
   and settings checks, live settings summary check, and restored trigger state
   `main enabled=false deliveryMode=commit`.
+- Slice 65 production installer verification passed: public `/install.sh`
+  matched the repo script byte-for-byte, homepage and setup surfaces use the
+  curl installer with no stale npm/backend-host strings, API health returned
+  `{"status":"ok"}`, and Chrome verified source plus PyPI CLI setup handoffs.
 
 ## Next Pressure Tests
 
@@ -372,8 +389,9 @@ repaired.
 - Add `GITHUB_TOKEN_ENCRYPTION_KEYS` to Doppler `codealmanac/dev_personal` if a
   local signed-in setup walkthrough is needed; the backend currently refuses to
   start without it.
-- Keep setup simple. The user should not see email verification, email/password,
-  or generic SSO as part of launch.
+- Keep setup simple. Product-owned CodeAlmanac setup should stay GitHub-first;
+  WorkOS/AuthKit may still show provider-owned account verification when its
+  own policy requires it.
 - Do not implement rate limits now unless Rohan explicitly reopens that work.
 - Do not deploy every small guardrail. Batch deploys after real functionality or
   infrastructure changes.

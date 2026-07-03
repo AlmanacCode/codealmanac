@@ -1215,5 +1215,24 @@ Current evidence:
   - hosted `npm run build`
   - temp-dir installer smoke installed `codealmanac==0.1.2` and warned about
     the stale Node-era binary shadowing the installed PyPI tool.
-- Remaining proof after deploy: live `curl -fsSL
-  https://www.codealmanac.com/install.sh | sed -n '1,80p'`.
+- Deploy and production smoke passed:
+  - CodeAlmanac commit `43a88a6e` pushed to `origin/dev` and `origin/main`.
+  - Hosted commit `3cb9462` pushed to the hosted feature branch and hosted
+    `origin/main`.
+  - Vercel production deployment `6RT9PwDsTAicKSHid57JjcmDkubA` is aliased to
+    `https://www.codealmanac.com`.
+  - `https://www.codealmanac.com/install.sh` returned `HTTP/2 200`,
+    `content-type: application/x-sh`, passed `sh -n`, and matched
+    `scripts/install.sh` byte-for-byte.
+  - Production homepage contains the curl installer twice and contains no
+    `npx codealmanac`, `codealmanac-backend-docker`, `vercel.app`, or
+    `render.com` strings.
+  - `https://api.codealmanac.com/api/health` returned `{"status":"ok"}`.
+  - Chrome verified signed-in `/setup` for `rohans0509`: cloud checklist,
+    curl installer, connected `AlmanacCode`, and no stale npm or old backend
+    host strings.
+  - Chrome verified signed-in `/dashboard/local-agent-access`: curl installer,
+    `codealmanac setup`, and no `npx`, old backend host, or Vercel URL.
+  - Chrome verified source CLI and PyPI CLI `/cli-login` handoffs; both saved
+    auth and `whoami` returned `rohans0509` with cloud
+    `https://api.codealmanac.com`.
