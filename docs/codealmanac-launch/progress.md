@@ -10,6 +10,9 @@ Percentages are planning estimates, not accounting metrics.
 
 Sent: 2026-07-03 after Slice 68 production branch-trigger smoke.
 
+Pending next update: Slice 69 CLI open-route fix after PyPI `0.1.3` publish
+and installed-CLI smoke.
+
 Route:
 
 ```bash
@@ -30,9 +33,9 @@ a fresh GitHub branch push created run
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
 | CodeAlmanac backend/local | 96% | 96% | CodeAlmanac local/backend unchanged in Slice 68. |
-| CodeAlmanac CLI/public UX | 98% | 98% | Published CLI setup/capture were verified in earlier slices; Slice 68 used the CLI to disable the smoke trigger and revoke capture cleanup. |
+| CodeAlmanac CLI/public UX | 99% | 98% | Source `0.1.3` fixes `codealmanac open` to use the resolved dashboard wiki route; PyPI publish/install verification is next. |
 | CodeAlmanac-hosted backend/auth/API | 99% | 99% | Production branch push now creates an immutable branch-source run and worker completion delivered successfully. |
-| Hosted frontend/onboarding | 96% | 95% | Chrome verified signed-in `/setup` and repository dashboard after production fixes; dashboard showed delivered run. |
+| Hosted frontend/onboarding | 97% | 96% | Chrome verified the signed-in dashboard wiki route for `AlmanacCode/codealmanac` with 62 pages. |
 | Infra/deploy rename | 99% | 99% | Render is live on `eb8dba0`; Modal app `codealmanac-hosted-updates` is redeployed; Vercel frontend unchanged. |
 
 ## Update Rule

@@ -1922,3 +1922,20 @@
 - Chrome refreshed the production dashboard and showed the delivered run at the
   top. Cleanup completed: smoke trigger disabled, temp capture credential
   revoked, remote smoke branch deleted, temp worktree removed.
+- Slice 69 re-tested the public CLI path in the user's real Chrome session.
+  The shell now resolves `codealmanac` only to
+  `/Users/rohan/.local/bin/codealmanac`; the stale global npm executable was
+  removed locally.
+- Published PyPI `0.1.2` still opens the old
+  `https://www.codealmanac.com/wiki/github/AlmanacCode/codealmanac` route for
+  `codealmanac open`. That route sends the user back through GitHub OAuth and
+  is the wrong public command target.
+- Source `0.1.3` resolves the current GitHub checkout through the cloud
+  repositories API and opens
+  `https://www.codealmanac.com/dashboard/accounts/264516179/repositories/1212149375/wiki`.
+- Chrome verified the fixed dashboard wiki URL as signed-in `rohans0509`.
+  The page rendered `AlmanacCode/codealmanac`, `Wiki`, and `Default branch /
+  62 pages`.
+- Source `codealmanac setup --yes --json` stayed cloud-only and idempotent:
+  it reported `already_signed_in`, installed no local automation, and found the
+  Codex and Claude instruction files already installed.

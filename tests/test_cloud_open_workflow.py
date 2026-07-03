@@ -3,17 +3,23 @@ from pathlib import Path
 import pytest
 
 from codealmanac.core.errors import ValidationFailed
+from codealmanac.services.cloud_repositories.models import CloudRepository
+from codealmanac.services.cloud_repositories.requests import (
+    ResolveCloudRepositoryRequest,
+)
 from codealmanac.workflows.cloud_open.requests import OpenCloudTargetRequest
 from codealmanac.workflows.cloud_open.service import CloudOpenWorkflow
 from codealmanac.workflows.local_setup.models import LocalRepositoryState
 
 
-def test_cloud_open_workflow_opens_wiki_url_for_current_github_checkout(
+def test_cloud_open_workflow_resolves_and_opens_dashboard_wiki_url(
     tmp_path: Path,
 ) -> None:
     browser = FakeBrowser()
+    repositories = FakeCloudRepositories()
     workflow = CloudOpenWorkflow(
         FakeRepositoryProbe(local_repository_state(tmp_path / "repo")),
+        repositories,
         browser,
     )
 
@@ -21,17 +27,28 @@ def test_cloud_open_workflow_opens_wiki_url_for_current_github_checkout(
         OpenCloudTargetRequest(
             cwd=tmp_path / "repo",
             app_url="https://app.example.test/",
+            api_url="https://api.example.test/",
         )
     )
 
-    assert result.url == "https://app.example.test/wiki/github/AlmanacCode/codealmanac"
+    assert result.url == (
+        "https://app.example.test/dashboard/accounts/264516179"
+        "/repositories/1212149375/wiki"
+    )
     assert result.opened is True
     assert browser.opened == [result.url]
+    assert repositories.resolved == [
+        ResolveCloudRepositoryRequest(
+            api_url="https://api.example.test",
+            full_name="AlmanacCode/codealmanac",
+        )
+    ]
 
 
 def test_cloud_open_workflow_builds_setup_and_repo_targets(tmp_path: Path) -> None:
     workflow = CloudOpenWorkflow(
         FakeRepositoryProbe(local_repository_state(tmp_path / "repo")),
+        FakeCloudRepositories(),
         FakeBrowser(),
     )
 
@@ -90,6 +107,7 @@ def test_cloud_open_workflow_builds_setup_and_repo_targets(tmp_path: Path) -> No
 def test_cloud_open_workflow_opens_github_direct_target(tmp_path: Path) -> None:
     workflow = CloudOpenWorkflow(
         FakeRepositoryProbe(local_repository_state(tmp_path / "repo")),
+        FakeCloudRepositories(),
         FakeBrowser(),
     )
 
@@ -113,6 +131,7 @@ def test_cloud_open_workflow_rejects_unavailable_checkout(tmp_path: Path) -> Non
                 unavailable_reason="not a git repository",
             )
         ),
+        FakeCloudRepositories(),
         FakeBrowser(),
     )
 
@@ -135,6 +154,20 @@ class FakeRepositoryProbe:
 
     def read(self, cwd: Path) -> LocalRepositoryState:
         return self.state
+
+
+class FakeCloudRepositories:
+    def __init__(self) -> None:
+        self.resolved: list[ResolveCloudRepositoryRequest] = []
+
+    def resolve(self, request: ResolveCloudRepositoryRequest) -> CloudRepository:
+        self.resolved.append(request)
+        return CloudRepository(
+            repo_id=1212149375,
+            account_id=264516179,
+            full_name=request.full_name,
+            default_branch="main",
+        )
 
 
 def local_repository_state(repo: Path) -> LocalRepositoryState:

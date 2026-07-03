@@ -762,30 +762,37 @@ def test_cli_open_commands_use_current_checkout_and_browser_handoff(
     repo = tmp_path / "repo"
     repo.mkdir()
     browser = CliBrowserOpener()
+    repositories_client = CliCloudRepositoriesClient()
     app = create_app(
         AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
+        cloud_auth_client=CliCloudAuthClient(),
+        cloud_repositories_client=repositories_client,
         local_repository_probe=CliLocalRepositoryProbe(local_repository_state(repo)),
         browser_opener=browser,
     )
     monkeypatch.chdir(repo)
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
 
+    assert main(["login", "--timeout", "0", "--poll-every", "0"]) == 0
+    capsys.readouterr()
+
     assert main(["open", "--app-url", "https://app.example.test", "--no-browser"]) == 0
     open_output = capsys.readouterr()
     assert (
-        "url: https://app.example.test/wiki/github/AlmanacCode/codealmanac\n"
+        "url: https://app.example.test/dashboard/accounts/10/repositories/1/wiki\n"
         in open_output.out
     )
     assert browser.opened == []
+    assert repositories_client.resolves == ["AlmanacCode/codealmanac"]
 
     assert main([]) == 0
     bare_output = capsys.readouterr()
     assert (
-        "opened: https://www.codealmanac.com/wiki/github/AlmanacCode/codealmanac\n"
+        "opened: https://www.codealmanac.com/dashboard/accounts/10/repositories/1/wiki\n"
         in bare_output.out
     )
     assert browser.opened == [
-        "https://www.codealmanac.com/wiki/github/AlmanacCode/codealmanac"
+        "https://www.codealmanac.com/dashboard/accounts/10/repositories/1/wiki"
     ]
 
     assert (

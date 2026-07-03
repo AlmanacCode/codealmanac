@@ -1332,3 +1332,26 @@ Known residue:
   evidence.
 - Conversation-batch run `aeb55370-cbdd-4ded-af6a-5e0e22f0ef0a` is still
   marked `running` from a stale pre-fix Modal image.
+
+## Slice 69 CLI Open Route Verification
+
+- Installed public CLI `0.1.2` was verified to be the PyPI executable at
+  `/Users/rohan/.local/bin/codealmanac`, not the stale Node/npm binary.
+- Public `0.1.2` still failed the product route contract:
+  `codealmanac open --no-browser` printed the obsolete
+  `/wiki/github/AlmanacCode/codealmanac` URL.
+- Source `0.1.3` passed the route contract:
+  `uv run codealmanac open --no-browser` printed the resolved dashboard wiki
+  URL
+  `/dashboard/accounts/264516179/repositories/1212149375/wiki`.
+- Chrome opened the source `0.1.3` URL and rendered the signed-in repository
+  wiki for `AlmanacCode/codealmanac` with `Default branch / 62 pages`.
+- Source `0.1.3` setup was re-run with `--yes --json`; it reported
+  `already_signed_in`, kept `automation_mode: "none"`, and made no instruction
+  file changes because Codex and Claude were already installed.
+- Focused tests passed:
+  `uv run pytest tests/test_cloud_open_workflow.py tests/test_cli.py -q`
+  (`62 passed`).
+- Full local gates passed:
+  `uv run pytest` (`501 passed`), `uv run ruff check .`, `git diff --check`,
+  `uv build --out-dir dist`, and `uvx twine check dist/*`.

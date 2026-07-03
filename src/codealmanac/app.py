@@ -360,6 +360,7 @@ def create_app(
     )
     cloud_open = CloudOpenWorkflow(
         resolved_local_repository_probe,
+        cloud_repositories,
         resolved_browser_opener,
     )
     cloud_runs_workflow = CloudRunsWorkflow(
