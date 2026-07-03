@@ -16,18 +16,18 @@ from codealmanac.engine.harnesses.models import (
 from codealmanac.engine.harnesses.requests import RunHarnessRequest
 from codealmanac.engine.sources.models import TranscriptApp, TranscriptCandidate
 from codealmanac.engine.sources.requests import DiscoverTranscriptsRequest
-from codealmanac.services.runs.models import (
-    RunOperation,
-    RunStatus,
-    RunWorkerSpawnResult,
+from codealmanac.jobs.ledger.models import (
+    JobOperation,
+    JobStatus,
+    JobWorkerSpawnResult,
 )
-from codealmanac.services.runs.requests import (
-    FinishRunRequest,
-    MarkRunRunningRequest,
-    RecordRunHarnessTranscriptRequest,
-    ShowRunRequest,
-    SpawnRunWorkerRequest,
-    StartRunRequest,
+from codealmanac.jobs.ledger.requests import (
+    FinishJobRequest,
+    MarkJobRunningRequest,
+    RecordJobHarnessTranscriptRequest,
+    ShowJobRequest,
+    SpawnJobWorkerRequest,
+    StartJobRequest,
 )
 from codealmanac.wiki.workspaces.identity import workspace_id_for
 from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
@@ -120,13 +120,13 @@ class LedgerObservingHarnessAdapter(SyncWritingHarnessAdapter):
 class SyncWorkerSpawner:
     def __init__(self, error: Exception | None = None):
         self.error = error
-        self.requests: list[SpawnRunWorkerRequest] = []
+        self.requests: list[SpawnJobWorkerRequest] = []
 
-    def spawn(self, request: SpawnRunWorkerRequest) -> RunWorkerSpawnResult:
+    def spawn(self, request: SpawnJobWorkerRequest) -> JobWorkerSpawnResult:
         self.requests.append(request)
         if self.error is not None:
             raise self.error
-        return RunWorkerSpawnResult(
+        return JobWorkerSpawnResult(
             child_pid=6262,
             command=("fake-sync-worker",),
         )
@@ -247,7 +247,7 @@ def test_sync_run_ingests_ready_transcripts_and_advances_ledger(
     assert entry.status == SyncLedgerStatus.DONE
     assert entry.last_absorbed_size == transcript.stat().st_size
     assert entry.last_absorbed_line == 2
-    assert entry.last_job_id == summary.started[0].run_id
+    assert entry.last_job_id == summary.started[0].job_id
     assert "Scheduled sync cursor:" in harness.requests[0].prompt
     assert "Focus on line 1 onward." in harness.requests[0].prompt
     assert "Sync should preserve the release blocker." in harness.requests[0].prompt
@@ -298,21 +298,21 @@ def test_sync_background_queues_ingest_and_leaves_pending_claim(
         sync_ledger_path(repo).read_text(encoding="utf-8")
     )
     entry = ledger.sessions[sync_ledger_key(candidate)]
-    run = app.runs.show(ShowRunRequest(cwd=repo, run_id=summary.started[0].run_id))
+    run = app.jobs.show(ShowJobRequest(cwd=repo, job_id=summary.started[0].job_id))
 
     assert summary.eligible == 1
     assert summary.started[0].from_line == 1
     assert summary.started[0].to_line == 2
-    assert run.status == RunStatus.QUEUED
-    assert run.operation == RunOperation.INGEST
+    assert run.status == JobStatus.QUEUED
+    assert run.operation == JobOperation.INGEST
     assert entry.status == SyncLedgerStatus.PENDING
     assert entry.pending_owner == "background-sync-owner"
-    assert entry.pending_run_id == run.run_id
+    assert entry.pending_job_id == run.job_id
     assert entry.pending_to_size == transcript.stat().st_size
     assert entry.pending_prefix_hash == sha256_text("one\ntwo\n")
     assert harness.requests == []
-    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
-    assert (workspace_jobs_path(repo) / f"{run.run_id}.spec.json").is_file()
+    assert spawner.requests == [SpawnJobWorkerRequest(cwd=repo, wiki=None)]
+    assert (workspace_jobs_path(repo) / f"{run.job_id}.spec.json").is_file()
 
 
 def test_sync_background_spawn_failure_marks_run_and_ledger_failed(
@@ -347,16 +347,16 @@ def test_sync_background_spawn_failure_marks_run_and_ledger_failed(
         sync_ledger_path(repo).read_text(encoding="utf-8")
     )
     entry = ledger.sessions[sync_ledger_key(candidate)]
-    run = app.runs.show(ShowRunRequest(cwd=repo, run_id=entry.last_job_id or ""))
+    run = app.jobs.show(ShowJobRequest(cwd=repo, job_id=entry.last_job_id or ""))
 
     assert summary.started == ()
     assert summary.needs_attention[0].reason == "worker-spawn-failed"
-    assert run.status == RunStatus.FAILED
+    assert run.status == JobStatus.FAILED
     assert run.error == "spawn denied"
     assert entry.status == SyncLedgerStatus.FAILED
     assert entry.failed_attempts == 1
     assert entry.last_error == "spawn denied"
-    assert entry.pending_run_id is None
+    assert entry.pending_job_id is None
 
 
 def test_sync_run_writes_pending_claim_before_ingest(
@@ -388,7 +388,7 @@ def test_sync_run_writes_pending_claim_before_ingest(
     assert harness.observed_entry.status == SyncLedgerStatus.PENDING
     assert harness.observed_entry.pending_started_at == current_time()
     assert harness.observed_entry.pending_owner == "test-sync-owner"
-    assert harness.observed_entry.pending_run_id is not None
+    assert harness.observed_entry.pending_job_id is not None
     assert harness.observed_entry.pending_to_size == transcript.stat().st_size
     assert harness.observed_entry.pending_prefix_hash == sha256_text("one\ntwo\n")
     assert harness.observed_entry.pending_from_line == 1
@@ -398,17 +398,17 @@ def test_sync_run_writes_pending_claim_before_ingest(
     )
     entry = ledger.sessions[sync_ledger_key(candidate)]
     assert entry.status == SyncLedgerStatus.DONE
-    assert entry.last_job_id == summary.started[0].run_id
+    assert entry.last_job_id == summary.started[0].job_id
     assert entry.pending_started_at is None
     assert entry.pending_owner is None
-    assert entry.pending_run_id is None
+    assert entry.pending_job_id is None
     assert entry.pending_to_size is None
     assert entry.pending_prefix_hash is None
     assert entry.pending_from_line is None
     assert entry.pending_to_line is None
 
 
-def test_sync_run_records_failed_attempt_after_ingest_failure(
+def test_sync_job_records_failed_attempt_after_ingest_failure(
     tmp_path: Path,
     isolated_home: Path,
 ):
@@ -538,10 +538,10 @@ def test_sync_status_skips_active_pending_run(
     workspace = app.workflows.init.initialize_workspace(
         InitializeWorkspaceRequest(path=repo)
     )
-    run = app.runs.start(
-        StartRunRequest(cwd=repo, operation=RunOperation.INGEST, title="Sync ingest")
+    run = app.jobs.start(
+        StartJobRequest(cwd=repo, operation=JobOperation.INGEST, title="Sync ingest")
     )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=run.run_id))
+    app.jobs.mark_running(MarkJobRunningRequest(cwd=repo, job_id=run.job_id))
     write_sync_ledger(
         workspace.almanac_path,
         candidate,
@@ -551,7 +551,7 @@ def test_sync_status_skips_active_pending_run(
         status=SyncLedgerStatus.PENDING,
         pending_started_at=current_time() - timedelta(minutes=30),
         pending_owner="active-owner",
-        pending_run_id=run.run_id,
+        pending_job_id=run.job_id,
         pending_to_size=transcript.stat().st_size,
         pending_prefix_hash=sha256_text("one\ntwo\n"),
         pending_from_line=1,
@@ -585,15 +585,15 @@ def test_sync_status_reports_done_pending_run_needs_reconcile(
     workspace = app.workflows.init.initialize_workspace(
         InitializeWorkspaceRequest(path=repo)
     )
-    run = app.runs.start(
-        StartRunRequest(cwd=repo, operation=RunOperation.INGEST, title="Sync ingest")
+    run = app.jobs.start(
+        StartJobRequest(cwd=repo, operation=JobOperation.INGEST, title="Sync ingest")
     )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=run.run_id))
-    app.runs.finish(
-        FinishRunRequest(
+    app.jobs.mark_running(MarkJobRunningRequest(cwd=repo, job_id=run.job_id))
+    app.jobs.finish(
+        FinishJobRequest(
             cwd=repo,
-            run_id=run.run_id,
-            status=RunStatus.DONE,
+            job_id=run.job_id,
+            status=JobStatus.DONE,
             summary="done",
         )
     )
@@ -606,7 +606,7 @@ def test_sync_status_reports_done_pending_run_needs_reconcile(
         status=SyncLedgerStatus.PENDING,
         pending_started_at=current_time() - timedelta(minutes=30),
         pending_owner="done-owner",
-        pending_run_id=run.run_id,
+        pending_job_id=run.job_id,
         pending_to_size=transcript.stat().st_size,
         pending_prefix_hash=sha256_text("one\ntwo\n"),
         pending_from_line=1,
@@ -644,15 +644,15 @@ def test_sync_run_reconciles_done_pending_run_before_new_work(
     )
     initialize_git(repo)
     commit_all(repo, "initial wiki")
-    run = app.runs.start(
-        StartRunRequest(cwd=repo, operation=RunOperation.INGEST, title="Sync ingest")
+    run = app.jobs.start(
+        StartJobRequest(cwd=repo, operation=JobOperation.INGEST, title="Sync ingest")
     )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=run.run_id))
-    app.runs.finish(
-        FinishRunRequest(
+    app.jobs.mark_running(MarkJobRunningRequest(cwd=repo, job_id=run.job_id))
+    app.jobs.finish(
+        FinishJobRequest(
             cwd=repo,
-            run_id=run.run_id,
-            status=RunStatus.DONE,
+            job_id=run.job_id,
+            status=JobStatus.DONE,
             summary="done",
         )
     )
@@ -665,7 +665,7 @@ def test_sync_run_reconciles_done_pending_run_before_new_work(
         status=SyncLedgerStatus.PENDING,
         pending_started_at=current_time() - timedelta(minutes=30),
         pending_owner="done-owner",
-        pending_run_id=run.run_id,
+        pending_job_id=run.job_id,
         pending_to_size=len(absorbed.encode("utf-8")),
         pending_prefix_hash=sha256_text(absorbed),
         pending_from_line=1,
@@ -693,8 +693,8 @@ def test_sync_run_reconciles_done_pending_run_before_new_work(
     assert entry.status == SyncLedgerStatus.DONE
     assert entry.last_absorbed_size == transcript.stat().st_size
     assert entry.last_absorbed_line == 3
-    assert entry.last_job_id == summary.started[0].run_id
-    assert entry.pending_run_id is None
+    assert entry.last_job_id == summary.started[0].job_id
+    assert entry.pending_job_id is None
 
 
 def test_sync_run_reconciles_failed_pending_run_and_retries(
@@ -712,15 +712,15 @@ def test_sync_run_reconciles_failed_pending_run_and_retries(
     )
     initialize_git(repo)
     commit_all(repo, "initial wiki")
-    run = app.runs.start(
-        StartRunRequest(cwd=repo, operation=RunOperation.INGEST, title="Sync ingest")
+    run = app.jobs.start(
+        StartJobRequest(cwd=repo, operation=JobOperation.INGEST, title="Sync ingest")
     )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=run.run_id))
-    app.runs.finish(
-        FinishRunRequest(
+    app.jobs.mark_running(MarkJobRunningRequest(cwd=repo, job_id=run.job_id))
+    app.jobs.finish(
+        FinishJobRequest(
             cwd=repo,
-            run_id=run.run_id,
-            status=RunStatus.FAILED,
+            job_id=run.job_id,
+            status=JobStatus.FAILED,
             error="previous crash",
         )
     )
@@ -733,7 +733,7 @@ def test_sync_run_reconciles_failed_pending_run_and_retries(
         status=SyncLedgerStatus.PENDING,
         pending_started_at=current_time() - timedelta(minutes=30),
         pending_owner="failed-owner",
-        pending_run_id=run.run_id,
+        pending_job_id=run.job_id,
         pending_to_size=transcript.stat().st_size,
         pending_prefix_hash=sha256_text("one\ntwo\n"),
         pending_from_line=1,
@@ -893,17 +893,17 @@ def test_sync_status_skips_internal_lifecycle_transcripts_by_session(
     candidate = transcript_candidate(repo, transcript, modified_at=old_time())
     app = app_with_candidates(isolated_home, (candidate,))
     app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    record = app.runs.start(
-        StartRunRequest(
+    record = app.jobs.start(
+        StartJobRequest(
             cwd=repo,
-            operation=RunOperation.INGEST,
+            operation=JobOperation.INGEST,
             title="Internal ingest",
         )
     )
-    app.runs.record_harness_transcript(
-        RecordRunHarnessTranscriptRequest(
+    app.jobs.record_harness_transcript(
+        RecordJobHarnessTranscriptRequest(
             cwd=repo,
-            run_id=record.run_id,
+            job_id=record.job_id,
             transcript=HarnessTranscriptRef(
                 kind=HarnessKind.CODEX,
                 session_id="session-1",
@@ -935,17 +935,17 @@ def test_sync_status_skips_internal_lifecycle_transcripts_by_path(
     candidate = transcript_candidate(repo, transcript, modified_at=old_time())
     app = app_with_candidates(isolated_home, (candidate,))
     app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    record = app.runs.start(
-        StartRunRequest(
+    record = app.jobs.start(
+        StartJobRequest(
             cwd=repo,
-            operation=RunOperation.GARDEN,
+            operation=JobOperation.GARDEN,
             title="Internal garden",
         )
     )
-    app.runs.record_harness_transcript(
-        RecordRunHarnessTranscriptRequest(
+    app.jobs.record_harness_transcript(
+        RecordJobHarnessTranscriptRequest(
             cwd=repo,
-            run_id=record.run_id,
+            job_id=record.job_id,
             transcript=HarnessTranscriptRef(
                 kind=HarnessKind.CODEX,
                 session_id="different-session",
@@ -1088,7 +1088,7 @@ def write_sync_ledger(
     status: SyncLedgerStatus = SyncLedgerStatus.DONE,
     pending_started_at: datetime | None = None,
     pending_owner: str | None = None,
-    pending_run_id: str | None = None,
+    pending_job_id: str | None = None,
     pending_to_size: int | None = None,
     pending_prefix_hash: str | None = None,
     pending_from_line: int | None = None,
@@ -1114,7 +1114,7 @@ def write_sync_ledger(
                 failed_attempts=failed_attempts,
                 pending_started_at=pending_started_at,
                 pending_owner=pending_owner,
-                pending_run_id=pending_run_id,
+                pending_job_id=pending_job_id,
                 pending_to_size=pending_to_size,
                 pending_prefix_hash=pending_prefix_hash,
                 pending_from_line=pending_from_line,

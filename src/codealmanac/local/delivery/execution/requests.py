@@ -2,11 +2,11 @@ from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
-from codealmanac.services.runs.models import RunId
+from codealmanac.local.control.models import LocalRunId
 
 
 class DeliverLocalRunRequest(CodeAlmanacModel):
-    run_id: RunId
+    run_id: LocalRunId
 
     @field_validator("run_id")
     @classmethod

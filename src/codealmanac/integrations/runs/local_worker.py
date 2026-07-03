@@ -1,12 +1,12 @@
 import subprocess
 import sys
 
+from codealmanac.local.runs.worker.models import LocalWorkerSpawnResult
 from codealmanac.local.runs.worker.requests import SpawnLocalWorkerRequest
-from codealmanac.services.runs.models import RunWorkerSpawnResult
 
 
 class SubprocessLocalWorkerSpawner:
-    def spawn(self, request: SpawnLocalWorkerRequest) -> RunWorkerSpawnResult:
+    def spawn(self, request: SpawnLocalWorkerRequest) -> LocalWorkerSpawnResult:
         command = local_worker_command(request)
         child = subprocess.Popen(
             command,
@@ -16,7 +16,7 @@ class SubprocessLocalWorkerSpawner:
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
-        return RunWorkerSpawnResult(
+        return LocalWorkerSpawnResult(
             child_pid=child.pid,
             command=tuple(command),
         )

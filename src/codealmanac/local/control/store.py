@@ -479,7 +479,7 @@ class ControlStore:
             if started_at is None and status is ControlRunStatus.RUNNING:
                 started_at = datetime.fromisoformat(now)
             finished_at = existing.finished_at
-            if status in TERMINAL_RUN_STATUSES and finished_at is None:
+            if status in TERMINAL_JOB_STATUSES and finished_at is None:
                 finished_at = datetime.fromisoformat(now)
             connection.execute(
                 """
@@ -1028,7 +1028,7 @@ def current_timestamp() -> str:
     return datetime.now(UTC).isoformat()
 
 
-TERMINAL_RUN_STATUSES = frozenset(
+TERMINAL_JOB_STATUSES = frozenset(
     (
         ControlRunStatus.SUCCEEDED,
         ControlRunStatus.FAILED,

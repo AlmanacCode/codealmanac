@@ -15,18 +15,18 @@ from codealmanac.engine.lifecycle import (
 )
 from codealmanac.engine.page_run.models import PageRunContext, PageRunResult
 from codealmanac.engine.page_run.requests import (
+    PageJobRecordEventRequest,
     PageRunBeginRequest,
     PageRunExecuteRequest,
-    PageRunRecordEventRequest,
 )
-from codealmanac.services.runs.models import RunEventKind, RunStatus
-from codealmanac.services.runs.requests import (
-    FinishRunRequest,
-    MarkRunRunningRequest,
-    RecordRunEventRequest,
-    RecordRunHarnessTranscriptRequest,
+from codealmanac.jobs.ledger.models import JobEventKind, JobStatus
+from codealmanac.jobs.ledger.requests import (
+    FinishJobRequest,
+    MarkJobRunningRequest,
+    RecordJobEventRequest,
+    RecordJobHarnessTranscriptRequest,
 )
-from codealmanac.services.runs.service import RunsService
+from codealmanac.jobs.ledger.service import JobLedgerService
 from codealmanac.wiki.index.service import IndexService
 from codealmanac.wiki.workspaces.models import Workspace
 from codealmanac.wiki.workspaces.requests import SelectWorkspaceRequest
@@ -38,49 +38,49 @@ class PageRunWorkflow:
         self,
         workspaces: WorkspacesService,
         harnesses: HarnessesService,
-        runs: RunsService,
+        jobs: JobLedgerService,
         index: IndexService,
         mutation_policy: LifecycleMutationPolicy,
     ):
         self.workspaces = workspaces
         self.harnesses = harnesses
-        self.runs = runs
+        self.jobs = jobs
         self.index = index
         self.mutation_policy = mutation_policy
 
     def begin(self, request: PageRunBeginRequest) -> PageRunContext:
         workspace = self.resolve_workspace(request.cwd, request.wiki)
-        self.runs.mark_running(
-            MarkRunRunningRequest(
+        self.jobs.mark_running(
+            MarkJobRunningRequest(
                 cwd=request.cwd,
                 wiki=request.wiki,
-                run_id=request.run_id,
+                job_id=request.job_id,
             )
         )
         return PageRunContext(
             cwd=request.cwd,
             wiki=request.wiki,
-            run_id=request.run_id,
+            job_id=request.job_id,
             workspace=workspace,
         )
 
     def preflight(self, context: PageRunContext) -> PageRunContext:
         preflight = self.mutation_policy.preflight(context.workspace)
         self.record(
-            PageRunRecordEventRequest(
+            PageJobRecordEventRequest(
                 context=context,
-                kind=RunEventKind.MESSAGE,
+                kind=JobEventKind.MESSAGE,
                 message=self.mutation_policy.preflight_message(context.workspace),
             )
         )
         return context.model_copy(update={"preflight": preflight})
 
-    def record(self, request: PageRunRecordEventRequest) -> None:
-        self.runs.record_event(
-            RecordRunEventRequest(
+    def record(self, request: PageJobRecordEventRequest) -> None:
+        self.jobs.record_event(
+            RecordJobEventRequest(
                 cwd=request.context.cwd,
                 wiki=request.context.wiki,
-                run_id=request.context.run_id,
+                job_id=request.context.job_id,
                 kind=request.kind,
                 message=request.message,
                 harness_event=request.harness_event,
@@ -107,17 +107,17 @@ class PageRunWorkflow:
         )
         validate_harness_result(harness)
         index = self.index.ensure_fresh(workspace.workspace_id)
-        finished = self.runs.finish(
-            FinishRunRequest(
+        finished = self.jobs.finish(
+            FinishJobRequest(
                 cwd=request.context.cwd,
                 wiki=request.context.wiki,
-                run_id=request.context.run_id,
-                status=RunStatus.DONE,
+                job_id=request.context.job_id,
+                status=JobStatus.DONE,
                 summary=harness.summary or request.success_summary,
             )
         )
         return PageRunResult(
-            run=finished,
+            job=finished,
             harness=harness,
             safety=safety,
             index=index,
@@ -127,18 +127,18 @@ class PageRunWorkflow:
         message = first_line(str(error)) or error.__class__.__name__
         with suppress(Exception):
             self.record(
-                PageRunRecordEventRequest(
+                PageJobRecordEventRequest(
                     context=context,
-                    kind=RunEventKind.ERROR,
+                    kind=JobEventKind.ERROR,
                     message=message,
                 )
             )
-            self.runs.finish(
-                FinishRunRequest(
+            self.jobs.finish(
+                FinishJobRequest(
                     cwd=context.cwd,
                     wiki=context.wiki,
-                    run_id=context.run_id,
-                    status=RunStatus.FAILED,
+                    job_id=context.job_id,
+                    status=JobStatus.FAILED,
                     error=message,
                 )
             )
@@ -157,11 +157,11 @@ class PageRunWorkflow:
     ) -> None:
         if harness.transcript is None:
             return
-        self.runs.record_harness_transcript(
-            RecordRunHarnessTranscriptRequest(
+        self.jobs.record_harness_transcript(
+            RecordJobHarnessTranscriptRequest(
                 cwd=context.cwd,
                 wiki=context.wiki,
-                run_id=context.run_id,
+                job_id=context.job_id,
                 transcript=harness.transcript,
             )
         )
@@ -173,7 +173,7 @@ class PageRunWorkflow:
     ) -> None:
         for event in harness_events(harness):
             self.record(
-                PageRunRecordEventRequest(
+                PageJobRecordEventRequest(
                     context=context,
                     kind=harness_run_event_kind(event),
                     message=event.message,

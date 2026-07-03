@@ -13,12 +13,12 @@ from codealmanac.engine.harnesses.models import (
     HarnessRunStatus,
 )
 from codealmanac.engine.harnesses.requests import RunHarnessRequest
+from codealmanac.jobs.ledger.models import JobStatus
 from codealmanac.maintenance import (
     MaintenanceOperation,
     RunMaintenanceRequest,
     run_maintenance,
 )
-from codealmanac.services.runs.models import RunStatus
 from codealmanac.wiki.search.requests import SearchPagesRequest
 from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 
@@ -97,11 +97,11 @@ def test_run_maintenance_routes_ingest_to_ingest_workflow(
     matches = app.search.search(SearchPagesRequest(cwd=repo, query="durable"))
 
     assert result.operation == MaintenanceOperation.INGEST
-    assert result.run_status == RunStatus.DONE
+    assert result.job_status == JobStatus.DONE
     assert result.harness_status == HarnessRunStatus.SUCCEEDED
     assert result.summary == "ingested maintenance source"
     assert result.output_text == "updated wiki from maintenance source"
-    assert result.run_id
+    assert result.job_id
     assert matches[0].slug == "maintenance-ingest"
     assert harness.requests[0].title == "Hosted maintenance ingest"
     assert "Keep the page terse." in harness.requests[0].prompt
@@ -140,7 +140,7 @@ def test_run_maintenance_routes_init_to_init_workflow(
     matches = app.search.search(SearchPagesRequest(cwd=repo, query="durable"))
 
     assert result.operation == MaintenanceOperation.INIT
-    assert result.run_status == RunStatus.DONE
+    assert result.job_status == JobStatus.DONE
     assert result.harness_status == HarnessRunStatus.SUCCEEDED
     assert result.summary == "initialized maintenance wiki"
     assert result.output_text == "initialized wiki from maintenance api"

@@ -104,8 +104,8 @@ class ViewerJobTranscript(CodeAlmanacModel):
     transcript_path: Path | None
 
 
-class ViewerJobRun(CodeAlmanacModel):
-    run_id: str
+class ViewerJobRecord(CodeAlmanacModel):
+    job_id: str
     operation: str
     status: str
     title: str | None
@@ -130,10 +130,10 @@ class ViewerJobEvent(CodeAlmanacModel):
 
 class ViewerJobs(CodeAlmanacModel):
     workspace: ViewerWorkspace
-    runs: tuple[ViewerJobRun, ...]
+    jobs: tuple[ViewerJobRecord, ...]
 
 
 class ViewerJob(CodeAlmanacModel):
     workspace: ViewerWorkspace
-    run: ViewerJobRun
+    job: ViewerJobRecord
     events: tuple[ViewerJobEvent, ...]

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from codealmanac.app import CodeAlmanac
 from codealmanac.cli.dispatch.config import resolve_harness
-from codealmanac.cli.render.root import render_init, render_run_queue_start
+from codealmanac.cli.render.root import render_init, render_job_queue_start
 from codealmanac.core.errors import ValidationFailed
 from codealmanac.services.config.models import CodeAlmanacConfig
 from codealmanac.workflows.init.requests import RunInitRequest
@@ -22,7 +22,7 @@ def dispatch_init(args: argparse.Namespace, app: CodeAlmanac) -> int:
     )
     if args.background:
         result = app.workflows.queue.start_init_background(request)
-        render_run_queue_start(result, json_output=args.json)
+        render_job_queue_start(result, json_output=args.json)
         return 0
     if args.json:
         raise ValidationFailed("--json is only supported with --background")

@@ -509,7 +509,7 @@
   `test_runs_service_streams_attach_until_run_is_terminal` exposed a real
   attach-stream race: the file-backed run ledger can expose a terminal record
   before the terminal status event is visible.
-- Fixed the attach-stream race in `RunAttachStreamer` by waiting through a
+- Fixed the attach-stream race in `JobAttachStreamer` by waiting through a
   bounded terminal-record/log-event settle window. Added a regression test that
   waits through repeated terminal-log race snapshots.
 - Verified the fix locally with focused run-stream tests (`3 passed`), full
@@ -796,7 +796,7 @@
   infra/deploy rename 84%.
 - Planned Slice 44 in
   `docs/plans/2026-07-02-slice-44-cloud-run-cancel.md`.
-- Added hosted `RunStatus.CANCELLED`, `UpdatesStore.mark_cancelled(...)`,
+- Added hosted `JobStatus.CANCELLED`, `UpdatesStore.mark_cancelled(...)`,
   `UpdateCancellation`, and `Updates.cancel_run(...)`.
 - Added Modal worker cancellation through
   `modal.FunctionCall.from_id(call_id).cancel(terminate_containers=False)`.
@@ -1114,7 +1114,7 @@
   `origin/codex/workos-authkit-api-foundation`.
 - Planned Slice 33 in
   `docs/plans/2026-07-02-slice-33-hosted-delivery-stale-outcome.md`.
-- Added hosted `RunStatus.STALE` and `UpdateResult.stale(...)` for runs whose
+- Added hosted `JobStatus.STALE` and `UpdateResult.stale(...)` for runs whose
   target branch moved before delivery.
 - Replaced raw GitHub commit-head drift `ValueError` with typed
   `GitHubBranchHeadChanged`.
@@ -1147,7 +1147,7 @@
 - Added hosted SQL-backed `run_events` with ordered `(run_id, sequence)`
   storage, event kind, message, timestamp, and optional normalized
   `payload_json`.
-- Added hosted `RunEventKind` and `RunEvent` models, `RunEventRow`, and
+- Added hosted `JobEventKind` and `RunEvent` models, `RunEventRow`, and
   `run_event_from_row`.
 - Wired `UpdatesStore` transitions to append lifecycle status events for
   queued, running, delivered, and failed runs in the same transaction as the
@@ -1761,9 +1761,9 @@
 - Added public first-build `codealmanac init` flags for harness selection,
   foreground/background mode, `--force`, `--verbose`, `--guidance`, and
   background JSON output.
-- Added `RunOperation.INIT` and durable init queue specs.
-- Added `RunQueueWorkflow.queue_init(...)` and
-  `RunQueueWorkflow.start_init_background(...)`.
+- Added `JobOperation.INIT` and durable init queue specs.
+- Added `JobQueueWorkflow.queue_init(...)` and
+  `JobQueueWorkflow.start_init_background(...)`.
 - Updated the hidden worker drain path so queued init jobs run through
   `InitWorkflow.run_with_run(...)`.
 - Added init-specific mutation policy behavior:
@@ -1893,9 +1893,9 @@
 - Added hosted `ManualBranchRuns` so the `Updates` facade stays small and the
   product verb owns authorization, GitHub branch-head resolution, delivery
   policy lookup, duplicate-head idempotency, and worker start.
-- Added mirrored frontend `StartRunRequestDTO` to preserve backend/frontend DTO
+- Added mirrored frontend `StartJobRequestDTO` to preserve backend/frontend DTO
   parity.
-- Added CodeAlmanac `CloudRunsService.start_for_repo`,
+- Added CodeAlmanac `CloudJobLedgerService.start_for_repo`,
   `CloudRunsWorkflow.start`, and public
   `codealmanac runs start --branch <branch>`.
 - Pushed hosted commit `14caf8b feat: start cloud runs from CLI` to
@@ -2489,4 +2489,26 @@
   tests/test_local_hooks.py tests/test_engine_runs_service.py
   tests/test_deliveries_service.py -q --tb=short` (`131 passed`).
 - Slice 84 full local verification passed with `uv run ruff check src tests`,
+  `uv run pytest -q --tb=short` (`513 passed`), and `git diff --check`.
+
+## 2026-07-03 Slice 85 CodeAlmanac Job Ledger Naming
+
+- Slice 85 moved repo-local lifecycle job storage from `services/runs` to
+  `src/codealmanac/jobs/ledger/`.
+- Slice 85 moved the repo-local background lifecycle queue from
+  `workflows/run_queue` to `src/codealmanac/jobs/queue/`.
+- The job ledger now uses `JobRecord`, `JobLogEvent`, `JobSpec`,
+  `JobLedgerService`, `JobStore`, and `job_id` across service, CLI, viewer API,
+  sync, maintenance, and tests.
+- Branch-triggered local/cloud-parallel execution intentionally remains
+  `run`-named under `src/codealmanac/local/runs/` and `src/codealmanac/cloud/runs/`.
+- Added `src/codealmanac/engine/run_ids.py` so engine run artifact IDs do not
+  import local-control types.
+- Focused Slice 85 verification passed:
+  `uv run pytest tests/test_runs_service.py tests/test_run_queue_workflow.py
+  tests/test_cli.py tests/test_sync_workflow.py tests/test_init_workflow.py
+  tests/test_ingest_workflow.py tests/test_garden_workflow.py
+  tests/test_viewer_service.py tests/test_server.py tests/test_maintenance_api.py
+  tests/test_architecture.py -q --tb=short` (`217 passed`).
+- Full Slice 85 verification passed with `uv run ruff check src tests`,
   `uv run pytest -q --tb=short` (`513 passed`), and `git diff --check`.

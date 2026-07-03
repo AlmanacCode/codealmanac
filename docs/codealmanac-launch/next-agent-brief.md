@@ -12,6 +12,16 @@ Cloud remains the primary product path. Local remains a free/dev surface with a
 parallel conceptual model where it is useful, but not a reason to muddy the
 cloud setup flow.
 
+Other people may push to `codealmanac` or `codealmanac-hosted` while this run
+is active, especially UX work. Treat those commits as collaborative input. If
+they are rough, preserve the intended product improvement and fold the changes
+into the code-quality pass instead of reverting them.
+
+If an incoming commit is over-defensive, creates a parallel path, or looks like
+the wrong long-term solution, send a RelayForge/Discord alert before absorbing
+it silently. The alert should explain the architectural concern and the cleaner
+direction.
+
 ## Current Verified State
 
 - Hosted `main` includes
@@ -587,6 +597,33 @@ repaired.
   WorkOS dashboard authentication methods; the installed AuthKit Next.js helper
   routes to AuthKit and does not expose a code-level force-GitHub provider
   option.
+
+## Current Slice 85 Handoff
+
+- Slice 85 completed the repo-local lifecycle job rename.
+- `src/codealmanac/jobs/ledger/` now owns `JobRecord`, `JobLogEvent`,
+  `JobSpec`, `JobStore`, and `JobLedgerService`.
+- `src/codealmanac/jobs/queue/` now owns `JobQueueWorkflow`.
+- Service, CLI, sync, maintenance, viewer API, server API, and tests use
+  `job_id` for repo-local lifecycle records.
+- Cloud runs and branch-triggered local runs intentionally remain under
+  `src/codealmanac/cloud/runs/` and `src/codealmanac/local/runs/`.
+- `src/codealmanac/engine/run_ids.py` now owns engine run ID validation so
+  engine artifacts do not import local control-plane ID types.
+- Architecture tests prevent the removed `services/runs` and
+  `workflows/run_queue` source paths from returning.
+- Verification passed:
+  `uv run pytest tests/test_runs_service.py tests/test_run_queue_workflow.py
+  tests/test_cli.py tests/test_sync_workflow.py tests/test_init_workflow.py
+  tests/test_ingest_workflow.py tests/test_garden_workflow.py
+  tests/test_viewer_service.py tests/test_server.py tests/test_maintenance_api.py
+  tests/test_architecture.py -q --tb=short` (`217 passed`);
+  `uv run ruff check src tests`; `uv run pytest -q --tb=short`
+  (`513 passed`); `git diff --check`.
+- If another contributor pushes while this run continues, treat the commit as
+  collaborative input. Preserve the intended UX/product improvement. If it
+  creates a parallel path or over-defensive architecture, alert Rohan through
+  RelayForge/Discord before silently absorbing it.
 
 ## Remaining Launch Gaps
 

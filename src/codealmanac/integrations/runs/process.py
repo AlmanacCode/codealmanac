@@ -2,12 +2,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-from codealmanac.services.runs.models import RunWorkerSpawnResult
-from codealmanac.services.runs.requests import SpawnRunWorkerRequest
+from codealmanac.jobs.ledger.models import JobWorkerSpawnResult
+from codealmanac.jobs.ledger.requests import SpawnJobWorkerRequest
 
 
-class SubprocessRunWorkerSpawner:
-    def spawn(self, request: SpawnRunWorkerRequest) -> RunWorkerSpawnResult:
+class SubprocessJobWorkerSpawner:
+    def spawn(self, request: SpawnJobWorkerRequest) -> JobWorkerSpawnResult:
         command = worker_command(request)
         child = subprocess.Popen(
             command,
@@ -17,13 +17,13 @@ class SubprocessRunWorkerSpawner:
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
-        return RunWorkerSpawnResult(
+        return JobWorkerSpawnResult(
             child_pid=child.pid,
             command=tuple(command),
         )
 
 
-def worker_command(request: SpawnRunWorkerRequest) -> list[str]:
+def worker_command(request: SpawnJobWorkerRequest) -> list[str]:
     command = [
         sys.executable,
         "-m",

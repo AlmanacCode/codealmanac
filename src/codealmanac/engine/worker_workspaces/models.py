@@ -1,11 +1,11 @@
 from pathlib import Path
 
 from codealmanac.core.models import CodeAlmanacModel
-from codealmanac.services.runs.models import RunId
+from codealmanac.engine.run_ids import EngineRunId
 
 
 class WorkerWorkspacePaths(CodeAlmanacModel):
-    run_id: RunId
+    run_id: EngineRunId
     root_path: Path
     repo_path: Path
     sources_path: Path

@@ -1,21 +1,21 @@
 from datetime import datetime
 
-from codealmanac.services.runs.models import (
+from codealmanac.jobs.ledger.models import (
+    JobLogEvent,
+    JobRecord,
     PageChangeSet,
-    RunLogEvent,
-    RunRecord,
 )
 from codealmanac.wiki.viewer.models import (
     ViewerJobEvent,
     ViewerJobPageChanges,
-    ViewerJobRun,
+    ViewerJobRecord,
     ViewerJobTranscript,
 )
 
 
-def viewer_job_run(record: RunRecord) -> ViewerJobRun:
-    return ViewerJobRun(
-        run_id=record.run_id,
+def viewer_job_record(record: JobRecord) -> ViewerJobRecord:
+    return ViewerJobRecord(
+        job_id=record.job_id,
         operation=record.operation.value,
         status=record.status.value,
         title=record.title,
@@ -31,7 +31,7 @@ def viewer_job_run(record: RunRecord) -> ViewerJobRun:
     )
 
 
-def viewer_job_event(event: RunLogEvent) -> ViewerJobEvent:
+def viewer_job_event(event: JobLogEvent) -> ViewerJobEvent:
     return ViewerJobEvent(
         sequence=event.sequence,
         timestamp=timestamp(event.timestamp),
@@ -51,7 +51,7 @@ def viewer_page_changes(changes: PageChangeSet | None) -> ViewerJobPageChanges |
     )
 
 
-def viewer_harness_transcript(record: RunRecord) -> ViewerJobTranscript | None:
+def viewer_harness_transcript(record: JobRecord) -> ViewerJobTranscript | None:
     transcript = record.harness_transcript
     if transcript is None:
         return None

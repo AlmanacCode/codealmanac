@@ -583,9 +583,9 @@ Current evidence:
   agent-backed first-build runs.
 - `codealmanac init` now accepts `--using`, `--background`, `--force`,
   `--verbose`, and `--json`; public `codealmanac build` is not parsed.
-- `RunOperation.INIT` and init queue specs are durable under the existing
+- `JobOperation.INIT` and init queue specs are durable under the existing
   file-backed run store.
-- `RunQueueWorkflow.start_init_background(...)` queues init work and the hidden
+- `JobQueueWorkflow.start_init_background(...)` queues init work and the hidden
   worker drains it through `InitWorkflow.run_with_run(...)`.
 - `LifecycleMutationPolicy(require_clean_almanac=False)` lets init create its
   starter root while preserving the outside-Almanac mutation safety check.
@@ -609,7 +609,7 @@ Current evidence:
 - Slice 24 moved file-backed lifecycle job state from repo-local
   `<almanac-root>/jobs/` to `~/.codealmanac/jobs/<workspace-id>/`.
 - `AppConfig.jobs_path` defaults to `~/.codealmanac/jobs`.
-- `RunsService` now writes new run records, event logs, queue specs, and
+- `JobLedgerService` now writes new run records, event logs, queue specs, and
   worker locks to the user-level workspace jobs directory while reading
   legacy repo-local run records when needed.
 - `SyncLedgerStore` now writes `sync-ledger.json` under the same user-level
@@ -796,7 +796,7 @@ Current evidence:
   (`306 passed, 1 warning`), `uv run ruff check .`,
   `uv run ruff format --check .`, `python -m compileall backend/src
   backend/modal_app -q`, and `git diff --check`.
-- Slice 33 added hosted `RunStatus.STALE` for expected-head drift during
+- Slice 33 added hosted `JobStatus.STALE` for expected-head drift during
   delivery.
 - `backend/tests/test_github_git_contract.py` proves Git commit delivery raises
   typed `GitHubBranchHeadChanged` when the branch ref no longer matches the
@@ -1202,7 +1202,7 @@ Current evidence:
   `main`; it failed in `uv run pytest` because
   `test_runs_service_streams_attach_until_run_is_terminal` exposed a real
   terminal-record/log-event race in local run attach streaming.
-- Slice 54 fixed the race in `RunAttachStreamer` and pushed commit
+- Slice 54 fixed the race in `JobAttachStreamer` and pushed commit
   `a0c86bfe6bedfdd2cd7bd8ff21c252692a6c4eb6` to `origin/dev` and
   `origin/main`.
 - Slice 54 local gates after the fix passed: focused run-stream tests
@@ -1671,3 +1671,21 @@ Known residue:
   (`131 passed`). Full local verification passed with
   `uv run ruff check src tests`, `uv run pytest -q --tb=short` (`513 passed`), and
   `git diff --check`.
+
+## Slice 85 CodeAlmanac Job Ledger Naming
+
+- Requirement: repo-local lifecycle execution should not share the `run` noun
+  with cloud runs and branch-triggered local runs.
+- Implementation evidence: `src/codealmanac/jobs/ledger/` now owns
+  `JobRecord`, `JobLogEvent`, `JobSpec`, `JobStore`, and `JobLedgerService`;
+  `src/codealmanac/jobs/queue/` now owns `JobQueueWorkflow`.
+- Boundary evidence: `src/codealmanac/cloud/runs/` and
+  `src/codealmanac/local/runs/` keep the run noun for trigger-created
+  executions, while repo-local lifecycle records use `job_id` across service,
+  CLI, sync, maintenance, viewer API, server API, and tests.
+- Engine ID evidence: `src/codealmanac/engine/run_ids.py` owns engine run ID
+  validation, so engine artifact stores do not import local control-plane IDs.
+- Verification evidence: focused lifecycle job, sync, CLI, viewer, server,
+  maintenance, and architecture test set passed (`217 passed`). Full local
+  verification passed with `uv run ruff check src tests`,
+  `uv run pytest -q --tb=short` (`513 passed`), and `git diff --check`.

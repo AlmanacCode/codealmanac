@@ -3,7 +3,7 @@ from codealmanac.workflows.init.models import (
     InitPromptPayload,
     InitResult,
 )
-from codealmanac.workflows.init.requests import RunInitRequest, RunInitWithRunRequest
+from codealmanac.workflows.init.requests import RunInitRequest, RunInitWithJobRequest
 from codealmanac.workflows.init.service import InitWorkflow
 
 __all__ = [
@@ -12,5 +12,5 @@ __all__ = [
     "InitResult",
     "InitWorkflow",
     "RunInitRequest",
-    "RunInitWithRunRequest",
+    "RunInitWithJobRequest",
 ]

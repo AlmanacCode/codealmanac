@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from codealmanac.core.paths import normalize_path
 from codealmanac.engine.sources.models import TranscriptCandidate
-from codealmanac.services.runs.models import RunRecord
+from codealmanac.jobs.ledger.models import JobRecord
 from codealmanac.wiki.workspaces.models import Workspace
 from codealmanac.workflows.sync.entries import fresh_ledger_entry
 from codealmanac.workflows.sync.models import SyncLedger, SyncLedgerEntry
@@ -53,9 +53,9 @@ def same_ledger_identity(
     )
 
 
-def run_record(records: tuple[RunRecord, ...], run_id: str) -> RunRecord | None:
+def job_record(records: tuple[JobRecord, ...], job_id: str) -> JobRecord | None:
     for record in records:
-        if record.run_id == run_id:
+        if record.job_id == job_id:
             return record
     return None
 

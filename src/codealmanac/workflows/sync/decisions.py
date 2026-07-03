@@ -2,13 +2,13 @@ from datetime import datetime, timedelta
 
 from codealmanac.core.paths import normalize_path
 from codealmanac.engine.sources.models import TranscriptCandidate
-from codealmanac.services.runs.models import RunRecord, RunStatus
+from codealmanac.jobs.ledger.models import JobRecord, JobStatus
 from codealmanac.workflows.sync.entries import (
     cleared_pending_fields,
     needs_attention_entry,
     pending_cursor_complete,
 )
-from codealmanac.workflows.sync.identity import run_record
+from codealmanac.workflows.sync.identity import job_record
 from codealmanac.workflows.sync.models import (
     SyncCursorDecision,
     SyncDecisionKind,
@@ -34,7 +34,7 @@ def quiet_window_skip(
 
 def is_internal_transcript(
     candidate: TranscriptCandidate,
-    records: tuple[RunRecord, ...],
+    records: tuple[JobRecord, ...],
 ) -> bool:
     candidate_path = normalize_path(candidate.transcript_path)
     for record in records:
@@ -108,19 +108,19 @@ def pending_is_stale(
 
 def evaluate_pending_run(
     entry: SyncLedgerEntry,
-    records: tuple[RunRecord, ...],
+    records: tuple[JobRecord, ...],
 ) -> SyncCursorDecision | None:
-    if entry.status != SyncLedgerStatus.PENDING or entry.pending_run_id is None:
+    if entry.status != SyncLedgerStatus.PENDING or entry.pending_job_id is None:
         return None
-    record = run_record(records, entry.pending_run_id)
+    record = job_record(records, entry.pending_job_id)
     if record is None:
         return None
-    if record.status in {RunStatus.QUEUED, RunStatus.RUNNING}:
+    if record.status in {JobStatus.QUEUED, JobStatus.RUNNING}:
         return SyncCursorDecision(
             kind=SyncDecisionKind.SKIP,
             reason="sync-pending-run-active",
         )
-    if record.status == RunStatus.DONE:
+    if record.status == JobStatus.DONE:
         return SyncCursorDecision(
             kind=SyncDecisionKind.NEEDS_ATTENTION,
             reason="sync-pending-run-done",
@@ -133,20 +133,20 @@ def evaluate_pending_run(
 
 def reconcile_pending_entry(
     entry: SyncLedgerEntry,
-    records: tuple[RunRecord, ...],
+    records: tuple[JobRecord, ...],
     now: datetime,
 ) -> SyncLedgerEntry:
-    if entry.status != SyncLedgerStatus.PENDING or entry.pending_run_id is None:
+    if entry.status != SyncLedgerStatus.PENDING or entry.pending_job_id is None:
         return entry
-    record = run_record(records, entry.pending_run_id)
-    if record is None or record.status in {RunStatus.QUEUED, RunStatus.RUNNING}:
+    record = job_record(records, entry.pending_job_id)
+    if record is None or record.status in {JobStatus.QUEUED, JobStatus.RUNNING}:
         return entry
-    if record.status == RunStatus.DONE:
+    if record.status == JobStatus.DONE:
         if not pending_cursor_complete(entry):
             return needs_attention_entry(
                 entry,
                 "sync-pending-missing-cursor",
-                record.run_id,
+                record.job_id,
             )
         return entry.model_copy(
             update={
@@ -155,7 +155,7 @@ def reconcile_pending_entry(
                 "last_absorbed_line": entry.pending_to_line,
                 "last_absorbed_prefix_hash": entry.pending_prefix_hash,
                 "last_absorbed_at": record.finished_at or now,
-                "last_job_id": record.run_id,
+                "last_job_id": record.job_id,
                 "last_error": None,
                 **cleared_pending_fields(),
             }
@@ -163,7 +163,7 @@ def reconcile_pending_entry(
     return entry.model_copy(
         update={
             "status": SyncLedgerStatus.FAILED,
-            "last_job_id": record.run_id,
+            "last_job_id": record.job_id,
             "last_error": record.error or f"sync-pending-run-{record.status.value}",
             "failed_attempts": entry.failed_attempts + 1,
             **cleared_pending_fields(),

@@ -50,8 +50,8 @@ from codealmanac.integrations.cloud import HttpCloudAuthClient
 from codealmanac.integrations.cloud_login import TerminalCloudLoginInteraction
 from codealmanac.integrations.harnesses import default_harness_adapters
 from codealmanac.integrations.runs import (
+    SubprocessJobWorkerSpawner,
     SubprocessLocalWorkerSpawner,
-    SubprocessRunWorkerSpawner,
 )
 from codealmanac.integrations.setup import FileInstructionInstaller
 from codealmanac.integrations.sources import (
@@ -70,6 +70,10 @@ from codealmanac.integrations.workspaces.git import (
     GitLocalStateProbe,
     GitWorkspaceChangeProbe,
 )
+from codealmanac.jobs.ledger.ports import JobWorkerSpawner
+from codealmanac.jobs.ledger.service import JobLedgerService
+from codealmanac.jobs.ledger.store import JobStore
+from codealmanac.jobs.queue import JobQueueWorkflow
 from codealmanac.local.control.ports import LocalGitStateProbe
 from codealmanac.local.control.service import ControlService
 from codealmanac.local.control.store import ControlStore
@@ -99,9 +103,6 @@ from codealmanac.services.automation.service import AutomationService
 from codealmanac.services.config.service import ConfigService
 from codealmanac.services.config.store import ConfigStore
 from codealmanac.services.diagnostics.service import DiagnosticsService
-from codealmanac.services.runs.ports import RunWorkerSpawner
-from codealmanac.services.runs.service import RunsService
-from codealmanac.services.runs.store import RunStore
 from codealmanac.services.setup.ports import InstructionInstaller
 from codealmanac.services.setup.service import SetupService
 from codealmanac.services.tagging.service import TaggingService
@@ -124,7 +125,6 @@ from codealmanac.wiki.workspaces.store import WorkspaceRegistryStore
 from codealmanac.workflows.garden.service import GardenWorkflow
 from codealmanac.workflows.ingest.service import IngestWorkflow
 from codealmanac.workflows.init.service import InitWorkflow
-from codealmanac.workflows.run_queue import RunQueueWorkflow
 from codealmanac.workflows.sync.service import SyncWorkflow
 from codealmanac.workflows.sync.store import SyncLedgerStore
 
@@ -139,7 +139,7 @@ class CodeAlmanacWorkflows:
     init: InitWorkflow
     ingest: IngestWorkflow
     garden: GardenWorkflow
-    queue: RunQueueWorkflow
+    queue: JobQueueWorkflow
     local_runs: LocalRunPreparationWorkflow
     local_setup: LocalSetupWorkflow
     local_status: LocalStatusWorkflow
@@ -196,7 +196,7 @@ class CodeAlmanac:
     updates: UpdatesService
     setup: SetupService
     viewer: ViewerService
-    runs: RunsService
+    jobs: JobLedgerService
     sources: SourcesService
     harnesses: HarnessesService
     local: CodeAlmanacLocal
@@ -212,7 +212,7 @@ def create_app(
     transcript_discovery_adapters: Sequence[TranscriptDiscoveryAdapter] | None = None,
     source_runtime_adapters: Sequence[SourceRuntimeAdapter] | None = None,
     scheduler: SchedulerAdapter | None = None,
-    worker_spawner: RunWorkerSpawner | None = None,
+    worker_spawner: JobWorkerSpawner | None = None,
     local_worker_spawner: LocalWorkerSpawner | None = None,
     update_metadata: PackageInstallMetadataProvider | None = None,
     update_runner: PackageCommandRunner | None = None,
@@ -294,8 +294,8 @@ def create_app(
         instruction_installer or FileInstructionInstaller(),
         cloud_login,
     )
-    runs = RunsService(workspaces, RunStore(), jobs_path=app_config.jobs_path)
-    viewer = ViewerService(workspaces, index, runs, MarkdownRenderer())
+    jobs = JobLedgerService(workspaces, JobStore(), jobs_path=app_config.jobs_path)
+    viewer = ViewerService(workspaces, index, jobs, MarkdownRenderer())
     sources = SourcesService(
         default_transcript_discovery_adapters()
         if transcript_discovery_adapters is None
@@ -311,7 +311,7 @@ def create_app(
     init_page_runs = PageRunWorkflow(
         workspaces,
         harnesses,
-        runs,
+        jobs,
         index,
         LifecycleMutationPolicy(
             GitWorkspaceChangeProbe(),
@@ -322,43 +322,43 @@ def create_app(
     ingest_page_runs = PageRunWorkflow(
         workspaces,
         harnesses,
-        runs,
+        jobs,
         index,
         LifecycleMutationPolicy(GitWorkspaceChangeProbe(), operation="ingest"),
     )
     garden_page_runs = PageRunWorkflow(
         workspaces,
         harnesses,
-        runs,
+        jobs,
         index,
         LifecycleMutationPolicy(GitWorkspaceChangeProbe(), operation="garden"),
     )
     init = InitWorkflow(
         workspaces,
         wiki,
-        runs,
+        jobs,
         init_page_runs,
         prompts,
     )
     ingest = IngestWorkflow(
         sources,
-        runs,
+        jobs,
         ingest_page_runs,
         prompts,
     )
     garden = GardenWorkflow(
-        runs,
+        jobs,
         index,
         health,
         garden_page_runs,
         prompts,
     )
-    queue = RunQueueWorkflow(
-        runs,
+    queue = JobQueueWorkflow(
+        jobs,
         init,
         ingest,
         garden,
-        worker_spawner or SubprocessRunWorkerSpawner(),
+        worker_spawner or SubprocessJobWorkerSpawner(),
     )
     local_runs = LocalRunPreparationWorkflow(
         control,
@@ -446,7 +446,7 @@ def create_app(
     sync = SyncWorkflow(
         workspaces,
         sources,
-        runs,
+        jobs,
         ingest,
         queue,
         SyncLedgerStore(app_config.jobs_path),
@@ -497,7 +497,7 @@ def create_app(
         updates=updates,
         setup=setup,
         viewer=viewer,
-        runs=runs,
+        jobs=jobs,
         sources=sources,
         harnesses=harnesses,
         local=local,

@@ -83,7 +83,7 @@ Expected responsibilities:
   writing to `PageRunWorkflow`;
 - page-run workflow: unchanged shared lifecycle machinery for harness events,
   mutation safety, run records, logs, outputs, and index refresh;
-- run queue: accept `RunOperation.INIT` specs alongside ingest/garden;
+- run queue: accept `JobOperation.INIT` specs alongside ingest/garden;
 - CLI: parse flags and call workflows; no internal shelling out to
   `codealmanac`.
 
@@ -149,7 +149,7 @@ Update tests that currently protect the wrong behavior:
 - remove parser/CLI expectations for public `build`;
 - make `init` test the first-build lifecycle path;
 - add background `init` queue tests;
-- add run-spec validation for `RunOperation.INIT`;
+- add run-spec validation for `JobOperation.INIT`;
 - add prompt inventory tests proving the init/ingest/garden prompt resources
   exist;
 - add manual inventory tests for the restored manual resources;

@@ -2,7 +2,7 @@ from codealmanac.cli.render.lifecycle import (
     render_garden,
     render_ingest,
     render_init,
-    render_run_queue_start,
+    render_job_queue_start,
     render_sync_status,
 )
 from codealmanac.cli.render.wiki import (
@@ -29,7 +29,7 @@ __all__ = [
     "render_init",
     "render_page",
     "render_reindex",
-    "render_run_queue_start",
+    "render_job_queue_start",
     "render_search",
     "render_sync_status",
     "render_tagging",

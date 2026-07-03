@@ -90,6 +90,8 @@ Completed:
 - Slice 84: `services/control`, `services/deliveries`,
   `services/engine_runs`, `services/local_hooks`, and `workflows/local_*`
   control-plane workflows -> `local/`
+- Slice 85: repo-local lifecycle `services/runs` and `workflows/run_queue` ->
+  `jobs/ledger` and `jobs/queue`
 
 Goal:
 
@@ -98,6 +100,7 @@ services/cloud_* + workflows/cloud_* -> cloud/                              # do
 services/wiki/index/search/pages/topics/viewer/workspaces -> wiki/          # done
 services/source_bundles/sources/harnesses/worker_workspaces + lifecycle workflows -> engine/  # done
 control/deliveries/local_hooks/local_* workflows -> local/                  # done
+repo-local lifecycle services/runs + workflows/run_queue -> jobs/           # done
 ```
 
 Do this with import-move tooling and thin compatibility only inside the same slice. Delete compatibility modules before the slice lands if all imports are moved.
@@ -109,7 +112,7 @@ Remaining work in this slice family:
 - optional later collapse of old repo-local job/run ledger names into the new
   local/engine package language
 
-## Slice F: Collapse Local Run Names
+## Slice F: Collapse Remaining Local Run Names
 
 Goal:
 
@@ -120,7 +123,6 @@ runs
 engine_runs
 local_runs
 local_jobs
-run_queue
 local_worker
 worker_workspaces
 ```
@@ -134,6 +136,10 @@ engine/workspaces
 ```
 
 This slice should include a before/after CLI and DB table map.
+
+Status: partially reduced by Slice 85. Repo-local lifecycle jobs no longer use
+the run noun. Remaining cleanup is only for names that still blur branch-
+triggered local runs, engine run artifacts, workers, and workspaces.
 
 ## Slice G: Database Cleanup
 

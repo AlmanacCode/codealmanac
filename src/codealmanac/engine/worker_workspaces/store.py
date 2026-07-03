@@ -1,8 +1,8 @@
 import shutil
 from pathlib import Path
 
+from codealmanac.engine.run_ids import EngineRunId
 from codealmanac.engine.worker_workspaces.models import WorkerWorkspacePaths
-from codealmanac.services.runs.models import RunId
 
 REPO_DIR_NAME = "repo"
 SOURCES_DIR_NAME = "sources"
@@ -13,7 +13,7 @@ class WorkerWorkspacesStore:
     def __init__(self, root_path: Path):
         self.root_path = root_path
 
-    def paths(self, run_id: RunId) -> WorkerWorkspacePaths:
+    def paths(self, run_id: EngineRunId) -> WorkerWorkspacePaths:
         root_path = self.root_path / run_id
         return WorkerWorkspacePaths(
             run_id=run_id,

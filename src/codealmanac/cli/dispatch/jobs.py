@@ -3,48 +3,48 @@ from pathlib import Path
 
 from codealmanac.app import CodeAlmanac
 from codealmanac.cli.render.admin import (
-    render_run,
-    render_run_attach_stream,
-    render_run_cancel,
-    render_run_log,
-    render_runs,
+    render_job,
+    render_job_attach_stream,
+    render_job_cancel,
+    render_job_log,
+    render_jobs,
 )
-from codealmanac.services.runs.requests import (
-    CancelRunRequest,
-    ListRunsRequest,
-    ReadRunLogRequest,
-    ShowRunRequest,
-    StreamRunAttachRequest,
+from codealmanac.jobs.ledger.requests import (
+    CancelJobRequest,
+    ListJobsRequest,
+    ReadJobLogRequest,
+    ShowJobRequest,
+    StreamJobAttachRequest,
 )
 
 
 def dispatch_jobs(args: argparse.Namespace, app: CodeAlmanac) -> int:
     if args.jobs_command == "show":
-        record = app.runs.show(
-            ShowRunRequest(cwd=Path.cwd(), wiki=args.wiki, run_id=args.run_id)
+        record = app.jobs.show(
+            ShowJobRequest(cwd=Path.cwd(), wiki=args.wiki, job_id=args.job_id)
         )
-        render_run(record, json_output=args.json)
+        render_job(record, json_output=args.json)
         return 0
     if args.jobs_command == "logs":
-        events = app.runs.log(
-            ReadRunLogRequest(cwd=Path.cwd(), wiki=args.wiki, run_id=args.run_id)
+        events = app.jobs.log(
+            ReadJobLogRequest(cwd=Path.cwd(), wiki=args.wiki, job_id=args.job_id)
         )
-        render_run_log(events, json_output=args.json)
+        render_job_log(events, json_output=args.json)
         return 0
     if args.jobs_command == "attach":
-        updates = app.runs.stream_attach(
-            StreamRunAttachRequest(cwd=Path.cwd(), wiki=args.wiki, run_id=args.run_id)
+        updates = app.jobs.stream_attach(
+            StreamJobAttachRequest(cwd=Path.cwd(), wiki=args.wiki, job_id=args.job_id)
         )
-        render_run_attach_stream(updates, json_output=args.json)
+        render_job_attach_stream(updates, json_output=args.json)
         return 0
     if args.jobs_command == "cancel":
-        result = app.runs.cancel(
-            CancelRunRequest(cwd=Path.cwd(), wiki=args.wiki, run_id=args.run_id)
+        result = app.jobs.cancel(
+            CancelJobRequest(cwd=Path.cwd(), wiki=args.wiki, job_id=args.job_id)
         )
-        render_run_cancel(result, json_output=args.json)
+        render_job_cancel(result, json_output=args.json)
         return 0
-    records = app.runs.list(
-        ListRunsRequest(cwd=Path.cwd(), wiki=args.wiki, limit=args.limit)
+    records = app.jobs.list(
+        ListJobsRequest(cwd=Path.cwd(), wiki=args.wiki, limit=args.limit)
     )
-    render_runs(records, json_output=args.json)
+    render_jobs(records, json_output=args.json)
     return 0

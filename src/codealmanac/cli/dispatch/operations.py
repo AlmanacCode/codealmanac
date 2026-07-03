@@ -6,7 +6,7 @@ from codealmanac.cli.dispatch.config import load_cli_config, resolve_harness
 from codealmanac.cli.render.root import (
     render_garden,
     render_ingest,
-    render_run_queue_start,
+    render_job_queue_start,
 )
 from codealmanac.core.errors import ValidationFailed
 from codealmanac.workflows.garden.requests import RunGardenRequest
@@ -25,7 +25,7 @@ def dispatch_ingest(args: argparse.Namespace, app: CodeAlmanac) -> int:
     )
     if args.background:
         result = app.workflows.queue.start_ingest_background(request)
-        render_run_queue_start(result, json_output=args.json)
+        render_job_queue_start(result, json_output=args.json)
         return 0
     if args.json:
         raise ValidationFailed("--json is only supported with --background")
@@ -45,7 +45,7 @@ def dispatch_garden(args: argparse.Namespace, app: CodeAlmanac) -> int:
     )
     if args.background:
         result = app.workflows.queue.start_garden_background(request)
-        render_run_queue_start(result, json_output=args.json)
+        render_job_queue_start(result, json_output=args.json)
         return 0
     if args.json:
         raise ValidationFailed("--json is only supported with --background")

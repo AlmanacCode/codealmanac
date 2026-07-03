@@ -2,33 +2,33 @@ from datetime import datetime
 from pathlib import Path
 
 from codealmanac.engine.harnesses.models import HarnessEvent
-from codealmanac.services.runs.io import RunLedgerIO
-from codealmanac.services.runs.models import (
-    RunEventKind,
-    RunLogEvent,
-    RunRecord,
+from codealmanac.jobs.ledger.io import JobLedgerIO
+from codealmanac.jobs.ledger.models import (
+    JobEventKind,
+    JobLogEvent,
+    JobRecord,
 )
 
 
-class RunTransitionWriter:
-    def __init__(self, ledger: RunLedgerIO):
+class JobTransitionWriter:
+    def __init__(self, ledger: JobLedgerIO):
         self.ledger = ledger
 
     def write_queued_record(
         self,
-        run_dir: Path,
-        record: RunRecord,
+        job_dir: Path,
+        record: JobRecord,
         timestamp: datetime,
     ) -> None:
         event = self.new_event(
-            run_dir,
-            record.run_id,
+            job_dir,
+            record.job_id,
             timestamp,
-            RunEventKind.STATUS,
+            JobEventKind.STATUS,
             f"queued {record.operation.value}",
         )
         self.write_record_with_event(
-            run_dir,
+            job_dir,
             previous=None,
             record=record,
             event=event,
@@ -36,21 +36,21 @@ class RunTransitionWriter:
 
     def write_status_transition(
         self,
-        run_dir: Path,
-        previous: RunRecord,
-        record: RunRecord,
+        job_dir: Path,
+        previous: JobRecord,
+        record: JobRecord,
         timestamp: datetime,
         message: str,
     ) -> None:
         event = self.new_event(
-            run_dir,
-            record.run_id,
+            job_dir,
+            record.job_id,
             timestamp,
-            RunEventKind.STATUS,
+            JobEventKind.STATUS,
             message,
         )
         self.write_record_with_event(
-            run_dir,
+            job_dir,
             previous=previous,
             record=record,
             event=event,
@@ -58,30 +58,30 @@ class RunTransitionWriter:
 
     def write_record_with_event(
         self,
-        run_dir: Path,
-        previous: RunRecord | None,
-        record: RunRecord,
-        event: RunLogEvent,
+        job_dir: Path,
+        previous: JobRecord | None,
+        record: JobRecord,
+        event: JobLogEvent,
     ) -> None:
-        self.ledger.write_record(run_dir, record)
+        self.ledger.write_record(job_dir, record)
         try:
-            self.ledger.append_event(run_dir, event)
+            self.ledger.append_event(job_dir, event)
         except Exception:
-            self.restore_record(run_dir, previous, record.run_id)
+            self.restore_record(job_dir, previous, record.job_id)
             raise
 
     def new_event(
         self,
-        run_dir: Path,
-        run_id: str,
+        job_dir: Path,
+        job_id: str,
         timestamp: datetime,
-        kind: RunEventKind,
+        kind: JobEventKind,
         message: str,
         harness_event: HarnessEvent | None = None,
-    ) -> RunLogEvent:
-        return RunLogEvent(
-            run_id=run_id,
-            sequence=self.ledger.next_sequence(run_dir, run_id),
+    ) -> JobLogEvent:
+        return JobLogEvent(
+            job_id=job_id,
+            sequence=self.ledger.next_sequence(job_dir, job_id),
             timestamp=timestamp,
             kind=kind,
             message=message,
@@ -90,11 +90,11 @@ class RunTransitionWriter:
 
     def restore_record(
         self,
-        run_dir: Path,
-        previous: RunRecord | None,
-        run_id: str,
+        job_dir: Path,
+        previous: JobRecord | None,
+        job_id: str,
     ) -> None:
         if previous is None:
-            self.ledger.delete_record(run_dir, run_id)
+            self.ledger.delete_record(job_dir, job_id)
             return
-        self.ledger.write_record(run_dir, previous)
+        self.ledger.write_record(job_dir, previous)

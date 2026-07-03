@@ -3,7 +3,7 @@ from pathlib import Path
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.engine.harnesses.models import HarnessRunResult
 from codealmanac.engine.lifecycle import LifecycleMutationReport
-from codealmanac.services.runs.models import RunRecord
+from codealmanac.jobs.ledger.models import JobRecord
 from codealmanac.wiki.index.models import (
     HealthReport,
     IndexRefreshResult,
@@ -23,7 +23,7 @@ class GardenPromptPayload(CodeAlmanacModel):
 
 
 class GardenResult(CodeAlmanacModel):
-    run: RunRecord
+    job: JobRecord
     harness: HarnessRunResult
     safety: LifecycleMutationReport
     index: IndexRefreshResult

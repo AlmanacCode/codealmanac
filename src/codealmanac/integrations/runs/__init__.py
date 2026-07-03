@@ -1,4 +1,4 @@
 from codealmanac.integrations.runs.local_worker import SubprocessLocalWorkerSpawner
-from codealmanac.integrations.runs.process import SubprocessRunWorkerSpawner
+from codealmanac.integrations.runs.process import SubprocessJobWorkerSpawner
 
-__all__ = ["SubprocessLocalWorkerSpawner", "SubprocessRunWorkerSpawner"]
+__all__ = ["SubprocessLocalWorkerSpawner", "SubprocessJobWorkerSpawner"]

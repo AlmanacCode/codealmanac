@@ -4,14 +4,14 @@ from fastapi.testclient import TestClient
 
 from codealmanac.app import CodeAlmanac
 from codealmanac.engine.harnesses.models import HarnessEvent, HarnessEventKind
-from codealmanac.server.app import create_server_app
-from codealmanac.services.runs.models import RunEventKind, RunOperation, RunStatus
-from codealmanac.services.runs.requests import (
-    FinishRunRequest,
-    MarkRunRunningRequest,
-    RecordRunEventRequest,
-    StartRunRequest,
+from codealmanac.jobs.ledger.models import JobEventKind, JobOperation, JobStatus
+from codealmanac.jobs.ledger.requests import (
+    FinishJobRequest,
+    MarkJobRunningRequest,
+    RecordJobEventRequest,
+    StartJobRequest,
 )
+from codealmanac.server.app import create_server_app
 from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 
 
@@ -78,18 +78,18 @@ def test_server_serves_jobs_api_with_normalized_harness_events(
     viewer_repo: tuple[Path, CodeAlmanac],
 ):
     repo, app = viewer_repo
-    record = create_server_run(repo, app)
+    record = create_server_job(repo, app)
     client = TestClient(create_server_app(app, repo))
 
     jobs = client.get("/api/jobs")
-    detail = client.get(f"/api/jobs/{record.run_id}")
+    detail = client.get(f"/api/jobs/{record.job_id}")
 
     assert jobs.status_code == 200
     assert jobs.json()["workspace"]["name"] == "repo"
-    assert [run["run_id"] for run in jobs.json()["runs"]] == [record.run_id]
-    assert jobs.json()["runs"][0]["status"] == "done"
+    assert [job["job_id"] for job in jobs.json()["jobs"]] == [record.job_id]
+    assert jobs.json()["jobs"][0]["status"] == "done"
     assert detail.status_code == 200
-    assert detail.json()["run"]["summary"] == "updated wiki"
+    assert detail.json()["job"]["summary"] == "updated wiki"
     assert detail.json()["events"][2]["harness_event"]["kind"] == "text"
     assert detail.json()["events"][2]["harness_event"]["message"] == (
         "Created auth-flow.md"
@@ -221,20 +221,20 @@ def write_server_page(repo: Path, name: str, body: str) -> None:
     path.write_text(body, encoding="utf-8")
 
 
-def create_server_run(repo: Path, app: CodeAlmanac):
-    record = app.runs.start(
-        StartRunRequest(
+def create_server_job(repo: Path, app: CodeAlmanac):
+    record = app.jobs.start(
+        StartJobRequest(
             cwd=repo,
-            operation=RunOperation.INGEST,
+            operation=JobOperation.INGEST,
             title="Digest auth note",
         )
     )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=record.run_id))
-    app.runs.record_event(
-        RecordRunEventRequest(
+    app.jobs.mark_running(MarkJobRunningRequest(cwd=repo, job_id=record.job_id))
+    app.jobs.record_event(
+        RecordJobEventRequest(
             cwd=repo,
-            run_id=record.run_id,
-            kind=RunEventKind.OUTPUT,
+            job_id=record.job_id,
+            kind=JobEventKind.OUTPUT,
             message="Created auth-flow.md",
             harness_event=HarnessEvent(
                 kind=HarnessEventKind.TEXT,
@@ -242,11 +242,11 @@ def create_server_run(repo: Path, app: CodeAlmanac):
             ),
         )
     )
-    return app.runs.finish(
-        FinishRunRequest(
+    return app.jobs.finish(
+        FinishJobRequest(
             cwd=repo,
-            run_id=record.run_id,
-            status=RunStatus.DONE,
+            job_id=record.job_id,
+            status=JobStatus.DONE,
             summary="updated wiki",
         )
     )

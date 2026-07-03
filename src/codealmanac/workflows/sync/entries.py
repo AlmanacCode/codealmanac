@@ -25,7 +25,7 @@ def fresh_ledger_entry(candidate: TranscriptCandidate) -> SyncLedgerEntry:
 def absorbed_entry(
     entry: SyncLedgerEntry,
     snapshot: TranscriptSnapshot,
-    run_id: str,
+    job_id: str,
     now: datetime,
 ) -> SyncLedgerEntry:
     return entry.model_copy(
@@ -35,12 +35,12 @@ def absorbed_entry(
             "last_absorbed_line": snapshot.current_line,
             "last_absorbed_prefix_hash": sha256_bytes(snapshot.content),
             "last_absorbed_at": now,
-            "last_job_id": run_id,
+            "last_job_id": job_id,
             "last_error": None,
             "failed_attempts": 0,
             "pending_started_at": None,
             "pending_owner": None,
-            "pending_run_id": None,
+            "pending_job_id": None,
             "pending_to_size": None,
             "pending_prefix_hash": None,
             "pending_from_line": None,
@@ -52,17 +52,17 @@ def absorbed_entry(
 def failed_entry(
     entry: SyncLedgerEntry,
     error: Exception,
-    run_id: str | None = None,
+    job_id: str | None = None,
 ) -> SyncLedgerEntry:
     return entry.model_copy(
         update={
             "status": SyncLedgerStatus.FAILED,
             "last_error": first_error_line(error),
-            "last_job_id": run_id or entry.pending_run_id or entry.last_job_id,
+            "last_job_id": job_id or entry.pending_job_id or entry.last_job_id,
             "failed_attempts": entry.failed_attempts + 1,
             "pending_started_at": None,
             "pending_owner": None,
-            "pending_run_id": None,
+            "pending_job_id": None,
             "pending_to_size": None,
             "pending_prefix_hash": None,
             "pending_from_line": None,
@@ -76,7 +76,7 @@ def pending_entry(
     item: SyncWorkItem,
     now: datetime,
     owner: str,
-    run_id: str,
+    job_id: str,
 ) -> SyncLedgerEntry:
     return entry.model_copy(
         update={
@@ -84,7 +84,7 @@ def pending_entry(
             "last_error": None,
             "pending_started_at": now,
             "pending_owner": owner,
-            "pending_run_id": run_id,
+            "pending_job_id": job_id,
             "pending_to_size": item.snapshot.current_size,
             "pending_prefix_hash": sha256_bytes(item.snapshot.content),
             "pending_from_line": item.from_line,
@@ -111,12 +111,12 @@ def pending_cursor_complete(entry: SyncLedgerEntry) -> bool:
 def needs_attention_entry(
     entry: SyncLedgerEntry,
     reason: str,
-    run_id: str,
+    job_id: str,
 ) -> SyncLedgerEntry:
     return entry.model_copy(
         update={
             "status": SyncLedgerStatus.NEEDS_ATTENTION,
-            "last_job_id": run_id,
+            "last_job_id": job_id,
             "last_error": reason,
             **cleared_pending_fields(),
         }
@@ -127,10 +127,9 @@ def cleared_pending_fields() -> dict[str, None]:
     return {
         "pending_started_at": None,
         "pending_owner": None,
-        "pending_run_id": None,
+        "pending_job_id": None,
         "pending_to_size": None,
         "pending_prefix_hash": None,
         "pending_from_line": None,
         "pending_to_line": None,
     }
-

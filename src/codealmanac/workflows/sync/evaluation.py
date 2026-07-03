@@ -6,9 +6,9 @@ from codealmanac.core.paths import normalize_path
 from codealmanac.engine.sources.models import TranscriptCandidate
 from codealmanac.engine.sources.requests import DiscoverTranscriptsRequest
 from codealmanac.engine.sources.service import SourcesService
-from codealmanac.services.runs.models import RunRecord
-from codealmanac.services.runs.requests import ListRunsRequest
-from codealmanac.services.runs.service import RunsService
+from codealmanac.jobs.ledger.models import JobRecord
+from codealmanac.jobs.ledger.requests import ListJobsRequest
+from codealmanac.jobs.ledger.service import JobLedgerService
 from codealmanac.wiki.workspaces.requests import SelectWorkspaceRequest
 from codealmanac.wiki.workspaces.service import WorkspacesService
 from codealmanac.workflows.sync.models import (
@@ -50,12 +50,12 @@ class SyncEvaluator:
         self,
         workspaces: WorkspacesService,
         sources: SourcesService,
-        runs: RunsService,
+        jobs: JobLedgerService,
         ledger_store: SyncLedgerStore,
     ):
         self.workspaces = workspaces
         self.sources = sources
-        self.runs = runs
+        self.jobs = jobs
         self.ledger_store = ledger_store
 
     def evaluate(
@@ -78,7 +78,7 @@ class SyncEvaluator:
         needs_attention: list[SyncSkipped] = []
         ledgers: dict[Path, SyncLedger] = {}
         work_items: list[SyncWorkItem] = []
-        run_records: dict[Path, tuple[RunRecord, ...]] = {}
+        job_records: dict[Path, tuple[JobRecord, ...]] = {}
         for candidate in scoped_candidates:
             outcome = self.evaluate_candidate(
                 request=request,
@@ -86,7 +86,7 @@ class SyncEvaluator:
                 candidate=candidate,
                 current_time=current_time,
                 ledgers=ledgers,
-                run_records=run_records,
+                job_records=job_records,
             )
             ledgers = outcome.ledgers
             ready.extend(outcome.ready)
@@ -114,14 +114,14 @@ class SyncEvaluator:
         candidate: TranscriptCandidate,
         current_time: datetime,
         ledgers: dict[Path, SyncLedger],
-        run_records: dict[Path, tuple[RunRecord, ...]],
+        job_records: dict[Path, tuple[JobRecord, ...]],
     ) -> SyncCandidateEvaluationResult:
         quiet_skip = quiet_window_skip(candidate, request, current_time)
         if quiet_skip is not None:
             return SyncCandidateEvaluationResult(skipped=(quiet_skip,), ledgers=ledgers)
-        records = run_records.setdefault(
+        records = job_records.setdefault(
             candidate.repo_root,
-            self.runs.list(ListRunsRequest(cwd=candidate.repo_root)),
+            self.jobs.list(ListJobsRequest(cwd=candidate.repo_root)),
         )
         if is_internal_transcript(candidate, records):
             return SyncCandidateEvaluationResult(

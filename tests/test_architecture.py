@@ -1202,7 +1202,7 @@ def test_cli_admin_render_stays_split_by_output_family():
         "automation.py": ("AutomationInstallResult", "def render_automation_install("),
         "cloud_runs.py": ("CloudRunListResult", "def render_cloud_runs("),
         "diagnostics.py": ("DoctorReport", "def render_doctor("),
-        "jobs.py": ("RunRecord", "def render_runs("),
+        "jobs.py": ("JobRecord", "def render_jobs("),
         "repo.py": ("CloudRepoStatusResult", "def render_cloud_repo_status("),
         "setup.py": ("SetupResult", "def render_setup_result("),
         "updates.py": ("UpdatePlan", "def render_update_plan("),
@@ -1212,7 +1212,7 @@ def test_cli_admin_render_stays_split_by_output_family():
         "json.dumps",
         "AutomationInstallResult",
         "DoctorReport",
-        "RunRecord",
+        "JobRecord",
         "SetupResult",
         "UpdatePlan",
         "print(",
@@ -1316,7 +1316,7 @@ def test_cli_dispatch_edge_is_split_by_command_domain():
     assert "RunUpdateRequest" not in dispatch_root
     assert "DoctorReport" not in render_root
     assert "UpdatePlan" not in render_root
-    assert "RunRecord" not in render_root
+    assert "JobRecord" not in render_root
     assert [
         fragment for fragment in forbidden_wiki_fragments if fragment in dispatch_wiki
     ] == []
@@ -1337,7 +1337,7 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
         "capture.py": ("CaptureStatusRequest", "def dispatch_capture("),
         "cloud_status.py": ("ReadCloudStatusRequest", "def dispatch_cloud_status("),
         "diagnostics.py": ("DoctorRequest", "def dispatch_doctor("),
-        "jobs.py": ("ShowRunRequest", "def dispatch_jobs("),
+        "jobs.py": ("ShowJobRequest", "def dispatch_jobs("),
         "repo.py": ("ReadCloudRepoStatusRequest", "def dispatch_repo("),
         "runs.py": ("ListCloudRunsRequest", "def dispatch_runs("),
         "setup.py": ("RunSetupRequest", "def dispatch_setup("),
@@ -1349,7 +1349,7 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
         "DoctorRequest",
         "CheckUpdateRequest",
         "RunUpdateRequest",
-        "ShowRunRequest",
+        "ShowJobRequest",
         "InstallAutomationRequest",
         "parse_optional_duration",
         "load_cli_config",
@@ -1456,14 +1456,14 @@ def test_cli_lifecycle_dispatch_stays_split_by_command_family():
         "init.py": ("RunInitRequest", "def dispatch_init("),
         "operations.py": ("RunIngestRequest", "def dispatch_ingest("),
         "sync.py": ("RunSyncRequest", "def dispatch_sync("),
-        "worker.py": ("DrainRunQueueRequest", "def dispatch_run_worker("),
+        "worker.py": ("DrainJobQueueRequest", "def dispatch_run_worker("),
     }
     forbidden_lifecycle_fragments = (
         "RunIngestRequest",
         "RunGardenRequest",
         "RunSyncRequest",
         "RunSyncStatusRequest",
-        "DrainRunQueueRequest",
+        "DrainJobQueueRequest",
         "TranscriptApp",
         "ValidationFailed",
         "load_cli_config",
@@ -1520,7 +1520,7 @@ def test_page_run_workflow_owns_shared_lifecycle_execution():
     assert lifecycle_harness.is_file()
     assert lifecycle_mutation.is_file()
     assert "RunHarnessRequest" in page_run_text
-    assert "RecordRunHarnessTranscriptRequest" in page_run_text
+    assert "RecordJobHarnessTranscriptRequest" in page_run_text
     assert "validate_harness_result" in page_run_text
     assert len(lifecycle_text.splitlines()) <= 40
     assert "from codealmanac.engine.lifecycle.harness import" in lifecycle_text
@@ -1540,9 +1540,9 @@ def test_page_run_workflow_owns_shared_lifecycle_execution():
     )
     forbidden_fragments = (
         "RunHarnessRequest",
-        "RecordRunHarnessTranscriptRequest",
-        "MarkRunRunningRequest",
-        "FinishRunRequest",
+        "RecordJobHarnessTranscriptRequest",
+        "MarkJobRunningRequest",
+        "FinishJobRequest",
         "validate_harness_result",
         "harness_events",
         "harness_run_event_kind",
@@ -1563,7 +1563,7 @@ def test_page_writing_workflow_services_stay_small():
         SRC_ROOT / "workflows/ingest/service.py",
         SRC_ROOT / "workflows/garden/service.py",
         SRC_ROOT / "engine/page_run/service.py",
-        SRC_ROOT / "workflows/run_queue/service.py",
+        SRC_ROOT / "jobs/queue/service.py",
     ):
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         if line_count > 250:
@@ -2015,8 +2015,8 @@ def test_automation_service_keeps_selection_and_job_construction_boundaries():
     assert "ValidationFailed" in selection_text
 
 
-def test_run_queue_workflow_stays_operation_dispatch_only():
-    text = (SRC_ROOT / "workflows/run_queue/service.py").read_text(encoding="utf-8")
+def test_job_queue_workflow_stays_operation_dispatch_only():
+    text = (SRC_ROOT / "jobs/queue/service.py").read_text(encoding="utf-8")
 
     forbidden_fragments = (
         "RunHarnessRequest",
@@ -2062,7 +2062,7 @@ def test_sync_workflow_policy_stays_out_of_service_orchestration():
     )
     forbidden_service_evaluation_fragments = (
         "DiscoverTranscriptsRequest",
-        "ListRunsRequest",
+        "ListJobsRequest",
         "SelectWorkspaceRequest",
         "SyncReady(",
         "SyncWorkItem(",
@@ -2073,9 +2073,9 @@ def test_sync_workflow_policy_stays_out_of_service_orchestration():
     forbidden_policy_imports = (
         "codealmanac.integrations",
         "codealmanac.workflows.ingest",
-        "codealmanac.workflows.run_queue",
+        "codealmanac.jobs.queue",
         "codealmanac.engine.sources.service",
-        "codealmanac.services.runs.service",
+        "codealmanac.jobs.ledger.service",
         "codealmanac.wiki.workspaces.service",
     )
 
@@ -2085,7 +2085,7 @@ def test_sync_workflow_policy_stays_out_of_service_orchestration():
     assert "SyncEvaluator(" in service_text
     assert "class SyncEvaluator" in evaluation_text
     assert "DiscoverTranscriptsRequest" in evaluation_text
-    assert "ListRunsRequest" in evaluation_text
+    assert "ListJobsRequest" in evaluation_text
     assert "SelectWorkspaceRequest" in evaluation_text
     assert [
         fragment
@@ -2136,9 +2136,9 @@ def test_sync_execution_effects_stay_out_of_service_orchestration():
     execution_text = (sync_root / "execution.py").read_text(encoding="utf-8")
     forbidden_service_fragments = (
         "RunIngestRequest",
-        "RunIngestWithRunRequest",
-        "FinishRunRequest",
-        "RunStatus.FAILED",
+        "RunIngestWithJobRequest",
+        "FinishJobRequest",
+        "JobStatus.FAILED",
         "pending_entry(item",
         "failed_entry(",
         "absorbed_entry(",
@@ -2146,16 +2146,16 @@ def test_sync_execution_effects_stay_out_of_service_orchestration():
         "sync_ingest_title(",
         "queue_ingest(",
         "spawn_worker(",
-        "run_with_run(",
+        "run_with_job(",
     )
     forbidden_evaluation_fragments = (
         "RunIngestRequest",
-        "RunIngestWithRunRequest",
-        "FinishRunRequest",
-        "RunStatus.FAILED",
+        "RunIngestWithJobRequest",
+        "FinishJobRequest",
+        "JobStatus.FAILED",
         "queue_ingest(",
         "spawn_worker(",
-        "run_with_run(",
+        "run_with_job(",
     )
 
     assert (sync_root / "execution.py").is_file()
@@ -2170,10 +2170,10 @@ def test_sync_execution_effects_stay_out_of_service_orchestration():
         for fragment in forbidden_evaluation_fragments
         if fragment in evaluation_text
     ] == []
-    assert "class SyncRunExecutor" in execution_text
+    assert "class SyncJobExecutor" in execution_text
     assert "RunIngestRequest" in execution_text
-    assert "RunIngestWithRunRequest" in execution_text
-    assert "FinishRunRequest" in execution_text
+    assert "RunIngestWithJobRequest" in execution_text
+    assert "FinishJobRequest" in execution_text
     assert "pending_entry(" in execution_text
     assert "absorbed_entry(" in execution_text
     assert "queue_ingest(" in execution_text
@@ -2188,12 +2188,12 @@ def test_viewer_jobs_surface_stays_read_only():
         SRC_ROOT / "server/api_routes.py",
     )
     forbidden_fragments = (
-        "CancelRunRequest",
-        "FinishRunRequest",
-        "MarkRunRunningRequest",
-        "QueueRunRequest",
-        "RecordRunEventRequest",
-        "StartRunRequest",
+        "CancelJobRequest",
+        "FinishJobRequest",
+        "MarkJobRunningRequest",
+        "QueueJobRequest",
+        "RecordJobEventRequest",
+        "StartJobRequest",
     )
     offenders = [
         f"{path.relative_to(SRC_ROOT)}:{fragment}"
@@ -2255,37 +2255,37 @@ def test_server_app_stays_composition_root():
     assert "ViewerOverviewRequest" not in errors_text
 
 
-def test_run_id_validation_is_owned_by_runs_models():
-    runs_models = (SRC_ROOT / "services/runs/models.py").read_text(encoding="utf-8")
-    runs_requests = (SRC_ROOT / "services/runs/requests.py").read_text(
+def test_job_id_validation_is_owned_by_job_models():
+    jobs_models = (SRC_ROOT / "jobs/ledger/models.py").read_text(encoding="utf-8")
+    jobs_requests = (SRC_ROOT / "jobs/ledger/requests.py").read_text(
         encoding="utf-8"
     )
-    runs_store = (SRC_ROOT / "services/runs/store.py").read_text(encoding="utf-8")
-    runs_paths = (SRC_ROOT / "services/runs/paths.py").read_text(encoding="utf-8")
+    jobs_store = (SRC_ROOT / "jobs/ledger/store.py").read_text(encoding="utf-8")
+    jobs_paths = (SRC_ROOT / "jobs/ledger/paths.py").read_text(encoding="utf-8")
     viewer_requests = (SRC_ROOT / "wiki/viewer/requests.py").read_text(
         encoding="utf-8"
     )
 
-    assert "RunId = Annotated[" in runs_models
-    assert "StringConstraints" in runs_models
-    assert "run_id: RunId" in runs_requests
-    assert "TypeAdapter(RunId)" not in runs_store
-    assert "TypeAdapter(RunId)" in runs_paths
-    assert "run_id: RunId" in viewer_requests
+    assert "JobId = Annotated[" in jobs_models
+    assert "StringConstraints" in jobs_models
+    assert "job_id: JobId" in jobs_requests
+    assert "TypeAdapter(JobId)" not in jobs_store
+    assert "TypeAdapter(JobId)" in jobs_paths
+    assert "job_id: JobId" in viewer_requests
     assert "SAFE_RUN_ID" not in viewer_requests
 
 
-def test_run_ledger_persistence_stays_split_by_responsibility():
-    runs_root = SRC_ROOT / "services/runs"
-    module_names = {path.name for path in runs_root.glob("*.py")}
-    store_text = (runs_root / "store.py").read_text(encoding="utf-8")
-    factory_text = (runs_root / "factory.py").read_text(encoding="utf-8")
-    io_text = (runs_root / "io.py").read_text(encoding="utf-8")
-    locks_text = (runs_root / "locks.py").read_text(encoding="utf-8")
-    queries_text = (runs_root / "queries.py").read_text(encoding="utf-8")
-    service_text = (runs_root / "service.py").read_text(encoding="utf-8")
-    streaming_text = (runs_root / "streaming.py").read_text(encoding="utf-8")
-    transitions_text = (runs_root / "transitions.py").read_text(encoding="utf-8")
+def test_job_ledger_persistence_stays_split_by_responsibility():
+    jobs_root = SRC_ROOT / "jobs/ledger"
+    module_names = {path.name for path in jobs_root.glob("*.py")}
+    store_text = (jobs_root / "store.py").read_text(encoding="utf-8")
+    factory_text = (jobs_root / "factory.py").read_text(encoding="utf-8")
+    io_text = (jobs_root / "io.py").read_text(encoding="utf-8")
+    locks_text = (jobs_root / "locks.py").read_text(encoding="utf-8")
+    queries_text = (jobs_root / "queries.py").read_text(encoding="utf-8")
+    service_text = (jobs_root / "service.py").read_text(encoding="utf-8")
+    streaming_text = (jobs_root / "streaming.py").read_text(encoding="utf-8")
+    transitions_text = (jobs_root / "transitions.py").read_text(encoding="utf-8")
     forbidden_store_fragments = (
         "write_json_atomically",
         "model_validate_json",
@@ -2294,10 +2294,10 @@ def test_run_ledger_persistence_stays_split_by_responsibility():
         "time.sleep",
         'open("a"',
         ".open(\"a\"",
-        "RUN_ID_ADAPTER",
+        "JOB_ID_ADAPTER",
         "uuid4",
         "strftime",
-        "run_log_reference_path",
+        "job_log_reference_path",
         "key=lambda record",
         "ledger.iter_records",
     )
@@ -2315,18 +2315,18 @@ def test_run_ledger_persistence_stays_split_by_responsibility():
     assert [
         fragment for fragment in forbidden_store_fragments if fragment in store_text
     ] == []
-    assert "def new_run_record(" in factory_text
+    assert "def new_job_record(" in factory_text
     assert "uuid4" in factory_text
-    assert "run_log_reference_path" in factory_text
+    assert "job_log_reference_path" in factory_text
     assert "write_json_atomically" in io_text
     assert "model_validate_json" in io_text
     assert "worker_lock_owner_path" in locks_text
     assert "process_is_alive" in locks_text
-    assert "def list_run_records(" in queries_text
-    assert "def next_spec_backed_queued_run(" in queries_text
+    assert "def list_job_records(" in queries_text
+    assert "def next_spec_backed_queued_job(" in queries_text
     assert "ledger.iter_records" in queries_text
     assert "def stream_attach(" in service_text
-    assert "class RunAttachStreamer" in streaming_text
+    assert "class JobAttachStreamer" in streaming_text
     assert "time.sleep" in streaming_text
     assert "store.attach" in streaming_text
     assert "write_record_with_event" in transitions_text

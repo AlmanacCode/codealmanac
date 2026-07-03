@@ -12,18 +12,18 @@ from codealmanac.engine.harnesses.models import (
 )
 from codealmanac.engine.harnesses.requests import RunHarnessRequest
 from codealmanac.integrations.runs.process import worker_command
-from codealmanac.services.runs.models import RunStatus, RunWorkerSpawnResult
-from codealmanac.services.runs.requests import (
-    CancelRunRequest,
-    ListRunsRequest,
-    ReadRunLogRequest,
-    SpawnRunWorkerRequest,
+from codealmanac.jobs.ledger.models import JobStatus, JobWorkerSpawnResult
+from codealmanac.jobs.ledger.requests import (
+    CancelJobRequest,
+    ListJobsRequest,
+    ReadJobLogRequest,
+    SpawnJobWorkerRequest,
 )
+from codealmanac.jobs.queue import DrainJobQueueRequest
 from codealmanac.wiki.search.requests import SearchPagesRequest
 from codealmanac.wiki.workspaces.identity import workspace_id_for
 from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 from codealmanac.workflows.ingest.requests import RunIngestRequest
-from codealmanac.workflows.run_queue import DrainRunQueueRequest
 
 
 class QueueWritingHarnessAdapter:
@@ -68,11 +68,11 @@ The queued worker turned the note into durable wiki knowledge.
 
 class FakeWorkerSpawner:
     def __init__(self):
-        self.requests: list[SpawnRunWorkerRequest] = []
+        self.requests: list[SpawnJobWorkerRequest] = []
 
-    def spawn(self, request: SpawnRunWorkerRequest) -> RunWorkerSpawnResult:
+    def spawn(self, request: SpawnJobWorkerRequest) -> JobWorkerSpawnResult:
         self.requests.append(request)
-        return RunWorkerSpawnResult(
+        return JobWorkerSpawnResult(
             child_pid=4242,
             command=("fake-codealmanac-worker",),
         )
@@ -104,13 +104,13 @@ def test_run_queue_background_start_persists_spec_and_spawns_worker(
             harness=HarnessKind.CODEX,
         )
     )
-    runs = app.runs.list(ListRunsRequest(cwd=repo))
+    runs = app.jobs.list(ListJobsRequest(cwd=repo))
 
     assert result.worker.child_pid == 4242
-    assert result.run.status == RunStatus.QUEUED
-    assert runs[0].run_id == result.run.run_id
-    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
-    assert (workspace_jobs_path(repo) / f"{result.run.run_id}.spec.json").is_file()
+    assert result.job.status == JobStatus.QUEUED
+    assert runs[0].job_id == result.job.job_id
+    assert spawner.requests == [SpawnJobWorkerRequest(cwd=repo, wiki=None)]
+    assert (workspace_jobs_path(repo) / f"{result.job.job_id}.spec.json").is_file()
 
 
 def test_run_queue_drains_persisted_ingest_spec(
@@ -138,14 +138,14 @@ def test_run_queue_drains_persisted_ingest_spec(
         )
     )
 
-    result = app.workflows.queue.drain(DrainRunQueueRequest(cwd=repo))
-    runs = app.runs.list(ListRunsRequest(cwd=repo))
-    log = app.runs.log(ReadRunLogRequest(cwd=repo, run_id=queued.run_id))
+    result = app.workflows.queue.drain(DrainJobQueueRequest(cwd=repo))
+    runs = app.jobs.list(ListJobsRequest(cwd=repo))
+    log = app.jobs.log(ReadJobLogRequest(cwd=repo, job_id=queued.job_id))
     matches = app.search.search(SearchPagesRequest(cwd=repo, query="worker"))
 
     assert result.lock_acquired is True
-    assert [record.run_id for record in result.processed] == [queued.run_id]
-    assert runs[0].status == RunStatus.DONE
+    assert [record.job_id for record in result.processed] == [queued.job_id]
+    assert runs[0].status == JobStatus.DONE
     assert runs[0].summary == "queued ingest completed"
     assert matches[0].slug == "queued-note"
     assert len(harness.requests) == 1
@@ -177,19 +177,19 @@ def test_run_queue_skips_cancelled_queued_runs(
             harness=HarnessKind.CODEX,
         )
     )
-    app.runs.cancel(CancelRunRequest(cwd=repo, run_id=queued.run_id))
+    app.jobs.cancel(CancelJobRequest(cwd=repo, job_id=queued.job_id))
 
-    result = app.workflows.queue.drain(DrainRunQueueRequest(cwd=repo))
-    runs = app.runs.list(ListRunsRequest(cwd=repo))
+    result = app.workflows.queue.drain(DrainJobQueueRequest(cwd=repo))
+    runs = app.jobs.list(ListJobsRequest(cwd=repo))
 
     assert result.lock_acquired is True
     assert result.processed == ()
-    assert runs[0].status == RunStatus.CANCELLED
+    assert runs[0].status == JobStatus.CANCELLED
     assert harness.requests == []
 
 
 def test_worker_command_targets_codealmanac_module(tmp_path: Path):
-    command = worker_command(SpawnRunWorkerRequest(cwd=tmp_path, wiki="docs"))
+    command = worker_command(SpawnJobWorkerRequest(cwd=tmp_path, wiki="docs"))
 
     assert command[1:] == [
         "-m",

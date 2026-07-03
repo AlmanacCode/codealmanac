@@ -21,29 +21,29 @@ export async function renderJobs(context) {
   setRouteTitle("Jobs");
   replaceMain(
     elements,
-    pageIntro("Lifecycle runs", "Jobs", `${result.runs.length} local runs.`),
-    jobList(result.runs),
+    pageIntro("Lifecycle jobs", "Jobs", `${result.jobs.length} local jobs.`),
+    jobList(result.jobs),
   );
-  if (result.runs.some((run) => isActiveJobStatus(run.status))) {
+  if (result.jobs.some((job) => isActiveJobStatus(job.status))) {
     scheduleJobPolling(routeHash, () => renderJobs(context));
   }
 }
 
-export async function renderJob(context, runId) {
+export async function renderJob(context, jobId) {
   const { elements, setRouteTitle, wiki } = context;
   const routeHash = window.location.hash;
-  const detail = await viewerApi.job(runId, wiki);
+  const detail = await viewerApi.job(jobId, wiki);
   if (window.location.hash !== routeHash) return;
-  const run = detail.run;
-  setRouteTitle(run.title || run.run_id);
+  const job = detail.job;
+  setRouteTitle(job.title || job.job_id);
   replaceMain(
     elements,
-    pageIntro("Job", run.title || run.run_id, `${run.operation} · ${run.status}`),
-    jobDetail(run),
+    pageIntro("Job", job.title || job.job_id, `${job.operation} · ${job.status}`),
+    jobDetail(job),
     eventList(detail.events),
   );
-  if (isActiveJobStatus(run.status)) {
-    scheduleJobPolling(routeHash, () => renderJob(context, runId));
+  if (isActiveJobStatus(job.status)) {
+    scheduleJobPolling(routeHash, () => renderJob(context, jobId));
   }
 }
 
@@ -62,75 +62,75 @@ function isActiveJobStatus(status) {
   return ACTIVE_JOB_STATUSES.has(status);
 }
 
-function jobList(runs) {
-  if (runs.length === 0) {
+function jobList(jobs) {
+  if (jobs.length === 0) {
     return emptyState(
       "No jobs yet",
-      "Lifecycle runs appear here after ingest, garden, or sync.",
+      "Lifecycle jobs appear here after ingest, garden, or sync.",
     );
   }
   const list = document.createElement("nav");
   list.className = "job-list";
   list.setAttribute("aria-label", "Lifecycle jobs");
-  for (const run of runs) {
-    list.append(jobRow(run));
+  for (const job of jobs) {
+    list.append(jobRow(job));
   }
   return list;
 }
 
-function jobRow(run) {
+function jobRow(job) {
   const item = document.createElement("a");
   item.className = "job-row";
-  item.href = jobHref(run.run_id);
+  item.href = jobHref(job.job_id);
 
   const main = document.createElement("span");
   main.className = "job-row-main";
   const title = document.createElement("span");
   title.className = "job-row-title";
-  title.textContent = run.title || run.run_id;
+  title.textContent = job.title || job.job_id;
   const summary = document.createElement("span");
   summary.className = "job-row-summary";
-  summary.textContent = run.summary || run.error || run.run_id;
+  summary.textContent = job.summary || job.error || job.job_id;
   main.append(title, summary);
 
   const meta = document.createElement("span");
   meta.className = "job-row-meta";
   meta.append(
-    jobPill(run.status),
-    textSpan(run.operation),
-    textSpan(shortTime(run.updated_at)),
+    jobPill(job.status),
+    textSpan(job.operation),
+    textSpan(shortTime(job.updated_at)),
   );
 
   item.append(main, meta);
   return item;
 }
 
-function jobDetail(run) {
+function jobDetail(job) {
   const section = document.createElement("section");
   section.className = "job-detail";
   section.append(
-    detailRow("Run", run.run_id),
-    detailRow("Status", run.status),
-    detailRow("Operation", run.operation),
-    detailRow("Updated", run.updated_at),
-    detailRow("Log", run.log_path),
+    detailRow("Job", job.job_id),
+    detailRow("Status", job.status),
+    detailRow("Operation", job.operation),
+    detailRow("Updated", job.updated_at),
+    detailRow("Log", job.log_path),
   );
-  if (run.harness_transcript) {
+  if (job.harness_transcript) {
     section.append(
       detailRow(
         "Transcript",
-        `${run.harness_transcript.kind} ${run.harness_transcript.session_id}`,
+        `${job.harness_transcript.kind} ${job.harness_transcript.session_id}`,
       ),
     );
   }
-  if (run.summary) section.append(detailRow("Summary", run.summary));
-  if (run.error) section.append(detailRow("Error", run.error));
+  if (job.summary) section.append(detailRow("Summary", job.summary));
+  if (job.error) section.append(detailRow("Error", job.error));
   return section;
 }
 
 function eventList(events) {
   if (events.length === 0) {
-    return emptyState("No events", "This run has no persisted log events.");
+    return emptyState("No events", "This job has no persisted log events.");
   }
   const section = document.createElement("section");
   section.className = "job-events";

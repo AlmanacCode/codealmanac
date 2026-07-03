@@ -6,16 +6,16 @@ from pydantic import field_validator
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
 from codealmanac.engine.harnesses.models import HarnessEvent, HarnessTranscriptRef
-from codealmanac.services.runs.models import (
-    RunEventKind,
-    RunId,
-    RunOperation,
-    RunSpec,
-    RunStatus,
+from codealmanac.jobs.ledger.models import (
+    JobEventKind,
+    JobId,
+    JobOperation,
+    JobSpec,
+    JobStatus,
 )
 
 
-class ListRunsRequest(CodeAlmanacModel):
+class ListJobsRequest(CodeAlmanacModel):
     cwd: Path
     wiki: str | None = None
     limit: int | None = None
@@ -28,27 +28,27 @@ class ListRunsRequest(CodeAlmanacModel):
         return value
 
 
-class ShowRunRequest(CodeAlmanacModel):
+class ShowJobRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
+    job_id: JobId
     wiki: str | None = None
 
 
-class ReadRunLogRequest(CodeAlmanacModel):
+class ReadJobLogRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
+    job_id: JobId
     wiki: str | None = None
 
 
-class AttachRunRequest(CodeAlmanacModel):
+class AttachJobRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
+    job_id: JobId
     wiki: str | None = None
 
 
-class StreamRunAttachRequest(CodeAlmanacModel):
+class StreamJobAttachRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
+    job_id: JobId
     wiki: str | None = None
     poll_interval_seconds: float = 0.5
 
@@ -60,38 +60,38 @@ class StreamRunAttachRequest(CodeAlmanacModel):
         return value
 
 
-class CancelRunRequest(CodeAlmanacModel):
+class CancelJobRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
+    job_id: JobId
     wiki: str | None = None
 
 
-class StartRunRequest(CodeAlmanacModel):
+class StartJobRequest(CodeAlmanacModel):
     cwd: Path
-    operation: RunOperation
-    wiki: str | None = None
-    title: str | None = None
-
-
-class QueueRunRequest(CodeAlmanacModel):
-    cwd: Path
-    spec: RunSpec
+    operation: JobOperation
     wiki: str | None = None
     title: str | None = None
 
 
-class ReadRunSpecRequest(CodeAlmanacModel):
+class QueueJobRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
+    spec: JobSpec
+    wiki: str | None = None
+    title: str | None = None
+
+
+class ReadJobSpecRequest(CodeAlmanacModel):
+    cwd: Path
+    job_id: JobId
     wiki: str | None = None
 
 
-class NextQueuedRunRequest(CodeAlmanacModel):
+class NextQueuedJobRequest(CodeAlmanacModel):
     cwd: Path
     wiki: str | None = None
 
 
-class AcquireRunWorkerLockRequest(CodeAlmanacModel):
+class AcquireJobWorkerLockRequest(CodeAlmanacModel):
     cwd: Path
     wiki: str | None = None
     owner: str
@@ -109,7 +109,7 @@ class AcquireRunWorkerLockRequest(CodeAlmanacModel):
     @field_validator("owner")
     @classmethod
     def require_owner(cls, value: str) -> str:
-        return required_text(value, "run worker lock owner")
+        return required_text(value, "job worker lock owner")
 
     @field_validator("pid")
     @classmethod
@@ -119,44 +119,44 @@ class AcquireRunWorkerLockRequest(CodeAlmanacModel):
         return value
 
 
-class SpawnRunWorkerRequest(CodeAlmanacModel):
+class SpawnJobWorkerRequest(CodeAlmanacModel):
     cwd: Path
     wiki: str | None = None
 
 
-class RecordRunEventRequest(CodeAlmanacModel):
+class RecordJobEventRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
-    kind: RunEventKind
+    job_id: JobId
+    kind: JobEventKind
     message: str
     wiki: str | None = None
     harness_event: HarnessEvent | None = None
 
 
-class MarkRunRunningRequest(CodeAlmanacModel):
+class MarkJobRunningRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
+    job_id: JobId
     wiki: str | None = None
 
 
-class RecordRunHarnessTranscriptRequest(CodeAlmanacModel):
+class RecordJobHarnessTranscriptRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
+    job_id: JobId
     transcript: HarnessTranscriptRef
     wiki: str | None = None
 
 
-class FinishRunRequest(CodeAlmanacModel):
+class FinishJobRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
-    status: RunStatus
+    job_id: JobId
+    status: JobStatus
     wiki: str | None = None
     summary: str | None = None
     error: str | None = None
 
     @field_validator("status")
     @classmethod
-    def terminal_status(cls, value: RunStatus) -> RunStatus:
-        if value not in {RunStatus.DONE, RunStatus.FAILED, RunStatus.CANCELLED}:
+    def terminal_status(cls, value: JobStatus) -> JobStatus:
+        if value not in {JobStatus.DONE, JobStatus.FAILED, JobStatus.CANCELLED}:
             raise ValueError("finish status must be done, failed, or cancelled")
         return value

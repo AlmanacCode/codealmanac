@@ -46,7 +46,7 @@ class SyncLedgerEntry(CodeAlmanacModel):
     failed_attempts: int = 0
     pending_started_at: datetime | None = None
     pending_owner: str | None = None
-    pending_run_id: str | None = None
+    pending_job_id: str | None = None
     pending_to_size: int | None = None
     pending_prefix_hash: str | None = None
     pending_from_line: int | None = None
@@ -57,7 +57,7 @@ class SyncLedgerEntry(CodeAlmanacModel):
     def require_text(cls, value: str) -> str:
         return required_text(value, "sync ledger entry")
 
-    @field_validator("pending_owner", "pending_run_id", "pending_prefix_hash")
+    @field_validator("pending_owner", "pending_job_id", "pending_prefix_hash")
     @classmethod
     def require_optional_pending_text(cls, value: str | None) -> str | None:
         if value is None:
@@ -106,7 +106,7 @@ class SyncStarted(CodeAlmanacModel):
     session_id: str
     transcript_path: Path
     repo_root: Path
-    run_id: str
+    job_id: str
     from_line: int
     to_line: int
 

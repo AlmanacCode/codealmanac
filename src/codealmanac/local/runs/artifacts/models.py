@@ -7,7 +7,7 @@ from pydantic import Field, field_validator, model_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
-from codealmanac.services.runs.models import RunId
+from codealmanac.engine.run_ids import EngineRunId
 
 COMMIT_SUBJECT_PREFIX = "docs almanac:"
 
@@ -50,7 +50,7 @@ class EngineChangedFile(CodeAlmanacModel):
 
 
 class EngineRunArtifactPaths(CodeAlmanacModel):
-    run_id: RunId
+    run_id: EngineRunId
     run_path: Path
     request_path: Path
     result_path: Path
@@ -60,7 +60,7 @@ class EngineRunArtifactPaths(CodeAlmanacModel):
 class EngineRunRequest(CodeAlmanacModel):
     version: int = 1
     request_id: str = Field(default_factory=lambda: f"engine_req_{uuid4().hex}")
-    run_id: RunId
+    run_id: EngineRunId
     operation: str = "update"
     repository_id: str
     branch_id: str
@@ -110,7 +110,7 @@ class EngineRunRequest(CodeAlmanacModel):
 class EngineRunResult(CodeAlmanacModel):
     version: int = 1
     result_id: str = Field(default_factory=lambda: f"engine_res_{uuid4().hex}")
-    run_id: RunId
+    run_id: EngineRunId
     status: EngineRunStatus
     summary: str | None = None
     commit_subject: str | None = None

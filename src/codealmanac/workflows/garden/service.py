@@ -1,13 +1,13 @@
 from codealmanac.engine.page_run import (
+    PageJobRecordEventRequest,
     PageRunBeginRequest,
     PageRunExecuteRequest,
-    PageRunRecordEventRequest,
     PageRunWorkflow,
 )
+from codealmanac.jobs.ledger.models import JobEventKind, JobOperation
+from codealmanac.jobs.ledger.requests import StartJobRequest
+from codealmanac.jobs.ledger.service import JobLedgerService
 from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
-from codealmanac.services.runs.models import RunEventKind, RunOperation
-from codealmanac.services.runs.requests import StartRunRequest
-from codealmanac.services.runs.service import RunsService
 from codealmanac.wiki.health.requests import HealthCheckRequest
 from codealmanac.wiki.health.service import HealthService
 from codealmanac.wiki.index.models import HealthReport, IndexSummary
@@ -16,7 +16,7 @@ from codealmanac.wiki.workspaces.models import Workspace
 from codealmanac.workflows.garden.models import GardenPromptPayload, GardenResult
 from codealmanac.workflows.garden.requests import (
     RunGardenRequest,
-    RunGardenWithRunRequest,
+    RunGardenWithJobRequest,
 )
 
 GARDEN_PROMPT_SECTIONS = (
@@ -30,44 +30,44 @@ GARDEN_PROMPT_SECTIONS = (
 class GardenWorkflow:
     def __init__(
         self,
-        runs: RunsService,
+        jobs: JobLedgerService,
         index: IndexService,
         health: HealthService,
         page_runs: PageRunWorkflow,
         prompts: PromptRenderer,
     ):
-        self.runs = runs
+        self.jobs = jobs
         self.index = index
         self.health = health
         self.page_runs = page_runs
         self.prompts = prompts
 
     def run(self, request: RunGardenRequest) -> GardenResult:
-        started = self.runs.start(
-            StartRunRequest(
+        started = self.jobs.start(
+            StartJobRequest(
                 cwd=request.cwd,
                 wiki=request.wiki,
-                operation=RunOperation.GARDEN,
+                operation=JobOperation.GARDEN,
                 title=request.title or "Garden wiki",
             )
         )
-        return self.run_with_run(
-            RunGardenWithRunRequest(
+        return self.run_with_job(
+            RunGardenWithJobRequest(
                 cwd=request.cwd,
                 harness=request.harness,
                 wiki=request.wiki,
                 title=request.title,
                 guidance=request.guidance,
-                run_id=started.run_id,
+                job_id=started.job_id,
             )
         )
 
-    def run_with_run(self, request: RunGardenWithRunRequest) -> GardenResult:
+    def run_with_job(self, request: RunGardenWithJobRequest) -> GardenResult:
         context = self.page_runs.begin(
             PageRunBeginRequest(
                 cwd=request.cwd,
                 wiki=request.wiki,
-                run_id=request.run_id,
+                job_id=request.job_id,
             )
         )
         try:
@@ -76,9 +76,9 @@ class GardenWorkflow:
                 HealthCheckRequest(cwd=request.cwd, wiki=request.wiki)
             )
             self.page_runs.record(
-                PageRunRecordEventRequest(
+                PageJobRecordEventRequest(
                     context=context,
-                    kind=RunEventKind.MESSAGE,
+                    kind=JobEventKind.MESSAGE,
                     message="prepared garden context",
                 )
             )
@@ -99,7 +99,7 @@ class GardenWorkflow:
                 )
             )
             return GardenResult(
-                run=page_run.run,
+                job=page_run.job,
                 harness=page_run.harness,
                 safety=page_run.safety,
                 index=page_run.index,

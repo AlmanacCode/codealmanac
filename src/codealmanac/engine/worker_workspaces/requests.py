@@ -4,11 +4,11 @@ from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
-from codealmanac.services.runs.models import RunId
+from codealmanac.engine.run_ids import EngineRunId
 
 
 class PrepareWorkerWorkspaceRequest(CodeAlmanacModel):
-    run_id: RunId
+    run_id: EngineRunId
     repository_root_path: Path
     expected_head_sha: str
 
@@ -19,9 +19,9 @@ class PrepareWorkerWorkspaceRequest(CodeAlmanacModel):
 
 
 class ReadWorkerWorkspaceRequest(CodeAlmanacModel):
-    run_id: RunId
+    run_id: EngineRunId
 
 
 class RemoveWorkerWorkspaceRequest(CodeAlmanacModel):
-    run_id: RunId
+    run_id: EngineRunId
     repository_root_path: Path

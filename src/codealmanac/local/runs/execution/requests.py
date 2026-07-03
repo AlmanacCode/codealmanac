@@ -3,11 +3,11 @@ from pydantic import field_validator
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
 from codealmanac.engine.harnesses.models import HarnessKind
-from codealmanac.services.runs.models import RunId
+from codealmanac.local.control.models import LocalRunId
 
 
 class ExecuteLocalEngineRunRequest(CodeAlmanacModel):
-    run_id: RunId
+    run_id: LocalRunId
     harness: HarnessKind = HarnessKind.CODEX
     title: str | None = None
 

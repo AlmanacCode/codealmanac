@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-03 after Slice 84 CodeAlmanac local package boundary.
+Sent: 2026-07-03 after Slice 85 CodeAlmanac job ledger naming.
 
 Route:
 
@@ -19,10 +19,12 @@ doppler run --project almanac --config dev -- \
   --binding rohan-almanac-main "..."
 ```
 
-Slice 84 moved the local control plane into `src/codealmanac/local/`, removed
-tracked old local service/workflow source modules, added a `CodeAlmanacLocal`
-composition-root facade, and kept CLI behavior unchanged. Focused local
-verification passed with `131 passed`; full local verification passed with
+Slice 85 moved repo-local lifecycle job storage into
+`src/codealmanac/jobs/ledger/` and the background lifecycle queue into
+`src/codealmanac/jobs/queue/`. Lifecycle records now use `job_id` and
+`JobRecord`/`JobLogEvent` naming across service, CLI, viewer API, sync,
+maintenance, and tests; cloud/local trigger executions remain `runs`. Focused
+verification passed with `217 passed`; full local verification passed with
 `uv run ruff check src tests`, `uv run pytest -q --tb=short` (`513 passed`), and
 `git diff --check`.
 
@@ -48,12 +50,16 @@ verification passed with `131 passed`; full local verification passed with
 - Slice 84 implemented the next CodeAlmanac-side refactor from that audit:
   local control DB, hooks, delivery, run preparation/execution/jobs/worker,
   policies, setup, status, and update now live under `src/codealmanac/local/`.
+- Slice 85 implemented the job-ledger naming cleanup from that audit:
+  repo-local lifecycle jobs now live under `src/codealmanac/jobs/ledger/` and
+  `src/codealmanac/jobs/queue/`, while branch-triggered local/cloud executions
+  remain `runs`.
 
 ## Percentages
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 99.8% | 99.5% | Slice 84 moved the local control plane into `src/codealmanac/local/`, added architecture guards, and passed focused local gates. |
+| CodeAlmanac backend/local | 99.9% | 99.8% | Slice 85 renamed repo-local lifecycle execution to jobs, moved the ledger/queue under `src/codealmanac/jobs/`, added architecture guards, and passed focused/full gates. |
 | CodeAlmanac CLI/public UX | 100% | 100% | Published CLI `0.1.9` passed public install smoke; root uninstall is now scoped to setup-owned artifacts, while automation teardown remains explicit. |
 | CodeAlmanac-hosted backend/auth/API | 100% | 100% | Slice 75 added production `/v1/repositories`; production repo list and repo status pass without per-repo permission fanout. |
 | Hosted frontend/onboarding | 100% | 99% | Slice 76 shipped repository readiness, capture handoff, maintained branches, and per-branch delivery to Vercel; Chrome verified production with no console errors. |

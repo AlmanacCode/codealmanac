@@ -38,3 +38,18 @@
   (`131 passed`).
 - Full Slice 84 verification passed with `uv run ruff check src tests`,
   `uv run pytest -q --tb=short` (`513 passed`), and `git diff --check`.
+- Planned and implemented Slice 85 in
+  `docs/plans/2026-07-03-slice-85-job-ledger-naming.md`.
+- Moved repo-local lifecycle job storage into `src/codealmanac/jobs/ledger/`
+  and the background lifecycle queue into `src/codealmanac/jobs/queue/`.
+- Renamed the lifecycle ledger contract from run-shaped names to job-shaped
+  names: `JobRecord`, `JobLogEvent`, `JobSpec`, `JobLedgerService`, `JobStore`,
+  and `job_id`.
+- Kept cloud runs and branch-triggered local runs under `cloud/runs/` and
+  `local/runs/`; Slice 85 deliberately did not flatten that product distinction.
+- Added `engine/run_ids.py` so engine run artifacts have an engine-owned ID
+  type instead of importing local control-plane IDs.
+- Focused Slice 85 verification passed with the lifecycle job, sync, viewer,
+  server, CLI, and architecture test set (`217 passed`).
+- Full Slice 85 verification passed with `uv run ruff check src tests`,
+  `uv run pytest -q --tb=short` (`513 passed`), and `git diff --check`.

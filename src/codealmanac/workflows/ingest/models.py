@@ -4,7 +4,7 @@ from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.engine.harnesses.models import HarnessRunResult
 from codealmanac.engine.lifecycle import LifecycleMutationReport
 from codealmanac.engine.sources.models import SourceBrief, SourceRuntime
-from codealmanac.services.runs.models import RunRecord
+from codealmanac.jobs.ledger.models import JobRecord
 from codealmanac.wiki.index.models import IndexRefreshResult
 
 
@@ -18,7 +18,7 @@ class IngestPromptPayload(CodeAlmanacModel):
 
 
 class IngestResult(CodeAlmanacModel):
-    run: RunRecord
+    job: JobRecord
     sources: tuple[SourceBrief, ...]
     source_runtime: tuple[SourceRuntime, ...]
     harness: HarnessRunResult

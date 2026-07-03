@@ -4,16 +4,16 @@ from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
+from codealmanac.engine.run_ids import EngineRunId
 from codealmanac.local.runs.artifacts.models import (
     COMMIT_SUBJECT_PREFIX,
     EngineChangedFile,
     EngineRunStatus,
 )
-from codealmanac.services.runs.models import RunId
 
 
 class PrepareEngineRunRequest(CodeAlmanacModel):
-    run_id: RunId
+    run_id: EngineRunId
     repository_id: str
     branch_id: str
     repository_full_name: str
@@ -48,7 +48,7 @@ class PrepareEngineRunRequest(CodeAlmanacModel):
 
 
 class WriteEngineRunResultRequest(CodeAlmanacModel):
-    run_id: RunId
+    run_id: EngineRunId
     status: EngineRunStatus
     summary: str | None = None
     commit_subject: str | None = None
@@ -73,4 +73,4 @@ class WriteEngineRunResultRequest(CodeAlmanacModel):
 
 
 class ReadEngineRunRequest(CodeAlmanacModel):
-    run_id: RunId
+    run_id: EngineRunId

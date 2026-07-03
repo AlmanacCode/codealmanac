@@ -3,12 +3,12 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
+from codealmanac.engine.run_ids import EngineRunId
 from codealmanac.local.runs.artifacts.models import (
     EngineRunArtifactPaths,
     EngineRunRequest,
     EngineRunResult,
 )
-from codealmanac.services.runs.models import RunId
 
 REQUEST_FILE_NAME = "request.json"
 RESULT_FILE_NAME = "result.json"
@@ -19,7 +19,7 @@ class EngineRunsStore:
     def __init__(self, root_path: Path):
         self.root_path = root_path
 
-    def paths(self, run_id: RunId) -> EngineRunArtifactPaths:
+    def paths(self, run_id: EngineRunId) -> EngineRunArtifactPaths:
         run_path = self.root_path / run_id
         return EngineRunArtifactPaths(
             run_id=run_id,
@@ -35,7 +35,7 @@ class EngineRunsStore:
         write_json_atomically(paths.request_path, request.model_dump_json(indent=2))
         return paths
 
-    def read_request(self, run_id: RunId) -> EngineRunRequest | None:
+    def read_request(self, run_id: EngineRunId) -> EngineRunRequest | None:
         path = self.paths(run_id).request_path
         if not path.is_file():
             return None
@@ -50,7 +50,7 @@ class EngineRunsStore:
         write_json_atomically(paths.result_path, result.model_dump_json(indent=2))
         return paths
 
-    def read_result(self, run_id: RunId) -> EngineRunResult | None:
+    def read_result(self, run_id: EngineRunId) -> EngineRunResult | None:
         path = self.paths(run_id).result_path
         if not path.is_file():
             return None

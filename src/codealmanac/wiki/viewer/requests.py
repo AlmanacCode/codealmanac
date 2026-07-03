@@ -4,7 +4,7 @@ from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
-from codealmanac.services.runs.models import RunId
+from codealmanac.jobs.ledger.models import JobId
 from codealmanac.wiki.paths import (
     looks_like_dir,
     normalize_reference_path_preserving_case,
@@ -103,5 +103,5 @@ class ViewerJobsRequest(CodeAlmanacModel):
 
 class ViewerJobRequest(CodeAlmanacModel):
     cwd: Path
-    run_id: RunId
+    job_id: JobId
     wiki: str | None = None

@@ -5,7 +5,7 @@ from pydantic import Field, field_validator, model_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
-from codealmanac.services.runs.models import RunId
+from codealmanac.engine.run_ids import EngineRunId
 
 
 def utc_now() -> datetime:
@@ -56,7 +56,7 @@ class SourceBundleSessionFile(CodeAlmanacModel):
 
 class SourceBundleManifest(CodeAlmanacModel):
     version: int = 1
-    run_id: RunId
+    run_id: EngineRunId
     branch_id: str
     sessions: tuple[SourceBundleSessionFile, ...] = ()
     created_at: datetime = Field(default_factory=utc_now)

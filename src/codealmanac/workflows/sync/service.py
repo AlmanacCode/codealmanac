@@ -1,12 +1,12 @@
 from datetime import UTC, datetime
 
 from codealmanac.engine.sources.service import SourcesService
-from codealmanac.services.runs.service import RunsService
+from codealmanac.jobs.ledger.service import JobLedgerService
+from codealmanac.jobs.queue.service import JobQueueWorkflow
 from codealmanac.wiki.workspaces.service import WorkspacesService
 from codealmanac.workflows.ingest.service import IngestWorkflow
-from codealmanac.workflows.run_queue.service import RunQueueWorkflow
 from codealmanac.workflows.sync.evaluation import SyncEvaluator
-from codealmanac.workflows.sync.execution import SyncRunExecutor
+from codealmanac.workflows.sync.execution import SyncJobExecutor
 from codealmanac.workflows.sync.models import (
     SyncEvaluation,
     SyncMode,
@@ -26,23 +26,23 @@ class SyncWorkflow:
         self,
         workspaces: WorkspacesService,
         sources: SourcesService,
-        runs: RunsService,
+        jobs: JobLedgerService,
         ingest: IngestWorkflow,
-        queue: RunQueueWorkflow,
+        queue: JobQueueWorkflow,
         ledger_store: SyncLedgerStore,
     ):
         self.workspaces = workspaces
         self.sources = sources
-        self.runs = runs
+        self.jobs = jobs
         self.ledger_store = ledger_store
         self.evaluator = SyncEvaluator(
             workspaces=workspaces,
             sources=sources,
-            runs=runs,
+            jobs=jobs,
             ledger_store=ledger_store,
         )
-        self.executor = SyncRunExecutor(
-            runs=runs,
+        self.executor = SyncJobExecutor(
+            jobs=jobs,
             ingest=ingest,
             queue=queue,
             ledger_store=ledger_store,

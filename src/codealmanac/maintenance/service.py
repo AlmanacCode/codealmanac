@@ -1,5 +1,5 @@
 from codealmanac.app import CodeAlmanac, create_app
-from codealmanac.maintenance.models import MaintenanceRunResult
+from codealmanac.maintenance.models import MaintenanceJobResult
 from codealmanac.maintenance.requests import (
     MaintenanceOperation,
     RunMaintenanceRequest,
@@ -11,7 +11,7 @@ from codealmanac.workflows.init.requests import RunInitRequest
 def run_maintenance(
     request: RunMaintenanceRequest,
     app: CodeAlmanac | None = None,
-) -> MaintenanceRunResult:
+) -> MaintenanceJobResult:
     resolved_app = create_app() if app is None else app
     if request.operation == MaintenanceOperation.INIT:
         result = resolved_app.workflows.init.run(
@@ -26,12 +26,12 @@ def run_maintenance(
                 force=request.force,
             )
         )
-        return MaintenanceRunResult(
+        return MaintenanceJobResult(
             operation=request.operation,
-            run_id=result.run.run_id,
-            run_status=result.run.status,
+            job_id=result.job.job_id,
+            job_status=result.job.status,
             harness_status=result.harness.status,
-            summary=result.run.summary,
+            summary=result.job.summary,
             output_text=result.harness.output_text,
         )
     if request.operation == MaintenanceOperation.INGEST:
@@ -44,12 +44,12 @@ def run_maintenance(
                 guidance=request.guidance,
             )
         )
-        return MaintenanceRunResult(
+        return MaintenanceJobResult(
             operation=request.operation,
-            run_id=result.run.run_id,
-            run_status=result.run.status,
+            job_id=result.job.job_id,
+            job_status=result.job.status,
             harness_status=result.harness.status,
-            summary=result.run.summary,
+            summary=result.job.summary,
             output_text=result.harness.output_text,
         )
     raise AssertionError(f"unsupported maintenance operation: {request.operation}")

@@ -4,12 +4,12 @@ from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
+from codealmanac.engine.run_ids import EngineRunId
 from codealmanac.engine.source_bundles.models import SourceBundleSessionInput
-from codealmanac.services.runs.models import RunId
 
 
 class MaterializeSourceBundleRequest(CodeAlmanacModel):
-    run_id: RunId
+    run_id: EngineRunId
     branch_id: str
     target_path: Path
     sessions: tuple[SourceBundleSessionInput, ...] = ()

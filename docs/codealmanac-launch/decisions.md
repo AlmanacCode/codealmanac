@@ -126,6 +126,16 @@ Status: active.
 - Code quality is a first-class launch objective. Refactors should be done when
   they remove split-brain concepts, provider leakage, stale compatibility, or
   unclear ownership; they should not be done for motion alone.
+- Other contributors may push to `codealmanac` or `codealmanac-hosted` while
+  this launch run is active, especially for UX improvements. Treat those
+  commits as collaborative input. Do not revert them merely because they are
+  rough; inspect them, preserve the intended UX/product improvement, and fold
+  them into the ongoing code-quality pass.
+- If an incoming contributor change looks over-defensive, preserves the wrong
+  product model, creates a parallel path, or solves the immediate symptom in a
+  way that fights the long-term architecture, send a RelayForge/Discord alert
+  before absorbing it silently. The alert should name the concern and the safer
+  long-term direction.
 - The README should preserve the old README's banner, feel, and core language
   while updating launch commands and product facts. Do not replace it with a
   generic marketing README.

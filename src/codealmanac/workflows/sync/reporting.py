@@ -12,14 +12,13 @@ def skip(candidate: TranscriptCandidate, reason: str) -> SyncSkipped:
     )
 
 
-def sync_started(item: SyncWorkItem, run_id: str) -> SyncStarted:
+def sync_started(item: SyncWorkItem, job_id: str) -> SyncStarted:
     return SyncStarted(
         app=item.candidate.app,
         session_id=item.candidate.session_id,
         transcript_path=item.candidate.transcript_path,
         repo_root=item.candidate.repo_root,
-        run_id=run_id,
+        job_id=job_id,
         from_line=item.from_line,
         to_line=item.to_line,
     )
-

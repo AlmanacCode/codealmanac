@@ -126,6 +126,23 @@ root package level until a distribution-aware resource move is worth doing.
 The hosted Modal worker imports from here. The human CLI is not the engine
 contract.
 
+### `jobs/`
+
+Jobs own repo-local lifecycle execution records and the single-writer
+background queue.
+
+```text
+jobs/
+  ledger/
+  queue/
+```
+
+Implemented in Slice 85. `jobs/ledger/` owns `JobRecord`, `JobLogEvent`,
+`JobSpec`, `JobStore`, and `JobLedgerService`. `jobs/queue/` owns
+`JobQueueWorkflow`. This package replaces the old repo-local lifecycle
+`services/runs` and `workflows/run_queue` names. It does not replace
+`cloud/runs/` or `local/runs/`, which represent trigger-created runs.
+
 ## `codealmanac-hosted` Target Shape
 
 Recommended direction:
@@ -230,3 +247,5 @@ Examples:
 - `messages` should become `events` or `github_webhooks`, depending on the actual responsibility.
 - `modal_app` should become `worker`.
 - `cloud_auth` in local should become `cloud/auth`, because it is a cloud client feature.
+- repo-local lifecycle execution is `jobs`; cloud/local trigger execution is
+  `runs`.

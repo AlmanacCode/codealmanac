@@ -1,11 +1,22 @@
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
+from typing import Annotated
 
-from pydantic import field_validator
+from pydantic import StringConstraints, field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
+
+LOCAL_RUN_ID_PATTERN = r"^[A-Za-z0-9_-]+$"
+LocalRunId = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=1,
+        pattern=LOCAL_RUN_ID_PATTERN,
+    ),
+]
 
 
 class ControlDeliveryMode(StrEnum):

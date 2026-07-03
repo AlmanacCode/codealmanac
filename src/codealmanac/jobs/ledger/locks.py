@@ -5,12 +5,12 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from codealmanac.services.runs.models import RunWorkerLockOwner
-from codealmanac.services.runs.paths import worker_lock_owner_path, worker_lock_path
+from codealmanac.jobs.ledger.models import JobWorkerLockOwner
+from codealmanac.jobs.ledger.paths import worker_lock_owner_path, worker_lock_path
 
 
-class RunWorkerLease:
-    def __init__(self, lock_path: Path, owner: RunWorkerLockOwner):
+class JobWorkerLease:
+    def __init__(self, lock_path: Path, owner: JobWorkerLockOwner):
         self.lock_path = lock_path
         self.owner = owner
 
@@ -22,14 +22,14 @@ class RunWorkerLease:
 
 
 def acquire_worker_lock(
-    run_dir: Path,
+    job_dir: Path,
     owner: str,
     pid: int,
     now: datetime,
     stale_after: timedelta,
-) -> RunWorkerLease | None:
-    path = worker_lock_path(run_dir)
-    lock_owner = RunWorkerLockOwner(owner=owner, pid=pid, acquired_at=now)
+) -> JobWorkerLease | None:
+    path = worker_lock_path(job_dir)
+    lock_owner = JobWorkerLockOwner(owner=owner, pid=pid, acquired_at=now)
     path.parent.mkdir(parents=True, exist_ok=True)
     for _ in range(2):
         try:
@@ -45,13 +45,13 @@ def acquire_worker_lock(
             shutil.rmtree(path, ignore_errors=True)
             continue
         write_worker_lock_owner(path, lock_owner)
-        return RunWorkerLease(path, lock_owner)
+        return JobWorkerLease(path, lock_owner)
     return None
 
 
 def write_worker_lock_owner(
     lock_path: Path,
-    owner: RunWorkerLockOwner,
+    owner: JobWorkerLockOwner,
 ) -> None:
     worker_lock_owner_path(lock_path).write_text(
         owner.model_dump_json(indent=2),
@@ -59,18 +59,18 @@ def write_worker_lock_owner(
     )
 
 
-def read_worker_lock_owner(lock_path: Path) -> RunWorkerLockOwner | None:
+def read_worker_lock_owner(lock_path: Path) -> JobWorkerLockOwner | None:
     path = worker_lock_owner_path(lock_path)
     if not path.is_file():
         return None
     try:
-        return RunWorkerLockOwner.model_validate_json(path.read_text(encoding="utf-8"))
+        return JobWorkerLockOwner.model_validate_json(path.read_text(encoding="utf-8"))
     except (OSError, ValidationError, ValueError):
         return None
 
 
 def worker_lock_is_stale(
-    owner: RunWorkerLockOwner,
+    owner: JobWorkerLockOwner,
     now: datetime,
     stale_after: timedelta,
 ) -> bool:

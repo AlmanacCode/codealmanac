@@ -2,15 +2,15 @@ from datetime import datetime
 from pathlib import Path
 
 from codealmanac.core.models import CodeAlmanacModel
-from codealmanac.services.runs.models import RunStatus
-from codealmanac.services.runs.requests import FinishRunRequest
-from codealmanac.services.runs.service import RunsService
+from codealmanac.jobs.ledger.models import JobStatus
+from codealmanac.jobs.ledger.requests import FinishJobRequest
+from codealmanac.jobs.ledger.service import JobLedgerService
+from codealmanac.jobs.queue.service import JobQueueWorkflow
 from codealmanac.workflows.ingest.requests import (
     RunIngestRequest,
-    RunIngestWithRunRequest,
+    RunIngestWithJobRequest,
 )
 from codealmanac.workflows.ingest.service import IngestWorkflow
-from codealmanac.workflows.run_queue.service import RunQueueWorkflow
 from codealmanac.workflows.sync.models import (
     SyncEvaluation,
     SyncExecution,
@@ -33,15 +33,15 @@ from codealmanac.workflows.sync.requests import RunSyncRequest
 from codealmanac.workflows.sync.store import SyncLedgerStore
 
 
-class SyncRunExecutor:
+class SyncJobExecutor:
     def __init__(
         self,
-        runs: RunsService,
+        jobs: JobLedgerService,
         ingest: IngestWorkflow,
-        queue: RunQueueWorkflow,
+        queue: JobQueueWorkflow,
         ledger_store: SyncLedgerStore,
     ):
-        self.runs = runs
+        self.jobs = jobs
         self.ingest = ingest
         self.queue = queue
         self.ledger_store = ledger_store
@@ -52,7 +52,7 @@ class SyncRunExecutor:
         evaluation: SyncEvaluation,
         now: datetime,
         claim_owner: str,
-    ) -> "SyncRunExecutionResult":
+    ) -> "SyncExecutionResult":
         started: list[SyncStarted] = []
         needs_attention = list(evaluation.summary.needs_attention)
         ledgers = dict(evaluation.ledgers)
@@ -76,7 +76,7 @@ class SyncRunExecutor:
             ledgers = result.ledgers
             started.extend(result.started)
             needs_attention.extend(result.needs_attention)
-        return SyncRunExecutionResult(
+        return SyncExecutionResult(
             started=tuple(started),
             needs_attention=tuple(needs_attention),
             ledgers=ledgers,
@@ -91,9 +91,9 @@ class SyncRunExecutor:
         claim_owner: str,
     ) -> "SyncItemExecutionResult":
         ingest_request = sync_ingest_request(request, item)
-        run = self.queue.queue_ingest(ingest_request)
+        job = self.queue.queue_ingest(ingest_request)
         ledger = ledgers[item.candidate.repo_root]
-        pending = pending_entry(item.entry, item, now, claim_owner, run.run_id)
+        pending = pending_entry(item.entry, item, now, claim_owner, job.job_id)
         ledger.sessions[item.ledger_key] = pending
         ledger = self.ledger_store.save(
             item.candidate.repo_root,
@@ -105,16 +105,16 @@ class SyncRunExecutor:
         try:
             self.queue.spawn_worker(item.candidate.repo_root, request.wiki)
         except Exception as error:
-            self.runs.finish(
-                FinishRunRequest(
+            self.jobs.finish(
+                FinishJobRequest(
                     cwd=item.candidate.repo_root,
                     wiki=request.wiki,
-                    run_id=run.run_id,
-                    status=RunStatus.FAILED,
+                    job_id=job.job_id,
+                    status=JobStatus.FAILED,
                     error=first_error_line(error),
                 )
             )
-            ledger.sessions[item.ledger_key] = failed_entry(pending, error, run.run_id)
+            ledger.sessions[item.ledger_key] = failed_entry(pending, error, job.job_id)
             ledger = self.ledger_store.save(
                 item.candidate.repo_root,
                 item.candidate.almanac_path,
@@ -128,7 +128,7 @@ class SyncRunExecutor:
             )
         return SyncItemExecutionResult(
             ledgers=ledgers,
-            started=(sync_started(item, run.run_id),),
+            started=(sync_started(item, job.job_id),),
         )
 
     def run_foreground_item(
@@ -140,9 +140,9 @@ class SyncRunExecutor:
         claim_owner: str,
     ) -> "SyncItemExecutionResult":
         ingest_request = sync_ingest_request(request, item)
-        run = self.ingest.start(ingest_request)
+        job = self.ingest.start(ingest_request)
         ledger = ledgers[item.candidate.repo_root]
-        pending = pending_entry(item.entry, item, now, claim_owner, run.run_id)
+        pending = pending_entry(item.entry, item, now, claim_owner, job.job_id)
         ledger.sessions[item.ledger_key] = pending
         ledger = self.ledger_store.save(
             item.candidate.repo_root,
@@ -153,22 +153,22 @@ class SyncRunExecutor:
         ledgers[item.candidate.repo_root] = ledger
         item = item.model_copy(update={"entry": pending})
         try:
-            result = self.ingest.run_with_run(
-                RunIngestWithRunRequest(
+            result = self.ingest.run_with_job(
+                RunIngestWithJobRequest(
                     cwd=ingest_request.cwd,
                     inputs=ingest_request.inputs,
                     harness=ingest_request.harness,
                     wiki=ingest_request.wiki,
                     title=ingest_request.title,
                     guidance=ingest_request.guidance,
-                    run_id=run.run_id,
+                    job_id=job.job_id,
                 )
             )
         except Exception as error:
             ledger.sessions[item.ledger_key] = failed_entry(
                 item.entry,
                 error,
-                run.run_id,
+                job.job_id,
             )
             ledger = self.ledger_store.save(
                 item.candidate.repo_root,
@@ -184,7 +184,7 @@ class SyncRunExecutor:
         ledger.sessions[item.ledger_key] = absorbed_entry(
             item.entry,
             item.snapshot,
-            result.run.run_id,
+            result.job.job_id,
             now,
         )
         ledgers[item.candidate.repo_root] = self.ledger_store.save(
@@ -195,11 +195,11 @@ class SyncRunExecutor:
         )
         return SyncItemExecutionResult(
             ledgers=ledgers,
-            started=(sync_started(item, result.run.run_id),),
+            started=(sync_started(item, result.job.job_id),),
         )
 
 
-class SyncRunExecutionResult(CodeAlmanacModel):
+class SyncExecutionResult(CodeAlmanacModel):
     started: tuple[SyncStarted, ...]
     needs_attention: tuple[SyncSkipped, ...]
     ledgers: dict[Path, SyncLedger]

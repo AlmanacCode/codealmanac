@@ -11,13 +11,13 @@ from codealmanac.engine.harnesses.models import (
     HarnessKind,
     HarnessTranscriptRef,
 )
-from codealmanac.services.runs.models import RunEventKind, RunOperation, RunStatus
-from codealmanac.services.runs.requests import (
-    FinishRunRequest,
-    MarkRunRunningRequest,
-    RecordRunEventRequest,
-    RecordRunHarnessTranscriptRequest,
-    StartRunRequest,
+from codealmanac.jobs.ledger.models import JobEventKind, JobOperation, JobStatus
+from codealmanac.jobs.ledger.requests import (
+    FinishJobRequest,
+    MarkJobRunningRequest,
+    RecordJobEventRequest,
+    RecordJobHarnessTranscriptRequest,
+    StartJobRequest,
 )
 from codealmanac.wiki.viewer.requests import (
     ViewerFileRequest,
@@ -179,23 +179,23 @@ def test_viewer_file_request_rejects_paths_outside_reference_space(
         ViewerFileRequest(cwd=repo, path="../secret.txt")
 
 
-def test_viewer_jobs_expose_runs_and_normalized_harness_events(
+def test_viewer_jobs_expose_jobs_and_normalized_harness_events(
     viewer_repo: tuple[Path, CodeAlmanac],
 ):
     repo, app = viewer_repo
-    record = create_viewer_run(repo, app)
+    record = create_viewer_job(repo, app)
 
     jobs = app.viewer.jobs(ViewerJobsRequest(cwd=repo))
-    detail = app.viewer.job(ViewerJobRequest(cwd=repo, run_id=record.run_id))
+    detail = app.viewer.job(ViewerJobRequest(cwd=repo, job_id=record.job_id))
 
     assert jobs.workspace.name == "repo"
-    assert [run.run_id for run in jobs.runs] == [record.run_id]
-    assert jobs.runs[0].operation == "ingest"
-    assert jobs.runs[0].status == "done"
-    assert jobs.runs[0].harness_transcript is not None
-    assert jobs.runs[0].harness_transcript.kind == "codex"
-    assert detail.run.run_id == record.run_id
-    assert detail.run.summary == "updated auth page"
+    assert [job.job_id for job in jobs.jobs] == [record.job_id]
+    assert jobs.jobs[0].operation == "ingest"
+    assert jobs.jobs[0].status == "done"
+    assert jobs.jobs[0].harness_transcript is not None
+    assert jobs.jobs[0].harness_transcript.kind == "codex"
+    assert detail.job.job_id == record.job_id
+    assert detail.job.summary == "updated auth page"
     assert [event.kind for event in detail.events] == [
         "status",
         "status",
@@ -207,13 +207,13 @@ def test_viewer_jobs_expose_runs_and_normalized_harness_events(
     assert detail.events[2].harness_event.message == "Edited auth-flow.md"
 
 
-def test_viewer_job_request_rejects_path_shaped_run_ids(
+def test_viewer_job_request_rejects_path_shaped_job_ids(
     viewer_repo: tuple[Path, CodeAlmanac],
 ):
     repo, _ = viewer_repo
 
     with pytest.raises(ValidationError, match="String should match pattern"):
-        ViewerJobRequest(cwd=repo, run_id="../secret")
+        ViewerJobRequest(cwd=repo, job_id="../secret")
 
 
 def write_viewer_page(repo: Path, name: str, body: str) -> None:
@@ -222,20 +222,20 @@ def write_viewer_page(repo: Path, name: str, body: str) -> None:
     path.write_text(body, encoding="utf-8")
 
 
-def create_viewer_run(repo: Path, app: CodeAlmanac):
-    record = app.runs.start(
-        StartRunRequest(
+def create_viewer_job(repo: Path, app: CodeAlmanac):
+    record = app.jobs.start(
+        StartJobRequest(
             cwd=repo,
-            operation=RunOperation.INGEST,
+            operation=JobOperation.INGEST,
             title="Digest auth session",
         )
     )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=record.run_id))
-    app.runs.record_event(
-        RecordRunEventRequest(
+    app.jobs.mark_running(MarkJobRunningRequest(cwd=repo, job_id=record.job_id))
+    app.jobs.record_event(
+        RecordJobEventRequest(
             cwd=repo,
-            run_id=record.run_id,
-            kind=RunEventKind.OUTPUT,
+            job_id=record.job_id,
+            kind=JobEventKind.OUTPUT,
             message="Edited auth-flow.md",
             harness_event=HarnessEvent(
                 kind=HarnessEventKind.TEXT,
@@ -243,10 +243,10 @@ def create_viewer_run(repo: Path, app: CodeAlmanac):
             ),
         )
     )
-    app.runs.record_harness_transcript(
-        RecordRunHarnessTranscriptRequest(
+    app.jobs.record_harness_transcript(
+        RecordJobHarnessTranscriptRequest(
             cwd=repo,
-            run_id=record.run_id,
+            job_id=record.job_id,
             transcript=HarnessTranscriptRef(
                 kind=HarnessKind.CODEX,
                 session_id="codex-session-1",
@@ -254,11 +254,11 @@ def create_viewer_run(repo: Path, app: CodeAlmanac):
             ),
         )
     )
-    return app.runs.finish(
-        FinishRunRequest(
+    return app.jobs.finish(
+        FinishJobRequest(
             cwd=repo,
-            run_id=record.run_id,
-            status=RunStatus.DONE,
+            job_id=record.job_id,
+            status=JobStatus.DONE,
             summary="updated auth page",
         )
     )

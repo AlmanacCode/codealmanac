@@ -48,6 +48,21 @@ from codealmanac.engine.sources.models import TranscriptApp, TranscriptCandidate
 from codealmanac.engine.sources.requests import DiscoverTranscriptsRequest
 from codealmanac.engine.worker_workspaces.models import GitWorktreeCheckout
 from codealmanac.integrations.setup.instructions import CODEALMANAC_START
+from codealmanac.jobs.ledger.models import (
+    JobEventKind,
+    JobOperation,
+    JobStatus,
+    JobWorkerSpawnResult,
+)
+from codealmanac.jobs.ledger.requests import (
+    FinishJobRequest,
+    ListJobsRequest,
+    RecordJobEventRequest,
+    RecordJobHarnessTranscriptRequest,
+    ShowJobRequest,
+    SpawnJobWorkerRequest,
+    StartJobRequest,
+)
 from codealmanac.local.control.models import (
     ControlDeliveryMode,
     ControlRunEventKind,
@@ -76,21 +91,6 @@ from codealmanac.local.setup.models import LocalRepositoryState
 from codealmanac.services.automation.models import (
     ScheduledJob,
     ScheduledJobStatus,
-)
-from codealmanac.services.runs.models import (
-    RunEventKind,
-    RunOperation,
-    RunStatus,
-    RunWorkerSpawnResult,
-)
-from codealmanac.services.runs.requests import (
-    FinishRunRequest,
-    ListRunsRequest,
-    RecordRunEventRequest,
-    RecordRunHarnessTranscriptRequest,
-    ShowRunRequest,
-    SpawnRunWorkerRequest,
-    StartRunRequest,
 )
 from codealmanac.services.updates.models import (
     PackageCommandResult,
@@ -222,11 +222,11 @@ The public CLI gardened the local wiki graph.
 
 class CliWorkerSpawner:
     def __init__(self):
-        self.requests: list[SpawnRunWorkerRequest] = []
+        self.requests: list[SpawnJobWorkerRequest] = []
 
-    def spawn(self, request: SpawnRunWorkerRequest) -> RunWorkerSpawnResult:
+    def spawn(self, request: SpawnJobWorkerRequest) -> JobWorkerSpawnResult:
         self.requests.append(request)
-        return RunWorkerSpawnResult(
+        return JobWorkerSpawnResult(
             child_pid=5151,
             command=("fake-codealmanac-worker",),
         )
@@ -236,9 +236,9 @@ class CliLocalWorkerSpawner:
     def __init__(self):
         self.requests: list[SpawnLocalWorkerRequest] = []
 
-    def spawn(self, request: SpawnLocalWorkerRequest) -> RunWorkerSpawnResult:
+    def spawn(self, request: SpawnLocalWorkerRequest) -> JobWorkerSpawnResult:
         self.requests.append(request)
-        return RunWorkerSpawnResult(
+        return JobWorkerSpawnResult(
             child_pid=6262,
             command=("fake-codealmanac-local-worker",),
         )
@@ -991,14 +991,14 @@ def test_cli_init_background_queues_run_and_spawns_worker(
 
     output = capsys.readouterr()
     data = json.loads(output.out)
-    run = app.runs.show(ShowRunRequest(cwd=repo, run_id=data["run_id"]))
+    job = app.jobs.show(ShowJobRequest(cwd=repo, job_id=data["job_id"]))
 
     assert data["status"] == "queued"
     assert data["child_pid"] == 5151
-    assert run.operation == RunOperation.INIT
-    assert run.status == RunStatus.QUEUED
+    assert job.operation == JobOperation.INIT
+    assert job.status == JobStatus.QUEUED
     assert harness.requests == []
-    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
+    assert spawner.requests == [SpawnJobWorkerRequest(cwd=repo, wiki=None)]
 
 
 def test_cli_build_command_is_not_public():
@@ -2546,14 +2546,14 @@ def test_cli_dev_ingest_background_queues_run_and_spawns_worker(
 
     output = capsys.readouterr()
     data = json.loads(output.out)
-    run = app.runs.show(ShowRunRequest(cwd=repo, run_id=data["run_id"]))
+    job = app.jobs.show(ShowJobRequest(cwd=repo, job_id=data["job_id"]))
 
     assert data["status"] == "queued"
     assert data["child_pid"] == 5151
-    assert run.status == RunStatus.QUEUED
+    assert job.status == JobStatus.QUEUED
     assert harness.requests == []
-    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
-    assert (workspace_jobs_path(repo) / f"{run.run_id}.spec.json").is_file()
+    assert spawner.requests == [SpawnJobWorkerRequest(cwd=repo, wiki=None)]
+    assert (workspace_jobs_path(repo) / f"{job.job_id}.spec.json").is_file()
 
 
 def test_cli_dev_garden_runs_workflow_with_selected_harness(
@@ -2623,13 +2623,13 @@ def test_cli_dev_garden_background_plain_output(
     assert main(["dev", "garden", "--using", "codex", "--background"]) == 0
 
     output = capsys.readouterr()
-    run = app.runs.list(ListRunsRequest(cwd=repo))[0]
+    job = app.jobs.list(ListJobsRequest(cwd=repo))[0]
 
-    assert f"queued {run.run_id}: queued" in output.out
+    assert f"queued {job.job_id}: queued" in output.out
     assert "worker_pid: 5151" in output.out
-    assert run.operation == RunOperation.GARDEN
+    assert job.operation == JobOperation.GARDEN
     assert harness.requests == []
-    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
+    assert spawner.requests == [SpawnJobWorkerRequest(cwd=repo, wiki=None)]
 
 
 def test_cli_hidden_run_worker_drains_queued_run(
@@ -2660,9 +2660,9 @@ def test_cli_hidden_run_worker_drains_queued_run(
 
     assert main(["__run-worker", "--cwd", str(repo)]) == 0
 
-    run = app.runs.show(ShowRunRequest(cwd=repo, run_id=queued.run_id))
+    job = app.jobs.show(ShowJobRequest(cwd=repo, job_id=queued.job_id))
 
-    assert run.status == RunStatus.DONE
+    assert job.status == JobStatus.DONE
     assert harness.requests[0].kind == HarnessKind.CODEX
     assert (repo / "almanac/pages/cli-ingest-note.md").is_file()
 
@@ -3226,15 +3226,15 @@ def test_cli_sync_background_queues_ingest_for_ready_transcripts(
     )
 
     output = capsys.readouterr()
-    run = app.runs.list(ListRunsRequest(cwd=repo))[0]
+    job = app.jobs.list(ListJobsRequest(cwd=repo))[0]
 
     assert "sync:\n" in output.out
     assert "started: 1\n" in output.out
-    assert f"started codex codex-session: {run.run_id}" in output.out
-    assert run.status == RunStatus.QUEUED
+    assert f"started codex codex-session: {job.job_id}" in output.out
+    assert job.status == JobStatus.QUEUED
     assert harness.requests == []
-    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
-    assert (workspace_jobs_path(repo) / f"{run.run_id}.spec.json").is_file()
+    assert spawner.requests == [SpawnJobWorkerRequest(cwd=repo, wiki=None)]
+    assert (workspace_jobs_path(repo) / f"{job.job_id}.spec.json").is_file()
 
 
 def test_cli_automation_install_status_and_uninstall(
@@ -3299,25 +3299,25 @@ def test_cli_jobs_inspects_local_run_records(
         AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
     )
     app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    record = app.runs.start(
-        StartRunRequest(
+    record = app.jobs.start(
+        StartJobRequest(
             cwd=repo,
-            operation=RunOperation.INGEST,
+            operation=JobOperation.INGEST,
             title="Digest note",
         )
     )
-    app.runs.record_event(
-        RecordRunEventRequest(
+    app.jobs.record_event(
+        RecordJobEventRequest(
             cwd=repo,
-            run_id=record.run_id,
-            kind=RunEventKind.MESSAGE,
+            job_id=record.job_id,
+            kind=JobEventKind.MESSAGE,
             message="read note",
         )
     )
-    app.runs.record_harness_transcript(
-        RecordRunHarnessTranscriptRequest(
+    app.jobs.record_harness_transcript(
+        RecordJobHarnessTranscriptRequest(
             cwd=repo,
-            run_id=record.run_id,
+            job_id=record.job_id,
             transcript=HarnessTranscriptRef(
                 kind=HarnessKind.CODEX,
                 session_id="codex-job-session",
@@ -3329,63 +3329,63 @@ def test_cli_jobs_inspects_local_run_records(
 
     assert main(["jobs"]) == 0
     list_output = capsys.readouterr()
-    assert f"{record.run_id}\tqueued\tingest\tDigest note\n" in list_output.out
+    assert f"{record.job_id}\tqueued\tingest\tDigest note\n" in list_output.out
 
-    assert main(["jobs", "show", record.run_id]) == 0
+    assert main(["jobs", "show", record.job_id]) == 0
     show_output = capsys.readouterr()
-    assert f"id: {record.run_id}\n" in show_output.out
+    assert f"id: {record.job_id}\n" in show_output.out
     assert "operation: ingest\n" in show_output.out
     assert "harness_transcript: codex codex-job-session\n" in show_output.out
     assert f"harness_transcript_path: {repo / 'codex-job.jsonl'}\n" in (show_output.out)
 
-    assert main(["jobs", "logs", record.run_id]) == 0
+    assert main(["jobs", "logs", record.job_id]) == 0
     log_output = capsys.readouterr()
     assert "1\tstatus\tqueued ingest\n" in log_output.out
     assert "2\tmessage\tread note\n" in log_output.out
 
-    assert main(["jobs", "logs", record.run_id, "--json"]) == 0
+    assert main(["jobs", "logs", record.job_id, "--json"]) == 0
     logs_json_output = capsys.readouterr()
     log_events = json.loads(logs_json_output.out)
     assert "harness_event" not in log_events[0]
 
-    app.runs.finish(
-        FinishRunRequest(
+    app.jobs.finish(
+        FinishJobRequest(
             cwd=repo,
-            run_id=record.run_id,
-            status=RunStatus.DONE,
+            job_id=record.job_id,
+            status=JobStatus.DONE,
             summary="digest complete",
         )
     )
 
-    assert main(["jobs", "attach", record.run_id]) == 0
+    assert main(["jobs", "attach", record.job_id]) == 0
     attach_output = capsys.readouterr()
     assert "1\tstatus\tqueued ingest\n" in attach_output.out
     assert "2\tmessage\tread note\n" in attach_output.out
     assert "3\tstatus\tdone\n" in attach_output.out
     assert "status: done\n" in attach_output.out
 
-    cancellable = app.runs.start(
-        StartRunRequest(
+    cancellable = app.jobs.start(
+        StartJobRequest(
             cwd=repo,
-            operation=RunOperation.GARDEN,
+            operation=JobOperation.GARDEN,
             title="Garden later",
         )
     )
 
-    assert main(["jobs", "cancel", cancellable.run_id]) == 0
+    assert main(["jobs", "cancel", cancellable.job_id]) == 0
     cancel_output = capsys.readouterr()
-    assert f"cancelled {cancellable.run_id}\n" in cancel_output.out
-    cancelled_record = app.runs.show(
-        ShowRunRequest(cwd=repo, run_id=cancellable.run_id)
+    assert f"cancelled {cancellable.job_id}\n" in cancel_output.out
+    cancelled_record = app.jobs.show(
+        ShowJobRequest(cwd=repo, job_id=cancellable.job_id)
     )
-    assert cancelled_record.status == RunStatus.CANCELLED
+    assert cancelled_record.status == JobStatus.CANCELLED
 
     assert main(["jobs", "--json"]) == 0
     json_output = capsys.readouterr()
-    assert f'"run_id": "{record.run_id}"' in json_output.out
+    assert f'"job_id": "{record.job_id}"' in json_output.out
     assert '"session_id": "codex-job-session"' in json_output.out
 
-    assert main(["jobs", "cancel", cancellable.run_id, "--json"]) == 0
+    assert main(["jobs", "cancel", cancellable.job_id, "--json"]) == 0
     cancel_json_output = capsys.readouterr()
     assert '"changed": false' in cancel_json_output.out
     assert '"status": "cancelled"' in cancel_json_output.out

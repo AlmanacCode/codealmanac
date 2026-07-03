@@ -110,12 +110,12 @@ def register_api_routes(server: FastAPI, context: ServerApiContext) -> None:
             )
         )
 
-    @server.get("/api/jobs/{run_id}", response_model=ViewerJob)
-    def job(run_id: str, wiki: str | None = None) -> ViewerJob:
+    @server.get("/api/jobs/{job_id}", response_model=ViewerJob)
+    def job(job_id: str, wiki: str | None = None) -> ViewerJob:
         return context.codealmanac.viewer.job(
             ViewerJobRequest(
                 cwd=context.cwd,
                 wiki=context.selected_wiki(wiki),
-                run_id=run_id,
+                job_id=job_id,
             )
         )
