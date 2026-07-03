@@ -2012,3 +2012,33 @@
 - Final public CLI checks showed `capture status --check-cloud --json` has no
   local credential, no hooks, and no cloud credentials; `repo triggers list`
   shows the Slice 71 smoke branch disabled with delivery mode `commit`.
+
+## Slice 72 Cloud Setup CLI Polish
+
+- Root `codealmanac setup` was simplified to the launch product contract:
+  cloud login plus Codex/Claude instruction setup. It no longer installs or
+  recommends local scheduled automation.
+- The setup request/model/plan JSON no longer contains root scheduler fields
+  such as `automation_mode`, `automation`, or `automation_install`.
+- Old scheduler flags on root setup remain rejected by the parser/model.
+- The text renderer now uses the OpenAlmanac-style banner and compact sections:
+  cloud, agent instructions, and next commands.
+- Source setup smoke passed:
+  `uv run codealmanac setup --yes --skip-login --target codex`.
+- Source setup JSON smoke passed:
+  `uv run codealmanac setup --yes --skip-login --skip-instructions --json`;
+  the payload omitted root automation fields.
+- Chrome production retry passed in the user's Chrome profile:
+  `/dashboard/accounts/264516179/repositories/1212149375` showed the
+  `AlmanacCode/codealmanac` activity feed with the Slice 71 delivered run, and
+  `/setup` showed WorkOS/AuthKit connected, one GitHub account connected,
+  GitHub App access, and the CLI install/setup command.
+- Installed public CLI `0.1.4` auth agreed with Chrome:
+  `codealmanac whoami` returned `Signed in as rohans0509`.
+- Verification passed:
+  - `uv run pytest tests/test_setup_service.py tests/test_cli.py tests/test_architecture.py -q`
+    (`133 passed`)
+  - `uv run pytest tests/test_public_contract.py -q` (`26 passed`)
+  - `uv run pytest -q` (`504 passed`)
+  - `uv run ruff check .`
+  - `git diff --check`

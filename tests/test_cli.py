@@ -995,13 +995,15 @@ def test_cli_setup_and_uninstall_codex_instructions(
     agents_path = isolated_home / ".codex/AGENTS.md"
     assert exit_code == 0
     assert "CodeAlmanac setup" in captured.out
+    assert "█████" in captured.out
+    assert "Cloud setup and agent instructions." in captured.out
     assert "Agent instructions" in captured.out
-    assert "default agent" in captured.out
     assert "codex" in captured.out
-    assert "Next steps" in captured.out
+    assert "Next" in captured.out
     assert "codealmanac capture enable" in captured.out
     assert "codealmanac repo setup" in captured.out
     assert "codealmanac automation install" not in captured.out
+    assert "Scheduled automation" not in captured.out
     assert CODEALMANAC_START in agents_path.read_text(encoding="utf-8")
 
     second_exit = main(["setup", "--yes", "--skip-login", "--target", "codex"])
@@ -1889,7 +1891,8 @@ def test_cli_setup_skip_instructions_json(capsys):
     assert payload["changes"] == []
     assert payload["plan"]["default_harness"] == "codex"
     assert payload["plan"]["instruction_targets"] == ["codex", "claude"]
-    assert payload["plan"]["automation"] == []
+    assert "automation" not in payload["plan"]
+    assert "automation_install" not in payload
     assert ["codealmanac", "capture", "enable"] in [
         command["command"] for command in payload["plan"]["next_commands"]
     ]

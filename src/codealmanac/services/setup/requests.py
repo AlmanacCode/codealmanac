@@ -1,4 +1,3 @@
-from datetime import timedelta
 from pathlib import Path
 
 from pydantic import Field, field_validator
@@ -26,15 +25,6 @@ class RunSetupRequest(CodeAlmanacModel):
     login_poll_interval_seconds: float = 2.0
     skip_login: bool = False
     skip_instructions: bool = False
-    home: Path | None = None
-    install_automation: bool = False
-    automation_tasks: tuple[AutomationTask, ...] = ()
-    sync_every: timedelta | None = None
-    sync_quiet: timedelta | None = None
-    garden_every: timedelta | None = None
-    garden_off: bool = False
-    env_path: str | None = None
-    python_executable: Path | None = None
 
     @field_validator("targets")
     @classmethod
@@ -44,28 +34,10 @@ class RunSetupRequest(CodeAlmanacModel):
     ) -> tuple[SetupTarget, ...]:
         return unique_non_empty_targets(value)
 
-    @field_validator("automation_tasks")
-    @classmethod
-    def validate_automation_tasks(
-        cls,
-        value: tuple[AutomationTask, ...],
-    ) -> tuple[AutomationTask, ...]:
-        return unique_tasks(value)
-
     @field_validator("api_url")
     @classmethod
     def validate_api_url(cls, value: str) -> str:
         return normalize_api_url(value)
-
-    @field_validator("sync_every", "sync_quiet", "garden_every")
-    @classmethod
-    def non_negative_duration(
-        cls,
-        value: timedelta | None,
-    ) -> timedelta | None:
-        if value is not None and value.total_seconds() < 0:
-            raise ValueError("setup automation duration must be non-negative")
-        return value
 
 
 class RunUninstallRequest(CodeAlmanacModel):

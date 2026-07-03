@@ -1290,36 +1290,28 @@ def test_setup_instruction_adapter_stays_split_by_target_family():
     assert "resources.files" in guide
 
 
-def test_setup_service_stays_split_from_planning_and_automation_policy():
+def test_setup_service_stays_split_from_cloud_setup_planning():
     setup_root = SRC_ROOT / "services/setup"
     service = (setup_root / "service.py").read_text(encoding="utf-8")
     planning = (setup_root / "planning.py").read_text(encoding="utf-8")
-    automation = (setup_root / "automation.py").read_text(encoding="utf-8")
 
     assert {
         "service.py",
         "planning.py",
-        "automation.py",
     } <= {path.name for path in setup_root.glob("*.py")}
     assert len(service.splitlines()) <= 110
     assert "class SetupService" in service
     assert "setup_plan(request)" in service
-    assert "install_automation_request(request)" in service
     assert "duration_text" not in service
     assert "DEFAULT_SYNC_INTERVAL" not in service
     assert "SetupAutomationRecommendation" not in service
     assert "def automation_recommendations" not in service
-    assert "def should_install_automation" not in service
-    assert "def install_automation_request" not in service
 
     assert "def setup_plan" in planning
-    assert "def automation_recommendations" in planning
     assert "def next_commands" in planning
-    assert "SetupAutomationRecommendation" in planning
     assert "UninstallAutomationRequest" not in planning
-    assert "def should_install_automation" in automation
-    assert "def install_automation_request" in automation
-    assert "InstallAutomationRequest" in automation
+    assert "AutomationTask" not in planning
+    assert "automation" not in planning
 
 
 def test_cli_lifecycle_dispatch_stays_split_by_command_family():

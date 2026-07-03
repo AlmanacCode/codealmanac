@@ -541,3 +541,21 @@ repaired.
 - Do not repeat the same smoke unless changing trigger/source-bundle code.
   Spend the next slice on CLI/setup polish, provider cleanup, or frontend
   branch/delivery/capture UX.
+
+## Current Slice 72 Handoff
+
+- Source root `codealmanac setup` is now cloud-first and bannered. It handles
+  cloud login plus Codex/Claude instruction setup only.
+- Root setup no longer installs or recommends local scheduled automation, and
+  its JSON output no longer contains `automation_mode`, `automation`, or
+  `automation_install`.
+- Explicit local/admin automation still lives under the existing automation
+  surface; do not re-add scheduler fields to root setup.
+- Chrome production retry worked in the user's Chrome profile. `/setup` showed
+  connected WorkOS/AuthKit and GitHub state, and the repository dashboard showed
+  the Slice 71 delivered run.
+- Source gates passed: focused setup/CLI/architecture tests, public-contract
+  tests, full `uv run pytest -q`, ruff, and `git diff --check`.
+- Version was bumped to `0.1.5` for the public CLI release. Finish the build,
+  Twine check, commit, push to `dev` and `main`, run `publish.yml` with
+  `confirm_version=0.1.5`, then verify PyPI and a fresh install.

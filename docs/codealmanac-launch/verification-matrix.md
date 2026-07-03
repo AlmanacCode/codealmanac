@@ -1422,3 +1422,25 @@ Known residue:
 - Cleanup verification passed: no local capture credential, no installed temp
   hooks, no cloud capture credentials, disabled smoke trigger, deleted remote
   smoke branch, removed temp worktree, and removed temp HOME.
+
+## Slice 72 Cloud Setup CLI Polish
+
+- Source root setup is cloud-first:
+  `uv run codealmanac setup --yes --skip-login --target codex` rendered the
+  bannered `CodeAlmanac setup` output with agent instructions and next commands.
+- Source JSON setup no longer leaks scheduler fields:
+  `uv run codealmanac setup --yes --skip-login --skip-instructions --json`
+  omitted `plan.automation`, `automation_mode`, and `automation_install`.
+- Parser/model guardrails keep old root scheduler flags invalid.
+- Chrome verified production `/setup` and the repository dashboard as
+  `rohans0509`; the setup page showed WorkOS/AuthKit connected, GitHub account
+  connected, GitHub repository access, and the CLI setup command.
+- Installed public CLI `0.1.4` still authenticated to production:
+  `codealmanac whoami` returned `Signed in as rohans0509`.
+- Local gates passed:
+  - `uv run pytest tests/test_setup_service.py tests/test_cli.py tests/test_architecture.py -q`
+    (`133 passed`)
+  - `uv run pytest tests/test_public_contract.py -q` (`26 passed`)
+  - `uv run pytest -q` (`504 passed`)
+  - `uv run ruff check .`
+  - `git diff --check`

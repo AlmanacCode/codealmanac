@@ -1,22 +1,33 @@
 import shlex
 import sys
 
-from rich.console import Console, Group
-from rich.panel import Panel
-from rich.table import Table
+from rich.console import Console
 from rich.text import Text
 
+from codealmanac.cli.render.automation import render_automation_uninstall
 from codealmanac.cli.render.common import print_json_model
-from codealmanac.services.automation.defaults import duration_text
-from codealmanac.services.automation.models import (
-    AutomationInstallResult,
-    AutomationUninstallResult,
-    ScheduledJob,
-)
 from codealmanac.services.setup.models import (
     InstructionChange,
     SetupResult,
     UninstallResult,
+)
+from codealmanac.workflows.cloud_login.models import CloudLoginWorkflowResult
+
+LOGO_LINES = (
+    " █████╗ ██╗     ███╗   ███╗ █████╗ ███╗   ██╗ █████╗  ██████╗",
+    "██╔══██╗██║     ████╗ ████║██╔══██╗████╗  ██║██╔══██╗██╔════╝",
+    "███████║██║     ██╔████╔██║███████║██╔██╗ ██║███████║██║     ",
+    "██╔══██║██║     ██║╚██╔╝██║██╔══██║██║╚██╗██║██╔══██║██║     ",
+    "██║  ██║███████╗██║ ╚═╝ ██║██║  ██║██║ ╚████║██║  ██║╚██████╗",
+    "╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝ ╚═════╝",
+)
+LOGO_STYLES = (
+    "grey100",
+    "grey93",
+    "grey85",
+    "grey74",
+    "grey62",
+    "grey50",
 )
 
 
@@ -36,154 +47,88 @@ def render_uninstall_result(result: UninstallResult, json_output: bool) -> None:
 
 def render_setup_text(result: SetupResult) -> None:
     console = setup_console()
-    console.print(
-        setup_panel(
-            "CodeAlmanac setup",
-            "Cloud onboarding and local agent support files.",
-        )
-    )
-    console.print(plan_panel(result))
+    render_banner(console, "CodeAlmanac setup", "Cloud setup and agent instructions.")
     if result.cloud_login is not None:
-        console.print(cloud_login_panel(result.cloud_login))
-    if result.skipped_instructions:
-        console.print(status_panel("Instructions skipped", "No files changed."))
-    else:
-        console.print(changes_panel("Agent instructions", result.changes))
-    if result.automation_install is not None:
-        console.print(automation_install_panel(result.automation_install))
-    console.print(next_steps_panel(result))
+        render_cloud(console, result.cloud_login)
+    render_instructions(console, result)
+    render_next_steps(console, result)
 
 
 def render_uninstall_text(result: UninstallResult) -> None:
     console = setup_console()
-    console.print(setup_panel("CodeAlmanac uninstall", "Remove setup-owned files."))
+    render_banner(console, "CodeAlmanac uninstall", "Remove setup-owned local files.")
     if result.kept_instructions:
-        console.print(status_panel("Instructions kept", "No files changed."))
+        step(console, "Agent instructions", "kept")
     else:
-        console.print(changes_panel("Removed artifacts", result.changes))
+        render_changes(console, "Removed artifacts", result.changes)
     if result.kept_automation:
-        console.print(status_panel("Automation kept", "No scheduler entries changed."))
+        step(console, "Scheduled automation", "kept")
     elif result.automation_uninstall is not None:
-        console.print(automation_uninstall_panel(result.automation_uninstall))
+        render_automation_uninstall(result.automation_uninstall, json_output=False)
 
 
-def setup_panel(title: str, subtitle: str) -> Panel:
-    heading = Text(title, style="bold")
-    body = Group(heading, Text(subtitle))
-    return Panel(body, border_style="blue", padding=(1, 2))
+def render_banner(console: Console, title: str, subtitle: str) -> None:
+    console.print()
+    for line, style in zip(LOGO_LINES, LOGO_STYLES, strict=True):
+        console.print(Text(f"  {line}", style=style))
+    console.print(Text(f"\n  {title}", style="bold"))
+    console.print(Text(f"  {subtitle}", style="dim"))
+    console.print()
 
 
-def status_panel(title: str, message: str) -> Panel:
-    body = Group(Text(title, style="bold"), Text(message))
-    return Panel(body, border_style="dim", padding=(1, 2))
-
-
-def changes_panel(title: str, changes: tuple[InstructionChange, ...]) -> Panel:
-    table = Table.grid(padding=(0, 2))
-    table.add_column("target", style="bold")
-    table.add_column("status")
-    table.add_column("message")
-    for change in changes:
-        table.add_row(change.target.value, change_status(change), change.message)
-        for path in change.paths:
-            table.add_row("", "", str(path))
-    return Panel(
-        Group(Text(title, style="bold"), table),
-        border_style="blue",
-        padding=(1, 2),
-    )
-
-
-def plan_panel(result: SetupResult) -> Panel:
-    plan = result.plan
-    table = Table.grid(padding=(0, 2))
-    table.add_column("label", style="bold")
-    table.add_column("value")
-    table.add_row("default agent", plan.default_harness.value)
-    table.add_row(
-        "instruction targets",
-        ", ".join(target.value for target in plan.instruction_targets),
-    )
-    for recommendation in plan.automation:
-        label = f"{recommendation.task.value} automation"
-        table.add_row(
-            label,
-            shell_command(recommendation.command),
-        )
-    return Panel(
-        Group(Text("Setup plan", style="bold"), table),
-        border_style="blue",
-        padding=(1, 2),
-    )
-
-
-def cloud_login_panel(result) -> Panel:
-    table = Table.grid(padding=(0, 2))
-    table.add_column("label", style="bold")
-    table.add_column("value")
-    table.add_row("cloud", result.api_url)
-    table.add_row("status", result.status)
+def render_cloud(console: Console, result: CloudLoginWorkflowResult) -> None:
+    rows = [
+        ("cloud", result.api_url),
+        ("status", result.status),
+    ]
     if result.github_login is not None:
-        table.add_row("user", result.github_login)
-    return Panel(
-        Group(Text("Cloud", style="bold"), table),
-        border_style="green",
-        padding=(1, 2),
-    )
+        rows.append(("user", result.github_login))
+    render_rows(console, "Cloud", rows)
 
 
-def automation_install_panel(result: AutomationInstallResult) -> Panel:
-    table = Table.grid(padding=(0, 2))
-    table.add_column("task", style="bold")
-    table.add_column("value")
-    for job in result.jobs:
-        add_job_rows(table, job)
-    for job in result.disabled:
-        table.add_row(job.task.value, "disabled")
-    return Panel(
-        Group(Text("Scheduled automation", style="bold"), table),
-        border_style="green",
-        padding=(1, 2),
-    )
+def render_instructions(console: Console, result: SetupResult) -> None:
+    if result.skipped_instructions:
+        step(console, "Agent instructions", "skipped")
+        return
+    render_changes(console, "Agent instructions", result.changes)
 
 
-def automation_uninstall_panel(result: AutomationUninstallResult) -> Panel:
-    table = Table.grid(padding=(0, 2))
-    table.add_column("label", style="bold")
-    table.add_column("value")
-    if len(result.removed) == 0:
-        table.add_row("automation", "not installed")
-    for path in result.removed:
-        table.add_row("removed", str(path))
-    return Panel(
-        Group(Text("Scheduled automation", style="bold"), table),
-        border_style="blue",
-        padding=(1, 2),
-    )
+def render_changes(
+    console: Console,
+    title: str,
+    changes: tuple[InstructionChange, ...],
+) -> None:
+    console.print(Text(f"  ◆ {title}", style="bold cyan"))
+    for change in changes:
+        status = "changed" if change.changed else "ok"
+        console.print(f"    {change.target.value:<6} {status:<7} {change.message}")
+        for path in change.paths:
+            console.print(Text(f"                   {path}", style="dim"))
+    console.print()
 
 
-def add_job_rows(table: Table, job: ScheduledJob) -> None:
-    table.add_row(job.task.value, f"every {duration_text(job.interval)}")
-    table.add_row("", shell_command(job.program_arguments))
-    if job.working_directory is not None:
-        table.add_row("", str(job.working_directory))
-    table.add_row("", str(job.plist_path))
-
-
-def next_steps_panel(result: SetupResult) -> Panel:
-    table = Table.grid()
+def render_next_steps(console: Console, result: SetupResult) -> None:
+    console.print(Text("  ◆ Next", style="bold cyan"))
     for command in result.plan.next_commands:
-        table.add_row(Text(command.label, style="bold"))
-        table.add_row(Text(shell_command(command.command), style="cyan"))
-    return Panel(
-        Group(Text("Next steps", style="bold"), table),
-        border_style="green",
-        padding=(1, 2),
-    )
+        console.print(f"    {command.label}")
+        console.print(Text(f"    {shell_command(command.command)}", style="cyan"))
+    console.print()
 
 
-def change_status(change: InstructionChange) -> str:
-    return "changed" if change.changed else "ok"
+def render_rows(
+    console: Console,
+    title: str,
+    rows: list[tuple[str, str]],
+) -> None:
+    console.print(Text(f"  ◆ {title}", style="bold cyan"))
+    for label, value in rows:
+        console.print(f"    {label:<8} {value}")
+    console.print()
+
+
+def step(console: Console, title: str, message: str) -> None:
+    console.print(Text(f"  ◆ {title}", style="bold cyan"))
+    console.print(f"    {message}\n")
 
 
 def shell_command(command: tuple[str, ...]) -> str:

@@ -1,13 +1,7 @@
 from typing import Protocol
 
-from codealmanac.services.automation.models import (
-    AutomationInstallResult,
-    AutomationUninstallResult,
-)
-from codealmanac.services.automation.requests import (
-    InstallAutomationRequest,
-    UninstallAutomationRequest,
-)
+from codealmanac.services.automation.models import AutomationUninstallResult
+from codealmanac.services.automation.requests import UninstallAutomationRequest
 from codealmanac.services.setup.models import InstructionChange, SetupTarget
 from codealmanac.workflows.cloud_login.models import CloudLoginWorkflowResult
 from codealmanac.workflows.cloud_login.requests import RunCloudLoginRequest
@@ -27,10 +21,7 @@ class InstructionInstaller(Protocol):
         pass
 
 
-class SetupAutomationManager(Protocol):
-    def install(self, request: InstallAutomationRequest) -> AutomationInstallResult:
-        pass
-
+class SetupAutomationCleaner(Protocol):
     def uninstall(
         self,
         request: UninstallAutomationRequest,

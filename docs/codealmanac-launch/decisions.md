@@ -169,6 +169,10 @@ Status: active.
 - Branch-triggered cloud runs are immutable snapshots. The worker must
   materialize the run's recorded `head_sha`, and when a range is needed it must
   fetch the recorded `before_sha`; it must not run against the live branch tip.
+- Root `codealmanac setup` is cloud setup plus local agent instruction setup.
+  It must not install local scheduled automation, configure local Git hooks,
+  inspect the current repo, run an update, or expose scheduler JSON fields.
+  Local maintenance stays under explicit local/admin surfaces.
 
 ## Naming
 

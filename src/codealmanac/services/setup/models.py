@@ -5,11 +5,7 @@ from pydantic import Field, field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
-from codealmanac.services.automation.models import (
-    AutomationInstallResult,
-    AutomationTask,
-    AutomationUninstallResult,
-)
+from codealmanac.services.automation.models import AutomationUninstallResult
 from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.workflows.cloud_login.models import CloudLoginWorkflowResult
 
@@ -17,12 +13,6 @@ from codealmanac.workflows.cloud_login.models import CloudLoginWorkflowResult
 class SetupTarget(StrEnum):
     CODEX = "codex"
     CLAUDE = "claude"
-
-
-class SetupAutomationMode(StrEnum):
-    NONE = "none"
-    RECOMMEND = "recommend"
-    INSTALL = "install"
 
 
 class InstructionChange(CodeAlmanacModel):
@@ -51,31 +41,9 @@ class SetupCommand(CodeAlmanacModel):
         return value
 
 
-class SetupAutomationRecommendation(CodeAlmanacModel):
-    task: AutomationTask
-    description: str
-    command: tuple[str, ...]
-
-    @field_validator("description")
-    @classmethod
-    def require_description(cls, value: str) -> str:
-        return required_text(value, "setup automation description")
-
-    @field_validator("command")
-    @classmethod
-    def require_command(cls, value: tuple[str, ...]) -> tuple[str, ...]:
-        if len(value) == 0:
-            raise ValueError("setup automation command is required")
-        for item in value:
-            required_text(item, "setup automation command part")
-        return value
-
-
 class SetupPlan(CodeAlmanacModel):
     default_harness: HarnessKind
     instruction_targets: tuple[SetupTarget, ...]
-    automation_mode: SetupAutomationMode = SetupAutomationMode.NONE
-    automation: tuple[SetupAutomationRecommendation, ...]
     next_commands: tuple[SetupCommand, ...]
 
     @field_validator("instruction_targets")
@@ -94,7 +62,6 @@ class SetupResult(CodeAlmanacModel):
     cloud_login: CloudLoginWorkflowResult | None = None
     skipped_instructions: bool = False
     changes: tuple[InstructionChange, ...] = ()
-    automation_install: AutomationInstallResult | None = None
 
 
 class UninstallResult(CodeAlmanacModel):
