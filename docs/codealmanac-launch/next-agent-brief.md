@@ -555,7 +555,7 @@ repaired.
   connected WorkOS/AuthKit and GitHub state, and the repository dashboard showed
   the Slice 71 delivered run.
 - Source gates passed: focused setup/CLI/architecture tests, public-contract
-  tests, full `uv run pytest -q`, ruff, and `git diff --check`.
-- Version was bumped to `0.1.5` for the public CLI release. Finish the build,
-  Twine check, commit, push to `dev` and `main`, run `publish.yml` with
-  `confirm_version=0.1.5`, then verify PyPI and a fresh install.
+  tests, full `uv run pytest -q`, ruff, diff hygiene, build, and Twine check.
+- PyPI `0.1.5` is live from GitHub Actions publish run `28662835062`.
+- Fresh isolated public install of `codealmanac==0.1.5` passed, and installed
+  setup JSON showed the cloud setup plan without root automation fields.

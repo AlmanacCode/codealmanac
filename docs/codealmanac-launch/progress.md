@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: pending after Slice 72 cloud setup CLI polish.
+Sent: 2026-07-03 after Slice 72 cloud setup CLI polish.
 
 Route:
 
@@ -19,16 +19,16 @@ doppler run --project almanac --config dev -- \
   --binding rohan-almanac-main "..."
 ```
 
-Note: source CLI setup is now cloud-first and no longer exposes local scheduled
-automation in the root setup path. Chrome also verified the production
-dashboard and `/setup` route as signed-in `rohans0509`.
+Note: published CLI `0.1.5` setup is now cloud-first and no longer exposes
+local scheduled automation in the root setup path. Chrome also verified the
+production dashboard and `/setup` route as signed-in `rohans0509`.
 
 ## Percentages
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
 | CodeAlmanac backend/local | 96% | 96% | Local/backend unchanged in Slice 72; root setup no longer leaks local scheduler concepts. |
-| CodeAlmanac CLI/public UX | 100% | 99% | Source CLI setup renders the bannered cloud setup flow, rejects old scheduler fields, and points to cloud/capture/repo/open next commands. |
+| CodeAlmanac CLI/public UX | 100% | 99% | Published CLI `0.1.5` renders the bannered cloud setup flow, rejects old scheduler fields, and points to cloud/capture/repo/open next commands. |
 | CodeAlmanac-hosted backend/auth/API | 100% | 100% | Unchanged in Slice 72; live trigger path was already verified in Slice 71. |
 | Hosted frontend/onboarding | 98% | 98% | Chrome verified production `/setup`, connected GitHub account state, repository dashboard, and activity feed. |
 | Infra/deploy rename | 99% | 99% | Render is live on `eb8dba0`; Modal app `codealmanac-hosted-updates` is redeployed; Vercel frontend unchanged. |

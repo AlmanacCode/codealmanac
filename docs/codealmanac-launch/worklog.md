@@ -2042,3 +2042,18 @@
   - `uv run pytest -q` (`504 passed`)
   - `uv run ruff check .`
   - `git diff --check`
+- Package verification passed:
+  - `uv build --out-dir dist`
+  - `uvx twine check dist/*`
+- CodeAlmanac commit `94b15ed3` was pushed to `dev` and `main`.
+- GitHub Actions publish run `28662835062` succeeded on `main`; it passed
+  tests, lint, diff hygiene, build, Twine check, artifact upload, and PyPI
+  upload through trusted publishing.
+- PyPI latest JSON and the version-specific endpoint both exposed
+  `codealmanac` `0.1.5`.
+- Fresh isolated public install passed with
+  `uv tool install --refresh --python 3.12 codealmanac==0.1.5`.
+- Installed `0.1.5` smoke passed:
+  `codealmanac --version` printed `0.1.5`, and
+  `codealmanac setup --yes --skip-login --skip-instructions --json` returned
+  cloud setup next commands without root automation fields.

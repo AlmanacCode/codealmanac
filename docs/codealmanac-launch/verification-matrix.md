@@ -1444,3 +1444,13 @@ Known residue:
   - `uv run pytest -q` (`504 passed`)
   - `uv run ruff check .`
   - `git diff --check`
+- Package and release verification passed:
+  - `uv build --out-dir dist`
+  - `uvx twine check dist/*`
+  - GitHub Actions publish run `28662835062` succeeded from `main`
+  - PyPI latest JSON reported `0.1.5`
+  - fresh isolated `uv tool install --refresh --python 3.12 codealmanac==0.1.5`
+    installed the public package
+  - installed `codealmanac --version` printed `0.1.5`
+  - installed `codealmanac setup --yes --skip-login --skip-instructions --json`
+    returned the cloud setup plan without root automation fields
