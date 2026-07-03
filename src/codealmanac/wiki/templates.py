@@ -27,6 +27,14 @@ Do not write pages that restate nearby code.
 
 Topics live in `topics.yaml`. Pages live in `pages/`.
 
+The default first-build page neighborhoods are:
+
+- `pages/concepts/`
+- `pages/architecture/`
+- `pages/guides/`
+- `pages/decisions/`
+- `pages/reference/`
+
 Those two entries are the source markers for an initialized CodeAlmanac wiki.
 `README.md` guides writers, but it is not a marker by itself.
 
@@ -39,6 +47,16 @@ rewriting pages. The manual is bundled with CodeAlmanac and copied here by
 ## Links
 
 Use `[[page-slug]]` for page links and `[[src/path.py]]` for file references.
+
+## Writing Standard
+
+Write clear product documentation. Every article starts with a lead paragraph
+that summarizes the page's main story. Use simple, direct language and cite
+non-obvious claims inline with `[@source-id]`.
+
+Read `manual/how-to-write.md`, `manual/evidence.md`, and `manual/links.md`
+before writing substantial pages. Read the relevant page-type manuals before
+writing concepts, architecture, guides, decisions, or reference pages.
 """
 
 

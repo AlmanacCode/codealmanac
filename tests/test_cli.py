@@ -2282,8 +2282,8 @@ def test_cli_doctor_reports_local_state(
     output = capsys.readouterr()
     assert f"codealmanac v{__version__}\n" in output.out
     assert "## Install\n" in output.out
-    assert "manual: 8 bundled docs" in output.out
-    assert "manual: 8 docs" in output.out
+    assert "manual: 12 bundled docs" in output.out
+    assert "manual: 12 docs" in output.out
     assert f"repo: {repo}\n" in output.out
     assert "index: 1 page, 1 topic" in output.out
 

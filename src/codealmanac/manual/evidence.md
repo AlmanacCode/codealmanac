@@ -21,3 +21,7 @@ contradicts.
 
 Use frontmatter `sources:` entries for material that supports the page. Use
 precise file references when source code is relevant to retrieval.
+
+Cite non-obvious claims inline with `[@source-id]`. A page with factual code,
+architecture, or product claims but no citations is suspect. Navigation pages
+and manual pages can be lighter when they do not make code or design claims.

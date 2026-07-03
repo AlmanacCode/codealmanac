@@ -1,82 +1,121 @@
 # Init Operation
 
-You are building the first substantial CodeAlmanac wiki for this repository.
+Build the first useful wiki for this repository.
 
-The base prompt modules define the wiki purpose, notability rules, page
-structure, and writing syntax. Follow them.
+Use local files, shell/search commands, and direct writes under the configured
+Almanac root. Do not use hosted wiki APIs or external wiki search for init.
 
-Your job is to perform a deep first construction pass. Create a reusable
-project memory layer, not a stub wiki and not a file-tree summary.
+## Phase 1: Scan And Plan
 
-## Required Navigation Page
+Scan the repository as a system, not as a list of files. Inspect the materials
+that define how the project works: product docs, architecture notes, public
+entrypoints, command or API surfaces, domain modules, workflows, persistence,
+integrations, configuration, runtime resources, and tests that encode contracts.
 
-Always create `pages/getting-started.md` under the configured Almanac root as
-the canonical front door to the wiki. This page is for navigation through the
-wiki, not repository setup or install instructions.
+Make a coverage map before writing pages. Write it to `coverage-map.md` in the
+configured Almanac root, then treat it as the contract for the rest of the run.
+The map should include:
 
-Write it after the initial graph is mostly known so it can route through the
-actual pages you created. It should help a future reader avoid overwhelm by
-explaining where to start, which pages to read first, which dense clusters
-matter, and what to read next for common work areas. Link directly to the most
-important pages and local hubs with `[[...]]`.
+1. `Scan Summary`: what the repo is and the main runtime shape.
+2. `Evidence Scanned`: concrete files and directories inspected.
+3. `Subject Map`: durable subsystems, workflows, contracts, and decisions found.
+4. `Page Inventory`: proposed pages grouped by folder. For each page, include:
+   - slug
+   - one-sentence purpose
+   - key evidence files
+   - links it should have to related planned pages
+5. `Dropped Or Deferred`: subjects seen but not planned, with reasons.
+6. `Coverage Audit`: what the map covers, what risks remain, and whether any
+   area is over-compressed.
 
-Use `getting-started.md` for the required orientation role. Do not create a
-second front-door page such as `project-overview.md`.
+Choose a complete page inventory from repo evidence. Do not start from a fixed
+page list. The folders below are the shape of the wiki, not a checklist.
 
-## Tooling Boundary
+- `concepts/`: vocabulary pages. Use these for stable ideas a future agent must
+  understand before the architecture makes sense.
+- `architecture/`: system-shape pages. Use these for subsystems, ownership
+  boundaries, runtime flows, adapters, stores, services, workflows, and how
+  pieces fit together.
+- `guides/`: task pages. Use these only for real procedures a future agent may
+  need to perform.
+- `decisions/`: decision records. Use these for durable choices stated in docs,
+  encoded in tests, or visible in naming and architecture.
+- `reference/`: exact lookup pages. Use these for commands, flags, config/state
+  paths, schemas, enums, file formats, frontmatter, link syntax, event shapes,
+  and other stable contracts.
 
-Init creates a local CodeAlmanac wiki from the current filesystem. Do not use
-MCP tools, remote wiki search, hosted Almanac APIs, or external page search
-tools for this operation.
+Do not create `active/`, `_meta/`, or `context/` during init by default.
 
-Use filesystem reads, shell/search commands, and direct writes under the
-configured Almanac root. The wiki may start empty, so an unavailable or empty
-local wiki search is not a blocker and is not evidence that the wiki cannot be
-updated.
+Split pages by reader need. A subject usually deserves its own page when it has:
 
-## Algorithm
+- separate owner or module boundary
+- public command family or workflow
+- storage schema, state enum, ledger, queue, or file format
+- external provider adapter or integration contract
+- prompt/manual/resource contract
+- major test contract
+- durable design decision
+- operational guide a future agent will actually follow
 
-1. Orient to the corpus: repo layout, commands, package/config files, docs,
-   entrypoints, generated outputs, tests, schemas, data files, and external
-   dependencies.
-2. Build a working map of the repo from multiple angles: entities, subsystems,
-   flows, contracts, data models, operations, external systems, product
-   concepts, and dense clusters.
-3. Investigate important areas deeply enough to explain how they work and how
-   they connect. Tests are often the clearest source of intended behavior.
-4. Compare code against existing docs and research. Do not copy docs; preserve
-   applied conclusions and project-specific meaning.
-5. Identify page candidates by future value. Ask whether each page preserves
-   understanding that would be costly, useful, or risky to reconstruct later.
-6. Design the initial graph: pages, topics, links, and any local hubs.
-7. Write detailed, grounded pages directly under `pages/` inside the configured
-   Almanac root.
-8. Use structured `sources:` frontmatter for evidence. Do not emit legacy
-   `files:` on new pages.
-9. Re-read the wiki as a future agent. Fix weak leads, duplicate pages,
-   unsupported claims, missing links, topic noise, and thin placeholders.
+Do not compress sibling systems into one umbrella page when a future agent would
+search for them separately. Related subjects can be separate pages when they
+answer different questions and have separate repo evidence.
 
-Be thorough. Create many pages when many pages are justified. Do not stay tiny
-to be safe. The quality gate is not page count; it is whether each page earns
-its place in the project graph.
+Do not mirror every file. Do not create pages for implementation details that
+only make sense inside one source file. The map should be broad and precise, not
+mechanical.
 
-## Helper Agents
+The coverage map is working state and an audit artifact. Do not stop after
+planning, and do not create only a report or a starter page. Use the map to
+write the wiki in this same run.
 
-If the provider supports helper agents and the repo is broad enough, use them
-for bounded investigation or draft fragments. Good helper tasks include
-investigating one subsystem, tracing one flow, reading tests for one area,
-checking an external dependency, or identifying page candidates for one
-cluster.
+Phase 1 and Phase 2 are separate jobs. In Phase 1, create the best coverage map
+for the repo. Do not make the map smaller because you will need to write it
+later. Do not optimize for speed, brevity, context limits, or ease of completion
+while planning.
 
-The main agent owns final synthesis, page boundaries, topics, links, hubs, and
-final prose. Helper output is evidence, not completion.
+After Phase 1, freeze the page inventory. Phase 2 must write the frozen
+inventory. You may remove a planned page only if you discover it has no repo
+evidence or is a true duplicate. If you remove one, update `coverage-map.md`
+under `Dropped Or Deferred` with the exact reason. Do not merge planned sibling
+pages during Phase 2 for convenience. If two pages are related, write both and
+link them.
 
-Do not end with page candidates, pages to add later, or an investigation
-report. After helpers return, synthesize their findings into actual markdown
-pages now.
+## Phase 2: Write And Review
 
-## Output Standard
+Before writing pages, read `manual/README.md`, `manual/how-to-write.md`,
+`manual/evidence.md`, `manual/links.md`, and the page-type manuals for the
+folders you will create.
 
-The output is a coherent wiki under the configured Almanac root. It should let
-a future agent form a working model of the project faster than by starting from
-raw files.
+Write grounded pages directly under `pages/` from the coverage map. The planned
+page inventory is not a suggestion to compress later. Write every planned page
+unless you update `coverage-map.md` to move it into `Dropped Or Deferred` with a
+repo-evidence reason.
+
+Every page must have a strong lead section. The lead should summarize the whole
+article clearly enough that a reader understands the page's subject, purpose,
+and main facts before reading the rest.
+
+Use simple, direct prose. Avoid jargon when plain language works. Structure
+sections so each next heading feels like the natural next question.
+
+Use inline citations for non-obvious claims. Link related pages with
+`[[page-slug]]`, and link relevant files or folders with `[[path/to/file.py]]`
+or `[[path/to/folder/]]`.
+
+Create `pages/getting-started.md` as the front door to the finished wiki. If
+you draft it early, revise it last so it links only to pages that exist.
+
+Re-read the generated wiki before stopping. Fix weak leads, missing citations,
+missing links, duplicate pages, thin placeholders, and obvious coverage gaps.
+Compare `coverage-map.md` against the actual files under `pages/` and fix any
+missing planned page.
+
+Before stopping, report the planned page count, written page count, and any
+dropped pages with reasons. If planned and written counts differ, fix the wiki
+before stopping unless every missing page is listed in `Dropped Or Deferred`.
+
+Finish only after the planned pages have been written or deliberately dropped
+because the repository evidence did not support them. Do not drop pages for
+brevity, convenience, context limits, or because a smaller wiki seems complete
+enough.

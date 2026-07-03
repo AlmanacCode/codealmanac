@@ -36,7 +36,8 @@ def test_initialize_creates_almanac_wiki_and_registry(
     assert (repo / "almanac/topics.yaml").is_file()
     assert (repo / "almanac/pages/getting-started.md").is_file()
     assert (repo / "almanac/manual/README.md").is_file()
-    assert (repo / "almanac/manual/init.md").is_file()
+    assert (repo / "almanac/manual/how-to-write.md").is_file()
+    assert (repo / "almanac/manual/architecture.md").is_file()
     assert (repo / "almanac/manual/ingest.md").is_file()
     gitignore_lines = (repo / ".gitignore").read_text(encoding="utf-8").splitlines()
     assert gitignore_lines.count("almanac/index.db") == 1

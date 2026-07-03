@@ -26,9 +26,7 @@ from codealmanac.workflows.init.models import (
 from codealmanac.workflows.init.requests import RunInitRequest, RunInitWithJobRequest
 
 INIT_PROMPT_SECTIONS = (
-    PromptName.BASE_PURPOSE,
-    PromptName.BASE_NOTABILITY,
-    PromptName.BASE_SYNTAX,
+    PromptName.BASE_KERNEL,
     PromptName.OPERATION_INIT,
 )
 

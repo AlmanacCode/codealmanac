@@ -1,5 +1,8 @@
 import re
 
+from markdown_it import MarkdownIt
+from markdown_it.token import Token
+
 from codealmanac.core.slug import to_kebab_case
 from codealmanac.wiki.models import (
     CrossWikiLink,
@@ -15,6 +18,9 @@ from codealmanac.wiki.paths import (
     normalize_reference_path,
     normalize_reference_path_preserving_case,
 )
+
+WIKILINK_RE = re.compile(r"\[\[([^\]\n]+)\]\]")
+MARKDOWN = MarkdownIt("commonmark", {"html": False, "linkify": False})
 
 
 def classify_wikilink(raw: str) -> Wikilink | None:
@@ -51,7 +57,25 @@ def classify_wikilink(raw: str) -> Wikilink | None:
 
 def extract_wikilinks(body: str) -> tuple[Wikilink, ...]:
     links: list[Wikilink] = []
-    for match in re.finditer(r"\[\[([^\]\n]+)\]\]", body):
+    for token in MARKDOWN.parse(body):
+        if token.type != "inline" or token.children is None:
+            continue
+        links.extend(extract_wikilinks_from_inline_tokens(token.children))
+    return tuple(links)
+
+
+def extract_wikilinks_from_inline_tokens(tokens: list[Token]) -> tuple[Wikilink, ...]:
+    links: list[Wikilink] = []
+    for token in tokens:
+        if token.type != "text":
+            continue
+        links.extend(extract_wikilinks_from_text(token.content))
+    return tuple(links)
+
+
+def extract_wikilinks_from_text(value: str) -> tuple[Wikilink, ...]:
+    links: list[Wikilink] = []
+    for match in WIKILINK_RE.finditer(value):
         link = classify_wikilink(match.group(1))
         if link is not None:
             links.append(link)

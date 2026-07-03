@@ -27,9 +27,7 @@ from codealmanac.workflows.ingest.requests import (
 )
 
 INGEST_PROMPT_SECTIONS = (
-    PromptName.BASE_PURPOSE,
-    PromptName.BASE_NOTABILITY,
-    PromptName.BASE_SYNTAX,
+    PromptName.BASE_KERNEL,
     PromptName.OPERATION_INGEST,
 )
 

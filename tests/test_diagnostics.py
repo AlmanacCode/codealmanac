@@ -68,7 +68,7 @@ def test_doctor_reports_index_and_health_for_selected_wiki(
     assert checks["wiki.index"].status == DoctorStatus.OK
     assert checks["wiki.index"].message.startswith("index: 1 page, 1 topic")
     assert checks["wiki.manual"].status == DoctorStatus.OK
-    assert checks["wiki.manual"].message == "manual: 8 docs"
+    assert checks["wiki.manual"].message == "manual: 12 docs"
     assert checks["wiki.health"].status == DoctorStatus.OK
     assert checks["wiki.health"].message == "health: 0 problems"
 
@@ -86,13 +86,13 @@ def test_doctor_reports_missing_workspace_manual(
         InitializeWorkspaceRequest(path=repo, name="repo")
     )
     app.index.ensure_fresh(workspace.workspace_id)
-    (repo / "almanac/manual/pages.md").unlink()
+    (repo / "almanac/manual/how-to-write.md").unlink()
 
     report = app.diagnostics.check(DoctorRequest(cwd=repo))
 
     checks = {check.key: check for check in report.wiki}
     assert checks["wiki.manual"].status == DoctorStatus.PROBLEM
-    assert checks["wiki.manual"].message == "manual missing: pages.md"
+    assert checks["wiki.manual"].message == "manual missing: how-to-write.md"
     assert checks["wiki.manual"].fix == "run: codealmanac init --force"
 
 

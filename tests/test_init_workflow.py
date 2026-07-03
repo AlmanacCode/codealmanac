@@ -108,6 +108,7 @@ def test_init_workflow_runs_harness_and_refreshes_index(
     assert result.index.pages_indexed == 2
     assert matches[0].slug == "initialized-note"
     assert "Init Operation" in harness.requests[0].prompt
+    assert "Phase 1: Scan And Plan" in harness.requests[0].prompt
     assert "Keep the first page short." in harness.requests[0].prompt
     assert "verified almanac mutation boundary preflight" in {
         entry.message for entry in log

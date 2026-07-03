@@ -1,6 +1,7 @@
 from codealmanac.wiki.frontmatter import parse_frontmatter
+from codealmanac.wiki.models import FileLink, PageLink
 from codealmanac.wiki.paths import escape_glob_meta, normalize_reference_path
-from codealmanac.wiki.wikilinks import classify_wikilink
+from codealmanac.wiki.wikilinks import classify_wikilink, extract_wikilinks
 
 
 def test_frontmatter_uses_pydantic_validated_shape():
@@ -71,6 +72,28 @@ def test_wikilink_classification_preserves_existing_rules():
     assert classify_wikilink("src/a:b.ts").kind == "file"
     assert classify_wikilink("src/auth/").kind == "folder"
     assert classify_wikilink("Auth Flow").kind == "page"
+
+
+def test_wikilink_extraction_ignores_inline_and_fenced_code_examples():
+    links = extract_wikilinks(
+        """Real link [[real-page]] and real file [[src/auth/session.py]].
+
+Inline example `[[path/to/file.py]]` should stay literal.
+
+```markdown
+[[fenced-page]]
+[[fenced/file.py]]
+```
+"""
+    )
+
+    assert [(type(link), getattr(link, "target", None)) for link in links] == [
+        (PageLink, "real-page"),
+        (FileLink, None),
+    ]
+    assert [link.ref.path for link in links if isinstance(link, FileLink)] == [
+        "src/auth/session.py"
+    ]
 
 
 def test_reference_paths_normalize_and_escape_glob_metacharacters():

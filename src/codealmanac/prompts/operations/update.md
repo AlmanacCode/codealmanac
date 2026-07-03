@@ -3,8 +3,8 @@
 Update refreshes the configured Almanac wiki after a finalization event on a
 configured branch.
 
-Before editing, read `manual/README.md`, `manual/pages.md`,
-`manual/evidence.md`, `manual/style.md`, and `manual/sources.md` under the
+Before editing, read `manual/README.md`, `manual/how-to-write.md`,
+`manual/evidence.md`, `manual/links.md`, and `manual/sources.md` under the
 configured Almanac root when those files exist.
 
 Use the runtime context as the execution contract. The repository checkout is

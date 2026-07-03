@@ -7,16 +7,19 @@ topics: []
 
 This manual defines how agents maintain a CodeAlmanac repo-owned wiki.
 
-Prompts name the job. The manual defines the writing rules, evidence bar, page
-shape, and operation-specific workflow.
+Prompts name the job. The manual explains how to write the pages.
 
 Read the relevant page before editing:
 
-- `pages.md`: what deserves a page and how pages connect.
+- `how-to-write.md`: the general writing standard for all pages.
 - `evidence.md`: how claims stay grounded and how conflicts are handled.
-- `style.md`: how CodeAlmanac prose should read.
+- `links.md`: how wiki pages, files, folders, and hubs connect.
+- `concepts.md`: how to write concept pages.
+- `architecture.md`: how to write architecture pages.
+- `how-to-guides.md`: how to write task guides.
+- `decisions.md`: how to write decision pages.
+- `reference.md`: how to write reference pages.
 - `sources.md`: how raw material relates to wiki synthesis.
-- `init.md`: how to create the first useful wiki.
 - `ingest.md`: how to fold new material into an existing wiki.
 - `garden.md`: how to improve an existing wiki graph.
 
@@ -34,11 +37,20 @@ repo may explicitly use another safe repo-relative directory such as
 |-- README.md
 |-- topics.yaml
 |-- pages/
+|   |-- concepts/
+|   |-- architecture/
+|   |-- guides/
+|   |-- decisions/
+|   `-- reference/
 |-- manual/
 ```
 
 `topics.yaml` plus `pages/` identify an initialized CodeAlmanac wiki. `README.md`
 is guidance for readers and writers, not a marker by itself.
+
+The category folders under `pages/` are the default first-build structure. Do
+not add `active/`, `_meta/`, or `context/` during init unless repository
+evidence makes that structure necessary.
 
 Runtime state is local and rebuildable:
 

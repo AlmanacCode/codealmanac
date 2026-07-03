@@ -66,6 +66,62 @@ Session persistence details.
     assert page.wikilinks_in == ("auth-flow",)
 
 
+def test_read_model_ignores_wikilink_examples_inside_code(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+    )
+    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
+    write_page(
+        repo,
+        "examples.md",
+        """---
+title: Examples
+topics: [concepts]
+---
+# Examples
+
+Real link to [[session-store]].
+
+Inline example: `[[path/to/file.py]]`
+
+```markdown
+[[fenced-page]]
+[[src/missing.py]]
+```
+""",
+    )
+    write_page(
+        repo,
+        "session-store.md",
+        """---
+title: Session Store
+topics: [concepts]
+---
+# Session Store
+
+Stores session facts.
+""",
+    )
+
+    page = app.pages.show(ShowPageRequest(cwd=repo, slug="examples"))
+    missing_mentions = app.search.search(
+        SearchPagesRequest(cwd=repo, mentions="src/missing.py")
+    )
+    placeholder_mentions = app.search.search(
+        SearchPagesRequest(cwd=repo, mentions="path/to/file.py")
+    )
+
+    assert page.wikilinks_out == ("session-store",)
+    assert page.file_refs == ()
+    assert missing_mentions == ()
+    assert placeholder_mentions == ()
+
+
 def test_read_model_projects_structured_page_sources(
     tmp_path: Path,
     isolated_home: Path,

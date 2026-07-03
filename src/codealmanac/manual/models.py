@@ -9,22 +9,30 @@ from codealmanac.core.text import required_text
 
 class ManualDocumentName(StrEnum):
     README = "README.md"
-    PAGES = "pages.md"
+    HOW_TO_WRITE = "how-to-write.md"
     EVIDENCE = "evidence.md"
-    STYLE = "style.md"
+    LINKS = "links.md"
+    CONCEPTS = "concepts.md"
+    ARCHITECTURE = "architecture.md"
+    HOW_TO_GUIDES = "how-to-guides.md"
+    DECISIONS = "decisions.md"
+    REFERENCE = "reference.md"
     SOURCES = "sources.md"
-    INIT = "init.md"
     INGEST = "ingest.md"
     GARDEN = "garden.md"
 
 
 MANUAL_DOCUMENTS: tuple[ManualDocumentName, ...] = (
     ManualDocumentName.README,
-    ManualDocumentName.PAGES,
+    ManualDocumentName.HOW_TO_WRITE,
     ManualDocumentName.EVIDENCE,
-    ManualDocumentName.STYLE,
+    ManualDocumentName.LINKS,
+    ManualDocumentName.CONCEPTS,
+    ManualDocumentName.ARCHITECTURE,
+    ManualDocumentName.HOW_TO_GUIDES,
+    ManualDocumentName.DECISIONS,
+    ManualDocumentName.REFERENCE,
     ManualDocumentName.SOURCES,
-    ManualDocumentName.INIT,
     ManualDocumentName.INGEST,
     ManualDocumentName.GARDEN,
 )

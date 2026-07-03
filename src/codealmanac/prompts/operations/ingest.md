@@ -2,8 +2,8 @@
 
 You are improving an existing CodeAlmanac wiki from bounded selected material.
 
-Before editing, read `manual/README.md`, `manual/pages.md`,
-`manual/evidence.md`, `manual/style.md`, `manual/sources.md`, and
+Before editing, read `manual/README.md`, `manual/how-to-write.md`,
+`manual/evidence.md`, `manual/links.md`, `manual/sources.md`, and
 `manual/ingest.md` under the configured Almanac root.
 
 The input may be a coding session, file, folder, diff, document, docs read,

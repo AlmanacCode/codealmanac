@@ -2,8 +2,8 @@
 
 You are improving an existing CodeAlmanac wiki as a whole graph.
 
-Before editing, read `manual/README.md`, `manual/pages.md`,
-`manual/evidence.md`, `manual/style.md`, `manual/sources.md`, and
+Before editing, read `manual/README.md`, `manual/how-to-write.md`,
+`manual/evidence.md`, `manual/links.md`, `manual/sources.md`, and
 `manual/garden.md` under the configured Almanac root.
 
 Garden is cultivation. The goal is not to add activity; the goal is to make the

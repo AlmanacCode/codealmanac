@@ -23,6 +23,10 @@ almanac/index.db
 almanac/index.db-wal
 almanac/index.db-shm
 almanac/jobs/
+docs/almanac/index.db
+docs/almanac/index.db-wal
+docs/almanac/index.db-shm
+docs/almanac/jobs/
 .almanac/index.db
 .almanac/index.db-wal
 .almanac/index.db-shm

@@ -994,11 +994,12 @@ def test_init_first_build_resources_use_init_naming():
 
     assert (SRC_ROOT / "prompts/operations/init.md").is_file()
     assert not (SRC_ROOT / "prompts/operations/build.md").exists()
-    assert (SRC_ROOT / "manual/init.md").is_file()
+    assert (SRC_ROOT / "manual/how-to-write.md").is_file()
+    assert (SRC_ROOT / "manual/architecture.md").is_file()
     assert not (SRC_ROOT / "manual/build.md").exists()
     assert "OPERATION_INIT" in prompt_models
     assert "OPERATION_BUILD" not in prompt_models
-    assert "INIT = \"init.md\"" in manual_models
+    assert "HOW_TO_WRITE = \"how-to-write.md\"" in manual_models
     assert "BUILD = \"build.md\"" not in manual_models
 
 

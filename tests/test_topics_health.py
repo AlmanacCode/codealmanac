@@ -74,7 +74,7 @@ sources:
     url: https://example.com/b
   - id: unused
     type: manual
-    path: manual/pages.md
+    path: manual/how-to-write.md
 ---
 # Source Hygiene
 

@@ -1,0 +1,32 @@
+topics:
+  concepts:
+    title: Concepts
+    description: Vocabulary and mental models for the Python CodeAlmanac codebase.
+  architecture:
+    title: Architecture
+    description: System structure, boundaries, flows, and subsystem responsibilities.
+  guides:
+    title: Guides
+    description: Task-oriented maintainer how-to pages.
+  decisions:
+    title: Decisions
+    description: Accepted architectural choices and their consequences.
+  reference:
+    title: Reference
+    description: Exact lookup material for commands, schemas, states, and file shapes.
+  manual:
+    title: Manual
+    description: Rules for writing and maintaining this wiki.
+  lifecycle:
+    title: Lifecycle
+    description: Write-capable operations, page runs, run records, sync, and background jobs.
+    parents: [architecture]
+  integration:
+    title: Integration
+    description: Provider, scheduler, source, setup, and package-manager edges.
+    parents: [architecture]
+  storage:
+    title: Storage
+    description: Markdown, SQLite, registry, config, run ledger, and sync ledger persistence.
+    parents: [architecture]
+
