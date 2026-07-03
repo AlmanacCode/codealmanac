@@ -5,22 +5,32 @@ topics: [manual]
 
 # Architecture
 
-An architecture page explains how a system area works and how it fits into the
-whole codebase.
+Use this manual when writing a page under `pages/architecture/`. An
+architecture page explains one system area: its responsibility, boundary,
+collaborators, and runtime behavior.
 
-The lead should summarize the system area: what owns it, how it works at a high
-level, and why its shape matters.
+The lead should summarize the area, what owns it, how it fits into the larger
+system, and why its shape matters.
 
-Cover the facts a maintainer needs to change the area safely:
+Write the page so a maintainer can safely change the area. Explain the static
+shape, the runtime flow, and the constraints that future work must preserve.
+
+Cover the angles that matter for the area:
 
 - ownership and boundaries
 - entrypoints
+- important collaborators
 - data or control flow
-- important files
-- dependencies and integrations
-- invariants
+- storage, adapters, or external integrations
+- invariants and failure modes
 - consequences of the current shape
 - related concepts, decisions, guides, and reference pages
+
+Do not use these as required sections. Use headings that fit the system area.
+
+Do not turn an architecture page into a file-by-file tour. Mention files when
+they anchor the explanation, but keep the page about responsibility, flow, and
+system shape.
 
 Architecture coverage should form a system map. Do not write only one or two
 architecture pages when the repository has many real subsystems.

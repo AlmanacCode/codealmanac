@@ -21,7 +21,7 @@ def test_manual_library_reads_all_bundled_documents():
     assert "configured Almanac root" in ManualLibrary().read(
         ManualReadRequest(document=ManualDocumentName.README)
     ).body
-    assert "summarizes the whole article" in ManualLibrary().read(
+    assert "compact summary of the whole" in ManualLibrary().read(
         ManualReadRequest(document=ManualDocumentName.HOW_TO_WRITE)
     ).body
     assert "Use links to make the wiki a graph" in ManualLibrary().read(

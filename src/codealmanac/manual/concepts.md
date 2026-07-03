@@ -5,13 +5,28 @@ topics: [manual]
 
 # Concepts
 
-A concept page explains vocabulary or a mental model used in this repository.
+Use this manual when writing a page under `pages/concepts/`. A concept page
+explains one repo-specific term or mental model that other pages rely on.
 
-The lead should define the concept, explain why it matters here, and summarize
-the role it plays in the rest of the wiki.
+The lead must define the concept clearly. It should also explain why the
+concept matters in this repository and summarize the role it plays in the rest
+of the wiki.
 
-Write a concept page when a maintainer needs the idea before deeper pages make
-sense. Explain where the concept appears, what pages depend on it, and what the
-term does not mean if confusion is likely.
+A concept page is understanding-oriented. It should deepen the reader's grasp
+of the concept, not just name it. After the lead, explain the angles that make
+the concept useful:
 
-Do not turn a concept page into a file summary or a generic definition.
+- why this repo needs the concept
+- what problem or distinction the concept clarifies
+- where the concept appears in the system
+- what architecture, guide, decision, or reference pages depend on it
+- what the concept is often confused with, if confusion is likely
+
+Do not use these angles as required sections. Use headings that fit the
+concept.
+
+Keep the page focused on one concept. If the explanation starts needing another
+concept, link to that page instead of folding both into one.
+
+Do not turn a concept page into a guide, reference table, file summary, generic
+definition, or full architecture overview.
