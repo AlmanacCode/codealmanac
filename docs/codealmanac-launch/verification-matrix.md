@@ -1093,3 +1093,8 @@ Current evidence:
   `https://www.codealmanac.com/login` HTTP 200, unauthenticated
   `https://www.codealmanac.com/setup` redirected through WorkOS/AuthKit, and
   backend health returned `{"status":"ok"}`.
+- 2026-07-03 production clean-slate reset verified:
+  `codealmanac/prd` is the Render production Doppler target, WorkOS production
+  user count is `0`, Supabase production hosted-table/auth/storage count query
+  returned no nonzero rows, and `supabase db push --linked --dry-run` reported
+  `Remote database is up to date.`

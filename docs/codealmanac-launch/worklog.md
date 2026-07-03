@@ -1565,3 +1565,28 @@
 - Recorded progress as: CodeAlmanac backend/local 96%, CLI/public UX 98%,
   CodeAlmanac-hosted backend/auth/API 96%, hosted frontend/onboarding 78%, and
   infra/deploy rename 98%.
+- Performed a production clean-slate reset for the launch target.
+- Confirmed Render `render.yaml` points backend runtime config at
+  `DOPPLER_PROJECT=codealmanac` and `DOPPLER_CONFIG=prd`.
+- Confirmed `codealmanac/prd` uses WorkOS client
+  `client_01KWGQ30PY07SPTCAHHHFHFV2Y` and Supabase project
+  `amlownbvhsmnuhqofknb`.
+- Confirmed stale `almanac/*` Doppler configs still point at old WorkOS clients
+  and project `bjhtprwkufhojfmzkohg`; those were not used for the reset.
+- Linked Supabase CLI to `amlownbvhsmnuhqofknb` with the stored production DB
+  password.
+- Before reset, WorkOS production contained 3 users: Rohan, Divit, and Kushagra.
+- Before reset, Supabase production contained 2 hosted `public.users`, 16 legacy
+  `auth.users`, 13 accounts, 15 installations, 135 repositories, 135 repository
+  settings, 30 runs, 5,827 webhook deliveries, and hosted wiki read-model rows.
+- Wiped Supabase production data by truncating hosted public tables and
+  `storage.objects`, then deleting `auth.users`; schema, migration history, and
+  bucket definitions were preserved.
+- Deleted the 3 WorkOS production users through the WorkOS Python SDK.
+- Verified WorkOS production has 0 users after reset.
+- Verified the Supabase production count query returned no nonzero rows across
+  hosted public tables, `auth.users`, and `storage.objects`.
+- Verified `supabase db push --linked --dry-run` reports the remote production
+  database is up to date.
+- `supabase migration list --linked` hit a temp-role SASL auth retry after the
+  dry-run; the dry-run is the schema verification used for this reset.

@@ -20,10 +20,11 @@ doppler run --project almanac --config dev -- \
 ```
 
 Note: rate limits were postponed. PyPI Trusted Publishing is working for
-CodeAlmanac `0.1.0`. Hosted sign-in now reaches the production `/setup` page
-with GitHub accounts visible. The root cause was production Supabase schema
-drift: backend code expected WorkOS-shaped `users` rows, while production still
-had the old Supabase Auth-shaped `users.supabase_user_id` table shape.
+CodeAlmanac `0.1.0`. Hosted sign-in reached production `/setup` after the
+schema repair, then production identity/data state was intentionally reset for a
+fresh first-login path. The root cause was production Supabase schema drift:
+backend code expected WorkOS-shaped `users` rows, while production still had the
+old Supabase Auth-shaped `users.supabase_user_id` table shape.
 
 ## Percentages
 
