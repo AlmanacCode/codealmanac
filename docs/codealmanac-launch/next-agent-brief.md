@@ -495,3 +495,23 @@ repaired.
   a GitHub OAuth bounce.
 - Keep the user-facing explanation short: old npm shadow was local and fixed;
   stale `open` route was public and fixed in `0.1.3`.
+
+## Current Slice 70 Handoff
+
+- Source `0.1.4` fixes the fresh-install `open` regression without undoing
+  Slice 69.
+- Signed-in `codealmanac open` still resolves through the cloud API and opens
+  `/dashboard/accounts/264516179/repositories/1212149375/wiki`.
+- No-auth `codealmanac open` now falls back to
+  `/wiki/github/AlmanacCode/codealmanac` so the browser can handle hosted
+  login/onboarding.
+- Do not broaden the fallback. Only missing local `cloud auth state` should use
+  the public resolver; real cloud repository/API failures should stay visible.
+- Chrome verified both paths: public resolver completed through GitHub OAuth to
+  `/setup`, and the signed-in dashboard wiki rendered `Default branch /
+  62 pages`.
+- Local gates passed for source `0.1.4`: focused tests (`65 passed`), full
+  tests (`504 passed`), ruff, diff hygiene, build, and Twine check.
+- Publish `0.1.4` from `main`, then verify a fresh `uv tool install --refresh`
+  sees `codealmanac --version` `0.1.4` and the fresh-HOME no-auth fallback
+  still prints the public resolver.

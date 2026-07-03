@@ -1,6 +1,6 @@
 from urllib.parse import quote, urlencode
 
-from codealmanac.core.errors import ValidationFailed
+from codealmanac.core.errors import NotFoundError, ValidationFailed
 from codealmanac.services.cloud_repositories.models import CloudRepository
 from codealmanac.services.cloud_repositories.requests import (
     ResolveCloudRepositoryRequest,
@@ -29,12 +29,19 @@ class CloudOpenWorkflow:
         require_github_checkout(checkout)
         repository = None
         if request.target == "wiki":
-            repository = self.cloud_repositories.resolve(
-                ResolveCloudRepositoryRequest(
-                    api_url=request.api_url,
-                    full_name=required_part(checkout.full_name, "GitHub repository"),
+            try:
+                repository = self.cloud_repositories.resolve(
+                    ResolveCloudRepositoryRequest(
+                        api_url=request.api_url,
+                        full_name=required_part(
+                            checkout.full_name,
+                            "GitHub repository",
+                        ),
+                    )
                 )
-            )
+            except NotFoundError as exc:
+                if exc.resource != "cloud auth state":
+                    raise
         url = url_for_target(
             request.target,
             app_url=request.app_url,
@@ -73,12 +80,12 @@ def url_for_target(
     if target == "github":
         return f"https://github.com/{quote(owner, safe='')}/{quote(repo, safe='')}"
     if target == "wiki":
-        if repository is None:
-            raise ValidationFailed("cloud repository is unavailable")
-        return (
-            f"{app_url}/dashboard/accounts/{repository.account_id}"
-            f"/repositories/{repository.repo_id}/wiki"
-        )
+        if repository is not None:
+            return (
+                f"{app_url}/dashboard/accounts/{repository.account_id}"
+                f"/repositories/{repository.repo_id}/wiki"
+            )
+        return public_wiki_resolver_url(app_url, owner=owner, repo=repo)
     if target == "setup":
         return repo_setup_url(app_url, owner=owner, repo=repo, target=None)
     if target == "repo":
@@ -105,6 +112,15 @@ def repo_setup_url(
     if target is not None:
         params["target"] = target
     return f"{app_url}/setup/repo?{urlencode(params)}"
+
+
+def public_wiki_resolver_url(
+    app_url: str,
+    *,
+    owner: str,
+    repo: str,
+) -> str:
+    return f"{app_url}/wiki/github/{quote(owner, safe='')}/{quote(repo, safe='')}"
 
 
 def required_part(value: str | None, label: str) -> str:

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from codealmanac.core.errors import ValidationFailed
+from codealmanac.core.errors import NotFoundError, ValidationFailed
 from codealmanac.services.cloud_repositories.models import CloudRepository
 from codealmanac.services.cloud_repositories.requests import (
     ResolveCloudRepositoryRequest,
@@ -43,6 +43,56 @@ def test_cloud_open_workflow_resolves_and_opens_dashboard_wiki_url(
             full_name="AlmanacCode/codealmanac",
         )
     ]
+
+
+def test_cloud_open_workflow_falls_back_to_public_wiki_when_cli_is_not_logged_in(
+    tmp_path: Path,
+) -> None:
+    browser = FakeBrowser()
+    repositories = FakeCloudRepositories(error=NotFoundError("cloud auth state", ""))
+    workflow = CloudOpenWorkflow(
+        FakeRepositoryProbe(local_repository_state(tmp_path / "repo")),
+        repositories,
+        browser,
+    )
+
+    result = workflow.open(
+        OpenCloudTargetRequest(
+            cwd=tmp_path / "repo",
+            app_url="https://app.example.test/",
+            api_url="https://api.example.test/",
+            no_browser=True,
+        )
+    )
+
+    assert result.url == "https://app.example.test/wiki/github/AlmanacCode/codealmanac"
+    assert result.opened is False
+    assert browser.opened == []
+    assert repositories.resolved == [
+        ResolveCloudRepositoryRequest(
+            api_url="https://api.example.test",
+            full_name="AlmanacCode/codealmanac",
+        )
+    ]
+
+
+def test_cloud_open_workflow_does_not_hide_repository_resolution_failures(
+    tmp_path: Path,
+) -> None:
+    workflow = CloudOpenWorkflow(
+        FakeRepositoryProbe(local_repository_state(tmp_path / "repo")),
+        FakeCloudRepositories(error=NotFoundError("cloud repository", "missing")),
+        FakeBrowser(),
+    )
+
+    with pytest.raises(NotFoundError, match="cloud repository not found: missing"):
+        workflow.open(
+            OpenCloudTargetRequest(
+                cwd=tmp_path / "repo",
+                app_url="https://app.example.test/",
+                api_url="https://api.example.test/",
+            )
+        )
 
 
 def test_cloud_open_workflow_builds_setup_and_repo_targets(tmp_path: Path) -> None:
@@ -157,11 +207,14 @@ class FakeRepositoryProbe:
 
 
 class FakeCloudRepositories:
-    def __init__(self) -> None:
+    def __init__(self, error: NotFoundError | None = None) -> None:
+        self.error = error
         self.resolved: list[ResolveCloudRepositoryRequest] = []
 
     def resolve(self, request: ResolveCloudRepositoryRequest) -> CloudRepository:
         self.resolved.append(request)
+        if self.error is not None:
+            raise self.error
         return CloudRepository(
             repo_id=1212149375,
             account_id=264516179,

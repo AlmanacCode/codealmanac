@@ -1363,3 +1363,28 @@ Known residue:
 - Installed `codealmanac open` passed the browser contract: it opened Chrome to
   the dashboard wiki URL, not the obsolete `/wiki/github/...` URL, and Chrome
   rendered `AlmanacCode/codealmanac` with `Default branch / 62 pages`.
+
+## Slice 70 Fresh-Install Open Fallback
+
+- Source `0.1.4` preserves both public `open` paths:
+  - fresh HOME/no local auth prints
+    `https://www.codealmanac.com/wiki/github/AlmanacCode/codealmanac`
+  - signed-in HOME prints
+    `https://www.codealmanac.com/dashboard/accounts/264516179/repositories/1212149375/wiki`
+- `tests/test_cloud_open_workflow.py` proves only missing `cloud auth state`
+  falls back to the public resolver. Other repository resolution failures still
+  raise.
+- `tests/test_cli.py` proves `codealmanac open --no-browser` succeeds from a
+  fresh install without calling the cloud repository client.
+- Chrome verified the public resolver path through GitHub OAuth and WorkOS. It
+  completed at `/setup` with GitHub connected and no console errors.
+- Chrome verified the signed-in dashboard wiki route still renders the
+  `AlmanacCode/codealmanac` wiki with `Default branch / 62 pages`.
+- Verification passed:
+  - `uv run pytest tests/test_cloud_open_workflow.py tests/test_cli.py -q`
+    (`65 passed`)
+  - `uv run pytest` (`504 passed`)
+  - `uv run ruff check .`
+  - `git diff --check`
+  - `uv build --out-dir dist`
+  - `uvx twine check dist/*`

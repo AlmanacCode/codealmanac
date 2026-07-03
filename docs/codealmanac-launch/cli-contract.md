@@ -35,7 +35,8 @@ codealmanac serve
 ```
 
 `codealmanac` and `codealmanac open` resolve the current checkout's GitHub
-remote and open the cloud wiki route. The browser owns the final redirect.
+remote and open the cloud wiki route. The browser owns the final redirect when
+the CLI is not signed in.
 
 Implemented in Slice 38:
 
@@ -46,6 +47,21 @@ codealmanac open [--app-url URL] [--no-browser] [--json]
 
 These commands do not require a stored CLI token. They detect the current
 GitHub checkout and open `/wiki/github/<owner>/<repo>` on the hosted app.
+
+Implemented in Slice 69 and repaired in Slice 70:
+
+```text
+codealmanac
+codealmanac open [--app-url URL] [--no-browser] [--json]
+```
+
+Signed-in CLI state resolves the repository through `/v1/repositories/resolve`
+and opens the exact dashboard wiki route:
+`/dashboard/accounts/{account_id}/repositories/{repo_id}/wiki`.
+
+Missing local cloud auth falls back to `/wiki/github/<owner>/<repo>`, so a
+fresh install still hands the browser to hosted login/onboarding instead of
+failing in the terminal. Other repository resolution failures are not hidden.
 
 ## Cloud Setup And Identity
 

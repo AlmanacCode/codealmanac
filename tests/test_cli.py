@@ -851,6 +851,35 @@ def test_cli_open_commands_use_current_checkout_and_browser_handoff(
     assert github_output["opened"] is False
 
 
+def test_cli_open_without_login_prints_public_wiki_resolver(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    browser = CliBrowserOpener()
+    repositories_client = CliCloudRepositoriesClient()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
+        cloud_repositories_client=repositories_client,
+        local_repository_probe=CliLocalRepositoryProbe(local_repository_state(repo)),
+        browser_opener=browser,
+    )
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert main(["open", "--app-url", "https://app.example.test", "--no-browser"]) == 0
+
+    output = capsys.readouterr()
+    assert "url: https://app.example.test/wiki/github/AlmanacCode/codealmanac\n" in (
+        output.out
+    )
+    assert browser.opened == []
+    assert repositories_client.resolves == []
+
+
 def test_cli_init_creates_wiki_and_prints_name(
     tmp_path: Path,
     isolated_home: Path,

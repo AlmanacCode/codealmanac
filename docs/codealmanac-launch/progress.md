@@ -19,16 +19,16 @@ doppler run --project almanac --config dev -- \
   --binding rohan-almanac-main "..."
 ```
 
-Note: PyPI `0.1.3` is published. A fresh public install returned
-`codealmanac --version` `0.1.3`; installed `codealmanac open` opened Chrome to
-the signed-in dashboard wiki for `AlmanacCode/codealmanac`.
+Note: Slice 70 source `0.1.4` is ready for publish. It keeps signed-in
+`codealmanac open` on the dashboard wiki route and restores the fresh-install
+no-auth fallback to `/wiki/github/<owner>/<repo>`.
 
 ## Percentages
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
 | CodeAlmanac backend/local | 96% | 96% | CodeAlmanac local/backend unchanged in Slice 68. |
-| CodeAlmanac CLI/public UX | 99% | 98% | PyPI `0.1.3` is live; installed `setup` is cloud-only/idempotent and installed `open` opens the dashboard wiki route. |
+| CodeAlmanac CLI/public UX | 99% | 99% | Source `0.1.4` fixes fresh-install `open`: no-auth falls back to `/wiki/github/...`, signed-in opens the dashboard wiki. |
 | CodeAlmanac-hosted backend/auth/API | 99% | 99% | Production branch push now creates an immutable branch-source run and worker completion delivered successfully. |
 | Hosted frontend/onboarding | 97% | 96% | Chrome verified the signed-in dashboard wiki route for `AlmanacCode/codealmanac` with 62 pages. |
 | Infra/deploy rename | 99% | 99% | Render is live on `eb8dba0`; Modal app `codealmanac-hosted-updates` is redeployed; Vercel frontend unchanged. |

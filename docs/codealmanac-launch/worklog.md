@@ -1951,3 +1951,21 @@
   `https://www.codealmanac.com/dashboard/accounts/264516179/repositories/1212149375/wiki`.
   Chrome verified the signed-in wiki page with `AlmanacCode/codealmanac` and
   `Default branch / 62 pages`.
+- Slice 70 fixed the fresh-install regression introduced by the Slice 69
+  dashboard-route repair. Source `0.1.4` now falls back only when local cloud
+  auth state is missing: `codealmanac open --no-browser` from a fresh HOME
+  prints `https://www.codealmanac.com/wiki/github/AlmanacCode/codealmanac`,
+  while a signed-in HOME still prints the exact dashboard wiki route.
+- Chrome verified the no-auth browser handoff. The public resolver sent the
+  user through GitHub OAuth for Almanac Bot and completed at
+  `https://www.codealmanac.com/setup` with GitHub connected and no console
+  errors.
+- Chrome also verified the signed-in dashboard wiki route still renders
+  `AlmanacCode/codealmanac`, `Wiki`, and `Default branch / 62 pages` with no
+  console errors.
+- Slice 70 focused tests passed:
+  `uv run pytest tests/test_cloud_open_workflow.py tests/test_cli.py -q`
+  (`65 passed`).
+- Slice 70 full local gates passed:
+  `uv run pytest` (`504 passed`), `uv run ruff check .`, `git diff --check`,
+  `uv build --out-dir dist`, and `uvx twine check dist/*`.
