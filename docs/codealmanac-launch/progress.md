@@ -8,7 +8,7 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-03 after Slice 74 GitHub App permission hot-path fix.
+Sent: 2026-07-03 after Slice 75 cloud repo-list release verification.
 
 Route:
 
@@ -19,9 +19,9 @@ doppler run --project almanac --config dev -- \
   --binding rohan-almanac-main "..."
 ```
 
-Slice 75 has since been completed locally: published CLI `0.1.6` includes the
-canonical `codealmanac repo list` command, production `/v1/repositories` works,
-and Chrome verified fresh setup from a clean `HOME`.
+Published CLI `0.1.6` includes the canonical `codealmanac repo list` command,
+production `/v1/repositories` works, and Chrome verified fresh setup from a
+clean `HOME`.
 
 ## Percentages
 
