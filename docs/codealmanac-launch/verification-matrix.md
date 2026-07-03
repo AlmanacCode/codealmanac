@@ -1388,3 +1388,11 @@ Known residue:
   - `git diff --check`
   - `uv build --out-dir dist`
   - `uvx twine check dist/*`
+- GitHub Actions publish run `28660115818` succeeded on `main` at
+  `35c7108e`, and PyPI now serves `codealmanac` `0.1.4`.
+- Fresh public install with
+  `uv tool install --python 3.12 --upgrade --force --refresh codealmanac`
+  installed `0.1.4`.
+- Installed `codealmanac open --no-browser` verified both paths after publish:
+  fresh HOME printed the public resolver, and signed-in HOME printed the
+  dashboard wiki URL.

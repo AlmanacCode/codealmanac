@@ -498,7 +498,7 @@ repaired.
 
 ## Current Slice 70 Handoff
 
-- Source `0.1.4` fixes the fresh-install `open` regression without undoing
+- PyPI `0.1.4` fixes the fresh-install `open` regression without undoing
   Slice 69.
 - Signed-in `codealmanac open` still resolves through the cloud API and opens
   `/dashboard/accounts/264516179/repositories/1212149375/wiki`.
@@ -512,6 +512,9 @@ repaired.
   62 pages`.
 - Local gates passed for source `0.1.4`: focused tests (`65 passed`), full
   tests (`504 passed`), ruff, diff hygiene, build, and Twine check.
-- Publish `0.1.4` from `main`, then verify a fresh `uv tool install --refresh`
-  sees `codealmanac --version` `0.1.4` and the fresh-HOME no-auth fallback
-  still prints the public resolver.
+- Publish run `28660115818` succeeded from `main` at `35c7108e`.
+- Fresh public install with
+  `uv tool install --python 3.12 --upgrade --force --refresh codealmanac`
+  installed `0.1.4`.
+- Installed `codealmanac open --no-browser` verified both paths: fresh HOME
+  prints the public resolver, and signed-in HOME prints the dashboard wiki URL.

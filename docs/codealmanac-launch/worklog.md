@@ -1969,3 +1969,14 @@
 - Slice 70 full local gates passed:
   `uv run pytest` (`504 passed`), `uv run ruff check .`, `git diff --check`,
   `uv build --out-dir dist`, and `uvx twine check dist/*`.
+- GitHub Actions publish run `28660115818` succeeded on `main` at
+  `35c7108e`; the workflow built and published
+  `codealmanac-0.1.4-py3-none-any.whl` and `codealmanac-0.1.4.tar.gz`.
+- PyPI exposed `0.1.4` through the version-specific JSON endpoint and the
+  package latest JSON endpoint.
+- Fresh public install with
+  `uv tool install --python 3.12 --upgrade --force --refresh codealmanac`
+  installed `0.1.4`.
+- Installed `codealmanac open --no-browser` passed both launch paths:
+  fresh HOME printed `/wiki/github/AlmanacCode/codealmanac`, and signed-in HOME
+  printed `/dashboard/accounts/264516179/repositories/1212149375/wiki`.
