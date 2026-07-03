@@ -117,6 +117,11 @@ remain dashboard/API work after this slice.
 
 `setup` does not run a wiki update.
 
+Root `uninstall` reverses only root setup-owned artifacts: global Codex/Claude
+agent instruction entries and local cloud auth state where applicable. It does
+not remove local scheduled automation. Local scheduler cleanup belongs to the
+explicit `codealmanac automation uninstall` surface.
+
 Implemented in Slice 59:
 
 ```text

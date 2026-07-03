@@ -53,7 +53,7 @@ README_REQUIRED_FRAGMENTS = (
     "Derived local state appears when commands need it:",
     "Local schedules\nstay behind explicit local or automation commands.",
     "codealmanac uninstall --yes",
-    "codealmanac uninstall --yes\n--keep-automation",
+    "codealmanac automation uninstall",
     "Cloud commands: `setup`, `status`, `login`, `whoami`, `logout`,",
     "uv tool dir --bin",
 )
@@ -204,7 +204,7 @@ def test_user_facing_docs_do_not_advertise_node_or_old_state_paths():
     assert "uv run pytest" in docs["CONTRIBUTING.md"]
     assert "codealmanac init --root <path>" in docs["docs/concepts.md"]
     assert "Root `codealmanac setup` is cloud setup" in docs["docs/concepts.md"]
-    assert "codealmanac uninstall --keep-automation" in docs["docs/concepts.md"]
+    assert "codealmanac automation uninstall" in docs["docs/concepts.md"]
     for body in docs.values():
         assert "npm install" not in body
         assert "npm test" not in body

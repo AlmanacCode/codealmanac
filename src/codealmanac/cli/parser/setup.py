@@ -64,9 +64,4 @@ def add_uninstall_command(subcommands: argparse._SubParsersAction) -> None:
         action="store_true",
         help="leave global agent instructions installed",
     )
-    uninstall.add_argument(
-        "--keep-automation",
-        action="store_true",
-        help="leave scheduled automation installed",
-    )
     uninstall.add_argument("--json", action="store_true")

@@ -33,7 +33,6 @@ def dispatch_uninstall(args: argparse.Namespace, app: CodeAlmanac) -> int:
             targets=parse_setup_targets(args.target),
             yes=args.yes,
             keep_instructions=args.keep_instructions,
-            keep_automation=args.keep_automation,
         )
     )
     render_uninstall_result(result, json_output=args.json)

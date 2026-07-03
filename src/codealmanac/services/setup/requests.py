@@ -3,7 +3,6 @@ from pathlib import Path
 from pydantic import Field, field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
-from codealmanac.services.automation.models import AutomationTask
 from codealmanac.services.cloud_auth.models import (
     DEFAULT_CLOUD_API_URL,
     normalize_api_url,
@@ -44,9 +43,7 @@ class RunUninstallRequest(CodeAlmanacModel):
     targets: tuple[SetupTarget, ...] = DEFAULT_SETUP_TARGETS
     yes: bool = False
     keep_instructions: bool = False
-    keep_automation: bool = False
     home: Path | None = None
-    automation_tasks: tuple[AutomationTask, ...] = ()
 
     @field_validator("targets")
     @classmethod
@@ -55,14 +52,6 @@ class RunUninstallRequest(CodeAlmanacModel):
         value: tuple[SetupTarget, ...],
     ) -> tuple[SetupTarget, ...]:
         return unique_non_empty_targets(value)
-
-    @field_validator("automation_tasks")
-    @classmethod
-    def validate_automation_tasks(
-        cls,
-        value: tuple[AutomationTask, ...],
-    ) -> tuple[AutomationTask, ...]:
-        return unique_tasks(value)
 
 
 def unique_non_empty_targets(
@@ -74,12 +63,4 @@ def unique_non_empty_targets(
             unique.append(target)
     if len(unique) == 0:
         raise ValueError("at least one setup target is required")
-    return tuple(unique)
-
-
-def unique_tasks(tasks: tuple[AutomationTask, ...]) -> tuple[AutomationTask, ...]:
-    unique: list[AutomationTask] = []
-    for task in tasks:
-        if task not in unique:
-            unique.append(task)
     return tuple(unique)

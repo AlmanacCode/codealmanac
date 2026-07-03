@@ -5,7 +5,6 @@ from pydantic import Field, field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
-from codealmanac.services.automation.models import AutomationUninstallResult
 from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.workflows.cloud_login.models import CloudLoginWorkflowResult
 
@@ -66,6 +65,4 @@ class SetupResult(CodeAlmanacModel):
 
 class UninstallResult(CodeAlmanacModel):
     kept_instructions: bool = False
-    kept_automation: bool = False
     changes: tuple[InstructionChange, ...] = ()
-    automation_uninstall: AutomationUninstallResult | None = None

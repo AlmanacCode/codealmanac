@@ -1047,6 +1047,25 @@ def test_cli_setup_and_uninstall_codex_instructions(
     assert not agents_path.exists()
 
 
+def test_cli_uninstall_rejects_root_automation_flags():
+    parser = build_parser()
+
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(["uninstall", "--keep-automation"])
+
+    assert exit_info.value.code == 2
+
+
+def test_cli_uninstall_json_has_no_automation_fields(capsys):
+    exit_code = main(["uninstall", "--yes", "--json"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert "kept_automation" not in payload
+    assert "automation_uninstall" not in payload
+
+
 def test_cli_cloud_login_whoami_and_logout(
     isolated_home: Path,
     monkeypatch,

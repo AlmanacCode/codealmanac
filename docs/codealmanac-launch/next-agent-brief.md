@@ -45,6 +45,13 @@ cloud setup flow.
   `28671661249`; a fresh public `uv tool install --python 3.12 --refresh
   --no-cache --force codealmanac==0.1.8` smoke passed for version, root help,
   and signed-out human/JSON `codealmanac status`.
+- Local package `0.1.9` is ready for publish. Slice 79 removes root
+  `uninstall`'s stale scheduled-automation coupling; wheel smoke proved root
+  uninstall has no `--keep-automation` flag or automation JSON fields, while
+  `codealmanac automation uninstall` still exists.
+- Chrome verified the production CLI setup handshake again from an isolated
+  temp `HOME`; `codealmanac setup --no-browser --target codex --yes` approved
+  through `/cli-login` and completed as `rohans0509`.
 - Fresh production branch push created run
   `773da5fb-9871-4f83-8797-ddf651c635ce`; it delivered with summary
   `No wiki changes made.`
@@ -635,3 +642,24 @@ repaired.
   and `/setup`, with no console errors on `/setup`.
 - Remaining work for the slice: send the RelayForge update and continue into
   the next substantial slice.
+
+## Current Slice 79 Handoff
+
+- Local package version is now `0.1.9`.
+- Root `codealmanac uninstall` removes setup-owned instruction files only.
+  It no longer accepts `--keep-automation` and no longer returns automation
+  fields in JSON.
+- Local scheduled automation remains explicit:
+  `codealmanac automation uninstall`.
+- Architecture tests now guard setup-owned modules against importing the local
+  automation service or automation request types.
+- Full source gates passed: `uv run pytest` (`508 passed`), `uv run ruff
+  check .`, and `git diff --check`.
+- Distribution gates passed: clean `dist/`, Twine checks, isolated Python
+  `3.12.9` wheel install, version smoke, root uninstall help/JSON smoke, and
+  explicit automation uninstall help smoke.
+- Chrome production retry passed from a temp `HOME`: `/cli-login` rendered
+  `CLI login approved`, and `codealmanac setup --no-browser --target codex
+  --yes` completed as `signed_in` for `rohans0509`.
+- Next step: commit and push the slice, run the manual PyPI publish workflow
+  for `0.1.9`, then do a fresh public install smoke and RelayForge update.

@@ -3,7 +3,6 @@ import sys
 from re import sub
 from shutil import get_terminal_size
 
-from codealmanac.cli.render.automation import render_automation_uninstall
 from codealmanac.cli.render.common import print_json_model
 from codealmanac.services.setup.models import (
     InstructionChange,
@@ -65,10 +64,6 @@ def render_uninstall_text(result: UninstallResult) -> None:
         step("Agent instructions", "kept")
     else:
         render_changes("Removed artifacts", result.changes)
-    if result.kept_automation:
-        step("Scheduled automation", "kept")
-    elif result.automation_uninstall is not None:
-        render_automation_uninstall(result.automation_uninstall, json_output=False)
 
 
 def render_banner(title: str, subtitle: str) -> None:

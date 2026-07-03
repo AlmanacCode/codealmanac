@@ -9,11 +9,6 @@ from codealmanac.integrations.setup.instructions import (
     CODEALMANAC_START,
     FileInstructionInstaller,
 )
-from codealmanac.services.automation.models import (
-    AutomationTask,
-    AutomationUninstallResult,
-)
-from codealmanac.services.automation.requests import UninstallAutomationRequest
 from codealmanac.services.setup.models import SetupTarget
 from codealmanac.services.setup.requests import RunSetupRequest, RunUninstallRequest
 from codealmanac.services.setup.service import SetupService
@@ -112,49 +107,14 @@ def test_setup_rejects_scheduler_fields():
         RunSetupRequest(install_automation=True)
 
 
-def test_uninstall_removes_automation_by_default(home: Path):
-    automation = FakeSetupAutomationManager(home)
-
-    result = setup_service(home, automation).uninstall(
-        RunUninstallRequest(targets=(SetupTarget.CODEX,))
-    )
-
-    assert len(automation.uninstalled) == 1
-    assert result.kept_automation is False
-    assert result.automation_uninstall is not None
-    assert result.automation_uninstall.tasks == (
-        AutomationTask.SYNC,
-        AutomationTask.GARDEN,
-    )
-
-
-def test_uninstall_can_keep_automation(home: Path):
-    automation = FakeSetupAutomationManager(home)
-
-    result = setup_service(home, automation).uninstall(
-        RunUninstallRequest(
-            targets=(SetupTarget.CODEX,),
-            keep_automation=True,
-        )
-    )
-
-    assert automation.uninstalled == []
-    assert result.kept_automation is True
-    assert result.automation_uninstall is None
-
-
 @pytest.fixture
 def home(tmp_path: Path) -> Path:
     return tmp_path / "home"
 
 
-def setup_service(
-    home: Path,
-    automation: "FakeSetupAutomationManager | None" = None,
-) -> SetupService:
+def setup_service(home: Path) -> SetupService:
     return SetupService(
         FileInstructionInstaller(home),
-        automation or FakeSetupAutomationManager(home),
         FakeSetupCloudLogin(),
     )
 
@@ -170,21 +130,4 @@ class FakeSetupCloudLogin:
             status="signed_in",
             github_user_id=10,
             github_login="rohans0509",
-        )
-
-
-class FakeSetupAutomationManager:
-    def __init__(self, home: Path):
-        self.home = home
-        self.uninstalled: list[UninstallAutomationRequest] = []
-
-    def uninstall(
-        self,
-        request: UninstallAutomationRequest,
-    ) -> AutomationUninstallResult:
-        self.uninstalled.append(request)
-        tasks = request.tasks or (AutomationTask.SYNC, AutomationTask.GARDEN)
-        return AutomationUninstallResult(
-            tasks=tasks,
-            removed=tuple(self.home / f"{task.value}.plist" for task in tasks),
         )

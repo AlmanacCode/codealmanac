@@ -161,8 +161,8 @@ need no credentials.
 
 Run `codealmanac <command> --help` for the full flag surface. Local schedules
 stay behind explicit local or automation commands. `codealmanac uninstall --yes`
-removes setup-owned local artifacts; `codealmanac uninstall --yes
---keep-automation` leaves local scheduled automation in place.
+removes setup-owned local artifacts; use `codealmanac automation uninstall`
+when you want to remove local scheduled automation.
 
 ## Install troubleshooting
 

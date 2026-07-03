@@ -2,6 +2,50 @@
 
 ## 2026-07-03
 
+## 2026-07-03 Slice 79: Root uninstall automation split
+
+- Planned Slice 79 in
+  `docs/plans/2026-07-03-slice-79-root-uninstall-automation-split.md`.
+- Removed the stale root `codealmanac uninstall --keep-automation` flag.
+  Root uninstall now reverses only root setup-owned local artifacts: global
+  Codex/Claude instruction files.
+- Removed the setup service dependency on local scheduled automation cleanup.
+  Local scheduler teardown remains explicit under
+  `codealmanac automation uninstall`.
+- Removed root uninstall JSON fields for scheduled automation. The result now
+  contains instruction state and instruction changes only.
+- Added architecture coverage so setup-owned modules cannot import the local
+  automation service, `UninstallAutomationRequest`, or `AutomationTask`.
+- Updated README, concepts, decisions, and the CLI contract to make root
+  uninstall vs automation uninstall explicit.
+- Bumped the Python package version from `0.1.8` to `0.1.9`.
+- Focused local verification passed:
+  - `uv run pytest tests/test_setup_service.py tests/test_cli.py::test_cli_setup_and_uninstall_codex_instructions tests/test_cli.py::test_cli_uninstall_rejects_root_automation_flags tests/test_cli.py::test_cli_uninstall_json_has_no_automation_fields tests/test_cli.py::test_cli_setup_rejects_root_automation_flags tests/test_public_contract.py -q`
+    (`38 passed`)
+  - `uv run pytest tests/test_architecture.py -q` (`64 passed`)
+  - `uv run ruff check src/codealmanac/services/setup src/codealmanac/cli/parser/setup.py src/codealmanac/cli/dispatch/setup.py src/codealmanac/cli/render/setup.py tests/test_setup_service.py tests/test_cli.py tests/test_public_contract.py`
+  - `git diff --check`
+- Full local verification passed:
+  - `uv run pytest` (`508 passed`)
+  - `uv run ruff check .`
+- Distribution verification passed:
+  - `rm -rf dist && uv build --out-dir dist`
+  - `uvx twine check dist/*`
+  - isolated Python `3.12.9` venv installed
+    `dist/codealmanac-0.1.9-py3-none-any.whl`
+  - wheel smoke returned `codealmanac --version` = `0.1.9`
+  - wheel smoke verified root `uninstall --help` no longer exposes
+    `--keep-automation`
+  - wheel smoke verified root `uninstall --yes --json` contains no
+    automation fields
+  - wheel smoke verified `codealmanac automation uninstall --help` still exists
+    as the explicit local scheduler teardown surface
+- Chrome production CLI-login retry passed from an isolated temp `HOME`.
+  `codealmanac setup --no-browser --target codex --yes` printed a fresh
+  `/cli-login` URL, Chrome rendered `CLI login approved`, and the terminal
+  completed as `signed_in` for `rohans0509` while installing Codex instructions
+  into the temp home.
+
 ## 2026-07-03 Slice 78: Root cloud status
 
 - Planned Slice 78 in

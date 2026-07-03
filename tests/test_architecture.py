@@ -1303,6 +1303,10 @@ def test_setup_service_stays_split_from_cloud_setup_planning():
     setup_root = SRC_ROOT / "services/setup"
     service = (setup_root / "service.py").read_text(encoding="utf-8")
     planning = (setup_root / "planning.py").read_text(encoding="utf-8")
+    setup_owned_text = "\n".join(
+        (setup_root / name).read_text(encoding="utf-8")
+        for name in ("models.py", "ports.py", "requests.py", "service.py")
+    )
 
     assert {
         "service.py",
@@ -1315,6 +1319,9 @@ def test_setup_service_stays_split_from_cloud_setup_planning():
     assert "DEFAULT_SYNC_INTERVAL" not in service
     assert "SetupAutomationRecommendation" not in service
     assert "def automation_recommendations" not in service
+    assert "codealmanac.services.automation" not in setup_owned_text
+    assert "UninstallAutomationRequest" not in setup_owned_text
+    assert "AutomationTask" not in setup_owned_text
 
     assert "def setup_plan" in planning
     assert "def next_commands" in planning

@@ -100,5 +100,5 @@ Command groups:
 Scheduled automation is local scheduler state. It runs ordinary `codealmanac
 sync` jobs; it is not hosted sync. Root `codealmanac setup` is cloud setup and
 agent instructions only. Local schedules stay behind explicit local or
-automation commands, and `codealmanac uninstall --keep-automation` leaves them
-in place.
+automation commands. `codealmanac uninstall` removes setup-owned instruction
+files only; use `codealmanac automation uninstall` to remove scheduler entries.

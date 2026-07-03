@@ -80,6 +80,8 @@ Status: active.
 - `codealmanac setup` is cloud onboarding.
 - `codealmanac setup` must not install local scheduled automation; local
   automation belongs under the explicit local surface.
+- `codealmanac uninstall` must not remove local scheduled automation; scheduled
+  jobs are managed by `codealmanac automation uninstall`.
 - `codealmanac local setup` is local maintenance setup.
 - `codealmanac local setup` detects the current GitHub checkout, writes the
   repository and branch trigger policy to the local control DB, and installs

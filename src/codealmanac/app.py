@@ -273,7 +273,6 @@ def create_app(
     )
     setup = SetupService(
         instruction_installer or FileInstructionInstaller(),
-        automation,
         cloud_login,
     )
     runs = RunsService(workspaces, RunStore(), jobs_path=app_config.jobs_path)

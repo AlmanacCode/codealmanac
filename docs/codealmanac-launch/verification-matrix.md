@@ -54,6 +54,19 @@ Current evidence:
   --refresh --no-cache --force codealmanac==0.1.8` returned version `0.1.8`,
   showed root `status` in cloud-first help, and rendered signed-out human and
   JSON `codealmanac status` output.
+- Slice 79 split root uninstall from local scheduler cleanup. Full local gates
+  passed with `uv run pytest` (`508 passed`), `uv run ruff check .`, and
+  `git diff --check`.
+- Slice 79 wheel smoke installed
+  `dist/codealmanac-0.1.9-py3-none-any.whl` into an isolated Python `3.12.9`
+  venv. The binary returned version `0.1.9`; root `uninstall --help` no longer
+  exposed `--keep-automation`; root `uninstall --yes --json` emitted no
+  automation fields; and `codealmanac automation uninstall --help` still
+  exposed explicit local scheduler teardown.
+- Slice 79 Chrome production retry proved the setup browser handshake still
+  works after the uninstall split: `codealmanac setup --no-browser --target
+  codex --yes` from an isolated temp `HOME` rendered `CLI login approved` in
+  Chrome and completed as `signed_in` for `rohans0509`.
 - `tests/test_cloud_auth_service.py` proves `~/.codealmanac/auth.json`
   save/load/delete behavior, mode `0600`, malformed-file recovery, identity
   fetch, and logout.
