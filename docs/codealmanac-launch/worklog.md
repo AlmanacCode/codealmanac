@@ -2153,3 +2153,26 @@
 - Focused CodeAlmanac verification passed:
   `uv run pytest tests/test_cloud_repositories_service.py
   tests/test_cloud_repo_workflow.py tests/test_cli.py -q`.
+- Full CodeAlmanac verification passed: `uv run pytest` (`505 passed`),
+  `uv run ruff check src/codealmanac/cli/parser/repo.py`, and
+  `git diff --check`.
+- CodeAlmanac commit `a6da193562e74b63387f457a8099e458eba84f79` was pushed
+  to `origin/dev` and `origin/main`.
+- Hosted backend commit `4c986cf` was pushed to hosted `origin/main`; production
+  `GET https://api.codealmanac.com/v1/repositories?limit=5` returned
+  `AlmanacCode/codealmanac`, repo id `1212149375`, account id `264516179`.
+- GitHub Actions publish run `28667216307` passed and PyPI accepted
+  `codealmanac-0.1.6`.
+- Fresh temp install with
+  `uv tool install --python 3.12 --upgrade --force --refresh codealmanac`
+  installed `0.1.6` and exposed `codealmanac repo list`.
+- The real user install was upgraded from `0.1.4` to `0.1.6` with the same
+  `uv tool install --python 3.12 --upgrade --force --refresh codealmanac`
+  command.
+- Chrome verified a fresh setup from a clean `HOME`:
+  `codealmanac setup --no-browser --yes` opened
+  `https://www.codealmanac.com/cli-login`, rendered `CLI login approved`, saved
+  the CLI token, and installed Codex/Claude instruction files.
+- The same clean Chrome setup `HOME` passed production CLI smoke:
+  `codealmanac whoami`, `codealmanac repo list`, `codealmanac repo status`, and
+  `codealmanac capture status`.

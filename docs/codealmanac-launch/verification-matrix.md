@@ -1497,3 +1497,31 @@ Known residue:
   `/dashboard/local-agent-access?smoke=slice73` contain
   `codealmanac capture enable` and do not contain stale setup-capture install
   wording.
+
+## Slice 75 Cloud Repo List
+
+- Hosted `GET /v1/repositories` returns repositories mirrored from GitHub App
+  installations visible to the signed-in CLI user.
+- The route intentionally does not fan out to per-repository collaborator
+  permission checks, avoiding the GitHub user-token rate-limit hot path found in
+  Slice 74.
+- `codealmanac repo list [--limit N] [--cursor C] [--json]` is the canonical
+  public command; `repos` remains intentionally absent.
+- Hosted focused tests passed:
+  `uv run pytest tests/test_cli_repositories_api_contract.py
+  tests/test_repositories_api_contract.py tests/test_core_access_contracts.py
+  tests/test_repositories_contract.py`.
+- CodeAlmanac full verification passed: `uv run pytest` (`505 passed`), Ruff
+  on the touched CLI parser, and `git diff --check`.
+- Production API smoke passed:
+  `GET https://api.codealmanac.com/v1/repositories?limit=5` returned
+  `AlmanacCode/codealmanac`, repo id `1212149375`, account id `264516179`.
+- GitHub Actions publish run `28667216307` passed; PyPI accepted
+  `codealmanac-0.1.6`.
+- Fresh temp install with
+  `uv tool install --python 3.12 --upgrade --force --refresh codealmanac`
+  installed `0.1.6` and exposed `codealmanac repo list`.
+- Chrome verified fresh setup from a clean `HOME`; the hosted
+  `/cli-login` page rendered `CLI login approved`, the terminal saved the CLI
+  token, and the same clean `HOME` passed `whoami`, `repo list`, `repo status`,
+  and `capture status` against production.
