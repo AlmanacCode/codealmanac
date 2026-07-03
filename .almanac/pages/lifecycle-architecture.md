@@ -1,8 +1,6 @@
 ---
 title: Lifecycle Architecture
-summary: >-
-  Lifecycle architecture is the reading map for Almanac's AI write operations, provider execution
-  layer, job records, CLI commands, and scheduled maintenance tasks.
+summary: Lifecycle architecture is the reading map for CodeAlmanac's AI write operations, provider execution layer, repo-local job records, CLI commands, and scheduled maintenance tasks.
 topics:
   - agents
   - flows
@@ -11,88 +9,92 @@ topics:
 sources:
   - id: operations
     type: file
-    path: src/operations/
-    note: Defines the Build, Absorb, Garden, and shared operation modules that construct provider-neutral operation specs.
-  - id: operation-command
+    path: src/codealmanac/workflows/
+    note: Defines init, ingest, garden, sync, and shared lifecycle workflows in the active Python codebase.
+  - id: app-composition
     type: file
-    path: src/cli/commands/operations.ts
-    note: Implements command helpers that start foreground and background lifecycle operation runs.
-  - id: register-wiki-lifecycle-commands
+    path: src/codealmanac/app.py
+    note: Wires lifecycle workflows, the job ledger, the job queue, harnesses, and viewer services through the composition root.
+  - id: lifecycle-parser
     type: file
-    path: src/cli/register-wiki-lifecycle-commands.ts
-    note: Registers the public lifecycle command surface for init, absorb, ingest, sync, garden, and jobs-related routing.
+    path: src/codealmanac/cli/parser/lifecycle.py
+    note: Registers public lifecycle command parsing for init and hidden sync plus dev ingest/garden wiring.
+  - id: jobs-parser
+    type: file
+    path: src/codealmanac/cli/parser/jobs.py
+    note: Registers the hidden jobs inspection surface with `job_id` arguments.
   - id: jobs-layer
     type: file
-    path: src/jobs/
-    note: Stores durable job records, logs, snapshots, queue behavior, and background worker execution for lifecycle runs.
+    path: src/codealmanac/jobs/
+    note: Stores repo-local lifecycle job records, logs, queue specs, worker locks, and background queue behavior.
   - id: harness
     type: file
-    path: src/harness/
-    note: Defines the provider-neutral harness request and provider adapters that execute operation specs.
+    path: src/codealmanac/engine/harnesses/
+    note: Defines provider-neutral harness requests and provider adapters that execute lifecycle prompts.
   - id: automation
     type: file
-    path: src/platform/automation/
+    path: src/codealmanac/services/automation/
     note: Implements scheduled sync, Garden, and update task configuration for recurring lifecycle work.
   - id: purpose-prompt
     type: file
-    path: prompts/base/purpose.md
+    path: src/codealmanac/prompts/base/purpose.md
     note: Defines Almanac's project-memory purpose for lifecycle operations.
   - id: notability-prompt
     type: file
-    path: prompts/base/notability.md
+    path: src/codealmanac/prompts/base/notability.md
     note: Defines page notability and graph-structure rules used by lifecycle operations.
-  - id: build-prompt
+  - id: init-prompt
     type: file
-    path: prompts/operations/build.md
-    note: Defines the Build operation's first-wiki algorithm.
-  - id: absorb-prompt
+    path: src/codealmanac/prompts/operations/init.md
+    note: Defines the init operation's first-wiki algorithm.
+  - id: ingest-prompt
     type: file
-    path: prompts/operations/absorb.md
-    note: Defines the Absorb operation's source-distillation algorithm.
+    path: src/codealmanac/prompts/operations/ingest.md
+    note: Defines the ingest operation's source-distillation algorithm.
   - id: garden-prompt
     type: file
-    path: prompts/operations/garden.md
-    note: Defines the Garden operation's graph-maintenance algorithm.
+    path: src/codealmanac/prompts/operations/garden.md
+    note: Defines the garden operation's graph-maintenance algorithm.
 status: active
-verified: 2026-05-14T00:00:00.000Z
+verified: 2026-07-03
 
 ---
 
 # Lifecycle Architecture
 
-Lifecycle architecture is the cluster that explains how Almanac performs write-capable wiki work. It spans product operations, command routing, provider-neutral execution specs, provider adapters, durable job records, transcript sync, and scheduled maintenance. [@operations] [@operation-command] [@jobs-layer] [@harness] [@automation]
+Lifecycle architecture is the cluster that explains how CodeAlmanac performs write-capable wiki work. It spans product workflows, command routing, provider-neutral harness execution, repo-local job records, transcript sync, and scheduled maintenance. [@operations] [@app-composition] [@jobs-layer] [@harness] [@automation]
 
-Start with [[wiki-lifecycle-operations]] when the question is "what semantic operation is this?" Start with [[lifecycle-cli]] when the question is "what command did the user run?" Start with [[process-manager-runs]] when the question is "what happened during a job?" Start with [[harness-providers]] when the question is "how does this reach Claude, Codex, Cursor, or another runtime?"
+Start with [[wiki-lifecycle-operations]] when the question is "what semantic operation is this?" Start with [[lifecycle-cli]] when the question is "what command did the user run?" Start with [[process-manager-runs]] when the question is "what happened during a lifecycle job?" Start with [[harness-providers]] when the question is "how does this reach Claude, Codex, Cursor, or another runtime?"
 
 ## Core Read Order
 
-[[wiki-lifecycle-operations]] is the conceptual overview. Build, Absorb, and Garden are semantic modes encoded by prompts and operation code, not generic names for "run an agent."
+[[wiki-lifecycle-operations]] is the conceptual overview. Init, ingest, and garden are semantic modes encoded by prompts and workflow code, not generic names for "run an agent."
 
-[[operation-prompts]] explains the base doctrine and operation-specific algorithms that give Build, Absorb, and Garden their judgment rules. Prompt edits are the first place to improve wiki-writing behavior when the missing behavior is editorial judgment rather than deterministic plumbing. [@purpose-prompt] [@notability-prompt] [@build-prompt] [@absorb-prompt] [@garden-prompt]
+[[operation-prompts]] explains the base doctrine and operation-specific algorithms that give init, ingest, and garden their judgment rules. Prompt edits are the first place to improve wiki-writing behavior when the missing behavior is editorial judgment rather than deterministic plumbing. [@purpose-prompt] [@notability-prompt] [@init-prompt] [@ingest-prompt] [@garden-prompt]
 
-[[lifecycle-cli]] maps public commands to operations and job behavior. It is the command-surface reference for `init`, `absorb`, `ingest`, `sync`, `garden`, `jobs`, `serve`, `setup`, and `automation`. [@register-wiki-lifecycle-commands]
+[[lifecycle-cli]] maps public commands to operations and job behavior. It is the command-surface reference for `init`, `sync`, `jobs`, `serve`, `setup`, automation, and the developer ingest/garden surfaces. [@lifecycle-parser] [@jobs-parser]
 
-[[process-manager-runs]] owns job records, background spawn, event logs, cancellation, snapshots, reindex-on-success, and jobs inspection. It is the storage and observability layer for operation execution.
+[[process-manager-runs]] owns repo-local lifecycle job records, background spawn, event logs, cancellation, queue specs, worker locks, attach streaming, reindex-on-success, and jobs inspection. It is the storage and observability layer for init, ingest, garden, and sync-started ingest execution. It deliberately does not own cloud runs or branch-triggered local runs.
 
-[[harness-providers]] owns the runtime adapter boundary. Operations create provider-neutral `OperationSpec` values; adapters translate those specs into Claude SDK calls, Codex app-server turns, Cursor placeholders, or future runtimes.
+[[harness-providers]] owns the runtime adapter boundary. Workflows create provider-neutral harness requests; adapters translate those requests into Claude, Codex, or future runtimes.
 
 ## Operation Pages
 
-[[build-operation]] is the first-wiki creation path behind `almanac init`. It matters when work touches onboarding, initial corpus exploration, populated-wiki refusal, or first-run UX.
+[[build-operation]] is historical naming for the first-wiki creation path now surfaced as `codealmanac init`. It matters when work touches onboarding, initial corpus exploration, populated-wiki refusal, or first-run UX.
 
-[[capture-flow]] is the transcript-to-Absorb path. It matters when work touches session transcript resolution, capture cost, Codex/Claude transcript stores, or the boundary between raw transcript input and durable project memory.
+[[capture-flow]] is the transcript-to-ingest path. It matters when work touches session transcript resolution, capture cost, Codex/Claude transcript stores, or the boundary between raw transcript input and durable project memory.
 
-[[ingest-operation]] is the manual file/folder-to-Absorb path. It matters when work touches explicit user-supplied context that is not a coding-session transcript.
+[[ingest-operation]] is the explicit bounded-source ingest path. It matters when work touches user-supplied files, folders, git ranges, source refs, or other concrete source material that should be distilled into durable wiki memory.
 
 [[capture-automation]] and [[capture-ledger]] explain scheduled quiet-session capture. Read them together when changing sweep eligibility, quiet windows, dedupe, pending reconciliation, or cursor semantics.
 
-[[automation]] explains recurring scheduled tasks: sync, Garden, and opt-in self-update. [[self-update]] is the global package mutation path scheduled automation can invoke, but package mutation remains owned by the update command.
+[[automation]] explains recurring scheduled tasks such as sync and garden. [[self-update]] is the global package mutation path scheduled automation can invoke, but package mutation remains owned by the update command.
 
 ## Boundaries To Preserve
 
-Operations own wiki semantics and construct operation specs. They do not know provider SDKs, prompt transport protocols, launchd details, or job-record file formats.
+Lifecycle workflows own wiki semantics and construct harness requests. They do not know provider SDKs, prompt transport protocols, launchd details, or job-record file formats.
 
-The jobs layer owns execution lifecycle and durable observability. It does not decide whether a transcript is worth syncing, whether a page deserves to exist, or how provider-specific auth works.
+The jobs layer owns repo-local lifecycle execution state and durable observability. It does not decide whether a transcript is worth syncing, whether a page deserves to exist, how provider-specific auth works, or how cloud/local trigger runs are delivered.
 
 Harness providers own runtime execution truth. They must reject unsupported spec fields or report unsupported capabilities rather than silently pretending a provider honored a request.
 
@@ -104,4 +106,4 @@ Agent readiness, auth checks, global instruction installation, and persisted pro
 
 [[sessionend-hook]] is archived history for hook-based automatic capture. Current automatic sync is scheduler-only and must pass through sync sweep, ledger, and job records.
 
-The deleted `almanac bootstrap` and old writer/reviewer capture pipeline are historical names. Current runtime guidance should point to [[build-operation]], [[wiki-lifecycle-operations]], [[operation-prompts]], and [[process-manager-runs]].
+Deleted bootstrap/build surfaces and the old writer/reviewer capture pipeline are historical names. Current runtime guidance should point to `codealmanac init`, [[wiki-lifecycle-operations]], [[operation-prompts]], and [[process-manager-runs]].
