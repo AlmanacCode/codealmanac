@@ -122,10 +122,10 @@ CodeAlmanac:
 
 - repo: `/Users/rohan/Desktop/Projects/codealmanac`
 - branch: `dev`
-- current launch-docs commit before Slice 58 docs:
-  `d65392818f6d22f6b963b20259344bcd759b8dd1`
+- current launch-docs commit after Slice 58 docs:
+  `dfc4ea478b0164144d668258dcd9dc3f2cd722b3`
 - `origin/dev` and `origin/main` both point at
-  `d65392818f6d22f6b963b20259344bcd759b8dd1`
+  `dfc4ea478b0164144d668258dcd9dc3f2cd722b3`
 - package version in `pyproject.toml`: `0.1.0`
 - PyPI live version checked on 2026-07-02: `0.1.0`
 
