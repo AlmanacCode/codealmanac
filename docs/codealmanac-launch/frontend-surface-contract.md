@@ -86,10 +86,10 @@ Implemented in Slice 50:
 
 `/setup` is the browser-owned cloud setup hub. It requires a WorkOS/AuthKit
 browser session, presents GitHub App installation when needed, lists connected
-GitHub accounts when available, and shows the Python CLI command:
+GitHub accounts when available, and shows the public installer command:
 
 ```text
-uv tool install codealmanac
+curl -fsSL https://www.codealmanac.com/install.sh | sh
 codealmanac setup
 ```
 

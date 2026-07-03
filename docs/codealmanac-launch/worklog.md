@@ -1811,3 +1811,25 @@
   binary printed a `https://www.codealmanac.com/cli-login` URL, Chrome showed
   `CLI login approved`, and `whoami` returned `rohans0509` with cloud
   `https://api.codealmanac.com`.
+- Slice 65 adds the public installer path. CodeAlmanac now has
+  `scripts/install.sh`, and hosted serves the same bytes from
+  `frontend/public/install.sh` at `/install.sh`.
+- The installer uses Astral's official `uv` installer when needed, runs
+  `uv tool install --python 3.12 --upgrade --force codealmanac`, and warns when
+  an existing `codealmanac` earlier on `PATH` would shadow the installed PyPI
+  tool.
+- Slice 65 restored the README's old banner/product voice while making the
+  first install line `curl -fsSL https://www.codealmanac.com/install.sh | sh`.
+  The manual install path remains
+  `uv tool install --python 3.12 codealmanac`.
+- Hosted landing, `/setup`, `/dashboard/local-agent-access`, and design-lab
+  experiment copy now use the same curl-first install command.
+- Hosted frontend config now defaults to `https://api.codealmanac.com`, not the
+  Render service URL, when no backend env override is set.
+- Slice 65 verification passed: `sh -n` for both installer files,
+  byte-for-byte installer comparison, CodeAlmanac public-contract tests
+  (`26 passed`), full CodeAlmanac tests (`501 passed`), CodeAlmanac ruff,
+  hosted route tests (`28 passed`), hosted frontend tests (`52 passed`), hosted
+  lint, hosted Next build, and a temp-dir installer smoke that installed
+  `codealmanac==0.1.2` while correctly warning about the stale Node-era
+  `/Users/rohan/.nvm/versions/node/v21.7.3/bin/codealmanac` shadow.

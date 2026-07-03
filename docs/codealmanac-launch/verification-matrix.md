@@ -1185,3 +1185,35 @@ Current evidence:
   `uv tool install --python 3.12 --refresh --no-cache codealmanac` installed
   `0.1.2`, `capture status --json` reported the canonical API URL, and the
   installed CLI completed Chrome `/cli-login` approval with no `--api-url`.
+
+## Slice 65 Public Installer And README Contract
+
+- `scripts/install.sh` is the source public installer in CodeAlmanac.
+- Hosted serves the same installer from `frontend/public/install.sh`, so
+  `https://www.codealmanac.com/install.sh` can be a static file.
+- The README and hosted onboarding surfaces use
+  `curl -fsSL https://www.codealmanac.com/install.sh | sh` as the first public
+  install command.
+- Manual install remains
+  `uv tool install --python 3.12 codealmanac`.
+- Hosted frontend `BACKEND_BASE_URL` fallback is now
+  `https://api.codealmanac.com`; Render remains a provider deployment detail,
+  not a default product URL.
+- Installer contract tests prove the script uses Astral `uv`, installs through
+  `uv tool install`, does not contain npm/npx install paths, and reports
+  existing `codealmanac` PATH shadows.
+- Verification passed:
+  - `sh -n scripts/install.sh`
+  - `sh -n frontend/public/install.sh`
+  - byte-for-byte installer comparison
+  - `uv run pytest tests/test_public_contract.py -q` (`26 passed`)
+  - `uv run pytest -q` (`501 passed`)
+  - `uv run ruff check .`
+  - hosted `npm run test:routes` (`28 passed`)
+  - hosted `npm run test:frontend` (`52 passed`)
+  - hosted `npm run lint`
+  - hosted `npm run build`
+  - temp-dir installer smoke installed `codealmanac==0.1.2` and warned about
+    the stale Node-era binary shadowing the installed PyPI tool.
+- Remaining proof after deploy: live `curl -fsSL
+  https://www.codealmanac.com/install.sh | sed -n '1,80p'`.

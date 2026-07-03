@@ -183,6 +183,31 @@ Slice 63 pressure-tests production setup and repository settings:
 - the temporary production mutation was restored: `main` is disabled and its
   delivery mode is `commit`
 
+Slice 64 publishes canonical cloud endpoint defaults:
+
+- CodeAlmanac package version is `0.1.2`
+- PyPI `0.1.2` defaults to `https://api.codealmanac.com` and
+  `https://www.codealmanac.com`
+- fresh PyPI install and Chrome `/cli-login` approval worked without
+  `--api-url`
+- `codealmanac setup --no-browser --skip-instructions` from a temp HOME signed
+  in as `rohans0509`
+
+Slice 65 adds the public installer and curl-first onboarding:
+
+- `scripts/install.sh` installs through Astral `uv` and `uv tool install`
+- hosted serves the exact same script from `frontend/public/install.sh`
+- README, landing, `/setup`, `/dashboard/local-agent-access`, and design-lab
+  install copy now use
+  `curl -fsSL https://www.codealmanac.com/install.sh | sh`
+- manual install remains `uv tool install --python 3.12 codealmanac`
+- installer smoke with temp dirs correctly warned that the stale Node-era
+  `/Users/rohan/.nvm/versions/node/v21.7.3/bin/codealmanac` shadows the PyPI
+  tool on this machine
+- local verification passed: CodeAlmanac full tests (`501 passed`), ruff,
+  hosted route tests (`28 passed`), hosted frontend tests (`52 passed`),
+  hosted lint, and hosted Next build
+
 ## Current Repo State
 
 CodeAlmanac:
@@ -220,10 +245,12 @@ CodeAlmanac:
   `/Users/rohan/.local/bin/codealmanac` also reports stale `0.1.0.dev0` without
   cloud `setup`. Use `uv run codealmanac` inside this repo or a fresh
   `uv tool install` binary when verifying the Python package.
-- Local working tree note at handoff: a large `README.md` rewrite,
-  `docs/assets/`, and
-  `docs/plans/2026-07-03-github-webhook-contract-hardening.md` were
-  uncommitted and not part of the released `0.1.1` artifact.
+- Local working tree note at handoff: Slice 65 currently owns the README
+  rewrite, `docs/assets/`, `scripts/install.sh`, public-contract tests, and
+  launch-folder updates. The pre-existing
+  `docs/plans/2026-07-03-github-webhook-contract-hardening.md` remains
+  untracked and should not be swept into the installer slice unless the next
+  work intentionally resumes GitHub webhook planning.
 
 Hosted:
 
@@ -238,6 +265,9 @@ Hosted:
   checklist, production WorkOS identity schema repair, and capture-token
   storage repair, GitHub webhook event-header routing, branch-trigger delivery
   loop protection, and Slice 63 frontend production fixes through `47b1ada`.
+- Slice 65 hosted worktree currently has frontend install-copy changes,
+  `frontend/public/install.sh`, and the product API fallback change. Commit,
+  push, deploy, and live `/install.sh` curl smoke are still pending.
 
 The local wiki command currently fails on this checkout with:
 

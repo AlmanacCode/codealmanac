@@ -27,28 +27,34 @@ README_REQUIRED_FRAGMENTS = (
     "Custom repo wiki roots: any safe repo-relative directory via `--root`",
     "User state root: `~/.codealmanac/`",
     "Python 3.12+",
-    "uv tool install codealmanac",
-    "codealmanac setup",
+    "Install: `curl -fsSL https://www.codealmanac.com/install.sh | sh`",
+    "Manual install: `uv tool install --python 3.12 codealmanac`",
+    "codealmanac setup           # GitHub sign-in + agent instructions",
     "codealmanac setup --no-browser",
     "codealmanac login",
     "codealmanac whoami",
     "codealmanac capture status",
-    "codealmanac capture enable --target codex",
+    "codealmanac capture enable  # capture Codex/Claude sessions as source",
+    "codealmanac repo setup      # configure the current repo in the browser",
+    "codealmanac repo triggers enable <branch> --delivery pr\\|commit",
+    "codealmanac runs start --branch <branch>",
     "codealmanac init",
     'codealmanac search "getting"',
     "codealmanac serve",
-    "codealmanac local setup --branch main",
+    "codealmanac local setup --branch main --delivery commit",
     "codealmanac local update --using codex",
     "codealmanac local triggers enable dev --delivery commit",
     "codealmanac local jobs list",
     "## What gets created",
     "A folder counts as a CodeAlmanac wiki only when it has both",
-    "`topics.yaml` and `pages/`",
+    "has both `topics.yaml` and",
+    "`pages/`. Derived local state appears",
     "Derived local state appears when commands need it:",
-    "Local schedules stay behind explicit local or automation commands.",
+    "Local schedules\nstay behind explicit local or automation commands.",
     "codealmanac uninstall --yes",
-    "codealmanac uninstall --yes --keep-automation",
-    "Cloud commands: `setup`, `login`, `whoami`, `logout`, `capture`.",
+    "codealmanac uninstall --yes\n--keep-automation",
+    "Cloud commands: `setup`, `login`, `whoami`, `logout`, `capture`, `repo`,",
+    "uv tool dir --bin",
 )
 
 README_FORBIDDEN_FRAGMENTS = (
@@ -165,6 +171,24 @@ def test_readme_documents_python_cloud_first_public_surface():
         assert fragment not in readme
 
 
+def test_public_installer_uses_uv_tool_and_reports_path_shadows():
+    installer = (PROJECT_ROOT / "scripts/install.sh").read_text(encoding="utf-8")
+
+    assert installer.startswith("#!/bin/sh\n")
+    assert "https://astral.sh/uv/install.sh" in installer
+    assert (
+        'uv tool install --python "$PYTHON_VERSION" --upgrade --force "$PACKAGE_SPEC"'
+        in installer
+    )
+    assert "uv tool dir --bin" in installer
+    assert 'ORIGINAL_CODEALMANAC="$(command -v codealmanac' in installer
+    assert 'if [ -n "$ORIGINAL_CODEALMANAC" ]' in installer
+    assert "Your shell currently resolves codealmanac to:" in installer
+    assert 'prepend_path_if_present "$tool_bin_dir"' not in installer
+    assert "npm" not in installer
+    assert "npx" not in installer
+
+
 def test_user_facing_docs_do_not_advertise_node_or_old_state_paths():
     docs = {
         "CONTRIBUTING.md": (PROJECT_ROOT / "CONTRIBUTING.md").read_text(
@@ -217,7 +241,24 @@ def test_readme_lifecycle_examples_parse_public_local_commands():
     commands = readme_section(readme, "## Commands")
     parser = build_parser()
 
-    parser.parse_args(("local", "setup", "--branch", "main"))
+    parser.parse_args(("setup",))
+    parser.parse_args(("setup", "--no-browser"))
+    parser.parse_args(("capture", "status"))
+    parser.parse_args(("capture", "enable"))
+    parser.parse_args(("repo", "setup"))
+    parser.parse_args(
+        (
+            "repo",
+            "triggers",
+            "enable",
+            "dev",
+            "--delivery",
+            "commit",
+        )
+    )
+    parser.parse_args(("runs", "list"))
+    parser.parse_args(("runs", "start", "--branch", "main"))
+    parser.parse_args(("local", "setup", "--branch", "main", "--delivery", "commit"))
     parser.parse_args(("local", "update", "--using", "codex"))
     parser.parse_args(
         (
