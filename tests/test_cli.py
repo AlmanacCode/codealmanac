@@ -11,6 +11,7 @@ import pytest
 
 from codealmanac import __version__
 from codealmanac.app import create_app
+from codealmanac.cli.dispatch.setup import setup_login_browser_mode
 from codealmanac.cli.main import build_parser, main
 from codealmanac.core.models import AppConfig
 from codealmanac.core.paths import default_jobs_path, normalize_path
@@ -1019,11 +1020,14 @@ def test_cli_setup_and_uninstall_codex_instructions(
     agents_path = isolated_home / ".codex/AGENTS.md"
     assert exit_code == 0
     assert "CodeAlmanac setup" in captured.out
+    assert "\x1b[38;5;255m" in captured.out
     assert "█████" in captured.out
     assert "Cloud setup and agent instructions." in captured.out
     assert "Agent instructions" in captured.out
     assert "codex" in captured.out
-    assert "Next" in captured.out
+    assert "Next steps" in captured.out
+    assert "╭" in captured.out
+    assert "╰" in captured.out
     assert "codealmanac capture enable" in captured.out
     assert "codealmanac repo setup" in captured.out
     assert "codealmanac automation install" not in captured.out
@@ -1959,6 +1963,18 @@ def test_cli_setup_rejects_root_automation_flags():
     assert exit_info.value.code == 2
 
 
+def test_cli_setup_yes_does_not_force_browser_open():
+    parser = build_parser()
+
+    yes_args = parser.parse_args(["setup", "--yes"])
+    no_browser_args = parser.parse_args(["setup", "--no-browser"])
+    json_args = parser.parse_args(["setup", "--json"])
+
+    assert setup_login_browser_mode(yes_args) == "prompt"
+    assert setup_login_browser_mode(no_browser_args) == "never"
+    assert setup_login_browser_mode(json_args) == "silent"
+
+
 def test_cli_list_outputs_registered_wikis(
     tmp_path: Path,
     isolated_home: Path,
@@ -2241,7 +2257,7 @@ def test_cli_doctor_json_reports_no_wiki(
     assert '"fix": "run: codealmanac init"' in output.out
 
 
-def test_cli_help_includes_serve(capsys):
+def test_cli_help_is_cloud_first_and_hides_compatibility_commands(capsys):
     parser = build_parser()
 
     with pytest.raises(SystemExit) as exit_info:
@@ -2249,13 +2265,19 @@ def test_cli_help_includes_serve(capsys):
 
     output = capsys.readouterr()
     assert exit_info.value.code == 0
+    assert "CodeAlmanac wikis for GitHub repositories" in output.out
+    assert output.out.index("setup") < output.out.index("local")
+    assert output.out.index("repo") < output.out.index("local")
     assert "serve" in output.out
-    assert "jobs" in output.out
-    assert "sync" in output.out
     assert "automation" in output.out
+    assert "jobs" not in output.out
+    assert "sync" not in output.out
     assert "ingest" not in output.out
     assert "garden" not in output.out
     assert "dev" not in output.out
+
+    parser.parse_args(["sync", "status"])
+    parser.parse_args(["jobs"])
 
 
 def test_cli_lifecycle_dev_commands_are_hidden_from_public_parser():

@@ -27,6 +27,15 @@ Current evidence:
   compatibility.
 - Slice 27 added `codealmanac login`, `codealmanac whoami`, and
   `codealmanac logout`.
+- Slice 77 Chrome production retry proved the end-to-end CLI login loop from
+  an isolated temp `HOME`: local `codealmanac login --force --no-browser`
+  printed a fresh `https://www.codealmanac.com/cli-login` URL, Chrome rendered
+  `CLI login approved`, the terminal completed with `Signed in as rohans0509`,
+  `codealmanac whoami` succeeded, and `codealmanac repo status` resolved
+  `AlmanacCode/codealmanac` on `dev` with `triggers: 3`.
+- Slice 77 CLI launch-surface verification proved root help is cloud-first,
+  hidden compatibility parsers still parse `sync status` and `jobs`, and
+  `setup --yes` stays in prompt-mode instead of silently opening the browser.
 - `tests/test_cloud_auth_service.py` proves `~/.codealmanac/auth.json`
   save/load/delete behavior, mode `0600`, malformed-file recovery, identity
   fetch, and logout.

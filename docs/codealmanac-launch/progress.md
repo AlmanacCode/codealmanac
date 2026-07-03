@@ -6,9 +6,9 @@ Updated: 2026-07-03.
 This file tracks the rough percentage estimates used in RelayForge updates.
 Percentages are planning estimates, not accounting metrics.
 
-## Latest RelayForge Update
+## Latest Local Verification Update
 
-Sent: 2026-07-03 after Slice 76 hosted repository-settings UX verification.
+Prepared: 2026-07-03 after Slice 77 CLI launch-surface verification.
 
 Route:
 
@@ -19,16 +19,18 @@ doppler run --project almanac --config dev -- \
   --binding rohan-almanac-main "..."
 ```
 
-Published CLI `0.1.6` includes the canonical `codealmanac repo list` command,
-production `/v1/repositories` works, and Chrome verified the live hosted
-repository settings page after the Vercel deployment.
+Local package `0.1.7` makes root help cloud-first, hides stale root
+compatibility entrypoints, keeps `setup --yes` from silently opening a browser,
+and uses the OpenAlmanac-style setup output. Chrome verified the live
+production CLI-login loop and `/setup` page from an isolated temp `HOME`.
+RelayForge should be updated after the PyPI publish/smoke completes.
 
 ## Percentages
 
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
-| CodeAlmanac backend/local | 97% | 97% | No local engine change in Slice 76; previous full suite passed with the repo-list service/workflow additions. |
-| CodeAlmanac CLI/public UX | 100% | 100% | Published CLI `0.1.6` setup/whoami/repo list/repo status/capture status passed against production from a clean Chrome-approved HOME. |
+| CodeAlmanac backend/local | 97% | 97% | No local engine change in Slice 77; previous full suite passed with the repo-list service/workflow additions. |
+| CodeAlmanac CLI/public UX | 100% | 100% | Local `0.1.7` launch surface tests passed and Chrome verified CLI login plus repo status against production; publish/smoke still needs to land before the RelayForge update. |
 | CodeAlmanac-hosted backend/auth/API | 100% | 100% | Slice 75 added production `/v1/repositories`; production repo list and repo status pass without per-repo permission fanout. |
 | Hosted frontend/onboarding | 100% | 99% | Slice 76 shipped repository readiness, capture handoff, maintained branches, and per-branch delivery to Vercel; Chrome verified production with no console errors. |
 | Infra/deploy rename | 99% | 99% | Hosted frontend deployed to Vercel production at `bff009b` and aliased to `https://www.codealmanac.com`. |

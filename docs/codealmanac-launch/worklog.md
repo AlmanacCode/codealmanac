@@ -2,6 +2,45 @@
 
 ## 2026-07-03
 
+## 2026-07-03 Slice 77: CLI launch surface polish
+
+- Planned Slice 77 in
+  `docs/plans/2026-07-03-slice-77-cli-launch-surface-polish.md`.
+- Made root CLI help cloud-first. The public command order now starts with
+  `open`, `setup`, `login`, `whoami`, `capture`, `repo`, and `runs`; local/dev
+  and wiki-admin commands stay lower in the help.
+- Hid stale compatibility entrypoints `sync` and `jobs` from root help while
+  preserving their parsers for existing callers.
+- Changed `codealmanac setup --yes` so it no longer silently opens a browser.
+  Setup uses prompt-mode unless the user explicitly asks for `--no-browser` or
+  machine-readable `--json`.
+- Reworked setup rendering to match the OpenAlmanac CLI feel: ANSI logo,
+  diamond progress markers, and a boxed `Next steps` section.
+- Bumped the Python package version from `0.1.6` to `0.1.7`.
+- Focused local verification passed:
+  - `uv run pytest tests/test_cli.py tests/test_public_contract.py tests/test_cloud_login_workflow.py -q`
+    (`90 passed`)
+  - `uv run ruff check src/codealmanac/cli src/codealmanac/integrations/cloud_login.py tests/test_cli.py tests/test_public_contract.py tests/test_cloud_login_workflow.py`
+  - `git diff --check`
+- Distribution verification passed:
+  - `rm -rf dist && uv build --out-dir dist`
+  - `uvx twine check dist/*`
+  - isolated Python `3.12.9` venv installed
+    `dist/codealmanac-0.1.7-py3-none-any.whl`
+  - wheel smoke returned `codealmanac --version` = `0.1.7`
+  - wheel smoke showed cloud-first root help with hidden `sync` / `jobs`
+  - wheel smoke rendered the OpenAlmanac-style setup output with boxed
+    `Next steps`
+- Chrome production CLI-login retry passed from an isolated temp `HOME`.
+  `codealmanac login --force --no-browser` printed a fresh
+  `https://www.codealmanac.com/cli-login` URL, Chrome rendered
+  `CLI login approved`, the terminal completed with `Signed in as rohans0509`,
+  `codealmanac whoami` succeeded, and `codealmanac repo status` resolved
+  `AlmanacCode/codealmanac` on `dev` with `triggers: 3`.
+- Chrome verified production `https://www.codealmanac.com/setup` with
+  `rohans0509`, `AlmanacCode`, GitHub connected, the curl install command, and
+  `codealmanac setup`; console errors were empty.
+
 ## 2026-07-03 Slice 76: Hosted repository settings UX
 
 - Planned Slice 76 in

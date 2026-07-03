@@ -19,7 +19,6 @@ Status: active.
 ## Implementation
 
 - Which Python CLI auto-update library should be used?
-- Which compatibility commands remain hidden aliases during the CLI migration?
 
 ## Future Work
 

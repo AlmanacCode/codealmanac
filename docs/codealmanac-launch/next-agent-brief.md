@@ -29,6 +29,14 @@ cloud setup flow.
   after the Slice 76 Vercel deployment. The page shows repository readiness,
   GitHub settings, CLI guide, capture handoff, branch rows, delivery controls,
   and no console errors.
+- Slice 77 local CLI verification passed for the launch surface:
+  root help is cloud-first, `sync` and `jobs` are hidden compatibility
+  entrypoints, setup uses OpenAlmanac-style output, and `setup --yes` no longer
+  silently opens a browser.
+- Chrome verified the production CLI-login loop again from an isolated temp
+  `HOME`: `codealmanac login --force --no-browser` printed a fresh
+  `/cli-login` URL, Chrome showed `CLI login approved`, `whoami` succeeded, and
+  `repo status` resolved `AlmanacCode/codealmanac` on `dev` with `triggers: 3`.
 - Fresh production branch push created run
   `773da5fb-9871-4f83-8797-ddf651c635ce`; it delivered with summary
   `No wiki changes made.`
@@ -594,3 +602,22 @@ repaired.
 - Next useful work is not another settings-copy slice. Prefer either real
   GitHub App onboarding/install-path pressure testing or the larger codebase
   sharpening pass Rohan requested.
+
+## Current Slice 77 Handoff
+
+- Local package version is now `0.1.7`.
+- Root help is cloud-first and starts with open/setup/auth/capture/repo/runs.
+  `sync` and `jobs` still parse for compatibility but are hidden from help.
+- `codealmanac setup --yes` stays in prompt-mode; only `--no-browser` forces
+  no-browser mode, and `--json` stays silent/machine-readable.
+- Setup output uses the OpenAlmanac-style ANSI logo, diamond status markers,
+  and boxed `Next steps`.
+- Focused gates passed: CLI/public-contract/cloud-login pytest (`90 passed`),
+  ruff on the touched CLI/login files, and `git diff --check`.
+- Distribution gates passed: `uv build --out-dir dist`, `uvx twine check
+  dist/*`, and an isolated Python `3.12.9` wheel install smoke for version,
+  root help, and setup output.
+- Chrome production retry passed for `/cli-login`, `whoami`, `repo status`,
+  and `/setup`, with no console errors on `/setup`.
+- Remaining work for the slice: publish `0.1.7` to PyPI through GitHub
+  Actions, smoke a fresh public install, then send the RelayForge update.

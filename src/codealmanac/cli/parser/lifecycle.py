@@ -61,7 +61,7 @@ def add_lifecycle_commands(subcommands: argparse._SubParsersAction) -> None:
     local_trigger.add_argument("--spawn-worker", action="store_true")
     local_trigger.add_argument("--json", action="store_true")
 
-    sync = subcommands.add_parser("sync", help="sync quiet local transcripts")
+    sync = subcommands.add_parser("sync", help=argparse.SUPPRESS)
     sync.add_argument("--wiki")
     sync.add_argument("--from", dest="source_apps")
     sync.add_argument("--quiet")

@@ -45,8 +45,6 @@ def setup_login_browser_mode(args: argparse.Namespace) -> CloudLoginBrowserMode:
         return "silent"
     if args.no_browser:
         return "never"
-    if args.yes:
-        return "open"
     return "prompt"
 
 

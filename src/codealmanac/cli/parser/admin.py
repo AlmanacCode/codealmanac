@@ -11,13 +11,16 @@ from codealmanac.cli.parser.setup import add_setup_commands
 from codealmanac.cli.parser.updates import add_update_commands
 
 
-def add_admin_commands(subcommands: argparse._SubParsersAction) -> None:
+def add_cloud_commands(subcommands: argparse._SubParsersAction) -> None:
+    add_setup_commands(subcommands)
     add_cloud_auth_commands(subcommands)
     add_capture_commands(subcommands)
     add_repo_commands(subcommands)
     add_runs_commands(subcommands)
-    add_setup_commands(subcommands)
+
+
+def add_admin_commands(subcommands: argparse._SubParsersAction) -> None:
     add_diagnostics_commands(subcommands)
     add_update_commands(subcommands)
-    add_jobs_commands(subcommands)
     add_automation_commands(subcommands)
+    add_jobs_commands(subcommands)

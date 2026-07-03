@@ -130,6 +130,26 @@ prints the verification URL and user code and polls without opening anything.
 The workflow stores WorkOS-shaped `access_token` and optional `refresh_token`
 fields while reading older `token` auth files for migration.
 
+Implemented in Slice 77:
+
+```text
+codealmanac setup [--yes] [--no-browser] [--skip-login] [--skip-instructions]
+```
+
+Root help is now cloud-first: `setup`, `login`, `capture`, `repo`, and `runs`
+are listed before `init`, `local`, and wiki-read commands. Root `sync` and
+root `jobs` still parse as compatibility entrypoints, but they are hidden from
+normal top-level help; the launch surface teaches `local jobs` instead.
+
+`setup --yes` no longer means "open the browser." It keeps the normal
+prompt-mode login interaction, so non-interactive agent installs print the
+verification URL/code and wait. Only an interactive yes at the browser prompt
+opens the browser.
+
+Setup output now uses the OpenAlmanac ANSI banner constants, diamond step
+markers, and boxed `Next steps` renderer instead of a generic Rich-styled
+layout. JSON output is unchanged.
+
 ## Cloud Repo Configuration
 
 ```text
