@@ -29,6 +29,9 @@ The map should include:
 5. `Dropped Or Deferred`: subjects seen but not planned, with reasons.
 6. `Coverage Audit`: what the map covers, what risks remain, and whether any
   area is over-compressed.
+7. `Topic Sketch`: broad topic neighborhoods that may help query and browse
+  the planned wiki. This sketch is provisional. Do not overfit it before pages
+  exist.
 
 Choose a complete page inventory from repo evidence. Do not start from a fixed
 page list. The folders below are the shape of the wiki, not a checklist.
@@ -94,12 +97,19 @@ under `Dropped Or Deferred` with the exact reason. Do not merge planned sibling
 pages during Phase 2 for convenience. If two pages are related, write both and
 link them.
 
+The topic sketch is a draft query graph, not a second folder structure. Use it
+to think about how future readers may find related pages across folders. Keep it
+lightweight; the final topic graph should come from the actual written pages.
+
 ## Phase 2: Write And Review
 
 Before writing pages, read `manual/README.md`.
 
 Use `manual/how-to-write.md`, `manual/evidence.md`, and `manual/links.md` for
 every page.
+
+Use `manual/topics.md` when assigning page `topics:` frontmatter and when
+finalizing `topics.yaml`.
 
 Before writing each page, use the manual that matches that page's folder:
 
@@ -128,6 +138,13 @@ or `[[path/to/folder/]]`.
 
 Create `pages/getting-started.md` as the front door to the finished wiki. If
 you draft it early, revise it last so it links only to pages that exist.
+
+After writing the pages, build or revise `topics.yaml` from the actual page set.
+Treat page frontmatter as evidence: look at the subjects that recur across
+concepts, architecture, guides, decisions, and reference pages. Create topics
+for real query neighborhoods, not for every page. The final topic graph may
+differ from the Phase 1 Topic Sketch. Prefer the topics that best organize the
+written wiki.
 
 Re-read the generated wiki before stopping. Fix weak leads, missing citations,
 missing links, duplicate pages, thin placeholders, and obvious coverage gaps.

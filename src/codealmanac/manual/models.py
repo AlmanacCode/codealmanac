@@ -12,6 +12,7 @@ class ManualDocumentName(StrEnum):
     HOW_TO_WRITE = "how-to-write.md"
     EVIDENCE = "evidence.md"
     LINKS = "links.md"
+    TOPICS = "topics.md"
     CONCEPTS = "concepts.md"
     ARCHITECTURE = "architecture.md"
     HOW_TO_GUIDES = "how-to-guides.md"
@@ -27,6 +28,7 @@ MANUAL_DOCUMENTS: tuple[ManualDocumentName, ...] = (
     ManualDocumentName.HOW_TO_WRITE,
     ManualDocumentName.EVIDENCE,
     ManualDocumentName.LINKS,
+    ManualDocumentName.TOPICS,
     ManualDocumentName.CONCEPTS,
     ManualDocumentName.ARCHITECTURE,
     ManualDocumentName.HOW_TO_GUIDES,

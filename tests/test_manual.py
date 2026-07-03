@@ -27,6 +27,9 @@ def test_manual_library_reads_all_bundled_documents():
     assert "Use links to make the wiki a graph" in ManualLibrary().read(
         ManualReadRequest(document=ManualDocumentName.LINKS)
     ).body
+    assert "easy to query and browse" in ManualLibrary().read(
+        ManualReadRequest(document=ManualDocumentName.TOPICS)
+    ).body
 
 
 def test_manual_read_request_requires_known_document():
@@ -45,6 +48,7 @@ def test_manual_install_missing_preserves_existing_files(tmp_path: Path):
     assert existing.read_text(encoding="utf-8") == "local edit\n"
     assert "README.md" in result.existing
     assert "how-to-write.md" in result.copied
+    assert "topics.md" in result.copied
     assert (target / "architecture.md").is_file()
     assert (target / "ingest.md").is_file()
     assert ManualLibrary().workspace_status(target).complete

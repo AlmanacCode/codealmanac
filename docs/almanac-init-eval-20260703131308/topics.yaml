@@ -1,0 +1,145 @@
+topics:
+  - slug: overview
+    title: Overview
+    description: Entry points and reading paths for the wiki
+    parents: []
+  - slug: concepts
+    title: Concepts
+    description: Core vocabulary and mental models for this codebase
+    parents: []
+  - slug: architecture
+    title: Architecture
+    description: Runtime shape, subsystem boundaries, and flows
+    parents: []
+  - slug: decisions
+    title: Decisions
+    description: Durable architecture and product choices
+    parents: []
+  - slug: reference
+    title: Reference
+    description: Exact lookup material for commands, schemas, files, states, and formats
+    parents: []
+  - slug: guides
+    title: Guides
+    description: Task-oriented procedures for future agents
+    parents: []
+  - slug: wiki
+    title: Wiki
+    description: Repo-owned wiki source, parsing, links, topics, and page provenance
+    parents: [architecture]
+  - slug: workspaces
+    title: Workspaces
+    description: Workspace registry, root resolution, and repo selection
+    parents: [architecture]
+  - slug: cli
+    title: CLI
+    description: Public command surface and CLI adapter boundaries
+    parents: [architecture]
+  - slug: lifecycle
+    title: Lifecycle
+    description: AI-backed page-writing operations and shared page-run execution
+    parents: [architecture]
+  - slug: runs
+    title: Runs
+    description: Lifecycle run records, logs, queue specs, and worker locks
+    parents: [architecture]
+  - slug: sync
+    title: Sync
+    description: Transcript discovery, quiet-window policy, and sync ledger state
+    parents: [architecture]
+  - slug: sources
+    title: Sources
+    description: Source address resolution and runtime material adapters
+    parents: [architecture]
+  - slug: harnesses
+    title: Harnesses
+    description: Provider-neutral agent harness contract and provider adapters
+    parents: [architecture]
+  - slug: local
+    title: Local Control
+    description: Local branch-aware update, worker, control database, and Git delivery flows
+    parents: [architecture]
+  - slug: cloud
+    title: Cloud
+    description: Cloud auth, repository, run, and capture CLI support
+    parents: [architecture]
+  - slug: setup
+    title: Setup
+    description: Setup, uninstall, and agent instruction installation
+    parents: [architecture]
+  - slug: automation
+    title: Automation
+    description: Scheduled local sync and garden jobs
+    parents: [architecture]
+  - slug: viewer
+    title: Viewer
+    description: Local FastAPI server and static browser UI
+    parents: [architecture]
+  - slug: server
+    title: Server
+    description: HTTP adapter and static asset serving
+    parents: [architecture]
+  - slug: prompts
+    title: Prompts
+    description: Prompt package resources and rendering
+    parents: [architecture]
+  - slug: manual
+    title: Manual
+    description: Bundled wiki-writing manual resources
+    parents: [architecture]
+  - slug: persistence
+    title: Persistence
+    description: SQLite and file-backed durable state
+    parents: [architecture]
+  - slug: sqlite
+    title: SQLite
+    description: SQLite-backed schemas and stores
+    parents: [persistence]
+  - slug: index
+    title: Index
+    description: Derived wiki read model and health projection
+    parents: [architecture, persistence]
+  - slug: topics
+    title: Topics
+    description: Topic YAML, topic DAG, and topic mutations
+    parents: [wiki]
+  - slug: links
+    title: Links
+    description: Wikilinks, file references, and cross-wiki references
+    parents: [wiki]
+  - slug: integrations
+    title: Integrations
+    description: Concrete adapters for external systems and local tools
+    parents: [architecture]
+  - slug: composition
+    title: Composition
+    description: App construction and dependency wiring
+    parents: [architecture]
+  - slug: product
+    title: Product
+    description: Public product identity and surface constraints
+    parents: [decisions]
+  - slug: python
+    title: Python
+    description: Python rewrite and package-level behavior
+    parents: [decisions]
+  - slug: codex
+    title: Codex
+    description: Codex provider integration
+    parents: [harnesses]
+  - slug: claude
+    title: Claude
+    description: Claude provider integration
+    parents: [harnesses]
+  - slug: operations
+    title: Operations
+    description: Operational services such as config, diagnostics, and updates
+    parents: [architecture]
+  - slug: testing
+    title: Testing
+    description: Tests, linting, release gates, and public contracts
+    parents: [reference]
+  - slug: paths
+    title: Paths
+    description: User state and repo state paths
+    parents: [reference]

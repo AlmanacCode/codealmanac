@@ -14,7 +14,6 @@ Read the relevant page before editing:
 - `how-to-write.md`: the general writing standard for all pages.
 - `evidence.md`: how claims stay grounded and how conflicts are handled.
 - `links.md`: how wiki pages, files, folders, and hubs connect.
-- `topics.md`: how topic graphs support querying and browsing.
 - `concepts.md`: how to write concept pages.
 - `architecture.md`: how to write architecture pages.
 - `how-to-guides.md`: how to write task guides.
