@@ -45,10 +45,10 @@ cloud setup flow.
   `28671661249`; a fresh public `uv tool install --python 3.12 --refresh
   --no-cache --force codealmanac==0.1.8` smoke passed for version, root help,
   and signed-out human/JSON `codealmanac status`.
-- Local package `0.1.9` is ready for publish. Slice 79 removes root
-  `uninstall`'s stale scheduled-automation coupling; wheel smoke proved root
-  uninstall has no `--keep-automation` flag or automation JSON fields, while
-  `codealmanac automation uninstall` still exists.
+- PyPI `codealmanac` `0.1.9` is published from GitHub Actions run
+  `28672818638`; a fresh public `uv tool install --python 3.12 --refresh
+  --no-cache --force codealmanac==0.1.9` smoke passed for version, root
+  uninstall help/JSON, and explicit `codealmanac automation uninstall`.
 - Chrome verified the production CLI setup handshake again from an isolated
   temp `HOME`; `codealmanac setup --no-browser --target codex --yes` approved
   through `/cli-login` and completed as `rohans0509`.
@@ -658,8 +658,10 @@ repaired.
 - Distribution gates passed: clean `dist/`, Twine checks, isolated Python
   `3.12.9` wheel install, version smoke, root uninstall help/JSON smoke, and
   explicit automation uninstall help smoke.
+- PyPI `0.1.9` is live from GitHub Actions publish run `28672818638`, and a
+  fresh public install smoke passed with `--refresh --no-cache`.
 - Chrome production retry passed from a temp `HOME`: `/cli-login` rendered
   `CLI login approved`, and `codealmanac setup --no-browser --target codex
   --yes` completed as `signed_in` for `rohans0509`.
-- Next step: commit and push the slice, run the manual PyPI publish workflow
-  for `0.1.9`, then do a fresh public install smoke and RelayForge update.
+- Next step: send the RelayForge update if not already sent, then continue into
+  the next substantial launch slice.

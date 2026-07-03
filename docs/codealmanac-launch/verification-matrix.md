@@ -67,6 +67,12 @@ Current evidence:
   works after the uninstall split: `codealmanac setup --no-browser --target
   codex --yes` from an isolated temp `HOME` rendered `CLI login approved` in
   Chrome and completed as `signed_in` for `rohans0509`.
+- Slice 79 published PyPI `codealmanac` `0.1.9` through GitHub Actions run
+  `28672818638`. A fresh public install with `uv tool install --python 3.12
+  --refresh --no-cache --force codealmanac==0.1.9` returned version `0.1.9`,
+  omitted `--keep-automation` from root uninstall help, omitted automation
+  fields from root uninstall JSON, and kept explicit
+  `codealmanac automation uninstall --help`.
 - `tests/test_cloud_auth_service.py` proves `~/.codealmanac/auth.json`
   save/load/delete behavior, mode `0600`, malformed-file recovery, identity
   fetch, and logout.

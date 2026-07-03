@@ -45,6 +45,15 @@
   `/cli-login` URL, Chrome rendered `CLI login approved`, and the terminal
   completed as `signed_in` for `rohans0509` while installing Codex instructions
   into the temp home.
+- Published `codealmanac` `0.1.9` to PyPI through GitHub Actions run
+  `28672818638`. The run passed full tests, lint, diff hygiene, build, Twine
+  checks, artifact upload, and PyPI upload.
+- Fresh public install smoke passed with
+  `uv tool install --python 3.12 --refresh --no-cache --force
+  codealmanac==0.1.9`. The installed binary returned version `0.1.9`, root
+  uninstall help omitted `--keep-automation`, root uninstall JSON omitted
+  automation fields, and explicit `codealmanac automation uninstall --help`
+  remained available.
 
 ## 2026-07-03 Slice 78: Root cloud status
 
