@@ -78,6 +78,9 @@ Status: active.
 - The public CLI is not the worker API.
 - Bare `codealmanac` opens the cloud wiki for the current checkout.
 - `codealmanac setup` is cloud onboarding.
+- `codealmanac setup` includes capture installation. `codealmanac capture
+  enable` remains a manual repair/admin command, not a required onboarding
+  step.
 - `codealmanac setup` must not install local trigger hooks; local trigger hooks
   belong under `codealmanac local setup`.
 - `codealmanac uninstall` must not remove local run history or control DB data.
@@ -180,7 +183,8 @@ Status: active.
 - Branch-triggered cloud runs are immutable snapshots. The worker must
   materialize the run's recorded `head_sha`, and when a range is needed it must
   fetch the recorded `before_sha`; it must not run against the live branch tip.
-- Root `codealmanac setup` is cloud setup plus local agent instruction setup.
+- Root `codealmanac setup` is cloud setup plus capture and local agent
+  instruction setup.
   It must not install local trigger hooks,
   inspect the current repo, run an update, or expose scheduler JSON fields.
   Local maintenance stays under explicit local/admin surfaces.

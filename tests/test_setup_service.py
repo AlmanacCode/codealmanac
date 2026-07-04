@@ -5,6 +5,8 @@ from pydantic import ValidationError
 
 from codealmanac.cloud.auth.login_models import CloudLoginWorkflowResult
 from codealmanac.cloud.auth.login_requests import RunCloudLoginRequest
+from codealmanac.cloud.capture.models import CaptureEnableResult
+from codealmanac.cloud.capture.requests import CaptureRepairRequest
 from codealmanac.integrations.setup.instructions import (
     CLAUDE_IMPORT_LINE,
     CODEALMANAC_END,
@@ -116,6 +118,7 @@ def setup_service(home: Path) -> SetupService:
     return SetupService(
         FileInstructionInstaller(home),
         FakeSetupCloudLogin(),
+        FakeSetupCapture(),
     )
 
 
@@ -130,4 +133,18 @@ class FakeSetupCloudLogin:
             status="signed_in",
             github_user_id=10,
             github_login="rohans0509",
+        )
+
+
+class FakeSetupCapture:
+    def __init__(self) -> None:
+        self.requests: list[CaptureRepairRequest] = []
+
+    def repair(self, request: CaptureRepairRequest) -> CaptureEnableResult:
+        self.requests.append(request)
+        return CaptureEnableResult(
+            api_url=request.api_url,
+            providers=request.providers,
+            credential_present=True,
+            hooks=(),
         )

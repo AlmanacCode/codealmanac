@@ -958,13 +958,16 @@ def test_cli_setup_and_uninstall_codex_instructions(
     assert "CodeAlmanac setup" in captured.out
     assert "\x1b[38;5;255m" in captured.out
     assert "█████" in captured.out
-    assert "Cloud setup and agent instructions." in captured.out
+    assert "Cloud setup, capture, and agent instructions." in captured.out
     assert "Agent instructions" in captured.out
+    assert "Capture" in captured.out
+    assert "skipped" in captured.out
     assert "codex" in captured.out
     assert "Next steps" in captured.out
     assert "╭" in captured.out
     assert "╰" in captured.out
-    assert "codealmanac capture enable" in captured.out
+    assert "codealmanac capture status" in captured.out
+    assert "codealmanac capture enable" not in captured.out
     assert "codealmanac repo setup" in captured.out
     assert "codealmanac automation install" not in captured.out
     assert "Scheduled automation" not in captured.out
@@ -981,6 +984,50 @@ def test_cli_setup_and_uninstall_codex_instructions(
     assert "CodeAlmanac uninstall" in uninstall.out
     assert "Removed artifacts" in uninstall.out
     assert not agents_path.exists()
+
+
+def test_cli_setup_enables_capture_after_cloud_login(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    auth_client = CliCloudAuthClient()
+    capture_client = CliCloudCaptureClient()
+    app = create_app(
+        AppConfig(
+            auth_path=isolated_home / ".codealmanac/auth.json",
+            capture_path=isolated_home / ".codealmanac/capture.json",
+            capture_events_path=isolated_home / ".codealmanac/capture-events",
+        ),
+        cloud_auth_client=auth_client,
+        cloud_capture_client=capture_client,
+        browser_opener=CliBrowserOpener(),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    exit_code = main(
+        [
+            "setup",
+            "--api-url",
+            "https://api.example.test",
+            "--login-timeout",
+            "0",
+            "--login-poll-every",
+            "0",
+            "--target",
+            "codex",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert capture_client.issued == ["CodeAlmanac capture"]
+    assert "Capture" in captured.out
+    assert "providers codex, claude" in captured.out
+    assert "codealmanac capture status" in captured.out
+    assert "codealmanac capture enable" not in captured.out
+    assert (isolated_home / ".codex/hooks.json").is_file()
+    assert (isolated_home / ".claude/settings.json").is_file()
 
 
 def test_cli_uninstall_rejects_root_automation_flags():
@@ -1092,10 +1139,16 @@ def test_cli_setup_is_cloud_first_without_repo_detection(
     outside_repo = tmp_path / "outside"
     outside_repo.mkdir()
     client = CliCloudAuthClient()
+    capture_client = CliCloudCaptureClient()
     browser = CliBrowserOpener()
     app = create_app(
-        AppConfig(auth_path=isolated_home / ".codealmanac/auth.json"),
+        AppConfig(
+            auth_path=isolated_home / ".codealmanac/auth.json",
+            capture_path=isolated_home / ".codealmanac/capture.json",
+            capture_events_path=isolated_home / ".codealmanac/capture-events",
+        ),
         cloud_auth_client=client,
+        cloud_capture_client=capture_client,
         browser_opener=browser,
     )
     monkeypatch.chdir(outside_repo)
@@ -1123,7 +1176,9 @@ def test_cli_setup_is_cloud_first_without_repo_detection(
     assert "Code: ABCD2345" in output.out
     assert "rohans0509" in output.out
     assert "Agent instructions" in output.out
+    assert "Capture" in output.out
     assert client.started == 1
+    assert capture_client.issued == ["CodeAlmanac capture"]
     assert browser.opened == []
 
 
@@ -2005,12 +2060,14 @@ def test_cli_setup_skip_instructions_json(capsys):
     assert exit_code == 0
     payload = json.loads(captured.out)
     assert payload["skipped_instructions"] is True
+    assert payload["skipped_capture"] is True
+    assert payload["capture"] is None
     assert payload["changes"] == []
     assert payload["plan"]["default_harness"] == "codex"
     assert payload["plan"]["instruction_targets"] == ["codex", "claude"]
     assert "automation" not in payload["plan"]
     assert "automation_install" not in payload
-    assert ["codealmanac", "capture", "enable"] in [
+    assert ["codealmanac", "capture", "status"] in [
         command["command"] for command in payload["plan"]["next_commands"]
     ]
 

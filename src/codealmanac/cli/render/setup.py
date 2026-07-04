@@ -51,10 +51,11 @@ def render_uninstall_result(result: UninstallResult, json_output: bool) -> None:
 
 
 def render_setup_text(result: SetupResult) -> None:
-    render_banner("CodeAlmanac setup", "Cloud setup and agent instructions.")
+    render_banner("CodeAlmanac setup", "Cloud setup, capture, and agent instructions.")
     if result.cloud_login is not None:
         render_cloud(result.cloud_login)
     render_instructions(result)
+    render_capture(result)
     render_next_steps(result)
 
 
@@ -90,6 +91,21 @@ def render_instructions(result: SetupResult) -> None:
         step("Agent instructions", "skipped")
         return
     render_changes("Agent instructions", result.changes)
+
+
+def render_capture(result: SetupResult) -> None:
+    if result.skipped_capture:
+        step("Capture", "skipped")
+        return
+    if result.capture is None:
+        return
+    step_active("Capture")
+    write(f"  {DIM}│{RST}   providers {', '.join(result.capture.providers)}")
+    for hook in result.capture.hooks:
+        status = "changed" if hook.changed else "ok"
+        write(f"  {DIM}│{RST}   {hook.provider:<6} {status:<7} {hook.message}")
+        write(f"  {DIM}│{RST}                  {DIM}{hook.path}{RST}")
+    write()
 
 
 def render_changes(

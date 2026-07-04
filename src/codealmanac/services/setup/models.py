@@ -4,6 +4,7 @@ from pathlib import Path
 from pydantic import Field, field_validator
 
 from codealmanac.cloud.auth.login_models import CloudLoginWorkflowResult
+from codealmanac.cloud.capture.models import CaptureEnableResult
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
 from codealmanac.engine.harnesses.models import HarnessKind
@@ -60,6 +61,8 @@ class SetupResult(CodeAlmanacModel):
     plan: SetupPlan
     cloud_login: CloudLoginWorkflowResult | None = None
     skipped_instructions: bool = False
+    skipped_capture: bool = False
+    capture: CaptureEnableResult | None = None
     changes: tuple[InstructionChange, ...] = ()
 
 

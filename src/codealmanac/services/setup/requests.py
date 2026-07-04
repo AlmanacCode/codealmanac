@@ -24,6 +24,7 @@ class RunSetupRequest(CodeAlmanacModel):
     login_poll_interval_seconds: float = 2.0
     skip_login: bool = False
     skip_instructions: bool = False
+    skip_capture: bool = False
 
     @field_validator("targets")
     @classmethod

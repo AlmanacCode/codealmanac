@@ -1,9 +1,11 @@
 from codealmanac.cloud.auth.login_requests import RunCloudLoginRequest
+from codealmanac.cloud.capture.requests import CaptureRepairRequest
 from codealmanac.core.errors import ExecutionFailed
 from codealmanac.services.setup.models import SetupResult, UninstallResult
 from codealmanac.services.setup.planning import setup_plan
 from codealmanac.services.setup.ports import (
     InstructionInstaller,
+    SetupCapture,
     SetupCloudLogin,
 )
 from codealmanac.services.setup.requests import RunSetupRequest, RunUninstallRequest
@@ -14,9 +16,11 @@ class SetupService:
         self,
         instructions: InstructionInstaller,
         cloud_login: SetupCloudLogin | None = None,
+        capture: SetupCapture | None = None,
     ):
         self._instructions = instructions
         self._cloud_login = cloud_login
+        self._capture = capture
 
     def run(self, request: RunSetupRequest) -> SetupResult:
         plan = setup_plan(request)
@@ -38,15 +42,27 @@ class SetupService:
         changes = ()
         if not request.skip_instructions:
             changes = self._instructions.install(request.targets)
+        capture = None
+        skipped_capture = request.skip_capture or request.skip_login
+        if not skipped_capture:
+            if self._capture is None:
+                raise ExecutionFailed("capture setup is not configured")
+            capture = self._capture.repair(
+                CaptureRepairRequest(api_url=request.api_url)
+            )
         if request.skip_instructions:
             return SetupResult(
                 plan=plan,
                 cloud_login=cloud_login,
                 skipped_instructions=True,
+                skipped_capture=skipped_capture,
+                capture=capture,
             )
         return SetupResult(
             plan=plan,
             cloud_login=cloud_login,
+            skipped_capture=skipped_capture,
+            capture=capture,
             changes=changes,
         )
 

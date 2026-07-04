@@ -50,9 +50,8 @@ uv tool install --python 3.12 codealmanac
 delivered back to the repo as commits or pull requests:
 
 ```bash
-codealmanac setup           # GitHub sign-in + agent instructions
+codealmanac setup           # GitHub sign-in + capture + agent instructions
 codealmanac status          # cloud identity, repo, and capture status
-codealmanac capture enable  # capture Codex/Claude sessions as source
 codealmanac repo setup      # configure the current repo in the browser
 ```
 
@@ -140,11 +139,11 @@ need no credentials.
 |---|---|
 | `codealmanac` | Open the cloud wiki for the current checkout. |
 | `codealmanac open` | Open the cloud wiki for the current checkout. |
-| `codealmanac setup` | Cloud sign-in plus agent instructions. |
+| `codealmanac setup` | Cloud sign-in, capture setup, and agent instructions. |
 | `codealmanac status` | Show cloud identity, current repo, and capture status. |
 | `codealmanac login` / `whoami` / `logout` | Manage cloud auth. |
 | `codealmanac capture status` | Show Codex/Claude capture status. |
-| `codealmanac capture enable --target codex` | Enable Codex session capture. |
+| `codealmanac capture enable --target codex` | Manually enable or repair Codex session capture. |
 | `codealmanac capture disable` | Disable capture hooks and revoke the capture token. |
 | `codealmanac repo setup` | Open browser setup for the current repo. |
 | `codealmanac repo triggers enable <branch> --delivery pr\|commit` | Choose how cloud updates land for a branch. |
@@ -178,9 +177,9 @@ codealmanac setup
 
 ## Privacy
 
-Capture is opt-in, per provider, and reversible. `capture status` shows exactly
-what is on, and `capture disable` removes hooks and revokes the stored capture
-credential. CodeAlmanac never stores your Codex or Claude provider credentials.
+Capture is enabled by cloud setup, per provider, and reversible. `capture status`
+shows exactly what is on, and `capture disable` removes hooks and revokes the
+stored capture credential. CodeAlmanac never stores your Codex or Claude provider credentials.
 Wiki content is canonical in your repository: every change arrives as a commit
 or PR you can review, amend, or reject.
 

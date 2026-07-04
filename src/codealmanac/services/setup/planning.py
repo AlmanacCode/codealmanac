@@ -15,8 +15,8 @@ def next_commands() -> tuple[SetupCommand, ...]:
     return (
         SetupCommand(label="Check cloud login", command=("codealmanac", "whoami")),
         SetupCommand(
-            label="Enable capture",
-            command=("codealmanac", "capture", "enable"),
+            label="Check capture",
+            command=("codealmanac", "capture", "status"),
         ),
         SetupCommand(
             label="Set up a repository",

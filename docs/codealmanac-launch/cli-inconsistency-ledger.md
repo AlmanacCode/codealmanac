@@ -83,8 +83,10 @@ console scripts, and added `codealmanac capture inspect` to match the contract.
 
 ## Decisions Captured
 
-- Root `codealmanac setup` is cloud setup plus agent instructions. It must not
-  install local trigger hooks or local scheduled automation.
+- Root `codealmanac setup` is cloud setup plus capture plus agent instructions.
+  It must not install local trigger hooks or local scheduled automation.
+- `codealmanac capture enable` remains available for repair/admin use, but it is
+  not a separate onboarding step after setup.
 - Local setup is explicit: `codealmanac local setup`.
 - Wiki-maintenance execution is named `runs` in both cloud and local command
   surfaces.

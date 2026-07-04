@@ -128,11 +128,13 @@ codealmanac setup [--yes] [--no-browser] [--skip-login] [--skip-instructions]
 codealmanac login [--no-browser] [--force]
 ```
 
-Root setup is cloud setup only. It no longer exposes local trigger or scheduler
-flags. Interactive setup asks before opening the browser; non-interactive setup
-prints the verification URL and user code and polls without opening anything.
-The workflow stores WorkOS-shaped `access_token` and optional `refresh_token`
-fields while reading older `token` auth files for migration.
+Root setup is cloud setup only. It signs in, installs global agent
+instructions, and enables Codex/Claude capture. It no longer exposes local
+trigger or scheduler flags. Interactive setup asks before opening the browser;
+non-interactive setup prints the verification URL and user code and polls
+without opening anything. The workflow stores WorkOS-shaped `access_token` and
+optional `refresh_token` fields while reading older `token` auth files for
+migration.
 
 Implemented in Slice 77:
 
@@ -152,7 +154,8 @@ opens the browser.
 
 Setup output now uses the OpenAlmanac ANSI banner constants, diamond step
 markers, and boxed `Next steps` renderer instead of a generic Rich-styled
-layout. JSON output is unchanged.
+layout. Setup output treats capture as a completed setup step and lists
+`capture status`, not `capture enable`, as the follow-up check.
 
 Implemented in Slice 78:
 
@@ -297,8 +300,9 @@ codealmanac capture repair [--target all|codex|claude] [--json] [--api-url URL]
 codealmanac capture disable [--target all|codex|claude] [--keep-credential] [--json] [--api-url URL]
 ```
 
-Capture installation is explicit. CLI install must never silently install
-Codex/Claude hooks.
+Capture installation is explicit inside `codealmanac setup`. CLI install must
+never silently install Codex/Claude hooks. `capture enable` and `capture repair`
+remain manual repair/admin commands.
 
 Implemented in Slice 28:
 

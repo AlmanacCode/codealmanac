@@ -288,6 +288,7 @@ def create_app(
     setup = SetupService(
         instruction_installer or FileInstructionInstaller(),
         cloud_login,
+        capture,
     )
     jobs = JobLedgerService(workspaces, JobStore(), jobs_path=app_config.jobs_path)
     viewer = ViewerService(workspaces, index, jobs, MarkdownRenderer())
