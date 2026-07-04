@@ -4,4 +4,3 @@ from codealmanac.integrations.updates.package import (
 )
 
 __all__ = ["InstalledPackageMetadataProvider", "SubprocessPackageCommandRunner"]
-

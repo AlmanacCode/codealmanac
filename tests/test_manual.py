@@ -18,15 +18,24 @@ def test_manual_library_reads_all_bundled_documents():
     assert all(
         document.body.strip().startswith("---") for document in inventory.documents
     )
-    assert "configured Almanac root" in ManualLibrary().read(
-        ManualReadRequest(document=ManualDocumentName.README)
-    ).body
-    assert "Page links are for real wiki nodes" in ManualLibrary().read(
-        ManualReadRequest(document=ManualDocumentName.PAGES)
-    ).body
-    assert "first substantial wiki" in ManualLibrary().read(
-        ManualReadRequest(document=ManualDocumentName.INIT)
-    ).body
+    assert (
+        "configured Almanac root"
+        in ManualLibrary()
+        .read(ManualReadRequest(document=ManualDocumentName.README))
+        .body
+    )
+    assert (
+        "Page links are for real wiki nodes"
+        in ManualLibrary()
+        .read(ManualReadRequest(document=ManualDocumentName.PAGES))
+        .body
+    )
+    assert (
+        "first substantial wiki"
+        in ManualLibrary()
+        .read(ManualReadRequest(document=ManualDocumentName.INIT))
+        .body
+    )
 
 
 def test_manual_read_request_requires_known_document():

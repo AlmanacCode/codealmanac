@@ -10,6 +10,7 @@ import pytest
 
 from codealmanac import __version__
 from codealmanac.app import create_app
+from codealmanac.capture_hook import main as capture_hook_main
 from codealmanac.cli.dispatch.setup import setup_login_browser_mode
 from codealmanac.cli.main import build_parser, main
 from codealmanac.cloud.auth.models import CloudIdentity, CloudLoginSession
@@ -40,25 +41,20 @@ from codealmanac.engine.harnesses.models import (
     HarnessReadiness,
     HarnessRunResult,
     HarnessRunStatus,
-    HarnessTranscriptRef,
 )
 from codealmanac.engine.harnesses.requests import RunHarnessRequest
 from codealmanac.engine.workspaces.models import GitWorktreeCheckout
 from codealmanac.integrations.setup.instructions import CODEALMANAC_START
+from codealmanac.job_worker import main as job_worker_main
 from codealmanac.jobs.ledger.models import (
-    JobEventKind,
     JobOperation,
     JobStatus,
     JobWorkerSpawnResult,
 )
 from codealmanac.jobs.ledger.requests import (
-    FinishJobRequest,
     ListJobsRequest,
-    RecordJobEventRequest,
-    RecordJobHarnessTranscriptRequest,
     ShowJobRequest,
     SpawnJobWorkerRequest,
-    StartJobRequest,
 )
 from codealmanac.local.control.models import (
     ControlDeliveryMode,
@@ -776,8 +772,7 @@ def test_cli_open_commands_use_current_checkout_and_browser_handoff(
     setup_output = capsys.readouterr()
     assert (
         "url: https://app.example.test/setup/repo?"
-        "provider=github&owner=AlmanacCode&repo=codealmanac\n"
-        in setup_output.out
+        "provider=github&owner=AlmanacCode&repo=codealmanac\n" in setup_output.out
     )
 
     assert (
@@ -1150,6 +1145,7 @@ def test_cli_capture_enable_status_hook_and_disable(
         browser_opener=CliBrowserOpener(),
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    monkeypatch.setattr("codealmanac.capture_hook.create_app", lambda: app)
 
     assert (
         main(
@@ -1187,6 +1183,9 @@ def test_cli_capture_enable_status_hook_and_disable(
     assert enabled["providers"] == ["codex"]
     assert capture_client.issued == ["CodeAlmanac capture"]
     assert (isolated_home / ".codex/hooks.json").is_file()
+    assert "codealmanac-capture-hook --provider codex" in (
+        isolated_home / ".codex/hooks.json"
+    ).read_text(encoding="utf-8")
 
     assert (
         main(
@@ -1234,7 +1233,7 @@ def test_cli_capture_enable_status_hook_and_disable(
         ),
     )
 
-    assert main(["__capture-hook", "--provider", "codex"]) == 0
+    assert capture_hook_main(["--provider", "codex"]) == 0
     hook = json.loads(capsys.readouterr().out)
 
     assert hook["session_id"] == "sess_1"
@@ -1246,6 +1245,12 @@ def test_cli_capture_enable_status_hook_and_disable(
     )
     assert capture_client.turns[0].routing_status == "missing_repo"
     assert (isolated_home / ".codealmanac/capture-events/events.jsonl").is_file()
+
+    assert main(["capture", "inspect", "--json"]) == 0
+    inspect = json.loads(capsys.readouterr().out)
+
+    assert inspect["events"][0]["session_id"] == "sess_1"
+    assert inspect["events"][0]["upload_status"] == "uploaded"
 
     assert (
         main(
@@ -2343,14 +2348,22 @@ def test_cli_help_is_cloud_first_and_hides_compatibility_commands(capsys):
     assert "garden" not in output.out
     assert "dev" not in output.out
 
-    parser.parse_args(["jobs"])
     parser.parse_args(["status"])
+    with pytest.raises(SystemExit) as jobs_exit:
+        parser.parse_args(["jobs"])
     with pytest.raises(SystemExit) as sync_exit:
         parser.parse_args(["sync", "status"])
     with pytest.raises(SystemExit) as automation_exit:
         parser.parse_args(["automation", "status"])
+    with pytest.raises(SystemExit) as capture_hook_exit:
+        parser.parse_args(["__capture-hook", "--provider", "codex"])
+    with pytest.raises(SystemExit) as run_worker_exit:
+        parser.parse_args(["__run-worker", "--cwd", "."])
+    assert jobs_exit.value.code == 2
     assert sync_exit.value.code == 2
     assert automation_exit.value.code == 2
+    assert capture_hook_exit.value.code == 2
+    assert run_worker_exit.value.code == 2
 
 
 def test_cli_local_help_uses_runs_language(capsys):
@@ -2618,9 +2631,9 @@ def test_cli_hidden_run_worker_drains_queued_run(
             harness=HarnessKind.CODEX,
         )
     )
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    monkeypatch.setattr("codealmanac.job_worker.create_app", lambda: app)
 
-    assert main(["__run-worker", "--cwd", str(repo)]) == 0
+    assert job_worker_main(["--cwd", str(repo)]) == 0
 
     job = app.jobs.show(ShowJobRequest(cwd=repo, job_id=queued.job_id))
 
@@ -2933,118 +2946,6 @@ def test_cli_hidden_run_local_worker_processes_one_trigger(
         isolated_home / ".codealmanac/workspaces" / data["run"]["id"] / "repo"
     )
     assert delivery.apply_calls[0][3] == "docs almanac: update local worker note"
-
-
-def test_cli_jobs_inspects_local_run_records(
-    tmp_path: Path,
-    isolated_home: Path,
-    monkeypatch,
-    capsys,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
-    )
-    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    record = app.jobs.start(
-        StartJobRequest(
-            cwd=repo,
-            operation=JobOperation.INGEST,
-            title="Digest note",
-        )
-    )
-    app.jobs.record_event(
-        RecordJobEventRequest(
-            cwd=repo,
-            job_id=record.job_id,
-            kind=JobEventKind.MESSAGE,
-            message="read note",
-        )
-    )
-    app.jobs.record_harness_transcript(
-        RecordJobHarnessTranscriptRequest(
-            cwd=repo,
-            job_id=record.job_id,
-            transcript=HarnessTranscriptRef(
-                kind=HarnessKind.CODEX,
-                session_id="codex-job-session",
-                transcript_path=repo / "codex-job.jsonl",
-            ),
-        )
-    )
-    monkeypatch.chdir(repo)
-
-    assert main(["jobs"]) == 0
-    list_output = capsys.readouterr()
-    assert f"{record.job_id}\tqueued\tingest\tDigest note\n" in list_output.out
-
-    assert main(["jobs", "show", record.job_id]) == 0
-    show_output = capsys.readouterr()
-    assert f"id: {record.job_id}\n" in show_output.out
-    assert "operation: ingest\n" in show_output.out
-    assert "harness_transcript: codex codex-job-session\n" in show_output.out
-    assert f"harness_transcript_path: {repo / 'codex-job.jsonl'}\n" in (show_output.out)
-
-    assert main(["jobs", "logs", record.job_id]) == 0
-    log_output = capsys.readouterr()
-    assert "1\tstatus\tqueued ingest\n" in log_output.out
-    assert "2\tmessage\tread note\n" in log_output.out
-
-    assert main(["jobs", "logs", record.job_id, "--json"]) == 0
-    logs_json_output = capsys.readouterr()
-    log_events = json.loads(logs_json_output.out)
-    assert "harness_event" not in log_events[0]
-
-    app.jobs.finish(
-        FinishJobRequest(
-            cwd=repo,
-            job_id=record.job_id,
-            status=JobStatus.DONE,
-            summary="digest complete",
-        )
-    )
-
-    assert main(["jobs", "attach", record.job_id]) == 0
-    attach_output = capsys.readouterr()
-    assert "1\tstatus\tqueued ingest\n" in attach_output.out
-    assert "2\tmessage\tread note\n" in attach_output.out
-    assert "3\tstatus\tdone\n" in attach_output.out
-    assert "status: done\n" in attach_output.out
-
-    cancellable = app.jobs.start(
-        StartJobRequest(
-            cwd=repo,
-            operation=JobOperation.GARDEN,
-            title="Garden later",
-        )
-    )
-
-    assert main(["jobs", "cancel", cancellable.job_id]) == 0
-    cancel_output = capsys.readouterr()
-    assert f"cancelled {cancellable.job_id}\n" in cancel_output.out
-    cancelled_record = app.jobs.show(
-        ShowJobRequest(cwd=repo, job_id=cancellable.job_id)
-    )
-    assert cancelled_record.status == JobStatus.CANCELLED
-
-    assert main(["jobs", "--json"]) == 0
-    json_output = capsys.readouterr()
-    assert f'"job_id": "{record.job_id}"' in json_output.out
-    assert '"session_id": "codex-job-session"' in json_output.out
-
-    assert main(["jobs", "cancel", cancellable.job_id, "--json"]) == 0
-    cancel_json_output = capsys.readouterr()
-    assert '"changed": false' in cancel_json_output.out
-    assert '"status": "cancelled"' in cancel_json_output.out
-
-
-def test_cli_jobs_rejects_path_shaped_run_ids(capsys):
-    assert main(["jobs", "show", "../secret"]) == 1
-
-    output = capsys.readouterr()
-    assert output.out == ""
-    assert "String should match pattern" in output.err
 
 
 def test_cli_search_and_show_read_current_repo_wiki(

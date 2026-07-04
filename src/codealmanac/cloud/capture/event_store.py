@@ -16,3 +16,16 @@ class CaptureEventStore:
             handle.write("\n")
         return event_path
 
+    def latest(self, limit: int) -> tuple[CaptureHookEvent, ...]:
+        event_path = self.path / "events.jsonl"
+        if not event_path.exists():
+            return ()
+        rows = event_path.read_text(encoding="utf-8").splitlines()
+        events: list[CaptureHookEvent] = []
+        for row in reversed(rows):
+            if row.strip() == "":
+                continue
+            events.append(CaptureHookEvent.model_validate_json(row))
+            if len(events) == limit:
+                break
+        return tuple(events)

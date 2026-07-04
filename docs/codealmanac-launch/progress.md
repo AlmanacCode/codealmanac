@@ -64,7 +64,7 @@ CLI returned `0.1.10`, exposed `codealmanac`, `codealmanac-local-trigger`, and
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
 | CodeAlmanac backend/local | 100% | 100% | Slice 89 removed the old sync/automation implementation path and aligned local execution/history on `local runs`; Slice 90 public smoke verified the packaged private local trigger/worker entrypoints. |
-| CodeAlmanac CLI/public UX | 100% | 100% | Published CLI `0.1.10` passed public install smoke; stale launch-facing `sync`, root scheduled `automation`, `local update`, and `local jobs` help text is gone. |
+| CodeAlmanac CLI/public UX | 99% | 100% | `0.1.11` fixes the post-release hidden root command gap: `jobs`, `__capture-hook`, and `__run-worker` are no longer accepted by the root parser; private hook/worker execution now uses named console scripts. Awaiting final publish smoke. |
 | CodeAlmanac-hosted backend/auth/API | 100% | 100% | Slice 75 added production `/v1/repositories`; production repo list and repo status pass without per-repo permission fanout. |
 | Hosted frontend/onboarding | 100% | 99% | Slice 76 shipped repository readiness, capture handoff, maintained branches, and per-branch delivery to Vercel; Chrome verified production with no console errors. |
 | Infra/deploy rename | 100% | 100% | Vercel targets `thealmanac/codealmanac-hosted`, Render health is live, Modal `codealmanac-hosted-updates` was redeployed, and PyPI `codealmanac` `0.1.10` is live. |

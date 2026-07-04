@@ -51,9 +51,7 @@ def test_local_status_reports_configured_checkout_branch(
         )
     )
 
-    result = app.workflows.local_status.status(
-        ReadLocalStatusRequest(cwd=repo / "src")
-    )
+    result = app.workflows.local_status.status(ReadLocalStatusRequest(cwd=repo / "src"))
 
     assert result.checkout.available is True
     assert result.repository == repository

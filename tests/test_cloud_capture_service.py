@@ -15,6 +15,7 @@ from codealmanac.cloud.capture.requests import (
     CaptureDisableRequest,
     CaptureEnableRequest,
     CaptureHookRequest,
+    CaptureInspectRequest,
     CaptureStatusRequest,
 )
 from codealmanac.cloud.capture.service import CloudCaptureService
@@ -96,13 +97,16 @@ def test_capture_hook_manager_preserves_unrelated_hooks(tmp_path: Path) -> None:
 
     first = manager.install("codex")
     second = manager.install("codex")
+    installed_body = codex.read_text(encoding="utf-8")
     removed = manager.uninstall("codex")
     body = codex.read_text(encoding="utf-8")
 
     assert first.changed is True
     assert second.changed is False
     assert removed.changed is True
+    assert "codealmanac-capture-hook --provider codex" in installed_body
     assert "echo keep" in body
+    assert "codealmanac-capture-hook --provider codex" not in body
     assert "__capture-hook" not in body
 
 
@@ -131,6 +135,8 @@ def test_cloud_capture_hook_records_diagnostic_event(tmp_path: Path) -> None:
 
     assert event.session_id == "sess_1"
     assert (tmp_path / "capture-events/events.jsonl").exists()
+    inspected = service.inspect(CaptureInspectRequest(limit=1))
+    assert inspected.events[0].session_id == "sess_1"
 
 
 def capture_service(

@@ -292,12 +292,8 @@ def test_ingest_workflow_resolves_sources_runs_harness_and_refreshes_index(
     assert result.job.harness_transcript.session_id == "codex-ingest-session"
     assert result.sources[0].ref.fingerprint is not None
     assert result.source_runtime[0].status == SourceRuntimeStatus.AVAILABLE
-    assert result.harness.changed_files == (
-        repo / "almanac/pages/ingested-note.md",
-    )
-    assert result.safety.changed_files == (
-        repo / "almanac/pages/ingested-note.md",
-    )
+    assert result.harness.changed_files == (repo / "almanac/pages/ingested-note.md",)
+    assert result.safety.changed_files == (repo / "almanac/pages/ingested-note.md",)
     assert result.index.pages_indexed == 2
     assert matches[0].slug == "ingested-note"
     assert "path.file" in adapter.requests[0].prompt
@@ -355,9 +351,7 @@ def test_ingest_workflow_records_normalized_harness_events(
     assert log[-6].harness_event.actor.role == HarnessActorRole.ROOT
     assert log[-5].harness_event is not None
     assert log[-5].harness_event.tool_display is not None
-    assert log[-5].harness_event.tool_display.path == (
-        "almanac/pages/ingested-note.md"
-    )
+    assert log[-5].harness_event.tool_display.path == ("almanac/pages/ingested-note.md")
     assert log[-4].harness_event is not None
     assert log[-4].harness_event.usage is not None
     assert log[-4].harness_event.usage.total_tokens == 42
@@ -666,9 +660,7 @@ def test_ingest_workflow_allows_preexisting_dirty_app_files_when_unchanged(
     )
 
     assert result.job.status == JobStatus.DONE
-    assert result.safety.changed_files == (
-        repo / "almanac/pages/ingested-note.md",
-    )
+    assert result.safety.changed_files == (repo / "almanac/pages/ingested-note.md",)
     assert (repo / "src/app.py").read_text(encoding="utf-8") == "user edit\n"
 
 

@@ -28,6 +28,4 @@ class AppConfig(CodeAlmanacModel):
     control_db_path: Path = Field(default_factory=default_control_db_path)
     run_artifacts_path: Path = Field(default_factory=default_run_artifacts_path)
     jobs_path: Path = Field(default_factory=default_jobs_path)
-    engine_workspaces_path: Path = Field(
-        default_factory=default_engine_workspaces_path
-    )
+    engine_workspaces_path: Path = Field(default_factory=default_engine_workspaces_path)

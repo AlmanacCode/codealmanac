@@ -30,9 +30,7 @@ def test_git_local_delivery_applies_worker_wiki_patch_as_commit(tmp_path: Path):
     assert (repo / "almanac/pages/index.md").read_text(encoding="utf-8") == "updated\n"
     assert (repo / "almanac/pages/new.md").read_text(encoding="utf-8") == "new\n"
     assert git_stdout(repo, "rev-parse", "HEAD") == commit.commit_sha
-    assert git_stdout(repo, "log", "-1", "--pretty=%s") == (
-        "docs almanac: update wiki"
-    )
+    assert git_stdout(repo, "log", "-1", "--pretty=%s") == ("docs almanac: update wiki")
 
 
 def test_git_local_delivery_applies_worker_wiki_patch_to_working_tree(

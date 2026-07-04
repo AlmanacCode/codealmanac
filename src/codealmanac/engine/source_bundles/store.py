@@ -55,9 +55,7 @@ class SourceBundlesStore:
         if not source_path.is_file():
             raise ValidationFailed(f"session source file is unavailable: {source_path}")
         suffix = source_path.suffix or DEFAULT_SESSION_SUFFIX
-        destination = (
-            sessions_path / session.provider / f"{session.session_id}{suffix}"
-        )
+        destination = sessions_path / session.provider / f"{session.session_id}{suffix}"
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source_path, destination)
         return SourceBundleSessionFile(

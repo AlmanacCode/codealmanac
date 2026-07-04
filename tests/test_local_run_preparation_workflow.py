@@ -69,9 +69,7 @@ def test_prepare_next_local_run_claims_trigger_and_prepares_engine_request(
             source_ref=transcript.as_uri(),
         )
     )
-    turn = app.control.upsert_turn(
-        UpsertTurnRequest(session_id=session.id, sequence=1)
-    )
+    turn = app.control.upsert_turn(UpsertTurnRequest(session_id=session.id, sequence=1))
     app.control.link_turn_branch(
         LinkTurnBranchRequest(
             turn_id=turn.id,

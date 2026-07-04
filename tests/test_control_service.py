@@ -923,9 +923,7 @@ def test_new_trigger_marks_active_runs_for_old_head_stale(
 
     stale_queued = app.control.get_run(GetControlRunRequest(run_id=queued.id))
     stale_running = app.control.get_run(GetControlRunRequest(run_id=running.id))
-    preserved_same_head = app.control.get_run(
-        GetControlRunRequest(run_id=same_head.id)
-    )
+    preserved_same_head = app.control.get_run(GetControlRunRequest(run_id=same_head.id))
     preserved_terminal = app.control.get_run(GetControlRunRequest(run_id=terminal.id))
     queued_events = app.control.list_run_events(
         ListControlRunEventsRequest(run_id=queued.id)
@@ -942,9 +940,7 @@ def test_new_trigger_marks_active_runs_for_old_head_stale(
     assert stale_running.error == "branch advanced to head-2; run marked stale"
     assert preserved_same_head.status is ControlRunStatus.QUEUED
     assert preserved_terminal.status is ControlRunStatus.SUCCEEDED
-    assert tuple(event.kind for event in queued_events) == (
-        ControlRunEventKind.STATUS,
-    )
+    assert tuple(event.kind for event in queued_events) == (ControlRunEventKind.STATUS,)
     assert tuple(event.kind for event in running_events) == (
         ControlRunEventKind.STATUS,
     )

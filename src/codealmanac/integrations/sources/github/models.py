@@ -118,4 +118,3 @@ class GitHubIssuePayload(GitHubCliModel):
     labels: tuple[GitHubLabel, ...] = ()
     assignees: tuple[GitHubActor, ...] = ()
     comments: tuple[GitHubComment, ...] = ()
-

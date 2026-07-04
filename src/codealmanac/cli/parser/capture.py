@@ -43,8 +43,12 @@ def add_capture_commands(subcommands: argparse._SubParsersAction) -> None:
     )
     disable.add_argument("--json", action="store_true")
 
-    capture_hook = subcommands.add_parser("__capture-hook", help=argparse.SUPPRESS)
-    capture_hook.add_argument("--provider", choices=("codex", "claude"), required=True)
+    inspect = capture_subcommands.add_parser(
+        "inspect",
+        help="inspect recent local capture hook events",
+    )
+    inspect.add_argument("--limit", type=int, default=1)
+    inspect.add_argument("--json", action="store_true")
 
 
 def add_api_url(parser: argparse.ArgumentParser) -> None:

@@ -18,6 +18,7 @@ def default_source_runtime_adapters() -> tuple[SourceRuntimeAdapter, ...]:
         WebSourceRuntimeAdapter(),
     )
 
+
 __all__ = [
     "FilesystemSourceRuntimeAdapter",
     "GitSourceRuntimeAdapter",

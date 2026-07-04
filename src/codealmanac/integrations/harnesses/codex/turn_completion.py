@@ -13,9 +13,7 @@ def root_turn_completion(message: JsonObject, state: CodexRunState) -> bool:
     completed_turn_id = string_field(params, "turnId")
     completed_thread_id = string_field(params, "threadId")
     return (
-        state.root_turn_id is not None
-        and completed_turn_id == state.root_turn_id
+        state.root_turn_id is not None and completed_turn_id == state.root_turn_id
     ) or (
-        state.root_thread_id is not None
-        and completed_thread_id == state.root_thread_id
+        state.root_thread_id is not None and completed_thread_id == state.root_thread_id
     )

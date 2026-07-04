@@ -86,4 +86,3 @@ def wikilink_label(raw: str) -> str:
     if separator:
         return label.strip() or target.strip()
     return target.strip()
-

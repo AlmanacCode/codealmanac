@@ -42,4 +42,3 @@ class CaptureStateStore:
             self.path.unlink()
         except FileNotFoundError:
             return
-

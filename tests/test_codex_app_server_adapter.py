@@ -16,7 +16,7 @@ from codealmanac.integrations.harnesses.codex.usage import (
     parse_codex_app_server_usage,
 )
 
-FAKE_CODEX_BODY = r'''
+FAKE_CODEX_BODY = r"""
 import base64
 import json
 import os
@@ -273,7 +273,7 @@ elif SCENARIO == "helper_error":
     run_helper_error_then_root_success()
 else:
     run_success()
-'''
+"""
 
 
 def test_codex_app_server_run_maps_notifications(tmp_path: Path):
@@ -385,17 +385,15 @@ def test_codex_app_server_usage_preserves_zero_counts():
 
 
 def test_codex_app_server_noninteractive_responses_are_deterministic():
-    assert noninteractive_response(
-        "item/commandExecution/requestApproval"
-    ).result == {"decision": "decline"}
+    assert noninteractive_response("item/commandExecution/requestApproval").result == {
+        "decision": "decline"
+    }
     assert noninteractive_response("item/permissions/requestApproval").result == {
         "permissions": {},
         "scope": "turn",
         "strictAutoReview": True,
     }
-    assert noninteractive_response(
-        "account/chatgptAuthTokens/refresh"
-    ).error == {
+    assert noninteractive_response("account/chatgptAuthTokens/refresh").error == {
         "code": -32001,
         "message": (
             "CodeAlmanac does not manage ChatGPT auth tokens for Codex app-server."
@@ -406,9 +404,7 @@ def test_codex_app_server_noninteractive_responses_are_deterministic():
 def fake_codex_path(tmp_path: Path, scenario: str) -> str:
     path = tmp_path / "codex"
     path.write_text(
-        "#!/usr/bin/env python3\n"
-        f"SCENARIO = {scenario!r}\n"
-        f"{FAKE_CODEX_BODY}\n",
+        f"#!/usr/bin/env python3\nSCENARIO = {scenario!r}\n{FAKE_CODEX_BODY}\n",
         encoding="utf-8",
     )
     path.chmod(0o755)

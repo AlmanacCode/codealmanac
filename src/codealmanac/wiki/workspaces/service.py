@@ -76,9 +76,8 @@ class WorkspacesService:
             root_path,
             request.name or (existing.name if existing is not None else None),
         )
-        description = (
-            request.description.strip()
-            or (existing.description if existing is not None else "")
+        description = request.description.strip() or (
+            existing.description if existing is not None else ""
         )
         workspace = Workspace(
             workspace_id=workspace_id_for(root_path),
@@ -160,9 +159,7 @@ class WorkspacesService:
         if selected is None:
             raise NotFoundError("workspace", request.selector)
         remaining = [
-            entry
-            for entry in entries
-            if entry.workspace_id != selected.workspace_id
+            entry for entry in entries if entry.workspace_id != selected.workspace_id
         ]
         self.store.replace(remaining)
         return DropWorkspaceResult(dropped=(selected.to_workspace(),))
@@ -170,8 +167,7 @@ class WorkspacesService:
     def drop_missing(self) -> DropWorkspaceResult:
         entries = self.store.list()
         dropped = tuple(
-            entry.to_workspace()
-            for entry in unavailable_registry_entries(entries)
+            entry.to_workspace() for entry in unavailable_registry_entries(entries)
         )
         remaining = available_registry_entries(entries)
         self.store.replace(remaining)

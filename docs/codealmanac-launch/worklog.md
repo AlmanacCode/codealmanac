@@ -2640,3 +2640,18 @@
   `local update`, and `local jobs` help text.
 - RelayForge update sent through binding `rohan-codex-019f05b3` with the public
   install evidence and 100% status for CLI/public UX.
+
+## 2026-07-04 Slice 91 CLI Hidden Root Command Cleanup
+
+- The post-release contract check found that root `jobs`, `__capture-hook`,
+  and `__run-worker` were still parser-accepted in `0.1.10` even though they
+  were hidden from help and documented as removed.
+- Removed the root parser/dispatch/render `jobs` command surface.
+- Moved capture hook execution to the private `codealmanac-capture-hook`
+  console script.
+- Moved detached lifecycle job queue execution to the private
+  `codealmanac-job-worker` console script.
+- Kept `codealmanac-local-trigger` and `codealmanac-local-worker` as the local
+  Git trigger/private local worker scripts.
+- Added `codealmanac capture inspect` to read recent local capture hook events.
+- Bumped the Python package version to `0.1.11` for the corrected CLI contract.

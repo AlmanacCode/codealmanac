@@ -187,4 +187,3 @@ def render_actor(actor: GitHubActor | None) -> str:
     if actor.name:
         return f"{actor.login} ({actor.name})"
     return actor.login
-

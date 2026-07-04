@@ -58,3 +58,7 @@ class CaptureDisableRequest(CaptureRequest):
 class CaptureHookRequest(CodeAlmanacModel):
     provider: CaptureProvider
     payload: dict[str, object]
+
+
+class CaptureInspectRequest(CodeAlmanacModel):
+    limit: int = Field(default=1, ge=1, le=100)

@@ -124,10 +124,14 @@ def test_console_entry_points_keep_one_human_cli_and_private_workers():
     scripts = pyproject["project"]["scripts"]
 
     assert scripts["codealmanac"] == "codealmanac.cli.main:main"
+    assert scripts["codealmanac-capture-hook"] == "codealmanac.capture_hook:main"
+    assert scripts["codealmanac-job-worker"] == "codealmanac.job_worker:main"
     assert scripts["codealmanac-local-trigger"] == "codealmanac.local_trigger:main"
     assert scripts["codealmanac-local-worker"] == "codealmanac.local_worker:main"
     assert set(scripts) == {
         "codealmanac",
+        "codealmanac-capture-hook",
+        "codealmanac-job-worker",
         "codealmanac-local-trigger",
         "codealmanac-local-worker",
     }
@@ -162,9 +166,7 @@ def test_default_user_state_paths_are_product_specific(isolated_home: Path):
     assert config.config_path == isolated_home / ".codealmanac/config.toml"
     assert config.auth_path == isolated_home / ".codealmanac/auth.json"
     assert config.capture_path == isolated_home / ".codealmanac/capture.json"
-    assert config.capture_events_path == (
-        isolated_home / ".codealmanac/capture-events"
-    )
+    assert config.capture_events_path == (isolated_home / ".codealmanac/capture-events")
 
 
 def test_readme_documents_python_cloud_first_public_surface():
@@ -342,9 +344,7 @@ def test_github_automation_and_templates_use_python_public_surface():
     for fragment in GITHUB_FORBIDDEN_FRAGMENTS:
         assert fragment not in github_text
 
-    assert "uv build --out-dir dist" in github_files[
-        ".github/workflows/pack-check.yml"
-    ]
+    assert "uv build --out-dir dist" in github_files[".github/workflows/pack-check.yml"]
     publish_workflow = github_files[".github/workflows/publish.yml"]
     assert "pypa/gh-action-pypi-publish@release/v1" in publish_workflow
     assert "id-token: write" in publish_workflow

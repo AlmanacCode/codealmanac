@@ -23,9 +23,7 @@ class WorkspaceRegistryStore:
 
     def remember(self, workspace: Workspace) -> WorkspaceRegistryEntry:
         entries = [
-            entry
-            for entry in self.list()
-            if not same_workspace(entry, workspace)
+            entry for entry in self.list() if not same_workspace(entry, workspace)
         ]
         entry = registry_entry_for(workspace)
         entries.append(entry)

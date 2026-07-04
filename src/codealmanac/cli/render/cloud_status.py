@@ -51,9 +51,7 @@ def render_repo(result: CloudStatusOverview, console: Console) -> None:
 def render_capture(result: CloudStatusOverview, console: Console) -> None:
     capture = result.capture
     marker = (
-        "credential installed"
-        if capture.credential_present
-        else "credential missing"
+        "credential installed" if capture.credential_present else "credential missing"
     )
     console.print(f"Capture: {marker}")
     if len(capture.providers) == 0:

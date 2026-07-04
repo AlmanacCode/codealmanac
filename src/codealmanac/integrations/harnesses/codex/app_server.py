@@ -221,18 +221,24 @@ class CodexAppServerClient:
     def resolved_rpc_timeout_seconds(self) -> float:
         if self.rpc_timeout_seconds is not None:
             return self.rpc_timeout_seconds
-        return env_milliseconds(
-            CODEX_APP_SERVER_RPC_TIMEOUT_ENV,
-            CODEX_APP_SERVER_RPC_TIMEOUT_MS,
-        ) / 1000
+        return (
+            env_milliseconds(
+                CODEX_APP_SERVER_RPC_TIMEOUT_ENV,
+                CODEX_APP_SERVER_RPC_TIMEOUT_MS,
+            )
+            / 1000
+        )
 
     def resolved_turn_timeout_seconds(self) -> float:
         if self.turn_timeout_seconds is not None:
             return self.turn_timeout_seconds
-        return env_milliseconds(
-            CODEX_APP_SERVER_TURN_TIMEOUT_ENV,
-            CODEX_APP_SERVER_TURN_TIMEOUT_MS,
-        ) / 1000
+        return (
+            env_milliseconds(
+                CODEX_APP_SERVER_TURN_TIMEOUT_ENV,
+                CODEX_APP_SERVER_TURN_TIMEOUT_MS,
+            )
+            / 1000
+        )
 
     def resolved_sandbox_mode(self) -> SandboxMode:
         return resolve_sandbox_mode(self.sandbox_mode)

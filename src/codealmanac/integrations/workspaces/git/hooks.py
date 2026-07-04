@@ -81,7 +81,7 @@ def local_trigger_block(hook: LocalGitHookName) -> str:
         (
             LOCAL_TRIGGER_START,
             f"# {hook.value}: record CodeAlmanac branch trigger if configured.",
-            'if command -v codealmanac-local-trigger >/dev/null 2>&1; then',
+            "if command -v codealmanac-local-trigger >/dev/null 2>&1; then",
             '  _codealmanac_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
             "  codealmanac-local-trigger \\",
             '    --cwd "$_codealmanac_root" \\',

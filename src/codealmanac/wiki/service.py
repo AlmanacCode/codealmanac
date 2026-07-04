@@ -41,9 +41,7 @@ def ensure_root_gitignore(root_path: Path, almanac_root: Path) -> None:
     existing = path.read_text(encoding="utf-8") if path.exists() else ""
     lines = {line.strip() for line in existing.splitlines()}
     missing = [
-        line
-        for line in gitignore_runtime_block(almanac_root)
-        if line not in lines
+        line for line in gitignore_runtime_block(almanac_root) if line not in lines
     ]
     if len(missing) == 0:
         return

@@ -1,13 +1,11 @@
 import argparse
-import json
-import sys
 from typing import cast
 
 from codealmanac.app import CodeAlmanac
 from codealmanac.cli.render.capture import (
     render_capture_disable,
     render_capture_enable,
-    render_capture_hook_event,
+    render_capture_inspect,
     render_capture_status,
 )
 from codealmanac.cloud.capture.models import (
@@ -17,11 +15,10 @@ from codealmanac.cloud.capture.models import (
 from codealmanac.cloud.capture.requests import (
     CaptureDisableRequest,
     CaptureEnableRequest,
-    CaptureHookRequest,
+    CaptureInspectRequest,
     CaptureRepairRequest,
     CaptureStatusRequest,
 )
-from codealmanac.core.errors import CodeAlmanacError, ValidationFailed
 
 
 def dispatch_capture(args: argparse.Namespace, app: CodeAlmanac) -> int:
@@ -62,25 +59,11 @@ def dispatch_capture(args: argparse.Namespace, app: CodeAlmanac) -> int:
         )
         render_capture_disable(result, json_output=args.json)
         return 0
-    raise AssertionError(f"unhandled capture command: {args.capture_command}")
-
-
-def dispatch_capture_hook(args: argparse.Namespace, app: CodeAlmanac) -> int:
-    raw = sys.stdin.read()
-    try:
-        payload = json.loads(raw or "{}")
-    except json.JSONDecodeError as error:
-        raise ValidationFailed(f"invalid capture hook JSON: {error}") from error
-    if not isinstance(payload, dict):
-        raise ValidationFailed("invalid capture hook JSON: expected object")
-    try:
-        event = app.capture.record_hook(
-            CaptureHookRequest(provider=args.provider, payload=payload)
-        )
-    except CodeAlmanacError:
+    if args.capture_command == "inspect":
+        result = app.capture.inspect(CaptureInspectRequest(limit=args.limit))
+        render_capture_inspect(result, json_output=args.json)
         return 0
-    render_capture_hook_event(event)
-    return 0
+    raise AssertionError(f"unhandled capture command: {args.capture_command}")
 
 
 def providers_for(value: str) -> tuple[CaptureProvider, ...]:

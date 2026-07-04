@@ -843,7 +843,7 @@ repaired.
 - Release branch: `codex/cli-run-surface-release`, based on `origin/main`.
 - Branch intent: publish the Slice 89 CLI run-surface cleanup without pulling
   unrelated `dev` commits into `main`.
-- Package version is now `0.1.10`.
+- Package version is now `0.1.11`.
 - Release-branch compatibility fix: local run prompt loading uses the prompt
   names present on `main`, not the dev-only `BASE_KERNEL` prompt.
 - Local gates passed:
@@ -871,3 +871,13 @@ repaired.
 - RelayForge update was sent through `rohan-codex-019f05b3`.
 - Next step: continue the larger code-quality and hosted/local architecture
   cleanup.
+
+## Current Slice 91 Correction Handoff
+
+- Do not treat `0.1.10` as the final CLI-breaking release.
+- `0.1.10` still accepted hidden root `jobs`, `__capture-hook`, and
+  `__run-worker`.
+- `0.1.11` removes those root commands, adds `codealmanac-capture-hook` and
+  `codealmanac-job-worker`, keeps the local private trigger/worker scripts, and
+  adds `codealmanac capture inspect`.
+- Text Discord only after `0.1.11` is published and fresh-install smoke-tested.

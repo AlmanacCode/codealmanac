@@ -599,9 +599,7 @@ class ControlStore:
         turn_id = turn_id_for(request.session_id, request.sequence)
         now = current_timestamp()
         created_at = (
-            request.created_at.isoformat()
-            if request.created_at is not None
-            else now
+            request.created_at.isoformat() if request.created_at is not None else now
         )
         with connect_control(self.path) as connection:
             self.session_by_id(connection, request.session_id)

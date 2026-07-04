@@ -11,8 +11,8 @@ from codealmanac.core.errors import ValidationFailed
 from codealmanac.core.paths import home_dir
 
 CAPTURE_STATUS_MESSAGE = "CodeAlmanac capture"
-CODEX_COMMAND = "codealmanac __capture-hook --provider codex"
-CLAUDE_COMMAND = "codealmanac __capture-hook --provider claude"
+CODEX_COMMAND = "codealmanac-capture-hook --provider codex"
+CLAUDE_COMMAND = "codealmanac-capture-hook --provider claude"
 STOP_EVENT = "Stop"
 
 

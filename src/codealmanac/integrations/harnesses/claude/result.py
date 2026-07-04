@@ -55,9 +55,7 @@ def result_from_state(
     output_text = state.result if state.success else state.error_text()
     return HarnessRunResult(
         kind=HarnessKind.CLAUDE,
-        status=HarnessRunStatus.SUCCEEDED
-        if state.success
-        else HarnessRunStatus.FAILED,
+        status=HarnessRunStatus.SUCCEEDED if state.success else HarnessRunStatus.FAILED,
         output_text=output_text or "claude completed without output",
         summary=first_line(output_text) if output_text else None,
         transcript=claude_transcript_ref(state.provider_session_id),

@@ -21,7 +21,3 @@ def add_lifecycle_commands(subcommands: argparse._SubParsersAction) -> None:
     init.add_argument("--verbose", action="store_true")
     init.add_argument("--guidance")
     init.add_argument("--json", action="store_true")
-
-    worker = subcommands.add_parser("__run-worker", help=argparse.SUPPRESS)
-    worker.add_argument("--cwd", required=True)
-    worker.add_argument("--wiki")

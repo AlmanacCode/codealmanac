@@ -10,4 +10,3 @@ def github_target_args(ref: SourceRef) -> tuple[str, ...]:
     if ref.repository is None:
         return (str(ref.number),)
     return (str(ref.number), "--repo", ref.repository)
-

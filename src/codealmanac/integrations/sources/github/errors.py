@@ -23,4 +23,3 @@ def first_error_line(error: Exception) -> str:
     if not lines:
         return error.__class__.__name__
     return lines[0]
-

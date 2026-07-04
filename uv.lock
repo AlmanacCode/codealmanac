@@ -232,7 +232,7 @@ wheels = [
 
 [[package]]
 name = "codealmanac"
-version = "0.1.10"
+version = "0.1.11"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },

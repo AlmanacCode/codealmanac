@@ -95,9 +95,7 @@ def test_local_delivery_applies_patch_and_marks_run_succeeded(
     app, run, repo_path = local_delivery_app(tmp_path, isolated_home, fake_git)
     write_engine_result(app, run.id)
 
-    result = app.workflows.local_delivery.deliver(
-        DeliverLocalRunRequest(run_id=run.id)
-    )
+    result = app.workflows.local_delivery.deliver(DeliverLocalRunRequest(run_id=run.id))
     events = app.control.list_run_events(ListControlRunEventsRequest(run_id=run.id))
 
     assert result.delivered is True
@@ -129,9 +127,7 @@ def test_local_delivery_marks_run_stale_when_branch_head_moved(
     app, run, _repo_path = local_delivery_app(tmp_path, isolated_home, fake_git)
     write_engine_result(app, run.id)
 
-    result = app.workflows.local_delivery.deliver(
-        DeliverLocalRunRequest(run_id=run.id)
-    )
+    result = app.workflows.local_delivery.deliver(DeliverLocalRunRequest(run_id=run.id))
     stale_run = app.control.get_run(GetControlRunRequest(run_id=run.id))
 
     assert result.delivered is False
@@ -162,9 +158,7 @@ def test_local_delivery_can_apply_patch_to_working_tree(
     )
     write_engine_result(app, run.id)
 
-    result = app.workflows.local_delivery.deliver(
-        DeliverLocalRunRequest(run_id=run.id)
-    )
+    result = app.workflows.local_delivery.deliver(DeliverLocalRunRequest(run_id=run.id))
     events = app.control.list_run_events(ListControlRunEventsRequest(run_id=run.id))
 
     assert result.delivered is True
@@ -196,9 +190,7 @@ def test_local_delivery_skips_empty_worker_diff(
     app, run, _repo_path = local_delivery_app(tmp_path, isolated_home, fake_git)
     write_engine_result(app, run.id)
 
-    result = app.workflows.local_delivery.deliver(
-        DeliverLocalRunRequest(run_id=run.id)
-    )
+    result = app.workflows.local_delivery.deliver(DeliverLocalRunRequest(run_id=run.id))
 
     assert result.delivered is False
     assert result.reason == "no_wiki_changes"

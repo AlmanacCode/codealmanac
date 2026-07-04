@@ -34,9 +34,7 @@ def session_id_for_message(message: ClaudeMessage) -> str | None:
         return message.session_id
     if isinstance(
         message,
-        TaskStartedMessage
-        | TaskProgressMessage
-        | TaskNotificationMessage,
+        TaskStartedMessage | TaskProgressMessage | TaskNotificationMessage,
     ):
         return message.session_id
     if isinstance(message, TaskUpdatedMessage):

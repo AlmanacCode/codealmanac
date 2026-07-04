@@ -1,5 +1,4 @@
 import subprocess
-import sys
 from pathlib import Path
 
 from codealmanac.jobs.ledger.models import JobWorkerSpawnResult
@@ -25,10 +24,7 @@ class SubprocessJobWorkerSpawner:
 
 def worker_command(request: SpawnJobWorkerRequest) -> list[str]:
     command = [
-        sys.executable,
-        "-m",
-        "codealmanac.cli.main",
-        "__run-worker",
+        "codealmanac-job-worker",
         "--cwd",
         str(Path(request.cwd)),
     ]

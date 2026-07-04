@@ -34,12 +34,9 @@ class JobAttachStreamer:
         terminal_seen_at: float | None = None
         while True:
             snapshot = self.store.attach(almanac_path, job_id)
-            if (
-                snapshot.terminal
-                and not terminal_status_event_seen(
-                    snapshot.events,
-                    snapshot.record.status,
-                )
+            if snapshot.terminal and not terminal_status_event_seen(
+                snapshot.events,
+                snapshot.record.status,
             ):
                 now = time.monotonic()
                 if terminal_seen_at is None:

@@ -19,9 +19,7 @@ def test_markdown_renderer_rewrites_only_text_wikilinks():
 
 
 def test_markdown_renderer_escapes_wikilink_label_html():
-    html = MarkdownRenderer().render(
-        "[[session-store|<script>alert(1)</script>]]"
-    )
+    html = MarkdownRenderer().render("[[session-store|<script>alert(1)</script>]]")
 
     assert '<a href="#/page/session-store">' in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html

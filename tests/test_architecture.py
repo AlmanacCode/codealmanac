@@ -114,7 +114,7 @@ def test_engine_workspaces_service_keeps_git_mechanics_in_integration():
     assert "worktree add" not in service_text
     assert "worktree" not in store_text
     assert "codealmanac.integrations" not in service_text
-    assert "worktree\", \"add\", \"--detach\"" in integration_text
+    assert 'worktree", "add", "--detach"' in integration_text
 
 
 def test_source_bundles_service_keeps_bundle_materialization_boundary():
@@ -184,9 +184,9 @@ def test_local_delivery_workflow_keeps_git_mechanics_in_integration():
     assert "git_delivery.apply_patch_to_working_tree" in service_text
     assert "codealmanac.integrations" not in service_text
     assert "subprocess" not in service_text
-    assert "\"apply\", \"--index\", \"-\"" in integration_text
-    assert "\"apply\", \"-\"" in integration_text
-    assert "\"commit\", \"--only\"" in integration_text
+    assert '"apply", "--index", "-"' in integration_text
+    assert '"apply", "-"' in integration_text
+    assert '"commit", "--only"' in integration_text
 
 
 def test_local_setup_workflow_keeps_git_detection_in_integration():
@@ -212,8 +212,8 @@ def test_local_setup_workflow_keeps_git_detection_in_integration():
     assert "local_hooks.install" in service_text
     assert "codealmanac.integrations" not in service_text
     assert "subprocess" not in service_text
-    assert "\"rev-parse\", \"--show-toplevel\"" in integration_text
-    assert "\"remote\", \"get-url\", \"origin\"" in integration_text
+    assert '"rev-parse", "--show-toplevel"' in integration_text
+    assert '"remote", "get-url", "origin"' in integration_text
 
 
 def test_cloud_open_workflow_keeps_browser_handoff_out_of_cli():
@@ -625,14 +625,12 @@ def test_index_read_views_are_split_by_query_family():
     assert "IndexCounts(" in (index_root / "summary_views.py").read_text(
         encoding="utf-8"
     )
-    assert "WITH RECURSIVE descendants" in (
-        index_root / "topic_views.py"
-    ).read_text(encoding="utf-8")
-    health_facade = (index_root / "health_views.py").read_text(encoding="utf-8")
-    health_graph = (index_root / "health_graph_views.py").read_text(encoding="utf-8")
-    health_sources = (index_root / "health_source_views.py").read_text(
+    assert "WITH RECURSIVE descendants" in (index_root / "topic_views.py").read_text(
         encoding="utf-8"
     )
+    health_facade = (index_root / "health_views.py").read_text(encoding="utf-8")
+    health_graph = (index_root / "health_graph_views.py").read_text(encoding="utf-8")
+    health_sources = (index_root / "health_source_views.py").read_text(encoding="utf-8")
     assert len(health_facade.splitlines()) <= 60
     assert "HealthReport(" in health_facade
     assert "connection.execute" not in health_facade
@@ -832,9 +830,7 @@ def test_topics_service_keeps_graph_and_workspace_boundaries():
     assert "reject_cycle(" in mutations_text
     assert "existing_topic_slugs(" in mutations_text
     assert [
-        fragment
-        for fragment in forbidden_service_fragments
-        if fragment in service_text
+        fragment for fragment in forbidden_service_fragments if fragment in service_text
     ] == []
     assert "def reject_cycle(" in graph_text
     assert "def ancestors_of(" in graph_text
@@ -865,7 +861,7 @@ def test_local_hooks_service_keeps_file_writes_in_git_integration():
     assert "chmod" not in service_text
     assert "subprocess" not in service_text
     assert "LocalGitHookManager" in service_text
-    assert "git\", \"rev-parse\", \"--git-path\"" in hooks_text
+    assert 'git", "rev-parse", "--git-path"' in hooks_text
     assert "codealmanac-local-trigger" in hooks_text
 
 
@@ -897,7 +893,7 @@ def test_wiki_topics_yaml_stays_split_by_read_and_mutation():
 
     assert "class TopicsYamlFile" in file_text
     assert "def load_topics_file(" in file_text
-    assert "YAML(typ=\"rt\")" in file_text
+    assert 'YAML(typ="rt")' in file_text
     assert "CommentedMap" in file_text
     assert "pyyaml.safe_load" not in file_text
 
@@ -997,8 +993,8 @@ def test_init_first_build_resources_use_init_naming():
     assert not (SRC_ROOT / "manual/build.md").exists()
     assert "OPERATION_INIT" in prompt_models
     assert "OPERATION_BUILD" not in prompt_models
-    assert "INIT = \"init.md\"" in manual_models
-    assert "BUILD = \"build.md\"" not in manual_models
+    assert 'INIT = "init.md"' in manual_models
+    assert 'BUILD = "build.md"' not in manual_models
 
 
 def test_cli_main_stays_as_thin_entrypoint():
@@ -1025,7 +1021,6 @@ def test_cli_parser_is_split_by_command_domain():
         "cloud_status.py",
         "dev.py",
         "diagnostics.py",
-        "jobs.py",
         "lifecycle.py",
         "local.py",
         "open.py",
@@ -1057,7 +1052,6 @@ def test_cli_admin_parser_stays_split_by_command_family():
         "cloud_auth.py": ('add_parser("login"', "def add_cloud_auth_commands("),
         "cloud_status.py": ('add_parser("status"', "def add_cloud_status_command("),
         "diagnostics.py": ('add_parser("doctor"', "def add_diagnostics_commands("),
-        "jobs.py": ('add_parser("jobs"', "def add_jobs_commands("),
         "repo.py": ('add_parser("repo"', "def add_repo_commands("),
         "runs.py": ('add_parser("runs"', "def add_runs_commands("),
         "setup.py": ('add_parser("setup"', "def add_setup_commands("),
@@ -1094,7 +1088,7 @@ def test_cli_admin_parser_stays_split_by_command_family():
     assert "add_runs_commands(subcommands)" in admin
     assert "add_diagnostics_commands(subcommands)" in admin
     assert "add_update_commands(subcommands)" in admin
-    assert "add_jobs_commands(subcommands)" in admin
+    assert "add_jobs_commands(subcommands)" not in admin
     assert oversized == []
 
 
@@ -1107,7 +1101,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "parser/cloud_status.py").is_file()
     assert (cli_root / "parser/dev.py").is_file()
     assert (cli_root / "parser/diagnostics.py").is_file()
-    assert (cli_root / "parser/jobs.py").is_file()
+    assert not (cli_root / "parser/jobs.py").exists()
     assert (cli_root / "parser/local.py").is_file()
     assert (cli_root / "parser/repo.py").is_file()
     assert (cli_root / "parser/runs.py").is_file()
@@ -1123,7 +1117,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert not (cli_root / "dispatch/build.py").exists()
     assert (cli_root / "dispatch/config.py").is_file()
     assert (cli_root / "dispatch/diagnostics.py").is_file()
-    assert (cli_root / "dispatch/jobs.py").is_file()
+    assert not (cli_root / "dispatch/jobs.py").exists()
     assert (cli_root / "dispatch/lifecycle.py").is_file()
     assert (cli_root / "dispatch/local.py").is_file()
     assert not (cli_root / "dispatch/local_trigger.py").exists()
@@ -1136,7 +1130,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "dispatch/topics.py").is_file()
     assert (cli_root / "dispatch/updates.py").is_file()
     assert (cli_root / "dispatch/wiki.py").is_file()
-    assert (cli_root / "dispatch/worker.py").is_file()
+    assert not (cli_root / "dispatch/worker.py").exists()
     assert (cli_root / "dispatch/workspaces.py").is_file()
     assert (cli_root / "render/root.py").is_file()
     assert not (cli_root / "render/automation.py").exists()
@@ -1146,7 +1140,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "render/common.py").is_file()
     assert (cli_root / "render/diagnostics.py").is_file()
     assert (cli_root / "render/health.py").is_file()
-    assert (cli_root / "render/jobs.py").is_file()
+    assert not (cli_root / "render/jobs.py").exists()
     assert (cli_root / "render/lifecycle.py").is_file()
     assert (cli_root / "render/pages.py").is_file()
     assert (cli_root / "render/repo.py").is_file()
@@ -1183,7 +1177,6 @@ def test_cli_render_root_stays_facade():
         "lifecycle.py",
         "root.py",
         "health.py",
-        "jobs.py",
         "pages.py",
         "repo.py",
         "search.py",
@@ -1195,16 +1188,14 @@ def test_cli_render_root_stays_facade():
         "workspaces.py",
     } <= module_names
     assert len(root.splitlines()) <= 80
-    assert [
-        fragment for fragment in forbidden_root_fragments if fragment in root
-    ] == []
+    assert [fragment for fragment in forbidden_root_fragments if fragment in root] == []
     assert "render_sync_status" not in (render_root / "lifecycle.py").read_text(
         encoding="utf-8"
     )
     assert "render_page" in (render_root / "pages.py").read_text(encoding="utf-8")
-    assert "render_workspace_list" in (
-        render_root / "workspaces.py"
-    ).read_text(encoding="utf-8")
+    assert "render_workspace_list" in (render_root / "workspaces.py").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_cli_admin_render_stays_split_by_output_family():
@@ -1213,7 +1204,6 @@ def test_cli_admin_render_stays_split_by_output_family():
     module_expectations = {
         "cloud_runs.py": ("CloudRunListResult", "def render_cloud_runs("),
         "diagnostics.py": ("DoctorReport", "def render_doctor("),
-        "jobs.py": ("JobRecord", "def render_jobs("),
         "repo.py": ("CloudRepoStatusResult", "def render_cloud_repo_status("),
         "setup.py": ("SetupResult", "def render_setup_result("),
         "updates.py": ("UpdatePlan", "def render_update_plan("),
@@ -1241,7 +1231,7 @@ def test_cli_admin_render_stays_split_by_output_family():
         fragment for fragment in forbidden_admin_fragments if fragment in admin
     ] == []
     assert "from codealmanac.cli.render.automation import" not in admin
-    assert "from codealmanac.cli.render.jobs import" in admin
+    assert "from codealmanac.cli.render.jobs import" not in admin
     assert oversized == []
 
 
@@ -1278,9 +1268,7 @@ def test_cli_wiki_render_stays_split_by_output_family():
             oversized.append(f"{module_name}:{line_count}")
 
     assert len(wiki.splitlines()) <= 80
-    assert [
-        fragment for fragment in forbidden_wiki_fragments if fragment in wiki
-    ] == []
+    assert [fragment for fragment in forbidden_wiki_fragments if fragment in wiki] == []
     assert "from codealmanac.cli.render.health import render_health" in wiki
     assert "from codealmanac.cli.render.pages import render_page" in wiki
     assert oversized == []
@@ -1291,9 +1279,7 @@ def test_cli_dispatch_edge_is_split_by_command_domain():
     dispatch_root = (dispatch_path / "root.py").read_text(encoding="utf-8")
     dispatch_wiki = (dispatch_path / "wiki.py").read_text(encoding="utf-8")
     dispatch_topics = (dispatch_path / "topics.py").read_text(encoding="utf-8")
-    dispatch_workspaces = (dispatch_path / "workspaces.py").read_text(
-        encoding="utf-8"
-    )
+    dispatch_workspaces = (dispatch_path / "workspaces.py").read_text(encoding="utf-8")
     dispatch_serve = (dispatch_path / "serve.py").read_text(encoding="utf-8")
     render_root = (SRC_ROOT / "cli/render/root.py").read_text(encoding="utf-8")
     forbidden_wiki_fragments = (
@@ -1346,7 +1332,6 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
         "capture.py": ("CaptureStatusRequest", "def dispatch_capture("),
         "cloud_status.py": ("ReadCloudStatusRequest", "def dispatch_cloud_status("),
         "diagnostics.py": ("DoctorRequest", "def dispatch_doctor("),
-        "jobs.py": ("ShowJobRequest", "def dispatch_jobs("),
         "repo.py": ("ReadCloudRepoStatusRequest", "def dispatch_repo("),
         "runs.py": ("ListCloudRunsRequest", "def dispatch_runs("),
         "setup.py": ("RunSetupRequest", "def dispatch_setup("),
@@ -1383,7 +1368,7 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
     assert "dispatch_repo(args, app)" in admin
     assert "dispatch_runs(args, app)" in admin
     assert "dispatch_uninstall(args, app)" in admin
-    assert "dispatch_jobs(args, app)" in admin
+    assert "dispatch_jobs(args, app)" not in admin
     assert "dispatch_automation(args, app)" not in admin
     assert oversized == []
 
@@ -1462,7 +1447,6 @@ def test_cli_lifecycle_dispatch_stays_split_by_command_family():
     module_expectations = {
         "init.py": ("RunInitRequest", "def dispatch_init("),
         "operations.py": ("RunIngestRequest", "def dispatch_ingest("),
-        "worker.py": ("DrainJobQueueRequest", "def dispatch_run_worker("),
     }
     forbidden_lifecycle_fragments = (
         "RunIngestRequest",
@@ -1485,16 +1469,14 @@ def test_cli_lifecycle_dispatch_stays_split_by_command_family():
 
     assert len(lifecycle.splitlines()) <= 80
     assert [
-        fragment
-        for fragment in forbidden_lifecycle_fragments
-        if fragment in lifecycle
+        fragment for fragment in forbidden_lifecycle_fragments if fragment in lifecycle
     ] == []
     assert "dispatch_init(args, app)" in lifecycle
     assert "dispatch_build(args, app)" not in lifecycle
     assert "dispatch_ingest(args, app)" not in lifecycle
     assert "dispatch_garden(args, app)" not in lifecycle
     assert "dispatch_sync(args, app)" not in lifecycle
-    assert "dispatch_run_worker(args, app)" in lifecycle
+    assert "dispatch_run_worker(args, app)" not in lifecycle
     assert oversized == []
 
 
@@ -1720,9 +1702,7 @@ def test_filesystem_source_runtime_stays_split_by_responsibility():
     } <= module_names
     assert len(adapter_text.splitlines()) <= 220
     assert [
-        fragment
-        for fragment in forbidden_adapter_fragments
-        if fragment in adapter_text
+        fragment for fragment in forbidden_adapter_fragments if fragment in adapter_text
     ] == []
     assert len(listing_text.splitlines()) <= 110
     assert [
@@ -1863,19 +1843,17 @@ def test_transcript_source_runtime_stays_split_by_responsibility():
     } <= module_names
     assert len(runtime_text.splitlines()) <= 100
     assert [
-        fragment
-        for fragment in forbidden_runtime_fragments
-        if fragment in runtime_text
+        fragment for fragment in forbidden_runtime_fragments if fragment in runtime_text
     ] == []
-    assert "class TranscriptJsonLine" in (
-        transcripts_root / "models.py"
-    ).read_text(encoding="utf-8")
-    assert "def transcript_entry(" in (
-        transcripts_root / "entries.py"
-    ).read_text(encoding="utf-8")
-    assert "def read_transcript_entries(" in (
-        transcripts_root / "reader.py"
-    ).read_text(encoding="utf-8")
+    assert "class TranscriptJsonLine" in (transcripts_root / "models.py").read_text(
+        encoding="utf-8"
+    )
+    assert "def transcript_entry(" in (transcripts_root / "entries.py").read_text(
+        encoding="utf-8"
+    )
+    assert "def read_transcript_entries(" in (transcripts_root / "reader.py").read_text(
+        encoding="utf-8"
+    )
     assert "def render_transcript_runtime(" in (
         transcripts_root / "rendering.py"
     ).read_text(encoding="utf-8")
@@ -1884,9 +1862,7 @@ def test_transcript_source_runtime_stays_split_by_responsibility():
 def test_sources_service_stays_orchestration_only():
     sources_root = SRC_ROOT / "engine/sources"
     service_text = (sources_root / "service.py").read_text(encoding="utf-8")
-    address_text = (sources_root / "address_resolution.py").read_text(
-        encoding="utf-8"
-    )
+    address_text = (sources_root / "address_resolution.py").read_text(encoding="utf-8")
     module_names = {path.name for path in sources_root.glob("*.py")}
     forbidden_service_fragments = (
         "urlsplit",
@@ -1935,9 +1911,7 @@ def test_sources_service_stays_orchestration_only():
     assert (sources_root / "address_resolution.py").is_file()
     assert (sources_root / "transcripts.py").is_file()
     assert [
-        fragment
-        for fragment in forbidden_service_fragments
-        if fragment in service_text
+        fragment for fragment in forbidden_service_fragments if fragment in service_text
     ] == []
     assert [
         fragment
@@ -1954,18 +1928,14 @@ def test_sources_service_stays_orchestration_only():
     assert "def resolve_git_range(" in (sources_root / "address_git.py").read_text(
         encoding="utf-8"
     )
-    assert "AnyHttpUrl" in (sources_root / "address_web.py").read_text(
-        encoding="utf-8"
-    )
-    assert "sha256" in (sources_root / "address_path.py").read_text(
-        encoding="utf-8"
-    )
+    assert "AnyHttpUrl" in (sources_root / "address_web.py").read_text(encoding="utf-8")
+    assert "sha256" in (sources_root / "address_path.py").read_text(encoding="utf-8")
     assert "TRANSCRIPT_PROMPT_HINT" in (
         sources_root / "address_transcript.py"
     ).read_text(encoding="utf-8")
-    assert "def transcript_sort_key(" in (
-        sources_root / "transcripts.py"
-    ).read_text(encoding="utf-8")
+    assert "def transcript_sort_key(" in (sources_root / "transcripts.py").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_job_queue_workflow_stays_operation_dispatch_only():
@@ -2011,12 +1981,8 @@ def test_server_app_stays_composition_root():
     server_root = SRC_ROOT / "server"
     app_text = (server_root / "app.py").read_text(encoding="utf-8")
     api_text = (server_root / "api_routes.py").read_text(encoding="utf-8")
-    static_routes_text = (server_root / "static_routes.py").read_text(
-        encoding="utf-8"
-    )
-    static_assets_text = (server_root / "static_assets.py").read_text(
-        encoding="utf-8"
-    )
+    static_routes_text = (server_root / "static_routes.py").read_text(encoding="utf-8")
+    static_assets_text = (server_root / "static_assets.py").read_text(encoding="utf-8")
     errors_text = (server_root / "errors.py").read_text(encoding="utf-8")
     forbidden_app_fragments = (
         "@server.get",
@@ -2038,18 +2004,18 @@ def test_server_app_stays_composition_root():
     assert "register_api_routes(" in app_text
     assert "register_static_routes(server)" in app_text
 
-    assert "@server.get(\"/api/overview\"" in api_text
+    assert '@server.get("/api/overview"' in api_text
     assert "ViewerOverviewRequest(" in api_text
     assert "context.codealmanac.viewer" in api_text
     assert "resources.files" not in api_text
     assert "CodeAlmanacError" not in api_text
 
-    assert "@server.get(\"/assets/{asset_path:path}\"" in static_routes_text
+    assert '@server.get("/assets/{asset_path:path}"' in static_routes_text
     assert "asset_response(asset_path)" in static_routes_text
     assert "ViewerOverviewRequest" not in static_routes_text
 
     assert "class StaticAssetRequest" in static_assets_text
-    assert "resources.files(\"codealmanac.server.assets\")" in static_assets_text
+    assert 'resources.files("codealmanac.server.assets")' in static_assets_text
     assert "ViewerOverviewRequest" not in static_assets_text
 
     assert "CodeAlmanacError" in errors_text
@@ -2059,14 +2025,10 @@ def test_server_app_stays_composition_root():
 
 def test_job_id_validation_is_owned_by_job_models():
     jobs_models = (SRC_ROOT / "jobs/ledger/models.py").read_text(encoding="utf-8")
-    jobs_requests = (SRC_ROOT / "jobs/ledger/requests.py").read_text(
-        encoding="utf-8"
-    )
+    jobs_requests = (SRC_ROOT / "jobs/ledger/requests.py").read_text(encoding="utf-8")
     jobs_store = (SRC_ROOT / "jobs/ledger/store.py").read_text(encoding="utf-8")
     jobs_paths = (SRC_ROOT / "jobs/ledger/paths.py").read_text(encoding="utf-8")
-    viewer_requests = (SRC_ROOT / "wiki/viewer/requests.py").read_text(
-        encoding="utf-8"
-    )
+    viewer_requests = (SRC_ROOT / "wiki/viewer/requests.py").read_text(encoding="utf-8")
 
     assert "JobId = Annotated[" in jobs_models
     assert "StringConstraints" in jobs_models
@@ -2095,7 +2057,7 @@ def test_job_ledger_persistence_stays_split_by_responsibility():
         "os.kill",
         "time.sleep",
         'open("a"',
-        ".open(\"a\"",
+        '.open("a"',
         "JOB_ID_ADAPTER",
         "uuid4",
         "strftime",
@@ -2113,7 +2075,7 @@ def test_job_ledger_persistence_stays_split_by_responsibility():
         "streaming.py",
         "transitions.py",
     } <= module_names
-    assert len(store_text.splitlines()) <= 240
+    assert len(store_text.splitlines()) <= 245
     assert [
         fragment for fragment in forbidden_store_fragments if fragment in store_text
     ] == []

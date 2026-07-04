@@ -59,9 +59,7 @@ def search_sql(request: SearchIndexRequest) -> tuple[str, tuple[object, ...]]:
             tuple(params),
         )
 
-    where_sql = (
-        f"WHERE {' AND '.join(where_clauses)}" if len(where_clauses) > 0 else ""
-    )
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if len(where_clauses) > 0 else ""
     return (
         f"""
         SELECT p.slug, p.title, p.summary, p.updated_at

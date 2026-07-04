@@ -118,12 +118,8 @@ def test_garden_workflow_runs_harness_and_refreshes_index(
     assert result.job.harness_transcript is not None
     assert result.job.harness_transcript.session_id == "codex-garden-session"
     assert result.health_before.empty_pages == ()
-    assert result.harness.changed_files == (
-        repo / "almanac/pages/gardened-note.md",
-    )
-    assert result.safety.changed_files == (
-        repo / "almanac/pages/gardened-note.md",
-    )
+    assert result.harness.changed_files == (repo / "almanac/pages/gardened-note.md",)
+    assert result.safety.changed_files == (repo / "almanac/pages/gardened-note.md",)
     assert result.index.pages_indexed == 2
     assert matches[0].slug == "gardened-note"
     assert "Garden Operation" in adapter.requests[0].prompt

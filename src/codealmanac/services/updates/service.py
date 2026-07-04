@@ -31,9 +31,7 @@ class UpdatesService:
             return UpdateResult(status=plan.status, plan=plan)
         output = self.runner.run(plan.command)
         status = (
-            UpdateStatus.COMPLETED
-            if output.exit_code == 0
-            else UpdateStatus.FAILED
+            UpdateStatus.COMPLETED if output.exit_code == 0 else UpdateStatus.FAILED
         )
         return UpdateResult(
             status=status,

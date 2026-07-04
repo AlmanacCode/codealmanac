@@ -53,12 +53,15 @@ codealmanac local runs logs <run-id>
 Private process entrypoints:
 
 ```bash
+codealmanac-capture-hook
+codealmanac-job-worker
 codealmanac-local-trigger
 codealmanac-local-worker
 ```
 
-Git hooks and detached local workers call these process entrypoints directly.
-They are intentionally not root `codealmanac` subcommands.
+Capture hooks, detached lifecycle job workers, Git hooks, and detached local
+workers call these process entrypoints directly. They are intentionally not
+root `codealmanac` subcommands.
 
 ## Removed Breaking Surfaces
 
@@ -72,6 +75,11 @@ docs, and public contract:
 - Hidden double-underscore root worker commands.
 - Root setup automation flags.
 - Root uninstall automation flags and JSON fields.
+
+The post-release check found that `jobs`, `__capture-hook`, and `__run-worker`
+were hidden from help but still accepted by the parser in `0.1.10`. Slice 91
+removed those root parser paths, moved hook/worker execution to named private
+console scripts, and added `codealmanac capture inspect` to match the contract.
 
 ## Decisions Captured
 
@@ -88,8 +96,6 @@ docs, and public contract:
 
 ## Verification
 
-- Focused gate passed: `uv run pytest tests/test_config_service.py tests/test_local_hooks.py tests/test_local_worker_spawner.py tests/test_local_runs_workflow.py tests/test_cli.py tests/test_public_contract.py tests/test_architecture.py -q` (`165 passed`).
-- Full source gate passed: `uv run pytest -q` (`481 passed`).
-- Lint and diff hygiene passed: `uv run ruff check .` and `git diff --check`.
-- Stale-command search only finds historical launch logs and tests that
-  intentionally reject old flags.
+- Slice 91 focused gate passed: `uv run pytest tests/test_cli.py tests/test_cloud_capture_service.py tests/test_run_queue_workflow.py tests/test_public_contract.py tests/test_architecture.py -q` (`157 passed`).
+- Slice 91 lint/format passed: `uv run ruff check .` and
+  `uv run ruff format --check .`.

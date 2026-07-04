@@ -27,10 +27,8 @@ FILE_PROMPT_HINT = (
     "durable wiki knowledge changed."
 )
 MISSING_PATH_PROMPT_HINT = (
-    "Resolve the missing local path before attempting to use it as source "
-    "material."
+    "Resolve the missing local path before attempting to use it as source material."
 )
 TRANSCRIPT_PROMPT_HINT = (
-    "Inspect the transcript structurally and preserve only reusable "
-    "project knowledge."
+    "Inspect the transcript structurally and preserve only reusable project knowledge."
 )

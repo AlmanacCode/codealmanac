@@ -22,10 +22,7 @@ def render_update_prompt(
     guidance: str | None = None,
 ) -> str:
     sections = operation_prompt_sections(request.operation)
-    context = (
-        "Runtime context:\n"
-        f"{request.model_dump_json(indent=2)}\n",
-    )
+    context = (f"Runtime context:\n{request.model_dump_json(indent=2)}\n",)
     if guidance is not None:
         context = (*context, f"\n\nUser guidance:\n{guidance}\n")
     return prompts.render(

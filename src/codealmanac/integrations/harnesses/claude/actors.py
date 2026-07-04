@@ -38,9 +38,7 @@ def actor_for_message(
         )
     if isinstance(
         message,
-        TaskStartedMessage
-        | TaskProgressMessage
-        | TaskNotificationMessage,
+        TaskStartedMessage | TaskProgressMessage | TaskNotificationMessage,
     ):
         return actor_for_parent(state, message.session_id, message.tool_use_id)
     if isinstance(message, TaskUpdatedMessage):

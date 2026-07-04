@@ -5,6 +5,7 @@ from codealmanac.cloud.capture.models import (
     CaptureDisableResult,
     CaptureEnableResult,
     CaptureHookEvent,
+    CaptureInspectResult,
     CaptureStatus,
 )
 
@@ -65,3 +66,21 @@ def render_capture_disable(result: CaptureDisableResult, *, json_output: bool) -
 def render_capture_hook_event(event: CaptureHookEvent) -> None:
     print_json_model(event)
 
+
+def render_capture_inspect(
+    result: CaptureInspectResult,
+    *,
+    json_output: bool,
+) -> None:
+    if json_output:
+        print_json_model(result)
+        return
+    console = Console(highlight=False)
+    if len(result.events) == 0:
+        console.print("No capture events")
+        return
+    for event in result.events:
+        session = event.session_id or "-"
+        status = event.upload_status
+        provider = event.provider
+        console.print(f"{provider}\t{status}\t{session}")

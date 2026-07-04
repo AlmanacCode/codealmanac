@@ -75,4 +75,3 @@ class GitHubClient:
                 f"gh {' '.join(args)} failed: {surface_process_error(result)}"
             )
         return result.stdout.strip()
-

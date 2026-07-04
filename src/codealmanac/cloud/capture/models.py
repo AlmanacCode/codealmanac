@@ -107,6 +107,10 @@ class CaptureHookEvent(CodeAlmanacModel):
     routing_status: CaptureRoutingStatus | None = None
 
 
+class CaptureInspectResult(CodeAlmanacModel):
+    events: tuple[CaptureHookEvent, ...]
+
+
 class CaptureArtifactUpload(CodeAlmanacModel):
     provider: CaptureProvider
     provider_session_id: str = Field(min_length=1)

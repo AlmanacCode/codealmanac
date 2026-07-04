@@ -127,8 +127,7 @@ def render_local_run_start(result: LocalRunStartResult, json_output: bool) -> No
         print(f"local run: not started ({result.reason})")
         if result.active_run is not None:
             print(
-                f"active_run: {result.active_run.id} "
-                f"{result.active_run.status.value}"
+                f"active_run: {result.active_run.id} {result.active_run.status.value}"
             )
         return
     assert result.worker is not None

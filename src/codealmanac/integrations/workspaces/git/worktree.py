@@ -33,9 +33,7 @@ class GitDetachedWorktreeManager:
         )
         head_sha = self._git(worktree_path, ("rev-parse", "HEAD")).stdout.strip()
         if head_sha != commit_sha:
-            raise ExecutionFailed(
-                "Git worktree HEAD did not match expected head SHA"
-            )
+            raise ExecutionFailed("Git worktree HEAD did not match expected head SHA")
         return GitWorktreeCheckout(repo_path=worktree_path, head_sha=head_sha)
 
     def remove(self, source_repo_path: Path, worktree_path: Path) -> None:

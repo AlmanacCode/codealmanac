@@ -85,7 +85,9 @@ def test_filesystem_source_runtime_reads_directory_with_ignores(tmp_path: Path):
     (tmp_path / "almanac/pages").mkdir(parents=True)
     (tmp_path / "almanac/pages/wiki.md").write_text("wiki\n", encoding="utf-8")
     app = create_app(
-        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=5),),
+        source_runtime_adapters=(
+            FilesystemSourceRuntimeAdapter(max_directory_files=5),
+        ),
     )
     (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=tmp_path, inputs=(".",)))
 
@@ -116,7 +118,9 @@ def test_filesystem_source_runtime_uses_configured_wiki_root_ignore(
     (tmp_path / "knowledge/pages").mkdir(parents=True)
     (tmp_path / "knowledge/pages/wiki.md").write_text("wiki\n", encoding="utf-8")
     app = create_app(
-        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=5),),
+        source_runtime_adapters=(
+            FilesystemSourceRuntimeAdapter(max_directory_files=5),
+        ),
     )
     (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=tmp_path, inputs=(".",)))
 
@@ -141,7 +145,9 @@ def test_filesystem_source_runtime_does_not_hard_code_wiki_root_names(
     (tmp_path / "almanac/pages").mkdir(parents=True)
     (tmp_path / "almanac/pages/wiki.md").write_text("wiki\n", encoding="utf-8")
     app = create_app(
-        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=5),),
+        source_runtime_adapters=(
+            FilesystemSourceRuntimeAdapter(max_directory_files=5),
+        ),
     )
     (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=tmp_path, inputs=(".",)))
 
@@ -167,7 +173,9 @@ def test_filesystem_source_runtime_normalizes_display_base(
     (real / "src").mkdir()
     (real / "src/service.py").write_text("VALUE = 42\n", encoding="utf-8")
     app = create_app(
-        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=5),),
+        source_runtime_adapters=(
+            FilesystemSourceRuntimeAdapter(max_directory_files=5),
+        ),
     )
     (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=alias, inputs=("src",)))
 
@@ -202,7 +210,9 @@ def test_filesystem_source_runtime_uses_git_directory_listing(
     (repo / "root-ignored.md").write_text("ignored root\n", encoding="utf-8")
     run_git(repo, "add", "src/keep.py")
     app = create_app(
-        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=10),)
+        source_runtime_adapters=(
+            FilesystemSourceRuntimeAdapter(max_directory_files=10),
+        )
     )
     (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=repo, inputs=("src",)))
 
@@ -248,7 +258,9 @@ def test_filesystem_source_runtime_uses_configured_wiki_root_ignore_with_git(
     (repo / "knowledge/pages/wiki.md").write_text("wiki\n", encoding="utf-8")
     run_git(repo, "add", "src/app.py", "knowledge/pages/wiki.md")
     app = create_app(
-        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=5),),
+        source_runtime_adapters=(
+            FilesystemSourceRuntimeAdapter(max_directory_files=5),
+        ),
     )
     (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=repo, inputs=(".",)))
 
@@ -361,7 +373,9 @@ def test_filesystem_source_runtime_bounds_directory_files(tmp_path: Path):
             encoding="utf-8",
         )
     app = create_app(
-        source_runtime_adapters=(FilesystemSourceRuntimeAdapter(max_directory_files=2),),
+        source_runtime_adapters=(
+            FilesystemSourceRuntimeAdapter(max_directory_files=2),
+        ),
     )
     (brief,) = app.sources.resolve(ResolveSourcesRequest(cwd=tmp_path, inputs=(".",)))
 

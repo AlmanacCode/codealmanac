@@ -101,9 +101,7 @@ class EngineRunRequest(CodeAlmanacModel):
         if self.version != 1:
             raise ValueError("engine run request version must be 1")
         if self.commit_subject_prefix != COMMIT_SUBJECT_PREFIX:
-            raise ValueError(
-                f"commit subject prefix must be {COMMIT_SUBJECT_PREFIX!r}"
-            )
+            raise ValueError(f"commit subject prefix must be {COMMIT_SUBJECT_PREFIX!r}")
         return self
 
 

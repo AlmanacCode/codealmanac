@@ -111,9 +111,7 @@ class GitLocalDeliveryManager:
         ).stdout
         changed_paths = tuple(change.path for change in parse_git_status(status))
         return LocalDeliveryWorkingTree(
-            changed_paths=tuple(
-                sorted(changed_paths, key=lambda item: item.as_posix())
-            )
+            changed_paths=tuple(sorted(changed_paths, key=lambda item: item.as_posix()))
         )
 
     def validate_almanac_root_clean(self, repo_path: Path, almanac_root: Path) -> None:

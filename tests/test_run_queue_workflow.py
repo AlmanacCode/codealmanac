@@ -188,13 +188,11 @@ def test_run_queue_skips_cancelled_queued_runs(
     assert harness.requests == []
 
 
-def test_worker_command_targets_codealmanac_module(tmp_path: Path):
+def test_worker_command_targets_private_job_worker_entrypoint(tmp_path: Path):
     command = worker_command(SpawnJobWorkerRequest(cwd=tmp_path, wiki="docs"))
 
-    assert command[1:] == [
-        "-m",
-        "codealmanac.cli.main",
-        "__run-worker",
+    assert command == [
+        "codealmanac-job-worker",
         "--cwd",
         str(tmp_path),
         "--wiki",

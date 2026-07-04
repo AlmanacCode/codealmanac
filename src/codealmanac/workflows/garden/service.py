@@ -130,9 +130,6 @@ def render_garden_prompt(
     return prompts.render(
         RenderPromptRequest(
             sections=GARDEN_PROMPT_SECTIONS,
-            context=(
-                "Runtime context:\n"
-                f"{payload.model_dump_json(indent=2)}\n",
-            ),
+            context=(f"Runtime context:\n{payload.model_dump_json(indent=2)}\n",),
         )
     )

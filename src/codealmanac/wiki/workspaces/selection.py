@@ -21,9 +21,7 @@ def entry_by_name(
     entries: list[WorkspaceRegistryEntry],
 ) -> WorkspaceRegistryEntry | None:
     matches = [
-        entry
-        for entry in entries
-        if entry.name.casefold() == selector.casefold()
+        entry for entry in entries if entry.name.casefold() == selector.casefold()
     ]
     if len(matches) > 1:
         raise ConflictError(f"workspace selector is ambiguous: {selector}")

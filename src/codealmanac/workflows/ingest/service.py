@@ -167,10 +167,7 @@ def render_ingest_prompt(
     return prompts.render(
         RenderPromptRequest(
             sections=INGEST_PROMPT_SECTIONS,
-            context=(
-                "Runtime context:\n"
-                f"{payload.model_dump_json(indent=2)}\n",
-            ),
+            context=(f"Runtime context:\n{payload.model_dump_json(indent=2)}\n",),
         )
     )
 

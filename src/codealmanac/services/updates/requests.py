@@ -7,4 +7,3 @@ class CheckUpdateRequest(CodeAlmanacModel):
 
 class RunUpdateRequest(CodeAlmanacModel):
     pass
-

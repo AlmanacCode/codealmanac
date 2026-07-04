@@ -8,6 +8,7 @@ from codealmanac.cloud.capture.models import (
     CaptureDisableResult,
     CaptureEnableResult,
     CaptureHookEvent,
+    CaptureInspectResult,
     CaptureState,
     CaptureStatus,
 )
@@ -21,6 +22,7 @@ from codealmanac.cloud.capture.requests import (
     CaptureDisableRequest,
     CaptureEnableRequest,
     CaptureHookRequest,
+    CaptureInspectRequest,
     CaptureRepairRequest,
     CaptureStatusRequest,
 )
@@ -231,6 +233,9 @@ class CloudCaptureService:
             )
         self.events.append(event)
         return event
+
+    def inspect(self, request: CaptureInspectRequest) -> CaptureInspectResult:
+        return CaptureInspectResult(events=self.events.latest(request.limit))
 
 
 def string_value(value: object) -> str | None:

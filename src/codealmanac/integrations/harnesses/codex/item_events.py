@@ -71,9 +71,10 @@ def map_completed_item(
         item.get("result"),
         item.get("error"),
     )
-    is_error = display.status == HarnessToolStatus.FAILED or boolean_field(
-        item, "success"
-    ) is False
+    is_error = (
+        display.status == HarnessToolStatus.FAILED
+        or boolean_field(item, "success") is False
+    )
     events = [
         HarnessEvent(
             kind=HarnessEventKind.TOOL_RESULT,

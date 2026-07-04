@@ -147,10 +147,20 @@ def test_github_source_runtime_loads_issue_shorthand(tmp_path: Path):
     assert "The wiki should preserve deployment gotchas." in (runtime.content or "")
     assert "- docs" in (runtime.content or "")
     assert "- kushagra" in (runtime.content or "")
-    assert ("gh", ("issue", "view", "7", "--json", (
-        "title,state,author,body,url,createdAt,updatedAt,closedAt,"
-        "labels,assignees,comments"
-    )), tmp_path) in runner.calls
+    assert (
+        "gh",
+        (
+            "issue",
+            "view",
+            "7",
+            "--json",
+            (
+                "title,state,author,body,url,createdAt,updatedAt,closedAt,"
+                "labels,assignees,comments"
+            ),
+        ),
+        tmp_path,
+    ) in runner.calls
 
 
 def test_github_source_runtime_marks_cli_failures_unavailable(tmp_path: Path):

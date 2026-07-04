@@ -45,7 +45,11 @@ class JobStore:
         now = datetime.now(UTC)
         job_id = new_job_id(operation, now)
         record = new_job_record(
-            job_id, workspace_id, operation, title, now,
+            job_id,
+            workspace_id,
+            operation,
+            title,
+            now,
             log_reference_dir,
         )
         self.transitions.write_queued_record(job_dir, record, now)
@@ -62,7 +66,11 @@ class JobStore:
         now = datetime.now(UTC)
         job_id = new_job_id(spec.operation, now)
         record = new_job_record(
-            job_id, workspace_id, spec.operation, title or spec.title, now,
+            job_id,
+            workspace_id,
+            spec.operation,
+            title or spec.title,
+            now,
             log_reference_dir,
         )
         self.ledger.write_spec(job_dir, record.job_id, spec)
@@ -146,9 +154,7 @@ class JobStore:
         if record.status == JobStatus.RUNNING:
             return record
         if record.status != JobStatus.QUEUED:
-            raise ConflictError(
-                f"job {job_id} cannot start from {record.status.value}"
-            )
+            raise ConflictError(f"job {job_id} cannot start from {record.status.value}")
         now = datetime.now(UTC)
         running = record.model_copy(
             update={

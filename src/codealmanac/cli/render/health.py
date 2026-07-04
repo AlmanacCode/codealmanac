@@ -35,8 +35,7 @@ def render_health(report: HealthReport, json_output: bool) -> None:
     render_health_section(
         "missing_source_citations",
         tuple(
-            f"{item.slug}\t{item.source_id}"
-            for item in report.missing_source_citations
+            f"{item.slug}\t{item.source_id}" for item in report.missing_source_citations
         ),
     )
     render_health_section(

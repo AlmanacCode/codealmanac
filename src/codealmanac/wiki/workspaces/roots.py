@@ -67,10 +67,9 @@ def nearest_almanac_root(
 def is_initialized_almanac_root(path: Path) -> bool:
     if not path.is_dir():
         return False
-    return (
-        (path / ALMANAC_ROOT_MARKER_FILE).is_file()
-        and (path / ALMANAC_ROOT_MARKER_DIR).is_dir()
-    )
+    return (path / ALMANAC_ROOT_MARKER_FILE).is_file() and (
+        path / ALMANAC_ROOT_MARKER_DIR
+    ).is_dir()
 
 
 def validate_almanac_root_field(value: Path | str | None) -> Path:

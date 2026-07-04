@@ -32,15 +32,11 @@ def test_prompt_inventory_reads_init_ingest_garden_and_update_operations():
     }
 
     assert "Init Operation" in rendered[PromptName.OPERATION_INIT]
-    assert "first substantial CodeAlmanac wiki" in rendered[
-        PromptName.OPERATION_INIT
-    ]
+    assert "first substantial CodeAlmanac wiki" in rendered[PromptName.OPERATION_INIT]
     assert "Ingest Operation" in rendered[PromptName.OPERATION_INGEST]
     assert "Garden Operation" in rendered[PromptName.OPERATION_GARDEN]
     assert "Update Operation" in rendered[PromptName.OPERATION_UPDATE]
-    assert "Page Notability And Graph Structure" in rendered[
-        PromptName.BASE_NOTABILITY
-    ]
+    assert "Page Notability And Graph Structure" in rendered[PromptName.BASE_NOTABILITY]
 
 
 def test_prompt_renderer_requires_sections():
