@@ -13,8 +13,9 @@ class RunNextLocalWorkerRequest(CodeAlmanacModel):
     operation: str = "update"
     harness: HarnessKind = HarnessKind.CODEX
     title: str | None = None
+    guidance: str | None = None
 
-    @field_validator("repository_id", "branch_id", "operation", "title")
+    @field_validator("repository_id", "branch_id", "operation", "title", "guidance")
     @classmethod
     def require_optional_text(cls, value: str | None) -> str | None:
         if value is None:
@@ -29,8 +30,9 @@ class SpawnLocalWorkerRequest(CodeAlmanacModel):
     operation: str = "update"
     harness: HarnessKind = HarnessKind.CODEX
     title: str | None = None
+    guidance: str | None = None
 
-    @field_validator("repository_id", "branch_id", "operation", "title")
+    @field_validator("repository_id", "branch_id", "operation", "title", "guidance")
     @classmethod
     def require_spawn_text(cls, value: str | None) -> str | None:
         if value is None:

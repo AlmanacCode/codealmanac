@@ -2,41 +2,23 @@ from datetime import timedelta
 from typing import Any
 
 from humanfriendly import InvalidTimespan, parse_timespan
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.engine.harnesses.models import HarnessKind
 
 DEFAULT_HARNESS = HarnessKind.CODEX
-DEFAULT_SYNC_QUIET = timedelta(minutes=45)
 
 
 class HarnessConfig(CodeAlmanacModel):
     default: HarnessKind = DEFAULT_HARNESS
 
 
-class SyncConfig(CodeAlmanacModel):
-    quiet: timedelta = DEFAULT_SYNC_QUIET
-
-    @field_validator("quiet", mode="before")
-    @classmethod
-    def parse_quiet(cls, value: Any) -> Any:
-        return parse_duration(value, "sync.quiet")
-
-    @field_validator("quiet")
-    @classmethod
-    def require_non_negative_quiet(cls, value: timedelta) -> timedelta:
-        if value.total_seconds() < 0:
-            raise ValueError("sync.quiet must be zero or greater")
-        return value
-
-
 class CodeAlmanacConfig(BaseSettings):
     model_config = SettingsConfigDict(frozen=True, extra="forbid")
 
     harness: HarnessConfig = Field(default_factory=HarnessConfig)
-    sync: SyncConfig = Field(default_factory=SyncConfig)
 
     @classmethod
     def settings_customise_sources(

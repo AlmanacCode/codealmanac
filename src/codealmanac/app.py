@@ -41,7 +41,6 @@ from codealmanac.engine.sources.service import SourcesService
 from codealmanac.engine.workspaces.ports import GitWorktreeManager
 from codealmanac.engine.workspaces.service import EngineWorkspacesService
 from codealmanac.engine.workspaces.store import EngineWorkspacesStore
-from codealmanac.integrations.automation import LaunchdSchedulerAdapter
 from codealmanac.integrations.browser import WebBrowserOpener
 from codealmanac.integrations.capture import (
     CaptureTranscriptNormalizer,
@@ -87,19 +86,16 @@ from codealmanac.local.hooks.ports import LocalGitHookManager
 from codealmanac.local.hooks.service import LocalHooksService
 from codealmanac.local.policies import LocalPolicyWorkflow
 from codealmanac.local.runs.execution import LocalEngineWorkflow
-from codealmanac.local.runs.jobs import LocalJobsWorkflow
 from codealmanac.local.runs.preparation import LocalRunPreparationWorkflow
+from codealmanac.local.runs.service import LocalRunsWorkflow
 from codealmanac.local.runs.worker import LocalWorkerSpawner, LocalWorkerWorkflow
 from codealmanac.local.setup import (
     LocalRepositoryProbe,
     LocalSetupWorkflow,
 )
 from codealmanac.local.status import LocalStatusWorkflow
-from codealmanac.local.update import LocalUpdateWorkflow
 from codealmanac.manual import ManualLibrary
 from codealmanac.prompts import PromptRenderer
-from codealmanac.services.automation.ports import SchedulerAdapter
-from codealmanac.services.automation.service import AutomationService
 from codealmanac.services.config.service import ConfigService
 from codealmanac.services.config.store import ConfigStore
 from codealmanac.services.diagnostics.service import DiagnosticsService
@@ -125,8 +121,6 @@ from codealmanac.wiki.workspaces.store import WorkspaceRegistryStore
 from codealmanac.workflows.garden.service import GardenWorkflow
 from codealmanac.workflows.ingest.service import IngestWorkflow
 from codealmanac.workflows.init.service import InitWorkflow
-from codealmanac.workflows.sync.service import SyncWorkflow
-from codealmanac.workflows.sync.store import SyncLedgerStore
 
 
 @dataclass(frozen=True)
@@ -140,16 +134,14 @@ class CodeAlmanacWorkflows:
     ingest: IngestWorkflow
     garden: GardenWorkflow
     queue: JobQueueWorkflow
-    local_runs: LocalRunPreparationWorkflow
+    local_runs: LocalRunsWorkflow
     local_setup: LocalSetupWorkflow
     local_status: LocalStatusWorkflow
-    local_jobs: LocalJobsWorkflow
     local_policy: LocalPolicyWorkflow
+    local_run_preparation: LocalRunPreparationWorkflow
     local_engine: LocalEngineWorkflow
     local_delivery: LocalDeliveryWorkflow
     local_worker: LocalWorkerWorkflow
-    local_update: LocalUpdateWorkflow
-    sync: SyncWorkflow
 
 
 @dataclass(frozen=True)
@@ -169,18 +161,16 @@ class CodeAlmanacLocal:
     worker_spawner: LocalWorkerSpawner
     setup: LocalSetupWorkflow
     status: LocalStatusWorkflow
-    jobs: LocalJobsWorkflow
+    runs: LocalRunsWorkflow
     policy: LocalPolicyWorkflow
     run_preparation: LocalRunPreparationWorkflow
     engine: LocalEngineWorkflow
     delivery: LocalDeliveryWorkflow
     worker: LocalWorkerWorkflow
-    update: LocalUpdateWorkflow
 
 
 @dataclass(frozen=True)
 class CodeAlmanac:
-    automation: AutomationService
     cloud_auth: CloudAuthService
     capture: CloudCaptureService
     cloud_runs: CloudRunsService
@@ -218,7 +208,6 @@ def create_app(
     harness_adapters: Sequence[HarnessAdapter] | None = None,
     transcript_discovery_adapters: Sequence[TranscriptDiscoveryAdapter] | None = None,
     source_runtime_adapters: Sequence[SourceRuntimeAdapter] | None = None,
-    scheduler: SchedulerAdapter | None = None,
     worker_spawner: JobWorkerSpawner | None = None,
     local_worker_spawner: LocalWorkerSpawner | None = None,
     update_metadata: PackageInstallMetadataProvider | None = None,
@@ -277,7 +266,6 @@ def create_app(
         EngineWorkspacesStore(app_config.engine_workspaces_path),
         git_worktree_manager or GitDetachedWorktreeManager(),
     )
-    automation = AutomationService(workspaces, scheduler or LaunchdSchedulerAdapter())
     manual = ManualLibrary()
     wiki = WikiService(workspaces, manual)
     index = IndexService(workspaces, IndexStore())
@@ -410,7 +398,6 @@ def create_app(
         control,
         resolved_local_repository_probe,
     )
-    local_jobs = LocalJobsWorkflow(control)
     local_policy = LocalPolicyWorkflow(
         control,
         local_status,
@@ -433,7 +420,7 @@ def create_app(
         local_engine,
         local_delivery,
     )
-    local_update = LocalUpdateWorkflow(
+    local_runs_workflow = LocalRunsWorkflow(
         control,
         local_status,
         local_worker,
@@ -448,21 +435,12 @@ def create_app(
         worker_spawner=resolved_local_worker_spawner,
         setup=local_setup,
         status=local_status,
-        jobs=local_jobs,
+        runs=local_runs_workflow,
         policy=local_policy,
         run_preparation=local_runs,
         engine=local_engine,
         delivery=local_delivery,
         worker=local_worker,
-        update=local_update,
-    )
-    sync = SyncWorkflow(
-        workspaces,
-        sources,
-        jobs,
-        ingest,
-        queue,
-        SyncLedgerStore(app_config.jobs_path),
     )
     workflows = CodeAlmanacWorkflows(
         cloud_login=cloud_login,
@@ -474,19 +452,16 @@ def create_app(
         ingest=ingest,
         garden=garden,
         queue=queue,
-        local_runs=local_runs,
+        local_runs=local_runs_workflow,
         local_setup=local_setup,
         local_status=local_status,
-        local_jobs=local_jobs,
         local_policy=local_policy,
+        local_run_preparation=local_runs,
         local_engine=local_engine,
         local_delivery=local_delivery,
         local_worker=local_worker,
-        local_update=local_update,
-        sync=sync,
     )
     return CodeAlmanac(
-        automation=automation,
         cloud_auth=cloud_auth,
         capture=capture,
         cloud_runs=cloud_runs,

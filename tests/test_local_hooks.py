@@ -32,7 +32,7 @@ def test_local_hooks_install_default_git_trigger_hooks(tmp_path: Path):
     assert all(change.changed for change in result.changes)
     for hook in LocalGitHookName:
         text = hook_path(repo, hook).read_text(encoding="utf-8")
-        assert "__record-local-trigger" in text
+        assert "codealmanac-local-trigger" in text
         assert f"--kind {trigger_kind_for(hook)}" in text
         assert "--spawn-worker" in text
         assert LOCAL_TRIGGER_START in text
@@ -78,7 +78,7 @@ def test_local_hooks_preserve_user_hook_content_and_uninstall_block(
     assert removed.changes[0].changed is True
     assert "echo user hook" in uninstalled
     assert LOCAL_TRIGGER_START not in uninstalled
-    assert "__record-local-trigger" not in uninstalled
+    assert "codealmanac-local-trigger" not in uninstalled
 
 
 def make_git_repo(tmp_path: Path) -> Path:

@@ -93,12 +93,17 @@ Command groups:
 |---|---|---|
 | Read | `list`, `search`, `show`, `topics`, `health`, `serve` | No |
 | Organize | `tag`, `untag`, `topics create/rename/delete/link` | No |
-| Lifecycle | `init`, `sync`, `local update`, `jobs`, `local jobs` | `init`, `sync`, and `local update` |
+| Lifecycle | `init`, `local runs start`, `jobs`, `local runs` | `init` and `local runs start` |
 | Cloud | `setup`, `login`, `whoami`, `logout`, `capture`, `repo`, `runs`, `open` | No |
-| Admin | `local setup`, `local triggers`, `automation`, `uninstall`, `doctor`, `update`, `reindex` | No |
+| Admin | `local setup`, `local triggers`, `local delivery`, `uninstall`, `doctor`, `update`, `reindex` | No |
 
-Scheduled automation is local scheduler state. It runs ordinary `codealmanac
-sync` jobs; it is not hosted sync. Root `codealmanac setup` is cloud setup and
-agent instructions only. Local schedules stay behind explicit local or
-automation commands. `codealmanac uninstall` removes setup-owned instruction
-files only; use `codealmanac automation uninstall` to remove scheduler entries.
+Local trigger hooks are repository state installed by `codealmanac local setup`.
+They record local trigger events and start private worker entrypoints; they do
+not run through a public `sync` or scheduler command.
+
+`codealmanac local runs start` starts the same local run path explicitly from
+the terminal.
+
+Root `codealmanac setup` is cloud setup and agent instructions only.
+`codealmanac uninstall` removes setup-owned instruction files only; local control
+data and run artifacts stay in `~/.codealmanac/` unless removed deliberately.

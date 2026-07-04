@@ -1,4 +1,3 @@
-from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -22,7 +21,6 @@ def test_config_service_returns_defaults_without_files(
     config = app.config.load(LoadConfigRequest(cwd=tmp_path))
 
     assert config.harness.default == HarnessKind.CODEX
-    assert config.sync.quiet == timedelta(minutes=45)
 
 
 def test_config_service_applies_user_then_project_precedence(
@@ -35,9 +33,6 @@ def test_config_service_applies_user_then_project_precedence(
         """
 [harness]
 default = "codex"
-
-[sync]
-quiet = "30m"
 """,
         encoding="utf-8",
     )
@@ -52,8 +47,8 @@ quiet = "30m"
     app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
     (repo / "almanac/config.toml").write_text(
         """
-[sync]
-quiet = "5s"
+[harness]
+default = "codex"
 """,
         encoding="utf-8",
     )
@@ -61,7 +56,6 @@ quiet = "5s"
     config = app.config.load(LoadConfigRequest(cwd=repo))
 
     assert config.harness.default == HarnessKind.CODEX
-    assert config.sync.quiet == timedelta(seconds=5)
 
 
 def test_config_service_uses_explicit_wiki_project_config(
@@ -96,7 +90,7 @@ def test_config_service_reports_invalid_toml(
 ):
     config_path = isolated_home / ".codealmanac/config.toml"
     config_path.parent.mkdir(parents=True)
-    config_path.write_text('[sync\nquiet = "0s"\n', encoding="utf-8")
+    config_path.write_text('[harness\ndefault = "codex"\n', encoding="utf-8")
     app = create_app(
         AppConfig(
             registry_path=isolated_home / ".codealmanac/registry.json",

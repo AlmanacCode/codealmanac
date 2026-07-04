@@ -21,7 +21,7 @@ export async function renderJobs(context) {
   setRouteTitle("Jobs");
   replaceMain(
     elements,
-    pageIntro("Lifecycle jobs", "Jobs", `${result.jobs.length} local jobs.`),
+    pageIntro("Lifecycle jobs", "Jobs", `${result.jobs.length} lifecycle jobs.`),
     jobList(result.jobs),
   );
   if (result.jobs.some((job) => isActiveJobStatus(job.status))) {

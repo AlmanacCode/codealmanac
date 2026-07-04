@@ -1,5 +1,4 @@
 import subprocess
-import sys
 
 from codealmanac.local.runs.worker.models import LocalWorkerSpawnResult
 from codealmanac.local.runs.worker.requests import SpawnLocalWorkerRequest
@@ -24,10 +23,7 @@ class SubprocessLocalWorkerSpawner:
 
 def local_worker_command(request: SpawnLocalWorkerRequest) -> list[str]:
     command = [
-        sys.executable,
-        "-m",
-        "codealmanac.cli.main",
-        "__run-local-worker",
+        "codealmanac-local-worker",
         "--repository-id",
         request.repository_id,
         "--branch-id",
@@ -39,4 +35,6 @@ def local_worker_command(request: SpawnLocalWorkerRequest) -> list[str]:
     ]
     if request.title is not None:
         command.extend(("--title", request.title))
+    if request.guidance is not None:
+        command.extend(("--guidance", request.guidance))
     return command

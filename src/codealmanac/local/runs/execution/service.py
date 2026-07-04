@@ -61,7 +61,11 @@ class LocalEngineWorkflow:
                 RunHarnessRequest(
                     kind=request.harness,
                     cwd=engine_request.repo_path,
-                    prompt=render_update_prompt(self.prompts, engine_request),
+                    prompt=render_update_prompt(
+                        self.prompts,
+                        engine_request,
+                        request.guidance,
+                    ),
                     title=request.title,
                 )
             )

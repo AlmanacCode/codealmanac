@@ -3,7 +3,6 @@ from codealmanac.cli.render.lifecycle import (
     render_ingest,
     render_init,
     render_job_queue_start,
-    render_sync_status,
 )
 from codealmanac.cli.render.wiki import (
     render_health,
@@ -31,7 +30,6 @@ __all__ = [
     "render_reindex",
     "render_job_queue_start",
     "render_search",
-    "render_sync_status",
     "render_tagging",
     "render_topic",
     "render_topic_edge_mutation",

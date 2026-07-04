@@ -5,7 +5,7 @@ from codealmanac.integrations.runs.local_worker import local_worker_command
 from codealmanac.local.runs.worker.requests import SpawnLocalWorkerRequest
 
 
-def test_local_worker_command_targets_hidden_local_worker_cli(tmp_path: Path):
+def test_local_worker_command_targets_private_worker_entrypoint(tmp_path: Path):
     request = SpawnLocalWorkerRequest(
         cwd=tmp_path,
         repository_id="repo-1",
@@ -16,10 +16,8 @@ def test_local_worker_command_targets_hidden_local_worker_cli(tmp_path: Path):
 
     command = local_worker_command(request)
 
-    assert command[1:] == [
-        "-m",
-        "codealmanac.cli.main",
-        "__run-local-worker",
+    assert command == [
+        "codealmanac-local-worker",
         "--repository-id",
         "repo-1",
         "--branch-id",

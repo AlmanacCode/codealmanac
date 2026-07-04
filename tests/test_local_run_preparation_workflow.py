@@ -42,7 +42,7 @@ def test_prepare_next_local_run_returns_noop_without_pending_trigger(
 ):
     app = local_run_app(isolated_home)
 
-    result = app.workflows.local_runs.prepare_next()
+    result = app.workflows.local_run_preparation.prepare_next()
 
     assert result.prepared is False
     assert result.reason == "no_pending_trigger"
@@ -88,7 +88,7 @@ def test_prepare_next_local_run_claims_trigger_and_prepares_engine_request(
         )
     )
 
-    result = app.workflows.local_runs.prepare_next()
+    result = app.workflows.local_run_preparation.prepare_next()
 
     assert result.prepared is True
     assert result.trigger is not None
@@ -164,7 +164,7 @@ def test_prepare_next_local_run_marks_claimed_run_failed_without_local_root(
         )
     )
 
-    result = app.workflows.local_runs.prepare_next()
+    result = app.workflows.local_run_preparation.prepare_next()
 
     assert result.prepared is False
     assert result.reason == "preparation_failed"

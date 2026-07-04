@@ -461,18 +461,19 @@ def test_local_worker_workflow_only_composes_local_workflows():
     assert "CreateDeliveryRequest" not in service_text
 
 
-def test_local_update_workflow_only_records_manual_trigger_and_runs_worker():
-    workflow_root = SRC_ROOT / "local/update"
+def test_local_runs_workflow_only_records_manual_trigger_and_runs_worker():
+    workflow_root = SRC_ROOT / "local/runs"
     service_text = (workflow_root / "service.py").read_text(encoding="utf-8")
     module_names = {path.name for path in workflow_root.glob("*.py")}
 
     assert {
         "__init__.py",
+        "kinds.py",
         "models.py",
         "requests.py",
         "service.py",
     } <= module_names
-    assert len(service_text.splitlines()) <= 130
+    assert len(service_text.splitlines()) <= 170
     assert "local_status.status" in service_text
     assert "control.record_trigger_event" in service_text
     assert "local_worker.run_next" in service_text
@@ -867,7 +868,7 @@ def test_local_hooks_service_keeps_file_writes_in_git_integration():
     assert "subprocess" not in service_text
     assert "LocalGitHookManager" in service_text
     assert "git\", \"rev-parse\", \"--git-path\"" in hooks_text
-    assert "__record-local-trigger" in hooks_text
+    assert "codealmanac-local-trigger" in hooks_text
 
 
 def test_wiki_topics_yaml_stays_split_by_read_and_mutation():
@@ -1021,7 +1022,6 @@ def test_cli_parser_is_split_by_command_domain():
     assert parser_files == {
         "__init__.py",
         "admin.py",
-        "automation.py",
         "capture.py",
         "cloud_auth.py",
         "cloud_status.py",
@@ -1052,7 +1052,6 @@ def test_cli_admin_parser_stays_split_by_command_family():
     parser_root = SRC_ROOT / "cli/parser"
     admin = (parser_root / "admin.py").read_text(encoding="utf-8")
     module_expectations = {
-        "automation.py": ("AutomationTask", "def add_automation_commands("),
         "capture.py": (
             "manage cloud conversation capture",
             "def add_capture_commands(",
@@ -1071,7 +1070,6 @@ def test_cli_admin_parser_stays_split_by_command_family():
         "add_argument",
         "choices=",
         'dest="jobs_command"',
-        'dest="automation_command"',
         "--target",
         "--check",
         "--keep-automation",
@@ -1099,7 +1097,6 @@ def test_cli_admin_parser_stays_split_by_command_family():
     assert "add_diagnostics_commands(subcommands)" in admin
     assert "add_update_commands(subcommands)" in admin
     assert "add_jobs_commands(subcommands)" in admin
-    assert "add_automation_commands(subcommands)" in admin
     assert oversized == []
 
 
@@ -1107,7 +1104,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     cli_root = SRC_ROOT / "cli"
 
     assert (cli_root / "parser/root.py").is_file()
-    assert (cli_root / "parser/automation.py").is_file()
+    assert not (cli_root / "parser/automation.py").exists()
     assert (cli_root / "parser/capture.py").is_file()
     assert (cli_root / "parser/cloud_status.py").is_file()
     assert (cli_root / "parser/dev.py").is_file()
@@ -1120,7 +1117,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "parser/updates.py").is_file()
     assert (cli_root / "dispatch/root.py").is_file()
     assert (cli_root / "dispatch/admin.py").is_file()
-    assert (cli_root / "dispatch/automation.py").is_file()
+    assert not (cli_root / "dispatch/automation.py").exists()
     assert (cli_root / "dispatch/capture.py").is_file()
     assert (cli_root / "dispatch/cloud_status.py").is_file()
     assert (cli_root / "dispatch/dev.py").is_file()
@@ -1131,19 +1128,20 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "dispatch/jobs.py").is_file()
     assert (cli_root / "dispatch/lifecycle.py").is_file()
     assert (cli_root / "dispatch/local.py").is_file()
-    assert (cli_root / "dispatch/local_trigger.py").is_file()
+    assert not (cli_root / "dispatch/local_trigger.py").exists()
+    assert not (cli_root / "dispatch/local_worker.py").exists()
     assert (cli_root / "dispatch/repo.py").is_file()
     assert (cli_root / "dispatch/runs.py").is_file()
     assert (cli_root / "dispatch/serve.py").is_file()
     assert (cli_root / "dispatch/setup.py").is_file()
-    assert (cli_root / "dispatch/sync.py").is_file()
+    assert not (cli_root / "dispatch/sync.py").exists()
     assert (cli_root / "dispatch/topics.py").is_file()
     assert (cli_root / "dispatch/updates.py").is_file()
     assert (cli_root / "dispatch/wiki.py").is_file()
     assert (cli_root / "dispatch/worker.py").is_file()
     assert (cli_root / "dispatch/workspaces.py").is_file()
     assert (cli_root / "render/root.py").is_file()
-    assert (cli_root / "render/automation.py").is_file()
+    assert not (cli_root / "render/automation.py").exists()
     assert (cli_root / "render/capture.py").is_file()
     assert (cli_root / "render/cloud_status.py").is_file()
     assert (cli_root / "render/cloud_runs.py").is_file()
@@ -1176,13 +1174,11 @@ def test_cli_render_root_stays_facade():
         "HealthReport",
         "IndexRefreshResult",
         "PageView",
-        "SyncSummary",
         "WorkspaceListResult",
     )
 
     assert {
         "admin.py",
-        "automation.py",
         "capture.py",
         "common.py",
         "diagnostics.py",
@@ -1204,7 +1200,7 @@ def test_cli_render_root_stays_facade():
     assert [
         fragment for fragment in forbidden_root_fragments if fragment in root
     ] == []
-    assert "render_sync_status" in (render_root / "lifecycle.py").read_text(
+    assert "render_sync_status" not in (render_root / "lifecycle.py").read_text(
         encoding="utf-8"
     )
     assert "render_page" in (render_root / "pages.py").read_text(encoding="utf-8")
@@ -1217,7 +1213,6 @@ def test_cli_admin_render_stays_split_by_output_family():
     render_path = SRC_ROOT / "cli/render"
     admin = (render_path / "admin.py").read_text(encoding="utf-8")
     module_expectations = {
-        "automation.py": ("AutomationInstallResult", "def render_automation_install("),
         "cloud_runs.py": ("CloudRunListResult", "def render_cloud_runs("),
         "diagnostics.py": ("DoctorReport", "def render_doctor("),
         "jobs.py": ("JobRecord", "def render_jobs("),
@@ -1228,7 +1223,6 @@ def test_cli_admin_render_stays_split_by_output_family():
     forbidden_admin_fragments = (
         "def render_",
         "json.dumps",
-        "AutomationInstallResult",
         "DoctorReport",
         "JobRecord",
         "SetupResult",
@@ -1248,7 +1242,7 @@ def test_cli_admin_render_stays_split_by_output_family():
     assert [
         fragment for fragment in forbidden_admin_fragments if fragment in admin
     ] == []
-    assert "from codealmanac.cli.render.automation import" in admin
+    assert "from codealmanac.cli.render.automation import" not in admin
     assert "from codealmanac.cli.render.jobs import" in admin
     assert oversized == []
 
@@ -1351,7 +1345,6 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
     dispatch_path = SRC_ROOT / "cli/dispatch"
     admin = (dispatch_path / "admin.py").read_text(encoding="utf-8")
     module_expectations = {
-        "automation.py": ("InstallAutomationRequest", "def dispatch_automation("),
         "capture.py": ("CaptureStatusRequest", "def dispatch_capture("),
         "cloud_status.py": ("ReadCloudStatusRequest", "def dispatch_cloud_status("),
         "diagnostics.py": ("DoctorRequest", "def dispatch_doctor("),
@@ -1368,11 +1361,9 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
         "CheckUpdateRequest",
         "RunUpdateRequest",
         "ShowJobRequest",
-        "InstallAutomationRequest",
         "parse_optional_duration",
         "load_cli_config",
         "parse_setup_targets",
-        "parse_automation_tasks",
         "render_",
     )
     oversized = []
@@ -1395,7 +1386,7 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
     assert "dispatch_runs(args, app)" in admin
     assert "dispatch_uninstall(args, app)" in admin
     assert "dispatch_jobs(args, app)" in admin
-    assert "dispatch_automation(args, app)" in admin
+    assert "dispatch_automation(args, app)" not in admin
     assert oversized == []
 
 
@@ -1473,21 +1464,16 @@ def test_cli_lifecycle_dispatch_stays_split_by_command_family():
     module_expectations = {
         "init.py": ("RunInitRequest", "def dispatch_init("),
         "operations.py": ("RunIngestRequest", "def dispatch_ingest("),
-        "sync.py": ("RunSyncRequest", "def dispatch_sync("),
         "worker.py": ("DrainJobQueueRequest", "def dispatch_run_worker("),
     }
     forbidden_lifecycle_fragments = (
         "RunIngestRequest",
         "RunGardenRequest",
-        "RunSyncRequest",
-        "RunSyncStatusRequest",
         "DrainJobQueueRequest",
         "TranscriptApp",
         "ValidationFailed",
         "load_cli_config",
         "resolve_harness",
-        "parse_sync_apps",
-        "sync_execution",
         "render_",
     )
     oversized = []
@@ -1509,7 +1495,7 @@ def test_cli_lifecycle_dispatch_stays_split_by_command_family():
     assert "dispatch_build(args, app)" not in lifecycle
     assert "dispatch_ingest(args, app)" not in lifecycle
     assert "dispatch_garden(args, app)" not in lifecycle
-    assert "dispatch_sync(args, app)" in lifecycle
+    assert "dispatch_sync(args, app)" not in lifecycle
     assert "dispatch_run_worker(args, app)" in lifecycle
     assert oversized == []
 
@@ -1984,55 +1970,6 @@ def test_sources_service_stays_orchestration_only():
     ).read_text(encoding="utf-8")
 
 
-def test_automation_service_keeps_selection_and_job_construction_boundaries():
-    automation_root = SRC_ROOT / "services/automation"
-    service_text = (automation_root / "service.py").read_text(encoding="utf-8")
-    definitions_text = (automation_root / "definitions.py").read_text(
-        encoding="utf-8"
-    )
-    jobs_text = (automation_root / "jobs.py").read_text(encoding="utf-8")
-    selection_text = (automation_root / "selection.py").read_text(encoding="utf-8")
-    forbidden_service_fragments = (
-        "AutomationTaskDefinition",
-        "DEFAULT_SYNC_INTERVAL",
-        "DEFAULT_GARDEN_INTERVAL",
-        "LAUNCHD_FALLBACK_PATHS",
-        "AUTOMATION_SYNC_CLAIM_OWNER",
-        "duration_text(",
-        "ValidationFailed",
-        "EnvironmentVariable(",
-        "program_arguments_for(",
-        "plist_path_for(",
-        "launch_path(",
-        "interval_for(",
-        "selected_tasks(",
-        "task_definition(",
-        "state_dir_for(",
-        "sys.executable",
-        "os.environ",
-        "def _job_for_task(",
-    )
-
-    assert {"definitions.py", "jobs.py", "selection.py"} <= {
-        path.name for path in automation_root.glob("*.py")
-    }
-    assert len(service_text.splitlines()) <= 110
-    assert [
-        fragment
-        for fragment in forbidden_service_fragments
-        if fragment in service_text
-    ] == []
-    assert "class AutomationTaskDefinition" in definitions_text
-    assert "def task_definition(" in definitions_text
-    assert "class AutomationJobFactory" in jobs_text
-    assert "def program_arguments_for(" in jobs_text
-    assert "def launch_path(" in jobs_text
-    assert "state_dir_for(" in jobs_text
-    assert "class InstallTaskSelection" in selection_text
-    assert "def install_task_selection(" in selection_text
-    assert "ValidationFailed" in selection_text
-
-
 def test_job_queue_workflow_stays_operation_dispatch_only():
     text = (SRC_ROOT / "jobs/queue/service.py").read_text(encoding="utf-8")
 
@@ -2045,157 +1982,6 @@ def test_job_queue_workflow_stays_operation_dispatch_only():
     )
 
     assert [fragment for fragment in forbidden_fragments if fragment in text] == []
-
-
-def test_sync_workflow_policy_stays_out_of_service_orchestration():
-    service = SRC_ROOT / "workflows/sync/service.py"
-    sync_root = SRC_ROOT / "workflows/sync"
-    evaluation = sync_root / "evaluation.py"
-    policy = sync_root / "policy.py"
-    policy_modules = (
-        policy,
-        sync_root / "decisions.py",
-        sync_root / "entries.py",
-        sync_root / "guidance.py",
-        sync_root / "identity.py",
-        sync_root / "reporting.py",
-        sync_root / "snapshots.py",
-    )
-    service_text = service.read_text(encoding="utf-8")
-    evaluation_text = evaluation.read_text(encoding="utf-8")
-    policy_text = policy.read_text(encoding="utf-8")
-    combined_policy_text = "\n".join(
-        path.read_text(encoding="utf-8") for path in policy_modules
-    )
-
-    forbidden_service_fragments = (
-        "def evaluate_cursor(",
-        "def reconcile_pending_entry(",
-        "def pending_entry(",
-        "def absorbed_entry(",
-        "def failed_entry(",
-        "def ledger_key(",
-        "def sync_ingest_guidance(",
-        "EMPTY_SHA256",
-    )
-    forbidden_service_evaluation_fragments = (
-        "DiscoverTranscriptsRequest",
-        "ListJobsRequest",
-        "SelectWorkspaceRequest",
-        "SyncReady(",
-        "SyncWorkItem(",
-        "read_transcript(",
-        "quiet_window_skip(",
-        "evaluate_pending_run(",
-    )
-    forbidden_policy_imports = (
-        "codealmanac.integrations",
-        "codealmanac.workflows.ingest",
-        "codealmanac.jobs.queue",
-        "codealmanac.engine.sources.service",
-        "codealmanac.jobs.ledger.service",
-        "codealmanac.wiki.workspaces.service",
-    )
-
-    assert evaluation.is_file()
-    assert all(path.is_file() for path in policy_modules)
-    assert len(service_text.splitlines()) <= 120
-    assert "SyncEvaluator(" in service_text
-    assert "class SyncEvaluator" in evaluation_text
-    assert "DiscoverTranscriptsRequest" in evaluation_text
-    assert "ListJobsRequest" in evaluation_text
-    assert "SelectWorkspaceRequest" in evaluation_text
-    assert [
-        fragment
-        for fragment in forbidden_service_evaluation_fragments
-        if fragment in service_text
-    ] == []
-    assert len(policy_text.splitlines()) <= 80
-    assert [
-        fragment
-        for fragment in forbidden_service_fragments
-        if fragment in service_text
-    ] == []
-    assert [
-        fragment
-        for fragment in forbidden_policy_imports
-        if fragment in combined_policy_text
-    ] == []
-    assert "from codealmanac.workflows.sync.decisions import" in policy_text
-    assert "from codealmanac.workflows.sync.entries import" in policy_text
-    assert "from codealmanac.workflows.sync.guidance import" in policy_text
-    assert "from codealmanac.workflows.sync.identity import" in policy_text
-    assert "from codealmanac.workflows.sync.reporting import" in policy_text
-    assert "from codealmanac.workflows.sync.snapshots import" in policy_text
-    assert "def evaluate_cursor(" in (
-        sync_root / "decisions.py"
-    ).read_text(encoding="utf-8")
-    assert "def pending_entry(" in (sync_root / "entries.py").read_text(
-        encoding="utf-8"
-    )
-    assert "def ledger_key(" in (sync_root / "identity.py").read_text(
-        encoding="utf-8"
-    )
-    assert "def read_transcript(" in (sync_root / "snapshots.py").read_text(
-        encoding="utf-8"
-    )
-    assert "def sync_ingest_guidance(" in (sync_root / "guidance.py").read_text(
-        encoding="utf-8"
-    )
-    assert "def sync_started(" in (sync_root / "reporting.py").read_text(
-        encoding="utf-8"
-    )
-
-
-def test_sync_execution_effects_stay_out_of_service_orchestration():
-    sync_root = SRC_ROOT / "workflows/sync"
-    service_text = (sync_root / "service.py").read_text(encoding="utf-8")
-    evaluation_text = (sync_root / "evaluation.py").read_text(encoding="utf-8")
-    execution_text = (sync_root / "execution.py").read_text(encoding="utf-8")
-    forbidden_service_fragments = (
-        "RunIngestRequest",
-        "RunIngestWithJobRequest",
-        "FinishJobRequest",
-        "JobStatus.FAILED",
-        "pending_entry(item",
-        "failed_entry(",
-        "absorbed_entry(",
-        "sync_ingest_guidance(",
-        "sync_ingest_title(",
-        "queue_ingest(",
-        "spawn_worker(",
-        "run_with_job(",
-    )
-    forbidden_evaluation_fragments = (
-        "RunIngestRequest",
-        "RunIngestWithJobRequest",
-        "FinishJobRequest",
-        "JobStatus.FAILED",
-        "queue_ingest(",
-        "spawn_worker(",
-        "run_with_job(",
-    )
-
-    assert (sync_root / "execution.py").is_file()
-    assert len(service_text.splitlines()) <= 120
-    assert [
-        fragment
-        for fragment in forbidden_service_fragments
-        if fragment in service_text
-    ] == []
-    assert [
-        fragment
-        for fragment in forbidden_evaluation_fragments
-        if fragment in evaluation_text
-    ] == []
-    assert "class SyncJobExecutor" in execution_text
-    assert "RunIngestRequest" in execution_text
-    assert "RunIngestWithJobRequest" in execution_text
-    assert "FinishJobRequest" in execution_text
-    assert "pending_entry(" in execution_text
-    assert "absorbed_entry(" in execution_text
-    assert "queue_ingest(" in execution_text
-    assert "spawn_worker(" in execution_text
 
 
 def test_viewer_jobs_surface_stays_read_only():

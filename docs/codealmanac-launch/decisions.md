@@ -78,10 +78,9 @@ Status: active.
 - The public CLI is not the worker API.
 - Bare `codealmanac` opens the cloud wiki for the current checkout.
 - `codealmanac setup` is cloud onboarding.
-- `codealmanac setup` must not install local scheduled automation; local
-  automation belongs under the explicit local surface.
-- `codealmanac uninstall` must not remove local scheduled automation; scheduled
-  jobs are managed by `codealmanac automation uninstall`.
+- `codealmanac setup` must not install local trigger hooks; local trigger hooks
+  belong under `codealmanac local setup`.
+- `codealmanac uninstall` must not remove local run history or control DB data.
 - `codealmanac local setup` is local maintenance setup.
 - `codealmanac local setup` detects the current GitHub checkout, writes the
   repository and branch trigger policy to the local control DB, and installs
@@ -97,15 +96,15 @@ Status: active.
 - Public launch CLI should not expose `ingest` or `garden`.
 - Manual `ingest` and `garden` remain available under the hidden
   `codealmanac dev` namespace for maintainers and agents.
-- Local public maintenance command is `codealmanac local update`.
-- `codealmanac local update` is a foreground manual update for the current
+- Local public maintenance command is `codealmanac local runs start`.
+- `codealmanac local runs start` is a foreground manual run for the current
   configured checkout and branch.
-- `codealmanac local update` records a `manual` trigger event and then runs the
-  same local worker path used by Git hook triggers.
-- Manual local update can rerun on the same HEAD because local capture/source
+- `codealmanac local runs start` records a `manual` trigger event and then runs
+  the same local worker path used by Git hook triggers.
+- Manual local runs can rerun on the same HEAD because local capture/source
   material can change without a Git commit.
-- Manual local update does not start a second job when the same branch already
-  has a queued or running local job.
+- Manual local runs do not start a second run when the same branch already has
+  a queued or running local run.
 - Local trigger policy commands are repo-scoped to the current configured
   checkout and branch-targeted by argument.
 - Local trigger policy commands mutate local control DB branch rows only; they
@@ -182,7 +181,7 @@ Status: active.
   materialize the run's recorded `head_sha`, and when a range is needed it must
   fetch the recorded `before_sha`; it must not run against the live branch tip.
 - Root `codealmanac setup` is cloud setup plus local agent instruction setup.
-  It must not install local scheduled automation, configure local Git hooks,
+  It must not install local trigger hooks,
   inspect the current repo, run an update, or expose scheduler JSON fields.
   Local maintenance stays under explicit local/admin surfaces.
 

@@ -92,6 +92,7 @@ class LocalRunPreparationWorkflow:
                     run_id=claim.run.id,
                     repository_id=repository.id,
                     branch_id=branch.id,
+                    operation=claim.run.operation,
                     repository_full_name=repository.full_name,
                     branch_name=branch.name,
                     expected_head_sha=claim.run.expected_head_sha,

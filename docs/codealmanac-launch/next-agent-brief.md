@@ -810,3 +810,24 @@ repaired.
   --yes` completed as `signed_in` for `rohans0509`.
 - Next step: send the RelayForge update if not already sent, then continue into
   the next substantial launch slice.
+
+## Current CLI Run Surface Handoff
+
+- Root sync and scheduled automation are removed from active launch code.
+- Local wiki execution is now `codealmanac local runs start`.
+- Local run history is now `codealmanac local runs list/show/logs`.
+- Git hook and worker process calls use `codealmanac-local-trigger` and
+  `codealmanac-local-worker`.
+- Root setup is cloud setup plus agent instructions only; it rejects old local
+  automation flags.
+- Root uninstall removes setup-owned instruction files only; it does not remove
+  local control DB or run artifacts.
+- Do not reintroduce `sync`, root `automation`, local `update`, local `jobs`,
+  or hidden double-underscore root worker commands as compatibility shims.
+- Last focused verification:
+  `uv run pytest tests/test_config_service.py tests/test_local_hooks.py
+  tests/test_local_worker_spawner.py tests/test_local_runs_workflow.py
+  tests/test_cli.py tests/test_public_contract.py tests/test_architecture.py -q`
+  passed with `165 passed`.
+- Full source verification: `uv run pytest -q` passed with `481 passed`.
+- Lint and diff hygiene: `uv run ruff check .` and `git diff --check` passed.

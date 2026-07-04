@@ -44,6 +44,7 @@ class LocalWorkerWorkflow:
                 run_id=preparation.run.id,
                 harness=resolved.harness,
                 title=resolved.title,
+                guidance=resolved.guidance,
             )
         )
         if not engine.executed:

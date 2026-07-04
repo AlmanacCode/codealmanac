@@ -1,7 +1,6 @@
 import argparse
 
 from codealmanac.app import CodeAlmanac
-from codealmanac.cli.dispatch.automation import dispatch_automation
 from codealmanac.cli.dispatch.capture import dispatch_capture, dispatch_capture_hook
 from codealmanac.cli.dispatch.cloud_auth import (
     dispatch_login,
@@ -18,7 +17,6 @@ from codealmanac.cli.dispatch.updates import dispatch_update
 
 ADMIN_COMMANDS = frozenset(
     (
-        "automation",
         "__capture-hook",
         "capture",
         "doctor",
@@ -67,6 +65,4 @@ def dispatch_admin(args: argparse.Namespace, app: CodeAlmanac) -> int:
         return dispatch_update(args, app)
     if args.command == "jobs":
         return dispatch_jobs(args, app)
-    if args.command == "automation":
-        return dispatch_automation(args, app)
     raise AssertionError(f"unhandled admin command: {args.command}")

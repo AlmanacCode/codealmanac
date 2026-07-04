@@ -10,8 +10,9 @@ class ExecuteLocalEngineRunRequest(CodeAlmanacModel):
     run_id: LocalRunId
     harness: HarnessKind = HarnessKind.CODEX
     title: str | None = None
+    guidance: str | None = None
 
-    @field_validator("title")
+    @field_validator("title", "guidance")
     @classmethod
     def require_optional_title(cls, value: str | None) -> str | None:
         if value is None:

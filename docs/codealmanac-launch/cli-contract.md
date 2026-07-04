@@ -119,8 +119,7 @@ remain dashboard/API work after this slice.
 
 Root `uninstall` reverses only root setup-owned artifacts: global Codex/Claude
 agent instruction entries and local cloud auth state where applicable. It does
-not remove local scheduled automation. Local scheduler cleanup belongs to the
-explicit `codealmanac automation uninstall` surface.
+not remove local trigger hooks, local run history, or local control DB data.
 
 Implemented in Slice 59:
 
@@ -129,7 +128,7 @@ codealmanac setup [--yes] [--no-browser] [--skip-login] [--skip-instructions]
 codealmanac login [--no-browser] [--force]
 ```
 
-Root setup is cloud setup only. It no longer exposes local scheduled automation
+Root setup is cloud setup only. It no longer exposes local trigger or scheduler
 flags. Interactive setup asks before opening the browser; non-interactive setup
 prints the verification URL and user code and polls without opening anything.
 The workflow stores WorkOS-shaped `access_token` and optional `refresh_token`
@@ -143,8 +142,8 @@ codealmanac setup [--yes] [--no-browser] [--skip-login] [--skip-instructions]
 
 Root help is now cloud-first: `setup`, `login`, `capture`, `repo`, and `runs`
 are listed before `init`, `local`, and wiki-read commands. Root `sync` and
-root `jobs` still parse as compatibility entrypoints, but they are hidden from
-normal top-level help; the launch surface teaches `local jobs` instead.
+`automation` do not parse. Root `jobs` remains a hidden lifecycle inspection
+surface; the launch-facing local execution surface teaches `local runs`.
 
 `setup --yes` no longer means "open the browser." It keeps the normal
 prompt-mode login interaction, so non-interactive agent installs print the
@@ -330,17 +329,17 @@ and still exit `0` so Codex/Claude work is not blocked.
 codealmanac init [path] --using codex|claude [--background|--foreground] [--force]
 codealmanac local setup
 codealmanac local status
-codealmanac local update
+codealmanac local runs start
+codealmanac local runs list
+codealmanac local runs show <run-id>
+codealmanac local runs logs <run-id>
 codealmanac local triggers list
 codealmanac local triggers enable <branch> --delivery working-tree|commit
 codealmanac local triggers disable <branch>
 codealmanac local delivery set --branch <branch> --mode working-tree|commit
-codealmanac local jobs list
-codealmanac local jobs show <job-id>
-codealmanac local jobs logs <job-id>
 ```
 
-Local uses `jobs` because execution happens on the user's machine.
+Local uses `runs` because execution is the same product noun as cloud runs.
 
 `init` is the local first-build lifecycle command. It creates or refreshes the
 configured Almanac root, installs manual files, runs the init prompt through the
@@ -354,14 +353,14 @@ selected branch policy in `~/.codealmanac/control.sqlite`, and installs local
 Git trigger hooks unless `--skip-hooks` is passed. The default delivery mode is
 `commit`; `working-tree` is the explicit no-commit mode.
 
-`local update` runs the local update pipeline now for the current checkout and
+`local runs start` runs local wiki maintenance now for the current checkout and
 current branch. The branch must already be configured by `local setup`.
 
 The command records a `manual` trigger event for the current HEAD, then runs the
 same local worker path used by Git hooks: source bundle, shared engine, and
-local delivery. Manual update can rerun on the same HEAD after a completed job
+local delivery. Manual runs can rerun on the same HEAD after a completed run
 because source/capture material can change without a code commit. It refuses to
-start when the branch already has a queued or running local job.
+start when the branch already has a queued or running local run.
 
 `local triggers list|enable|disable` and `local delivery set` mutate branch
 policy rows in the local control DB for the current checkout's configured

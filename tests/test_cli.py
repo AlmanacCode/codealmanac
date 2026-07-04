@@ -2,7 +2,6 @@ import json
 import shutil
 import subprocess
 from datetime import UTC, datetime
-from hashlib import sha256
 from io import StringIO
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -35,7 +34,7 @@ from codealmanac.cloud.runs.models import (
     CloudRunSource,
 )
 from codealmanac.core.models import AppConfig
-from codealmanac.core.paths import default_jobs_path, normalize_path
+from codealmanac.core.paths import default_jobs_path
 from codealmanac.engine.harnesses.models import (
     HarnessKind,
     HarnessReadiness,
@@ -44,8 +43,6 @@ from codealmanac.engine.harnesses.models import (
     HarnessTranscriptRef,
 )
 from codealmanac.engine.harnesses.requests import RunHarnessRequest
-from codealmanac.engine.sources.models import TranscriptApp, TranscriptCandidate
-from codealmanac.engine.sources.requests import DiscoverTranscriptsRequest
 from codealmanac.engine.workspaces.models import GitWorktreeCheckout
 from codealmanac.integrations.setup.instructions import CODEALMANAC_START
 from codealmanac.jobs.ledger.models import (
@@ -88,10 +85,8 @@ from codealmanac.local.delivery.execution.models import (
 )
 from codealmanac.local.runs.worker.requests import SpawnLocalWorkerRequest
 from codealmanac.local.setup.models import LocalRepositoryState
-from codealmanac.services.automation.models import (
-    ScheduledJob,
-    ScheduledJobStatus,
-)
+from codealmanac.local_trigger import main as local_trigger_main
+from codealmanac.local_worker import main as local_worker_main
 from codealmanac.services.updates.models import (
     PackageCommandResult,
     PackageInstallMetadata,
@@ -99,11 +94,6 @@ from codealmanac.services.updates.models import (
 from codealmanac.wiki.workspaces.identity import workspace_id_for
 from codealmanac.wiki.workspaces.requests import InitializeWorkspaceRequest
 from codealmanac.workflows.ingest.requests import RunIngestRequest
-from codealmanac.workflows.sync.models import (
-    SyncLedger,
-    SyncLedgerEntry,
-    SyncLedgerStatus,
-)
 
 
 class CliWritingHarnessAdapter:
@@ -241,51 +231,6 @@ class CliLocalWorkerSpawner:
         return JobWorkerSpawnResult(
             child_pid=6262,
             command=("fake-codealmanac-local-worker",),
-        )
-
-
-class CliTranscriptDiscoveryAdapter:
-    app = TranscriptApp.CODEX
-
-    def __init__(self, candidates: tuple[TranscriptCandidate, ...]):
-        self.candidates = candidates
-        self.requests: list[DiscoverTranscriptsRequest] = []
-
-    def discover(
-        self,
-        request: DiscoverTranscriptsRequest,
-    ) -> tuple[TranscriptCandidate, ...]:
-        self.requests.append(request)
-        return self.candidates
-
-
-class CliSchedulerAdapter:
-    def __init__(self):
-        self.installed: list[ScheduledJob] = []
-        self.uninstalled: list[ScheduledJob] = []
-
-    def install(self, job: ScheduledJob) -> ScheduledJobStatus:
-        self.installed.append(job)
-        return ScheduledJobStatus(
-            task=job.task,
-            label=job.label,
-            plist_path=job.plist_path,
-            installed=True,
-            loaded=True,
-            interval=job.interval,
-        )
-
-    def uninstall(self, job: ScheduledJob) -> bool:
-        self.uninstalled.append(job)
-        return False
-
-    def status(self, job: ScheduledJob) -> ScheduledJobStatus:
-        return ScheduledJobStatus(
-            task=job.task,
-            label=job.label,
-            plist_path=job.plist_path,
-            installed=False,
-            loaded=False,
         )
 
 
@@ -651,10 +596,6 @@ class CliUpdateRunner:
 
 def workspace_jobs_path(repo: Path) -> Path:
     return default_jobs_path() / workspace_id_for(repo)
-
-
-def sync_ledger_path(repo: Path) -> Path:
-    return workspace_jobs_path(repo) / "sync-ledger.json"
 
 
 class CliLocalGitStateProbe:
@@ -1973,7 +1914,7 @@ def test_cli_local_jobs_list_show_and_logs(
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
 
-    assert main(["local", "jobs", "list", "--json"]) == 0
+    assert main(["local", "runs", "list", "--json"]) == 0
     list_output = capsys.readouterr()
     list_data = json.loads(list_output.out)
 
@@ -1981,18 +1922,18 @@ def test_cli_local_jobs_list_show_and_logs(
     assert list_data[0]["repository"]["full_name"] == "AlmanacCode/codealmanac"
     assert list_data[0]["branch"]["name"] == "dev"
 
-    assert main(["local", "jobs", "show", run.id]) == 0
+    assert main(["local", "runs", "show", run.id]) == 0
     show_output = capsys.readouterr()
     assert f"id: {run.id}\n" in show_output.out
     assert "repo: AlmanacCode/codealmanac\n" in show_output.out
     assert "summary: updated local wiki\n" in show_output.out
 
-    assert main(["local", "jobs", "logs", run.id]) == 0
+    assert main(["local", "runs", "logs", run.id]) == 0
     logs_output = capsys.readouterr()
     assert "1\tstatus\tdelivered local commit head-2\n" in logs_output.out
 
 
-def test_cli_local_update_runs_manual_local_worker(
+def test_cli_local_runs_start_runs_manual_local_worker(
     tmp_path: Path,
     isolated_home: Path,
     monkeypatch,
@@ -2035,7 +1976,7 @@ def test_cli_local_update_runs_manual_local_worker(
     monkeypatch.chdir(repo)
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
 
-    assert main(["local", "update", "--json"]) == 0
+    assert main(["local", "runs", "start", "--json"]) == 0
 
     output = capsys.readouterr()
     data = json.loads(output.out)
@@ -2395,16 +2336,21 @@ def test_cli_help_is_cloud_first_and_hides_compatibility_commands(capsys):
     assert output.out.index("\n    status") < output.out.index("\n    local")
     assert output.out.index("\n    repo") < output.out.index("\n    local")
     assert "serve" in output.out
-    assert "automation" in output.out
+    assert "automation" not in output.out
     assert "jobs" not in output.out
     assert "sync" not in output.out
     assert "ingest" not in output.out
     assert "garden" not in output.out
     assert "dev" not in output.out
 
-    parser.parse_args(["sync", "status"])
     parser.parse_args(["jobs"])
     parser.parse_args(["status"])
+    with pytest.raises(SystemExit) as sync_exit:
+        parser.parse_args(["sync", "status"])
+    with pytest.raises(SystemExit) as automation_exit:
+        parser.parse_args(["automation", "status"])
+    assert sync_exit.value.code == 2
+    assert automation_exit.value.code == 2
 
 
 def test_cli_lifecycle_dev_commands_are_hidden_from_public_parser():
@@ -2710,12 +2656,11 @@ def test_cli_hidden_record_local_trigger_records_pending_event(
             delivery_mode=ControlDeliveryMode.COMMIT,
         )
     )
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    monkeypatch.setattr("codealmanac.local_trigger.create_app", lambda: app)
 
     assert (
-        main(
+        local_trigger_main(
             [
-                "__record-local-trigger",
                 "--cwd",
                 str(repo / "src"),
                 "--kind",
@@ -2783,12 +2728,11 @@ def test_cli_hidden_record_local_trigger_spawns_worker_for_recorded_event(
             delivery_mode=ControlDeliveryMode.COMMIT,
         )
     )
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    monkeypatch.setattr("codealmanac.local_trigger.create_app", lambda: app)
 
     assert (
-        main(
+        local_trigger_main(
             [
-                "__record-local-trigger",
                 "--cwd",
                 str(repo),
                 "--kind",
@@ -2851,12 +2795,11 @@ def test_cli_hidden_record_local_trigger_does_not_spawn_worker_when_ignored(
             local_root_path=repo,
         )
     )
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    monkeypatch.setattr("codealmanac.local_trigger.create_app", lambda: app)
 
     assert (
-        main(
+        local_trigger_main(
             [
-                "__record-local-trigger",
                 "--cwd",
                 str(repo),
                 "--kind",
@@ -2888,9 +2831,9 @@ def test_cli_hidden_run_local_worker_returns_json_noop(
             control_db_path=isolated_home / ".codealmanac/control.sqlite",
         )
     )
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    monkeypatch.setattr("codealmanac.local_worker.create_app", lambda: app)
 
-    assert main(["__run-local-worker", "--json"]) == 0
+    assert local_worker_main(["--json"]) == 0
 
     output = capsys.readouterr()
     data = json.loads(output.out)
@@ -2948,12 +2891,11 @@ def test_cli_hidden_run_local_worker_processes_one_trigger(
             head_sha="head-1",
         )
     )
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    monkeypatch.setattr("codealmanac.local_worker.create_app", lambda: app)
 
     assert (
-        main(
+        local_worker_main(
             [
-                "__run-local-worker",
                 "--repository-id",
                 repository.id,
                 "--branch-id",
@@ -2975,316 +2917,6 @@ def test_cli_hidden_run_local_worker_processes_one_trigger(
         isolated_home / ".codealmanac/workspaces" / data["run"]["id"] / "repo"
     )
     assert delivery.apply_calls[0][3] == "docs almanac: update local worker note"
-
-
-def test_cli_sync_status_reports_ready_transcripts(
-    tmp_path: Path,
-    isolated_home: Path,
-    monkeypatch,
-    capsys,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = tmp_path / "codex.jsonl"
-    transcript.write_text('{"timestamp":"2026-01-01T00:00:00Z"}\n', encoding="utf-8")
-    candidate = TranscriptCandidate(
-        app=TranscriptApp.CODEX,
-        session_id="codex-session",
-        transcript_path=transcript,
-        cwd=repo,
-        repo_root=repo,
-        almanac_path=repo / "almanac",
-        modified_at=datetime(2026, 1, 1, tzinfo=UTC),
-        size_bytes=transcript.stat().st_size,
-    )
-    adapter = CliTranscriptDiscoveryAdapter((candidate,))
-    app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
-        transcript_discovery_adapters=(adapter,),
-    )
-    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    monkeypatch.chdir(repo)
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
-
-    assert main(["sync", "status", "--from", "codex", "--quiet", "0s"]) == 0
-
-    output = capsys.readouterr()
-    assert "sync status:\n" in output.out
-    assert "scanned: 1\n" in output.out
-    assert "eligible: 1\n" in output.out
-    assert "ready codex codex-session: lines 1-1\n" in output.out
-    assert adapter.requests[0].apps == (TranscriptApp.CODEX,)
-
-
-def test_cli_sync_status_uses_configured_quiet_window(
-    tmp_path: Path,
-    isolated_home: Path,
-    monkeypatch,
-    capsys,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = tmp_path / "codex.jsonl"
-    transcript.write_text('{"timestamp":"2026-01-01T00:00:00Z"}\n', encoding="utf-8")
-    candidate = TranscriptCandidate(
-        app=TranscriptApp.CODEX,
-        session_id="codex-session",
-        transcript_path=transcript,
-        cwd=repo,
-        repo_root=repo,
-        almanac_path=repo / "almanac",
-        modified_at=datetime.now(UTC),
-        size_bytes=transcript.stat().st_size,
-    )
-    adapter = CliTranscriptDiscoveryAdapter((candidate,))
-    app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
-        transcript_discovery_adapters=(adapter,),
-    )
-    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    (repo / "almanac/config.toml").write_text(
-        """
-[sync]
-quiet = "0s"
-""",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(repo)
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
-
-    assert main(["sync", "status", "--from", "codex"]) == 0
-
-    output = capsys.readouterr()
-    assert "eligible: 1\n" in output.out
-    assert "ready codex codex-session: lines 1-1\n" in output.out
-
-
-def test_cli_sync_status_uses_retry_budget_flags(
-    tmp_path: Path,
-    isolated_home: Path,
-    monkeypatch,
-    capsys,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = tmp_path / "codex.jsonl"
-    transcript.write_text('{"timestamp":"2026-01-01T00:00:00Z"}\n', encoding="utf-8")
-    candidate = TranscriptCandidate(
-        app=TranscriptApp.CODEX,
-        session_id="codex-session",
-        transcript_path=transcript,
-        cwd=repo,
-        repo_root=repo,
-        almanac_path=repo / "almanac",
-        modified_at=datetime(2026, 1, 1, tzinfo=UTC),
-        size_bytes=transcript.stat().st_size,
-    )
-    adapter = CliTranscriptDiscoveryAdapter((candidate,))
-    app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
-        transcript_discovery_adapters=(adapter,),
-    )
-    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    ledger_path = sync_ledger_path(repo)
-    ledger_path.parent.mkdir(parents=True, exist_ok=True)
-    ledger = SyncLedger(
-        version=1,
-        updated_at=datetime(2026, 1, 1, tzinfo=UTC),
-        sessions={
-            f"{candidate.app.value}:{normalize_path(candidate.transcript_path)}": (
-                SyncLedgerEntry(
-                    app=candidate.app,
-                    session_id=candidate.session_id,
-                    transcript_path=candidate.transcript_path,
-                    status=SyncLedgerStatus.FAILED,
-                    last_absorbed_size=0,
-                    last_absorbed_line=0,
-                    last_absorbed_prefix_hash=f"sha256:{sha256(b'').hexdigest()}",
-                    failed_attempts=1,
-                )
-            )
-        },
-    )
-    ledger_path.write_text(ledger.model_dump_json(indent=2), encoding="utf-8")
-    monkeypatch.chdir(repo)
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
-
-    assert (
-        main(
-            [
-                "sync",
-                "status",
-                "--from",
-                "codex",
-                "--quiet",
-                "0s",
-                "--max-failed-attempts",
-                "1",
-            ]
-        )
-        == 0
-    )
-
-    output = capsys.readouterr()
-    assert "needs_attention: 1\n" in output.out
-    assert "sync-retry-budget-exhausted" in output.out
-
-
-def test_cli_sync_runs_ingest_for_ready_transcripts(
-    tmp_path: Path,
-    isolated_home: Path,
-    monkeypatch,
-    capsys,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = tmp_path / "codex.jsonl"
-    transcript.write_text('{"timestamp":"2026-01-01T00:00:00Z"}\n', encoding="utf-8")
-    candidate = TranscriptCandidate(
-        app=TranscriptApp.CODEX,
-        session_id="codex-session",
-        transcript_path=transcript,
-        cwd=repo,
-        repo_root=repo,
-        almanac_path=repo / "almanac",
-        modified_at=datetime(2026, 1, 1, tzinfo=UTC),
-        size_bytes=transcript.stat().st_size,
-    )
-    transcript_adapter = CliTranscriptDiscoveryAdapter((candidate,))
-    harness = CliWritingHarnessAdapter()
-    app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
-        harness_adapters=(harness,),
-        transcript_discovery_adapters=(transcript_adapter,),
-    )
-    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    initialize_git(repo)
-    commit_all(repo, "initial wiki")
-    monkeypatch.chdir(repo)
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
-
-    assert main(["sync", "--from", "codex", "--quiet", "0s", "--using", "codex"]) == 0
-
-    output = capsys.readouterr()
-    assert "sync:\n" in output.out
-    assert "scanned: 1\n" in output.out
-    assert "eligible: 1\n" in output.out
-    assert "started: 1\n" in output.out
-    assert "started codex codex-session: ingest-" in output.out
-    assert "Scheduled sync cursor:" in harness.requests[0].prompt
-    assert f"transcript:{transcript}" in harness.requests[0].prompt
-    assert sync_ledger_path(repo).is_file()
-
-
-def test_cli_sync_background_queues_ingest_for_ready_transcripts(
-    tmp_path: Path,
-    isolated_home: Path,
-    monkeypatch,
-    capsys,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = tmp_path / "codex.jsonl"
-    transcript.write_text('{"timestamp":"2026-01-01T00:00:00Z"}\n', encoding="utf-8")
-    candidate = TranscriptCandidate(
-        app=TranscriptApp.CODEX,
-        session_id="codex-session",
-        transcript_path=transcript,
-        cwd=repo,
-        repo_root=repo,
-        almanac_path=repo / "almanac",
-        modified_at=datetime(2026, 1, 1, tzinfo=UTC),
-        size_bytes=transcript.stat().st_size,
-    )
-    transcript_adapter = CliTranscriptDiscoveryAdapter((candidate,))
-    harness = CliWritingHarnessAdapter()
-    spawner = CliWorkerSpawner()
-    app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
-        harness_adapters=(harness,),
-        transcript_discovery_adapters=(transcript_adapter,),
-        worker_spawner=spawner,
-    )
-    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    monkeypatch.chdir(repo)
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
-
-    assert (
-        main(
-            [
-                "sync",
-                "--from",
-                "codex",
-                "--quiet",
-                "0s",
-                "--using",
-                "codex",
-                "--background",
-            ]
-        )
-        == 0
-    )
-
-    output = capsys.readouterr()
-    job = app.jobs.list(ListJobsRequest(cwd=repo))[0]
-
-    assert "sync:\n" in output.out
-    assert "started: 1\n" in output.out
-    assert f"started codex codex-session: {job.job_id}" in output.out
-    assert job.status == JobStatus.QUEUED
-    assert harness.requests == []
-    assert spawner.requests == [SpawnJobWorkerRequest(cwd=repo, wiki=None)]
-    assert (workspace_jobs_path(repo) / f"{job.job_id}.spec.json").is_file()
-
-
-def test_cli_automation_install_status_and_uninstall(
-    tmp_path: Path,
-    isolated_home: Path,
-    monkeypatch,
-    capsys,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    scheduler = CliSchedulerAdapter()
-    app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
-        scheduler=scheduler,
-    )
-    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
-    monkeypatch.chdir(repo)
-    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
-
-    assert (
-        main(
-            [
-                "automation",
-                "install",
-                "--every",
-                "1m",
-                "--quiet",
-                "1s",
-                "--garden-every",
-                "2m",
-            ]
-        )
-        == 0
-    )
-    install_output = capsys.readouterr()
-    assert "automation installed\n" in install_output.out
-    assert "sync interval: 60s\n" in install_output.out
-    assert "sync quiet: 1s\n" in install_output.out
-    assert "garden interval: 120s\n" in install_output.out
-    assert tuple(job.task.value for job in scheduler.installed) == ("sync", "garden")
-
-    assert main(["automation", "status", "--json"]) == 0
-    status_output = capsys.readouterr()
-    assert '"statuses": [' in status_output.out
-    assert '"task": "sync"' in status_output.out
-
-    assert main(["automation", "uninstall", "sync"]) == 0
-    uninstall_output = capsys.readouterr()
-    assert "automation not installed\n" in uninstall_output.out
-    assert scheduler.uninstalled[-1].task.value == "sync"
 
 
 def test_cli_jobs_inspects_local_run_records(

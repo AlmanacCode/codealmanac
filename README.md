@@ -152,17 +152,17 @@ need no credentials.
 | `codealmanac runs start --branch <branch>` | Start a cloud run for a maintained branch. |
 | `codealmanac init` | Build the first local wiki for the current repo. |
 | `codealmanac local setup --branch main --delivery commit` | Configure local branch triggers and delivery. |
-| `codealmanac local update --using codex` | Run a local wiki update now. |
+| `codealmanac local runs start --using codex` | Run local wiki maintenance now. |
 | `codealmanac local triggers enable dev --delivery commit` | Maintain another branch locally. |
-| `codealmanac local jobs list` | Inspect local update jobs. |
+| `codealmanac local runs list` | Inspect local maintenance runs. |
 | `codealmanac search` / `show` / `topics` / `health` | Query the local wiki. |
 | `codealmanac serve` | Start the local wiki viewer. |
-| `codealmanac doctor` | Check install, auth, providers, automation, and wiki health. |
+| `codealmanac doctor` | Check install, auth, providers, and wiki health. |
 
-Run `codealmanac <command> --help` for the full flag surface. Local schedules
-stay behind explicit local or automation commands. `codealmanac uninstall --yes`
-removes setup-owned local artifacts; use `codealmanac automation uninstall`
-when you want to remove local scheduled automation.
+Run `codealmanac <command> --help` for the full flag surface. Local trigger
+hooks stay behind explicit `codealmanac local setup`. `codealmanac uninstall --yes`
+removes setup-owned local artifacts; local run history and control data stay in
+`~/.codealmanac/` unless removed deliberately.
 
 ## Install troubleshooting
 

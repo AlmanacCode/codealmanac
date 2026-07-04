@@ -34,9 +34,10 @@ from codealmanac.local.delivery.execution.models import (
     LocalDeliveryPatch,
     LocalDeliveryWorkingTree,
 )
+from codealmanac.local.runs.kinds import LocalRunKind
+from codealmanac.local.runs.requests import StartLocalRunRequest
 from codealmanac.local.setup.models import LocalRepositoryState
 from codealmanac.local.status.requests import ReadLocalStatusRequest
-from codealmanac.local.update.requests import RunLocalUpdateRequest
 
 
 class FakeLocalRepositoryProbe:
@@ -131,13 +132,13 @@ class FakeGitDeliveryManager:
         raise AssertionError("commit delivery should be used by this test")
 
 
-def test_local_update_creates_manual_trigger_and_runs_worker(
+def test_local_runs_start_creates_manual_trigger_and_runs_worker(
     tmp_path: Path,
     isolated_home: Path,
 ):
-    app, repo, _harness, delivery = local_update_app(tmp_path, isolated_home)
+    app, repo, _harness, delivery = local_runs_app(tmp_path, isolated_home)
 
-    result = app.workflows.local_update.update(RunLocalUpdateRequest(cwd=repo))
+    result = app.workflows.local_runs.start(StartLocalRunRequest(cwd=repo))
     events = app.control.list_run_events(
         ListControlRunEventsRequest(run_id=result.worker.run.id)
     )
@@ -171,14 +172,14 @@ def test_local_update_creates_manual_trigger_and_runs_worker(
     )
 
 
-def test_local_update_can_rerun_same_head_after_previous_success(
+def test_local_runs_start_can_rerun_same_head_after_previous_success(
     tmp_path: Path,
     isolated_home: Path,
 ):
-    app, repo, _harness, _delivery = local_update_app(tmp_path, isolated_home)
+    app, repo, _harness, _delivery = local_runs_app(tmp_path, isolated_home)
 
-    first = app.workflows.local_update.update(RunLocalUpdateRequest(cwd=repo))
-    second = app.workflows.local_update.update(RunLocalUpdateRequest(cwd=repo))
+    first = app.workflows.local_runs.start(StartLocalRunRequest(cwd=repo))
+    second = app.workflows.local_runs.start(StartLocalRunRequest(cwd=repo))
     triggers = app.control.list_trigger_events(
         ListTriggerEventsRequest(statuses=(TriggerEventStatus.CLAIMED,))
     )
@@ -191,11 +192,11 @@ def test_local_update_can_rerun_same_head_after_previous_success(
     assert len(triggers) == 2
 
 
-def test_local_update_does_not_start_when_branch_has_active_run(
+def test_local_runs_start_does_not_start_when_branch_has_active_run(
     tmp_path: Path,
     isolated_home: Path,
 ):
-    app, repo, _harness, _delivery = local_update_app(tmp_path, isolated_home)
+    app, repo, _harness, _delivery = local_runs_app(tmp_path, isolated_home)
     branch = app.workflows.local_status.status(ReadLocalStatusRequest(cwd=repo)).branch
     assert branch is not None
     active = app.control.create_run(
@@ -213,7 +214,7 @@ def test_local_update_does_not_start_when_branch_has_active_run(
         )
     )
 
-    result = app.workflows.local_update.update(RunLocalUpdateRequest(cwd=repo))
+    result = app.workflows.local_runs.start(StartLocalRunRequest(cwd=repo))
 
     assert result.started is False
     assert result.reason == "active_run_exists"
@@ -221,7 +222,7 @@ def test_local_update_does_not_start_when_branch_has_active_run(
     assert app.control.list_trigger_events() == ()
 
 
-def test_local_update_requires_configured_branch(
+def test_local_runs_start_requires_configured_branch(
     tmp_path: Path,
     isolated_home: Path,
 ):
@@ -233,10 +234,27 @@ def test_local_update_requires_configured_branch(
     )
 
     with pytest.raises(ValidationFailed, match="current checkout is not configured"):
-        app.workflows.local_update.update(RunLocalUpdateRequest(cwd=repo))
+        app.workflows.local_runs.start(StartLocalRunRequest(cwd=repo))
 
 
-def local_update_app(tmp_path: Path, isolated_home: Path):
+def test_local_runs_start_uses_garden_kind(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    app, repo, harness, _delivery = local_runs_app(tmp_path, isolated_home)
+
+    result = app.workflows.local_runs.start(
+        StartLocalRunRequest(cwd=repo, kind=LocalRunKind.GARDEN)
+    )
+
+    assert result.started is True
+    assert result.worker is not None
+    assert result.worker.run is not None
+    assert result.worker.run.operation == "garden"
+    assert "# Garden Operation" in harness.requests[0].prompt
+
+
+def local_runs_app(tmp_path: Path, isolated_home: Path):
     repo = tmp_path / "repo"
     repo.mkdir()
     harness = FakeHarnessAdapter()

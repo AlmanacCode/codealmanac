@@ -1689,3 +1689,23 @@ Known residue:
   maintenance, and architecture test set passed (`217 passed`). Full local
   verification passed with `uv run ruff check src tests`,
   `uv run pytest -q --tb=short` (`513 passed`), and `git diff --check`.
+
+## Slice 89 CLI Run Surface Convergence
+
+- Requirement: launch CLI must not expose the old scheduled sync/automation
+  model or stale local update/jobs spellings.
+- Implementation evidence: old sync/automation modules were removed from
+  parser, dispatch, render, services, integrations, workflows, and tests.
+  Local execution now lives under `codealmanac local runs start`, with
+  `local runs list/show/logs` for local control-DB run history.
+- Boundary evidence: local Git hooks and detached workers now call private
+  console entrypoints, `codealmanac-local-trigger` and
+  `codealmanac-local-worker`, rather than hidden root CLI subcommands.
+- Setup evidence: root setup rejects old automation flags and remains cloud
+  setup plus agent instructions only.
+- Uninstall evidence: root uninstall removes setup-owned instruction files only
+  and omits automation fields from help and JSON.
+- Verification evidence: focused CLI/local/config/public-contract/architecture
+  test set passed with `165 passed`; full source verification passed with
+  `uv run pytest -q` (`481 passed`); lint and diff hygiene passed with
+  `uv run ruff check .` and `git diff --check`.

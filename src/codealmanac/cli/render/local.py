@@ -5,12 +5,12 @@ from codealmanac.local.policies.models import (
     LocalTriggerPoliciesResult,
     LocalTriggerPolicyResult,
 )
-from codealmanac.local.runs.jobs.models import (
-    LocalJobLogsResult,
-    LocalJobSummary,
+from codealmanac.local.runs.models import (
+    LocalRunLogsResult,
+    LocalRunStartResult,
+    LocalRunSummary,
 )
 from codealmanac.local.status.models import LocalStatusResult
-from codealmanac.local.update.models import LocalUpdateResult
 
 
 def render_local_status(result: LocalStatusResult, json_output: bool) -> None:
@@ -67,32 +67,32 @@ def render_local_trigger_policy(
     print(f"delivery: {delivery}")
 
 
-def render_local_jobs(
-    jobs: tuple[LocalJobSummary, ...],
+def render_local_runs(
+    runs: tuple[LocalRunSummary, ...],
     json_output: bool,
 ) -> None:
     if json_output:
-        print_json_rows(jobs)
+        print_json_rows(runs)
         return
-    if len(jobs) == 0:
-        print("# 0 local jobs", file=sys.stderr)
+    if len(runs) == 0:
+        print("# 0 local runs", file=sys.stderr)
         return
-    for job in jobs:
-        summary = job.run.summary or job.run.error or ""
+    for item in runs:
+        summary = item.run.summary or item.run.error or ""
         print(
-            f"{job.run.id}\t{job.run.status.value}\t{job.run.operation}\t"
-            f"{job.repository.full_name}\t{job.branch.name}\t{summary}"
+            f"{item.run.id}\t{item.run.status.value}\t{item.run.operation}\t"
+            f"{item.repository.full_name}\t{item.branch.name}\t{summary}"
         )
 
 
-def render_local_job(job: LocalJobSummary, json_output: bool) -> None:
+def render_local_run(item: LocalRunSummary, json_output: bool) -> None:
     if json_output:
-        print_json_model(job)
+        print_json_model(item)
         return
-    run = job.run
+    run = item.run
     print(f"id: {run.id}")
-    print(f"repo: {job.repository.full_name}")
-    print(f"branch: {job.branch.name}")
+    print(f"repo: {item.repository.full_name}")
+    print(f"branch: {item.branch.name}")
     print(f"operation: {run.operation}")
     print(f"status: {run.status.value}")
     if run.expected_head_sha is not None:
@@ -105,8 +105,8 @@ def render_local_job(job: LocalJobSummary, json_output: bool) -> None:
     print(f"updated_at: {run.updated_at.isoformat()}")
 
 
-def render_local_job_logs(
-    result: LocalJobLogsResult,
+def render_local_run_logs(
+    result: LocalRunLogsResult,
     json_output: bool,
 ) -> None:
     if json_output:
@@ -119,21 +119,21 @@ def render_local_job_logs(
         print(f"{event.sequence}\t{event.kind.value}\t{event.message}")
 
 
-def render_local_update(result: LocalUpdateResult, json_output: bool) -> None:
+def render_local_run_start(result: LocalRunStartResult, json_output: bool) -> None:
     if json_output:
         print_json_model(result)
         return
     if not result.started:
-        print(f"local update: not started ({result.reason})")
+        print(f"local run: not started ({result.reason})")
         if result.active_run is not None:
             print(
-                f"active_job: {result.active_run.id} "
+                f"active_run: {result.active_run.id} "
                 f"{result.active_run.status.value}"
             )
         return
     assert result.worker is not None
     assert result.worker.run is not None
-    print(f"local update: {result.worker.run.status.value} {result.worker.run.id}")
+    print(f"local run: {result.worker.run.status.value} {result.worker.run.id}")
     if result.worker.run.summary is not None:
         print(f"summary: {result.worker.run.summary}")
 

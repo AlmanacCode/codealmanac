@@ -43,17 +43,16 @@ README_REQUIRED_FRAGMENTS = (
     'codealmanac search "getting"',
     "codealmanac serve",
     "codealmanac local setup --branch main --delivery commit",
-    "codealmanac local update --using codex",
+    "codealmanac local runs start --using codex",
     "codealmanac local triggers enable dev --delivery commit",
-    "codealmanac local jobs list",
+    "codealmanac local runs list",
     "## What gets created",
     "A folder counts as a CodeAlmanac wiki only when it has both",
     "has both `topics.yaml` and",
     "`pages/`. Derived local state appears",
     "Derived local state appears when commands need it:",
-    "Local schedules\nstay behind explicit local or automation commands.",
+    "Local trigger\nhooks stay behind explicit `codealmanac local setup`.",
     "codealmanac uninstall --yes",
-    "codealmanac automation uninstall",
     "Cloud commands: `setup`, `status`, `login`, `whoami`, `logout`,",
     "uv tool dir --bin",
 )
@@ -67,7 +66,6 @@ README_FORBIDDEN_FRAGMENTS = (
     "~/.almanac",
     "codealmanac.com/dashboard",
     "usealmanac.com",
-    "does not install scheduled automation",
     "ingest is an alias",
     "absorb",
 )
@@ -120,12 +118,19 @@ GITHUB_FORBIDDEN_FRAGMENTS = (
 )
 
 
-def test_public_entry_point_is_codealmanac_only():
+def test_console_entry_points_keep_one_human_cli_and_private_workers():
     pyproject = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
 
     scripts = pyproject["project"]["scripts"]
 
-    assert scripts == {"codealmanac": "codealmanac.cli.main:main"}
+    assert scripts["codealmanac"] == "codealmanac.cli.main:main"
+    assert scripts["codealmanac-local-trigger"] == "codealmanac.local_trigger:main"
+    assert scripts["codealmanac-local-worker"] == "codealmanac.local_worker:main"
+    assert set(scripts) == {
+        "codealmanac",
+        "codealmanac-local-trigger",
+        "codealmanac-local-worker",
+    }
 
 
 def test_python_package_metadata_declares_readme_and_license():
@@ -204,7 +209,7 @@ def test_user_facing_docs_do_not_advertise_node_or_old_state_paths():
     assert "uv run pytest" in docs["CONTRIBUTING.md"]
     assert "codealmanac init --root <path>" in docs["docs/concepts.md"]
     assert "Root `codealmanac setup` is cloud setup" in docs["docs/concepts.md"]
-    assert "codealmanac automation uninstall" in docs["docs/concepts.md"]
+    assert "codealmanac local runs start" in docs["docs/concepts.md"]
     for body in docs.values():
         assert "npm install" not in body
         assert "npm test" not in body
@@ -260,7 +265,7 @@ def test_readme_lifecycle_examples_parse_public_local_commands():
     parser.parse_args(("runs", "list"))
     parser.parse_args(("runs", "start", "--branch", "main"))
     parser.parse_args(("local", "setup", "--branch", "main", "--delivery", "commit"))
-    parser.parse_args(("local", "update", "--using", "codex"))
+    parser.parse_args(("local", "runs", "start", "--using", "codex"))
     parser.parse_args(
         (
             "local",
@@ -271,7 +276,7 @@ def test_readme_lifecycle_examples_parse_public_local_commands():
             "commit",
         )
     )
-    parser.parse_args(("local", "jobs", "list"))
+    parser.parse_args(("local", "runs", "list"))
 
     assert "docs/adr.md" not in commands
     assert "codealmanac ingest" not in commands

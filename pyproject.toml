@@ -43,6 +43,8 @@ dependencies = [
 
 [project.scripts]
 codealmanac = "codealmanac.cli.main:main"
+codealmanac-local-trigger = "codealmanac.local_trigger:main"
+codealmanac-local-worker = "codealmanac.local_worker:main"
 
 [project.urls]
 Repository = "https://github.com/AlmanacCode/codealmanac"
