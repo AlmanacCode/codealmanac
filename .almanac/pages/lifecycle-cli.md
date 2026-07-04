@@ -13,60 +13,66 @@ sources:
   - id: lifecycle-parser
     type: file
     path: src/codealmanac/cli/parser/lifecycle.py
-    note: Defines public init, hidden sync, hidden worker, and hidden local-trigger command parsing.
+    note: Defines `codealmanac init` lifecycle command parsing.
   - id: dev-parser
     type: file
     path: src/codealmanac/cli/parser/dev.py
     note: Defines hidden developer ingest and garden lifecycle command parsing.
-  - id: jobs-parser
+  - id: capture-parser
     type: file
-    path: src/codealmanac/cli/parser/jobs.py
-    note: Defines hidden jobs inspection commands with `job_id` arguments.
-  - id: jobs-dispatch
+    path: src/codealmanac/cli/parser/capture.py
+    note: Defines cloud capture commands, including `capture inspect` for recent local hook events.
+  - id: local-parser
     type: file
-    path: src/codealmanac/cli/dispatch/jobs.py
-    note: Dispatches jobs inspection commands to `app.jobs`.
+    path: src/codealmanac/cli/parser/local.py
+    note: Defines local branch trigger and local runs command parsing.
   - id: lifecycle-rendering
     type: file
     path: src/codealmanac/cli/render/lifecycle.py
     note: Renders foreground and background lifecycle results with job terminology.
-  - id: jobs-rendering
+  - id: project-scripts
     type: file
-    path: src/codealmanac/cli/render/jobs.py
-    note: Renders job records, logs, attach streams, and cancellation results.
+    path: pyproject.toml
+    note: Defines the installed console scripts for the public CLI and private hook/worker entrypoints.
+  - id: capture-hook-script
+    type: file
+    path: src/codealmanac/capture_hook.py
+    note: Implements the private `codealmanac-capture-hook` console script.
+  - id: job-worker-script
+    type: file
+    path: src/codealmanac/job_worker.py
+    note: Implements the private `codealmanac-job-worker` console script that drains lifecycle jobs.
   - id: wiki-parser
     type: file
     path: src/codealmanac/cli/parser/wiki.py
     note: Defines deterministic local wiki read, topic, health, reindex, serve, and tagging commands.
-  - id: automation-parser
+  - id: cli-contract-tests
     type: file
-    path: src/codealmanac/cli/parser/automation.py
-    note: Defines local scheduled automation install, status, and uninstall commands.
+    path: tests/test_cli.py
+    note: Verifies public help hides removed compatibility commands and rejects old root worker/admin names.
 status: active
-verified: 2026-07-03
+verified: 2026-07-04
 ---
 
 # Lifecycle CLI
 
 The public program name is `codealmanac`. The CLI is an adapter over services and workflows: parsing builds request objects, dispatch calls the app composition root, renderers print results, and product behavior stays in workflows and services. [@root-parser]
 
-[[lifecycle-architecture]] is the reading map for the surrounding workflow, harness, job-ledger, and automation pages. [[process-manager-runs]] owns the repo-local lifecycle job ledger that background CLI commands create and that jobs inspection commands read.
+[[lifecycle-architecture]] is the reading map for the surrounding workflow, harness, job-ledger, and local-run pages. [[process-manager-runs]] owns the repo-local lifecycle job ledger that background CLI commands create and that the local viewer reads.
 
 ## Write-Capable Commands
 
 `codealmanac init` initializes a local Almanac wiki. It accepts an optional path, configured root/name/description options, `--using`, foreground/background mode flags, `--force`, `--yes`, `--verbose`, `--guidance`, and background `--json`. Foreground init renders the finished job, wiki change count, and refreshed index summary; background init renders `job_id`, queued status, and worker PID. [@lifecycle-parser] [@lifecycle-rendering]
 
-`codealmanac sync` is hidden but remains the scheduler-facing transcript sync entry point. Its status subcommand is read-only; its syncing path can queue lifecycle ingest jobs and renders started work by `job_id`. [@lifecycle-parser] [@lifecycle-rendering]
-
 `codealmanac dev ingest` and `codealmanac dev garden` are hidden developer surfaces for local ingest and garden workflows. They share lifecycle options such as `--wiki`, `--using`, foreground/background mode, `--title`, `--guidance`, and background `--json`. These commands are not evidence for adding public `absorb`, `build`, or `garden` aliases outside the current runtime. [@dev-parser]
 
-The hidden worker command `codealmanac __run-worker` drains the repo-local lifecycle job queue. The hidden local-worker and local-trigger commands belong to branch-triggered local runs, not to the lifecycle job ledger. [@lifecycle-parser]
+Detached lifecycle jobs are drained by the private console script `codealmanac-job-worker`, not by a root `codealmanac __run-worker` subcommand. Branch-triggered local runs use the separate private `codealmanac-local-trigger` and `codealmanac-local-worker` scripts. [@project-scripts] [@job-worker-script] [@local-parser]
 
-## Jobs Commands
+## Removed Compatibility Commands
 
-`codealmanac jobs`, `jobs show <job-id>`, `jobs logs <job-id>`, `jobs attach <job-id>`, and `jobs cancel <job-id>` are hidden admin inspection commands over lifecycle job records. They dispatch to `app.jobs`, render `job_id`, and do not run AI or write wiki page prose. [@jobs-parser] [@jobs-dispatch] [@jobs-rendering]
+`codealmanac jobs`, `codealmanac __capture-hook`, and `codealmanac __run-worker` are no longer accepted root parser commands. The root help also hides the old `sync`, root scheduled `automation`, and developer lifecycle surfaces. Tests pin this as a public contract because a hidden-but-accepted root command still becomes user-facing once an installed package can execute it. [@root-parser] [@cli-contract-tests]
 
-`jobs attach` streams job log events until a job reaches a terminal status. `jobs cancel` marks queued or running lifecycle jobs cancelled through the job ledger; it is not the cancellation surface for hosted/cloud runs. [@jobs-dispatch] [@jobs-rendering]
+The capture hook moved to the private `codealmanac-capture-hook` console script. Capture setup writes provider hooks that invoke that script, and `codealmanac capture inspect` is the public local inspection surface for recent hook events. [@project-scripts] [@capture-hook-script] [@capture-parser]
 
 ## Read And Organization Commands
 
@@ -74,10 +80,8 @@ The hidden worker command `codealmanac __run-worker` drains the repo-local lifec
 
 `codealmanac serve` starts the local read-only viewer. It reads wiki pages, index state, topics, backlinks, and lifecycle job data; it is not a lifecycle execution command.
 
-## Automation Commands
-
-`codealmanac automation install|status|uninstall` manages scheduled local sync and garden tasks. Automation owns scheduled invocation; it does not own transcript eligibility, lifecycle job storage, provider execution, or wiki-writing judgment. [@automation-parser]
-
 ## Boundary Rule
 
 When adding CLI behavior, keep the CLI as an adapter. Public command names should express product intent, while internal naming follows the owning subsystem: repo-local lifecycle records are jobs, cloud/local trigger executions are runs, and query commands remain deterministic over committed wiki files plus derived local index state.
+
+Private process entrypoints belong in package scripts when installed hooks or detached workers need to call them directly. Do not reintroduce private worker or hook verbs as hidden root `codealmanac` subcommands unless they are meant to become part of the executable root parser contract. [@project-scripts] [@cli-contract-tests]
