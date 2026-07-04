@@ -52,6 +52,7 @@ def page_summary_from_search(page: SearchPageResult) -> ViewerPageSummary:
         slug=page.slug,
         title=page.title,
         summary=page.summary,
+        path=page.relative_path,
         topics=page.topics,
     )
 
@@ -61,5 +62,6 @@ def page_summary_from_view(page: PageView) -> ViewerPageSummary:
         slug=page.slug,
         title=page.title,
         summary=page.summary,
+        path=page.relative_path,
         topics=page.topics,
     )

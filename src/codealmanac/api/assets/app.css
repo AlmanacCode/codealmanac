@@ -348,6 +348,63 @@ button {
   white-space: nowrap;
 }
 
+.wiki-rail-folder {
+  min-width: 0;
+}
+
+.wiki-rail-folder-summary {
+  display: flex;
+  min-width: 0;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+  padding: 6px 8px 6px calc(8px + var(--rail-indent, 0px));
+  user-select: none;
+  white-space: nowrap;
+}
+
+.wiki-rail-folder-summary::-webkit-details-marker {
+  display: none;
+}
+
+.wiki-rail-folder-summary::before {
+  content: "›";
+  display: inline-block;
+  width: 14px;
+  color: var(--faint);
+  font-size: 16px;
+  line-height: 1;
+  transform: translateY(1px);
+  transition: transform 120ms ease;
+}
+
+.wiki-rail-folder[open] > .wiki-rail-folder-summary::before {
+  transform: translateY(1px) rotate(90deg);
+}
+
+.wiki-rail-folder-summary:hover {
+  background: rgba(42, 46, 28, 0.05);
+  color: var(--ink);
+}
+
+.wiki-rail-folder-summary:focus-visible {
+  outline: 2px solid rgba(152, 118, 26, 0.35);
+  outline-offset: 2px;
+}
+
+.wiki-rail-folder-children {
+  display: grid;
+  gap: 2px;
+}
+
+.wiki-rail-list a.wiki-rail-page {
+  padding-left: calc(22px + var(--rail-indent, 0px));
+}
+
 .wiki-rail-list a:hover,
 .wiki-rail-list a.is-active {
   background: rgba(42, 46, 28, 0.05);

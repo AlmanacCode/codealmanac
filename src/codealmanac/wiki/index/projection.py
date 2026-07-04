@@ -52,15 +52,16 @@ def insert_document(connection: SQLiteConnection, document: PageDocument) -> Non
     connection.execute(
         """
         INSERT INTO pages (
-          slug, title, summary, file_path, content_hash, updated_at, body
+          slug, title, summary, file_path, relative_path, content_hash, updated_at, body
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             document.slug,
             document.title,
             document.summary,
             str(document.file_path),
+            document.relative_path,
             document.content_hash,
             document.updated_at,
             document.body,

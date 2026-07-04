@@ -21,6 +21,7 @@ class SearchPageResult(CodeAlmanacModel):
     slug: str
     title: str | None
     summary: str | None
+    relative_path: str
     updated_at: int
     topics: tuple[str, ...]
 
@@ -49,6 +50,7 @@ class PageView(CodeAlmanacModel):
     title: str | None
     summary: str | None
     file_path: Path
+    relative_path: str
     updated_at: int
     topics: tuple[str, ...]
     sources: tuple[PageSourceReference, ...]

@@ -44,8 +44,42 @@ def test_viewer_overview_search_and_topic_use_index_read_model(
     assert overview.featured_page is not None
     assert overview.featured_page.slug == "getting-started"
     assert "auth-flow" in [page.slug for page in overview.pages]
+    assert "auth-flow" in [page.slug for page in overview.navigation_pages]
+    assert [page.path for page in overview.navigation_pages] == [
+        "auth-flow.md",
+        "getting-started.md",
+        "session-store.md",
+    ]
     assert [page.slug for page in search.pages] == ["auth-flow"]
     assert [page.slug for page in topic.pages] == ["auth-flow", "session-store"]
+
+
+def test_viewer_navigation_pages_are_not_limited_by_overview_page_limit(
+    viewer_repo: tuple[Path, CodeAlmanac],
+):
+    repo, app = viewer_repo
+    write_viewer_page(
+        repo,
+        "architecture/runtime-flow.md",
+        """---
+title: Runtime Flow
+topics: [architecture]
+---
+# Runtime Flow
+
+Shows the runtime shape.
+""",
+    )
+
+    overview = app.viewer.overview(ViewerOverviewRequest(cwd=repo, page_limit=1))
+
+    assert len(overview.pages) == 1
+    assert {page.path for page in overview.navigation_pages} == {
+        "architecture/runtime-flow.md",
+        "auth-flow.md",
+        "getting-started.md",
+        "session-store.md",
+    }
 
 
 def test_viewer_overview_lists_available_registered_wikis(

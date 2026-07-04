@@ -50,7 +50,7 @@ def search_sql(request: SearchIndexRequest) -> tuple[str, tuple[object, ...]]:
         params.insert(0, build_fts_query(query))
         return (
             f"""
-            SELECT p.slug, p.title, p.summary, p.updated_at
+            SELECT p.slug, p.title, p.summary, p.relative_path, p.updated_at
             FROM pages p
             JOIN fts_pages f ON f.slug = p.slug
             WHERE {" AND ".join(where_clauses)}
@@ -62,7 +62,7 @@ def search_sql(request: SearchIndexRequest) -> tuple[str, tuple[object, ...]]:
     where_sql = f"WHERE {' AND '.join(where_clauses)}" if len(where_clauses) > 0 else ""
     return (
         f"""
-        SELECT p.slug, p.title, p.summary, p.updated_at
+        SELECT p.slug, p.title, p.summary, p.relative_path, p.updated_at
         FROM pages p
         {where_sql}
         ORDER BY p.updated_at DESC, p.slug ASC
@@ -136,6 +136,7 @@ def search_result_from_row(
         slug=row["slug"],
         title=row["title"],
         summary=row["summary"],
+        relative_path=row["relative_path"],
         updated_at=row["updated_at"],
         topics=topics_for_page(connection, row["slug"]),
     )

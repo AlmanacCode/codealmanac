@@ -7,7 +7,7 @@ from codealmanac.database import (
     connect_sqlite,
 )
 
-SCHEMA_VERSION = 2026070101
+SCHEMA_VERSION = 2026070401
 
 SCHEMA_DDL = """
 CREATE TABLE IF NOT EXISTS pages (
@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS pages (
   title         TEXT,
   summary       TEXT,
   file_path     TEXT NOT NULL,
+  relative_path TEXT NOT NULL,
   content_hash  TEXT NOT NULL,
   updated_at    INTEGER NOT NULL,
   body          TEXT NOT NULL
