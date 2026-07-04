@@ -2,7 +2,7 @@ from contextlib import suppress
 from pathlib import Path
 
 from codealmanac.core.errors import ValidationFailed
-from codealmanac.engine.harnesses.models import HarnessRunResult
+from codealmanac.engine.harnesses.models import HarnessEvent, HarnessRunResult
 from codealmanac.engine.harnesses.requests import RunHarnessRequest
 from codealmanac.engine.harnesses.service import HarnessesService
 from codealmanac.engine.lifecycle import (
@@ -49,7 +49,10 @@ class PageRunWorkflow:
         self.mutation_policy = mutation_policy
 
     def begin(self, request: PageRunBeginRequest) -> PageRunContext:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
+        workspace = request.workspace or self.resolve_workspace(
+            request.cwd,
+            request.wiki,
+        )
         self.runs.mark_running(
             MarkRunRunningRequest(
                 cwd=request.cwd,
@@ -90,16 +93,27 @@ class PageRunWorkflow:
     def execute(self, request: PageRunExecuteRequest) -> PageRunResult:
         preflight = require_preflight(request.context)
         workspace = request.context.workspace
+        live_harness_event_ids: set[int] = set()
+
+        def record_live_harness_event(event: HarnessEvent) -> None:
+            live_harness_event_ids.add(id(event))
+            self.record_harness_event(request.context, event)
+
         harness = self.harnesses.run(
             RunHarnessRequest(
                 kind=request.harness,
                 cwd=workspace.root_path,
                 prompt=request.prompt,
                 title=request.title,
+                event_sink=record_live_harness_event,
             )
         )
         self.record_harness_transcript(request.context, harness)
-        self.record_harness_events(request.context, harness)
+        self.record_harness_events(
+            request.context,
+            harness,
+            already_recorded=live_harness_event_ids,
+        )
         safety = self.mutation_policy.validate(
             preflight,
             workspace,
@@ -170,16 +184,27 @@ class PageRunWorkflow:
         self,
         context: PageRunContext,
         harness: HarnessRunResult,
+        already_recorded: set[int] | None = None,
     ) -> None:
+        recorded_ids = already_recorded or set()
         for event in harness_events(harness):
-            self.record(
-                PageRunRecordEventRequest(
-                    context=context,
-                    kind=harness_run_event_kind(event),
-                    message=event.message,
-                    harness_event=event,
-                )
+            if id(event) in recorded_ids:
+                continue
+            self.record_harness_event(context, event)
+
+    def record_harness_event(
+        self,
+        context: PageRunContext,
+        event: HarnessEvent,
+    ) -> None:
+        self.record(
+            PageRunRecordEventRequest(
+                context=context,
+                kind=harness_run_event_kind(event),
+                message=event.message,
+                harness_event=event,
             )
+        )
 
 
 def require_preflight(context: PageRunContext) -> LifecycleMutationPreflight:

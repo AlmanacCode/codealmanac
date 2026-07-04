@@ -7,12 +7,14 @@ from codealmanac.core.text import required_text
 from codealmanac.engine.harnesses.models import HarnessEvent, HarnessKind
 from codealmanac.engine.page_run.models import PageRunContext
 from codealmanac.runs.ledger.models import RunEventKind, RunId
+from codealmanac.wiki.workspaces.models import Workspace
 
 
 class PageRunBeginRequest(CodeAlmanacModel):
     cwd: Path
     run_id: RunId
     wiki: str | None = None
+    workspace: Workspace | None = None
 
 
 class PageRunRecordEventRequest(CodeAlmanacModel):

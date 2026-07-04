@@ -103,6 +103,7 @@ class InitWorkflow:
             PageRunBeginRequest(
                 cwd=preparation.workspace.root_path,
                 run_id=request.run_id,
+                workspace=preparation.workspace,
             )
         )
         try:

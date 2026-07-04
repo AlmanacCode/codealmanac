@@ -318,6 +318,20 @@ def test_codex_app_server_run_maps_notifications(tmp_path: Path):
     assert done.source_role == HarnessActorRole.ROOT
 
 
+def test_codex_app_server_streams_notifications_to_event_sink(tmp_path: Path):
+    client = CodexAppServerClient(
+        command=fake_codex_path(tmp_path, "success"),
+        rpc_timeout_seconds=1,
+        turn_timeout_seconds=1,
+    )
+    streamed = []
+
+    result = client.run(run_request(tmp_path, event_sink=streamed.append))
+
+    assert result.status == HarnessRunStatus.SUCCEEDED
+    assert streamed == list(result.events)
+
+
 def test_codex_app_server_helper_turn_error_does_not_fail_root_turn(
     tmp_path: Path,
 ):
@@ -411,11 +425,12 @@ def fake_codex_path(tmp_path: Path, scenario: str) -> str:
     return str(path)
 
 
-def run_request(tmp_path: Path) -> RunHarnessRequest:
+def run_request(tmp_path: Path, event_sink=None) -> RunHarnessRequest:
     return RunHarnessRequest(
         kind=HarnessKind.CODEX,
         cwd=tmp_path,
         prompt="Update the wiki.",
+        event_sink=event_sink,
     )
 
 

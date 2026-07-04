@@ -47,6 +47,33 @@ a reason behind a decision, or a contract the reader needs to understand.
 Do not add sections because a template says so. Add them because the article
 needs that shape to explain the subject clearly.
 
+## Explanatory Rhythm
+
+Do not list implementation facts one after another. Each important fact should
+help the reader understand the subject.
+
+A strong article alternates between:
+
+- what the code does
+- why that exists
+- what it changes for the rest of the system
+- what the reader should now understand differently
+
+When you introduce a file, class, command, state, or contract, add enough
+context for a reader new to this repo to place it. One concise clause is often
+enough.
+
+Bad: `PageRunWorkflow` calls `harnesses.run(...)`.
+
+Better: `PageRunWorkflow` calls `harnesses.run(...)`, so init, ingest, and
+garden can use Codex or Claude without knowing provider-specific execution
+details.
+
+A complete article should feel like an explanation unfolding, not a reference
+entry. The reader should not feel jumped between disconnected facts. Use
+connective sentences when a section moves from purpose to mechanism, or from
+mechanism to consequence.
+
 ## Language
 
 Prefer short factual sentences. Use "is" when it fits. Avoid inflated verbs
@@ -58,6 +85,10 @@ architecture prose, filler introductions, and formulaic conclusions.
 Do not write generic sentences that could describe any codebase. Tie the prose
 to this repository's commands, files, workflows, contracts, decisions, or
 runtime behavior.
+
+When introducing a technical fact, do not stop at naming it. Explain the role
+it plays and why that fact matters to the system. Good prose alternates between
+code fact and reader meaning.
 
 Use prose first. Use bullets for real lists or ordered procedures. Use tables
 when structure makes comparison easier. A dense bullet list is not a substitute

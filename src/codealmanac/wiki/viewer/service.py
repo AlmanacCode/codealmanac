@@ -61,6 +61,10 @@ class ViewerService:
             workspace.workspace_id,
             SearchIndexRequest(limit=request.page_limit),
         )
+        navigation_pages = self.index.search(
+            workspace.workspace_id,
+            SearchIndexRequest(),
+        )
         topics = self.index.list_topics(workspace.workspace_id)
         return ViewerOverview(
             workspace=viewer_workspace(workspace),
@@ -71,6 +75,9 @@ class ViewerService:
             page_count=summary.pages,
             topic_count=summary.topics,
             pages=tuple(page_summary_from_search(page) for page in pages),
+            navigation_pages=tuple(
+                page_summary_from_search(page) for page in navigation_pages
+            ),
             topics=tuple(viewer_topic_summary(topic) for topic in topics),
             featured_page=self.get_featured_page(workspace),
         )
