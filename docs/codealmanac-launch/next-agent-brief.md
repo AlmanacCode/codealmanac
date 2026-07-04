@@ -75,6 +75,14 @@ direction.
   `codealmanac capture inspect`, and private script help for
   `codealmanac-capture-hook`, `codealmanac-job-worker`,
   `codealmanac-local-trigger`, and `codealmanac-local-worker`.
+- PyPI `codealmanac` `0.1.12` is published from GitHub Actions run
+  `28694070925`; fresh public `uvx --python 3.12 --refresh --no-cache --from
+  codealmanac==0.1.12` smoke returned version `0.1.12`. This release makes
+  `codealmanac setup` own capture installation; `capture enable` remains manual
+  repair/admin surface.
+- Hosted `main` is at `748c8ed`; Vercel deploy run `28694096088` succeeded.
+  Production `https://api.codealmanac.com/api/health` returns
+  `{"status":"ok"}`.
 - Chrome verified the production CLI setup handshake again from an isolated
   temp `HOME`; `codealmanac setup --no-browser --target codex --yes` approved
   through `/cli-login` and completed as `rohans0509`.

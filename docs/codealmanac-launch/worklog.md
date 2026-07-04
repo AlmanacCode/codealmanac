@@ -2681,3 +2681,37 @@
   inspect`, and private script help for all four process entrypoints.
 - RelayForge update sent through binding `rohan-codex-019f05b3` with the public
   install evidence and confirmation that the CLI breaking surface is done.
+
+## 2026-07-04 Setup Owns Capture and 0.1.12 Release
+
+- Changed `codealmanac setup` so cloud setup now performs login, installs agent
+  instructions, and repairs Codex/Claude capture hooks in one flow.
+- Kept `codealmanac capture enable` as a manual repair/admin command, not the
+  primary onboarding step.
+- Updated README, CLI contract, frontend-surface contract, decisions, and the
+  inconsistency ledger to remove stale guidance that told users to run capture
+  separately after setup.
+- Local verification passed:
+  - `uv run pytest -q` (`479 passed`)
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run python -m compileall src -q`
+  - `git diff --check`
+- Committed setup/capture behavior as `6b1e358d` and pushed `main`.
+- Bumped package version to `0.1.12` in `pyproject.toml` and `uv.lock`,
+  committed as `c3f85709`, and pushed `main`.
+- Published `codealmanac` `0.1.12` to PyPI through GitHub Actions run
+  `28694070925`. The workflow passed tests, lint, diff hygiene, build,
+  artifact checks, artifact upload, and PyPI upload.
+- Fresh public package smoke passed with
+  `uvx --python 3.12 --refresh --no-cache --from codealmanac==0.1.12`.
+  The installed package returned version `0.1.12`, and `codealmanac setup
+  --help` showed the cloud setup surface without stale scheduled-automation
+  flags.
+- Hosted `main` was fast-forwarded to `748c8ed`, which includes the setup copy
+  change and the source-library conversation store split.
+- Vercel deploy run `28694096088` succeeded for `codealmanac-hosted`.
+- Production smoke confirmed `https://api.codealmanac.com/api/health` returns
+  `{"status":"ok"}` and `/login` redirects through WorkOS/AuthKit. The bare
+  `/health` path returns 404 because the deployed health endpoint is namespaced
+  under `/api/health`.

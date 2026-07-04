@@ -29,6 +29,14 @@ returned `0.1.11`, rejected old root `jobs`, `__capture-hook`, and
 `codealmanac-capture-hook`, `codealmanac-job-worker`,
 `codealmanac-local-trigger`, and `codealmanac-local-worker` scripts.
 
+Follow-up release `0.1.12` is live on PyPI from GitHub Actions run
+`28694070925`. It makes `codealmanac setup` install cloud capture as part of
+setup, while `codealmanac capture enable` remains a manual repair command.
+Fresh `uvx --python 3.12 --refresh --no-cache --from codealmanac==0.1.12`
+smoke returned version `0.1.12` and showed the updated setup help.
+Hosted `main` was fast-forwarded to `748c8ed` and Vercel deploy run
+`28694096088` succeeded.
+
 ## Latest Local Notes
 
 2026-07-03 provider correction:
@@ -65,10 +73,10 @@ returned `0.1.11`, rejected old root `jobs`, `__capture-hook`, and
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
 | CodeAlmanac backend/local | 100% | 100% | Slice 89 removed the old sync/automation implementation path and aligned local execution/history on `local runs`; Slice 90 public smoke verified the packaged private local trigger/worker entrypoints. |
-| CodeAlmanac CLI/public UX | 100% | 99% | `0.1.11` is live on PyPI and fresh public install smoke verified the corrected command contract: old hidden root worker commands fail, `capture inspect` exists, and private hook/worker scripts are installed. |
+| CodeAlmanac CLI/public UX | 100% | 99% | `0.1.12` is live on PyPI and fresh public `uvx` smoke verified the setup/capture contract. `codealmanac setup` owns capture installation; `capture enable` is manual repair/admin surface. |
 | CodeAlmanac-hosted backend/auth/API | 100% | 100% | Slice 75 added production `/v1/repositories`; production repo list and repo status pass without per-repo permission fanout. |
-| Hosted frontend/onboarding | 100% | 99% | Slice 76 shipped repository readiness, capture handoff, maintained branches, and per-branch delivery to Vercel; Chrome verified production with no console errors. |
-| Infra/deploy rename | 100% | 100% | Vercel targets `thealmanac/codealmanac-hosted`, Render health is live, Modal `codealmanac-hosted-updates` was redeployed, and PyPI `codealmanac` `0.1.11` is live. |
+| Hosted frontend/onboarding | 100% | 99% | Hosted `main` is at `748c8ed`; Vercel deploy run `28694096088` succeeded with setup/onboarding copy aligned to `codealmanac setup` owning capture. |
+| Infra/deploy rename | 100% | 100% | Vercel targets `thealmanac/codealmanac-hosted`, Render `/api/health` is live, Modal `codealmanac-hosted-updates` was redeployed earlier, and PyPI `codealmanac` `0.1.12` is live. |
 
 ## Update Rule
 
