@@ -34,23 +34,27 @@ sources:
   - id: job-queue
     type: file
     path: src/codealmanac/jobs/queue/service.py
-    note: Queues init, ingest, and garden specs, spawns the hidden worker, and drains jobs through lifecycle workflows.
+    note: Queues init, ingest, and garden specs, spawns the private job worker, and drains jobs through lifecycle workflows.
   - id: page-run
     type: file
     path: src/codealmanac/engine/page_run/service.py
     note: Shows lifecycle workflows marking jobs running, recording harness events, refreshing the index, and finishing jobs.
-  - id: cli-jobs-parser
+  - id: project-scripts
     type: file
-    path: src/codealmanac/cli/parser/jobs.py
-    note: Defines the hidden `codealmanac jobs` inspection command arguments as `job_id`.
-  - id: cli-job-rendering
+    path: pyproject.toml
+    note: Defines `codealmanac-job-worker` as the private installed console script for lifecycle job draining.
+  - id: job-worker-script
     type: file
-    path: src/codealmanac/cli/render/jobs.py
-    note: Renders job records, logs, attach streams, and cancellation output with job terminology.
+    path: src/codealmanac/job_worker.py
+    note: Implements the private worker script that calls `app.workflows.queue.drain`.
   - id: cli-lifecycle-rendering
     type: file
     path: src/codealmanac/cli/render/lifecycle.py
     note: Renders foreground and background lifecycle results with `job` and `job_id` fields.
+  - id: cli-contract-tests
+    type: file
+    path: tests/test_cli.py
+    note: Verifies old root `jobs`, `__capture-hook`, and `__run-worker` commands are rejected.
   - id: cloud-runs
     type: file
     path: src/codealmanac/cloud/runs/
@@ -68,12 +72,12 @@ sources:
     path: tests/test_architecture.py
     note: Guards the job ID and job-ledger persistence boundaries introduced by the rename.
 status: active
-verified: 2026-07-03
+verified: 2026-07-04
 ---
 
 # Lifecycle Job Ledger
 
-Repo-local lifecycle work in the Python codebase is a job ledger, not a run subsystem. `init`, `ingest`, `garden`, and sync-started ingest work produce `JobRecord` entries with `job_id` values, event logs, durable queued specs, cancellation, attach streaming, and worker locking under `src/codealmanac/jobs/`. Cloud runs and branch-triggered local control-plane runs remain separate concepts under `src/codealmanac/cloud/runs/` and `src/codealmanac/local/runs/`. [@slice-85-plan] [@job-models] [@cloud-runs] [@local-runs]
+Repo-local lifecycle work in the Python codebase is a job ledger, not a run subsystem. `init`, `ingest`, and `garden` work produce `JobRecord` entries with `job_id` values, event logs, durable queued specs, cancellation, attach streaming, and worker locking under `src/codealmanac/jobs/`. Cloud runs and branch-triggered local control-plane runs remain separate concepts under `src/codealmanac/cloud/runs/` and `src/codealmanac/local/runs/`. [@slice-85-plan] [@job-models] [@cloud-runs] [@local-runs]
 
 The page slug is historical. Treat this page as the current home for lifecycle jobs, not as evidence that new repo-local lifecycle code should use run-shaped names.
 
@@ -81,7 +85,7 @@ The page slug is historical. Treat this page as the current home for lifecycle j
 
 `src/codealmanac/jobs/ledger/` owns durable lifecycle observability. It defines `JobRecord`, `JobLogEvent`, `JobSpec`, `JobOperation`, `JobStatus`, `JobStore`, and `JobLedgerService`; callers pass `job_id` through request objects rather than `run_id`. `src/codealmanac/jobs/queue/` owns the single-writer background queue through `JobQueueWorkflow`. [@job-models] [@job-service] [@job-store] [@job-queue]
 
-The composition root wires `JobLedgerService` as `app.jobs` and passes that service to the viewer, init, ingest, garden, page-run workflow, sync workflow, and queue workflow. There is no current `app.runs` facade for this repo-local lifecycle surface. [@app-composition]
+The composition root wires `JobLedgerService` as `app.jobs` and passes that service to the viewer, init, ingest, garden, page-run workflow, and queue workflow. There is no current `app.runs` facade for this repo-local lifecycle surface. [@app-composition]
 
 The run noun is still correct for two other domains. Cloud runs are hosted or cloud-parallel executions started through `codealmanac runs ...`; local runs are trigger-created branch executions managed by the local control plane. Engine run artifacts are request/result material for one engine execution and now validate their IDs through `src/codealmanac/engine/run_ids.py`, so engine storage does not import local control-plane ID types. [@cloud-runs] [@local-runs] [@engine-run-ids]
 
@@ -104,13 +108,13 @@ worker.lock/
 
 A foreground lifecycle workflow starts a job record, marks it running through `PageRunWorkflow.begin()`, records mutation-policy and harness events, validates changed files, refreshes the SQLite index after a successful harness run, and finishes the job as `done` or `failed`. The workflow records harness transcript references when the adapter supplies them. [@page-run]
 
-A background lifecycle workflow creates a queued job plus a durable `JobSpec`, spawns the hidden worker, and returns `job_id` plus the worker PID to the CLI. `JobQueueWorkflow.drain()` acquires the per-workspace worker lock, chooses the next queued spec-backed job, and calls the owning lifecycle workflow through `run_with_job(...)`. Missing specs fail the queued job instead of silently dropping it. [@job-queue] [@cli-lifecycle-rendering]
+A background lifecycle workflow creates a queued job plus a durable `JobSpec`, spawns `codealmanac-job-worker`, and returns `job_id` plus the worker PID to the CLI. `JobQueueWorkflow.drain()` acquires the per-workspace worker lock, chooses the next queued spec-backed job, and calls the owning lifecycle workflow through `run_with_job(...)`. Missing specs fail the queued job instead of silently dropping it. [@job-queue] [@project-scripts] [@job-worker-script] [@cli-lifecycle-rendering]
 
 Terminal job statuses are `done`, `failed`, and `cancelled`. Cancelling a queued or running job writes a terminal cancelled transition; finishing a job that was already cancelled returns the cancelled record instead of resurrecting it. Attach streaming tails job log events until the record reaches a terminal status. [@job-models] [@job-store]
 
 ## CLI And Viewer
 
-The public CLI name is `codealmanac`. The lifecycle jobs inspection surface is the hidden admin command group `codealmanac jobs`: list jobs, `show <job-id>`, `logs <job-id>`, `attach <job-id>`, and `cancel <job-id>`. Parser arguments, renderers, background JSON, and sync summaries now use `job_id`. [@cli-jobs-parser] [@cli-job-rendering] [@cli-lifecycle-rendering]
+The public CLI name is `codealmanac`. Root `codealmanac jobs`, `codealmanac __capture-hook`, and `codealmanac __run-worker` are rejected by the root parser; private hook and worker execution use installed console scripts instead of hidden root verbs. Background lifecycle JSON and renderers still expose `job_id` for queued work. [@project-scripts] [@job-worker-script] [@cli-contract-tests] [@cli-lifecycle-rendering]
 
 `codealmanac serve` uses the same `JobLedgerService` through the viewer service; job data for the local viewer is not reimplemented in a separate storage path. The jobs page is a read surface over lifecycle job records and logs, not a second execution mechanism. [@app-composition]
 
