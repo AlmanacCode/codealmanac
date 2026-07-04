@@ -2655,3 +2655,29 @@
   Git trigger/private local worker scripts.
 - Added `codealmanac capture inspect` to read recent local capture hook events.
 - Bumped the Python package version to `0.1.11` for the corrected CLI contract.
+- Local package verification passed:
+  - `uv run pytest -q` (`478 passed`)
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `git diff --check`
+  - `rm -rf dist && uv build --out-dir dist`
+  - `uvx twine check dist/*`
+- Local wheel smoke installed
+  `dist/codealmanac-0.1.11-py3-none-any.whl`, returned version `0.1.11`,
+  rejected root `jobs`, `__capture-hook`, and `__run-worker`, verified
+  `codealmanac capture inspect`, and verified private script help for
+  `codealmanac-capture-hook`, `codealmanac-job-worker`,
+  `codealmanac-local-trigger`, and `codealmanac-local-worker`.
+- Pushed release commit `84bfe5c2` to `codex/cli-run-surface-release` and
+  fast-forwarded `main` to the same commit.
+- Published `codealmanac` `0.1.11` to PyPI through GitHub Actions run
+  `28692015106`. The workflow passed tests, lint, diff hygiene, build,
+  artifact checks, artifact upload, and PyPI upload.
+- Fresh public install smoke passed with `uv tool install --python 3.12
+  --refresh --no-cache --force codealmanac==0.1.11`. The first attempt hit
+  PyPI propagation; the second installed the public package.
+- Public smoke verified `codealmanac --version`, root help, rejection of old
+  root `jobs`, `__capture-hook`, and `__run-worker`, `codealmanac capture
+  inspect`, and private script help for all four process entrypoints.
+- RelayForge update sent through binding `rohan-codex-019f05b3` with the public
+  install evidence and confirmation that the CLI breaking surface is done.

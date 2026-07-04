@@ -99,3 +99,8 @@ console scripts, and added `codealmanac capture inspect` to match the contract.
 - Slice 91 focused gate passed: `uv run pytest tests/test_cli.py tests/test_cloud_capture_service.py tests/test_run_queue_workflow.py tests/test_public_contract.py tests/test_architecture.py -q` (`157 passed`).
 - Slice 91 lint/format passed: `uv run ruff check .` and
   `uv run ruff format --check .`.
+- Slice 91 full gate passed: `uv run pytest -q` (`478 passed`) and
+  `git diff --check`.
+- Slice 91 package gate passed: `uv build`, `twine check`, local wheel smoke,
+  GitHub Actions publish run `28692015106`, and fresh public PyPI install smoke
+  for `codealmanac==0.1.11`.

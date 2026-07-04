@@ -68,6 +68,13 @@ direction.
   version, root/local help, private local trigger/worker entrypoints, and
   absence of stale `sync`, root scheduled `automation`, `local update`, and
   `local jobs` help text.
+- PyPI `codealmanac` `0.1.11` is published from GitHub Actions run
+  `28692015106`; a fresh public install with `uv tool install --python 3.12
+  --refresh --no-cache --force codealmanac==0.1.11` passed for version, root
+  help, rejection of old root `jobs`, `__capture-hook`, and `__run-worker`,
+  `codealmanac capture inspect`, and private script help for
+  `codealmanac-capture-hook`, `codealmanac-job-worker`,
+  `codealmanac-local-trigger`, and `codealmanac-local-worker`.
 - Chrome verified the production CLI setup handshake again from an isolated
   temp `HOME`; `codealmanac setup --no-browser --target codex --yes` approved
   through `/cli-login` and completed as `rohans0509`.
@@ -117,6 +124,16 @@ direction.
   resources, and continue the hosted package/worker/domain cleanup.
 
 ## Last Completed Work
+
+Slice 91 completes the corrected CLI public package:
+
+- root `jobs`, `__capture-hook`, and `__run-worker` were removed from the
+  accepted root parser surface
+- capture hooks now use `codealmanac-capture-hook`
+- detached lifecycle job workers now use `codealmanac-job-worker`
+- `codealmanac capture inspect` exists for recent capture hook events
+- `codealmanac` `0.1.11` is live on PyPI and public install smoke passed
+- RelayForge update was sent through binding `rohan-codex-019f05b3`
 
 Slice 86 creates the CodeAlmanac engine runtime facade:
 

@@ -8,25 +8,26 @@ Percentages are planning estimates, not accounting metrics.
 
 ## Latest RelayForge Update
 
-Sent: 2026-07-04 after Slice 90 CLI 0.1.10 release.
+Sent: 2026-07-04 after Slice 91 CLI 0.1.11 release.
 
 Route:
 
 ```bash
 doppler run --project almanac --config dev -- \
   relayforge reply \
-  "CLI breaking surface is done. Published codealmanac 0.1.10 ..." \
+  "CodeAlmanac CLI breaking surface is done and publicly shipped. Published codealmanac 0.1.11 ..." \
   --config /Users/rohan/Desktop/Projects/relayforge/relay.config.json
 ```
 
 Result: `sent via rohan-codex-019f05b3`.
 
-Slice 90 published `codealmanac` `0.1.10` from `main` through GitHub Actions
-run `28690993407`. Public temp-home install smoke passed with `uv tool install
---python 3.12 --refresh --no-cache --force codealmanac==0.1.10`; the installed
-CLI returned `0.1.10`, exposed `codealmanac`, `codealmanac-local-trigger`, and
-`codealmanac-local-worker`, and kept stale launch-facing `sync`, root scheduled
-`automation`, `local update`, and `local jobs` help text out of root/local help.
+Slice 91 published `codealmanac` `0.1.11` from `main` through GitHub Actions
+run `28692015106`. Public install smoke passed with `uv tool install --python
+3.12 --refresh --no-cache --force codealmanac==0.1.11`; the installed CLI
+returned `0.1.11`, rejected old root `jobs`, `__capture-hook`, and
+`__run-worker`, exposed `codealmanac capture inspect`, and installed private
+`codealmanac-capture-hook`, `codealmanac-job-worker`,
+`codealmanac-local-trigger`, and `codealmanac-local-worker` scripts.
 
 ## Latest Local Notes
 
@@ -64,10 +65,10 @@ CLI returned `0.1.10`, exposed `codealmanac`, `codealmanac-local-trigger`, and
 | Area | Latest | Previous | Basis |
 | --- | ---: | ---: | --- |
 | CodeAlmanac backend/local | 100% | 100% | Slice 89 removed the old sync/automation implementation path and aligned local execution/history on `local runs`; Slice 90 public smoke verified the packaged private local trigger/worker entrypoints. |
-| CodeAlmanac CLI/public UX | 99% | 100% | `0.1.11` fixes the post-release hidden root command gap: `jobs`, `__capture-hook`, and `__run-worker` are no longer accepted by the root parser; private hook/worker execution now uses named console scripts. Awaiting final publish smoke. |
+| CodeAlmanac CLI/public UX | 100% | 99% | `0.1.11` is live on PyPI and fresh public install smoke verified the corrected command contract: old hidden root worker commands fail, `capture inspect` exists, and private hook/worker scripts are installed. |
 | CodeAlmanac-hosted backend/auth/API | 100% | 100% | Slice 75 added production `/v1/repositories`; production repo list and repo status pass without per-repo permission fanout. |
 | Hosted frontend/onboarding | 100% | 99% | Slice 76 shipped repository readiness, capture handoff, maintained branches, and per-branch delivery to Vercel; Chrome verified production with no console errors. |
-| Infra/deploy rename | 100% | 100% | Vercel targets `thealmanac/codealmanac-hosted`, Render health is live, Modal `codealmanac-hosted-updates` was redeployed, and PyPI `codealmanac` `0.1.10` is live. |
+| Infra/deploy rename | 100% | 100% | Vercel targets `thealmanac/codealmanac-hosted`, Render health is live, Modal `codealmanac-hosted-updates` was redeployed, and PyPI `codealmanac` `0.1.11` is live. |
 
 ## Update Rule
 
