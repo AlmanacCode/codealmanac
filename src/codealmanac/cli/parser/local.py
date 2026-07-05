@@ -118,6 +118,14 @@ def add_local_commands(subcommands: argparse._SubParsersAction) -> None:
     runs_show.add_argument("run_id")
     runs_show.add_argument("--json", action="store_true")
 
+    runs_cancel = runs_subcommands.add_parser("cancel", help="cancel a local run")
+    runs_cancel.add_argument("run_id")
+    runs_cancel.add_argument("--json", action="store_true")
+
+    runs_retry = runs_subcommands.add_parser("retry", help="retry a local run")
+    runs_retry.add_argument("run_id")
+    runs_retry.add_argument("--json", action="store_true")
+
     runs_logs = runs_subcommands.add_parser("logs", help="show local run logs")
     runs_logs.add_argument("run_id")
     runs_logs.add_argument("--json", action="store_true")

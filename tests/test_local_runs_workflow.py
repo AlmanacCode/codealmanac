@@ -35,7 +35,11 @@ from codealmanac.local.delivery.execution.models import (
     LocalDeliveryWorkingTree,
 )
 from codealmanac.local.runs.kinds import LocalRunKind
-from codealmanac.local.runs.requests import StartLocalRunRequest
+from codealmanac.local.runs.requests import (
+    CancelLocalRunRequest,
+    RetryLocalRunRequest,
+    StartLocalRunRequest,
+)
 from codealmanac.local.setup.models import LocalRepositoryState
 from codealmanac.local.status.requests import ReadLocalStatusRequest
 
@@ -225,6 +229,51 @@ def test_local_runs_start_does_not_start_when_branch_has_active_run(
     assert result.reason == "active_run_exists"
     assert result.active_run == active
     assert app.control.list_trigger_events() == ()
+
+
+def test_local_runs_cancel_marks_active_run_cancelled(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    app, repo, _harness, _delivery = local_runs_app(tmp_path, isolated_home)
+    branch = app.workflows.local_status.status(ReadLocalStatusRequest(cwd=repo)).branch
+    assert branch is not None
+    active = app.control.create_run(
+        CreateControlRunRequest(
+            repository_id=branch.repository_id,
+            branch_id=branch.id,
+            expected_head_sha="head-1",
+        )
+    )
+
+    result = app.workflows.local_runs.cancel(
+        CancelLocalRunRequest(run_id=active.id)
+    )
+    events = app.control.list_run_events(
+        ListControlRunEventsRequest(run_id=active.id)
+    )
+
+    assert result.run.status is ControlRunStatus.CANCELLED
+    assert result.run.error == "cancelled by user"
+    assert tuple(event.message for event in events) == ("cancelled local run",)
+
+
+def test_local_runs_retry_starts_fresh_manual_run_for_same_branch(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    app, repo, _harness, _delivery = local_runs_app(tmp_path, isolated_home)
+    first = app.workflows.local_runs.start(StartLocalRunRequest(cwd=repo))
+    assert first.worker is not None
+
+    second = app.workflows.local_runs.retry(
+        RetryLocalRunRequest(run_id=first.worker.run.id)
+    )
+
+    assert second.started is True
+    assert second.worker is not None
+    assert second.worker.run.id != first.worker.run.id
+    assert second.worker.run.status is ControlRunStatus.SUCCEEDED
 
 
 def test_local_runs_start_requires_configured_branch(

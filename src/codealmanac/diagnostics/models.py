@@ -20,3 +20,4 @@ class DoctorReport(CodeAlmanacModel):
     version: str
     install: tuple[DoctorCheck, ...]
     wiki: tuple[DoctorCheck, ...]
+    harnesses: tuple[DoctorCheck, ...] = ()

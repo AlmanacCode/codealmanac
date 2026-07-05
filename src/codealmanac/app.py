@@ -276,7 +276,6 @@ def create_app(
     topics = TopicsService(workspaces, index)
     health = HealthService(workspaces, index)
     validation = ValidationService(workspaces)
-    diagnostics = DiagnosticsService(workspaces, index, manual, __version__)
     tagging = TaggingService(pages)
     updates = UpdatesService(
         update_metadata or InstalledPackageMetadataProvider(),
@@ -307,6 +306,7 @@ def create_app(
     harnesses = HarnessesService(
         default_harness_adapters() if harness_adapters is None else harness_adapters
     )
+    diagnostics = DiagnosticsService(workspaces, index, manual, harnesses, __version__)
     engine = CodeAlmanacEngine(
         harnesses=harnesses,
         sources=sources,
@@ -427,6 +427,7 @@ def create_app(
         local_runs,
         local_engine,
         local_delivery,
+        engine.workspaces,
     )
     local_runs_workflow = LocalRunsWorkflow(
         control,

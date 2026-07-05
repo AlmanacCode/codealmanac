@@ -1,9 +1,6 @@
 from codealmanac.core.errors import ValidationFailed
 from codealmanac.core.text import required_text
-from codealmanac.local.control.models import (
-    ControlRunStatus,
-    TriggerEventKind,
-)
+from codealmanac.local.control.models import ControlRunStatus, TriggerEventKind
 from codealmanac.local.control.requests import (
     GetBranchRequest,
     GetControlRunRequest,
@@ -18,9 +15,12 @@ from codealmanac.local.runs.models import (
     LocalRunStartResult,
     LocalRunSummary,
 )
+from codealmanac.local.runs.operations import cancel_active_run, retry_start_request
 from codealmanac.local.runs.requests import (
+    CancelLocalRunRequest,
     ListLocalRunsRequest,
     ReadLocalRunLogsRequest,
+    RetryLocalRunRequest,
     ShowLocalRunRequest,
     StartLocalRunRequest,
 )
@@ -116,6 +116,14 @@ class LocalRunsWorkflow:
 
     def show(self, request: ShowLocalRunRequest) -> LocalRunSummary:
         return self.summary(request.run_id)
+
+    def cancel(self, request: CancelLocalRunRequest) -> LocalRunSummary:
+        run = self.control.get_run(GetControlRunRequest(run_id=request.run_id))
+        cancel_active_run(self.control, run)
+        return self.summary(request.run_id)
+
+    def retry(self, request: RetryLocalRunRequest) -> LocalRunStartResult:
+        return self.start(retry_start_request(self.summary(request.run_id)))
 
     def logs(self, request: ReadLocalRunLogsRequest) -> LocalRunLogsResult:
         run = self.summary(request.run_id)

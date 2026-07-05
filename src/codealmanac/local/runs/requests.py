@@ -55,6 +55,24 @@ class ShowLocalRunRequest(CodeAlmanacModel):
         return required_text(value, "local run id")
 
 
+class CancelLocalRunRequest(CodeAlmanacModel):
+    run_id: str
+
+    @field_validator("run_id")
+    @classmethod
+    def require_run_id(cls, value: str) -> str:
+        return required_text(value, "local run id")
+
+
+class RetryLocalRunRequest(CodeAlmanacModel):
+    run_id: str
+
+    @field_validator("run_id")
+    @classmethod
+    def require_run_id(cls, value: str) -> str:
+        return required_text(value, "local run id")
+
+
 class ReadLocalRunLogsRequest(CodeAlmanacModel):
     run_id: str
 

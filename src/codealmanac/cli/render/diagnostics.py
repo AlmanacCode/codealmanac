@@ -10,6 +10,7 @@ def render_doctor(report: DoctorReport, json_output: bool) -> None:
     print("")
     render_doctor_section("Install", report.install)
     render_doctor_section("Current wiki", report.wiki)
+    render_doctor_section("Harnesses", report.harnesses)
 
 
 def render_doctor_section(title: str, checks: tuple[DoctorCheck, ...]) -> None:

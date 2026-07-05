@@ -1997,6 +1997,21 @@ def test_cli_local_runs_list_show_and_logs(
     logs_output = capsys.readouterr()
     assert "1\tstatus\tdelivered local commit head-2\n" in logs_output.out
 
+    active = app.control.create_run(
+        CreateControlRunRequest(
+            repository_id=repository.id,
+            branch_id=branch.id,
+            expected_head_sha="head-2",
+        )
+    )
+
+    assert main(["local", "runs", "cancel", active.id, "--json"]) == 0
+    cancel_output = capsys.readouterr()
+    cancel_data = json.loads(cancel_output.out)
+
+    assert cancel_data["run"]["id"] == active.id
+    assert cancel_data["run"]["status"] == "cancelled"
+
 
 def test_cli_local_runs_start_runs_manual_local_worker(
     tmp_path: Path,
@@ -2054,6 +2069,14 @@ def test_cli_local_runs_start_runs_manual_local_worker(
         isolated_home / ".codealmanac/workspaces" / data["worker"]["run"]["id"] / "repo"
     )
     assert delivery.apply_calls[0][3] == "docs almanac: update local worker note"
+
+    assert main(["local", "runs", "retry", data["worker"]["run"]["id"], "--json"]) == 0
+    retry_output = capsys.readouterr()
+    retry_data = json.loads(retry_output.out)
+
+    assert retry_data["started"] is True
+    assert retry_data["worker"]["run"]["id"] != data["worker"]["run"]["id"]
+    assert retry_data["worker"]["run"]["status"] == "succeeded"
 
 
 def test_cli_setup_skip_instructions_json(capsys):

@@ -4,10 +4,22 @@ from codealmanac.app import create_app
 from codealmanac.core.models import AppConfig
 from codealmanac.diagnostics.models import DoctorStatus
 from codealmanac.diagnostics.requests import DoctorRequest
+from codealmanac.engine.harnesses.models import HarnessKind, HarnessReadiness
 from codealmanac.wiki.workspaces.requests import (
     InitializeWorkspaceRequest,
     RegisterWorkspaceRequest,
 )
+
+
+class DiagnosticHarnessAdapter:
+    kind = HarnessKind.CODEX
+
+    def check(self) -> HarnessReadiness:
+        return HarnessReadiness(
+            kind=self.kind,
+            available=True,
+            message="codex app ready",
+        )
 
 
 def test_doctor_reports_no_wiki_without_failing(
@@ -25,6 +37,25 @@ def test_doctor_reports_no_wiki_without_failing(
     assert report.wiki[0].key == "wiki.none"
     assert report.wiki[0].status == DoctorStatus.INFO
     assert report.wiki[0].fix == "run: codealmanac init"
+    assert report.harnesses == ()
+
+
+def test_doctor_can_include_harness_readiness(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
+        harness_adapters=(DiagnosticHarnessAdapter(),),
+    )
+
+    report = app.diagnostics.check(
+        DoctorRequest(cwd=tmp_path, include_harnesses=True)
+    )
+
+    assert report.harnesses[0].key == "harness.codex"
+    assert report.harnesses[0].status == DoctorStatus.OK
+    assert report.harnesses[0].message == "codex: codex app ready"
 
 
 def test_doctor_does_not_materialize_missing_registered_wiki(

@@ -16,8 +16,10 @@ from codealmanac.local.control.models import (
     TriggerEventKind,
 )
 from codealmanac.local.control.requests import (
+    ListControlRunsRequest,
     RecordTriggerEventRequest,
     SetBranchPolicyRequest,
+    UpdateControlRunRequest,
     UpsertRepositoryRequest,
 )
 from codealmanac.local.delivery.execution.models import (
@@ -185,6 +187,7 @@ def test_local_worker_prepares_executes_and_delivers_one_trigger(
     assert fake_delivery.read_calls == [repo_path]
     assert fake_delivery.apply_calls[0][0] == repo_path
     assert fake_delivery.apply_calls[0][3] == "docs almanac: update wiki page"
+    assert not result.preparation.engine_workspace.paths.root_path.exists()
 
 
 def test_local_worker_marks_claimed_run_failed_when_preparation_fails(
@@ -238,6 +241,47 @@ def test_local_worker_skips_delivery_when_engine_fails(isolated_home: Path):
     assert result.engine is not None
     assert result.delivery is None
     assert fake_delivery.apply_calls == []
+    assert not result.preparation.engine_workspace.paths.root_path.exists()
+
+
+def test_local_worker_skips_delivery_when_run_is_cancelled_during_engine(
+    isolated_home: Path,
+):
+    fake_delivery = FakeGitDeliveryManager()
+    fake_harness = FakeHarnessAdapter(success_result())
+    app, _repo_path, repository, _branch = local_worker_app(
+        isolated_home,
+        fake_harness,
+        fake_delivery,
+    )
+
+    def cancel_running_run() -> None:
+        running = app.control.list_runs(
+            ListControlRunsRequest(
+                statuses=(ControlRunStatus.RUNNING,),
+                limit=1,
+            )
+        )[0]
+        app.control.update_run(
+            UpdateControlRunRequest(
+                run_id=running.id,
+                status=ControlRunStatus.CANCELLED,
+                error="cancelled by user",
+            )
+        )
+
+    fake_harness.on_run = cancel_running_run
+    record_trigger(app, repository.id, "head-1")
+
+    result = app.workflows.local_worker.run_next()
+
+    assert result.processed is True
+    assert result.reason == "run_cancelled"
+    assert result.run is not None
+    assert result.run.status is ControlRunStatus.CANCELLED
+    assert result.delivery is None
+    assert fake_delivery.apply_calls == []
+    assert not result.preparation.engine_workspace.paths.root_path.exists()
 
 
 def test_local_worker_skips_delivery_when_engine_writes_invalid_wiki(

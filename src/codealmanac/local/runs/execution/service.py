@@ -15,6 +15,7 @@ from codealmanac.local.control.requests import (
     UpdateControlRunRequest,
 )
 from codealmanac.local.control.service import ControlService
+from codealmanac.local.runs.execution.cancellation import cancelled_engine_result
 from codealmanac.local.runs.execution.events import (
     append_error,
     append_status,
@@ -73,6 +74,13 @@ class LocalEngineWorkflow:
                 )
             )
             record_harness_events(self.control, run.id, harness)
+            if result := cancelled_engine_result(
+                self.control,
+                self.engine_runs,
+                run,
+                harness=harness,
+            ):
+                return result
             self.validation.require_valid_root(
                 engine_request.repo_path,
                 engine_request.repo_path / engine_request.almanac_root,

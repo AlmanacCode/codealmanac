@@ -21,8 +21,10 @@ from codealmanac.local.policies.requests import (
 )
 from codealmanac.local.runs.kinds import LocalRunKind
 from codealmanac.local.runs.requests import (
+    CancelLocalRunRequest,
     ListLocalRunsRequest,
     ReadLocalRunLogsRequest,
+    RetryLocalRunRequest,
     ShowLocalRunRequest,
     StartLocalRunRequest,
 )
@@ -152,6 +154,18 @@ def dispatch_local_runs(args: argparse.Namespace, app: CodeAlmanac) -> int:
     if args.local_runs_command == "show":
         run = app.workflows.local_runs.show(ShowLocalRunRequest(run_id=args.run_id))
         render_local_run(run, json_output=args.json)
+        return 0
+    if args.local_runs_command == "cancel":
+        run = app.workflows.local_runs.cancel(
+            CancelLocalRunRequest(run_id=args.run_id)
+        )
+        render_local_run(run, json_output=args.json)
+        return 0
+    if args.local_runs_command == "retry":
+        result = app.workflows.local_runs.retry(
+            RetryLocalRunRequest(run_id=args.run_id)
+        )
+        render_local_run_start(result, json_output=args.json)
         return 0
     if args.local_runs_command == "logs":
         result = app.workflows.local_runs.logs(

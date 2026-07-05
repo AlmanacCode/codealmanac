@@ -1,10 +1,12 @@
 import platform
 import sys
 
+from codealmanac.diagnostics.harnesses import harness_checks
 from codealmanac.diagnostics.install import install_checks
 from codealmanac.diagnostics.models import DoctorReport
 from codealmanac.diagnostics.requests import DoctorRequest
 from codealmanac.diagnostics.wiki import wiki_checks
+from codealmanac.engine.harnesses.service import HarnessesService
 from codealmanac.manual import ManualLibrary
 from codealmanac.wiki.index.service import IndexService
 from codealmanac.wiki.workspaces.service import WorkspacesService
@@ -16,6 +18,7 @@ class DiagnosticsService:
         workspaces: WorkspacesService,
         index: IndexService,
         manual: ManualLibrary,
+        harnesses: HarnessesService,
         version: str,
         python_version: str | None = None,
         python_supported: bool | None = None,
@@ -23,6 +26,7 @@ class DiagnosticsService:
         self.workspaces = workspaces
         self.index = index
         self.manual = manual
+        self.harnesses = harnesses
         self.version = version
         self.python_version = python_version or platform.python_version()
         if python_supported is None:
@@ -45,5 +49,8 @@ class DiagnosticsService:
                 workspaces=self.workspaces,
                 index=self.index,
                 manual=self.manual,
+            ),
+            harnesses=(
+                harness_checks(self.harnesses) if request.include_harnesses else ()
             ),
         )
