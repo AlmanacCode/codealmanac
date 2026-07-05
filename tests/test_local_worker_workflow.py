@@ -36,6 +36,11 @@ class FakeGitWorktreeManager:
         commit_sha: str,
     ) -> GitWorktreeCheckout:
         worktree_path.mkdir(parents=True)
+        (worktree_path / "almanac/pages").mkdir(parents=True)
+        (worktree_path / "almanac/topics.yaml").write_text(
+            "topics: []\n",
+            encoding="utf-8",
+        )
         return GitWorktreeCheckout(repo_path=worktree_path, head_sha=commit_sha)
 
     def remove(self, source_repo_path: Path, worktree_path: Path) -> None:
@@ -69,6 +74,27 @@ class FakeHarnessAdapter:
             target = request.cwd / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("# Updated\n", encoding="utf-8")
+        return self.result
+
+
+class InvalidWikiHarnessAdapter(FakeHarnessAdapter):
+    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
+        self.requests.append(request)
+        page = request.cwd / "almanac/pages/a.md"
+        page.parent.mkdir(parents=True, exist_ok=True)
+        page.write_text(
+            """---
+title: Invalid Local Page
+sources:
+  - id: local
+    type: file
+    path: src/app.py
+    note: Records the boundary: bad YAML.
+---
+# Invalid Local Page
+""",
+            encoding="utf-8",
+        )
         return self.result
 
 
@@ -210,6 +236,30 @@ def test_local_worker_skips_delivery_when_engine_fails(isolated_home: Path):
     assert result.run is not None
     assert result.run.status is ControlRunStatus.FAILED
     assert result.engine is not None
+    assert result.delivery is None
+    assert fake_delivery.apply_calls == []
+
+
+def test_local_worker_skips_delivery_when_engine_writes_invalid_wiki(
+    isolated_home: Path,
+):
+    fake_harness = InvalidWikiHarnessAdapter(success_result())
+    fake_delivery = FakeGitDeliveryManager()
+    app, _repo_path, repository, _branch = local_worker_app(
+        isolated_home,
+        fake_harness,
+        fake_delivery,
+    )
+    record_trigger(app, repository.id, "head-1")
+
+    result = app.workflows.local_worker.run_next()
+
+    assert result.processed is True
+    assert result.reason == "engine_failed"
+    assert result.run is not None
+    assert result.run.status is ControlRunStatus.FAILED
+    assert result.run.error is not None
+    assert result.run.error.startswith("wiki validation failed:")
     assert result.delivery is None
     assert fake_delivery.apply_calls == []
 

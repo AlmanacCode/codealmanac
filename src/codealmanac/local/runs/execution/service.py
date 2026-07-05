@@ -29,6 +29,7 @@ from codealmanac.local.runs.execution.result import (
 )
 from codealmanac.local.runs.preparation.refs import path_ref
 from codealmanac.prompts import PromptRenderer
+from codealmanac.wiki.validation.service import ValidationService
 
 
 class LocalEngineWorkflow:
@@ -38,11 +39,13 @@ class LocalEngineWorkflow:
         engine_runs: EngineRunsService,
         harnesses: HarnessesService,
         prompts: PromptRenderer,
+        validation: ValidationService,
     ):
         self.control = control
         self.engine_runs = engine_runs
         self.harnesses = harnesses
         self.prompts = prompts
+        self.validation = validation
 
     def execute(self, request: ExecuteLocalEngineRunRequest) -> LocalEngineRunResult:
         run = self.control.get_run(GetControlRunRequest(run_id=request.run_id))
@@ -70,6 +73,10 @@ class LocalEngineWorkflow:
                 )
             )
             record_harness_events(self.control, run.id, harness)
+            self.validation.require_valid_root(
+                engine_request.repo_path,
+                engine_request.repo_path / engine_request.almanac_root,
+            )
             validate_harness_result(harness)
             engine_result = self.engine_runs.write_result(
                 WriteEngineRunResultRequest(

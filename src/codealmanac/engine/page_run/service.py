@@ -28,6 +28,7 @@ from codealmanac.runs.ledger.requests import (
 )
 from codealmanac.runs.ledger.service import RunLedgerService
 from codealmanac.wiki.index.service import IndexService
+from codealmanac.wiki.validation.service import ValidationService
 from codealmanac.wiki.workspaces.models import Workspace
 from codealmanac.wiki.workspaces.requests import SelectWorkspaceRequest
 from codealmanac.wiki.workspaces.service import WorkspacesService
@@ -40,12 +41,14 @@ class PageRunWorkflow:
         harnesses: HarnessesService,
         runs: RunLedgerService,
         index: IndexService,
+        validation: ValidationService,
         mutation_policy: LifecycleMutationPolicy,
     ):
         self.workspaces = workspaces
         self.harnesses = harnesses
         self.runs = runs
         self.index = index
+        self.validation = validation
         self.mutation_policy = mutation_policy
 
     def begin(self, request: PageRunBeginRequest) -> PageRunContext:
@@ -119,6 +122,7 @@ class PageRunWorkflow:
             workspace,
             harness.changed_files,
         )
+        self.validation.require_valid_workspace(workspace)
         validate_harness_result(harness)
         index = self.index.ensure_fresh(workspace.workspace_id)
         finished = self.runs.finish(

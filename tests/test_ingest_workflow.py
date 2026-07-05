@@ -204,6 +204,32 @@ Ingested durable wiki knowledge from the note.
         )
 
 
+class InvalidFrontmatterHarnessAdapter(WritingHarnessAdapter):
+    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
+        self.requests.append(request)
+        page = request.cwd / "almanac/pages/bad-note.md"
+        page.write_text(
+            """---
+title: Bad Note
+sources:
+  - id: bad
+    type: file
+    path: note.md
+    note: Records the boundary: bad YAML.
+---
+# Bad Note
+""",
+            encoding="utf-8",
+        )
+        return HarnessRunResult(
+            kind=self.kind,
+            status=HarnessRunStatus.SUCCEEDED,
+            output_text="updated wiki",
+            summary="bad wiki output",
+            changed_files=(page,),
+        )
+
+
 class FailedDirtyFileMutatingHarnessAdapter(WritingHarnessAdapter):
     def run(self, request: RunHarnessRequest) -> HarnessRunResult:
         self.requests.append(request)
@@ -630,6 +656,38 @@ def test_ingest_workflow_checks_mutations_before_failed_harness_status(
         RunEventKind.STATUS,
     )
     assert log[-3].message == "codex failed: agent failed after mutation"
+
+
+def test_ingest_workflow_rejects_invalid_wiki_before_finishing(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
+        harness_adapters=(InvalidFrontmatterHarnessAdapter(),),
+    )
+    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
+    initialize_git(repo)
+    commit_all(repo, "initial wiki")
+
+    with pytest.raises(ValidationFailed, match="wiki validation failed"):
+        app.workflows.ingest.run(
+            RunIngestRequest(
+                cwd=repo,
+                inputs=("note.md",),
+                harness=HarnessKind.CODEX,
+            )
+        )
+
+    run = app.runs.list(ListRunsRequest(cwd=repo))[0]
+
+    assert run.status == RunStatus.FAILED
+    assert run.error is not None
+    assert run.error.startswith("wiki validation failed:")
+    assert "almanac/pages/bad-note.md" in run.error
 
 
 def test_ingest_workflow_allows_preexisting_dirty_app_files_when_unchanged(

@@ -649,6 +649,11 @@ class CliGitWorktreeManager:
         commit_sha: str,
     ) -> GitWorktreeCheckout:
         worktree_path.mkdir(parents=True)
+        (worktree_path / "almanac/pages").mkdir(parents=True)
+        (worktree_path / "almanac/topics.yaml").write_text(
+            "topics: []\n",
+            encoding="utf-8",
+        )
         return GitWorktreeCheckout(repo_path=worktree_path, head_sha=commit_sha)
 
     def remove(self, source_repo_path: Path, worktree_path: Path) -> None:
@@ -3116,6 +3121,47 @@ def test_cli_topics_and_health_read_current_repo_wiki(
     health_output = capsys.readouterr()
     assert '"broken_links": [' in health_output.out
     assert '"target_slug": "missing-page"' in health_output.out
+
+
+def test_cli_validate_reports_invalid_frontmatter(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+    )
+    app.workflows.init.initialize_workspace(InitializeWorkspaceRequest(path=repo))
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    monkeypatch.chdir(repo)
+    (repo / "almanac/pages/bad.md").write_text(
+        """---
+title: Bad Page
+sources:
+  - id: bad
+    type: file
+    path: src/app.py
+    note: Records the boundary: bad YAML.
+---
+# Bad Page
+""",
+        encoding="utf-8",
+    )
+
+    assert main(["validate"]) == 1
+    output = capsys.readouterr()
+    assert output.out.startswith("wiki invalid: 1 issue\n")
+    assert "almanac/pages/bad.md:7" in output.out
+    assert "mapping values" in output.out
+
+    assert main(["validate", "--json"]) == 1
+    json_output = capsys.readouterr()
+    data = json.loads(json_output.out)
+    assert data["ok"] is False
+    assert data["issues"][0]["path"] == "almanac/pages/bad.md"
 
 
 def test_cli_tag_and_untag_update_page_frontmatter(

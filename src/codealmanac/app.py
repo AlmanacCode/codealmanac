@@ -114,6 +114,7 @@ from codealmanac.wiki.search.service import SearchService
 from codealmanac.wiki.service import WikiService
 from codealmanac.wiki.tagging.service import TaggingService
 from codealmanac.wiki.topics.service import TopicsService
+from codealmanac.wiki.validation.service import ValidationService
 from codealmanac.wiki.viewer.renderer import MarkdownRenderer
 from codealmanac.wiki.viewer.service import ViewerService
 from codealmanac.wiki.workspaces.service import WorkspacesService
@@ -188,6 +189,7 @@ class CodeAlmanac:
     pages: PagesService
     topics: TopicsService
     health: HealthService
+    validation: ValidationService
     diagnostics: DiagnosticsService
     tagging: TaggingService
     updates: UpdatesService
@@ -273,6 +275,7 @@ def create_app(
     pages = PagesService(workspaces, index)
     topics = TopicsService(workspaces, index)
     health = HealthService(workspaces, index)
+    validation = ValidationService(workspaces)
     diagnostics = DiagnosticsService(workspaces, index, manual, __version__)
     tagging = TaggingService(pages)
     updates = UpdatesService(
@@ -316,6 +319,7 @@ def create_app(
         harnesses,
         runs,
         index,
+        validation,
         LifecycleMutationPolicy(
             GitWorkspaceChangeProbe(),
             kind="init",
@@ -327,6 +331,7 @@ def create_app(
         harnesses,
         runs,
         index,
+        validation,
         LifecycleMutationPolicy(GitWorkspaceChangeProbe(), kind="ingest"),
     )
     garden_page_runs = PageRunWorkflow(
@@ -334,6 +339,7 @@ def create_app(
         harnesses,
         runs,
         index,
+        validation,
         LifecycleMutationPolicy(GitWorkspaceChangeProbe(), kind="garden"),
     )
     init = InitWorkflow(
@@ -408,6 +414,7 @@ def create_app(
         engine.runs,
         engine.harnesses,
         prompts,
+        validation,
     )
     local_delivery = LocalDeliveryWorkflow(
         control,
@@ -480,6 +487,7 @@ def create_app(
         pages=pages,
         topics=topics,
         health=health,
+        validation=validation,
         diagnostics=diagnostics,
         tagging=tagging,
         updates=updates,

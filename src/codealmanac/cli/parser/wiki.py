@@ -65,6 +65,10 @@ def add_wiki_commands(subcommands: argparse._SubParsersAction) -> None:
     health.add_argument("--wiki")
     health.add_argument("--json", action="store_true")
 
+    validate = subcommands.add_parser("validate", help="validate wiki files")
+    validate.add_argument("--wiki")
+    validate.add_argument("--json", action="store_true")
+
     reindex = subcommands.add_parser("reindex", help="force a full index rebuild")
     reindex.add_argument("--wiki")
     reindex.add_argument("--json", action="store_true")

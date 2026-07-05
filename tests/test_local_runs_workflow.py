@@ -56,6 +56,11 @@ class FakeGitWorktreeManager:
         commit_sha: str,
     ) -> GitWorktreeCheckout:
         worktree_path.mkdir(parents=True)
+        (worktree_path / "almanac/pages").mkdir(parents=True)
+        (worktree_path / "almanac/topics.yaml").write_text(
+            "topics: []\n",
+            encoding="utf-8",
+        )
         return GitWorktreeCheckout(repo_path=worktree_path, head_sha=commit_sha)
 
     def remove(self, source_repo_path: Path, worktree_path: Path) -> None:

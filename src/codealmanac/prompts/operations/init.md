@@ -103,6 +103,9 @@ duplicate explanation, wrong folder, or missing planned page, the main agent
 should dispatch a repair sub-agent with the exact page files and fixes needed.
 Do not handle substantive article rewrites in the main agent.
 
+Before the final response, run `codealmanac validate` from the repository root
+and fix any reported wiki source errors.
+
 Assign each writing sub-agent a small, non-overlapping batch of pages from the
 coverage map. Use batches of up to five related pages per writing sub-agent.
 Most non-trivial first wikis will need multiple waves. Continue dispatching

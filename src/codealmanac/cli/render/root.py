@@ -4,6 +4,7 @@ from codealmanac.cli.render.lifecycle import (
     render_init,
     render_run_queue_start,
 )
+from codealmanac.cli.render.validation import render_validation
 from codealmanac.cli.render.wiki import (
     render_health,
     render_page,
@@ -36,6 +37,7 @@ __all__ = [
     "render_topic_mutation",
     "render_topic_rewrite_mutation",
     "render_topics",
+    "render_validation",
     "render_workspace_drop",
     "render_workspace_list",
 ]

@@ -10,11 +10,11 @@ sources:
   - id: slice-85-plan
     type: file
     path: docs/plans/2026-07-03-slice-85-run-ledger-naming.md
-    note: Records the accepted Slice 85 boundary: lifecycle records are runs, cloud/local trigger executions remain runs.
+    note: "Records the accepted Slice 85 boundary: lifecycle records are runs, cloud/local trigger executions remain runs."
   - id: slice-86-plan
     type: file
     path: docs/plans/2026-07-03-slice-86-engine-runs-and-workspaces.md
-    note: Records the accepted Slice 86 boundary: engine request/result artifacts and detached workspaces are engine-owned runtime infrastructure.
+    note: "Records the accepted Slice 86 boundary: engine request/result artifacts and detached workspaces are engine-owned runtime infrastructure."
   - id: app-composition
     type: file
     path: src/codealmanac/app.py

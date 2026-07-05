@@ -210,6 +210,7 @@ def local_engine_app(
     repo_path: Path,
     sources_path: Path,
 ):
+    write_minimal_wiki(repo_path)
     app = create_app(
         AppConfig(
             registry_path=isolated_home / ".codealmanac/registry.json",
@@ -252,3 +253,11 @@ def local_engine_app(
         )
     )
     return app, run
+
+
+def write_minimal_wiki(repo_path: Path) -> None:
+    (repo_path / "almanac/pages").mkdir(parents=True, exist_ok=True)
+    (repo_path / "almanac/topics.yaml").write_text(
+        "topics: []\n",
+        encoding="utf-8",
+    )

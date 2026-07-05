@@ -27,6 +27,7 @@ project memory more coherent, navigable, current, and trustworthy.
    interpretation.
 7. Re-read edited areas as a future agent. Verify that leads, links,
    frontmatter, and page boundaries make the graph easier to use.
+8. Run `codealmanac validate` and fix any reported wiki source errors.
 
 Prefer synthesis over logs. Fold fragments into evolving pages when chronology
 is not part of the meaning. Split pages that contain independent concepts.

@@ -23,5 +23,8 @@ Only edit files under the configured Almanac root. Do not commit, open a pull
 request, modify delivery state, or edit files outside the configured Almanac
 root. Delivery is handled after this engine run.
 
+Before the final response, run `codealmanac validate` from the repository root
+and fix any reported wiki source errors.
+
 End with a concise one-line summary of the wiki change. The commit subject will
 be derived from that summary using the configured `docs almanac:` style.

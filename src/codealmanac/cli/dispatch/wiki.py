@@ -12,11 +12,13 @@ from codealmanac.cli.render.root import (
     render_search,
     render_tagging,
 )
+from codealmanac.cli.render.validation import render_validation
 from codealmanac.wiki.health.requests import HealthCheckRequest
 from codealmanac.wiki.index.requests import ReindexRequest
 from codealmanac.wiki.pages.requests import ShowPageRequest
 from codealmanac.wiki.search.requests import SearchPagesRequest
 from codealmanac.wiki.tagging.requests import TagPageRequest, UntagPageRequest
+from codealmanac.wiki.validation.requests import ValidateWikiRequest
 
 WIKI_COMMANDS = frozenset(
     (
@@ -29,6 +31,7 @@ WIKI_COMMANDS = frozenset(
         "tag",
         "topics",
         "untag",
+        "validate",
     )
 )
 
@@ -65,6 +68,12 @@ def dispatch_wiki(args: argparse.Namespace, app: CodeAlmanac) -> int:
         report = app.health.check(HealthCheckRequest(cwd=Path.cwd(), wiki=args.wiki))
         render_health(report, json_output=args.json)
         return 0
+    if args.command == "validate":
+        report = app.validation.check(
+            ValidateWikiRequest(cwd=Path.cwd(), wiki=args.wiki)
+        )
+        render_validation(report, json_output=args.json)
+        return 0 if report.ok else 1
     if args.command == "reindex":
         result = app.index.reindex(ReindexRequest(cwd=Path.cwd(), wiki=args.wiki))
         render_reindex(result, json_output=args.json)

@@ -30,7 +30,8 @@ agent run.
    meaning. If you create a temporal page, update or link the synthesis page or
    hub it informs.
 8. Update topics and links so the new understanding joins the graph.
-9. No-op when the input does not improve durable project knowledge.
+9. Run `codealmanac validate` and fix any reported wiki source errors.
+10. No-op when the input does not improve durable project knowledge.
 
 When you create or substantially edit a page, use structured `sources:`
 frontmatter for evidence. Do not emit legacy `files:` on new pages; use
