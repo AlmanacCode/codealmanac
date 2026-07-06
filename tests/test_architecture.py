@@ -692,6 +692,7 @@ def test_cli_render_root_stays_facade():
         "pages.py",
         "search.py",
         "setup.py",
+        "sync.py",
         "tagging.py",
         "topics.py",
         "updates.py",
@@ -702,7 +703,7 @@ def test_cli_render_root_stays_facade():
     assert [
         fragment for fragment in forbidden_root_fragments if fragment in root
     ] == []
-    assert "render_sync_status" in (render_root / "lifecycle.py").read_text(
+    assert "render_sync_status" in (render_root / "sync.py").read_text(
         encoding="utf-8"
     )
     assert "render_page" in (render_root / "pages.py").read_text(encoding="utf-8")

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from codealmanac.cli.render.common import index_summary, print_json_model
+from codealmanac.cli.render.common import index_summary
 from codealmanac.cli.render.style import style
 from codealmanac.services.index.models import HealthReport
 from codealmanac.services.runs.models import RunKind, RunRecord
@@ -12,7 +12,6 @@ from codealmanac.workflows.run_queue.models import (
     RunQueueStartResult,
     ScheduledGardenResult,
 )
-from codealmanac.workflows.sync.models import SyncMode, SyncSummary
 
 RUN_QUIPS = {
     RunKind.BUILD: "every codebase deserves a biography — writing yours now.",
@@ -145,32 +144,6 @@ def render_scheduled_garden(result: ScheduledGardenResult) -> None:
         print(f"worker: pid {result.worker.child_pid}")
     if result.worker_error is not None:
         print(f"  ! worker spawn failed: {result.worker_error}")
-
-
-def render_sync_status(summary: SyncSummary, json_output: bool) -> None:
-    if json_output:
-        print_json_model(summary)
-        return
-    status_mode = summary.mode == SyncMode.STATUS
-    print("sync status:" if status_mode else "sync:")
-    print(f"  since: {summary.since.isoformat()}")
-    print(f"  scanned: {summary.scanned}")
-    print(f"  eligible: {summary.eligible}")
-    if status_mode:
-        print(f"  ready: {len(summary.ready)}")
-    else:
-        print(f"  started: {len(summary.started)}")
-    print(f"  skipped: {len(summary.skipped)}")
-    for ready in summary.ready:
-        print(
-            f"  - ready {ready.repository_name}: "
-            f"{ready.transcript_count} transcript(s)"
-        )
-    for started in summary.started:
-        print(
-            f"  - started {started.repository_name}: "
-            f"{started.run_id} ({started.transcript_count} transcript(s))"
-        )
 
 
 def health_issue_count(report: HealthReport) -> int:
