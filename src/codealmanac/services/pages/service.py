@@ -11,7 +11,7 @@ class PagesService:
         self.index = index
 
     def show(self, request: ShowPageRequest) -> PageView:
-        repository = self.repositories.select_read_target(
+        repository = self.repositories.select_read_repository(
             request.cwd,
             request.repository_name,
         )

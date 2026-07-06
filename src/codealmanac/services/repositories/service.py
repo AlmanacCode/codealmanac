@@ -23,7 +23,7 @@ from codealmanac.services.repositories.requests import (
 from codealmanac.services.repositories.roots import (
     DEFAULT_ALMANAC_ROOT,
     RepositoryTarget,
-    direct_almanac_root,
+    initialized_repository_at,
 )
 from codealmanac.services.repositories.selection import (
     contains_path,
@@ -38,7 +38,7 @@ class RepositoriesService:
     def __init__(self, store: RepositoryStore):
         self.store = store
 
-    def prepare_target(
+    def prepare_repository_target(
         self,
         path: Path,
     ) -> RepositoryTarget:
@@ -102,7 +102,7 @@ class RepositoriesService:
             return exact.to_repository()
         raise NoRepositorySelected()
 
-    def select_operation_target(
+    def select_operation_repository(
         self,
         cwd: Path,
         repository_name: str | None,
@@ -111,12 +111,12 @@ class RepositoriesService:
             return self.resolve(cwd)
         return self.select(SelectRepositoryRequest(name=repository_name))
 
-    def resolve_read_target(self, path: Path) -> Repository:
+    def resolve_read_repository(self, path: Path) -> Repository:
         registered = self.find_by_path(path)
         if registered is not None:
             return registered
         normalized = normalize_path(path)
-        match = direct_almanac_root(normalized)
+        match = initialized_repository_at(normalized)
         if match is not None:
             return self.register(
                 RegisterRepositoryRequest(
@@ -125,13 +125,13 @@ class RepositoriesService:
             )
         raise NoRepositorySelected()
 
-    def select_read_target(
+    def select_read_repository(
         self,
         cwd: Path,
         repository_name: str | None,
     ) -> Repository:
         if repository_name is None:
-            return self.resolve_read_target(cwd)
+            return self.resolve_read_repository(cwd)
         return self.select(SelectRepositoryRequest(name=repository_name))
 
     def validate_path(self, repository_id: str, path: Path) -> Path:

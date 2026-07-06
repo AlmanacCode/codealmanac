@@ -140,7 +140,7 @@ class OperationRunner:
             )
 
     def resolve_repository(self, cwd: Path, repository_name: str | None) -> Repository:
-        return self.repositories.select_operation_target(cwd, repository_name)
+        return self.repositories.select_operation_repository(cwd, repository_name)
 
     def record_harness_transcript(
         self,

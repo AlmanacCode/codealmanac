@@ -30,7 +30,7 @@ def require_default_almanac_root(value: Path | str | None) -> Path:
     return normalized
 
 
-def direct_almanac_root(path: Path) -> RepositoryTarget | None:
+def initialized_repository_at(path: Path) -> RepositoryTarget | None:
     current = normalize_path(path)
     almanac_path = current / DEFAULT_ALMANAC_ROOT
     if is_initialized_almanac_root(almanac_path):
@@ -49,4 +49,3 @@ def is_initialized_almanac_root(path: Path) -> bool:
         (path / ALMANAC_ROOT_MARKER_FILE).is_file()
         and (path / ALMANAC_ROOT_MARKER_README).is_file()
     )
-

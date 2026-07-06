@@ -13,12 +13,12 @@ class ViewerRepositoryScope:
 
     def select(self, cwd: Path, repository_name: str | None) -> Repository:
         if repository_name is not None:
-            return self.repositories.select_read_target(cwd, repository_name)
+            return self.repositories.select_read_repository(cwd, repository_name)
         return self.select_default(cwd)
 
     def select_default(self, cwd: Path) -> Repository:
         try:
-            return self.repositories.select_read_target(cwd, None)
+            return self.repositories.select_read_repository(cwd, None)
         except NotFoundError:
             repositories = self.available_registered()
             if repositories:

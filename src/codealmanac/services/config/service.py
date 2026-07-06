@@ -64,7 +64,7 @@ class ConfigService:
 
     def project_config_path(self, request: LoadConfigRequest) -> Path | None:
         try:
-            repository = self.repositories.select_read_target(
+            repository = self.repositories.select_read_repository(
                 request.cwd,
                 request.repository_name,
             )

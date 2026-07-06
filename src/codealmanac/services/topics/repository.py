@@ -9,4 +9,4 @@ def resolve_topic_repository(
     cwd: Path,
     repository_name: str | None,
 ) -> Repository:
-    return repositories.select_read_target(cwd, repository_name)
+    return repositories.select_read_repository(cwd, repository_name)

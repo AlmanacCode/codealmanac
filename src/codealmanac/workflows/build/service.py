@@ -50,7 +50,7 @@ class BuildWorkflow:
         return self.run_started(request, self.start(request))
 
     def start(self, request: BuildRequest) -> StartedBuild:
-        target = self.repositories.prepare_target(request.path)
+        target = self.repositories.prepare_repository_target(request.path)
         reject_existing_almanac(target)
         self.operations.mutation_policy.ensure_tracking_available(target.root_path)
         repository = self.register_target(target, request)
