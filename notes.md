@@ -112,13 +112,11 @@ Adapt for the new Python product:
   partial-uninstall flags.
 - `codealmanac setup` is computer-level onboarding. It does not initialize,
   detect, register, or mutate a repo `almanac/` tree.
-- Current Python `codealmanac init` differs from archive behavior. Archive
-  `init` was described as "initialize and build this repo's Almanac wiki" and
-  routed through the build operation. Current Python `init` only creates and
-  registers the repo wiki; `build` refreshes the index separately. Bring back
-  archive-like init behavior in a ticket. `build` should not remain a
-  public-facing operation; initialization should be the zero-to-usable command,
-  and index refresh should be implicit or internal.
+- `codealmanac init` is the public command for the first wiki build. Internally
+  it starts a `build` operation. There are exactly three internal wiki
+  operations: `build`, `ingest`, and `garden`. `sync` is transcript intake that
+  creates `ingest` runs. `update` is product maintenance. `capture` is retired
+  language.
 
 The setup flow feels like the archive installer, not the current plain panel
 summary.

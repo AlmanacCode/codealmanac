@@ -474,53 +474,65 @@ Verification:
 - Tests for idempotent rerun.
 - `uv run pytest tests/test_setup_service.py tests/test_cli.py`
 
-## Ticket 13: Make Init Build And Index Like Archive
+## Ticket 13: Restore Three Operation Architecture
 
-Goal: make `codealmanac init` feel complete like archive `init`.
+Goal: make `codealmanac init` delegate to a model-backed internal `build`
+operation and make `build`, `ingest`, and `garden` the only internal wiki
+operations.
 
-Archive behavior:
+Non-negotiables:
 
-- `archive/code/src/cli/register-wiki-lifecycle-commands.ts` described `init`
-  as "initialize and build this repo's Almanac wiki".
-- `archive/code/src/operations/build.ts` called `initWiki(...)`, checked page
-  count, and started the build operation.
-
-Current Python behavior:
-
-- `codealmanac init` creates/registers `almanac/`.
-- `codealmanac build` refreshes the index separately.
-- This split is not the desired happy path.
-- `codealmanac build` should not remain a public-facing command.
+- `codealmanac init` is public.
+- `codealmanac build` is not public.
+- run records use only `build`, `ingest`, or `garden`.
+- `sync` creates `ingest` runs and is not a run operation.
+- `update` is product maintenance and is not a wiki operation.
+- `capture` is retired language.
+- Kushagra's prompt/manual material from commit `4c615718` is copied literally
+  first and adapted only for Python/nested `almanac/` format.
 
 Todos:
 
-- Make `codealmanac init` create/register the repo wiki and leave it ready for
-  immediate use.
-- Decide whether "ready" means:
-  - rebuild the deterministic index immediately, or
-  - run the full lifecycle build operation after scaffolding.
-- Prefer the archive feel: one command gets the repo from zero to usable.
-- Remove `codealmanac build` from the public CLI surface.
-- Keep any needed build/index behavior internal to `init`, query-time refresh,
-  or service/workflow code.
-- Update setup next steps to only tell the user:
-  - navigate to the repo,
-  - run `codealmanac init`.
-- Test that `init` produces an immediately searchable starter wiki.
-- Test idempotent rerun behavior.
-- Test that `codealmanac build` is no longer exposed as a public command.
+- Port Kushagra's July init prompt from `4c615718` into the Python package as
+  `src/codealmanac/prompts/operations/build.md`.
+- Preserve Kushagra's writing-subagent, coverage-map, topics, and article
+  quality instructions.
+- Adapt only the current product facts: `init` as public command, `build` as
+  internal operation, `almanac/` as the only repo wiki root, browseable nested
+  Markdown pages, Markdown links, `sources:` evidence, and three operation
+  names.
+- Make `codealmanac init` create/register `almanac/`, start a `build` run,
+  invoke the lifecycle harness, validate mutations under `almanac/`, refresh
+  the index, and validate wiki health.
+- Keep deterministic scaffold/index work private to services. It is not a
+  public operation.
+- Remove `RunOperation.SYNC`.
+- Keep `sync` as transcript intake that starts `ingest` runs.
+- Keep setup next steps focused on navigating to a repo and running
+  `codealmanac init`.
+- Test that `init` records operation `build`.
+- Test that `codealmanac build` is rejected by the parser.
+- Test that sync-created runs record operation `ingest`.
 
 Files:
 
 - `src/codealmanac/cli/dispatch/build.py`
+- `src/codealmanac/cli/parser/lifecycle.py`
+- `src/codealmanac/services/runs/models.py`
 - `src/codealmanac/workflows/build/`
-- `src/codealmanac/services/index/`
+- `src/codealmanac/workflows/run_queue/`
+- `src/codealmanac/workflows/sync/`
+- `src/codealmanac/prompts/operations/build.md`
+- `src/codealmanac/manual/`
 - `tests/test_build_workflow.py`
 - `tests/test_cli.py`
+- `tests/test_sync_workflow.py`
+- `tests/test_public_contract.py`
 
 Verification:
 
-- `uv run pytest tests/test_build_workflow.py tests/test_cli.py`
+- `uv run pytest tests/test_build_workflow.py tests/test_cli.py tests/test_sync_workflow.py tests/test_public_contract.py`
+- `uv run ruff check .`
 
 ## Ticket 14: Rebuild Viewer Around Folder Browsing
 
