@@ -21,7 +21,7 @@
 
 **Steps:**
 
-1. Add `auto_commit: bool = True` to `CodeAlmanacConfig`.
+1. Add `auto_commit: bool = True` to `UserConfig`.
 2. Add `ConfigKey.AUTO_COMMIT`, `SetConfigValueRequest`, and `ConfigSetResult`.
 3. Add `ConfigService.set(...)` that writes user config through `ConfigStore`.
 4. Add `ConfigStore.set_auto_commit(path, enabled)` using a small TOML-line writer for this one top-level key.

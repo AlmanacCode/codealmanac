@@ -856,7 +856,7 @@ Dynaconf as the mature Python settings libraries. We chose
 providing first-class TOML source handling.
 
 Code or product assumption affected:
-`ConfigStore` builds a `CodeAlmanacConfig` from
+`ConfigStore` builds a `UserConfig` from
 `TomlConfigSettingsSource` values, `ConfigService` chooses project and user
 source order, and `cli/main.py` resolves `flag > config` for lifecycle
 defaults. Automation keeps a service fallback default but shares the config
