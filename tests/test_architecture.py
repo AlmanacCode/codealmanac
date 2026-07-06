@@ -831,7 +831,7 @@ def test_cli_dispatch_edge_is_split_by_command_domain():
     assert "dispatch_lifecycle(args, app)" in dispatch_root
     assert "dispatch_wiki(args, app)" in dispatch_root
     assert "dispatch_admin(args, app)" in dispatch_root
-    assert "RunIngestRequest" not in dispatch_root
+    assert "IngestRequest" not in dispatch_root
     assert "SearchPagesRequest" not in dispatch_root
     assert "AutomationStatusRequest" not in dispatch_root
     assert "DoctorRequest" not in dispatch_root
@@ -972,23 +972,23 @@ def test_cli_lifecycle_dispatch_stays_split_by_command_family():
     lifecycle = (dispatch_path / "lifecycle.py").read_text(encoding="utf-8")
     module_expectations = {
         "build.py": ("InitializeRepositoryRequest", "def dispatch_build("),
-        "operations.py": ("RunIngestRequest", "def dispatch_ingest("),
-        "sync.py": ("RunSyncRequest", "def dispatch_sync("),
+        "operations.py": ("IngestRequest", "def dispatch_ingest("),
+        "sync.py": ("SyncRequest", "def dispatch_sync("),
         "worker.py": ("DrainRunQueueRequest", "def dispatch_run_worker("),
     }
     forbidden_lifecycle_fragments = (
         "InitializeRepositoryRequest",
-        "RunIngestRequest",
+        "IngestRequest",
         "RunGardenRequest",
-        "RunSyncRequest",
-        "RunSyncStatusRequest",
+        "SyncRequest",
+        "SyncStatusRequest",
         "DrainRunQueueRequest",
         "TranscriptApp",
         "ValidationFailed",
         "load_cli_config",
         "resolve_harness",
         "parse_sync_apps",
-        "sync_execution",
+        "sync_queue",
         "render_",
     )
     oversized = []
@@ -1651,13 +1651,13 @@ def test_sync_workflow_policy_stays_out_of_service_orchestration():
     )
 
 
-def test_sync_execution_effects_stay_out_of_service_orchestration():
+def test_sync_queue_effects_stay_out_of_service_orchestration():
     sync_root = SRC_ROOT / "workflows/sync"
     service_text = (sync_root / "service.py").read_text(encoding="utf-8")
     evaluation_text = (sync_root / "evaluation.py").read_text(encoding="utf-8")
-    execution_text = (sync_root / "execution.py").read_text(encoding="utf-8")
+    queue_text = (sync_root / "queue.py").read_text(encoding="utf-8")
     forbidden_service_fragments = (
-        "RunIngestRequest",
+        "IngestRequest",
         "StartedIngestRequest",
         "FinishRunRequest",
         "RunStatus.FAILED",
@@ -1671,7 +1671,7 @@ def test_sync_execution_effects_stay_out_of_service_orchestration():
         "run_started(",
     )
     forbidden_evaluation_fragments = (
-        "RunIngestRequest",
+        "IngestRequest",
         "StartedIngestRequest",
         "FinishRunRequest",
         "RunStatus.FAILED",
@@ -1680,7 +1680,7 @@ def test_sync_execution_effects_stay_out_of_service_orchestration():
         "run_started(",
     )
 
-    assert (sync_root / "execution.py").is_file()
+    assert (sync_root / "queue.py").is_file()
     assert len(service_text.splitlines()) <= 120
     assert [
         fragment
@@ -1692,14 +1692,11 @@ def test_sync_execution_effects_stay_out_of_service_orchestration():
         for fragment in forbidden_evaluation_fragments
         if fragment in evaluation_text
     ] == []
-    assert "class SyncRunExecutor" in execution_text
-    assert "RunIngestRequest" in execution_text
-    assert "StartedIngestRequest" in execution_text
-    assert "FinishRunRequest" in execution_text
-    assert "pending_entry(" in execution_text
-    assert "absorbed_entry(" in execution_text
-    assert "queue_ingest(" in execution_text
-    assert "spawn_worker(" in execution_text
+    assert "class SyncIngestQueue" in queue_text
+    assert "IngestRequest" in queue_text
+    assert "queue_ingest(" in queue_text
+    assert "spawn_worker(" in queue_text
+    assert "record_completed(" in queue_text
 
 
 def test_viewer_jobs_surface_stays_read_only():

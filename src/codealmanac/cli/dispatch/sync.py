@@ -9,8 +9,8 @@ from codealmanac.cli.render.root import render_sync_status
 from codealmanac.core.errors import ValidationFailed
 from codealmanac.services.sources.models import TranscriptApp
 from codealmanac.workflows.sync.requests import (
-    RunSyncRequest,
-    RunSyncStatusRequest,
+    SyncRequest,
+    SyncStatusRequest,
 )
 
 
@@ -19,7 +19,7 @@ def dispatch_sync(args: argparse.Namespace, app: CodeAlmanac) -> int:
         return dispatch_sync_status(args, app)
     cli_config = load_cli_config(app, args.wiki)
     result = app.workflows.sync.run(
-        RunSyncRequest(
+        SyncRequest(
             repository_name=args.wiki,
             apps=parse_sync_apps(args.source_apps),
             harness=resolve_harness(args.using, cli_config),
@@ -32,7 +32,7 @@ def dispatch_sync(args: argparse.Namespace, app: CodeAlmanac) -> int:
 
 def dispatch_sync_status(args: argparse.Namespace, app: CodeAlmanac) -> int:
     result = app.workflows.sync.status(
-        RunSyncStatusRequest(
+        SyncStatusRequest(
             repository_name=args.wiki,
             apps=parse_sync_apps(args.source_apps),
         )

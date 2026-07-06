@@ -35,10 +35,10 @@ class SyncSelectionRequest(CodeAlmanacModel):
         return value
 
 
-class RunSyncStatusRequest(SyncSelectionRequest):
+class SyncStatusRequest(SyncSelectionRequest):
     pass
 
 
-class RunSyncRequest(SyncSelectionRequest):
+class SyncRequest(SyncSelectionRequest):
     harness: HarnessKind
     auto_commit: bool = True

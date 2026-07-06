@@ -11,7 +11,7 @@ from codealmanac.workflows.sync.models import (
     SyncStarted,
     SyncWorkItem,
 )
-from codealmanac.workflows.sync.requests import RunSyncRequest
+from codealmanac.workflows.sync.requests import SyncRequest
 from codealmanac.workflows.sync.store import SyncStateStore
 from codealmanac.workflows.sync.summary import (
     skipped_transcript,
@@ -19,7 +19,7 @@ from codealmanac.workflows.sync.summary import (
 )
 
 
-class SyncRunExecutor:
+class SyncIngestQueue:
     def __init__(
         self,
         queue: RunQueue,
@@ -30,10 +30,10 @@ class SyncRunExecutor:
 
     def run(
         self,
-        request: RunSyncRequest,
+        request: SyncRequest,
         evaluation: SyncEvaluation,
         now: datetime,
-    ) -> "SyncRunExecutionResult":
+    ) -> "SyncQueueResult":
         started: list[SyncStarted] = []
         skipped = list(evaluation.summary.skipped)
         worker_cwd = None
@@ -66,19 +66,19 @@ class SyncRunExecutor:
                     for candidate in item.transcripts
                 )
         self.state_store.record_completed(now)
-        return SyncRunExecutionResult(
+        return SyncQueueResult(
             started=tuple(started),
             skipped=tuple(skipped),
         )
 
 
-class SyncRunExecutionResult(CodeAlmanacModel):
+class SyncQueueResult(CodeAlmanacModel):
     started: tuple[SyncStarted, ...]
     skipped: tuple[SyncSkipped, ...]
 
 
 def sync_ingest_request(
-    request: RunSyncRequest,
+    request: SyncRequest,
     item: SyncWorkItem,
 ) -> IngestRequest:
     return IngestRequest(

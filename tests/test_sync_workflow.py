@@ -3,15 +3,15 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from codealmanac.app import create_app
-from codealmanac.settings import AppConfig
 from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.services.repositories.requests import InitializeRepositoryRequest
 from codealmanac.services.runs.models import RunKind, RunWorkerSpawnResult
 from codealmanac.services.runs.requests import ReadRunSpecRequest, SpawnRunWorkerRequest
 from codealmanac.services.sources.models import TranscriptApp, TranscriptCandidate
 from codealmanac.services.sources.requests import DiscoverTranscriptsRequest
+from codealmanac.settings import AppConfig
 from codealmanac.workflows.sync.models import SyncMode
-from codealmanac.workflows.sync.requests import RunSyncRequest, RunSyncStatusRequest
+from codealmanac.workflows.sync.requests import SyncRequest, SyncStatusRequest
 
 
 class FakeTranscriptDiscoveryAdapter:
@@ -63,7 +63,7 @@ def test_sync_status_groups_active_transcripts_by_repository(
     app.workflows.build.initialize(InitializeRepositoryRequest(path=repo))
 
     summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
+        SyncStatusRequest(
             cwd=repo,
             apps=(TranscriptApp.CODEX,),
             now=current_time(),
@@ -93,7 +93,7 @@ def test_sync_uses_exact_registered_cwd_without_root_hopping(
     app.workflows.build.initialize(InitializeRepositoryRequest(path=repo))
 
     summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
+        SyncStatusRequest(
             cwd=repo,
             apps=(TranscriptApp.CODEX,),
             now=current_time(),
@@ -130,7 +130,7 @@ def test_sync_run_queues_one_ingest_run_per_repository_and_records_scan_time(
     app.workflows.build.initialize(InitializeRepositoryRequest(path=repo))
 
     summary = app.workflows.sync.run(
-        RunSyncRequest(
+        SyncRequest(
             cwd=repo,
             apps=(TranscriptApp.CODEX,),
             harness=HarnessKind.CODEX,
@@ -163,7 +163,7 @@ def test_sync_run_queues_one_ingest_run_per_repository_and_records_scan_time(
     assert sync_completed_at(database_path) == current_time().isoformat()
 
     next_status = app.workflows.sync.status(
-        RunSyncStatusRequest(
+        SyncStatusRequest(
             cwd=repo,
             apps=(TranscriptApp.CODEX,),
             now=current_time() + timedelta(minutes=1),
@@ -189,7 +189,7 @@ def test_sync_advances_scan_time_even_when_queueing_fails(
     app.workflows.build.initialize(InitializeRepositoryRequest(path=repo))
 
     summary = app.workflows.sync.run(
-        RunSyncRequest(
+        SyncRequest(
             cwd=repo,
             apps=(TranscriptApp.CODEX,),
             harness=HarnessKind.CODEX,
@@ -224,7 +224,7 @@ def test_sync_uses_last_completed_time_before_interval_fallback(
     write_sync_completed_at(database_path, previous)
 
     summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
+        SyncStatusRequest(
             cwd=repo,
             apps=(TranscriptApp.CODEX,),
             now=current_time(),

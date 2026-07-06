@@ -4,16 +4,16 @@ from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.sources.service import SourcesService
 from codealmanac.workflows.run_queue.service import RunQueue
 from codealmanac.workflows.sync.evaluation import SyncEvaluator
-from codealmanac.workflows.sync.execution import SyncRunExecutor
 from codealmanac.workflows.sync.models import (
     SyncEvaluation,
     SyncMode,
     SyncSummary,
 )
+from codealmanac.workflows.sync.queue import SyncIngestQueue
 from codealmanac.workflows.sync.requests import (
-    RunSyncRequest,
-    RunSyncStatusRequest,
+    SyncRequest,
     SyncSelectionRequest,
+    SyncStatusRequest,
 )
 from codealmanac.workflows.sync.store import SyncStateStore
 
@@ -31,15 +31,15 @@ class SyncWorkflow:
             sources=sources,
             state_store=state_store,
         )
-        self.executor = SyncRunExecutor(
+        self.executor = SyncIngestQueue(
             queue=queue,
             state_store=state_store,
         )
 
-    def status(self, request: RunSyncStatusRequest) -> SyncSummary:
+    def status(self, request: SyncStatusRequest) -> SyncSummary:
         return self.evaluate(request, SyncMode.STATUS).summary
 
-    def run(self, request: RunSyncRequest) -> SyncSummary:
+    def run(self, request: SyncRequest) -> SyncSummary:
         now = request.now or datetime.now(UTC)
         evaluation = self.evaluate(request, SyncMode.SYNC, now=now)
         effects = self.executor.run(request, evaluation, now)
