@@ -104,6 +104,29 @@ class CodeAlmanac:
     workflows: CodeAlmanacWorkflows
 
 
+@dataclass(frozen=True)
+class _Services:
+    automation: AutomationService
+    config: ConfigService
+    workspaces: WorkspacesService
+    wiki: WikiService
+    index: IndexService
+    search: SearchService
+    pages: PagesService
+    topics: TopicsService
+    health: HealthService
+    diagnostics: DiagnosticsService
+    tagging: TaggingService
+    updates: UpdatesService
+    setup: SetupService
+    viewer: ViewerService
+    runs: RunsService
+    sources: SourcesService
+    harnesses: HarnessesService
+    prompts: PromptRenderer
+    manual: ManualLibrary
+
+
 def create_app(
     config: AppConfig | None = None,
     harness_adapters: Sequence[HarnessAdapter] | None = None,
@@ -118,8 +141,43 @@ def create_app(
     package_uninstaller: PackageUninstaller | None = None,
 ) -> CodeAlmanac:
     app_config = config or AppConfig()
-    workspaces = WorkspacesService(WorkspaceRegistryStore(app_config.registry_path))
     runtime_paths = WorkspaceRuntimePaths(app_config.registry_path.parent)
+    services = _create_services(
+        app_config,
+        runtime_paths,
+        harness_adapters=harness_adapters,
+        transcript_discovery_adapters=transcript_discovery_adapters,
+        source_runtime_adapters=source_runtime_adapters,
+        scheduler=scheduler,
+        update_metadata=update_metadata,
+        update_runner=update_runner,
+        instruction_installer=instruction_installer,
+        global_state_remover=global_state_remover,
+        package_uninstaller=package_uninstaller,
+    )
+    workflows = _create_workflows(
+        services,
+        runtime_paths,
+        worker_spawner=worker_spawner,
+    )
+    return _create_app(services, workflows)
+
+
+def _create_services(
+    app_config: AppConfig,
+    runtime_paths: WorkspaceRuntimePaths,
+    *,
+    harness_adapters: Sequence[HarnessAdapter] | None,
+    transcript_discovery_adapters: Sequence[TranscriptDiscoveryAdapter] | None,
+    source_runtime_adapters: Sequence[SourceRuntimeAdapter] | None,
+    scheduler: SchedulerAdapter | None,
+    update_metadata: PackageInstallMetadataProvider | None,
+    update_runner: PackageCommandRunner | None,
+    instruction_installer: InstructionInstaller | None,
+    global_state_remover: GlobalStateRemover | None,
+    package_uninstaller: PackageUninstaller | None,
+) -> _Services:
+    workspaces = WorkspacesService(WorkspaceRegistryStore(app_config.registry_path))
     config_service = ConfigService(workspaces, ConfigStore(), app_config.config_path)
     automation = AutomationService(workspaces, scheduler or LaunchdSchedulerAdapter())
     manual = ManualLibrary()
@@ -161,77 +219,7 @@ def create_app(
     harnesses = HarnessesService(
         default_harness_adapters() if harness_adapters is None else harness_adapters
     )
-    build_page_runs = PageRunWorkflow(
-        workspaces,
-        harnesses,
-        runs,
-        index,
-        health,
-        LifecycleMutationPolicy(GitWorkspaceChangeProbe(), operation="build"),
-    )
-    ingest_page_runs = PageRunWorkflow(
-        workspaces,
-        harnesses,
-        runs,
-        index,
-        health,
-        LifecycleMutationPolicy(GitWorkspaceChangeProbe(), operation="ingest"),
-    )
-    garden_page_runs = PageRunWorkflow(
-        workspaces,
-        harnesses,
-        runs,
-        index,
-        health,
-        LifecycleMutationPolicy(GitWorkspaceChangeProbe(), operation="garden"),
-    )
-    ingest = IngestWorkflow(
-        sources,
-        runs,
-        ingest_page_runs,
-        prompts,
-        manual,
-    )
-    garden = GardenWorkflow(
-        runs,
-        index,
-        health,
-        garden_page_runs,
-        prompts,
-        manual,
-    )
-    build = BuildWorkflow(
-        workspaces,
-        wiki,
-        index,
-        runs,
-        build_page_runs,
-        prompts,
-        manual,
-    )
-    queue = RunQueueWorkflow(
-        runs,
-        ingest,
-        garden,
-        worker_spawner or SubprocessRunWorkerSpawner(),
-    )
-    sync = SyncWorkflow(
-        workspaces,
-        sources,
-        runs,
-        ingest,
-        queue,
-        SyncLedgerStore(),
-        runtime_paths,
-    )
-    workflows = CodeAlmanacWorkflows(
-        build=build,
-        ingest=ingest,
-        garden=garden,
-        queue=queue,
-        sync=sync,
-    )
-    return CodeAlmanac(
+    return _Services(
         automation=automation,
         config=config_service,
         workspaces=workspaces,
@@ -251,5 +239,97 @@ def create_app(
         harnesses=harnesses,
         prompts=prompts,
         manual=manual,
+    )
+
+
+def _create_page_run(services: _Services, operation: str) -> PageRunWorkflow:
+    return PageRunWorkflow(
+        services.workspaces,
+        services.harnesses,
+        services.runs,
+        services.index,
+        services.health,
+        LifecycleMutationPolicy(GitWorkspaceChangeProbe(), operation=operation),
+    )
+
+
+def _create_workflows(
+    services: _Services,
+    runtime_paths: WorkspaceRuntimePaths,
+    *,
+    worker_spawner: RunWorkerSpawner | None,
+) -> CodeAlmanacWorkflows:
+    build_page_runs = _create_page_run(services, "build")
+    ingest_page_runs = _create_page_run(services, "ingest")
+    garden_page_runs = _create_page_run(services, "garden")
+    ingest = IngestWorkflow(
+        services.sources,
+        services.runs,
+        ingest_page_runs,
+        services.prompts,
+        services.manual,
+    )
+    garden = GardenWorkflow(
+        services.runs,
+        services.index,
+        services.health,
+        garden_page_runs,
+        services.prompts,
+        services.manual,
+    )
+    build = BuildWorkflow(
+        services.workspaces,
+        services.wiki,
+        services.index,
+        services.runs,
+        build_page_runs,
+        services.prompts,
+        services.manual,
+    )
+    queue = RunQueueWorkflow(
+        services.runs,
+        ingest,
+        garden,
+        worker_spawner or SubprocessRunWorkerSpawner(),
+    )
+    sync = SyncWorkflow(
+        services.workspaces,
+        services.sources,
+        services.runs,
+        ingest,
+        queue,
+        SyncLedgerStore(),
+        runtime_paths,
+    )
+    return CodeAlmanacWorkflows(
+        build=build,
+        ingest=ingest,
+        garden=garden,
+        queue=queue,
+        sync=sync,
+    )
+
+
+def _create_app(services: _Services, workflows: CodeAlmanacWorkflows) -> CodeAlmanac:
+    return CodeAlmanac(
+        automation=services.automation,
+        config=services.config,
+        workspaces=services.workspaces,
+        wiki=services.wiki,
+        index=services.index,
+        search=services.search,
+        pages=services.pages,
+        topics=services.topics,
+        health=services.health,
+        diagnostics=services.diagnostics,
+        tagging=services.tagging,
+        updates=services.updates,
+        setup=services.setup,
+        viewer=services.viewer,
+        runs=services.runs,
+        sources=services.sources,
+        harnesses=services.harnesses,
+        prompts=services.prompts,
+        manual=services.manual,
         workflows=workflows,
     )

@@ -55,6 +55,35 @@ def test_config_service_owns_pydantic_settings_imports():
     assert offenders == []
 
 
+def test_app_composition_root_stays_scannable():
+    app_path = SRC_ROOT / "app.py"
+    tree = ast.parse(app_path.read_text(encoding="utf-8"))
+    functions = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+    }
+    create_app = functions["create_app"]
+
+    assert create_app.end_lineno is not None
+    assert create_app.end_lineno - create_app.lineno + 1 <= 40
+    assert {
+        "_create_services",
+        "_create_page_run",
+        "_create_workflows",
+        "_create_app",
+    } <= set(functions)
+    assert {
+        "_create_services",
+        "_create_workflows",
+        "_create_app",
+    } <= {
+        node.func.id
+        for node in ast.walk(create_app)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+
+
 def test_rich_terminal_ui_stays_in_cli_render_edge():
     offenders = [
         path

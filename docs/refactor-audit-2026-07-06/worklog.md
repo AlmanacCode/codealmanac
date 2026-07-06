@@ -66,3 +66,25 @@
   - `uv run pytest`: 401 passed.
   - `uv run ruff check .`: passed.
   - `git diff --check`: passed after removing one final blank line.
+
+## Second Refactor Batch: App Composition Root
+
+- Wrote `docs/plans/2026-07-06-app-composition-refactor.md`.
+- Kept `src/codealmanac/app.py` as the public composition root.
+- Split the long `create_app()` body into private helpers:
+  - `_create_services(...)` wires service objects and concrete adapter defaults.
+  - `_create_page_run(...)` owns the repeated page-run policy construction.
+  - `_create_workflows(...)` wires build, ingest, garden, queue, and sync.
+  - `_create_app(...)` assembles the public `CodeAlmanac` object.
+- Added `tests/test_architecture.py::test_app_composition_root_stays_scannable`
+  so the public factory does not regrow into one dense wiring function.
+- Size evidence after split:
+  - `create_app()`: 34 lines, down from 149.
+  - `_create_services(...)`: 77 lines.
+  - `_create_workflows(...)`: 55 lines.
+- Verification:
+  - `uv run pytest tests/test_architecture.py::test_app_composition_root_stays_scannable tests/test_cli.py::test_cli_help_includes_update tests/test_config_service.py -q`: 10 passed.
+  - `uv run ruff check src/codealmanac/app.py tests/test_architecture.py`: passed.
+  - `uv run pytest`: 402 passed.
+  - `uv run ruff check .`: passed.
+  - `git diff --check`: passed.
