@@ -21,8 +21,10 @@ Names must be honest. A file named `auth.py` must not secretly mean "Claude auth
 
 Naming is architecture: the moment a thing's general role can be named, it earns a first-class home at that name [@manual]. The reverse also holds — code that cannot be given a clear name has not found its boundary yet.
 
-Private helpers are not a substitute for names. A small `_helper()` is fine for
-local mechanics, but a cluster of internal functions that owns a policy,
-workflow step, or reusable concept is a boundary trying to exist. Give that
-concept an honest module, method, or type instead of hiding the architecture
-behind underscores.
+Avoid internal-looking functions. Single-underscore functions should be rare
+because they usually make the code harder to read: the important shape
+disappears behind "implementation detail" names. If a function owns a policy,
+workflow step, reusable concept, seam, or stable responsibility, give that
+concept an honest module, method, type, or small public package function. Use an
+underscore only when the function is genuinely tiny, local, and less readable as
+a named boundary.

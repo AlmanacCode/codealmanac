@@ -98,13 +98,14 @@ real code exists.
   hard-code yourself down to one kind — you've thrown away free generality.
 - *Raw external shapes don't leak past the normalization boundary.* Parse once
   at the edge into typed values; nothing downstream touches the raw payload.
-- *Private helpers are not architecture.* A private/internal function is fine
-  for tiny local mechanics, but it must not become the hiding place for a real
-  product concept, policy, workflow step, or seam. When a helper earns a name
-  that describes a stable responsibility, give it a first-class home — usually
-  a plainly named module, service method, typed model, or small public function
-  within the package. Underscores are for implementation details, not for the
-  shape a future maintainer needs to understand.
+- *Avoid internal-looking functions.* Single-underscore functions should be
+  exceptional, because they usually make the code harder to read: the important
+  shape disappears behind "implementation detail" names. If a function describes
+  a product concept, policy, workflow step, seam, or stable responsibility, give
+  it a first-class home — usually a plainly named module, service method, typed
+  model, or small public function within the package. Use an underscore only
+  when the function is genuinely tiny, local, and less readable as a named
+  boundary.
 
 **Craft (line-level gorgeousness)**
 - Typed models for all shaped data; enumerations are `Literal`/enums; **no loose
