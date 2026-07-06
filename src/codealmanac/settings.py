@@ -40,10 +40,14 @@ class LocalStatePaths(CodeAlmanacModel):
 
     @classmethod
     def from_config(cls, config: AppConfig) -> "LocalStatePaths":
+        state_dir = config.database_path.parent
+        config_path = config.config_path
+        if "config_path" not in config.model_fields_set:
+            config_path = state_dir / "config.toml"
         return cls(
             database_path=config.database_path,
-            config_path=config.config_path,
-            state_dir=config.database_path.parent,
+            config_path=normalize_path(config_path),
+            state_dir=state_dir,
         )
 
     def repository_dir(self, repository_id: str) -> Path:
