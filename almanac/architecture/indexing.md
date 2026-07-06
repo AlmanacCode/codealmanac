@@ -9,7 +9,7 @@ sources:
     note: SQLite schema and index database connection.
   - id: runtime
     type: file
-    path: src/codealmanac/services/config/models.py
+    path: src/codealmanac/settings.py
     note: LocalStatePaths maps repositories to derived runtime directories.
   - id: projection
     type: file

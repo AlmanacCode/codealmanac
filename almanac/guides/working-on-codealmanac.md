@@ -14,7 +14,7 @@ sources:
   - id: agreement
     type: file
     path: docs/python-port-live-agreement.md
-    note: Current product agreement.
+    note: Historical agreement that still has useful code-quality context.
 ---
 
 # Working On CodeAlmanac
@@ -23,6 +23,6 @@ Read `MANUAL.md` before implementing a feature [@manual]. The unit of work is to
 
 Follow `implementation-tickets.md` in order for the current rebuild [@tickets]. Later tickets depend on the page tree, source model, links, runtime layout, validation, and prompt/manual import from earlier tickets.
 
-Preserve the local-first product agreement while coding [@agreement]. Do not carry hosted/cloud behavior, legacy command aliases, alternate roots, or old page-layout compatibility into new work.
+Use the current refactor plan as product truth while coding. Do not carry hosted/cloud behavior, legacy command aliases, alternate roots, registry-file state, root hopping, or old page-layout compatibility into new work.
 
 Use `uv run pytest` and `uv run ruff check .` as the default gates. Use narrower tests first when a ticket names focused verification.

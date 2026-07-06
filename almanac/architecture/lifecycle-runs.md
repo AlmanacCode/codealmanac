@@ -37,7 +37,7 @@ sources:
     note: Prompt-facing lifecycle commit policy.
   - id: local-state
     type: file
-    path: src/codealmanac/services/config/models.py
+    path: src/codealmanac/settings.py
     note: LocalStatePaths defines machine-level DB and per-repository index paths.
   - id: validation
     type: file
@@ -49,7 +49,7 @@ sources:
 
 `BuildWorkflow`, `IngestWorkflow`, and `GardenWorkflow` each prepare operation-specific context and delegate harness execution, run events, mutation safety, index refresh, and validation to `OperationRunner` [@operations] [@ingest] [@garden].
 
-Lifecycle prompts include a `source_control` context block that carries whether auto-commit is allowed, the wiki source files agents may commit, forbidden file categories, and the `almanac: <summary>` commit-message shape [@ingest] [@garden] [@commit-policy]. Queued runs persist the selected harness, target wiki, inputs, guidance, and auto-commit flag in `RunSpec`; the worker restores that spec before running the operation [@queue] [@run-spec].
+Lifecycle prompts include a `source_control` context block that carries whether auto-commit is allowed, the wiki source files agents may commit, forbidden file categories, and the `almanac: <summary>` commit-message shape [@ingest] [@garden] [@commit-policy]. Queued runs store the target repository on the run record and persist the selected harness, inputs, guidance, and auto-commit flag in `RunSpec`; the worker restores that spec before running the operation [@queue] [@run-spec].
 
 `OperationRunner` marks a run as running, records lifecycle events, executes the selected harness, records harness transcript and harness events, validates mutation safety, refreshes the index, runs wiki validation, and finishes the run [@operations] [@validation]. This keeps harness plumbing out of individual operation workflows.
 

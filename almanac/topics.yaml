@@ -21,7 +21,7 @@ topics:
 
   - slug: storage
     title: Storage
-    description: SQLite index state, source metadata, run records, and registry files.
+    description: SQLite index state, source metadata, repositories, runs, and sync state.
     parents: [architecture]
 
   - slug: wiki-design
