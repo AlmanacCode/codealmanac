@@ -5,6 +5,7 @@ from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.services.repositories.models import (
     Repository,
 )
+from codealmanac.services.runs.models import RunKind
 from codealmanac.workflows.change_tracking import (
     RepositoryChangeProbe,
     RepositoryChangeSnapshot,
@@ -24,7 +25,7 @@ class LifecycleMutationReport(CodeAlmanacModel):
 
 
 class LifecycleMutationPolicy:
-    def __init__(self, probe: RepositoryChangeProbe, kind: str):
+    def __init__(self, probe: RepositoryChangeProbe, kind: RunKind):
         self.probe = probe
         self.kind = kind
 
@@ -74,7 +75,7 @@ class LifecycleMutationPolicy:
 
 def validate_snapshot_available(
     snapshot: RepositoryChangeSnapshot,
-    kind: str,
+    kind: RunKind,
 ) -> None:
     if snapshot.available:
         return

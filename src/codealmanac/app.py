@@ -34,6 +34,7 @@ from codealmanac.services.index.store import IndexStore
 from codealmanac.services.pages.service import PagesService
 from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.repositories.store import RepositoryStore
+from codealmanac.services.runs.models import RunKind
 from codealmanac.services.runs.ports import RunWorkerSpawner
 from codealmanac.services.runs.service import RunsService
 from codealmanac.services.runs.store import RunStore
@@ -250,7 +251,7 @@ def create_services(
     )
 
 
-def create_operation(services: Services, kind: str) -> OperationRunner:
+def create_operation(services: Services, kind: RunKind) -> OperationRunner:
     return OperationRunner(
         services.repositories,
         services.harnesses,
@@ -266,9 +267,9 @@ def create_workflows(
     *,
     worker_spawner: RunWorkerSpawner | None,
 ) -> CodeAlmanacWorkflows:
-    build_operations = create_operation(services, "build")
-    ingest_operations = create_operation(services, "ingest")
-    garden_operations = create_operation(services, "garden")
+    build_operations = create_operation(services, RunKind.BUILD)
+    ingest_operations = create_operation(services, RunKind.INGEST)
+    garden_operations = create_operation(services, RunKind.GARDEN)
     ingest = IngestWorkflow(
         services.sources,
         services.runs,
