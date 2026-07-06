@@ -1781,35 +1781,32 @@ def test_run_id_validation_is_owned_by_runs_models():
         encoding="utf-8"
     )
     runs_store = (SRC_ROOT / "services/runs/store.py").read_text(encoding="utf-8")
-    runs_paths = (SRC_ROOT / "services/runs/paths.py").read_text(encoding="utf-8")
     viewer_requests = (SRC_ROOT / "services/viewer/requests.py").read_text(
         encoding="utf-8"
     )
 
     assert "RunId = Annotated[" in runs_models
+    assert "RUN_ID_PATTERN" in runs_models
     assert "StringConstraints" in runs_models
     assert "run_id: RunId" in runs_requests
     assert "TypeAdapter(RunId)" not in runs_store
-    assert "TypeAdapter(RunId)" in runs_paths
     assert "run_id: RunId" in viewer_requests
     assert "SAFE_RUN_ID" not in viewer_requests
 
 
-def test_run_ledger_persistence_stays_split_by_responsibility():
+def test_run_persistence_stays_split_by_responsibility():
     runs_root = SRC_ROOT / "services/runs"
     module_names = {path.name for path in runs_root.glob("*.py")}
     store_text = (runs_root / "store.py").read_text(encoding="utf-8")
+    events_text = (runs_root / "events.py").read_text(encoding="utf-8")
     factory_text = (runs_root / "factory.py").read_text(encoding="utf-8")
-    io_text = (runs_root / "io.py").read_text(encoding="utf-8")
     locks_text = (runs_root / "locks.py").read_text(encoding="utf-8")
-    queries_text = (runs_root / "queries.py").read_text(encoding="utf-8")
     service_text = (runs_root / "service.py").read_text(encoding="utf-8")
     streaming_text = (runs_root / "streaming.py").read_text(encoding="utf-8")
-    transitions_text = (runs_root / "transitions.py").read_text(encoding="utf-8")
+    tables_text = (runs_root / "tables.py").read_text(encoding="utf-8")
+    worker_locks_text = (runs_root / "worker_locks.py").read_text(encoding="utf-8")
     forbidden_store_fragments = (
         "write_json_atomically",
-        "model_validate_json",
-        "worker_lock_owner_path",
         "os.kill",
         "time.sleep",
         'open("a"',
@@ -1819,37 +1816,39 @@ def test_run_ledger_persistence_stays_split_by_responsibility():
         "strftime",
         "run_log_reference_path",
         "key=lambda record",
-        "ledger.iter_records",
     )
 
     assert {
+        "events.py",
         "factory.py",
-        "io.py",
         "locks.py",
-        "paths.py",
-        "queries.py",
         "streaming.py",
-        "transitions.py",
+        "tables.py",
+        "worker_locks.py",
     } <= module_names
-    assert len(store_text.splitlines()) <= 240
+    assert len(store_text.splitlines()) <= 330
     assert [
         fragment for fragment in forbidden_store_fragments if fragment in store_text
     ] == []
     assert "def new_run_record(" in factory_text
     assert "uuid4" in factory_text
-    assert "run_log_reference_path" in factory_text
-    assert "write_json_atomically" in io_text
-    assert "model_validate_json" in io_text
+    assert "strftime" in factory_text
+    assert "class RunEventStore" in events_text
+    assert "run_events" in events_text
     assert "RunWorkerLease" in locks_text
     assert "process_is_alive" in locks_text
-    assert "def list_run_records(" in queries_text
-    assert "def next_spec_backed_queued_run(" in queries_text
-    assert "ledger.iter_records" in queries_text
-    assert "def stream_attach(" in service_text
+    assert "class RunWorkerLockStore" in worker_locks_text
+    assert "worker_locks" in worker_locks_text
+    assert "CREATE TABLE IF NOT EXISTS runs" in tables_text
+    assert "CREATE TABLE IF NOT EXISTS run_events" in tables_text
+    assert "CREATE TABLE IF NOT EXISTS worker_locks" in tables_text
+    assert "connect_local_database" in store_text
+    assert "connect_local_database" in events_text
+    assert "connect_local_database" in worker_locks_text
+    assert "connect_local_database" not in service_text
     assert "class RunAttachStreamer" in streaming_text
     assert "time.sleep" in streaming_text
     assert "store.attach" in streaming_text
-    assert "write_record_with_event" in transitions_text
 
 
 def test_repo_almanac_root_is_repository_owned():

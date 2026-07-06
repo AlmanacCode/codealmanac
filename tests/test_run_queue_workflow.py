@@ -2,7 +2,6 @@ import subprocess
 from pathlib import Path
 
 from codealmanac.app import create_app
-from codealmanac.settings import AppConfig
 from codealmanac.integrations.runs.process import worker_command
 from codealmanac.services.harnesses.models import (
     HarnessKind,
@@ -11,7 +10,7 @@ from codealmanac.services.harnesses.models import (
     HarnessRunStatus,
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
-from codealmanac.services.repositories.requests import InitializeRepositoryRequest
+from codealmanac.services.repositories.requests import RegisterRepositoryRequest
 from codealmanac.services.runs.models import RunStatus, RunWorkerSpawnResult
 from codealmanac.services.runs.requests import (
     CancelRunRequest,
@@ -20,7 +19,8 @@ from codealmanac.services.runs.requests import (
     SpawnRunWorkerRequest,
 )
 from codealmanac.services.search.requests import SearchPagesRequest
-from codealmanac.workflows.ingest.requests import RunIngestRequest
+from codealmanac.settings import AppConfig
+from codealmanac.workflows.ingest.requests import IngestRequest
 from codealmanac.workflows.run_queue import DrainRunQueueRequest
 
 
@@ -86,21 +86,21 @@ def test_run_queue_start_persists_spec_and_spawns_worker(
         harness_adapters=(QueueWritingHarnessAdapter(),),
         worker_spawner=spawner,
     )
-    app.workflows.build.initialize(InitializeRepositoryRequest(path=repo))
+    initialize_repository(app, repo)
 
     result = app.workflows.queue.start_ingest(
-        RunIngestRequest(
+        IngestRequest(
             cwd=repo,
             inputs=("note.md",),
             harness=HarnessKind.CODEX,
         )
     )
-    runs = app.runs.list(ListRunsRequest(cwd=repo))
+    runs = app.runs.list(ListRunsRequest(repository_name=repo.name))
 
     assert result.worker.child_pid == 4242
     assert result.run.status == RunStatus.QUEUED
     assert runs[0].run_id == result.run.run_id
-    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
+    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo)]
     assert (isolated_home / ".codealmanac/codealmanac.db").is_file()
     assert not (repo / "almanac/jobs").exists()
 
@@ -117,11 +117,11 @@ def test_run_queue_drains_persisted_ingest_spec(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         harness_adapters=(harness,),
     )
-    app.workflows.build.initialize(InitializeRepositoryRequest(path=repo))
+    initialize_repository(app, repo)
     initialize_git(repo)
     commit_all(repo, "initial wiki")
     queued = app.workflows.queue.queue_ingest(
-        RunIngestRequest(
+        IngestRequest(
             cwd=repo,
             inputs=("note.md",),
             harness=HarnessKind.CODEX,
@@ -131,9 +131,11 @@ def test_run_queue_drains_persisted_ingest_spec(
         )
     )
 
-    result = app.workflows.queue.drain(DrainRunQueueRequest(cwd=repo))
-    runs = app.runs.list(ListRunsRequest(cwd=repo))
-    log = app.runs.log(ReadRunLogRequest(cwd=repo, run_id=queued.run_id))
+    result = app.workflows.queue.drain(DrainRunQueueRequest())
+    runs = app.runs.list(ListRunsRequest(repository_name=repo.name))
+    log = app.runs.log(
+        ReadRunLogRequest(repository_name=repo.name, run_id=queued.run_id)
+    )
     matches = app.search.search(SearchPagesRequest(cwd=repo, query="worker"))
 
     assert result.lock_acquired is True
@@ -163,18 +165,18 @@ def test_run_queue_skips_cancelled_queued_runs(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         harness_adapters=(harness,),
     )
-    app.workflows.build.initialize(InitializeRepositoryRequest(path=repo))
+    initialize_repository(app, repo)
     queued = app.workflows.queue.queue_ingest(
-        RunIngestRequest(
+        IngestRequest(
             cwd=repo,
             inputs=("note.md",),
             harness=HarnessKind.CODEX,
         )
     )
-    app.runs.cancel(CancelRunRequest(cwd=repo, run_id=queued.run_id))
+    app.runs.cancel(CancelRunRequest(repository_name=repo.name, run_id=queued.run_id))
 
-    result = app.workflows.queue.drain(DrainRunQueueRequest(cwd=repo))
-    runs = app.runs.list(ListRunsRequest(cwd=repo))
+    result = app.workflows.queue.drain(DrainRunQueueRequest())
+    runs = app.runs.list(ListRunsRequest(repository_name=repo.name))
 
     assert result.lock_acquired is True
     assert result.processed == ()
@@ -183,7 +185,7 @@ def test_run_queue_skips_cancelled_queued_runs(
 
 
 def test_worker_command_targets_codealmanac_module(tmp_path: Path):
-    command = worker_command(SpawnRunWorkerRequest(cwd=tmp_path, wiki="docs"))
+    command = worker_command(SpawnRunWorkerRequest(cwd=tmp_path))
 
     assert command[1:] == [
         "-m",
@@ -191,9 +193,12 @@ def test_worker_command_targets_codealmanac_module(tmp_path: Path):
         "__run-worker",
         "--cwd",
         str(tmp_path),
-        "--wiki",
-        "docs",
     ]
+
+
+def initialize_repository(app, repo: Path) -> None:
+    repository = app.repositories.register(RegisterRepositoryRequest(root_path=repo))
+    app.wiki.initialize(repository.repository_id)
 
 
 def initialize_git(repo: Path) -> None:
