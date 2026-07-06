@@ -1,7 +1,4 @@
 from codealmanac.integrations.harnesses.codex.actors import actor_for_codex_thread
-from codealmanac.integrations.harnesses.codex.failures import (
-    failure_from_error_record,
-)
 from codealmanac.integrations.harnesses.codex.fields import (
     JsonObject,
     as_record,
@@ -10,20 +7,24 @@ from codealmanac.integrations.harnesses.codex.fields import (
 from codealmanac.integrations.harnesses.codex.item_events import (
     map_completed_item,
     map_started_item,
-    output_delta,
+)
+from codealmanac.integrations.harnesses.codex.notification_events import (
+    error_event,
+    output_delta_event,
+    plan_delta_event,
+    plan_updated_event,
+    text_delta_event,
+    warning_event,
 )
 from codealmanac.integrations.harnesses.codex.result import (
     done_event,
     map_turn_completed,
     map_usage_updated,
     provider_session_event,
-    record_failure,
 )
 from codealmanac.integrations.harnesses.codex.state import CodexRunState
 from codealmanac.services.harnesses.models import (
     HarnessEvent,
-    HarnessEventKind,
-    HarnessRunActor,
 )
 
 __all__ = (
@@ -32,6 +33,12 @@ __all__ = (
     "map_codex_notification",
     "provider_session_event",
 )
+
+OUTPUT_DELTA_METHODS = {
+    "item/commandExecution/outputDelta",
+    "command/exec/outputDelta",
+    "item/fileChange/outputDelta",
+}
 
 
 def map_codex_notification(
@@ -54,17 +61,7 @@ def map_codex_notification(
         return plan_delta_event(notification, params, actor)
 
     if method == "turn/plan/updated":
-        summary = plan_summary(params)
-        if summary is None:
-            return ()
-        return (
-            HarnessEvent(
-                kind=HarnessEventKind.TOOL_SUMMARY,
-                message=summary,
-                actor=actor,
-                raw=notification,
-            ),
-        )
+        return plan_updated_event(notification, params, actor)
 
     if method == "thread/tokenUsage/updated":
         return map_usage_updated(params, state, actor, notification)
@@ -82,22 +79,8 @@ def map_codex_notification(
             notification,
         )
 
-    if method in {
-        "item/commandExecution/outputDelta",
-        "command/exec/outputDelta",
-        "item/fileChange/outputDelta",
-    }:
-        delta = output_delta(params)
-        if delta is None or delta.strip() == "":
-            return ()
-        return (
-            HarnessEvent(
-                kind=HarnessEventKind.TOOL_SUMMARY,
-                message=delta.strip(),
-                actor=actor,
-                raw=notification,
-            ),
-        )
+    if method in OUTPUT_DELTA_METHODS:
+        return output_delta_event(notification, params, actor)
 
     if method == "turn/completed":
         return map_turn_completed(
@@ -109,80 +92,9 @@ def map_codex_notification(
         )
 
     if method == "warning":
-        message = string_field(params, "message") or "Codex warning"
-        return (
-            HarnessEvent(
-                kind=HarnessEventKind.TOOL_SUMMARY,
-                message=f"Warning: {message}",
-                actor=actor,
-                raw=notification,
-            ),
-        )
+        return warning_event(notification, params, actor)
 
     if method == "error":
-        error = as_record(params.get("error"))
-        failure = failure_from_error_record(error or params)
-        record_failure(state, failure)
-        return (
-            HarnessEvent(
-                kind=HarnessEventKind.ERROR,
-                message=failure.message,
-                actor=actor,
-                failure=failure,
-                raw=notification,
-            ),
-        )
+        return error_event(notification, params, state, actor)
 
     return ()
-
-
-def text_delta_event(
-    notification: JsonObject,
-    params: JsonObject,
-    actor: HarnessRunActor,
-) -> tuple[HarnessEvent, ...]:
-    delta = string_field(params, "delta")
-    if delta is None or delta.strip() == "":
-        return ()
-    return (
-        HarnessEvent(
-            kind=HarnessEventKind.TEXT_DELTA,
-            message=delta,
-            actor=actor,
-            raw=notification,
-        ),
-    )
-
-
-def plan_delta_event(
-    notification: JsonObject,
-    params: JsonObject,
-    actor: HarnessRunActor,
-) -> tuple[HarnessEvent, ...]:
-    delta = string_field(params, "delta")
-    if delta is None or delta.strip() == "":
-        return ()
-    return (
-        HarnessEvent(
-            kind=HarnessEventKind.TOOL_SUMMARY,
-            message=delta,
-            actor=actor,
-            raw=notification,
-        ),
-    )
-
-
-def plan_summary(params: JsonObject) -> str | None:
-    parts: list[str] = []
-    explanation = string_field(params, "explanation")
-    if explanation is not None:
-        parts.append(explanation)
-    plan = params.get("plan")
-    if isinstance(plan, list):
-        for item in plan:
-            step = string_field(as_record(item), "step")
-            if step is not None:
-                parts.append(step)
-    if len(parts) == 0:
-        return None
-    return " | ".join(parts)

@@ -128,3 +128,27 @@
   - `uv run pytest`: 402 passed.
   - `uv run ruff check .`: passed.
   - `git diff --check`: passed.
+
+## Fifth Refactor Batch: Codex Event Dispatcher
+
+- Wrote `docs/plans/2026-07-06-codex-event-dispatch-refactor.md`.
+- Kept `src/codealmanac/integrations/harnesses/codex/events.py` as the
+  notification dispatcher named in the live agreement.
+- Extracted notification helper logic into
+  `src/codealmanac/integrations/harnesses/codex/notification_events.py`:
+  - text and plan deltas;
+  - plan updates;
+  - command/file output deltas;
+  - warnings;
+  - errors.
+- `map_codex_notification(...)` is now 57 lines, down from 100, and
+  `events.py` is 100 lines total.
+- Updated the architecture test so `events.py` cannot regrow event-kind or
+  failure classification details.
+- Verification:
+  - `uv run pytest tests/test_codex_app_server_adapter.py tests/test_codex_adapter.py -q`: 11 passed.
+  - `uv run ruff check src/codealmanac/integrations/harnesses/codex/events.py tests/test_codex_app_server_adapter.py tests/test_codex_adapter.py`: passed.
+  - `uv run pytest tests/test_architecture.py::test_codex_app_server_event_mapper_stays_split_by_responsibility tests/test_codex_app_server_adapter.py tests/test_codex_adapter.py -q`: 12 passed.
+  - `uv run pytest`: 402 passed.
+  - `uv run ruff check .`: passed.
+  - `git diff --check`: passed.

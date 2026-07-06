@@ -1140,6 +1140,7 @@ def test_codex_app_server_event_mapper_stays_split_by_responsibility():
         "agent_events.py",
         "events.py",
         "item_events.py",
+        "notification_events.py",
         "result.py",
         "state.py",
     }
@@ -1163,9 +1164,12 @@ def test_codex_app_server_event_mapper_stays_split_by_responsibility():
             "codex_item_display",
             "tool_use_event",
             "HarnessAgentTrace",
+            "HarnessEventKind",
             "HarnessToolStatus",
+            "failure_from_error_record",
             "helper_label",
             "parse_codex_app_server_usage",
+            "record_failure",
         )
         if fragment in event_dispatch
     ]
