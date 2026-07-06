@@ -169,7 +169,7 @@ class RunStore:
             terminal=record.status in TERMINAL_RUN_STATUSES,
         )
 
-    def append(
+    def record_event(
         self,
         run_id: str,
         kind: RunEventKind,

@@ -118,8 +118,7 @@ class RunsService:
         )
 
     def record_event(self, request: RecordRunEventRequest) -> RunLogEvent:
-        self.store.read(request.run_id)
-        return self.store.append(
+        return self.store.record_event(
             request.run_id,
             request.kind,
             request.message,
@@ -127,21 +126,18 @@ class RunsService:
         )
 
     def mark_running(self, request: MarkRunRunningRequest) -> RunRecord:
-        self.store.read(request.run_id)
         return self.store.mark_running(request.run_id)
 
     def record_harness_transcript(
         self,
         request: RecordRunHarnessTranscriptRequest,
     ) -> RunRecord:
-        self.store.read(request.run_id)
         return self.store.record_harness_transcript(
             request.run_id,
             request.transcript,
         )
 
     def finish(self, request: FinishRunRequest) -> RunRecord:
-        self.store.read(request.run_id)
         return self.store.finish(
             request.run_id,
             request.status,
