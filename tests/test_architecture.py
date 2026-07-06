@@ -972,15 +972,15 @@ def test_cli_lifecycle_dispatch_stays_split_by_command_family():
     dispatch_path = SRC_ROOT / "cli/dispatch"
     lifecycle = (dispatch_path / "lifecycle.py").read_text(encoding="utf-8")
     module_expectations = {
-        "build.py": ("InitializeRepositoryRequest", "def dispatch_build("),
+        "build.py": ("BuildRequest", "def dispatch_build("),
         "operations.py": ("IngestRequest", "def dispatch_ingest("),
         "sync.py": ("SyncRequest", "def dispatch_sync("),
         "worker.py": ("DrainRunQueueRequest", "def dispatch_run_worker("),
     }
     forbidden_lifecycle_fragments = (
-        "InitializeRepositoryRequest",
+        "BuildRequest",
         "IngestRequest",
-        "RunGardenRequest",
+        "GardenRequest",
         "SyncRequest",
         "SyncStatusRequest",
         "DrainRunQueueRequest",

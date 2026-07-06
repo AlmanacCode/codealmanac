@@ -11,6 +11,10 @@ sources:
     type: file
     path: src/codealmanac/workflows/sync/service.py
     note: Sync workflow coordination.
+  - id: sync-queue
+    type: file
+    path: src/codealmanac/workflows/sync/queue.py
+    note: Turns eligible transcript groups into queued ingest runs.
   - id: automation-service
     type: file
     path: src/codealmanac/services/automation/service.py
@@ -41,7 +45,7 @@ sources:
 
 `codealmanac sync` defaults to scanning Claude and Codex transcript sources unless `--from` restricts the app set [@sync-dispatch]. The dispatch layer resolves CLI config and harness, then calls the sync workflow [@sync-dispatch].
 
-`SyncWorkflow` evaluates transcript candidates active since the last completed sync, matches each transcript cwd to an exact registered repository root, and delegates queueing to `SyncRunExecutor` [@sync-service]. `sync status` runs the same evaluation path without starting ingest work [@sync-service].
+`SyncWorkflow` evaluates transcript candidates active since the last completed sync, matches each transcript cwd to an exact registered repository root, and delegates ingest run queueing to `SyncIngestQueue` [@sync-service] [@sync-queue]. `sync status` runs the same evaluation path without starting ingest work [@sync-service].
 
 Automation installs scheduled jobs through `AutomationService`, which builds task jobs and passes them to the scheduler adapter [@automation-service]. The default automation task set is `sync`, `garden`, and `update`; explicit task requests stay explicit, setup can remove default tasks through opt-out flags, and the shared `--every` cadence applies to sync while update keeps its daily default unless update is the only explicit task [@automation-selection] [@automation-jobs].
 
