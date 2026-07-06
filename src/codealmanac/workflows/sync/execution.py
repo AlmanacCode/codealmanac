@@ -47,7 +47,7 @@ class SyncRunExecutor:
                         candidate,
                         f"queue-failed: {error_summary(error)}",
                     )
-                    for candidate in item.candidates
+                    for candidate in item.transcripts
                 )
                 continue
             started.append(started_repository(item, run.run_id))
@@ -63,7 +63,7 @@ class SyncRunExecutor:
                         f"worker-spawn-failed: {error_summary(error)}",
                     )
                     for item in queued_items
-                    for candidate in item.candidates
+                    for candidate in item.transcripts
                 )
         self.state_store.record_completed(now)
         return SyncRunExecutionResult(
@@ -85,7 +85,7 @@ def sync_ingest_request(
         cwd=item.repository.root_path,
         inputs=tuple(
             f"transcript:{candidate.transcript_path}"
-            for candidate in item.candidates
+            for candidate in item.transcripts
         ),
         harness=request.harness,
         repository_name=item.repository.name,
@@ -96,7 +96,7 @@ def sync_ingest_request(
 
 
 def sync_ingest_title(item: SyncWorkItem) -> str:
-    if len(item.candidates) == 1:
-        candidate = item.candidates[0]
+    if len(item.transcripts) == 1:
+        candidate = item.transcripts[0]
         return f"Sync {candidate.app.value} transcript {candidate.session_id}"
-    return f"Sync {len(item.candidates)} transcripts"
+    return f"Sync {len(item.transcripts)} transcripts"

@@ -22,9 +22,9 @@ def ready_repository(item: SyncWorkItem) -> SyncReady:
         repository_id=item.repository.repository_id,
         repository_name=item.repository.name,
         repository_root=item.repository.root_path,
-        transcript_count=len(item.candidates),
+        transcript_count=len(item.transcripts),
         transcript_paths=tuple(
-            candidate.transcript_path for candidate in item.candidates
+            candidate.transcript_path for candidate in item.transcripts
         ),
     )
 
@@ -35,8 +35,8 @@ def started_repository(item: SyncWorkItem, run_id: str) -> SyncStarted:
         repository_name=item.repository.name,
         repository_root=item.repository.root_path,
         run_id=run_id,
-        transcript_count=len(item.candidates),
+        transcript_count=len(item.transcripts),
         transcript_paths=tuple(
-            candidate.transcript_path for candidate in item.candidates
+            candidate.transcript_path for candidate in item.transcripts
         ),
     )

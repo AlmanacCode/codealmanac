@@ -72,7 +72,7 @@ class SyncSummary(CodeAlmanacModel):
 
 class SyncWorkItem(CodeAlmanacModel):
     repository: Repository
-    candidates: tuple[TranscriptCandidate, ...]
+    transcripts: tuple[TranscriptCandidate, ...]
 
 
 class SyncEvaluation(CodeAlmanacModel):

@@ -42,8 +42,8 @@ class SyncEvaluator:
         now: datetime | None = None,
     ) -> SyncEvaluation:
         current_time = now or request.now or datetime.now(UTC)
-        since = self.sync_since(request, current_time)
-        candidates = self.sources.discover_transcripts(
+        active_since = self.active_since(request, current_time)
+        transcripts = self.sources.discover_transcripts(
             DiscoverTranscriptsRequest(
                 home=normalize_path(request.home or Path.home()),
                 apps=request.apps,
@@ -51,7 +51,9 @@ class SyncEvaluator:
         )
         selected_repositories = self.selected_repositories(request)
         skipped: list[SyncSkipped] = []
-        grouped: dict[str, list[TranscriptCandidate]] = defaultdict(list)
+        transcripts_by_repository_id: dict[str, list[TranscriptCandidate]] = (
+            defaultdict(list)
+        )
         repositories_by_id = {
             repository.repository_id: repository
             for repository in selected_repositories
@@ -60,35 +62,37 @@ class SyncEvaluator:
             normalize_path(repository.root_path): repository
             for repository in selected_repositories
         }
-        for candidate in candidates:
-            repository = repositories_by_path.get(normalize_path(candidate.cwd))
+        for transcript in transcripts:
+            repository = repositories_by_path.get(normalize_path(transcript.cwd))
             if repository is None:
-                skipped.append(skipped_transcript(candidate, "unregistered-cwd"))
+                skipped.append(skipped_transcript(transcript, "unregistered-cwd"))
                 continue
-            if candidate.modified_at < since:
-                skipped.append(skipped_transcript(candidate, "inactive"))
+            if transcript.modified_at < active_since:
+                skipped.append(skipped_transcript(transcript, "inactive"))
                 continue
-            grouped[repository.repository_id].append(candidate)
+            transcripts_by_repository_id[repository.repository_id].append(transcript)
 
         work_items = tuple(
             SyncWorkItem(
                 repository=repositories_by_id[repository_id],
-                candidates=tuple(sorted(items, key=transcript_sort_key)),
+                transcripts=tuple(sorted(transcripts, key=transcript_sort_key)),
             )
-            for repository_id, items in sorted(grouped.items())
+            for repository_id, transcripts in sorted(
+                transcripts_by_repository_id.items()
+            )
         )
         ready = tuple(ready_repository(item) for item in work_items)
         summary = SyncSummary(
             mode=mode,
-            since=since,
-            scanned=len(candidates),
-            eligible=sum(len(item.candidates) for item in work_items),
+            since=active_since,
+            scanned=len(transcripts),
+            eligible=sum(len(item.transcripts) for item in work_items),
             ready=ready if mode == SyncMode.STATUS else (),
             skipped=tuple(skipped),
         )
         return SyncEvaluation(summary=summary, work_items=work_items)
 
-    def sync_since(self, request: SyncSelectionRequest, now: datetime) -> datetime:
+    def active_since(self, request: SyncSelectionRequest, now: datetime) -> datetime:
         state = self.state_store.read()
         if state.last_completed_at is not None:
             return state.last_completed_at

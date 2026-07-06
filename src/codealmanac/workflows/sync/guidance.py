@@ -6,11 +6,11 @@ def sync_ingest_guidance(item: SyncWorkItem) -> str:
         "Scheduled sync:",
         f"- Repository: {item.repository.name}",
         f"- Repository root: {item.repository.root_path}",
-        f"- Transcripts active since the last completed scan: {len(item.candidates)}",
+        f"- Transcripts active since the last completed scan: {len(item.transcripts)}",
         "- Read the listed transcripts and update the wiki only for durable "
         "project knowledge.",
     ]
-    for candidate in item.candidates:
+    for candidate in item.transcripts:
         lines.append(
             f"- {candidate.app.value} {candidate.session_id}: "
             f"{candidate.transcript_path}"
