@@ -11,8 +11,8 @@ Use normal Markdown links for page links. Link only to existing pages or pages
 you create or update in this run. If no page exists and you are not creating
 it, write the name as plain text instead of leaving a broken link.
 
-Do not write wikilinks. Do not use `files:` frontmatter. File and folder
-evidence belongs in `sources:` entries.
+Do not write wikilinks. File and folder evidence belongs in `sources:` entries
+with `type: file`.
 
 Every sentence should contain a specific fact. Prefer neutral prose. Do not
 speculate. Do not add promotional language.

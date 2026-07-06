@@ -34,7 +34,6 @@ def parse_frontmatter(raw: str) -> ParsedFrontmatter:
         title=fields.title,
         summary=fields.summary,
         topics=fields.topics,
-        files=fields.files,
         sources=fields.sources,
         body=post.content,
     )
@@ -58,7 +57,6 @@ class FrontmatterFields(BaseModel):
     title: str | None = None
     summary: str | None = None
     topics: tuple[str, ...] = ()
-    files: tuple[str, ...] = ()
     sources: tuple[PageSource, ...] = ()
 
     @field_validator("title", "summary", mode="before")
@@ -68,7 +66,7 @@ class FrontmatterFields(BaseModel):
             return value.strip()
         return None
 
-    @field_validator("topics", "files", mode="before")
+    @field_validator("topics", mode="before")
     @classmethod
     def text_tuple(cls, value: Any) -> tuple[str, ...]:
         if not isinstance(value, list | tuple):

@@ -10,8 +10,10 @@ title: Auth Flow
 summary: Login path.
 topics:
   - Auth
-files:
-  - Src/Auth/
+sources:
+  - id: auth-code
+    type: file
+    path: Src/Auth/
 archived_at: 2026-01-02
 superseded_by: old-auth
 ignored: true
@@ -23,7 +25,9 @@ ignored: true
     assert parsed.title == "Auth Flow"
     assert parsed.summary == "Login path."
     assert parsed.topics == ("Auth",)
-    assert parsed.files == ("Src/Auth/",)
+    assert parsed.sources[0].source_id == "auth-code"
+    assert parsed.sources[0].target == "Src/Auth/"
+    assert "files" not in parsed.model_dump()
     assert "archived_at" not in parsed.model_dump()
     assert "superseded_by" not in parsed.model_dump()
     assert parsed.body == "# Body"

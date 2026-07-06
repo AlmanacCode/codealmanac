@@ -27,4 +27,4 @@ sources:
 
 For file sources, the type-specific field is `path`; for web sources it is `url`; for commits it can be `commit`, `sha`, or `ref` [@frontmatter]. The parser stores a normalized `PageSource` value with id, type, target, title, retrieved timestamp, and note [@frontmatter].
 
-Page loading turns file sources into file references for mention search [@documents]. The current loader also reads legacy file metadata until Ticket 3 removes that compatibility path [@documents] [@ticket].
+Page loading turns file sources into file references for mention search [@documents]. Legacy file-list frontmatter is not a product input after Ticket 3 [@documents] [@ticket].

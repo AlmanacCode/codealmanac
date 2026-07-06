@@ -55,7 +55,7 @@ It contained useful project memory, but it represented the old product model:
 - `.almanac/` as the wiki root,
 - flat `.almanac/pages/`,
 - wikilinks,
-- `files:` compatibility,
+- legacy file-list compatibility,
 - old command names and old agent instructions.
 
 Durable, still-true knowledge was migrated into the new `almanac/` tree after
@@ -261,8 +261,8 @@ The viewer is the local browser for the repo's almanac.
 
 Use `sources:` as the canonical evidence field.
 
-Do not use `files:`. File references are represented as `sources:` entries with
-`type: file`. A file source powers `search --mentions`.
+File references are represented as `sources:` entries with `type: file`.
+A file source powers `search --mentions`.
 
 If the file is here:
 

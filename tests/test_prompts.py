@@ -23,7 +23,7 @@ def test_prompt_renderer_composes_packaged_sections_with_context():
     assert "public command and product name is `codealmanac`" in prompt
     assert "Use normal Markdown links for page links" in prompt
     assert "Do not write wikilinks" in prompt
-    assert "Do not use `files:` frontmatter" in prompt
+    assert "File and folder evidence belongs in `sources:` entries" in prompt
 
 
 def test_prompt_renderer_requires_sections():

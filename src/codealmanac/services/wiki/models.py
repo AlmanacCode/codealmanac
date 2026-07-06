@@ -65,7 +65,6 @@ class ParsedFrontmatter(CodeAlmanacModel):
     title: str | None = None
     summary: str | None = None
     topics: tuple[str, ...] = ()
-    files: tuple[str, ...] = ()
     sources: tuple[PageSource, ...] = ()
     body: str
 

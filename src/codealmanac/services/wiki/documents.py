@@ -31,8 +31,7 @@ def load_page_document(page_path: Path, almanac_path: Path) -> PageDocument | No
         return None
 
     title = frontmatter.title or first_h1(frontmatter.body) or page_path.stem
-    file_refs = list(frontmatter_file_refs(frontmatter.files))
-    file_refs.extend(source_file_refs(frontmatter.sources))
+    file_refs = list(source_file_refs(frontmatter.sources))
     page_links: list[str] = []
     cross_wiki_links: list[tuple[str, str]] = []
 
@@ -59,23 +58,6 @@ def load_page_document(page_path: Path, almanac_path: Path) -> PageDocument | No
         cross_wiki_links=tuple(sorted(set(cross_wiki_links))),
         body=frontmatter.body,
     )
-
-
-def frontmatter_file_refs(files: tuple[str, ...]) -> tuple[FileReference, ...]:
-    refs: list[FileReference] = []
-    for raw in files:
-        is_dir = looks_like_dir(raw)
-        normalized = normalize_reference_path(raw, is_dir)
-        original = normalize_reference_path_preserving_case(raw, is_dir)
-        if normalized:
-            refs.append(
-                FileReference(
-                    path=normalized,
-                    original_path=original,
-                    is_dir=is_dir,
-                )
-            )
-    return tuple(refs)
 
 
 def source_file_refs(sources: tuple[PageSource, ...]) -> tuple[FileReference, ...]:

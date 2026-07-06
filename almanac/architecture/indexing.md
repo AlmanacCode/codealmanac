@@ -27,6 +27,6 @@ The index is derived state. `src/codealmanac/services/index/schema.py` currently
 
 The schema includes pages, topics, page-topic edges, topic-parent edges, file references, page sources, page links, cross-wiki links, FTS5 content, and index metadata [@schema]. The projection deletes and rebuilds those tables from loaded page documents and topic definitions [@projection].
 
-Page documents load title, summary, topics, sources, file references, page links, and body from Markdown files [@documents]. File references currently come from `sources:` and a legacy file-list parser; Ticket 3 removes that compatibility parser from the product path.
+Page documents load title, summary, topics, sources, file references, page links, and body from Markdown files [@documents]. File references come from `sources:` file entries and inline file links until Markdown link parsing replaces wikilink extraction in Ticket 4.
 
 Health views read the derived tables to report graph and source problems [@health]. Ticket 6 turns that health surface into the public `codealmanac validate` command.

@@ -173,7 +173,7 @@ conversation.
   ```
 - Page identity is the path under `almanac/` without `.md`; `README.md` is the
   folder landing page. Use Markdown links for page links and `sources:` for
-  file evidence. Wikilinks and `files:` are retired.
+  file evidence. Wikilinks and legacy file-list frontmatter are retired.
 - `GLOB` not `LIKE` for path queries. Paths normalized on both sides of a
   comparison.
 - Slices: plan → build → review → fix → next. The review pass is where latent

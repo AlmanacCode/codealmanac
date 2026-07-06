@@ -707,7 +707,7 @@ or search flow.
 
 For frontend structure, read `docs/reference/bulletproof-react/CODEALMANAC.md`.
 If `serve` remains a static asset bundle, mirror the same boundaries in plain
-files: shared visual primitives, wiki-specific rendering, and API helpers
+assets: shared visual primitives, wiki-specific rendering, and API helpers
 should stay distinct instead of becoming one unstructured script.
 
 The current static module layout is:

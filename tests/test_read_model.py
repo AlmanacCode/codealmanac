@@ -32,12 +32,15 @@ def test_search_indexes_pages_topics_mentions_and_links(
 title: Auth Flow
 summary: How sign-in moves through the app.
 topics: [auth]
-files:
-  - src/auth/
+sources:
+  - id: auth-directory
+    type: file
+    path: src/auth/
+    note: Authentication package.
 ---
 # Auth Flow
 
-Login checks [[src/auth/session.py]] and links to [[session-store]].
+Login checks session state and links to [[session-store]].
 """,
     )
     write_page(
@@ -64,6 +67,41 @@ Session persistence details.
     assert [row.slug for row in rows] == ["auth-flow"]
     assert [row.slug for row in mentioned] == ["auth-flow"]
     assert page.wikilinks_in == ("auth-flow",)
+
+
+def test_legacy_files_frontmatter_does_not_create_file_refs(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+    )
+    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    legacy_key = "fil" "es"
+    write_page(
+        repo,
+        "legacy-files.md",
+        f"""---
+title: Legacy Files
+topics: [legacy]
+{legacy_key}:
+  - src/auth/
+---
+# Legacy Files
+
+This page uses retired file-list frontmatter.
+""",
+    )
+
+    mentioned = app.search.search(
+        SearchPagesRequest(cwd=repo, mentions="src/auth/session.py")
+    )
+    page = app.pages.show(ShowPageRequest(cwd=repo, slug="legacy-files"))
+
+    assert mentioned == ()
+    assert page.file_refs == ()
 
 
 def test_read_model_projects_structured_page_sources(
