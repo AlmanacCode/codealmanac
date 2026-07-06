@@ -20,9 +20,7 @@ from codealmanac.workflows.page_run import (
 )
 
 GARDEN_PROMPT_SECTIONS = (
-    PromptName.BASE_PURPOSE,
-    PromptName.BASE_NOTABILITY,
-    PromptName.BASE_SYNTAX,
+    PromptName.BASE_KERNEL,
     PromptName.OPERATION_GARDEN,
 )
 

@@ -19,9 +19,9 @@ sources:
     type: file
     path: src/codealmanac/services/wiki/templates.py
     note: Init-time starter wiki templates.
-  - id: syntax
+  - id: kernel
     type: file
-    path: src/codealmanac/prompts/base/syntax.md
+    path: src/codealmanac/prompts/base/kernel.md
     note: Agent-facing syntax rules for authored pages.
 ---
 
@@ -33,4 +33,4 @@ Every Markdown file under `almanac/` is a page unless it is under a reserved sou
 
 Route collisions fail during source loading. For example, `almanac/architecture.md` and `almanac/architecture/README.md` both map to `architecture`, so the loader raises a validation error instead of choosing one page [@sources].
 
-`codealmanac init` writes starter `README.md`, `topics.yaml`, and `getting-started.md` files only when those files are missing [@templates]. The prompt syntax tells agents to write normal Markdown pages in the source tree and to identify pages by their path under `almanac/` [@syntax].
+`codealmanac init` writes starter `README.md`, `topics.yaml`, and `getting-started.md` files only when those files are missing [@templates]. The prompt kernel tells agents to write normal Markdown pages in the source tree and to identify pages by their path under `almanac/` [@kernel].

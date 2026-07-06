@@ -2,8 +2,6 @@ from enum import StrEnum
 
 
 class PromptName(StrEnum):
-    BASE_PURPOSE = "base/purpose.md"
-    BASE_NOTABILITY = "base/notability.md"
-    BASE_SYNTAX = "base/syntax.md"
+    BASE_KERNEL = "base/kernel.md"
     OPERATION_INGEST = "operations/ingest.md"
     OPERATION_GARDEN = "operations/garden.md"

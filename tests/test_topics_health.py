@@ -75,7 +75,7 @@ sources:
     url: https://example.com/b
   - id: unused
     type: manual
-    path: manual/pages.md
+    path: manual/links.md
 ---
 # Source Hygiene
 
