@@ -4,13 +4,6 @@ from pathlib import Path
 from codealmanac.core.models import CodeAlmanacModel
 
 
-class WikilinkKind(StrEnum):
-    PAGE = "page"
-    FILE = "file"
-    FOLDER = "folder"
-    CROSS_WIKI = "xwiki"
-
-
 class FileReference(CodeAlmanacModel):
     path: str
     original_path: str
@@ -35,30 +28,6 @@ class PageSource(CodeAlmanacModel):
     title: str | None = None
     retrieved_at: str | None = None
     note: str | None = None
-
-
-class PageLink(CodeAlmanacModel):
-    kind: WikilinkKind
-    target: str
-
-
-class FileLink(CodeAlmanacModel):
-    kind: WikilinkKind
-    ref: FileReference
-
-
-class FolderLink(CodeAlmanacModel):
-    kind: WikilinkKind
-    ref: FileReference
-
-
-class CrossWikiLink(CodeAlmanacModel):
-    kind: WikilinkKind
-    wiki: str
-    target: str
-
-
-Wikilink = PageLink | FileLink | FolderLink | CrossWikiLink
 
 
 class ParsedFrontmatter(CodeAlmanacModel):

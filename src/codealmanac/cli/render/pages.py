@@ -12,10 +12,10 @@ def render_page(page: PageView, args: argparse.Namespace) -> None:
         print(body_with_trailing_newline(page.body), end="")
         return
     if args.links:
-        print_lines(page.wikilinks_out)
+        print_lines(page.page_links_out)
         return
     if args.backlinks:
-        print_lines(page.wikilinks_in)
+        print_lines(page.page_links_in)
         return
     if args.files:
         print_lines(tuple(ref.path for ref in page.file_refs))

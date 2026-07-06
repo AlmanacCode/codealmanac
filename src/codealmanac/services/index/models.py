@@ -53,8 +53,8 @@ class PageView(CodeAlmanacModel):
     topics: tuple[str, ...]
     sources: tuple[PageSourceReference, ...]
     file_refs: tuple[PageFileReference, ...]
-    wikilinks_out: tuple[str, ...]
-    wikilinks_in: tuple[str, ...]
+    page_links_out: tuple[str, ...]
+    page_links_in: tuple[str, ...]
     cross_wiki_links: tuple[CrossWikiReference, ...]
     body: str
 

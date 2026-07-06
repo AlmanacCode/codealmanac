@@ -40,7 +40,7 @@ sources:
 ---
 # Auth Flow
 
-Login checks session state and links to [[session-store]].
+Login checks session state and links to [Session Store](session-store).
 """,
     )
     write_page(
@@ -66,7 +66,7 @@ Session persistence details.
 
     assert [row.slug for row in rows] == ["auth-flow"]
     assert [row.slug for row in mentioned] == ["auth-flow"]
-    assert page.wikilinks_in == ("auth-flow",)
+    assert page.page_links_in == ("auth-flow",)
 
 
 def test_legacy_files_frontmatter_does_not_create_file_refs(

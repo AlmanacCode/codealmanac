@@ -113,7 +113,7 @@ def insert_document(connection: SQLiteConnection, document: PageDocument) -> Non
         )
     for target in document.page_links:
         connection.execute(
-            "INSERT OR IGNORE INTO wikilinks (source_slug, target_slug) VALUES (?, ?)",
+            "INSERT OR IGNORE INTO page_links (source_slug, target_slug) VALUES (?, ?)",
             (document.slug, target),
         )
     for wiki, target in document.cross_wiki_links:

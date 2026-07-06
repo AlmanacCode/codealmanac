@@ -1287,7 +1287,7 @@ sources:
 ---
 # Auth Flow
 
-Login reads [[src/auth/session.py]]. [@auth-folder]
+Login reads `src/auth/session.py`. [@auth-folder]
 """,
         encoding="utf-8",
     )
@@ -1359,7 +1359,7 @@ def test_cli_topics_and_health_read_current_repo_wiki(
         encoding="utf-8",
     )
     (pages / "auth-flow.md").write_text(
-        "---\ntopics: [auth]\n---\n# Auth Flow\n\nSee [[missing-page]].\n",
+        "---\ntopics: [auth]\n---\n# Auth Flow\n\nSee [Missing](missing-page).\n",
         encoding="utf-8",
     )
     monkeypatch.chdir(repo)

@@ -52,12 +52,12 @@ def dead_file_refs(
 def broken_page_links(connection: SQLiteConnection) -> tuple[BrokenPageLink, ...]:
     rows = connection.execute(
         """
-        SELECT w.source_slug, w.target_slug
-        FROM wikilinks w
-        JOIN pages source ON source.slug = w.source_slug
-        LEFT JOIN pages target ON target.slug = w.target_slug
+        SELECT link.source_slug, link.target_slug
+        FROM page_links link
+        JOIN pages source ON source.slug = link.source_slug
+        LEFT JOIN pages target ON target.slug = link.target_slug
         WHERE target.slug IS NULL
-        ORDER BY w.source_slug, w.target_slug
+        ORDER BY link.source_slug, link.target_slug
         """
     ).fetchall()
     return tuple(

@@ -116,7 +116,7 @@ Design rules every change must respect. The spec has the full rationale; these a
 
 - **Only lifecycle operations invoke AI or write page prose.** Read commands may refresh derived local index state and read committed markdown for display or validation. Organization commands may deterministically rewrite wiki metadata through explicit verbs such as `tag`, `topics`, `review`, and `migrate`.
 - **Reindex is silent and implicit.** Every query command compares `almanac/**/*.md` mtimes against the derived index and rebuilds if stale. No progress bars, no "indexing..." chatter, no opt-in flag. `codealmanac reindex` is the escape hatch for "I want to force it."
-- **Markdown links are the authored page-link syntax.** Do not reintroduce wikilinks. File evidence belongs in `sources:`.
+- **Markdown links are the authored page-link syntax.** Do not use double-bracket links. File evidence belongs in `sources:`.
 - **Use `GLOB` not `LIKE` for path queries**, and **escape `*?[` before concatenating stored paths into a GLOB pattern.** SQLite's `LIKE` treats `_` as a wildcard (spurious matches on `src/my_module/`); `GLOB` treats it literally. A Next.js-style stored path like `src/[id]/page.tsx` contains GLOB metacharacters — unescaped, it matches things it shouldn't. See `fixes-slice-2-review.md` for the bug and fix.
 - **Paths are normalized at index time and at query time.** Lowercase (macOS is case-insensitive), forward slashes, no `./` prefix, trailing slash iff directory, no redundant slashes. Normalize on both sides of a comparison.
 - **Slugs are kebab-case of the filename.** `checkout_flow`, `Checkout Flow.md`, `checkout-flow.md` all canonicalize to `checkout-flow`. Enforced at write time and checked by health.

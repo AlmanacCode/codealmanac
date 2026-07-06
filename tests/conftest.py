@@ -46,10 +46,10 @@ sources:
 ---
 # Auth Flow
 
-Login checks [[src/auth/session.py]] and [[session-store|Session Store]].
+Login checks `src/auth/session.py` and [Session Store](session-store).
 [@session-file] [@provider-docs]
 
-Inline code keeps `[[session-store]]` as source text.
+Inline code keeps `[Session Store](session-store)` as source text.
 
 <script>alert(1)</script>
 """,

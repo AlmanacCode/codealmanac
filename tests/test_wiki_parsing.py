@@ -1,6 +1,6 @@
 from codealmanac.services.wiki.frontmatter import parse_frontmatter
+from codealmanac.services.wiki.links import extract_page_links, resolve_page_href
 from codealmanac.services.wiki.paths import escape_glob_meta, normalize_reference_path
-from codealmanac.services.wiki.wikilinks import classify_wikilink
 
 
 def test_frontmatter_uses_pydantic_validated_shape():
@@ -70,11 +70,66 @@ sources:
     assert parsed.sources[0].target == "https://example.com/current"
 
 
-def test_wikilink_classification_preserves_existing_rules():
-    assert classify_wikilink("openalmanac:supabase").kind == "xwiki"
-    assert classify_wikilink("src/a:b.ts").kind == "file"
-    assert classify_wikilink("src/auth/").kind == "folder"
-    assert classify_wikilink("Auth Flow").kind == "page"
+def test_markdown_page_links_resolve_from_page_location():
+    body = """See [Source Provenance](decisions/source-provenance).
+
+Also see [Sibling](wiki-tree), [Parent](../decisions/local-first-python),
+[External](https://example.com), [Anchor](#section), and [File](src/auth.py).
+
+`[Code](code-link)` is not a page link.
+
+```markdown
+[Fence](fence-link)
+```
+"""
+
+    assert extract_page_links(
+        body,
+        "architecture/indexing",
+        source_is_folder_landing=False,
+    ) == (
+        "architecture/decisions/source-provenance",
+        "architecture/wiki-tree",
+        "decisions/local-first-python",
+    )
+
+
+def test_markdown_page_links_resolve_from_folder_landing_page():
+    assert (
+        resolve_page_href(
+            "wiki-tree",
+            "architecture",
+            source_is_folder_landing=True,
+        )
+        == "architecture/wiki-tree"
+    )
+    assert (
+        resolve_page_href(
+            "architecture/viewer",
+            "README",
+            source_is_folder_landing=True,
+        )
+        == "architecture/viewer"
+    )
+
+
+def test_markdown_page_links_ignore_non_page_hrefs():
+    assert (
+        resolve_page_href(
+            "/architecture/viewer",
+            "architecture/indexing",
+            source_is_folder_landing=False,
+        )
+        is None
+    )
+    assert (
+        resolve_page_href(
+            "src/auth/session.py",
+            "architecture/indexing",
+            source_is_folder_landing=False,
+        )
+        is None
+    )
 
 
 def test_reference_paths_normalize_and_escape_glob_metacharacters():

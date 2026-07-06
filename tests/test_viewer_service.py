@@ -132,7 +132,7 @@ def test_viewer_page_renders_markdown_and_reader_relationships(
     assert page.sources[1].target == "https://example.com/provider"
     assert '<a href="#/page/session-store">Session Store</a>' in page.html
     assert "<code>src/auth/session.py</code>" in page.html
-    assert "<code>[[session-store]]</code>" in page.html
+    assert "<code>[Session Store](session-store)</code>" in page.html
     assert "<script>" not in page.html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in page.html
 

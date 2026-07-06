@@ -21,6 +21,6 @@ sources:
 
 The old repo wiki under `.almanac/` described a mix of TypeScript-era behavior, hosted/cloud planning, business positioning, old flat page storage, and some durable local-product architecture memory. Ticket 2.5 migrates only the useful memory into the new nested `almanac/` tree [@tickets] [@notes].
 
-The migrated memory keeps current local Python facts about wiki structure, indexing, lifecycle runs, provider harnesses, sync, automation, source provenance, and the product fork point. It drops hosted deployment, login/connect/upload, fundraising, product-positioning, competitor research, old command aliases, old root choices, the old flat `pages/` model, wikilink rules, and file-list compatibility as product guidance [@agreement] [@tickets].
+The migrated memory keeps current local Python facts about wiki structure, indexing, lifecycle runs, provider harnesses, sync, automation, source provenance, and the product fork point. It drops hosted deployment, login/connect/upload, fundraising, product-positioning, competitor research, old command aliases, old root choices, the old flat `pages/` model, old double-bracket link rules, and file-list compatibility as product guidance [@agreement] [@tickets].
 
 The tracked `.almanac/` pages are removed from this branch after the migration so future agents see one active wiki source. Ignored runtime artifacts under `.almanac/` may remain in a developer checkout, but they are not product source.

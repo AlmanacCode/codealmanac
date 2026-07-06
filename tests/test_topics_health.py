@@ -41,10 +41,7 @@ def test_health_reports_read_model_problems(tmp_path: Path, isolated_home: Path)
     assert [(item.source_slug, item.target_slug) for item in report.broken_links] == [
         ("auth-flow", "missing-page")
     ]
-    assert [
-        (item.source_slug, item.target_wiki, item.target_slug)
-        for item in report.broken_xwiki
-    ] == [("auth-flow", "unknown", "thing")]
+    assert report.broken_xwiki == ()
     assert "empty-topic" in {item.slug for item in report.empty_topics}
     assert {item.slug for item in report.empty_pages} == {"empty-page"}
 
@@ -158,10 +155,14 @@ def make_topic_repo(tmp_path: Path) -> Path:
         """---
 title: Auth Flow
 topics: [jwt]
+sources:
+  - id: missing-file
+    type: file
+    path: src/missing.py
 ---
 # Auth Flow
 
-Login uses [[src/missing.py]], [[missing-page]], and [[unknown:thing]].
+Login uses the missing file [@missing-file] and links to [Missing](missing-page).
 """,
         encoding="utf-8",
     )

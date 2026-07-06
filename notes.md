@@ -54,7 +54,7 @@ It contained useful project memory, but it represented the old product model:
 
 - `.almanac/` as the wiki root,
 - flat `.almanac/pages/`,
-- wikilinks,
+- double-bracket links,
 - legacy file-list compatibility,
 - old command names and old agent instructions.
 
@@ -286,8 +286,8 @@ Preferred page links:
 
 The path starts at `almanac/` and omits `.md`.
 
-Do not use wikilinks for page links. Use Markdown links with root-relative
-paths in root pages and relative paths in nested pages.
+Do not use double-bracket links for page links. Use Markdown links from the
+`almanac/` tree in root pages and relative paths in nested pages.
 
 ## Inline link examples
 
@@ -408,7 +408,7 @@ The prompt and manual explicitly tell the model:
 - use short filenames,
 - link to other pages with extensionless Markdown paths,
 - prefer `[label](folder/page)` from root pages and relative links from nested pages,
-- do not use wikilinks,
+- do not use double-bracket links,
 - never create long filenames just to satisfy uniqueness.
 
 Example:
@@ -418,15 +418,11 @@ See [viewer navigation](architecture/viewer/navigation) for the local browser
 route model.
 ```
 
-Not:
-
-```md
-See [[viewer-navigation-local-browser-route-model-8f3a2]].
-```
+Avoid opaque id-style targets such as `viewer-navigation-local-browser-route-model-8f3a2`.
 
 ## File refs vs page refs
 
-Wikilinks are retired.
+Double-bracket links are retired.
 
 Page links:
 

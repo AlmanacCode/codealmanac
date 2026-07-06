@@ -3,13 +3,10 @@ from pathlib import Path
 
 from codealmanac.core.slug import to_kebab_case
 from codealmanac.services.wiki.frontmatter import first_h1, parse_frontmatter
+from codealmanac.services.wiki.links import extract_page_links
 from codealmanac.services.wiki.models import (
-    CrossWikiLink,
-    FileLink,
     FileReference,
-    FolderLink,
     PageDocument,
-    PageLink,
     PageSource,
     PageSourceType,
 )
@@ -19,7 +16,6 @@ from codealmanac.services.wiki.paths import (
     normalize_reference_path_preserving_case,
     page_id_for_path,
 )
-from codealmanac.services.wiki.wikilinks import extract_wikilinks
 
 
 def load_page_document(page_path: Path, almanac_path: Path) -> PageDocument | None:
@@ -32,16 +28,11 @@ def load_page_document(page_path: Path, almanac_path: Path) -> PageDocument | No
 
     title = frontmatter.title or first_h1(frontmatter.body) or page_path.stem
     file_refs = list(source_file_refs(frontmatter.sources))
-    page_links: list[str] = []
-    cross_wiki_links: list[tuple[str, str]] = []
-
-    for link in extract_wikilinks(frontmatter.body):
-        if isinstance(link, PageLink):
-            page_links.append(link.target)
-        elif isinstance(link, FileLink | FolderLink):
-            file_refs.append(link.ref)
-        elif isinstance(link, CrossWikiLink):
-            cross_wiki_links.append((link.wiki, link.target))
+    page_links = extract_page_links(
+        frontmatter.body,
+        page_id,
+        source_is_folder_landing=page_path.name == "README.md",
+    )
 
     return PageDocument(
         slug=page_id,
@@ -55,7 +46,7 @@ def load_page_document(page_path: Path, almanac_path: Path) -> PageDocument | No
         sources=frontmatter.sources,
         file_refs=dedupe_file_refs(file_refs),
         page_links=tuple(sorted(set(page_links))),
-        cross_wiki_links=tuple(sorted(set(cross_wiki_links))),
+        cross_wiki_links=(),
         body=frontmatter.body,
     )
 

@@ -7,7 +7,7 @@ from codealmanac.database import (
     connect_sqlite,
 )
 
-SCHEMA_VERSION = 2026070101
+SCHEMA_VERSION = 2026070601
 
 SCHEMA_DDL = """
 CREATE TABLE IF NOT EXISTS pages (
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS page_sources (
 CREATE INDEX IF NOT EXISTS idx_page_sources_id ON page_sources(page_slug, source_id);
 CREATE INDEX IF NOT EXISTS idx_page_sources_type ON page_sources(source_type);
 
-CREATE TABLE IF NOT EXISTS wikilinks (
+CREATE TABLE IF NOT EXISTS page_links (
   source_slug TEXT NOT NULL REFERENCES pages(slug) ON DELETE CASCADE,
   target_slug TEXT NOT NULL,
   PRIMARY KEY (source_slug, target_slug)
@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS index_metadata (
 
 DROP_DERIVED_INDEX_DDL = """
 DROP TABLE IF EXISTS cross_wiki_links;
+DROP TABLE IF EXISTS page_links;
 DROP TABLE IF EXISTS wikilinks;
 DROP TABLE IF EXISTS page_sources;
 DROP TABLE IF EXISTS file_refs;

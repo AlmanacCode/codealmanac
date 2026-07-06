@@ -35,8 +35,8 @@ def page_view_from_row(connection: SQLiteConnection, row: SQLiteRow) -> PageView
         topics=topics_for_page(connection, slug),
         sources=page_sources_for_page(connection, slug),
         file_refs=file_refs_for_page(connection, slug),
-        wikilinks_out=wikilinks_out_for_page(connection, slug),
-        wikilinks_in=wikilinks_in_for_page(connection, slug),
+        page_links_out=page_links_out_for_page(connection, slug),
+        page_links_in=page_links_in_for_page(connection, slug),
         cross_wiki_links=cross_wiki_for_page(connection, slug),
         body=row["body"],
     )
@@ -95,20 +95,20 @@ def file_refs_for_page(
     )
 
 
-def wikilinks_out_for_page(
+def page_links_out_for_page(
     connection: SQLiteConnection,
     slug: str,
 ) -> tuple[str, ...]:
     rows = connection.execute(
-        "SELECT target_slug FROM wikilinks WHERE source_slug = ? ORDER BY target_slug",
+        "SELECT target_slug FROM page_links WHERE source_slug = ? ORDER BY target_slug",
         (slug,),
     ).fetchall()
     return tuple(row["target_slug"] for row in rows)
 
 
-def wikilinks_in_for_page(connection: SQLiteConnection, slug: str) -> tuple[str, ...]:
+def page_links_in_for_page(connection: SQLiteConnection, slug: str) -> tuple[str, ...]:
     rows = connection.execute(
-        "SELECT source_slug FROM wikilinks WHERE target_slug = ? ORDER BY source_slug",
+        "SELECT source_slug FROM page_links WHERE target_slug = ? ORDER BY source_slug",
         (slug,),
     ).fetchall()
     return tuple(row["source_slug"] for row in rows)

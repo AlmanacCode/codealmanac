@@ -86,9 +86,13 @@ class ViewerService:
             summary=page.summary,
             topics=page.topics,
             body=page.body,
-            html=self.renderer.render(page.body),
-            backlinks=page.wikilinks_in,
-            outgoing_links=page.wikilinks_out,
+            html=self.renderer.render(
+                page.body,
+                page_id=page.slug,
+                source_is_folder_landing=page.file_path.name == "README.md",
+            ),
+            backlinks=page.page_links_in,
+            outgoing_links=page.page_links_out,
             file_refs=tuple(
                 ViewerFileReference(path=ref.path, is_dir=ref.is_dir)
                 for ref in page.file_refs
@@ -207,7 +211,7 @@ class ViewerService:
     ) -> tuple[ViewerPageSummary, ...]:
         seen: set[str] = set()
         related: list[ViewerPageSummary] = []
-        for slug in (*page.wikilinks_in, *page.wikilinks_out):
+        for slug in (*page.page_links_in, *page.page_links_out):
             if slug in seen or slug == page.slug:
                 continue
             seen.add(slug)
