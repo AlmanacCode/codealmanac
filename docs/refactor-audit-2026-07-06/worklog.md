@@ -88,3 +88,23 @@
   - `uv run pytest`: 402 passed.
   - `uv run ruff check .`: passed.
   - `git diff --check`: passed.
+
+## Third Refactor Batch: Sync Execution Ledger Writes
+
+- Wrote `docs/plans/2026-07-06-sync-execution-refactor.md`.
+- Kept `workflows/sync/execution.py` as the owner of sync execution effects.
+- Extracted repeated ledger-entry writes inside `SyncRunExecutor`:
+  - `_claim_pending(...)` writes the pending claim and returns the pending
+    work item.
+  - `_record_failure(...)` writes failed ledger state and the needs-attention
+    row.
+  - `_save_entry(...)` owns the shared ledger-store save call for one sync
+    item.
+- `run_background_item(...)` and `run_foreground_item(...)` now read as
+  orchestration steps instead of repeating ledger mutation mechanics.
+- Verification:
+  - `uv run pytest tests/test_sync_workflow.py -q`: 20 passed.
+  - `uv run ruff check src/codealmanac/workflows/sync/execution.py tests/test_sync_workflow.py`: passed.
+  - `uv run pytest`: 402 passed.
+  - `uv run ruff check .`: passed.
+  - `git diff --check`: passed.

@@ -17,6 +17,7 @@ from codealmanac.workflows.sync.models import (
     SyncEvaluation,
     SyncExecution,
     SyncLedger,
+    SyncLedgerEntry,
     SyncSkipped,
     SyncStarted,
     SyncWorkItem,
@@ -98,15 +99,13 @@ class SyncRunExecutor:
     ) -> "SyncItemExecutionResult":
         ingest_request = sync_ingest_request(request, item)
         run = self.queue.queue_ingest(ingest_request)
-        ledger = ledgers[item.candidate.repo_root]
-        pending = pending_entry(item.entry, item, now, claim_owner, run.run_id)
-        ledger.sessions[item.ledger_key] = pending
-        ledger = self.ledger_store.save(
-            self.runtime_path_for_repo(item.candidate.repo_root),
-            ledger,
+        ledgers, item = self._claim_pending(
+            item,
+            ledgers,
             now,
+            claim_owner,
+            run.run_id,
         )
-        ledgers[item.candidate.repo_root] = ledger
         try:
             self.queue.spawn_worker(item.candidate.repo_root, request.wiki)
         except Exception as error:
@@ -119,16 +118,13 @@ class SyncRunExecutor:
                     error=first_error_line(error),
                 )
             )
-            ledger.sessions[item.ledger_key] = failed_entry(pending, error, run.run_id)
-            ledger = self.ledger_store.save(
-                self.runtime_path_for_repo(item.candidate.repo_root),
-                ledger,
+            return self._record_failure(
+                item,
+                ledgers,
+                error,
+                run.run_id,
                 now,
-            )
-            ledgers[item.candidate.repo_root] = ledger
-            return SyncItemExecutionResult(
-                ledgers=ledgers,
-                needs_attention=(skip(item.candidate, "worker-spawn-failed"),),
+                reason="worker-spawn-failed",
             )
         return SyncItemExecutionResult(
             ledgers=ledgers,
@@ -145,16 +141,13 @@ class SyncRunExecutor:
     ) -> "SyncItemExecutionResult":
         ingest_request = sync_ingest_request(request, item)
         run = self.ingest.start(ingest_request)
-        ledger = ledgers[item.candidate.repo_root]
-        pending = pending_entry(item.entry, item, now, claim_owner, run.run_id)
-        ledger.sessions[item.ledger_key] = pending
-        ledger = self.ledger_store.save(
-            self.runtime_path_for_repo(item.candidate.repo_root),
-            ledger,
+        ledgers, item = self._claim_pending(
+            item,
+            ledgers,
             now,
+            claim_owner,
+            run.run_id,
         )
-        ledgers[item.candidate.repo_root] = ledger
-        item = item.model_copy(update={"entry": pending})
         try:
             result = self.ingest.run_with_run(
                 RunIngestWithRunRequest(
@@ -169,30 +162,23 @@ class SyncRunExecutor:
                 )
             )
         except Exception as error:
-            ledger.sessions[item.ledger_key] = failed_entry(
-                item.entry,
+            return self._record_failure(
+                item,
+                ledgers,
                 error,
                 run.run_id,
-            )
-            ledger = self.ledger_store.save(
-                self.runtime_path_for_repo(item.candidate.repo_root),
-                ledger,
                 now,
+                reason="ingest-failed",
             )
-            ledgers[item.candidate.repo_root] = ledger
-            return SyncItemExecutionResult(
-                ledgers=ledgers,
-                needs_attention=(skip(item.candidate, "ingest-failed"),),
-            )
-        ledger.sessions[item.ledger_key] = absorbed_entry(
-            item.entry,
-            item.snapshot,
-            result.run.run_id,
-            now,
-        )
-        ledgers[item.candidate.repo_root] = self.ledger_store.save(
-            self.runtime_path_for_repo(item.candidate.repo_root),
-            ledger,
+        ledgers = self._save_entry(
+            ledgers,
+            item,
+            absorbed_entry(
+                item.entry,
+                item.snapshot,
+                result.run.run_id,
+                now,
+            ),
             now,
         )
         return SyncItemExecutionResult(
@@ -203,6 +189,55 @@ class SyncRunExecutor:
     def runtime_path_for_repo(self, repo_root: Path) -> Path:
         workspace = self.workspaces.resolve(repo_root)
         return self.runtime_paths.repo_dir(workspace)
+
+    def _claim_pending(
+        self,
+        item: SyncWorkItem,
+        ledgers: dict[Path, SyncLedger],
+        now: datetime,
+        claim_owner: str,
+        run_id: str,
+    ) -> tuple[dict[Path, SyncLedger], SyncWorkItem]:
+        pending = pending_entry(item.entry, item, now, claim_owner, run_id)
+        ledgers = self._save_entry(ledgers, item, pending, now)
+        return ledgers, item.model_copy(update={"entry": pending})
+
+    def _record_failure(
+        self,
+        item: SyncWorkItem,
+        ledgers: dict[Path, SyncLedger],
+        error: Exception,
+        run_id: str,
+        now: datetime,
+        *,
+        reason: str,
+    ) -> "SyncItemExecutionResult":
+        ledgers = self._save_entry(
+            ledgers,
+            item,
+            failed_entry(item.entry, error, run_id),
+            now,
+        )
+        return SyncItemExecutionResult(
+            ledgers=ledgers,
+            needs_attention=(skip(item.candidate, reason),),
+        )
+
+    def _save_entry(
+        self,
+        ledgers: dict[Path, SyncLedger],
+        item: SyncWorkItem,
+        entry: SyncLedgerEntry,
+        now: datetime,
+    ) -> dict[Path, SyncLedger]:
+        ledger = ledgers[item.candidate.repo_root]
+        ledger.sessions[item.ledger_key] = entry
+        ledgers[item.candidate.repo_root] = self.ledger_store.save(
+            self.runtime_path_for_repo(item.candidate.repo_root),
+            ledger,
+            now,
+        )
+        return ledgers
 
 
 class SyncRunExecutionResult(CodeAlmanacModel):
