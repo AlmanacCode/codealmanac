@@ -21,7 +21,7 @@ class HarnessConfig(CodeAlmanacModel):
     default: HarnessKind = DEFAULT_HARNESS
 
 
-class CodeAlmanacConfig(BaseSettings):
+class UserConfig(BaseSettings):
     model_config = SettingsConfigDict(frozen=True, extra="forbid")
 
     auto_commit: bool = DEFAULT_AUTO_COMMIT

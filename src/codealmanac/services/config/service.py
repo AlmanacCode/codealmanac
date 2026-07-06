@@ -7,9 +7,9 @@ from codealmanac.core.errors import (
 )
 from codealmanac.core.paths import normalize_path
 from codealmanac.services.config.models import (
-    CodeAlmanacConfig,
     ConfigKey,
     ConfigSetResult,
+    UserConfig,
 )
 from codealmanac.services.config.requests import (
     LoadConfigRequest,
@@ -33,7 +33,7 @@ class ConfigService:
         self.store = store
         self.user_config_path = user_config_path
 
-    def load(self, request: LoadConfigRequest) -> CodeAlmanacConfig:
+    def load(self, request: LoadConfigRequest) -> UserConfig:
         project_config_path = self.project_config_path(request)
         paths = config_source_paths(
             user_config_path=normalize_path(self.user_config_path),
@@ -41,7 +41,7 @@ class ConfigService:
         )
         return self.store.load(paths)
 
-    def load_user(self) -> CodeAlmanacConfig:
+    def load_user(self) -> UserConfig:
         return self.store.load((normalize_path(self.user_config_path),))
 
     def set(self, request: SetConfigValueRequest) -> ConfigSetResult:
