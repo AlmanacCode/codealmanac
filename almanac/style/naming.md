@@ -20,3 +20,9 @@ Names are clear, simple, and product-oriented — words a user of the product wo
 Names must be honest. A file named `auth.py` must not secretly mean "Claude auth"; a central module must not know provider-specific details; a docstring that over-claims generality is a bug [@manual] [@claude-md]. If the honest name for a thing is awkward, the thing is probably shaped wrong — treat the naming difficulty as design feedback.
 
 Naming is architecture: the moment a thing's general role can be named, it earns a first-class home at that name [@manual]. The reverse also holds — code that cannot be given a clear name has not found its boundary yet.
+
+Private helpers are not a substitute for names. A small `_helper()` is fine for
+local mechanics, but a cluster of internal functions that owns a policy,
+workflow step, or reusable concept is a boundary trying to exist. Give that
+concept an honest module, method, or type instead of hiding the architecture
+behind underscores.
