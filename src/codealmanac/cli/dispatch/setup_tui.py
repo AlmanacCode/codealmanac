@@ -1,9 +1,12 @@
 import argparse
 import os
+import select
 import sys
 import termios
 import tty
+from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Iterator
 
 from codealmanac.cli.render.setup import (
     SetupChoiceOption,
@@ -48,6 +51,34 @@ def supports_interactive_setup() -> bool:
 
 
 def interactive_setup_selections(defaults: SetupSelections) -> SetupSelections:
+    try:
+        with wizard_terminal():
+            return wizard_selections(defaults)
+    except KeyboardInterrupt as error:
+        raise SetupCancelled() from error
+
+
+@contextmanager
+def wizard_terminal() -> Iterator[None]:
+    """Own the terminal for the wizard's lifetime.
+
+    cbreak keeps keys immediate and unechoed while leaving output newline
+    translation on; the alternate screen keeps repaints out of scrollback.
+    """
+    fd = sys.stdin.fileno()
+    previous = termios.tcgetattr(fd)
+    sys.stdout.write("\x1b[?1049h\x1b[?25l")
+    sys.stdout.flush()
+    tty.setcbreak(fd)
+    try:
+        yield
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, previous)
+        sys.stdout.write("\x1b[?25h\x1b[?1049l")
+        sys.stdout.flush()
+
+
+def wizard_selections(defaults: SetupSelections) -> SetupSelections:
     target_index = choose_setup_option(
         SetupChoiceScreen(
             step=1,
@@ -137,33 +168,38 @@ def change_options() -> tuple[SetupChoiceOption, ...]:
 
 def choose_setup_option(screen: SetupChoiceScreen, initial_index: int) -> int:
     selected_index = initial_index
+    render_setup_choice_screen(screen, selected_index)
     while True:
-        render_setup_choice_screen(screen, selected_index)
         key = read_setup_key()
-        if key in {"\x03", "q"}:
+        if key in {"\x03", "\x1b", "q"}:
             raise SetupCancelled()
         if key in {"\r", "\n"}:
             return selected_index
         shortcut_index = shortcut_option_index(screen, key)
         if shortcut_index is not None:
             return shortcut_index
+        next_index = selected_index
         if key in {"\x1b[D", "a"}:
-            selected_index = (selected_index - 1) % len(screen.options)
+            next_index = (selected_index - 1) % len(screen.options)
         elif key in {"\x1b[C", "d"}:
-            selected_index = (selected_index + 1) % len(screen.options)
+            next_index = (selected_index + 1) % len(screen.options)
+        if next_index != selected_index:
+            selected_index = next_index
+            render_setup_choice_screen(screen, selected_index)
 
 
 def read_setup_key() -> str:
     fd = sys.stdin.fileno()
-    previous = termios.tcgetattr(fd)
-    try:
-        tty.setraw(fd)
-        key = os.read(fd, 1).decode("utf-8", errors="ignore")
-        if key == "\x1b":
-            key += os.read(fd, 2).decode("utf-8", errors="ignore")
+    sys.stdout.flush()
+    key = os.read(fd, 1).decode("utf-8", errors="ignore")
+    if key != "\x1b":
         return key
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, previous)
+    for _ in range(2):
+        ready, _, _ = select.select([fd], [], [], 0.05)
+        if len(ready) == 0:
+            return key
+        key += os.read(fd, 1).decode("utf-8", errors="ignore")
+    return key
 
 
 def shortcut_option_index(screen: SetupChoiceScreen, key: str) -> int | None:

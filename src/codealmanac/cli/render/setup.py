@@ -28,6 +28,15 @@ WHITE_BOLD = "\x1b[1;37m"
 BLUE = "\x1b[38;5;75m"
 BLUE_DIM = "\x1b[38;5;69m"
 ACCENT_BG = "\x1b[48;5;252m\x1b[38;5;16m"
+CLAUDE_CORAL = "\x1b[38;5;173m"
+CODEX_PERIWINKLE = "\x1b[38;5;105m"
+
+BRAND_COLORS = {
+    "Codex": CODEX_PERIWINKLE,
+    "Claude": CLAUDE_CORAL,
+}
+DIFF_RED = "\x1b[38;5;203m"
+DIFF_GREEN = "\x1b[38;5;76m"
 
 GRADIENT = (
     "\x1b[38;5;255m",
@@ -138,7 +147,7 @@ def render_option_cards(
     options: tuple[SetupChoiceOption, ...],
     selected_index: int,
 ) -> None:
-    card_width = 30 if len(options) == 3 else 36
+    card_width = 21 if len(options) == 3 else 34
     card_lines = tuple(
         option_card(option, card_width, index == selected_index)
         for index, option in enumerate(options)
@@ -164,18 +173,32 @@ def option_card(
     selected: bool,
 ) -> tuple[str, ...]:
     border = BLUE if selected else DIM
-    title = WHITE_BOLD if selected else DIM
     body = RST if selected else DIM
     lines = [
-        f"{border}┌{'─' * width}┐{RST}",
-        card_row(f"{title}{option.label}{RST}", width, border),
+        f"{border}╭{'─' * width}╮{RST}",
+        card_row("", width, border),
+        card_center_row(option_label(option.label, selected), width, border),
     ]
-    if len(option.description) > 0:
-        lines.append(card_row("", width, border))
     for description in option.description:
-        lines.append(card_row(f"{body}{description}{RST}", width, border))
-    lines.append(f"{border}└{'─' * width}┘{RST}")
+        lines.append(card_center_row(f"{body}{description}{RST}", width, border))
+    lines.append(card_row("", width, border))
+    lines.append(f"{border}╰{'─' * width}╯{RST}")
     return tuple(lines)
+
+
+def option_label(label: str, selected: bool) -> str:
+    return " ".join(label_word(word, selected) for word in label.split(" "))
+
+
+def label_word(word: str, selected: bool) -> str:
+    color = BRAND_COLORS.get(word)
+    if color is None:
+        style = WHITE_BOLD if selected else DIM
+    elif selected:
+        style = f"{BOLD}{color}"
+    else:
+        style = f"{DIM}{color}"
+    return f"{style}{word}{RST}"
 
 
 def card_row(content: str, width: int, border: str) -> str:
@@ -183,15 +206,27 @@ def card_row(content: str, width: int, border: str) -> str:
     return f"{border}│{RST}{content}{' ' * padding}{border}│{RST}"
 
 
+def card_right_row(content: str, width: int, border: str) -> str:
+    padding = max(0, width - visible_length(content) - 2)
+    return f"{border}│{RST}{' ' * padding}{content}  {border}│{RST}"
+
+
+def card_center_row(content: str, width: int, border: str) -> str:
+    visible = visible_length(content)
+    left = max(0, (width - visible) // 2)
+    right = max(0, width - visible - left)
+    return f"{border}│{RST}{' ' * left}{content}{' ' * right}{border}│{RST}"
+
+
 def selected_indicator(width: int) -> str:
-    label = f"{BLUE}{BOLD}selected{RST}"
-    left_padding = max(0, (width + 2 - len("selected")) // 2)
-    right_padding = max(0, width + 2 - left_padding - len("selected"))
-    return f"{' ' * left_padding}{label}{' ' * right_padding}"
+    text = "◆ selected"
+    left_padding = max(0, (width + 2 - len(text)) // 2)
+    right_padding = max(0, width + 2 - left_padding - len(text))
+    return f"{' ' * left_padding}{BLUE}{BOLD}{text}{RST}{' ' * right_padding}"
 
 
 def render_change_handling_choice(selected_index: int) -> None:
-    width = 36
+    width = 34
     cards = (
         change_handling_commit_card(width, selected_index == 0),
         change_handling_worktree_card(width, selected_index == 1),
@@ -216,15 +251,18 @@ def change_handling_commit_card(width: int, selected: bool) -> tuple[str, ...]:
     muted = RST if selected else DIM
     commit = BLUE if selected else DIM
     return (
-        f"{border}┌{'─' * width}┐{RST}",
-        card_row(f"{title}Commit changes{RST}", width, border),
+        f"{border}╭{'─' * width}╮{RST}",
+        card_row("", width, border),
+        card_row(f" {title}Commit changes{RST}", width, border),
         card_row("", width, border),
         card_row(f" {commit}● almanac: update wiki context{RST}", width, border),
         card_row(f" {muted}│ rohan · just now{RST}", width, border),
         card_row(f" {muted}│{RST}", width, border),
         card_row(f" {muted}● docs: previous repo commit{RST}", width, border),
         card_row(f" {muted}│ rohan · earlier{RST}", width, border),
-        f"{border}└{'─' * width}┘{RST}",
+        card_row("", width, border),
+        card_row("", width, border),
+        f"{border}╰{'─' * width}╯{RST}",
     )
 
 
@@ -232,19 +270,21 @@ def change_handling_worktree_card(width: int, selected: bool) -> tuple[str, ...]
     border = BLUE if selected else DIM
     title = WHITE_BOLD if selected else DIM
     muted = RST if selected else DIM
-    delete = "\x1b[38;5;203m" if selected else DIM
-    add = "\x1b[38;5;76m" if selected else DIM
+    delete = DIFF_RED if selected else DIM
+    add = DIFF_GREEN if selected else DIM
     return (
-        f"{border}┌{'─' * width}┐{RST}",
-        card_row(f"{title}Leave in worktree{RST}", width, border),
+        f"{border}╭{'─' * width}╮{RST}",
+        card_row("", width, border),
+        card_row(f" {title}Leave in worktree{RST}", width, border),
         card_row("", width, border),
         card_row(f" {muted}almanac/architecture/indexing.md{RST}", width, border),
-        card_row(f" {delete}-18{RST} {add}+42{RST}", width, border),
+        card_right_row(f"{delete}-18{RST} {add}+42{RST}", width, border),
         card_row(f" {muted}almanac/decisions/local-first.md{RST}", width, border),
-        card_row(f" {delete}-4{RST}  {add}+19{RST}", width, border),
+        card_right_row(f"{delete}-4{RST} {add}+19{RST}", width, border),
         card_row(f" {muted}almanac/guides/setup.md{RST}", width, border),
-        card_row(f" {delete}-2{RST}  {add}+11{RST}", width, border),
-        f"{border}└{'─' * width}┘{RST}",
+        card_right_row(f"{delete}-2{RST} {add}+11{RST}", width, border),
+        card_row("", width, border),
+        f"{border}╰{'─' * width}╯{RST}",
     )
 
 
