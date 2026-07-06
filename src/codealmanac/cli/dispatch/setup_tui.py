@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 
-from codealmanac.cli.render.setup_screens import (
+from codealmanac.cli.render.setup import (
     SetupChoiceOption,
     SetupChoiceScreen,
     render_setup_choice_screen,

@@ -11,7 +11,7 @@ from codealmanac.cli.render.brand import (
     print_banner,
 )
 from codealmanac.cli.render.common import print_json_model
-from codealmanac.cli.render.setup_panels import render_uninstall_text
+from codealmanac.cli.render.setup.uninstall import render_uninstall_text
 from codealmanac.cli.render.terminal import (
     shell_command,
     terminal_width,

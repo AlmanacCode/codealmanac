@@ -655,6 +655,10 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "render/lifecycle.py").is_file()
     assert (cli_root / "render/pages.py").is_file()
     assert (cli_root / "render/search.py").is_file()
+    assert (cli_root / "render/setup/__init__.py").is_file()
+    assert (cli_root / "render/setup/result.py").is_file()
+    assert (cli_root / "render/setup/screens.py").is_file()
+    assert (cli_root / "render/setup/uninstall.py").is_file()
     assert (cli_root / "render/tagging.py").is_file()
     assert (cli_root / "render/topics.py").is_file()
     assert (cli_root / "render/updates.py").is_file()
@@ -691,7 +695,6 @@ def test_cli_render_root_stays_facade():
         "jobs.py",
         "pages.py",
         "search.py",
-        "setup.py",
         "sync.py",
         "tagging.py",
         "topics.py",
@@ -699,6 +702,7 @@ def test_cli_render_root_stays_facade():
         "wiki.py",
         "repositories.py",
     } <= module_names
+    assert (render_root / "setup/__init__.py").is_file()
     assert len(root.splitlines()) <= 80
     assert [
         fragment for fragment in forbidden_root_fragments if fragment in root
@@ -721,9 +725,9 @@ def test_cli_admin_render_stays_split_by_output_family():
         "config.py": ("ConfigSetResult", "def render_config_set("),
         "diagnostics.py": ("DoctorReport", "def render_doctor("),
         "jobs.py": ("RunRecord", "def render_runs("),
-        "setup.py": ("SetupResult", "def render_setup_result("),
-        "setup_panels.py": ("UninstallResult", "def render_uninstall_text("),
-        "setup_screens.py": ("SetupChoiceScreen", "def render_setup_choice_screen("),
+        "setup/result.py": ("SetupResult", "def render_setup_result("),
+        "setup/uninstall.py": ("UninstallResult", "def render_uninstall_text("),
+        "setup/screens.py": ("SetupChoiceScreen", "def render_setup_choice_screen("),
         "terminal.py": ("def visible_length(", "def wrap_with_prefixes("),
         "updates.py": ("UpdatePlan", "def render_update_plan("),
     }
@@ -743,10 +747,10 @@ def test_cli_admin_render_stays_split_by_output_family():
         text = (render_path / module_name).read_text(encoding="utf-8")
         assert all(fragment in text for fragment in fragments)
         line_count = len(text.splitlines())
-        if module_name == "setup.py":
+        if module_name == "setup/result.py":
             if line_count > 260:
                 oversized.append(f"{module_name}:{line_count}")
-        elif module_name == "setup_screens.py":
+        elif module_name == "setup/screens.py":
             if line_count > 200:
                 oversized.append(f"{module_name}:{line_count}")
         elif line_count > 180:
