@@ -36,5 +36,6 @@ pages because this repo treats architecture reshaping as part of implementation
 - Operation execution: [Runs](architecture/runs).
 - Codex and Claude execution: [Providers](architecture/providers).
 - Transcript intake and scheduling: [Sync And Automation](architecture/sync-and-automation).
+- Config keys, files, and precedence: [Configuration](reference/configuration).
 - Day-to-day coding: [Working On CodeAlmanac](guides/working-on-codealmanac).
 - Migrated historical context: [Legacy Almanac Migration](reference/legacy-almanac-migration).

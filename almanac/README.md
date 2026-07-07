@@ -31,9 +31,10 @@ Start with these pages:
 - [Wiki Tree](architecture/wiki-tree) for page identity, folder layout, and root detection.
 - [Indexing](architecture/indexing) for the derived SQLite read model.
 - [Runs](architecture/runs) for build, ingest, garden, harness execution, and run records.
-- [Providers](architecture/providers) for Codex and Claude harness boundaries.
+- [Providers](architecture/providers) for Codex and Claude harness boundaries, auth requirements, and agent instruction installation.
 - [Prompt Intelligence](decisions/prompt-intelligence) for the no-pipeline rule.
 - [Source Provenance](decisions/source-provenance) for `sources:` and file evidence.
+- [Configuration](reference/configuration) for config file locations, keys, defaults, and precedence.
 
 ## Notability Bar
 
