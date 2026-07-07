@@ -66,6 +66,8 @@ The public command surface is the set of terminal commands exposed by the `codea
 
 The root parser registers three command families: run commands, wiki commands, and admin commands [@parser_root]. The admin family delegates to config, setup, diagnostics, update, jobs, and automation parser modules [@parser_admin]. It also exposes `--version` and lists the visible top-level command names in `PUBLIC_COMMAND_METAVAR` [@parser_root]. Hidden worker commands exist for internal scheduling and queue execution, but they are removed from visible choices and from rendered syntax guidance [@parser_run] [@syntax_catalog].
 
+Parser failures go through the custom argument parser, which classifies syntax problems before the CLI renderer turns them into user-facing guidance [@parser_argument].
+
 ## Top-Level Commands
 
 | Command | Purpose | Main options |

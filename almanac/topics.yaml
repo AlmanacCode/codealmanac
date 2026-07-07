@@ -75,6 +75,10 @@ topics:
     title: Product
     description: Product scope and public surface decisions
     parents: []
+  - slug: release
+    title: Release
+    description: Package publishing, release smoke checks, and public install verification
+    parents: [product]
   - slug: config
     title: Config
     description: User and project configuration keys

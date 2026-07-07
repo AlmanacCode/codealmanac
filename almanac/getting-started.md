@@ -55,3 +55,4 @@ Use these routes when you already know the kind of work:
 - For page evidence and frontmatter, read [Frontmatter and sources](reference/page-format/frontmatter-and-sources).
 - For lifecycle run state, logs, and attach behavior, read [Run states and events](reference/runs/run-states-and-events).
 - For the local browser UI, read [Local viewer](architecture/viewer/local-viewer).
+- For PyPI publishing, installed-artifact smoke, and curl-installer verification, read [Release package](guides/release-package).
