@@ -50,6 +50,7 @@ CLAUDE_ALLOWED_TOOLS = (
     "Glob",
     "Grep",
     "LS",
+    "Bash",
 )
 CLAUDE_MAX_TURNS = 100
 
