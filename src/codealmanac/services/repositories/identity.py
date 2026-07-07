@@ -4,9 +4,13 @@ from pathlib import Path
 from codealmanac.core.errors import ValidationFailed
 from codealmanac.core.paths import normalize_path
 from codealmanac.core.slug import to_kebab_case
+from codealmanac.services.repositories.models import RepositoryName
 
 
-def repository_name_for(root_path: Path, requested_name: str | None) -> str:
+def repository_name_for(
+    root_path: Path,
+    requested_name: RepositoryName | None,
+) -> str:
     name = to_kebab_case(requested_name or root_path.name)
     if not name:
         raise ValidationFailed("could not derive a repository name; pass --name")
