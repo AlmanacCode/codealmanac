@@ -74,6 +74,31 @@ were updated to the newer README wording. Related: the blanket
 harness CLIs (codex, claude) are npm packages and the new troubleshooting
 section legitimately names their reinstall commands.
 
+### S6. SQLite connection leak crashed a 40-minute build at event recording — FIXED 2026-07-07
+
+Job `build-20260707063602-deac88ea`: the codex agent finished and committed
+the wiki, then init crashed with `sqlite3.OperationalError: unable to open
+database file` while recording harness events, leaving the job stuck at
+`running` and a raw Python traceback in the terminal.
+
+Root cause: every store used `with self.connect() as connection:` where
+`connect()` returned a raw `sqlite3.Connection`. Python's sqlite3 context
+manager scopes a **transaction**, not the connection — nothing ever closed.
+Each recorded event opened two connections (sequence read + insert), each
+holding db/WAL/shm descriptors; a long run's hundreds of events exhausted the
+process fd limit and `sqlite3.connect` itself started failing.
+
+**Fix:** `codealmanac.database.open_local_database(path, schema)` is a real
+context manager that opens, applies the store's schema, and always closes.
+All five stores (repositories, runs, run events, worker locks, sync state)
+route through it; regression test asserts every opened connection is closed.
+
+**Still open from this incident:** (a) a hard crash mid-run leaves the run
+record at `running` forever — runs need pid-liveness reconciliation like
+worker locks already have; (b) unexpected non-CodeAlmanacError exceptions
+reach the user as raw tracebacks; (c) event recording opens two connections
+per event — correct now, but worth batching for long runs.
+
 ---
 
 ## Must-fix

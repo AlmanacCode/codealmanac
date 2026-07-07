@@ -5,7 +5,7 @@ from pathlib import Path
 
 from codealmanac.core.errors import NotFoundError
 from codealmanac.core.paths import normalize_path
-from codealmanac.database.local import connect_local_database
+from codealmanac.database.local import open_local_database
 from codealmanac.services.harnesses.models import HarnessEvent, HarnessTranscriptRef
 from codealmanac.services.runs.events import RunEventStore
 from codealmanac.services.runs.factory import new_run_record
@@ -231,7 +231,4 @@ class RunStore:
             connection.commit()
 
     def connect(self):
-        connection = connect_local_database(self.database_path)
-        connection.executescript(RUN_TABLES)
-        connection.commit()
-        return connection
+        return open_local_database(self.database_path, RUN_TABLES)

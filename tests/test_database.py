@@ -55,3 +55,43 @@ def test_sqlite_migration_validates_version_and_sql():
 
     with pytest.raises(ValidationError, match="SQLite migration SQL"):
         SQLiteMigration(version=1, sql=" ")
+
+
+def test_store_connections_close_after_every_use(tmp_path: Path, monkeypatch):
+    from datetime import UTC, datetime
+
+    from codealmanac.database import local
+    from codealmanac.services.repositories.models import Repository
+    from codealmanac.services.repositories.store import RepositoryStore
+
+    opened: list[sqlite3.Connection] = []
+    real_connect = local.connect_sqlite
+
+    def tracking_connect(path: Path) -> sqlite3.Connection:
+        connection = real_connect(path)
+        opened.append(connection)
+        return connection
+
+    monkeypatch.setattr(local, "connect_sqlite", tracking_connect)
+    store = RepositoryStore(tmp_path / "codealmanac.db")
+
+    for index in range(50):
+        repo_root = tmp_path / f"repo-{index}"
+        store.remember(
+            Repository(
+                repository_id=f"w_{index:016x}",
+                name=f"repo-{index}",
+                description="",
+                root_path=repo_root,
+                almanac_path=repo_root / "almanac",
+                registered_at=datetime.now(UTC),
+            )
+        )
+
+    # A long agent run records hundreds of run events; sqlite3's
+    # transaction-only context manager used to leak every store connection
+    # until sqlite3.connect died with "unable to open database file".
+    assert len(opened) == 50
+    for connection in opened:
+        with pytest.raises(sqlite3.ProgrammingError):
+            connection.execute("SELECT 1")

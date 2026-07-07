@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from codealmanac.core.paths import normalize_path
-from codealmanac.database.local import connect_local_database
+from codealmanac.database.local import open_local_database
 from codealmanac.workflows.sync.models import SyncState
 from codealmanac.workflows.sync.records import (
     sync_completed_at_value,
@@ -45,7 +45,4 @@ class SyncStateStore:
         return sync_completed_state(completed_at)
 
     def connect(self):
-        connection = connect_local_database(self.database_path)
-        connection.executescript(SYNC_STATE_TABLES)
-        connection.commit()
-        return connection
+        return open_local_database(self.database_path, SYNC_STATE_TABLES)
