@@ -158,7 +158,7 @@ conversation.
 
 ## 6. Repo-specific instantiation — codealmanac
 
-- Only lifecycle operations invoke AI or write page prose. Read commands may
+- Only operations invoke AI or write page prose. Read commands may
   refresh derived local index state and read committed markdown for display or
   validation. Organization commands may deterministically rewrite wiki metadata
   through explicit verbs such as `tag`, `topics`, `review`, and `migrate`.

@@ -1,7 +1,7 @@
 import base64
 import binascii
 
-from codealmanac.integrations.harnesses.codex.agent_events import lifecycle_events
+from codealmanac.integrations.harnesses.codex.agent_events import helper_agent_events
 from codealmanac.integrations.harnesses.codex.display import (
     codex_item_display,
     item_type_tool_name,
@@ -42,7 +42,7 @@ def map_started_item(
             turn_id,
         )
     ]
-    events.extend(lifecycle_events(state, item, actor, "started"))
+    events.extend(helper_agent_events(state, item, actor, "started"))
     return tuple(event for event in events if event is not None)
 
 
@@ -87,7 +87,7 @@ def map_completed_item(
             raw=notification,
         )
     ]
-    events.extend(lifecycle_events(state, item, actor, "completed"))
+    events.extend(helper_agent_events(state, item, actor, "completed"))
     return tuple(events)
 
 

@@ -13,7 +13,7 @@ from codealmanac.services.harnesses.models import (
 )
 
 
-def lifecycle_events(
+def helper_agent_events(
     state: CodexRunState,
     item: JsonObject,
     actor: HarnessRunActor,

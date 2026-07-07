@@ -38,7 +38,7 @@ sources:
   - id: updates-activity
     type: file
     path: src/codealmanac/services/updates/activity.py
-    note: Active lifecycle run detection for scheduled update.
+    note: Active run detection for scheduled update.
 ---
 
 # Sync And Automation
@@ -51,6 +51,6 @@ Automation installs scheduled jobs through `AutomationService`, which builds tas
 
 The job factory writes logs under `~/.codealmanac/logs`, uses the Python executable with `-m codealmanac.cli.main`, schedules `sync` without a working directory, schedules machine-level garden through `__garden-scheduler`, and schedules `update --scheduled` without a working directory [@automation-jobs].
 
-Scheduled `update` is owned by `UpdatesService`, not by sync or Garden [@updates-service]. It acquires a global update lock, skips if queued or running lifecycle jobs exist, skips editable/source installs, supports uv-tool and pip installs, and runs `codealmanac --version` plus `codealmanac doctor --json` after a successful scheduled package update [@updates-service] [@updates-lock] [@updates-activity].
+Scheduled `update` is owned by `UpdatesService`, not by sync or Garden [@updates-service]. It acquires a global update lock, skips if queued or running jobs exist, skips editable/source installs, supports uv-tool and pip installs, and runs `codealmanac --version` plus `codealmanac doctor --json` after a successful scheduled package update [@updates-service] [@updates-lock] [@updates-activity].
 
 Automation is local. It schedules local `sync`, `garden`, and `update`; it does not install hosted capture, upload, login, or cloud polling.

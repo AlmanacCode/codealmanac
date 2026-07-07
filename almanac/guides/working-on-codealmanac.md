@@ -11,10 +11,6 @@ sources:
     type: file
     path: implementation-tickets.md
     note: Ordered implementation tickets.
-  - id: agreement
-    type: file
-    path: docs/python-port-live-agreement.md
-    note: Historical agreement that still has useful code-quality context.
 ---
 
 # Working On CodeAlmanac
