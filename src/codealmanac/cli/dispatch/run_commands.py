@@ -10,16 +10,16 @@ from codealmanac.cli.dispatch.operations import (
 from codealmanac.cli.dispatch.sync import dispatch_sync
 from codealmanac.cli.dispatch.worker import dispatch_run_worker
 
-LIFECYCLE_COMMANDS = frozenset(
+RUN_COMMANDS = frozenset(
     ("__garden-scheduler", "__run-worker", "garden", "ingest", "init", "sync")
 )
 
 
-def is_lifecycle_command(command: str | None) -> bool:
-    return command in LIFECYCLE_COMMANDS
+def is_run_command(command: str | None) -> bool:
+    return command in RUN_COMMANDS
 
 
-def dispatch_lifecycle(args: argparse.Namespace, app: CodeAlmanac) -> int:
+def dispatch_run_command(args: argparse.Namespace, app: CodeAlmanac) -> int:
     if args.command == "init":
         return dispatch_init(args, app)
     if args.command == "ingest":
@@ -32,4 +32,4 @@ def dispatch_lifecycle(args: argparse.Namespace, app: CodeAlmanac) -> int:
         return dispatch_scheduled_garden(args, app)
     if args.command == "sync":
         return dispatch_sync(args, app)
-    raise AssertionError(f"unhandled lifecycle command: {args.command}")
+    raise AssertionError(f"unhandled run command: {args.command}")

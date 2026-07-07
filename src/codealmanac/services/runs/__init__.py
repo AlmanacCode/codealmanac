@@ -1,1 +1,1 @@
-"""Run service for local CodeAlmanac lifecycle runs."""
+"""Run service for local CodeAlmanac runs."""

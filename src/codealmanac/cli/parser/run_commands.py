@@ -3,7 +3,7 @@ import argparse
 from codealmanac.services.harnesses.models import HarnessKind
 
 
-def add_lifecycle_commands(subcommands: argparse._SubParsersAction) -> None:
+def add_run_commands(subcommands: argparse._SubParsersAction) -> None:
     init = subcommands.add_parser("init", help="initialize a local Almanac wiki")
     init.add_argument("path", nargs="?", default=".")
     init.add_argument("--name")

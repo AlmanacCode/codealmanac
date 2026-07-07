@@ -1,4 +1,7 @@
-from codealmanac.cli.render.lifecycle import (
+from codealmanac.cli.render.repositories import (
+    render_repository_list,
+)
+from codealmanac.cli.render.run_commands import (
     render_garden,
     render_ingest,
     render_init,
@@ -7,9 +10,6 @@ from codealmanac.cli.render.lifecycle import (
     render_run_queued,
     render_run_started,
     render_scheduled_garden,
-)
-from codealmanac.cli.render.repositories import (
-    render_repository_list,
 )
 from codealmanac.cli.render.sync import render_sync_status
 from codealmanac.cli.render.wiki import (

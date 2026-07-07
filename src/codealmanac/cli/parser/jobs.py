@@ -2,7 +2,7 @@ import argparse
 
 
 def add_jobs_commands(subcommands: argparse._SubParsersAction) -> None:
-    jobs = subcommands.add_parser("jobs", help="inspect local lifecycle jobs")
+    jobs = subcommands.add_parser("jobs", help="inspect local jobs")
     jobs.add_argument("--wiki")
     jobs.add_argument("--limit", type=int)
     jobs.add_argument("--json", action="store_true")

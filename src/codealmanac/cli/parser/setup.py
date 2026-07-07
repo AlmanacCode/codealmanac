@@ -15,7 +15,7 @@ def add_setup_commands(subcommands: argparse._SubParsersAction) -> None:
     setup.add_argument(
         "--no-auto-commit",
         action="store_true",
-        help="tell lifecycle agents not to commit wiki changes",
+        help="tell run agents not to commit wiki changes",
     )
     setup.add_argument(
         "--skip-instructions",

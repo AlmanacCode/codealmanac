@@ -21,7 +21,7 @@ export async function renderJobs(context) {
   setRouteTitle("Jobs");
   replaceMain(
     elements,
-    pageIntro("Lifecycle runs", "Jobs", `${result.runs.length} local runs.`),
+    pageIntro("CodeAlmanac runs", "Jobs", `${result.runs.length} local runs.`),
     jobList(result.runs),
   );
   if (result.runs.some((run) => isActiveJobStatus(run.status))) {
@@ -66,12 +66,12 @@ function jobList(runs) {
   if (runs.length === 0) {
     return emptyState(
       "No jobs yet",
-      "Lifecycle runs appear here after ingest, garden, or sync.",
+      "CodeAlmanac runs appear here after ingest, garden, or sync.",
     );
   }
   const list = document.createElement("nav");
   list.className = "job-list";
-  list.setAttribute("aria-label", "Lifecycle jobs");
+  list.setAttribute("aria-label", "Jobs");
   for (const run of runs) {
     list.append(jobRow(run));
   }

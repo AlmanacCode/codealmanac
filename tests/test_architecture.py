@@ -560,14 +560,14 @@ def test_cli_parser_is_split_by_command_domain():
         "config.py",
         "diagnostics.py",
         "jobs.py",
-        "lifecycle.py",
+        "run_commands.py",
         "root.py",
         "setup.py",
         "updates.py",
         "wiki.py",
     }
     assert len(root.splitlines()) <= 80
-    assert "add_lifecycle_commands(subcommands)" in root
+    assert "add_run_commands(subcommands)" in root
     assert "add_wiki_commands(subcommands)" in root
     assert "add_admin_commands(subcommands)" in root
     assert "add_parser(" not in root
@@ -636,7 +636,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "dispatch/config_command.py").is_file()
     assert (cli_root / "dispatch/diagnostics.py").is_file()
     assert (cli_root / "dispatch/jobs.py").is_file()
-    assert (cli_root / "dispatch/lifecycle.py").is_file()
+    assert (cli_root / "dispatch/run_commands.py").is_file()
     assert (cli_root / "dispatch/serve.py").is_file()
     assert (cli_root / "dispatch/setup.py").is_file()
     assert (cli_root / "dispatch/sync.py").is_file()
@@ -652,7 +652,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "render/diagnostics.py").is_file()
     assert (cli_root / "render/health.py").is_file()
     assert (cli_root / "render/jobs.py").is_file()
-    assert (cli_root / "render/lifecycle.py").is_file()
+    assert (cli_root / "render/run_commands.py").is_file()
     assert (cli_root / "render/pages.py").is_file()
     assert (cli_root / "render/search.py").is_file()
     assert (cli_root / "render/setup/__init__.py").is_file()
@@ -689,7 +689,7 @@ def test_cli_render_root_stays_facade():
         "automation.py",
         "common.py",
         "diagnostics.py",
-        "lifecycle.py",
+        "run_commands.py",
         "root.py",
         "health.py",
         "jobs.py",
@@ -833,7 +833,7 @@ def test_cli_dispatch_edge_is_split_by_command_domain():
 
     assert len(dispatch_root.splitlines()) <= 80
     assert len(dispatch_wiki.splitlines()) <= 130
-    assert "dispatch_lifecycle(args, app)" in dispatch_root
+    assert "dispatch_run_command(args, app)" in dispatch_root
     assert "dispatch_wiki(args, app)" in dispatch_root
     assert "dispatch_admin(args, app)" in dispatch_root
     assert "IngestRequest" not in dispatch_root
@@ -972,16 +972,16 @@ def test_setup_service_stays_split_from_planning_and_automation_policy():
     assert "InstallAutomationRequest" in automation
 
 
-def test_cli_lifecycle_dispatch_stays_split_by_command_family():
+def test_cli_run_command_dispatch_stays_split_by_command_family():
     dispatch_path = SRC_ROOT / "cli/dispatch"
-    lifecycle = (dispatch_path / "lifecycle.py").read_text(encoding="utf-8")
+    run_commands = (dispatch_path / "run_commands.py").read_text(encoding="utf-8")
     module_expectations = {
-        "build.py": ("BuildRequest", "def dispatch_build("),
+        "build.py": ("BuildRequest", "def dispatch_init("),
         "operations.py": ("IngestRequest", "def dispatch_ingest("),
         "sync.py": ("SyncRequest", "def dispatch_sync("),
         "worker.py": ("DrainRunQueueRequest", "def dispatch_run_worker("),
     }
-    forbidden_lifecycle_fragments = (
+    forbidden_run_command_fragments = (
         "BuildRequest",
         "IngestRequest",
         "GardenRequest",
@@ -1005,17 +1005,17 @@ def test_cli_lifecycle_dispatch_stays_split_by_command_family():
         if line_count > 140:
             oversized.append(f"{module_name}:{line_count}")
 
-    assert len(lifecycle.splitlines()) <= 80
+    assert len(run_commands.splitlines()) <= 80
     assert [
         fragment
-        for fragment in forbidden_lifecycle_fragments
-        if fragment in lifecycle
+        for fragment in forbidden_run_command_fragments
+        if fragment in run_commands
     ] == []
-    assert "dispatch_init(args, app)" in lifecycle
-    assert "dispatch_ingest(args, app)" in lifecycle
-    assert "dispatch_garden(args, app)" in lifecycle
-    assert "dispatch_sync(args, app)" in lifecycle
-    assert "dispatch_run_worker(args, app)" in lifecycle
+    assert "dispatch_init(args, app)" in run_commands
+    assert "dispatch_ingest(args, app)" in run_commands
+    assert "dispatch_garden(args, app)" in run_commands
+    assert "dispatch_sync(args, app)" in run_commands
+    assert "dispatch_run_worker(args, app)" in run_commands
     assert oversized == []
 
 
