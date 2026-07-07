@@ -25,6 +25,10 @@ def harness_events(result: HarnessRunResult) -> tuple[HarnessEvent, ...]:
     return (terminal_harness_event(result.kind, result.status, result.output_text),)
 
 
+def should_record_harness_event(event: HarnessEvent) -> bool:
+    return event.kind != HarnessEventKind.TEXT_DELTA
+
+
 def harness_run_event_kind(event: HarnessEvent) -> RunEventKind:
     if event.kind == HarnessEventKind.ERROR:
         return RunEventKind.ERROR

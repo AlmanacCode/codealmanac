@@ -105,6 +105,26 @@ class EventfulHarnessAdapter(WritingHarnessAdapter):
             update={
                 "events": (
                     HarnessEvent(
+                        kind=HarnessEventKind.TEXT_DELTA,
+                        message="agent ",
+                        actor=HarnessRunActor(
+                            thread_id="root-thread",
+                            role=HarnessActorRole.ROOT,
+                            confidence=HarnessActorConfidence.PROVIDER,
+                            label="Main",
+                        ),
+                    ),
+                    HarnessEvent(
+                        kind=HarnessEventKind.TEXT_DELTA,
+                        message="read ",
+                        actor=HarnessRunActor(
+                            thread_id="root-thread",
+                            role=HarnessActorRole.ROOT,
+                            confidence=HarnessActorConfidence.PROVIDER,
+                            label="Main",
+                        ),
+                    ),
+                    HarnessEvent(
                         kind=HarnessEventKind.TEXT,
                         message="agent read source note",
                         actor=HarnessRunActor(
@@ -423,6 +443,11 @@ def test_ingest_workflow_records_normalized_harness_events(
     assert log[-3].harness_event.agent_trace.child_thread_id == "helper-thread"
     assert log[-2].harness_event is not None
     assert log[-2].harness_event.provider_session_id == "root-thread"
+    assert all(
+        entry.harness_event is None
+        or entry.harness_event.kind != HarnessEventKind.TEXT_DELTA
+        for entry in log
+    )
 
 
 def test_ingest_prompt_includes_git_source_runtime(

@@ -21,6 +21,7 @@ from codealmanac.workflows.operations.harness import (
     first_line,
     harness_events,
     harness_run_event_kind,
+    should_record_harness_event,
     validate_harness_result,
 )
 from codealmanac.workflows.operations.models import OperationContext, OperationResult
@@ -169,6 +170,8 @@ class OperationRunner:
         harness: HarnessRunResult,
     ) -> None:
         for event in harness_events(harness):
+            if not should_record_harness_event(event):
+                continue
             self.record(
                 RecordOperationEventRequest(
                     context=context,
