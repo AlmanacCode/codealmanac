@@ -28,10 +28,10 @@ curl -fsSL https://codealmanac.com/install.sh | sh
 codealmanac setup --yes
 
 cd your-repo
-codealmanac init
-codealmanac search "getting"
-codealmanac show getting-started
-codealmanac serve
+codealmanac init                     # Makes your wiki, if you don't have one
+codealmanac search "getting started" # Shows matching wiki pages.
+codealmanac show getting-started     # Opens one page in the terminal
+codealmanac serve                    # Shows the wiki in local web viewer.
 ```
 
 ## Install
