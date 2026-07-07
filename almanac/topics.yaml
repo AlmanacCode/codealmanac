@@ -34,6 +34,11 @@ topics:
     description: Public command surface and command adapter behavior.
     parents: [operations]
 
+  - slug: viewer
+    title: Viewer
+    description: Read-only browser surface served by codealmanac serve.
+    parents: [architecture, cli]
+
   - slug: migration
     title: Migration
     description: Notes about replacing the old repo wiki and dropping retired product assumptions.

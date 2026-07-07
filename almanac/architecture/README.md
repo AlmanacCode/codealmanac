@@ -25,6 +25,7 @@ The main architecture neighborhoods are:
 
 - [Wiki Tree](wiki-tree): committed wiki files under `almanac/`.
 - [Indexing](indexing): derived SQLite read model.
+- [Local Viewer](viewer): read-only browser surface for wiki and run data.
 - [Runs](runs): build, ingest, and garden execution through the shared operation runner.
 - [Providers](providers): Codex and Claude harness adapters.
 - [Sync And Automation](sync-and-automation): transcript sync and launchd jobs.

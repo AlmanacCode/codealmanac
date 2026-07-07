@@ -33,6 +33,7 @@ pages because this repo treats architecture reshaping as part of implementation
 - Product scope: [Local-First Python](decisions/local-first-python).
 - Wiki source shape: [Wiki Tree](architecture/wiki-tree).
 - Search behavior: [Indexing](architecture/indexing).
+- Local browser surface: [Local Viewer](architecture/viewer).
 - Operation execution: [Runs](architecture/runs).
 - Codex and Claude execution: [Providers](architecture/providers).
 - Transcript intake and scheduling: [Sync And Automation](architecture/sync-and-automation).
