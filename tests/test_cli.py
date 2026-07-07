@@ -259,7 +259,7 @@ def default_cli_app(monkeypatch, isolated_home):
 
 
 def repository_id_for(app, repo: Path) -> str:
-    return app.repositories.resolve(repo).repository_id
+    return app.repositories.registered_repository_at(repo).repository_id
 
 
 def test_cli_init_creates_wiki_and_prints_name(

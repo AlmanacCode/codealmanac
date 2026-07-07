@@ -542,7 +542,7 @@ def test_ingest_workflow_passes_almanac_root_to_source_runtime(
         source_runtime_adapters=(runtime,),
     )
     initialize_repository(app, path=repo)
-    repository = app.repositories.resolve(repo)
+    repository = app.repositories.registered_repository_at(repo)
     sources = app.sources.resolve(ResolveSourcesRequest(cwd=repo, inputs=(".",)))
 
     result = app.workflows.ingest.inspect_source_runtime(repository, sources)

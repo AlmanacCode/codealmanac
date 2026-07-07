@@ -259,7 +259,7 @@ def test_existing_almanac_can_auto_register_for_read(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
-    repository = app.repositories.repository_for_read_path(repo)
+    repository = app.repositories.read_repository_at(repo)
 
     assert repository.root_path == repo
     assert repository.almanac_path == repo / "almanac"
@@ -280,7 +280,7 @@ def test_register_reuses_exact_path_without_root_hopping(
     )
 
     with pytest.raises(NoRepositorySelected):
-        app.repositories.resolve(child)
+        app.repositories.registered_repository_at(child)
 
 
 def remove_tree(path: Path) -> None:

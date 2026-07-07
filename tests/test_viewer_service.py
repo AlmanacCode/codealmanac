@@ -223,7 +223,7 @@ def write_viewer_page(repo: Path, name: str, body: str) -> None:
 
 
 def create_viewer_run(repo: Path, app: CodeAlmanac):
-    repository = app.repositories.resolve(repo)
+    repository = app.repositories.registered_repository_at(repo)
     record = app.runs.start(
         StartRunRequest(
             repository_id=repository.repository_id,
