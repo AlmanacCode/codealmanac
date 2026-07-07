@@ -1,13 +1,18 @@
 import os
 from collections.abc import Iterator
 from datetime import UTC, datetime
-from pathlib import Path
 
+from codealmanac.core.errors import NotFoundError
+from codealmanac.services.repositories.models import Repository
+from codealmanac.services.repositories.requests import SelectRepositoryRequest
+from codealmanac.services.repositories.service import RepositoriesService
+from codealmanac.services.runs.locks import RunWorkerLease
 from codealmanac.services.runs.models import (
     QueuedRun,
     RunAttachSnapshot,
     RunAttachUpdate,
     RunCancelResult,
+    RunKind,
     RunLogEvent,
     RunRecord,
     RunSpec,
@@ -19,7 +24,6 @@ from codealmanac.services.runs.requests import (
     FinishRunRequest,
     ListRunsRequest,
     MarkRunRunningRequest,
-    NextQueuedRunRequest,
     QueueRunRequest,
     ReadRunLogRequest,
     ReadRunSpecRequest,
@@ -29,74 +33,67 @@ from codealmanac.services.runs.requests import (
     StartRunRequest,
     StreamRunAttachRequest,
 )
-from codealmanac.services.runs.store import RunStore, RunWorkerLease
+from codealmanac.services.runs.store import RunStore
 from codealmanac.services.runs.streaming import RunAttachStreamer
-from codealmanac.services.workspaces.models import Workspace
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
-from codealmanac.services.workspaces.runtime import WorkspaceRuntimePaths
-from codealmanac.services.workspaces.service import WorkspacesService
 
 
 class RunsService:
     def __init__(
         self,
-        workspaces: WorkspacesService,
+        repositories: RepositoriesService,
         store: RunStore,
-        runtime_paths: WorkspaceRuntimePaths,
         streamer: RunAttachStreamer | None = None,
     ):
-        self.workspaces = workspaces
+        self.repositories = repositories
         self.store = store
-        self.runtime_paths = runtime_paths
         self.streamer = streamer or RunAttachStreamer(store)
 
     def start(self, request: StartRunRequest) -> RunRecord:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
         return self.store.create(
-            self.runtime_paths.repo_dir(workspace),
-            workspace.workspace_id,
-            request.operation,
+            request.repository_id,
+            request.kind,
             request.title,
         )
 
     def queue(self, request: QueueRunRequest) -> RunRecord:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
-        spec = request.spec.model_copy(
-            update={"cwd": request.cwd, "wiki": request.wiki}
-        )
         return self.store.queue(
-            self.runtime_paths.repo_dir(workspace),
-            workspace.workspace_id,
-            spec,
+            request.repository_id,
+            request.spec,
             request.title,
         )
 
     def list(self, request: ListRunsRequest) -> tuple[RunRecord, ...]:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
-        return self.store.list(self.runtime_paths.repo_dir(workspace), request.limit)
+        repository = self.selected_repository(request.repository_name)
+        repository_id = None if repository is None else repository.repository_id
+        return self.store.list(request.limit, repository_id=repository_id)
 
     def show(self, request: ShowRunRequest) -> RunRecord:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
-        return self.store.read(self.runtime_paths.repo_dir(workspace), request.run_id)
+        record = self.store.read(request.run_id)
+        self.require_selected_run(record, request.repository_name)
+        return record
 
     def read_spec(self, request: ReadRunSpecRequest) -> RunSpec | None:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
-        return self.store.read_spec(
-            self.runtime_paths.repo_dir(workspace),
-            request.run_id,
-        )
+        record = self.store.read(request.run_id)
+        self.require_selected_run(record, request.repository_name)
+        return self.store.read_spec(request.run_id)
 
-    def next_queued(self, request: NextQueuedRunRequest) -> QueuedRun | None:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
-        return self.store.next_queued(self.runtime_paths.repo_dir(workspace))
+    def next_queued(self) -> QueuedRun | None:
+        return self.store.next_queued()
+
+    def queued_before(self, record: RunRecord) -> int:
+        return self.store.queued_before(record)
+
+    def has_active_run(self, repository_id: str, kind: RunKind) -> bool:
+        return self.store.has_active_run(repository_id, kind)
+
+    def repository_for(self, record: RunRecord) -> Repository:
+        return self.repositories.get(record.repository_id)
 
     def acquire_worker_lock(
         self,
         request: AcquireRunWorkerLockRequest,
     ) -> RunWorkerLease | None:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
         return self.store.acquire_worker_lock(
-            self.runtime_paths.repo_dir(workspace),
             request.owner,
             request.pid or os.getpid(),
             request.now or datetime.now(UTC),
@@ -104,28 +101,28 @@ class RunsService:
         )
 
     def log(self, request: ReadRunLogRequest) -> tuple[RunLogEvent, ...]:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
-        return self.store.log(self.runtime_paths.repo_dir(workspace), request.run_id)
+        record = self.store.read(request.run_id)
+        self.require_selected_run(record, request.repository_name)
+        return self.store.log(request.run_id)
 
     def attach(self, request: AttachRunRequest) -> RunAttachSnapshot:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
-        return self.store.attach(self.runtime_paths.repo_dir(workspace), request.run_id)
+        snapshot = self.store.attach(request.run_id)
+        self.require_selected_run(snapshot.record, request.repository_name)
+        return snapshot
 
     def stream_attach(
         self,
         request: StreamRunAttachRequest,
     ) -> Iterator[RunAttachUpdate]:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
+        record = self.store.read(request.run_id)
+        self.require_selected_run(record, request.repository_name)
         return self.streamer.stream(
-            self.runtime_paths.repo_dir(workspace),
             request.run_id,
             request.poll_interval_seconds,
         )
 
     def record_event(self, request: RecordRunEventRequest) -> RunLogEvent:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
-        return self.store.append(
-            self.runtime_paths.repo_dir(workspace),
+        return self.store.record_event(
             request.run_id,
             request.kind,
             request.message,
@@ -133,27 +130,19 @@ class RunsService:
         )
 
     def mark_running(self, request: MarkRunRunningRequest) -> RunRecord:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
-        return self.store.mark_running(
-            self.runtime_paths.repo_dir(workspace),
-            request.run_id,
-        )
+        return self.store.mark_running(request.run_id)
 
     def record_harness_transcript(
         self,
         request: RecordRunHarnessTranscriptRequest,
     ) -> RunRecord:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
         return self.store.record_harness_transcript(
-            self.runtime_paths.repo_dir(workspace),
             request.run_id,
             request.transcript,
         )
 
     def finish(self, request: FinishRunRequest) -> RunRecord:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
         return self.store.finish(
-            self.runtime_paths.repo_dir(workspace),
             request.run_id,
             request.status,
             request.summary,
@@ -161,12 +150,24 @@ class RunsService:
         )
 
     def cancel(self, request: CancelRunRequest) -> RunCancelResult:
-        workspace = self.resolve_workspace(request.cwd, request.wiki)
-        return self.store.cancel(self.runtime_paths.repo_dir(workspace), request.run_id)
+        record = self.store.read(request.run_id)
+        self.require_selected_run(record, request.repository_name)
+        return self.store.cancel(request.run_id)
 
-    def resolve_workspace(self, cwd: Path, wiki: str | None) -> Workspace:
-        if wiki is None:
-            return self.workspaces.resolve(cwd)
-        return self.workspaces.select(
-            SelectWorkspaceRequest(selector=wiki, base_path=cwd)
+    def selected_repository(self, repository_name: str | None) -> Repository | None:
+        if repository_name is None:
+            return None
+        return self.repositories.select_by_name(
+            SelectRepositoryRequest(name=repository_name)
         )
+
+    def require_selected_run(
+        self,
+        record: RunRecord,
+        repository_name: str | None,
+    ) -> None:
+        repository = self.selected_repository(repository_name)
+        if repository is None:
+            return
+        if record.repository_id != repository.repository_id:
+            raise NotFoundError("run", record.run_id)

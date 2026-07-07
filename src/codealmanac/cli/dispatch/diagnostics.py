@@ -7,6 +7,8 @@ from codealmanac.services.diagnostics.requests import DoctorRequest
 
 
 def dispatch_doctor(args: argparse.Namespace, app: CodeAlmanac) -> int:
-    report = app.diagnostics.check(DoctorRequest(cwd=Path.cwd(), wiki=args.wiki))
+    report = app.diagnostics.check(
+        DoctorRequest(cwd=Path.cwd(), repository_name=args.wiki)
+    )
     render_doctor(report, json_output=args.json)
     return 0

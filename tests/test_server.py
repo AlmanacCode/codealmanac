@@ -5,14 +5,14 @@ from fastapi.testclient import TestClient
 from codealmanac.app import CodeAlmanac
 from codealmanac.server.app import create_server_app
 from codealmanac.services.harnesses.models import HarnessEvent, HarnessEventKind
-from codealmanac.services.runs.models import RunEventKind, RunOperation, RunStatus
+from codealmanac.services.repositories.requests import RegisterRepositoryRequest
+from codealmanac.services.runs.models import RunEventKind, RunKind, RunStatus
 from codealmanac.services.runs.requests import (
     FinishRunRequest,
     MarkRunRunningRequest,
     RecordRunEventRequest,
     StartRunRequest,
 )
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
 
 
 def test_server_serves_static_assets_and_viewer_api(
@@ -59,8 +59,8 @@ def test_server_serves_static_assets_and_viewer_api(
     assert "Input tokens" in jobs_module.text
     assert "Failure" in jobs_module.text
     assert "Agent trace" in jobs_module.text
-    assert overview.json()["workspace"]["name"] == "repo"
-    assert overview.json()["workspaces"][0]["name"] == "repo"
+    assert overview.json()["repository"]["name"] == "repo"
+    assert overview.json()["repositories"][0]["name"] == "repo"
     assert page.json()["slug"] == "auth-flow"
     assert page.json()["sources"][0]["source_id"] == "session-file"
     assert page.json()["sources"][0]["target"] == "src/auth/session.py"
@@ -85,7 +85,7 @@ def test_server_serves_jobs_api_with_normalized_harness_events(
     detail = client.get(f"/api/jobs/{record.run_id}")
 
     assert jobs.status_code == 200
-    assert jobs.json()["workspace"]["name"] == "repo"
+    assert jobs.json()["repository"]["name"] == "repo"
     assert [run["run_id"] for run in jobs.json()["runs"]] == [record.run_id]
     assert jobs.json()["runs"][0]["status"] == "done"
     assert detail.status_code == 200
@@ -103,7 +103,8 @@ def test_server_viewer_api_switches_between_registered_wikis(
     repo, app = viewer_repo
     other_repo = tmp_path / "other"
     other_repo.mkdir()
-    other = app.workflows.build.initialize(InitializeWorkspaceRequest(path=other_repo))
+    other = app.repositories.register(RegisterRepositoryRequest(root_path=other_repo))
+    app.wiki.initialize(other.repository_id)
     write_server_page(
         other_repo,
         "ops-note.md",
@@ -119,31 +120,31 @@ Tracks operational decisions.
     client = TestClient(create_server_app(app, repo))
 
     overview = client.get("/api/overview")
-    other_overview = client.get("/api/overview", params={"wiki": other.workspace_id})
+    other_overview = client.get("/api/overview", params={"wiki": other.name})
     other_page = client.get(
         "/api/page/ops-note",
-        params={"wiki": other.workspace_id},
+        params={"wiki": other.name},
     )
-    locked_client = TestClient(create_server_app(app, repo, other.workspace_id))
+    locked_client = TestClient(create_server_app(app, repo, other.name))
     locked_overview = locked_client.get("/api/overview")
     locked_page = locked_client.get("/api/page/ops-note")
 
     assert overview.status_code == 200
-    assert [workspace["name"] for workspace in overview.json()["workspaces"]] == [
+    assert [repository["name"] for repository in overview.json()["repositories"]] == [
         "repo",
         "other",
     ]
     assert other_overview.status_code == 200
-    assert other_overview.json()["workspace"]["workspace_id"] == other.workspace_id
+    assert other_overview.json()["repository"]["repository_id"] == other.repository_id
     assert other_page.status_code == 200
     assert other_page.json()["title"] == "Ops Note"
     assert locked_overview.status_code == 200
-    assert locked_overview.json()["workspace"]["workspace_id"] == other.workspace_id
-    locked_workspace_ids = [
-        workspace["workspace_id"]
-        for workspace in locked_overview.json()["workspaces"]
+    assert locked_overview.json()["repository"]["repository_id"] == other.repository_id
+    locked_repository_ids = [
+        repository["repository_id"]
+        for repository in locked_overview.json()["repositories"]
     ]
-    assert locked_workspace_ids == [other.workspace_id]
+    assert locked_repository_ids == [other.repository_id]
     assert locked_page.status_code == 200
     assert locked_page.json()["slug"] == "ops-note"
 
@@ -221,17 +222,17 @@ def write_server_page(repo: Path, name: str, body: str) -> None:
 
 
 def create_server_run(repo: Path, app: CodeAlmanac):
+    repository = app.repositories.resolve(repo)
     record = app.runs.start(
         StartRunRequest(
-            cwd=repo,
-            operation=RunOperation.INGEST,
+            repository_id=repository.repository_id,
+            kind=RunKind.INGEST,
             title="Digest auth note",
         )
     )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=record.run_id))
+    app.runs.mark_running(MarkRunRunningRequest(run_id=record.run_id))
     app.runs.record_event(
         RecordRunEventRequest(
-            cwd=repo,
             run_id=record.run_id,
             kind=RunEventKind.OUTPUT,
             message="Created auth-flow.md",
@@ -243,7 +244,6 @@ def create_server_run(repo: Path, app: CodeAlmanac):
     )
     return app.runs.finish(
         FinishRunRequest(
-            cwd=repo,
             run_id=record.run_id,
             status=RunStatus.DONE,
             summary="updated wiki",

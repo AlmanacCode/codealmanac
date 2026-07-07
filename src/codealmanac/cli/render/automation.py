@@ -5,7 +5,6 @@ from codealmanac.cli.render.style import humanize_duration
 from codealmanac.services.automation.models import (
     AutomationInstallResult,
     AutomationStatusReport,
-    AutomationTask,
     AutomationUninstallResult,
     ScheduledJob,
     ScheduledJobStatus,
@@ -54,12 +53,7 @@ def render_automation_status(
 
 def print_automation_job(job: ScheduledJob) -> None:
     print(f"  {job.task.value} interval: {duration_label(job.interval)}")
-    if job.task == AutomationTask.SYNC:
-        quiet = job.program_arguments[job.program_arguments.index("--quiet") + 1]
-        print(f"  sync quiet: {quiet}")
     print(f"  {job.task.value} command: {' '.join(job.program_arguments)}")
-    if job.working_directory is not None:
-        print(f"  {job.task.value} cwd: {job.working_directory}")
     print(f"  {job.task.value} plist: {job.plist_path}")
 
 
@@ -73,8 +67,6 @@ def render_automation_job_status(status: ScheduledJobStatus) -> None:
     print(f"  launchd loaded: {'yes' if status.loaded else 'no'}")
     if status.interval is not None:
         print(f"  interval: {duration_label(status.interval)}")
-    if status.quiet is not None:
-        print(f"  quiet: {duration_label(status.quiet)}")
 
 
 def duration_label(value: timedelta) -> str:

@@ -9,8 +9,8 @@ sources:
     note: SQLite schema and index database connection.
   - id: runtime
     type: file
-    path: src/codealmanac/services/workspaces/runtime.py
-    note: Per-workspace runtime path mapping.
+    path: src/codealmanac/settings.py
+    note: LocalStatePaths maps repositories to derived runtime directories.
   - id: projection
     type: file
     path: src/codealmanac/services/index/projection.py
@@ -31,7 +31,7 @@ sources:
 
 # Indexing
 
-The index is derived runtime state. `WorkspaceRuntimePaths` maps each workspace to `~/.codealmanac/repos/<workspace-id>/`, and `src/codealmanac/services/index/schema.py` stores `index.db` inside that runtime directory [@runtime] [@schema].
+The index is derived runtime state. `LocalStatePaths.repository_dir(repository_id)` maps each registered repository to `~/.codealmanac/repos/<repository-id>/`, and `src/codealmanac/services/index/schema.py` stores `index.db` inside that runtime directory [@runtime] [@schema].
 
 The schema includes pages, topics, page-topic edges, topic-parent edges, file references, page sources, page links, cross-wiki links, FTS5 content, and index metadata [@schema]. The projection deletes and rebuilds those tables from loaded page documents and topic definitions [@projection].
 

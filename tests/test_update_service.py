@@ -1,7 +1,11 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-from codealmanac.services.runs.models import RunOperation, RunRecord, RunStatus
+from codealmanac.services.harnesses.models import HarnessKind
+from codealmanac.services.repositories.models import Repository
+from codealmanac.services.repositories.store import RepositoryStore
+from codealmanac.services.runs.models import RunKind, RunSpec, RunStatus
+from codealmanac.services.runs.store import RunStore
 from codealmanac.services.updates.models import (
     PackageCommandResult,
     PackageInstallMetadata,
@@ -79,7 +83,7 @@ def test_update_service_plans_pip_upgrade_with_current_python():
 
 def test_update_service_refuses_editable_install_without_running_command():
     runner = FakeCommandRunner(PackageCommandResult(exit_code=0))
-    service = UpdatesService(
+    service = update_service_with_runner(
         FakeMetadataProvider(
             PackageInstallMetadata(
                 version="0.1.0",
@@ -103,7 +107,7 @@ def test_update_service_returns_failed_result_from_executor():
     runner = FakeCommandRunner(
         PackageCommandResult(exit_code=2, stdout="out\n", stderr="err\n")
     )
-    service = UpdatesService(
+    service = update_service_with_runner(
         FakeMetadataProvider(PackageInstallMetadata(version="0.1.0", installer="uv")),
         runner,
     )
@@ -121,7 +125,7 @@ def test_update_service_returns_completed_result_from_executor_success():
     runner = FakeCommandRunner(
         PackageCommandResult(exit_code=0, stderr="Nothing to upgrade\n")
     )
-    service = UpdatesService(
+    service = update_service_with_runner(
         FakeMetadataProvider(PackageInstallMetadata(version="0.1.0", installer="uv")),
         runner,
     )
@@ -146,7 +150,8 @@ def test_scheduled_update_skips_editable_install(tmp_path: Path):
             )
         ),
         runner,
-        state_dir=tmp_path / ".codealmanac",
+        lock_path=tmp_path / ".codealmanac" / "update.lock",
+        database_path=tmp_path / ".codealmanac" / "codealmanac.db",
     )
 
     result = service.run(RunUpdateRequest(scheduled=True))
@@ -161,12 +166,14 @@ def test_scheduled_update_skips_editable_install(tmp_path: Path):
 
 def test_scheduled_update_skips_when_lifecycle_run_is_active(tmp_path: Path):
     state_dir = tmp_path / ".codealmanac"
-    write_run_record(state_dir, RunStatus.RUNNING)
+    database_path = state_dir / "codealmanac.db"
+    write_run_record(database_path, tmp_path / "repo", RunStatus.RUNNING)
     runner = FakeCommandRunner(PackageCommandResult(exit_code=0))
     service = UpdatesService(
         FakeMetadataProvider(PackageInstallMetadata(version="0.1.0", installer="uv")),
         runner,
-        state_dir=state_dir,
+        lock_path=state_dir / "update.lock",
+        database_path=database_path,
     )
 
     result = service.run(RunUpdateRequest(scheduled=True))
@@ -188,7 +195,8 @@ def test_scheduled_update_skips_when_update_lock_is_held(tmp_path: Path):
     service = UpdatesService(
         FakeMetadataProvider(PackageInstallMetadata(version="0.1.0", installer="uv")),
         runner,
-        state_dir=state_dir,
+        lock_path=state_dir / "update.lock",
+        database_path=state_dir / "codealmanac.db",
     )
 
     result = service.run(
@@ -215,7 +223,8 @@ def test_scheduled_update_runs_smoke_after_success(tmp_path: Path):
     service = UpdatesService(
         FakeMetadataProvider(PackageInstallMetadata(version="0.1.0", installer="uv")),
         runner,
-        state_dir=tmp_path / ".codealmanac",
+        lock_path=tmp_path / ".codealmanac" / "update.lock",
+        database_path=tmp_path / ".codealmanac" / "codealmanac.db",
     )
 
     result = service.run(RunUpdateRequest(scheduled=True))
@@ -241,7 +250,8 @@ def test_scheduled_update_fails_when_smoke_fails(tmp_path: Path):
     service = UpdatesService(
         FakeMetadataProvider(PackageInstallMetadata(version="0.1.0", installer="uv")),
         runner,
-        state_dir=tmp_path / ".codealmanac",
+        lock_path=tmp_path / ".codealmanac" / "update.lock",
+        database_path=tmp_path / ".codealmanac" / "codealmanac.db",
     )
 
     result = service.run(RunUpdateRequest(scheduled=True))
@@ -251,24 +261,49 @@ def test_scheduled_update_fails_when_smoke_fails(tmp_path: Path):
 
 
 def update_service(metadata: PackageInstallMetadata) -> UpdatesService:
-    return UpdatesService(
+    return update_service_with_runner(
         FakeMetadataProvider(metadata),
         FakeCommandRunner(PackageCommandResult(exit_code=0)),
     )
 
 
-def write_run_record(state_dir: Path, status: RunStatus) -> None:
-    path = state_dir / "repos/repo-id/runs/run_active.json"
-    path.parent.mkdir(parents=True)
-    now = datetime(2026, 7, 6, tzinfo=UTC)
-    record = RunRecord(
-        run_id="run_active",
-        workspace_id="repo-id",
-        operation=RunOperation.INGEST,
-        status=status,
-        title="Active run",
-        created_at=now,
-        updated_at=now,
-        log_path=Path("runs/run_active.jsonl"),
+def update_service_with_runner(
+    metadata: FakeMetadataProvider,
+    runner: FakeCommandRunner | ScriptedCommandRunner,
+) -> UpdatesService:
+    return UpdatesService(
+        metadata,
+        runner,
+        lock_path=Path(":memory:").parent / "update.lock",
+        database_path=Path(":memory:"),
     )
-    path.write_text(record.model_dump_json(indent=2), encoding="utf-8")
+
+
+def write_run_record(
+    database_path: Path,
+    repository_root: Path,
+    status: RunStatus,
+) -> None:
+    now = datetime(2026, 7, 6, tzinfo=UTC)
+    repository = Repository(
+        repository_id="repo-id",
+        name="repo",
+        description="",
+        root_path=repository_root,
+        almanac_path=repository_root / "almanac",
+        registered_at=now,
+    )
+    RepositoryStore(database_path).remember(repository)
+    store = RunStore(database_path)
+    record = store.queue(
+        repository.repository_id,
+        RunSpec(
+            kind=RunKind.INGEST,
+            harness=HarnessKind.CODEX,
+            model="gpt-5.5",
+            inputs=("note.md",),
+        ),
+        "Active run",
+    )
+    if status == RunStatus.RUNNING:
+        store.mark_running(record.run_id)

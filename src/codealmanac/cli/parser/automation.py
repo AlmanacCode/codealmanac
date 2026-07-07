@@ -26,10 +26,6 @@ def add_automation_commands(subcommands: argparse._SubParsersAction) -> None:
         help="run interval for sync or one selected task",
     )
     automation_install.add_argument(
-        "--quiet",
-        help="minimum quiet time before sync",
-    )
-    automation_install.add_argument(
         "--garden-every",
         help="Garden run interval (default: 4h)",
     )

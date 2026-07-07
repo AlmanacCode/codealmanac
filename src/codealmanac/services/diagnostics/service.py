@@ -7,22 +7,25 @@ from codealmanac.services.diagnostics.models import DoctorReport
 from codealmanac.services.diagnostics.requests import DoctorRequest
 from codealmanac.services.diagnostics.wiki import wiki_checks
 from codealmanac.services.index.service import IndexService
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.services.repositories.service import RepositoriesService
+from codealmanac.settings import LocalStatePaths
 
 
 class DiagnosticsService:
     def __init__(
         self,
-        workspaces: WorkspacesService,
+        repositories: RepositoriesService,
         index: IndexService,
         manual: ManualLibrary,
+        local_state: LocalStatePaths,
         version: str,
         python_version: str | None = None,
         python_supported: bool | None = None,
     ):
-        self.workspaces = workspaces
+        self.repositories = repositories
         self.index = index
         self.manual = manual
+        self.local_state = local_state
         self.version = version
         self.python_version = python_version or platform.python_version()
         if python_supported is None:
@@ -35,14 +38,14 @@ class DiagnosticsService:
             version=self.version,
             install=install_checks(
                 version=self.version,
-                registry_path=self.workspaces.registry_path,
+                database_path=self.local_state.database_path,
                 manual=self.manual,
                 python_version=self.python_version,
                 python_supported=self.python_supported,
             ),
             wiki=wiki_checks(
                 request,
-                workspaces=self.workspaces,
+                repositories=self.repositories,
                 index=self.index,
             ),
         )

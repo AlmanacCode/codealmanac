@@ -15,7 +15,7 @@ def add_setup_commands(subcommands: argparse._SubParsersAction) -> None:
     setup.add_argument(
         "--no-auto-commit",
         action="store_true",
-        help="tell lifecycle agents not to commit wiki changes",
+        help="tell run agents not to commit wiki changes",
     )
     setup.add_argument(
         "--skip-instructions",
@@ -30,10 +30,6 @@ def add_setup_commands(subcommands: argparse._SubParsersAction) -> None:
     setup.add_argument(
         "--sync-every",
         help="scheduled sync interval when setup installs automation",
-    )
-    setup.add_argument(
-        "--sync-quiet",
-        help="minimum quiet time before scheduled sync",
     )
     setup.add_argument(
         "--sync-off",

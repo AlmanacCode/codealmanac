@@ -1,9 +1,8 @@
 from codealmanac.services.config.models import (
-    CodeAlmanacConfig,
     ConfigKey,
     ConfigSetResult,
     HarnessConfig,
-    SyncConfig,
+    UserConfig,
 )
 from codealmanac.services.config.requests import (
     LoadConfigRequest,
@@ -13,7 +12,6 @@ from codealmanac.services.config.service import ConfigService
 from codealmanac.services.config.store import ConfigStore
 
 __all__ = [
-    "CodeAlmanacConfig",
     "ConfigKey",
     "ConfigSetResult",
     "ConfigService",
@@ -21,5 +19,5 @@ __all__ = [
     "HarnessConfig",
     "LoadConfigRequest",
     "SetConfigValueRequest",
-    "SyncConfig",
+    "UserConfig",
 ]

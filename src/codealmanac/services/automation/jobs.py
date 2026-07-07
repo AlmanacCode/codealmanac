@@ -4,46 +4,32 @@ from collections.abc import Sequence
 from datetime import timedelta
 from pathlib import Path
 
-from codealmanac.core.paths import home_dir, normalize_path, state_dir_for
+from codealmanac.core.paths import home_dir, logs_dir_for, normalize_path
 from codealmanac.services.automation.defaults import (
-    AUTOMATION_SYNC_CLAIM_OWNER,
-    AUTOMATION_SYNC_MAX_FAILED_ATTEMPTS,
-    AUTOMATION_SYNC_PENDING_TIMEOUT,
     DEFAULT_GARDEN_INTERVAL,
     DEFAULT_SYNC_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
     LAUNCHD_FALLBACK_PATHS,
-    duration_text,
 )
-from codealmanac.services.automation.definitions import (
-    AutomationTaskDefinition,
-    task_definition,
-)
+from codealmanac.services.automation.definitions import task_definition
 from codealmanac.services.automation.models import (
     AutomationTask,
-    AutomationWorkingDirectory,
     EnvironmentVariable,
     ScheduledJob,
 )
 from codealmanac.services.automation.requests import InstallAutomationRequest
-from codealmanac.services.config.models import DEFAULT_SYNC_QUIET
-from codealmanac.services.workspaces.service import WorkspacesService
 
 
 class AutomationJobFactory:
-    def __init__(self, workspaces: WorkspacesService):
-        self.workspaces = workspaces
-
     def job_for_task(
         self,
         task: AutomationTask,
         request: InstallAutomationRequest,
         explicit_tasks: bool,
-        resolve_working_directory: bool,
     ) -> ScheduledJob:
         definition = task_definition(task)
         home = normalize_path(request.home or home_dir())
-        logs_dir = state_dir_for(home) / "logs"
+        logs_dir = logs_dir_for(home)
         return ScheduledJob(
             task=task,
             label=definition.label,
@@ -58,19 +44,7 @@ class AutomationJobFactory:
             ),
             stdout_path=logs_dir / definition.stdout_log_name,
             stderr_path=logs_dir / definition.stderr_log_name,
-            working_directory=self._working_directory(definition, request.cwd)
-            if resolve_working_directory
-            else None,
         )
-
-    def _working_directory(
-        self,
-        definition: AutomationTaskDefinition,
-        cwd: Path,
-    ) -> Path | None:
-        if definition.working_directory == AutomationWorkingDirectory.NONE:
-            return None
-        return self.workspaces.resolve(cwd).root_path
 
 
 def interval_for(
@@ -109,22 +83,10 @@ def program_arguments_for(
     executable = request.python_executable or Path(sys.executable)
     base = (str(executable), "-m", "codealmanac.cli.main")
     if task == AutomationTask.SYNC:
-        quiet = request.quiet if request.quiet is not None else DEFAULT_SYNC_QUIET
-        return (
-            *base,
-            "sync",
-            "--quiet",
-            duration_text(quiet),
-            "--claim-owner",
-            AUTOMATION_SYNC_CLAIM_OWNER,
-            "--pending-timeout",
-            duration_text(AUTOMATION_SYNC_PENDING_TIMEOUT),
-            "--max-failed-attempts",
-            str(AUTOMATION_SYNC_MAX_FAILED_ATTEMPTS),
-        )
+        return (*base, "sync")
     if task == AutomationTask.UPDATE:
         return (*base, "update", "--scheduled")
-    return (*base, "garden")
+    return (*base, "__garden-scheduler")
 
 
 def plist_path_for(task: AutomationTask, home: Path) -> Path:

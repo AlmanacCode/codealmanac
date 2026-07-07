@@ -3,6 +3,8 @@ from codealmanac.core.slug import to_kebab_case
 from codealmanac.services.index.models import PageView
 from codealmanac.services.index.requests import SearchIndexRequest
 from codealmanac.services.index.service import IndexService
+from codealmanac.services.repositories.models import Repository
+from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.runs.requests import AttachRunRequest, ListRunsRequest
 from codealmanac.services.runs.service import RunsService
 from codealmanac.services.viewer.jobs import viewer_job_event, viewer_job_run
@@ -22,10 +24,11 @@ from codealmanac.services.viewer.projections import (
     page_summary_from_search,
     page_summary_from_view,
     viewer_page_sources,
+    viewer_repository,
     viewer_topic_summary,
-    viewer_workspace,
 )
 from codealmanac.services.viewer.renderer import MarkdownRenderer
+from codealmanac.services.viewer.repository_scope import ViewerRepositoryScope
 from codealmanac.services.viewer.requests import (
     ViewerFileRequest,
     ViewerJobRequest,
@@ -35,16 +38,13 @@ from codealmanac.services.viewer.requests import (
     ViewerSearchRequest,
     ViewerTopicRequest,
 )
-from codealmanac.services.viewer.workspace_scope import ViewerWorkspaceScope
 from codealmanac.services.wiki.paths import looks_like_dir
-from codealmanac.services.workspaces.models import Workspace
-from codealmanac.services.workspaces.service import WorkspacesService
 
 
 class ViewerService:
     def __init__(
         self,
-        workspaces: WorkspacesService,
+        repositories: RepositoriesService,
         index: IndexService,
         runs: RunsService,
         renderer: MarkdownRenderer,
@@ -52,71 +52,80 @@ class ViewerService:
         self.index = index
         self.runs = runs
         self.renderer = renderer
-        self.workspace_scope = ViewerWorkspaceScope(workspaces)
+        self.repository_scope = ViewerRepositoryScope(repositories)
 
     def overview(self, request: ViewerOverviewRequest) -> ViewerOverview:
-        workspace = self.workspace_scope.select(request.cwd, request.wiki)
-        summary = self.index.summary(workspace.workspace_id)
+        repository = self.repository_scope.select(request.cwd, request.repository_name)
+        summary = self.index.summary(repository.repository_id)
         pages = self.index.search(
-            workspace.workspace_id,
+            repository.repository_id,
             SearchIndexRequest(limit=request.page_limit),
         )
-        topics = self.index.list_topics(workspace.workspace_id)
+        navigation_pages = self.index.search(
+            repository.repository_id,
+            SearchIndexRequest(),
+        )
+        topics = self.index.list_topics(repository.repository_id)
         return ViewerOverview(
-            workspace=viewer_workspace(workspace),
-            workspaces=self.workspace_scope.navigation(
-                selected=workspace,
-                include_all=request.include_workspaces,
+            repository=viewer_repository(repository),
+            repositories=self.repository_scope.navigation(
+                selected=repository,
+                include_all=request.include_repositories,
             ),
             page_count=summary.pages,
             topic_count=summary.topics,
-            pages=tuple(page_summary_from_search(page) for page in pages),
+            pages=tuple(page_summary_from_search(repository, page) for page in pages),
+            navigation_pages=tuple(
+                page_summary_from_search(repository, page)
+                for page in navigation_pages
+            ),
             topics=tuple(viewer_topic_summary(topic) for topic in topics),
-            featured_page=self.get_featured_page(workspace),
+            featured_page=self.get_featured_page(repository),
         )
 
     def page(self, request: ViewerPageRequest) -> ViewerPage:
-        workspace = self.workspace_scope.select(request.cwd, request.wiki)
-        page = self.get_page_or_raise(workspace, request.slug)
-        related_pages = self.related_pages(workspace, page)
+        repository = self.repository_scope.select(request.cwd, request.repository_name)
+        page = self.get_page_or_raise(repository, request.slug)
+        related_pages = self.related_pages(repository, page)
+        rendered = self.renderer.render(
+            page.body,
+            page_id=page.slug,
+            source_is_folder_landing=page.file_path.name == "README.md",
+        )
         return ViewerPage(
-            workspace=viewer_workspace(workspace),
+            repository=viewer_repository(repository),
             slug=page.slug,
             title=page.title,
             summary=page.summary,
             topics=page.topics,
             body=page.body,
-            html=self.renderer.render(
-                page.body,
-                page_id=page.slug,
-                source_is_folder_landing=page.file_path.name == "README.md",
-            ),
+            html=rendered.html,
             backlinks=page.page_links_in,
             outgoing_links=page.page_links_out,
             file_refs=tuple(
                 ViewerFileReference(path=ref.path, is_dir=ref.is_dir)
                 for ref in page.file_refs
             ),
-            sources=viewer_page_sources(page.sources),
+            sources=viewer_page_sources(page.sources, rendered.citation_order),
             related_pages=related_pages,
         )
 
     def search(self, request: ViewerSearchRequest) -> ViewerSearch:
-        workspace = self.workspace_scope.select(request.cwd, request.wiki)
+        repository = self.repository_scope.select(request.cwd, request.repository_name)
         pages = self.index.search(
-            workspace.workspace_id,
+            repository.repository_id,
             SearchIndexRequest(query=request.query, limit=request.limit),
         )
         return ViewerSearch(
-            workspace=viewer_workspace(workspace),
+            repository=viewer_repository(repository),
             query=request.query,
-            pages=tuple(page_summary_from_search(page) for page in pages),
+            pages=tuple(page_summary_from_search(repository, page) for page in pages),
         )
 
     def file(self, request: ViewerFileRequest) -> ViewerFile:
-        workspace = self.workspace_scope.select(request.cwd, request.wiki)
+        repository = self.repository_scope.select(request.cwd, request.repository_name)
         pages = self.index.search(
-            workspace.workspace_id,
+            repository.repository_id,
             SearchIndexRequest(mentions=request.path, limit=request.limit),
         )
         kind = (
@@ -125,17 +134,17 @@ class ViewerService:
             else ViewerFileKind.FILE
         )
         return ViewerFile(
-            workspace=viewer_workspace(workspace),
+            repository=viewer_repository(repository),
             path=request.path,
             kind=kind,
-            pages=tuple(page_summary_from_search(page) for page in pages),
+            pages=tuple(page_summary_from_search(repository, page) for page in pages),
         )
 
     def topic(self, request: ViewerTopicRequest) -> ViewerTopic:
-        workspace = self.workspace_scope.select(request.cwd, request.wiki)
+        repository = self.repository_scope.select(request.cwd, request.repository_name)
         slug = to_kebab_case(request.slug)
         topic = self.index.get_topic(
-            workspace.workspace_id,
+            repository.repository_id,
             slug,
             request.include_descendants,
         )
@@ -144,10 +153,10 @@ class ViewerService:
         pages = tuple(
             page_summary
             for page_slug in topic.pages
-            if (page_summary := self.page_summary(workspace, page_slug)) is not None
+            if (page_summary := self.page_summary(repository, page_slug)) is not None
         )
         return ViewerTopic(
-            workspace=viewer_workspace(workspace),
+            repository=viewer_repository(repository),
             slug=topic.slug,
             title=topic.title,
             description=topic.description,
@@ -157,56 +166,54 @@ class ViewerService:
         )
 
     def jobs(self, request: ViewerJobsRequest) -> ViewerJobs:
-        workspace = self.workspace_scope.select(request.cwd, request.wiki)
+        repository = self.repository_scope.select(request.cwd, request.repository_name)
         runs = self.runs.list(
             ListRunsRequest(
-                cwd=request.cwd,
-                wiki=workspace.workspace_id,
+                repository_name=repository.name,
                 limit=request.limit,
             )
         )
         return ViewerJobs(
-            workspace=viewer_workspace(workspace),
+            repository=viewer_repository(repository),
             runs=tuple(viewer_job_run(record) for record in runs),
         )
 
     def job(self, request: ViewerJobRequest) -> ViewerJob:
-        workspace = self.workspace_scope.select(request.cwd, request.wiki)
+        repository = self.repository_scope.select(request.cwd, request.repository_name)
         snapshot = self.runs.attach(
             AttachRunRequest(
-                cwd=request.cwd,
-                wiki=workspace.workspace_id,
+                repository_name=repository.name,
                 run_id=request.run_id,
             )
         )
         return ViewerJob(
-            workspace=viewer_workspace(workspace),
+            repository=viewer_repository(repository),
             run=viewer_job_run(snapshot.record),
             events=tuple(viewer_job_event(event) for event in snapshot.events),
         )
 
-    def get_page_or_raise(self, workspace: Workspace, slug: str) -> PageView:
-        page = self.index.get_page(workspace.workspace_id, slug)
+    def get_page_or_raise(self, repository: Repository, slug: str) -> PageView:
+        page = self.index.get_page(repository.repository_id, slug)
         if page is None:
             raise NotFoundError("page", slug)
         return page
 
     def page_summary(
         self,
-        workspace: Workspace,
+        repository: Repository,
         slug: str,
     ) -> ViewerPageSummary | None:
-        page = self.index.get_page(workspace.workspace_id, slug)
+        page = self.index.get_page(repository.repository_id, slug)
         if page is None:
             return None
-        return page_summary_from_view(page)
+        return page_summary_from_view(repository, page)
 
-    def get_featured_page(self, workspace: Workspace) -> ViewerPageSummary | None:
-        return self.page_summary(workspace, "getting-started")
+    def get_featured_page(self, repository: Repository) -> ViewerPageSummary | None:
+        return self.page_summary(repository, "README")
 
     def related_pages(
         self,
-        workspace: Workspace,
+        repository: Repository,
         page: PageView,
     ) -> tuple[ViewerPageSummary, ...]:
         seen: set[str] = set()
@@ -215,7 +222,7 @@ class ViewerService:
             if slug in seen or slug == page.slug:
                 continue
             seen.add(slug)
-            summary = self.page_summary(workspace, slug)
+            summary = self.page_summary(repository, slug)
             if summary is not None:
                 related.append(summary)
         return tuple(related)

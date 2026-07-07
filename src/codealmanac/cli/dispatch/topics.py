@@ -26,7 +26,7 @@ def dispatch_topics(args: argparse.Namespace, app: CodeAlmanac) -> int:
         topic = app.topics.show(
             ShowTopicRequest(
                 cwd=Path.cwd(),
-                wiki=args.wiki,
+                repository_name=args.wiki,
                 slug=args.slug,
                 include_descendants=args.descendants,
             )
@@ -37,7 +37,7 @@ def dispatch_topics(args: argparse.Namespace, app: CodeAlmanac) -> int:
         result = app.topics.create(
             CreateTopicRequest(
                 cwd=Path.cwd(),
-                wiki=args.wiki,
+                repository_name=args.wiki,
                 name=args.name,
                 parents=tuple(args.parent),
             )
@@ -48,7 +48,7 @@ def dispatch_topics(args: argparse.Namespace, app: CodeAlmanac) -> int:
         result = app.topics.describe(
             DescribeTopicRequest(
                 cwd=Path.cwd(),
-                wiki=args.wiki,
+                repository_name=args.wiki,
                 slug=args.slug,
                 description=args.description,
             )
@@ -59,7 +59,7 @@ def dispatch_topics(args: argparse.Namespace, app: CodeAlmanac) -> int:
         result = app.topics.link(
             LinkTopicRequest(
                 cwd=Path.cwd(),
-                wiki=args.wiki,
+                repository_name=args.wiki,
                 child=args.child,
                 parent=args.parent,
             )
@@ -74,7 +74,7 @@ def dispatch_topic_rewrite(args: argparse.Namespace, app: CodeAlmanac) -> int:
         result = app.topics.unlink(
             UnlinkTopicRequest(
                 cwd=Path.cwd(),
-                wiki=args.wiki,
+                repository_name=args.wiki,
                 child=args.child,
                 parent=args.parent,
             )
@@ -85,7 +85,7 @@ def dispatch_topic_rewrite(args: argparse.Namespace, app: CodeAlmanac) -> int:
         result = app.topics.rename(
             RenameTopicRequest(
                 cwd=Path.cwd(),
-                wiki=args.wiki,
+                repository_name=args.wiki,
                 old_slug=args.old_slug,
                 new_slug=args.new_slug,
             )
@@ -96,12 +96,14 @@ def dispatch_topic_rewrite(args: argparse.Namespace, app: CodeAlmanac) -> int:
         result = app.topics.delete(
             DeleteTopicRequest(
                 cwd=Path.cwd(),
-                wiki=args.wiki,
+                repository_name=args.wiki,
                 slug=args.slug,
             )
         )
         render_topic_rewrite_mutation(result)
         return 0
-    topics = app.topics.list(ListTopicsRequest(cwd=Path.cwd(), wiki=args.wiki))
+    topics = app.topics.list(
+        ListTopicsRequest(cwd=Path.cwd(), repository_name=args.wiki)
+    )
     render_topics(topics)
     return 0

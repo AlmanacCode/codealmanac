@@ -1,1 +1,1 @@
-"""Run ledger service for local CodeAlmanac lifecycle jobs."""
+"""Run service for local CodeAlmanac runs."""

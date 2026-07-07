@@ -54,7 +54,7 @@ Plain setup installs local agent instructions plus the default local automation:
 sync, Garden, and daily package update. It does not connect to a hosted service.
 
 ```bash
-codealmanac setup --yes --sync-every 5h --sync-quiet 45m
+codealmanac setup --yes --sync-every 5h
 codealmanac setup --yes --sync-off
 codealmanac setup --yes --garden-off
 codealmanac setup --yes --no-auto-update
@@ -97,7 +97,8 @@ codealmanac validate
 ```
 
 Use `--wiki <name>` to read another registered local wiki. By default,
-commands resolve the nearest repository wiki from the current directory.
+commands target the exact current directory when it is a registered repository
+root.
 
 ## Updating The Wiki
 
@@ -107,9 +108,7 @@ They only allow source edits under `almanac/`.
 ```bash
 codealmanac ingest README.md --using codex
 codealmanac ingest github:pr:123 --using claude
-codealmanac ingest README.md --using codex --background
 codealmanac garden --using codex
-codealmanac garden --using codex --background
 ```
 
 `ingest` folds selected local material into the wiki. Inputs can include files,
@@ -122,27 +121,25 @@ leads, duplicate pages, and unsupported claims.
 No-op is valid. If the material adds no durable wiki knowledge, the harness
 should leave the wiki unchanged.
 
-Add `--background` to queue an `ingest` or `garden` run and start a detached
-local worker. Plain `ingest` and `garden` run in the foreground.
+`ingest` and `garden` create queued runs and start a local worker. Use
+`codealmanac jobs` and `codealmanac jobs attach <run-id>` to follow them.
 
 ## Sync And Automation
 
-`sync` scans local Claude and Codex transcript stores, waits for quiet sessions,
-and runs ordinary local ingest for eligible transcript ranges.
+`sync` scans local Claude and Codex transcript stores, finds conversations active
+since the last completed sync, and queues ordinary local ingest runs.
 
 ```bash
 codealmanac sync status --from codex
 codealmanac sync --from codex --using codex
-codealmanac sync --from codex --using codex --background
-codealmanac automation install sync --every 5h --quiet 30m
+codealmanac automation install sync --every 5h
 codealmanac automation install update --every 24h
 codealmanac automation status
 ```
 
-Scheduled automation launches foreground `sync`, `garden`, or `update`
-commands with explicit unattended policy. It is local scheduler state, not
-cloud sync. Scheduler logs live under `~/.codealmanac/logs/`.
-Use `sync --background` for manual queue-and-worker execution.
+Scheduled automation launches local `sync`, `garden`, or `update` commands with
+explicit unattended policy. It is local scheduler state, not cloud sync.
+Scheduler logs live under `~/.codealmanac/logs/`.
 
 ## Jobs
 
@@ -205,12 +202,13 @@ For auto-detection, a repository counts as a CodeAlmanac wiki when
 Derived local state lives under `~/.codealmanac/`:
 
 ```text
+~/.codealmanac/codealmanac.db
 ~/.codealmanac/repos/<repo-id>/index.db
-~/.codealmanac/repos/<repo-id>/runs/
 ```
 
-Those runtime files are rebuildable local machine state. They do not belong in
-the committed `almanac/` tree.
+The local database records repositories, runs, run events, worker locks, and
+sync state. Per-repository runtime files contain derived indexes. They do not
+belong in the committed `almanac/` tree.
 
 ## Configuration
 
@@ -233,9 +231,6 @@ auto_commit = true
 
 [harness]
 default = "codex"
-
-[sync]
-quiet = "30m"
 ```
 
 CLI flags still win over config.

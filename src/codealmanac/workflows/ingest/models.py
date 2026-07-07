@@ -6,18 +6,18 @@ from codealmanac.services.harnesses.models import HarnessRunResult
 from codealmanac.services.index.models import IndexRefreshResult
 from codealmanac.services.runs.models import RunRecord
 from codealmanac.services.sources.models import SourceBrief, SourceRuntime
-from codealmanac.workflows.lifecycle import LifecycleMutationReport
-from codealmanac.workflows.lifecycle_commit import LifecycleCommitPolicy
+from codealmanac.workflows.operations.commit import OperationCommitPolicy
+from codealmanac.workflows.operations.mutation import OperationMutationReport
 
 
 class IngestPromptPayload(CodeAlmanacModel):
-    workspace_name: str
-    workspace_root: Path
+    repository_name: str
+    repository_root: Path
     almanac_root: Path
     sources: tuple[SourceBrief, ...]
     source_runtime: tuple[SourceRuntime, ...]
     manual_documents: tuple[ManualDocument, ...]
-    source_control: LifecycleCommitPolicy
+    source_control: OperationCommitPolicy
     guidance: str | None = None
 
 
@@ -26,5 +26,5 @@ class IngestResult(CodeAlmanacModel):
     sources: tuple[SourceBrief, ...]
     source_runtime: tuple[SourceRuntime, ...]
     harness: HarnessRunResult
-    safety: LifecycleMutationReport
+    safety: OperationMutationReport
     index: IndexRefreshResult

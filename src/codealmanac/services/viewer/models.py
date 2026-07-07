@@ -10,8 +10,8 @@ class ViewerFileKind(StrEnum):
     DIRECTORY = "directory"
 
 
-class ViewerWorkspace(CodeAlmanacModel):
-    workspace_id: str
+class ViewerRepository(CodeAlmanacModel):
+    repository_id: str
     name: str
     root_path: Path
 
@@ -20,6 +20,7 @@ class ViewerPageSummary(CodeAlmanacModel):
     slug: str
     title: str | None
     summary: str | None
+    path: str
     topics: tuple[str, ...]
 
 
@@ -42,20 +43,22 @@ class ViewerPageSource(CodeAlmanacModel):
     title: str | None
     retrieved_at: str | None
     note: str | None
+    citation_number: int | None
 
 
 class ViewerOverview(CodeAlmanacModel):
-    workspace: ViewerWorkspace
-    workspaces: tuple[ViewerWorkspace, ...]
+    repository: ViewerRepository
+    repositories: tuple[ViewerRepository, ...]
     page_count: int
     topic_count: int
     pages: tuple[ViewerPageSummary, ...]
+    navigation_pages: tuple[ViewerPageSummary, ...]
     topics: tuple[ViewerTopicSummary, ...]
     featured_page: ViewerPageSummary | None
 
 
 class ViewerPage(CodeAlmanacModel):
-    workspace: ViewerWorkspace
+    repository: ViewerRepository
     slug: str
     title: str | None
     summary: str | None
@@ -70,20 +73,20 @@ class ViewerPage(CodeAlmanacModel):
 
 
 class ViewerSearch(CodeAlmanacModel):
-    workspace: ViewerWorkspace
+    repository: ViewerRepository
     query: str | None
     pages: tuple[ViewerPageSummary, ...]
 
 
 class ViewerFile(CodeAlmanacModel):
-    workspace: ViewerWorkspace
+    repository: ViewerRepository
     path: str
     kind: ViewerFileKind
     pages: tuple[ViewerPageSummary, ...]
 
 
 class ViewerTopic(CodeAlmanacModel):
-    workspace: ViewerWorkspace
+    repository: ViewerRepository
     slug: str
     title: str | None
     description: str | None
@@ -106,7 +109,7 @@ class ViewerJobTranscript(CodeAlmanacModel):
 
 class ViewerJobRun(CodeAlmanacModel):
     run_id: str
-    operation: str
+    kind: str
     status: str
     title: str | None
     summary: str | None
@@ -115,7 +118,6 @@ class ViewerJobRun(CodeAlmanacModel):
     updated_at: str
     started_at: str | None
     finished_at: str | None
-    log_path: Path
     page_changes: ViewerJobPageChanges | None
     harness_transcript: ViewerJobTranscript | None
 
@@ -129,11 +131,11 @@ class ViewerJobEvent(CodeAlmanacModel):
 
 
 class ViewerJobs(CodeAlmanacModel):
-    workspace: ViewerWorkspace
+    repository: ViewerRepository
     runs: tuple[ViewerJobRun, ...]
 
 
 class ViewerJob(CodeAlmanacModel):
-    workspace: ViewerWorkspace
+    repository: ViewerRepository
     run: ViewerJobRun
     events: tuple[ViewerJobEvent, ...]

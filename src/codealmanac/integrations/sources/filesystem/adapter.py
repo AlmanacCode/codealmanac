@@ -55,9 +55,9 @@ class FilesystemSourceRuntimeAdapter:
 
     def inspect(self, request: InspectSourceRuntimeRequest) -> SourceRuntime:
         if request.ref.kind == SourceKind.PATH_FILE:
-            return self._inspect_file(request.cwd, request.ref)
+            return self.inspect_file(request.cwd, request.ref)
         if request.ref.kind == SourceKind.PATH_DIRECTORY:
-            return self._inspect_directory(
+            return self.inspect_directory(
                 request.cwd,
                 request.ref,
                 request.context.ignored_directories,
@@ -74,7 +74,7 @@ class FilesystemSourceRuntimeAdapter:
             title=f"Unsupported filesystem source {request.ref.identity}",
         )
 
-    def _inspect_file(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
+    def inspect_file(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
         cwd = normalize_path(cwd)
         path = ref.path
         if path is None:
@@ -113,7 +113,7 @@ class FilesystemSourceRuntimeAdapter:
             truncated=truncated or document.bytes_truncated,
         )
 
-    def _inspect_directory(
+    def inspect_directory(
         self,
         cwd: Path,
         ref: SourceRef,

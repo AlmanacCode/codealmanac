@@ -76,7 +76,7 @@ class ManualInstallResult(CodeAlmanacModel):
         return tuple(required_text(path, "manual path") for path in value)
 
 
-class ManualWorkspaceStatus(CodeAlmanacModel):
+class ManualRepositoryStatus(CodeAlmanacModel):
     target_path: Path
     expected: tuple[str, ...] = Field(min_length=1)
     present: tuple[str, ...]

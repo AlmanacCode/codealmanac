@@ -21,6 +21,34 @@ It is the constraint document for future agents.
   Explicit runs snapshot the current Git state, allow pre-existing wiki edits,
   reject files changed during the run outside `almanac/`, and validate the final
   wiki before marking the run done.
+- 2026-07-06: The run/repository/local-database refactor is a breaking
+  architectural reset. The final code shape is what counts: no half-migrated
+  concepts, no compatibility aliases, no `registry.json` migration, no
+  `registry.json` fallback, no root hopping, and no parallel local state paths.
+  Repository registration, runs, run events, sync state, and worker locks belong
+  in `~/.codealmanac/codealmanac.db`.
+- 2026-07-06: Use the durable internal nouns `repository`, `run`, `run kind`,
+  `queued run`, `worker`, `schedule`, `trigger`, and `local database`.
+  Public `jobs` remains the user-facing control command for attach/logs/cancel,
+  but internal models, stores, and tables use `runs` and `run_events`.
+- 2026-07-06: Sync is a trigger/scanner, not agent work and not a run. Scheduled
+  sync reads active Claude/Codex transcript files since
+  `sync_state.last_completed_at` or `now - sync_interval`, reads each transcript
+  identity, exact-matches transcript cwd to a registered repository, skips
+  internal transcripts, groups active transcripts by repository, and queues one
+  ingest run per repository. No quiet window, cursor ledger, line-count ledger,
+  prefix hash, pending claim, needs-attention state, or foreground/background
+  execution mode remains in the target design.
+- 2026-07-06: `init` is deterministic repository setup plus a `build` run. It
+  creates the repository row, `almanac/`, `almanac/README.md`, and
+  `almanac/topics.yaml`, then queues/runs `build` for the first real
+  agent-authored wiki. `init` fails with a product error such as
+  `AlreadyExists` when `almanac/` already exists at the target path.
+- 2026-07-06: Code quality is part of the contract. Use Pydantic request models
+  for shaped service inputs, enums or `Literal` for stable choices, service-owned
+  verbs, store-owned persistence, consistent product errors, and thin CLI edges.
+  Avoid internal-looking single-underscore functions except when they are tiny,
+  local, and clearer than a named boundary.
 - 2026-06-29: The branch may contain merged `dev` / `origin/dev` work that
   assumes hosted shipping. Treat that work as reference or archive material,
   not as product direction for this rewrite.
@@ -50,11 +78,12 @@ It is the constraint document for future agents.
 - 2026-06-29: Repo-owned wiki data lives under `almanac/` only. The committed
   tree is browseable nested Markdown. Runtime state belongs under
   `~/.codealmanac/`.
-- 2026-07-01: Current-repo auto-detection prefers the nearest initialized
-  `almanac/` tree on disk over broad parent registry entries.
+- 2026-07-01: Current-repo auto-detection is exact. Commands that need a
+  repository run from a registered repository root or receive `--wiki <name>`.
+  CodeAlmanac does not walk parent directories to find an `almanac/` tree.
 - 2026-06-30: Global user state belongs to `~/.codealmanac/`. The repo-local
-  folder may be named `almanac/`; user config, registry state, and scheduler
-  logs use the product-specific hidden directory.
+  folder may be named `almanac/`; user config, local database state, and
+  scheduler logs use the product-specific hidden directory.
 - 2026-06-29: Follow Almanac's Python style: service symmetry, explicit request
   models, service-owned verbs, store-owned persistence, thin CLI edges.
 - 2026-07-01: CLI render follows the parser/dispatch/render domain split.
@@ -62,8 +91,7 @@ It is the constraint document for future agents.
   `cli/render/wiki.py` is a wiki-render facade only; `search.py` owns
   search/reindex output, `pages.py` owns show/page output, `topics.py` owns
   topic output, `health.py` owns health and validate output, and `tagging.py` owns
-  tag/untag output. `lifecycle.py` owns lifecycle/sync/job-start output,
-  `workspaces.py` owns local wiki registry list/drop output, and
+  tag/untag output. `lifecycle.py` owns lifecycle/sync/job-start output, and
   `cli/render/admin.py` is an admin-render facade only; `automation.py` owns
   automation output, `diagnostics.py` owns doctor output, `jobs.py` owns jobs
   output, `updates.py` owns update output, and `setup.py` owns setup/uninstall
@@ -71,14 +99,13 @@ It is the constraint document for future agents.
 - 2026-07-01: Wiki CLI dispatch follows the same command-family split.
   `cli/dispatch/wiki.py` remains the wiki-command facade for
   search/show/health/validate/reindex/tag/untag routing. `topics.py` owns topic
-  subcommand request construction, `workspaces.py` owns list/drop/drop-missing,
-  and `serve.py` owns local viewer startup. Do not move topic request
-  construction, workspace drop request construction, or uvicorn startup back
-  into `dispatch/wiki.py`.
+  subcommand request construction, and `serve.py` owns local viewer startup.
+  Do not move topic request construction or uvicorn startup back into
+  `dispatch/wiki.py`.
 - 2026-07-01: Lifecycle CLI dispatch follows the same command-family split.
   `cli/dispatch/lifecycle.py` remains the lifecycle-command facade;
   `build.py` owns init/build request construction, `operations.py` owns
-  ingest/garden foreground/background dispatch, `sync.py` owns sync and sync
+  ingest/garden request construction, `sync.py` owns sync and sync
   status request construction, and `worker.py` owns the hidden queue-drain
   entrypoint. Do not move workflow request construction, sync source parsing,
   or worker-drain request construction back into `dispatch/lifecycle.py`.
@@ -126,11 +153,10 @@ It is the constraint document for future agents.
   local transcripts and runs local ingest. `automation` schedules local
   `sync`/`garden`/`update`. Do not add public `capture`, cloud upload, hosted
   connection, login, or remote collection commands without a new agreement.
-- 2026-06-29: `sync` writes a durable pending ledger claim before it invokes
-  Ingest. Active pending claims skip that transcript; stale pending claims
-  surface as needs-attention; terminal success or failure clears the pending
-  fields. With background jobs enabled, sync can enqueue ingest work while the
-  ledger records pending ownership and later reconciles terminal run state.
+- 2026-06-29: `sync` is a scanner, not a replay ledger. It reads
+  `sync_state.last_completed_at`, finds active transcript files, queues ingest
+  runs, records the scan as complete, and relies on visible jobs for individual
+  ingest success or failure.
 - 2026-06-29: `runs` owns lifecycle state transitions. Run records start as
   `queued`, workflows explicitly mark them `running`, and only terminal
   finish calls may move them to `done`, `failed`, or `cancelled`.
@@ -143,37 +169,23 @@ It is the constraint document for future agents.
   `services/runs/streaming.py` polls `RunStore.attach(...)`, emits only new log
   events, and stops at `done`, `failed`, or `cancelled`; CLI rendering owns
   text and JSON-line output. `jobs logs` remains the snapshot command.
-- 2026-07-01: Run ledger persistence is split by responsibility. `RunStore`
-  remains the service-facing repository facade. `services/runs/paths.py` owns
-  run-id validation and path construction; `io.py` owns JSON record/spec and
-  JSONL event file mechanics; `locks.py` owns worker lock ownership;
-  `transitions.py` owns grouped record-plus-event transition writes;
-  `factory.py` owns run-id and initial `RunRecord` construction; and
-  `queries.py` owns sorted record listing and spec-backed queue selection. Do
-  not regrow path validation, worker lock mechanics, JSON parsing, manual
-  record/event pair writes, run-id construction, log-path construction, or
-  queue-selection sorting inside `store.py`.
-- 2026-07-01: Background queue membership is "queued run with a durable
-  `<run-id>.spec.json`", not merely any run whose status is `queued`.
-  Foreground lifecycle runs also begin as `queued`, so workers must select only
-  spec-backed runs. The queue core owns durable specs, oldest spec-backed
-  selection, per-wiki `worker.lock/owner.json`, stale-lock recovery, and
-  in-process draining through existing Ingest/Garden workflows. Detached worker
-  spawning and public foreground/background flags remain a later slice.
-- 2026-07-01: Public background lifecycle execution is opt-in for now.
-  `ingest --background` and `garden --background` enqueue spec-backed runs and
-  spawn a detached local worker through an injected worker-spawner port. The
-  hidden `__run-worker` command is a process entrypoint that calls
-  `RunQueueWorkflow.drain(...)`; it is not a public command and it does not
-  contain lifecycle business logic. Plain `ingest` and `garden` still run
-  foreground until the default-mode product decision is made explicitly.
-- 2026-07-01: `sync --background` enqueues eligible transcript ingests and
-  saves pending ledger claims linked to queued run ids before spawning local
-  workers. Plain `sync` remains foreground, and scheduled automation still
-  launches foreground `sync` until unattended background policy is reopened
-  explicitly.
+- 2026-07-01: Run persistence is centralized in `codealmanac.db`. `RunStore`
+  remains the service-facing persistence facade; `events.py` owns run-event
+  sequence writes, `worker_locks.py` owns the worker lock row, and `factory.py`
+  owns run-id and initial `RunRecord` construction. Do not regrow per-repository
+  run files, JSONL event files, log-path construction, or file-backed queue
+  selection.
+- 2026-07-01: Queue membership is "queued run with durable `spec_json` in the
+  `runs` table." User commands queue a run and spawn a worker. The hidden
+  `__run-worker` command is a process entrypoint that calls `RunQueue.drain(...)`;
+  it is not a public command and it does not contain lifecycle business logic.
+  Do not add parallel foreground/background modes; `jobs attach <run-id>` is the
+  public way to follow a run.
+- 2026-07-01: `sync` queues eligible transcript ingests and starts the same
+  worker path as manual lifecycle commands. Scheduled automation also launches
+  ordinary scanner/queue commands rather than a separate sync worker model.
 - 2026-07-01: Shared page-writing lifecycle execution belongs to
-  `PageRunWorkflow`. Operation workflows such as `ingest` and `garden` prepare
+  `OperationRunner`. Operation workflows such as `ingest` and `garden` prepare
   operation-specific context and prompts, then delegate running-state
   transition, mutation preflight, harness invocation, harness transcript/event
   recording, mutation validation, index refresh, terminal success, and failure
@@ -491,11 +503,10 @@ It is the constraint document for future agents.
   reader interaction model.
 - 2026-07-01: Viewer service boundaries are split by local-reader
   responsibility. `services/viewer/service.py` remains the use-case facade for
-  overview/page/search/file/topic/jobs payloads; `workspace_scope.py` owns
-  selected-wiki fallback, registry availability filtering, and multi-wiki
-  navigation ordering; `projections.py` owns conversion from index/workspace
-  models to viewer DTOs. Do not move registry filtering or DTO construction
-  back into `service.py`.
+  overview/page/search/file/topic/jobs payloads; `repository_scope.py` owns
+  current-repository and `--wiki` selection; `projections.py` owns conversion
+  from index/repository models to viewer DTOs. Do not move repository selection
+  or DTO construction back into `service.py`.
 - 2026-07-01: Server adapter boundaries are split by HTTP-edge
   responsibility. `server/app.py` is the FastAPI composition root only;
   `api_routes.py` owns viewer API route request construction;
@@ -515,24 +526,23 @@ It is the constraint document for future agents.
   `schema.py`, `sources.py`, and `projection.py` own write-side mechanics;
   `services/index/views.py` owns read-only query SQL and row-to-Pydantic view
   construction.
-- 2026-06-29: Registry cleanup is explicit. `codealmanac list` remains the
-  local wiki registry surface; `list --json` exposes availability status, and
-  `list --drop <selector>` / `list --drop-missing` remove entries only when the
-  user asks. Read commands do not silently prune missing workspaces.
-- 2026-07-01: Workspace service boundaries are split by workspace mechanic.
-  `services/workspaces/service.py` remains the use-case facade for
-  initialization targets, register/get/select/resolve, path validation,
-  registry listing, and explicit drops. `identity.py` owns workspace names and
-  ids; `selection.py` owns selector matching and path containment; `status.py`
-  owns registry availability policy; `roots.py` owns configured-root
-  validation and nearest-root discovery; and `store.py` owns registry JSON
-  persistence. Do not move selector mechanics, id generation, or marker-based
-  status checks back into `service.py`.
+- 2026-06-29: Repository registration lives in the local database. There is no
+  `registry.json`, no migration path, and no fallback reader. Repository rows
+  are not auto-dropped; unavailable paths are reported or skipped by the command
+  that encounters them.
+- 2026-07-01: Repository service boundaries are split by repository mechanic.
+  `services/repositories/service.py` remains the use-case facade for
+  initialization targets, register/get/select/resolve, and path validation.
+  `identity.py` owns repository names and ids; `selection.py` owns name matching
+  and path containment; `state.py` owns availability classification; `roots.py`
+  owns fixed-root validation and direct-root marker checks; and `store.py` owns
+  repository persistence in `codealmanac.db`. Do not move selector mechanics,
+  id generation, or marker-based status checks back into `service.py`.
 - 2026-06-30: An initialized Almanac tree is identified by wiki markers
   (`almanac/README.md` and `almanac/topics.yaml`), not by directory existence.
-  Runtime artifacts such as `index.db`, WAL files, and `jobs/` are derived
-  state. They must not make registry status, root discovery, `doctor`, or read
-  commands treat an otherwise missing root as available.
+  Runtime artifacts such as `index.db` and WAL files are derived state. They
+  must not make repository status, `doctor`, or read commands treat an
+  otherwise missing root as available.
 - 2026-06-30: `docs/python-port/next-agent-brief.md` is a load-bearing
   continuation artifact. Public-contract tests discover the newest
   `docs/python-port/slice-N-*.md` file and require the brief's current-state
@@ -591,7 +601,7 @@ models that do not belong to one service.
 
 ```text
 services/
-  workspaces/
+  repositories/
   wiki/
   index/
   sources/
@@ -619,7 +629,7 @@ the service boundary they implement, not as one flat external-tool list.
 
 ```text
 integrations/
-  workspaces/
+  repositories/
     git/
   harnesses/
     codex/
@@ -707,13 +717,13 @@ not make CLI contain product decisions.
 
 | Service | Owns | Must Not Own |
 |---|---|---|
-| `workspaces` | repo root, `almanac/` discovery, registry, path containment, local wiki selection, repo/worktree mutation observations | page parsing, source discovery, run execution policy |
+| `repositories` | registered repository rows, exact current-directory selection, `--wiki` name selection, fixed `almanac/` root checks, path containment | page parsing, source discovery, run execution policy |
 | `wiki` | markdown page truth, frontmatter, topics, Markdown links, page writes, health inputs | trigger timing, harness execution, source discovery |
 | `index` | SQLite read model, FTS, mentions, backlinks, query projections | markdown truth, agent execution |
 | `sources` | source observations, source refs, fingerprints, local source state | deciding when AI runs, page writes |
 | `runs` | run ledger, events, outputs, lifecycle state transitions | source discovery, page parsing, provider transports |
 | `harnesses` | normalized Codex/Claude task/session/event contracts and ports | run lifecycle, page writes, source catalog |
-| `automation` | local trigger decisions, quiet windows, scheduler state | run internals, source parsing, provider transports |
+| `automation` | local trigger decisions and scheduler state | run internals, source parsing, provider transports |
 | `config` | user/project config parsing and precedence | product workflows |
 | `diagnostics` | doctor-style checks and readiness reports | mutation workflows |
 | `updates` | local package update policy, installer detection, update command planning | scheduler state, hosted release management, package-manager subprocess mechanics |
@@ -745,11 +755,11 @@ server/assets/viewer/main.js
 Workflows coordinate services. They do not own durable schema unless a service
 is missing.
 
-`init` creates or refreshes the initial local wiki in the configured Almanac
-root and may run the initial agent-backed wiki build. New installs default to
-`almanac/`. Do not split the user-facing first-build story into a surprising
-`init` scaffold plus unrelated `build` index refresh unless the CLI names make
-that distinction obvious.
+`init` creates the initial local wiki at `almanac/` and starts the initial
+agent-backed wiki build. It fails when `almanac/` already exists at the target
+path. Do not split the user-facing first-build story into a surprising `init`
+scaffold plus unrelated `build` index refresh unless the CLI names make that
+distinction obvious.
 
 `ingest` updates the wiki from selected local material such as paths, PR refs,
 diffs, commit ranges, notes, or transcript refs.
@@ -762,10 +772,11 @@ observed state does not change during the run. Workflows persist normalized
 harness events into run logs after the harness returns and before later
 validation.
 
-`sync` scans supported local transcript stores, waits for quiet sessions, maps
-material back to repos with an `almanac/` tree, claims a transcript range in
-the sync ledger, and starts ordinary local ingest work. It does not mean cloud
-sync.
+`sync` scans supported local transcript stores for conversations active since
+the last completed sync, exact-matches each transcript cwd to a registered
+repository root, groups active transcripts by repository, and queues ordinary
+local ingest runs. It does not wait for quiet sessions, claim transcript ranges,
+or mean cloud sync.
 
 `garden` maintains existing wiki structure, links, topics, stale pages, and page
 quality. It may run without new source material.
@@ -824,13 +835,12 @@ codealmanac update
 codealmanac uninstall
 ```
 
-Commands run inside a repo resolve the nearest `almanac/` tree, like Git
-resolves `.git/`.
+Commands that need a current repository require the exact current directory to
+be a registered repository root, unless the user passes `--wiki <name>`.
 
 There is no `--root` setup option. `almanac/` is the only repo wiki root.
 
-`codealmanac list` reads the local registry of known repos with configured
-Almanac roots.
+Repository registration lives in `~/.codealmanac/codealmanac.db`.
 
 Use `--wiki <name>` to target a different registered local wiki. Do not add
 `codealmanac use <wiki>` in v1; sticky selection is hosted-style state and can
@@ -864,9 +874,9 @@ calls. They must not shell out to `codealmanac`.
 Correct shape:
 
 ```python
-app.workflows.sync.run(workspace_id, request)
-app.workflows.ingest.run(workspace_id, request)
-app.runs.record_event(workspace_id, request)
+app.workflows.sync.run(request)
+app.workflows.ingest.run(request)
+app.runs.record_event(request)
 app.viewer.page(request)
 ```
 
@@ -885,11 +895,11 @@ subprocess.run(["codealmanac", "show", "..."])
 | Area | Features |
 |---|---|
 | Install/name | `codealmanac` package and command only |
-| Workspace | nearest repo resolution, local registry, path containment |
+| Repository | exact root selection, `--wiki` name selection, local database registration, path containment |
 | Wiki | nested Markdown pages, frontmatter, topics, Markdown links, file/folder sources |
 | Index | SQLite read model, FTS search, mentions, backlinks, health |
 | Sources | transcript/path/Git/GitHub/web input contracts, local observations, and runtime snapshots |
-| Runs/jobs | durable ledger, events, outputs, foreground/background lifecycle state, attach/cancel |
+| Runs/jobs | durable run records, queued specs, events, outputs, attach/cancel |
 | Harnesses | Codex app-server and Claude SDK/event harnesses behind normalized ports |
 | Workflows | `build`, `ingest`, `sync`, `garden` |
 | Automation | local scheduled sync/garden/update |

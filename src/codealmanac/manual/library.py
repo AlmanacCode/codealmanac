@@ -7,7 +7,7 @@ from codealmanac.manual.models import (
     ManualDocument,
     ManualInstallResult,
     ManualInventory,
-    ManualWorkspaceStatus,
+    ManualRepositoryStatus,
 )
 from codealmanac.manual.requests import ManualReadRequest
 
@@ -59,23 +59,23 @@ class ManualLibrary:
             existing=tuple(existing),
         )
 
-    def workspace_status(self, target_path: Path) -> ManualWorkspaceStatus:
+    def repository_status(self, target_path: Path) -> ManualRepositoryStatus:
         expected = tuple(document.value for document in MANUAL_DOCUMENTS)
         present: list[str] = []
         changed: list[str] = []
         try:
             for document in MANUAL_DOCUMENTS:
-                workspace_file = target_path / document.value
-                if not workspace_file.is_file():
+                repository_file = target_path / document.value
+                if not repository_file.is_file():
                     continue
                 present.append(document.value)
                 bundled = files(MANUAL_PACKAGE).joinpath(document.value).read_bytes()
-                if workspace_file.read_bytes() != bundled:
+                if repository_file.read_bytes() != bundled:
                     changed.append(document.value)
         except OSError as error:
             raise ValidationFailed(f"cannot inspect manual files: {error}") from error
         missing = tuple(document for document in expected if document not in present)
-        return ManualWorkspaceStatus(
+        return ManualRepositoryStatus(
             target_path=target_path,
             expected=expected,
             present=tuple(present),

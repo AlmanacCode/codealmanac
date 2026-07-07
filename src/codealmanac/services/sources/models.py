@@ -108,8 +108,6 @@ class TranscriptCandidate(CodeAlmanacModel):
     session_id: str
     transcript_path: Path
     cwd: Path
-    repo_root: Path
-    almanac_path: Path
     modified_at: datetime
     size_bytes: int
 

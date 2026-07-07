@@ -9,13 +9,13 @@ from codealmanac.core.text import required_text
 
 class ListTopicsRequest(CodeAlmanacModel):
     cwd: Path
-    wiki: str | None = None
+    repository_name: str | None = None
 
 
 class ShowTopicRequest(CodeAlmanacModel):
     cwd: Path
     slug: str
-    wiki: str | None = None
+    repository_name: str | None = None
     include_descendants: bool = False
 
     @field_validator("slug")
@@ -28,7 +28,7 @@ class CreateTopicRequest(CodeAlmanacModel):
     cwd: Path
     name: str
     parents: tuple[str, ...] = ()
-    wiki: str | None = None
+    repository_name: str | None = None
 
     @field_validator("name")
     @classmethod
@@ -50,7 +50,7 @@ class DescribeTopicRequest(CodeAlmanacModel):
     cwd: Path
     slug: str
     description: str
-    wiki: str | None = None
+    repository_name: str | None = None
 
     @field_validator("slug")
     @classmethod
@@ -70,7 +70,7 @@ class LinkTopicRequest(CodeAlmanacModel):
     cwd: Path
     child: str
     parent: str
-    wiki: str | None = None
+    repository_name: str | None = None
 
     @field_validator("child", "parent")
     @classmethod
@@ -89,7 +89,7 @@ class RenameTopicRequest(CodeAlmanacModel):
     cwd: Path
     old_slug: str
     new_slug: str
-    wiki: str | None = None
+    repository_name: str | None = None
 
     @field_validator("old_slug", "new_slug")
     @classmethod
@@ -103,7 +103,7 @@ class RenameTopicRequest(CodeAlmanacModel):
 class DeleteTopicRequest(CodeAlmanacModel):
     cwd: Path
     slug: str
-    wiki: str | None = None
+    repository_name: str | None = None
 
     @field_validator("slug")
     @classmethod

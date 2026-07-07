@@ -4,7 +4,7 @@ from codealmanac.manual.models import (
     ManualDocumentName,
     ManualInstallResult,
     ManualInventory,
-    ManualWorkspaceStatus,
+    ManualRepositoryStatus,
 )
 from codealmanac.manual.requests import ManualReadRequest
 
@@ -15,5 +15,5 @@ __all__ = [
     "ManualInventory",
     "ManualLibrary",
     "ManualReadRequest",
-    "ManualWorkspaceStatus",
+    "ManualRepositoryStatus",
 ]

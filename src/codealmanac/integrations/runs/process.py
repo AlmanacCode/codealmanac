@@ -24,7 +24,7 @@ class SubprocessRunWorkerSpawner:
 
 
 def worker_command(request: SpawnRunWorkerRequest) -> list[str]:
-    command = [
+    return [
         sys.executable,
         "-m",
         "codealmanac.cli.main",
@@ -32,6 +32,3 @@ def worker_command(request: SpawnRunWorkerRequest) -> list[str]:
         "--cwd",
         str(Path(request.cwd)),
     ]
-    if request.wiki is not None:
-        command.extend(("--wiki", request.wiki))
-    return command

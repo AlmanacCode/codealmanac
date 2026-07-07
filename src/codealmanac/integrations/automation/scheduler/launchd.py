@@ -19,14 +19,14 @@ class LaunchdSchedulerAdapter:
         job.stderr_path.parent.mkdir(parents=True, exist_ok=True)
         with job.plist_path.open("wb") as handle:
             plistlib.dump(launchd_plist(job), handle, sort_keys=False)
-        self._bootout(job)
-        self._bootstrap(job)
+        self.bootout(job)
+        self.bootstrap(job)
         return self.status(job)
 
     def uninstall(self, job: ScheduledJob) -> bool:
         if not job.plist_path.exists():
             return False
-        self._bootout(job)
+        self.bootout(job)
         job.plist_path.unlink(missing_ok=True)
         return True
 
@@ -37,7 +37,7 @@ class LaunchdSchedulerAdapter:
                 label=job.label,
                 plist_path=job.plist_path,
                 installed=False,
-                loaded=self._is_loaded(job),
+                loaded=self.is_loaded(job),
             )
         data = read_plist(job.plist_path)
         return ScheduledJobStatus(
@@ -45,13 +45,12 @@ class LaunchdSchedulerAdapter:
             label=job.label,
             plist_path=job.plist_path,
             installed=True,
-            loaded=self._is_loaded(job),
+            loaded=self.is_loaded(job),
             interval=read_interval(data),
-            quiet=read_quiet(data),
         )
 
-    def _bootstrap(self, job: ScheduledJob) -> None:
-        result = self._run_launchctl(
+    def bootstrap(self, job: ScheduledJob) -> None:
+        result = self.run_launchctl(
             ("bootstrap", launchd_target(), str(job.plist_path))
         )
         if result.returncode != 0:
@@ -60,14 +59,14 @@ class LaunchdSchedulerAdapter:
                 f"{job.label}: {surface_process_error(result)}"
             )
 
-    def _bootout(self, job: ScheduledJob) -> None:
-        self._run_launchctl(("bootout", launchd_target(), str(job.plist_path)))
+    def bootout(self, job: ScheduledJob) -> None:
+        self.run_launchctl(("bootout", launchd_target(), str(job.plist_path)))
 
-    def _is_loaded(self, job: ScheduledJob) -> bool:
-        result = self._run_launchctl(("print", f"{launchd_target()}/{job.label}"))
+    def is_loaded(self, job: ScheduledJob) -> bool:
+        result = self.run_launchctl(("print", f"{launchd_target()}/{job.label}"))
         return result.returncode == 0
 
-    def _run_launchctl(self, args: tuple[str, ...]) -> subprocess.CompletedProcess[str]:
+    def run_launchctl(self, args: tuple[str, ...]) -> subprocess.CompletedProcess[str]:
         try:
             return subprocess.run(
                 ("launchctl", *args),
@@ -94,8 +93,6 @@ def launchd_plist(job: ScheduledJob) -> dict[str, object]:
         "StandardOutPath": str(job.stdout_path),
         "StandardErrorPath": str(job.stderr_path),
     }
-    if job.working_directory is not None:
-        data["WorkingDirectory"] = str(job.working_directory)
     return data
 
 
@@ -112,40 +109,6 @@ def read_interval(data: dict[str, object]) -> timedelta | None:
     if not isinstance(value, int):
         return None
     return timedelta(seconds=value)
-
-
-def read_quiet(data: dict[str, object]) -> timedelta | None:
-    args = data.get("ProgramArguments")
-    if not isinstance(args, list):
-        return None
-    values = [item for item in args if isinstance(item, str)]
-    try:
-        index = values.index("--quiet")
-    except ValueError:
-        return None
-    if index + 1 >= len(values):
-        return None
-    return parse_compact_duration(values[index + 1])
-
-
-def parse_compact_duration(value: str) -> timedelta | None:
-    if value.endswith("h"):
-        parsed = parse_int(value[:-1])
-        return None if parsed is None else timedelta(hours=parsed)
-    if value.endswith("m"):
-        parsed = parse_int(value[:-1])
-        return None if parsed is None else timedelta(minutes=parsed)
-    if value.endswith("s"):
-        parsed = parse_int(value[:-1])
-        return None if parsed is None else timedelta(seconds=parsed)
-    return None
-
-
-def parse_int(value: str) -> int | None:
-    try:
-        return int(value)
-    except ValueError:
-        return None
 
 
 def environment_dict(values: tuple[EnvironmentVariable, ...]) -> dict[str, str]:

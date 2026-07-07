@@ -1,75 +1,53 @@
 from datetime import UTC, datetime
 
-from codealmanac.services.runs.service import RunsService
+from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.sources.service import SourcesService
-from codealmanac.services.workspaces.runtime import WorkspaceRuntimePaths
-from codealmanac.services.workspaces.service import WorkspacesService
-from codealmanac.workflows.ingest.service import IngestWorkflow
-from codealmanac.workflows.run_queue.service import RunQueueWorkflow
+from codealmanac.workflows.run_queue.service import RunQueue
 from codealmanac.workflows.sync.evaluation import SyncEvaluator
-from codealmanac.workflows.sync.execution import SyncRunExecutor
 from codealmanac.workflows.sync.models import (
     SyncEvaluation,
     SyncMode,
     SyncSummary,
 )
-from codealmanac.workflows.sync.policy import sync_claim_owner
+from codealmanac.workflows.sync.queue import SyncIngestQueue
 from codealmanac.workflows.sync.requests import (
-    RunSyncRequest,
-    RunSyncStatusRequest,
+    SyncRequest,
     SyncSelectionRequest,
+    SyncStatusRequest,
 )
-from codealmanac.workflows.sync.store import SyncLedgerStore
+from codealmanac.workflows.sync.store import SyncStateStore
 
 
 class SyncWorkflow:
     def __init__(
         self,
-        workspaces: WorkspacesService,
+        repositories: RepositoriesService,
         sources: SourcesService,
-        runs: RunsService,
-        ingest: IngestWorkflow,
-        queue: RunQueueWorkflow,
-        ledger_store: SyncLedgerStore,
-        runtime_paths: WorkspaceRuntimePaths,
+        queue: RunQueue,
+        state_store: SyncStateStore,
     ):
-        self.workspaces = workspaces
-        self.sources = sources
-        self.runs = runs
-        self.ledger_store = ledger_store
         self.evaluator = SyncEvaluator(
-            workspaces=workspaces,
+            repositories=repositories,
             sources=sources,
-            runs=runs,
-            ledger_store=ledger_store,
-            runtime_paths=runtime_paths,
+            state_store=state_store,
         )
-        self.executor = SyncRunExecutor(
-            runs=runs,
-            workspaces=workspaces,
-            ingest=ingest,
+        self.executor = SyncIngestQueue(
             queue=queue,
-            ledger_store=ledger_store,
-            runtime_paths=runtime_paths,
+            state_store=state_store,
         )
 
-    def status(self, request: RunSyncStatusRequest) -> SyncSummary:
+    def status(self, request: SyncStatusRequest) -> SyncSummary:
         return self.evaluate(request, SyncMode.STATUS).summary
 
-    def run(self, request: RunSyncRequest) -> SyncSummary:
+    def run(self, request: SyncRequest) -> SyncSummary:
         now = request.now or datetime.now(UTC)
         evaluation = self.evaluate(request, SyncMode.SYNC, now=now)
-        claim_owner = request.claim_owner or sync_claim_owner(now)
-        effects = self.executor.run(
-            request,
-            evaluation,
-            now,
-            claim_owner,
-        )
+        effects = self.executor.run(request, evaluation, now)
         return evaluation.summary.model_copy(
             update={
                 "started": effects.started,
-                "needs_attention": effects.needs_attention,
+                "skipped": effects.skipped,
+                "completed_at": now,
             }
         )
 

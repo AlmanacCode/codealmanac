@@ -130,7 +130,7 @@ sources/citations findings.
 
 `services/config/` owns local config parsing and precedence. `ConfigStore`
 uses `pydantic-settings` TOML sources to build the frozen
-`CodeAlmanacConfig` settings model. `ConfigService` supplies sources in
+`UserConfig` settings model. `ConfigService` supplies sources in
 precedence order: selected project `<almanac-root>/config.toml`, then user
 config, then model defaults. CLI flags remain the final override at the
 command edge. There is no public `config` command in v1.

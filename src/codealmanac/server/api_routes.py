@@ -28,10 +28,10 @@ from codealmanac.services.viewer.requests import (
 class ServerApiContext:
     codealmanac: CodeAlmanac
     cwd: Path
-    scope_wiki: str | None = None
+    scoped_repository_name: str | None = None
 
-    def selected_wiki(self, request_wiki: str | None) -> str | None:
-        return self.scope_wiki or request_wiki
+    def repository_name(self, request_wiki: str | None) -> str | None:
+        return self.scoped_repository_name or request_wiki
 
 
 def register_api_routes(server: FastAPI, context: ServerApiContext) -> None:
@@ -40,8 +40,8 @@ def register_api_routes(server: FastAPI, context: ServerApiContext) -> None:
         return context.codealmanac.viewer.overview(
             ViewerOverviewRequest(
                 cwd=context.cwd,
-                wiki=context.selected_wiki(wiki),
-                include_workspaces=context.scope_wiki is None,
+                repository_name=context.repository_name(wiki),
+                include_repositories=context.scoped_repository_name is None,
             )
         )
 
@@ -50,7 +50,7 @@ def register_api_routes(server: FastAPI, context: ServerApiContext) -> None:
         return context.codealmanac.viewer.page(
             ViewerPageRequest(
                 cwd=context.cwd,
-                wiki=context.selected_wiki(wiki),
+                repository_name=context.repository_name(wiki),
                 slug=slug,
             )
         )
@@ -64,7 +64,7 @@ def register_api_routes(server: FastAPI, context: ServerApiContext) -> None:
         return context.codealmanac.viewer.search(
             ViewerSearchRequest(
                 cwd=context.cwd,
-                wiki=context.selected_wiki(wiki),
+                repository_name=context.repository_name(wiki),
                 query=q,
                 limit=limit,
             )
@@ -79,7 +79,7 @@ def register_api_routes(server: FastAPI, context: ServerApiContext) -> None:
         return context.codealmanac.viewer.file(
             ViewerFileRequest(
                 cwd=context.cwd,
-                wiki=context.selected_wiki(wiki),
+                repository_name=context.repository_name(wiki),
                 path=path,
                 limit=limit,
             )
@@ -94,7 +94,7 @@ def register_api_routes(server: FastAPI, context: ServerApiContext) -> None:
         return context.codealmanac.viewer.topic(
             ViewerTopicRequest(
                 cwd=context.cwd,
-                wiki=context.selected_wiki(wiki),
+                repository_name=context.repository_name(wiki),
                 slug=slug,
                 include_descendants=descendants,
             )
@@ -105,7 +105,7 @@ def register_api_routes(server: FastAPI, context: ServerApiContext) -> None:
         return context.codealmanac.viewer.jobs(
             ViewerJobsRequest(
                 cwd=context.cwd,
-                wiki=context.selected_wiki(wiki),
+                repository_name=context.repository_name(wiki),
                 limit=limit,
             )
         )
@@ -115,7 +115,7 @@ def register_api_routes(server: FastAPI, context: ServerApiContext) -> None:
         return context.codealmanac.viewer.job(
             ViewerJobRequest(
                 cwd=context.cwd,
-                wiki=context.selected_wiki(wiki),
+                repository_name=context.repository_name(wiki),
                 run_id=run_id,
             )
         )

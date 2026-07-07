@@ -11,7 +11,7 @@ class TagPageRequest(CodeAlmanacModel):
     cwd: Path
     slug: str
     topics: tuple[str, ...]
-    wiki: str | None = None
+    repository_name: str | None = None
 
     @field_validator("slug")
     @classmethod

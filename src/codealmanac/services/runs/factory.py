@@ -1,29 +1,27 @@
 from datetime import datetime
 from uuid import uuid4
 
-from codealmanac.services.runs.models import RunOperation, RunRecord, RunStatus
-from codealmanac.services.runs.paths import run_log_reference_path
+from codealmanac.services.runs.models import RunKind, RunRecord, RunStatus
 
 
-def new_run_id(operation: RunOperation, now: datetime) -> str:
+def new_run_id(kind: RunKind, now: datetime) -> str:
     stamp = now.strftime("%Y%m%d%H%M%S")
-    return f"{operation.value}-{stamp}-{uuid4().hex[:8]}"
+    return f"{kind.value}-{stamp}-{uuid4().hex[:8]}"
 
 
 def new_run_record(
-    workspace_id: str,
-    operation: RunOperation,
+    repository_id: str,
+    kind: RunKind,
     title: str | None,
     now: datetime,
 ) -> RunRecord:
-    run_id = new_run_id(operation, now)
+    run_id = new_run_id(kind, now)
     return RunRecord(
         run_id=run_id,
-        workspace_id=workspace_id,
-        operation=operation,
+        repository_id=repository_id,
+        kind=kind,
         status=RunStatus.QUEUED,
         title=title,
         created_at=now,
         updated_at=now,
-        log_path=run_log_reference_path(run_id),
     )

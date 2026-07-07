@@ -1,24 +1,18 @@
-from codealmanac.services.sources.models import TranscriptCandidate
-from codealmanac.workflows.sync.models import SyncWorkItem
+from codealmanac.workflows.sync.models import SyncRepositoryIngest
 
 
-def sync_ingest_title(candidate: TranscriptCandidate) -> str:
-    return f"Sync {candidate.app.value} transcript {candidate.session_id}"
-
-
-def sync_ingest_guidance(item: SyncWorkItem) -> str:
-    return "\n".join(
-        (
-            "Scheduled sync cursor:",
-            f"- App: {item.candidate.app.value}",
-            f"- Session id: {item.candidate.session_id}",
-            f"- Transcript: {item.candidate.transcript_path}",
-            f"- Previously absorbed through line: {item.entry.last_absorbed_line}",
-            f"- Previously absorbed through byte: {item.entry.last_absorbed_size}",
-            f"- Focus on line {item.from_line} onward.",
-            "- You may inspect earlier lines only for context.",
-            "- Do not re-document decisions already absorbed unless newer lines "
-            "amend, invalidate, or add important nuance to them.",
+def sync_ingest_guidance(item: SyncRepositoryIngest) -> str:
+    lines = [
+        "Scheduled sync:",
+        f"- Repository: {item.repository.name}",
+        f"- Repository root: {item.repository.root_path}",
+        f"- Transcripts active since the last completed scan: {len(item.transcripts)}",
+        "- Read the listed transcripts and update the wiki only for durable "
+        "project knowledge.",
+    ]
+    for candidate in item.transcripts:
+        lines.append(
+            f"- {candidate.app.value} {candidate.session_id}: "
+            f"{candidate.transcript_path}"
         )
-    )
-
+    return "\n".join(lines)

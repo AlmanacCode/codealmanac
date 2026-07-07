@@ -22,6 +22,6 @@ def runtime_state_issues(almanac_path: Path) -> tuple[ValidationIssue, ...]:
 def runtime_issue(almanac_path: Path, path: Path) -> ValidationIssue:
     return ValidationIssue(
         category="runtime_state",
-        message="runtime state belongs under ~/.codealmanac/repos/",
+        message="runtime state belongs under ~/.codealmanac/",
         path=path.relative_to(almanac_path).as_posix(),
     )

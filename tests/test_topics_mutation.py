@@ -4,7 +4,6 @@ import pytest
 
 from codealmanac.app import create_app
 from codealmanac.core.errors import ConflictError, NotFoundError, ValidationFailed
-from codealmanac.core.models import AppConfig
 from codealmanac.services.topics.models import TopicMutationAction
 from codealmanac.services.topics.requests import (
     CreateTopicRequest,
@@ -15,6 +14,7 @@ from codealmanac.services.topics.requests import (
     ShowTopicRequest,
     UnlinkTopicRequest,
 )
+from codealmanac.settings import AppConfig
 
 
 def test_create_topic_with_parent_preserves_topics_yaml_comment(
@@ -23,7 +23,7 @@ def test_create_topic_with_parent_preserves_topics_yaml_comment(
 ):
     repo = make_repo(tmp_path)
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     result = app.topics.create(
@@ -46,7 +46,7 @@ def test_create_rejects_missing_parent_without_overwriting_file(
     topics_path = repo / "almanac/topics.yaml"
     before = topics_path.read_text(encoding="utf-8")
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     with pytest.raises(NotFoundError):
@@ -68,7 +68,7 @@ def test_link_promotes_ad_hoc_page_topic_and_rejects_cycle(
         encoding="utf-8",
     )
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     linked = app.topics.link(LinkTopicRequest(cwd=repo, child="jwt", parent="concepts"))
@@ -93,7 +93,7 @@ def test_describe_promotes_ad_hoc_page_topic(
         encoding="utf-8",
     )
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     result = app.topics.describe(
@@ -118,7 +118,7 @@ def test_unlink_removes_edge_and_is_idempotent(
 ):
     repo = make_repo(tmp_path)
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
     app.topics.create(CreateTopicRequest(cwd=repo, name="Auth", parents=("concepts",)))
 
@@ -143,7 +143,7 @@ def test_mutating_malformed_topics_yaml_fails_without_overwrite(
     topics_path = repo / "almanac/topics.yaml"
     topics_path.write_text("topics: [", encoding="utf-8")
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     with pytest.raises(ValidationFailed):
@@ -179,7 +179,7 @@ topics:
         encoding="utf-8",
     )
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     result = app.topics.rename(
@@ -229,7 +229,7 @@ def test_rename_refuses_merge_without_writing_files(
     before_topics = topics_path.read_text(encoding="utf-8")
     before_page = page_path.read_text(encoding="utf-8")
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     with pytest.raises(ConflictError):
@@ -249,7 +249,7 @@ def test_rename_same_slug_is_noop_without_requiring_topic(
     topics_path = repo / "almanac/topics.yaml"
     before = topics_path.read_text(encoding="utf-8")
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     result = app.topics.rename(
@@ -272,7 +272,7 @@ def test_rename_page_only_ad_hoc_topic(
         encoding="utf-8",
     )
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     result = app.topics.rename(
@@ -309,7 +309,7 @@ def test_delete_removes_topic_edges_and_page_frontmatter_without_deleting_pages(
         encoding="utf-8",
     )
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     result = app.topics.delete(DeleteTopicRequest(cwd=repo, slug="auth"))
@@ -333,7 +333,7 @@ def test_delete_refuses_missing_topic_without_writing_files(
     topics_path = repo / "almanac/topics.yaml"
     before = topics_path.read_text(encoding="utf-8")
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     with pytest.raises(NotFoundError):
@@ -362,7 +362,7 @@ def test_rename_malformed_page_frontmatter_fails_before_topics_yaml_write(
     )
     before = topics_path.read_text(encoding="utf-8")
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     with pytest.raises(ValidationFailed):

@@ -18,43 +18,43 @@ def use_color() -> bool:
     return sys.stdout.isatty() and "NO_COLOR" not in os.environ
 
 
-def _code(code: str) -> str:
+def terminal_code(code: str) -> str:
     return code if use_color() else ""
 
 
-class _Palette:
+class Palette:
     """Palette resolved per access so tests can toggle TTY/NO_COLOR."""
 
     @property
     def RST(self) -> str:
-        return _code("\x1b[0m")
+        return terminal_code("\x1b[0m")
 
     @property
     def BOLD(self) -> str:
-        return _code("\x1b[1m")
+        return terminal_code("\x1b[1m")
 
     @property
     def DIM(self) -> str:
-        return _code("\x1b[2m")
+        return terminal_code("\x1b[2m")
 
     @property
     def BLUE(self) -> str:
-        return _code("\x1b[38;5;75m")
+        return terminal_code("\x1b[38;5;75m")
 
     @property
     def GREEN(self) -> str:
-        return _code("\x1b[38;5;35m")
+        return terminal_code("\x1b[38;5;35m")
 
     @property
     def RED(self) -> str:
-        return _code("\x1b[38;5;167m")
+        return terminal_code("\x1b[38;5;167m")
 
     @property
     def YELLOW(self) -> str:
-        return _code("\x1b[33m")
+        return terminal_code("\x1b[33m")
 
 
-style = _Palette()
+style = Palette()
 
 EM_DASH = "—"
 
@@ -80,13 +80,13 @@ def table(headers: tuple[str, ...], rows: list[tuple[str, ...]]) -> list[str]:
         )
         for index, header in enumerate(headers)
     ]
-    header_line = _table_row(headers, widths)
+    header_line = table_row(headers, widths)
     if use_color():
         header_line = f"{style.BOLD}{header_line}{style.RST}"
-    return [header_line, *(_table_row(row, widths) for row in rows)]
+    return [header_line, *(table_row(row, widths) for row in rows)]
 
 
-def _table_row(row: tuple[str, ...], widths: list[int]) -> str:
+def table_row(row: tuple[str, ...], widths: list[int]) -> str:
     cells = (
         pad_visible(row[index] if index < len(row) else "", width)
         for index, width in enumerate(widths)

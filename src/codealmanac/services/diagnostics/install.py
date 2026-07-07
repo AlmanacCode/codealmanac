@@ -12,7 +12,7 @@ from codealmanac.services.diagnostics.models import (
 def install_checks(
     *,
     version: str,
-    registry_path: Path,
+    database_path: Path,
     manual: ManualLibrary,
     python_version: str,
     python_supported: bool,
@@ -30,9 +30,9 @@ def install_checks(
             fix=None if python_supported else "install Python 3.12 or newer",
         ),
         DoctorCheck(
-            key="install.registry",
+            key="install.database",
             status=DoctorStatus.INFO,
-            message=f"registry: {registry_path}",
+            message=f"database: {database_path}",
         ),
         manual_package_check(manual),
     )

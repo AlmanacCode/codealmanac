@@ -171,7 +171,7 @@ button {
   outline-offset: 2px;
 }
 
-.dashboard-workspace-select {
+.dashboard-repository-select {
   width: 100%;
   min-width: 0;
   height: 20px;
@@ -188,12 +188,12 @@ button {
   text-overflow: ellipsis;
 }
 
-.dashboard-workspace-select:focus-visible {
+.dashboard-repository-select:focus-visible {
   outline: 2px solid rgba(152, 118, 26, 0.35);
   outline-offset: 2px;
 }
 
-.dashboard-workspace-select:disabled {
+.dashboard-repository-select:disabled {
   cursor: default;
   opacity: 0.45;
 }
@@ -661,10 +661,49 @@ button {
 
 .wiki-markdown a {
   color: var(--accent);
-  font-weight: 600;
+  font-family: inherit;
+  font-weight: inherit;
   text-decoration: underline;
   text-decoration-color: rgba(152, 118, 26, 0.28);
   text-underline-offset: 3px;
+}
+
+.wiki-markdown .wiki-citation {
+  position: relative;
+  margin-left: 2px;
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: 0.72em;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: underline;
+  text-decoration-color: rgba(152, 118, 26, 0.28);
+  text-underline-offset: 2px;
+  vertical-align: super;
+}
+
+.wiki-markdown .wiki-citation:hover::after,
+.wiki-markdown .wiki-citation:focus-visible::after {
+  position: absolute;
+  z-index: 10;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  width: max-content;
+  max-width: 22rem;
+  transform: translateX(-50%);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 10px 24px rgba(42, 46, 28, 0.14);
+  color: var(--ink);
+  content: attr(data-citation-tooltip);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  padding: 8px 9px;
+  text-align: left;
+  white-space: normal;
 }
 
 .wiki-markdown code {
@@ -751,6 +790,53 @@ button {
 
 .wiki-link-list a:hover {
   color: var(--accent);
+}
+
+.wiki-source-item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  color: var(--ink);
+  white-space: normal;
+}
+
+.wiki-source-number {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.wiki-source-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.wiki-source-body strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wiki-source-body span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.35;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .job-list,

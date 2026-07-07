@@ -28,12 +28,13 @@ def dispatch_setup(args: argparse.Namespace, app: CodeAlmanac) -> int:
         RunSetupRequest(
             cwd=Path.cwd(),
             targets=selections.targets,
+            harness=selections.harness,
+            model=selections.model,
             yes=args.yes,
             auto_commit=selections.auto_commit,
             auto_update=selections.auto_update,
             skip_instructions=args.skip_instructions,
             sync_every=parse_optional_duration(args.sync_every, "--sync-every"),
-            sync_quiet=parse_optional_duration(args.sync_quiet, "--sync-quiet"),
             sync_off=selections.sync_off,
             garden_every=parse_optional_duration(
                 args.garden_every,

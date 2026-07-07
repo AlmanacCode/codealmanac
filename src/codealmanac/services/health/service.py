@@ -11,68 +11,63 @@ from codealmanac.services.health.runtime import runtime_state_issues
 from codealmanac.services.health.sources import source_shape_issues
 from codealmanac.services.index.models import HealthReport, IndexRefreshResult
 from codealmanac.services.index.service import IndexService
-from codealmanac.services.workspaces.models import Workspace
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.services.repositories.models import Repository
+from codealmanac.services.repositories.service import RepositoriesService
 
 
 class HealthService:
-    def __init__(self, workspaces: WorkspacesService, index: IndexService):
-        self.workspaces = workspaces
+    def __init__(self, repositories: RepositoriesService, index: IndexService):
+        self.repositories = repositories
         self.index = index
 
     def check(self, request: HealthCheckRequest) -> HealthReport:
-        workspace = self.select_workspace(request.cwd, request.wiki)
-        return self.index.health_report(workspace.workspace_id)
+        repository = self.select_repository(request.cwd, request.repository_name)
+        return self.index.health_report(repository.repository_id)
 
     def validate(self, request: ValidateWikiRequest) -> ValidationResult:
-        workspace = self.select_workspace(request.cwd, request.wiki)
-        return self.validate_workspace(workspace)
+        repository = self.select_repository(request.cwd, request.repository_name)
+        return self.validate_repository(repository)
 
-    def validate_workspace(self, workspace: Workspace) -> ValidationResult:
+    def validate_repository(self, repository: Repository) -> ValidationResult:
         issues = [
-            *source_shape_issues(workspace.almanac_path),
-            *runtime_state_issues(workspace.almanac_path),
+            *source_shape_issues(repository.almanac_path),
+            *runtime_state_issues(repository.almanac_path),
         ]
         index = None
         try:
-            index = self.index.ensure_fresh(workspace.workspace_id)
+            index = self.index.ensure_fresh(repository.repository_id)
         except ValidationFailed as error:
             issues.append(
                 ValidationIssue(
                     category="page_routes",
                     message=str(error),
-                    path=workspace.almanac_root.as_posix(),
+                    path=repository.almanac_root.as_posix(),
                 )
             )
-            return validation_result(workspace, index, issues)
+            return validation_result(repository, index, issues)
         issues.extend(
-            health_report_issues(self.index.health_report(workspace.workspace_id))
+            health_report_issues(self.index.health_report(repository.repository_id))
         )
-        return validation_result(workspace, index, issues)
+        return validation_result(repository, index, issues)
 
-    def ensure_valid(self, workspace: Workspace) -> ValidationResult:
-        result = self.validate_workspace(workspace)
+    def ensure_valid(self, repository: Repository) -> ValidationResult:
+        result = self.validate_repository(repository)
         if not result.ok:
             raise ValidationFailed(validation_failure_message(result))
         return result
 
-    def select_workspace(self, cwd: Path, wiki: str | None) -> Workspace:
-        if wiki is None:
-            return self.workspaces.resolve(cwd)
-        return self.workspaces.select(
-            SelectWorkspaceRequest(selector=wiki, base_path=cwd)
-        )
+    def select_repository(self, cwd: Path, repository_name: str | None) -> Repository:
+        return self.repositories.select_for_read(cwd, repository_name)
 
 
 def validation_result(
-    workspace: Workspace,
+    repository: Repository,
     index: IndexRefreshResult | None,
     issues: list[ValidationIssue],
 ) -> ValidationResult:
     return ValidationResult(
-        workspace_name=workspace.name,
-        almanac_path=workspace.almanac_path,
+        repository_name=repository.name,
+        almanac_path=repository.almanac_path,
         index=index,
         issues=tuple(issues),
         ok=len(issues) == 0,

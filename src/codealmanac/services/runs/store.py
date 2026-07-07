@@ -1,228 +1,237 @@
+from __future__ import annotations
+
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from codealmanac.core.errors import ConflictError, NotFoundError
+from codealmanac.core.errors import NotFoundError
+from codealmanac.core.paths import normalize_path
+from codealmanac.database.local import connect_local_database
 from codealmanac.services.harnesses.models import HarnessEvent, HarnessTranscriptRef
+from codealmanac.services.runs.events import RunEventStore
 from codealmanac.services.runs.factory import new_run_record
-from codealmanac.services.runs.io import RunLedgerIO
-from codealmanac.services.runs.locks import RunWorkerLease, acquire_worker_lock
+from codealmanac.services.runs.locks import RunWorkerLease
 from codealmanac.services.runs.models import (
     TERMINAL_RUN_STATUSES,
     QueuedRun,
     RunAttachSnapshot,
     RunCancelResult,
     RunEventKind,
+    RunKind,
     RunLogEvent,
-    RunOperation,
     RunRecord,
     RunSpec,
     RunStatus,
 )
 from codealmanac.services.runs.queries import (
+    active_run_exists,
+    count_queued_runs_before,
     list_run_records,
-    next_spec_backed_queued_run,
+    next_queued_run,
+    read_run_record,
+    read_run_with_spec,
 )
-from codealmanac.services.runs.transitions import RunTransitionWriter
+from codealmanac.services.runs.records import run_record_json, run_spec_json
+from codealmanac.services.runs.tables import RUN_TABLES
+from codealmanac.services.runs.transitions import (
+    attach_harness_transcript,
+    cancel_run,
+    finish_run,
+    queued_message,
+    start_run,
+)
+from codealmanac.services.runs.worker_locks import RunWorkerLockStore
 
 
 class RunStore:
     def __init__(
         self,
-        ledger: RunLedgerIO | None = None,
-        transitions: RunTransitionWriter | None = None,
+        database_path: Path,
+        event_store: RunEventStore | None = None,
+        lock_store: RunWorkerLockStore | None = None,
     ):
-        self.ledger = ledger or RunLedgerIO()
-        self.transitions = transitions or RunTransitionWriter(self.ledger)
+        self.database_path = normalize_path(database_path)
+        self.event_store = event_store or RunEventStore(self.database_path)
+        self.lock_store = lock_store or RunWorkerLockStore(self.database_path)
 
     def create(
         self,
-        runtime_path: Path,
-        workspace_id: str,
-        operation: RunOperation,
+        repository_id: str,
+        kind: RunKind,
         title: str | None,
     ) -> RunRecord:
         now = datetime.now(UTC)
-        record = new_run_record(workspace_id, operation, title, now)
-        self.transitions.write_queued_record(runtime_path, record, now)
+        record = new_run_record(repository_id, kind, title, now)
+        self.write_record(record, spec=None)
+        self.event_store.append_status(record.run_id, now, queued_message(record.kind))
         return record
 
     def queue(
         self,
-        runtime_path: Path,
-        workspace_id: str,
+        repository_id: str,
         spec: RunSpec,
         title: str | None,
     ) -> RunRecord:
         now = datetime.now(UTC)
-        record = new_run_record(
-            workspace_id,
-            spec.operation,
-            title or spec.title,
-            now,
-        )
-        self.ledger.write_spec(runtime_path, record.run_id, spec)
-        try:
-            self.transitions.write_queued_record(runtime_path, record, now)
-        except Exception:
-            self.ledger.delete_spec(runtime_path, record.run_id)
-            raise
+        record = new_run_record(repository_id, spec.kind, title or spec.title, now)
+        self.write_record(record, spec=spec)
+        self.event_store.append_status(record.run_id, now, queued_message(record.kind))
         return record
 
-    def list(self, runtime_path: Path, limit: int | None) -> tuple[RunRecord, ...]:
-        return list_run_records(self.ledger, runtime_path, limit)
+    def list(
+        self,
+        limit: int | None,
+        repository_id: str | None = None,
+    ) -> tuple[RunRecord, ...]:
+        with self.connect() as connection:
+            return list_run_records(connection, limit, repository_id)
 
-    def read(self, runtime_path: Path, run_id: str) -> RunRecord:
-        record = self.ledger.read_record(runtime_path, run_id)
+    def read(self, run_id: str) -> RunRecord:
+        with self.connect() as connection:
+            record = read_run_record(connection, run_id)
         if record is None:
             raise NotFoundError("run", run_id)
         return record
 
-    def read_spec(self, runtime_path: Path, run_id: str) -> RunSpec | None:
-        self.read(runtime_path, run_id)
-        return self.ledger.read_spec(runtime_path, run_id)
+    def read_spec(self, run_id: str) -> RunSpec | None:
+        with self.connect() as connection:
+            result = read_run_with_spec(connection, run_id)
+        if result is None:
+            raise NotFoundError("run", run_id)
+        _, spec = result
+        return spec
 
-    def next_queued(self, runtime_path: Path) -> QueuedRun | None:
-        return next_spec_backed_queued_run(self.ledger, runtime_path)
+    def next_queued(self) -> QueuedRun | None:
+        with self.connect() as connection:
+            return next_queued_run(connection)
+
+    def queued_before(self, record: RunRecord) -> int:
+        with self.connect() as connection:
+            return count_queued_runs_before(connection, record)
+
+    def has_active_run(self, repository_id: str, kind: RunKind) -> bool:
+        with self.connect() as connection:
+            return active_run_exists(connection, repository_id, kind)
 
     def acquire_worker_lock(
         self,
-        runtime_path: Path,
         owner: str,
         pid: int,
         now: datetime,
         stale_after: timedelta,
     ) -> RunWorkerLease | None:
-        return acquire_worker_lock(runtime_path, owner, pid, now, stale_after)
+        return self.lock_store.acquire(owner, pid, now, stale_after)
 
-    def log(self, runtime_path: Path, run_id: str) -> tuple[RunLogEvent, ...]:
-        self.read(runtime_path, run_id)
-        return self.ledger.iter_events(runtime_path, run_id)
+    def log(self, run_id: str) -> tuple[RunLogEvent, ...]:
+        self.read(run_id)
+        return self.event_store.list(run_id)
 
-    def attach(self, runtime_path: Path, run_id: str) -> RunAttachSnapshot:
-        record = self.read(runtime_path, run_id)
+    def attach(self, run_id: str) -> RunAttachSnapshot:
+        record = self.read(run_id)
         return RunAttachSnapshot(
             record=record,
-            events=self.ledger.iter_events(runtime_path, run_id),
+            events=self.event_store.list(run_id),
             terminal=record.status in TERMINAL_RUN_STATUSES,
         )
 
-    def append(
+    def record_event(
         self,
-        runtime_path: Path,
         run_id: str,
         kind: RunEventKind,
         message: str,
         harness_event: HarnessEvent | None = None,
     ) -> RunLogEvent:
-        record = self.read(runtime_path, run_id)
+        record = self.read(run_id)
         now = datetime.now(UTC)
-        event = self.transitions.new_event(
-            runtime_path,
-            run_id,
-            now,
-            kind,
-            message,
-            harness_event,
-        )
+        event = self.event_store.new_event(run_id, now, kind, message, harness_event)
         updated = record.model_copy(update={"updated_at": event.timestamp})
-        self.transitions.write_record_with_event(
-            runtime_path,
-            previous=record,
-            record=updated,
-            event=event,
-        )
+        self.update_record_preserving_spec(updated)
+        self.event_store.write(event)
         return event
 
-    def mark_running(self, runtime_path: Path, run_id: str) -> RunRecord:
-        record = self.read(runtime_path, run_id)
-        if record.status == RunStatus.RUNNING:
-            return record
-        if record.status != RunStatus.QUEUED:
-            raise ConflictError(
-                f"run {run_id} cannot start from {record.status.value}"
-            )
+    def mark_running(self, run_id: str) -> RunRecord:
+        record = self.read(run_id)
         now = datetime.now(UTC)
-        running = record.model_copy(
-            update={
-                "status": RunStatus.RUNNING,
-                "updated_at": now,
-                "started_at": now,
-            }
-        )
-        self.transitions.write_status_transition(
-            runtime_path,
-            previous=record,
-            record=running,
-            timestamp=now,
-            message=RunStatus.RUNNING.value,
-        )
+        running = start_run(record, now)
+        if running is record:
+            return record
+        self.update_record_preserving_spec(running)
+        self.event_store.append_status(run_id, now, RunStatus.RUNNING.value)
         return running
 
     def record_harness_transcript(
         self,
-        runtime_path: Path,
         run_id: str,
         transcript: HarnessTranscriptRef,
     ) -> RunRecord:
-        record = self.read(runtime_path, run_id)
-        updated = record.model_copy(
-            update={
-                "harness_transcript": transcript,
-                "updated_at": datetime.now(UTC),
-            }
-        )
-        self.ledger.write_record(runtime_path, updated)
+        record = self.read(run_id)
+        updated = attach_harness_transcript(record, transcript, datetime.now(UTC))
+        self.update_record_preserving_spec(updated)
         return updated
 
     def finish(
         self,
-        runtime_path: Path,
         run_id: str,
         status: RunStatus,
         summary: str | None,
         error: str | None,
     ) -> RunRecord:
-        record = self.read(runtime_path, run_id)
-        if record.status == RunStatus.CANCELLED:
-            return record
+        record = self.read(run_id)
         now = datetime.now(UTC)
-        finished = record.model_copy(
-            update={
-                "status": status,
-                "summary": summary,
-                "error": error,
-                "updated_at": now,
-                "finished_at": now,
-            }
-        )
-        self.transitions.write_status_transition(
-            runtime_path,
-            previous=record,
-            record=finished,
-            timestamp=now,
-            message=status.value,
-        )
+        finished = finish_run(record, status, summary, error, now)
+        if finished is record:
+            return record
+        self.update_record_preserving_spec(finished)
+        self.event_store.append_status(run_id, now, status.value)
         return finished
 
-    def cancel(self, runtime_path: Path, run_id: str) -> RunCancelResult:
-        record = self.read(runtime_path, run_id)
-        if record.status in TERMINAL_RUN_STATUSES:
-            return RunCancelResult(record=record, changed=False)
+    def cancel(self, run_id: str) -> RunCancelResult:
+        record = self.read(run_id)
         now = datetime.now(UTC)
-        cancelled = record.model_copy(
-            update={
-                "status": RunStatus.CANCELLED,
-                "updated_at": now,
-                "finished_at": now,
-                "summary": record.summary,
-                "error": record.error,
-            }
-        )
-        self.transitions.write_status_transition(
-            runtime_path,
-            previous=record,
-            record=cancelled,
-            timestamp=now,
-            message=RunStatus.CANCELLED.value,
-        )
+        result = cancel_run(record, now)
+        if not result.changed:
+            return result
+        cancelled = result.record
+        self.update_record_preserving_spec(cancelled)
+        self.event_store.append_status(run_id, now, RunStatus.CANCELLED.value)
         return RunCancelResult(record=cancelled, changed=True)
+
+    def update_record_preserving_spec(self, record: RunRecord) -> None:
+        self.write_record(record, spec=self.read_spec(record.run_id))
+
+    def write_record(self, record: RunRecord, spec: RunSpec | None) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO runs (
+                    run_id, repository_id, kind, status, title, created_at,
+                    updated_at, record_json, spec_json
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(run_id) DO UPDATE SET
+                    repository_id = excluded.repository_id,
+                    kind = excluded.kind,
+                    status = excluded.status,
+                    title = excluded.title,
+                    updated_at = excluded.updated_at,
+                    record_json = excluded.record_json,
+                    spec_json = excluded.spec_json
+                """,
+                (
+                    record.run_id,
+                    record.repository_id,
+                    record.kind.value,
+                    record.status.value,
+                    record.title,
+                    record.created_at.isoformat(),
+                    record.updated_at.isoformat(),
+                    run_record_json(record),
+                    run_spec_json(spec),
+                ),
+            )
+            connection.commit()
+
+    def connect(self):
+        connection = connect_local_database(self.database_path)
+        connection.executescript(RUN_TABLES)
+        connection.commit()
+        return connection

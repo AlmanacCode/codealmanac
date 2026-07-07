@@ -2,9 +2,9 @@ import argparse
 from pathlib import Path
 
 from codealmanac.app import CodeAlmanac
+from codealmanac.cli.dispatch.repositories import dispatch_repositories
 from codealmanac.cli.dispatch.serve import run_serve
 from codealmanac.cli.dispatch.topics import dispatch_topics
-from codealmanac.cli.dispatch.workspaces import dispatch_workspaces
 from codealmanac.cli.render.root import (
     render_health,
     render_page,
@@ -41,12 +41,12 @@ def is_wiki_command(command: str | None) -> bool:
 
 def dispatch_wiki(args: argparse.Namespace, app: CodeAlmanac) -> int:
     if args.command == "list":
-        return dispatch_workspaces(args, app)
+        return dispatch_repositories(args, app)
     if args.command == "search":
         rows = app.search.search(
             SearchPagesRequest(
                 cwd=Path.cwd(),
-                wiki=args.wiki,
+                repository_name=args.wiki,
                 query=args.query,
                 topics=tuple(args.topic),
                 mentions=args.mentions,
@@ -62,24 +62,28 @@ def dispatch_wiki(args: argparse.Namespace, app: CodeAlmanac) -> int:
         return 0
     if args.command == "show":
         page = app.pages.show(
-            ShowPageRequest(cwd=Path.cwd(), wiki=args.wiki, slug=args.page)
+            ShowPageRequest(cwd=Path.cwd(), repository_name=args.wiki, slug=args.page)
         )
         render_page(page, args)
         return 0
     if args.command == "topics":
         return dispatch_topics(args, app)
     if args.command == "health":
-        report = app.health.check(HealthCheckRequest(cwd=Path.cwd(), wiki=args.wiki))
+        report = app.health.check(
+            HealthCheckRequest(cwd=Path.cwd(), repository_name=args.wiki)
+        )
         render_health(report, json_output=args.json)
         return 0
     if args.command == "validate":
         result = app.health.validate(
-            ValidateWikiRequest(cwd=Path.cwd(), wiki=args.wiki)
+            ValidateWikiRequest(cwd=Path.cwd(), repository_name=args.wiki)
         )
         render_validate(result, json_output=args.json)
         return 0 if result.ok else 1
     if args.command == "reindex":
-        result = app.index.reindex(ReindexRequest(cwd=Path.cwd(), wiki=args.wiki))
+        result = app.index.reindex(
+            ReindexRequest(cwd=Path.cwd(), repository_name=args.wiki)
+        )
         render_reindex(result, json_output=args.json)
         return 0
     if args.command == "serve":
@@ -88,7 +92,7 @@ def dispatch_wiki(args: argparse.Namespace, app: CodeAlmanac) -> int:
         result = app.tagging.tag(
             TagPageRequest(
                 cwd=Path.cwd(),
-                wiki=args.wiki,
+                repository_name=args.wiki,
                 slug=args.page,
                 topics=tuple(args.topics),
             )
@@ -99,7 +103,7 @@ def dispatch_wiki(args: argparse.Namespace, app: CodeAlmanac) -> int:
         result = app.tagging.untag(
             UntagPageRequest(
                 cwd=Path.cwd(),
-                wiki=args.wiki,
+                repository_name=args.wiki,
                 slug=args.page,
                 topics=tuple(args.topics),
             )

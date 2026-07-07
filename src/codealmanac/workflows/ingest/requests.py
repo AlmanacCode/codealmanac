@@ -8,11 +8,12 @@ from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.services.runs.models import RunId
 
 
-class RunIngestRequest(CodeAlmanacModel):
+class IngestRequest(CodeAlmanacModel):
     cwd: Path
     inputs: tuple[str, ...]
     harness: HarnessKind
-    wiki: str | None = None
+    model: str
+    repository_name: str | None = None
     title: str | None = None
     guidance: str | None = None
     auto_commit: bool = True
@@ -24,7 +25,7 @@ class RunIngestRequest(CodeAlmanacModel):
             raise ValueError("at least one ingest input is required")
         return value
 
-    @field_validator("title", "guidance")
+    @field_validator("model", "title", "guidance")
     @classmethod
     def require_optional_text(cls, value: str | None) -> str | None:
         if value is None:
@@ -32,5 +33,5 @@ class RunIngestRequest(CodeAlmanacModel):
         return required_text(value, "ingest request text")
 
 
-class RunIngestWithRunRequest(RunIngestRequest):
+class StartedIngestRequest(IngestRequest):
     run_id: RunId

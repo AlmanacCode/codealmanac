@@ -1,15 +1,24 @@
 from datetime import datetime, timedelta
-from pathlib import Path
 
 from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
+from codealmanac.services.harnesses.models import HarnessKind
+
+
+class ScheduledGardenRequest(CodeAlmanacModel):
+    harness: HarnessKind
+    model: str
+    auto_commit: bool = True
+
+    @field_validator("model")
+    @classmethod
+    def require_model(cls, value: str) -> str:
+        return required_text(value, "scheduled garden model")
 
 
 class DrainRunQueueRequest(CodeAlmanacModel):
-    cwd: Path
-    wiki: str | None = None
     owner: str = "codealmanac-worker"
     pid: int | None = None
     now: datetime | None = None

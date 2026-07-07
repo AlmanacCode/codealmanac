@@ -3,9 +3,6 @@ from datetime import timedelta
 DEFAULT_SYNC_INTERVAL = timedelta(hours=5)
 DEFAULT_GARDEN_INTERVAL = timedelta(hours=4)
 DEFAULT_UPDATE_INTERVAL = timedelta(days=1)
-AUTOMATION_SYNC_CLAIM_OWNER = "codealmanac.automation.sync"
-AUTOMATION_SYNC_PENDING_TIMEOUT = timedelta(hours=24)
-AUTOMATION_SYNC_MAX_FAILED_ATTEMPTS = 3
 
 SYNC_LABEL = "com.codealmanac.sync"
 GARDEN_LABEL = "com.codealmanac.garden"

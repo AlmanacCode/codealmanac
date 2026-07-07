@@ -24,18 +24,18 @@ def git_directory_candidates(
     timeout_seconds: int,
     ignore_spec: GitIgnoreSpec,
 ) -> tuple[FilesystemDirectoryCandidate, ...] | None:
-    repo_root = git_repo_root(root, runner, timeout_seconds)
-    if repo_root is None:
+    repository_root = git_repository_root(root, runner, timeout_seconds)
+    if repository_root is None:
         return None
     try:
-        pathspec = root.relative_to(repo_root).as_posix()
+        pathspec = root.relative_to(repository_root).as_posix()
     except ValueError:
         return None
     if pathspec == ".":
         pathspec = "."
     result = run_git(
         runner,
-        repo_root,
+        repository_root,
         (
             "ls-files",
             "-z",
@@ -51,7 +51,7 @@ def git_directory_candidates(
     if result is None:
         return None
     changed_statuses = git_changed_statuses(
-        repo_root,
+        repository_root,
         root,
         pathspec,
         runner,
@@ -62,7 +62,7 @@ def git_directory_candidates(
     for value in result.stdout.split("\0"):
         if not value:
             continue
-        path = repo_root / value
+        path = repository_root / value
         if path in seen:
             continue
         if not is_relative_to(path, root):
@@ -88,7 +88,7 @@ def git_directory_candidates(
 
 
 def git_changed_statuses(
-    repo_root: Path,
+    repository_root: Path,
     root: Path,
     pathspec: str,
     runner: CommandRunner,
@@ -96,7 +96,7 @@ def git_changed_statuses(
 ) -> dict[Path, str]:
     result = run_git(
         runner,
-        repo_root,
+        repository_root,
         (
             "--no-optional-locks",
             "status",
@@ -112,7 +112,7 @@ def git_changed_statuses(
         return {}
     statuses: dict[Path, str] = {}
     for relative_path, status in parse_git_status_z(result.stdout):
-        path = repo_root / relative_path
+        path = repository_root / relative_path
         if is_relative_to(path, root):
             statuses[path] = status
     return statuses
@@ -135,7 +135,7 @@ def parse_git_status_z(stdout: str) -> tuple[tuple[str, str], ...]:
     return tuple(parsed)
 
 
-def git_repo_root(
+def git_repository_root(
     root: Path,
     runner: CommandRunner,
     timeout_seconds: int,
@@ -146,10 +146,10 @@ def git_repo_root(
     text = first_line(result.stdout)
     if not text:
         return None
-    repo_root = Path(text).expanduser().resolve(strict=False)
-    if not is_relative_to(root, repo_root):
+    repository_root = Path(text).expanduser().resolve(strict=False)
+    if not is_relative_to(root, repository_root):
         return None
-    return repo_root
+    return repository_root
 
 
 def run_git(

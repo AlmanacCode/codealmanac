@@ -1,45 +1,18 @@
-import subprocess
+import sqlite3
 from datetime import UTC, datetime, timedelta
-from hashlib import sha256
 from pathlib import Path
 
-from conftest import runtime_repo_path_for_root, runtime_runs_path
+from conftest import initialize_repository
 
 from codealmanac.app import create_app
-from codealmanac.core.models import AppConfig
-from codealmanac.core.paths import normalize_path
-from codealmanac.services.harnesses.models import (
-    HarnessKind,
-    HarnessReadiness,
-    HarnessRunResult,
-    HarnessRunStatus,
-    HarnessTranscriptRef,
-)
-from codealmanac.services.harnesses.requests import RunHarnessRequest
-from codealmanac.services.runs.models import (
-    RunOperation,
-    RunStatus,
-    RunWorkerSpawnResult,
-)
-from codealmanac.services.runs.requests import (
-    FinishRunRequest,
-    MarkRunRunningRequest,
-    RecordRunHarnessTranscriptRequest,
-    ShowRunRequest,
-    SpawnRunWorkerRequest,
-    StartRunRequest,
-)
+from codealmanac.services.harnesses.models import HarnessKind
+from codealmanac.services.runs.models import RunKind, RunWorkerSpawnResult
+from codealmanac.services.runs.requests import ReadRunSpecRequest, SpawnRunWorkerRequest
 from codealmanac.services.sources.models import TranscriptApp, TranscriptCandidate
 from codealmanac.services.sources.requests import DiscoverTranscriptsRequest
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
-from codealmanac.workflows.sync.models import (
-    SyncExecution,
-    SyncLedger,
-    SyncLedgerEntry,
-    SyncLedgerStatus,
-    SyncMode,
-)
-from codealmanac.workflows.sync.requests import RunSyncRequest, RunSyncStatusRequest
+from codealmanac.settings import AppConfig
+from codealmanac.workflows.sync.models import SyncMode
+from codealmanac.workflows.sync.requests import SyncRequest, SyncStatusRequest
 
 
 class FakeTranscriptDiscoveryAdapter:
@@ -57,68 +30,6 @@ class FakeTranscriptDiscoveryAdapter:
         return self.candidates
 
 
-class SyncWritingHarnessAdapter:
-    kind = HarnessKind.CODEX
-
-    def __init__(self):
-        self.requests: list[RunHarnessRequest] = []
-
-    def check(self) -> HarnessReadiness:
-        return HarnessReadiness(
-            kind=self.kind,
-            available=True,
-            message="codex ready",
-        )
-
-    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
-        self.requests.append(request)
-        page = request.cwd / "almanac/synced-transcript.md"
-        page.write_text(
-            """---
-title: Synced Transcript
-topics: [getting-started]
-sources: []
----
-# Synced Transcript
-
-Sync ingested a quiet transcript.
-""",
-            encoding="utf-8",
-        )
-        return HarnessRunResult(
-            kind=self.kind,
-            status=HarnessRunStatus.SUCCEEDED,
-            output_text="synced transcript",
-            summary="synced transcript",
-            changed_files=(page,),
-        )
-
-
-class FailedSyncHarnessAdapter(SyncWritingHarnessAdapter):
-    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
-        self.requests.append(request)
-        return HarnessRunResult(
-            kind=self.kind,
-            status=HarnessRunStatus.FAILED,
-            output_text="agent failed",
-        )
-
-
-class LedgerObservingHarnessAdapter(SyncWritingHarnessAdapter):
-    def __init__(self, candidate: TranscriptCandidate, ledger_path: Path):
-        super().__init__()
-        self.candidate = candidate
-        self.ledger_path = ledger_path
-        self.observed_entry: SyncLedgerEntry | None = None
-
-    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
-        ledger = SyncLedger.model_validate_json(
-            self.ledger_path.read_text(encoding="utf-8")
-        )
-        self.observed_entry = ledger.sessions[sync_ledger_key(self.candidate)]
-        return super().run(request)
-
-
 class SyncWorkerSpawner:
     def __init__(self, error: Exception | None = None):
         self.error = error
@@ -134,986 +45,265 @@ class SyncWorkerSpawner:
         )
 
 
-def test_sync_status_reports_ready_transcript_ranges(
+def test_sync_status_groups_active_transcripts_by_repository(
     tmp_path: Path,
     isolated_home: Path,
 ):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            now=current_time(),
-        )
-    )
-
-    assert summary.scanned == 1
-    assert summary.eligible == 1
-    assert summary.ready[0].session_id == "session-1"
-    assert summary.ready[0].from_line == 1
-    assert summary.ready[0].to_line == 2
-    assert summary.skipped == ()
-    assert summary.needs_attention == ()
-    adapter = app.sources.transcript_discovery_adapters[0]
-    assert adapter.requests[0].almanac_roots == (Path("almanac"),)
-
-
-def test_sync_status_passes_only_almanac_root_to_discovery(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\n")
-    candidate = transcript_candidate(
+    repo = initialized_repo(tmp_path, "repo")
+    active = transcript_candidate(repo, tmp_path / "active.jsonl", current_time())
+    inactive = transcript_candidate(
         repo,
-        transcript,
-        modified_at=old_time(),
-        almanac_path=repo / "almanac",
+        tmp_path / "inactive.jsonl",
+        current_time() - timedelta(hours=6),
+        session_id="inactive-session",
     )
-    app = app_with_candidates(isolated_home, (candidate,))
-    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    app, adapter, spawner = app_with_sync(
+        isolated_home,
+        candidates=(active, inactive),
+    )
+    initialize_repository(app, path=repo)
 
     summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
+        SyncStatusRequest(
             apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
             now=current_time(),
         )
     )
 
-    adapter = app.sources.transcript_discovery_adapters[0]
+    assert summary.mode == SyncMode.STATUS
+    assert summary.scanned == 2
     assert summary.eligible == 1
-    assert adapter.requests[0].almanac_roots == (Path("almanac"),)
+    assert len(summary.ready) == 1
+    assert summary.ready[0].repository_name == "repo"
+    assert summary.ready[0].transcript_paths == (active.transcript_path,)
+    assert summary.skipped[0].reason == "inactive"
+    assert adapter.requests[0].apps == (TranscriptApp.CODEX,)
+    assert spawner.requests == []
 
 
-def test_sync_run_ingests_ready_transcripts_and_advances_ledger(
+def test_sync_uses_exact_registered_cwd_without_root_hopping(
     tmp_path: Path,
     isolated_home: Path,
 ):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(
-        tmp_path,
-        (
-            '{"type":"session_meta","payload":{"id":"session-1","cwd":"'
-            f'{repo}"}}\n'
-            '{"type":"response_item","payload":{"item":{"type":"message",'
-            '"role":"user","content":[{"type":"input_text","text":'
-            '"Sync should preserve the release blocker."}]}}}\n'
-        ),
+    repo = initialized_repo(tmp_path, "repo")
+    nested = repo / "src" / "package"
+    nested.mkdir(parents=True)
+    candidate = transcript_candidate(nested, tmp_path / "nested.jsonl", current_time())
+    app, _, _ = app_with_sync(isolated_home, candidates=(candidate,))
+    initialize_repository(app, path=repo)
+
+    summary = app.workflows.sync.status(
+        SyncStatusRequest(
+            apps=(TranscriptApp.CODEX,),
+            now=current_time(),
+        )
     )
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    harness = SyncWritingHarnessAdapter()
-    app = app_with_candidates(isolated_home, (candidate,), harness=harness)
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    ledger_path = runtime_runs_path(isolated_home, workspace) / "sync-ledger.json"
-    initialize_git(repo)
-    commit_all(repo, "initial wiki")
+
+    assert summary.eligible == 0
+    assert summary.ready == ()
+    assert summary.skipped[0].reason == "unregistered-cwd"
+
+
+def test_sync_run_queues_one_ingest_run_per_repository_and_records_scan_time(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = initialized_repo(tmp_path, "repo")
+    first = transcript_candidate(
+        repo,
+        tmp_path / "first.jsonl",
+        current_time() - timedelta(minutes=1),
+    )
+    second = transcript_candidate(
+        repo,
+        tmp_path / "second.jsonl",
+        current_time() - timedelta(minutes=10),
+        session_id="second-session",
+    )
+    database_path = isolated_home / ".codealmanac/codealmanac.db"
+    app, _, spawner = app_with_sync(
+        isolated_home,
+        candidates=(first, second),
+        database_path=database_path,
+    )
+    initialize_repository(app, path=repo)
 
     summary = app.workflows.sync.run(
-        RunSyncRequest(
-            cwd=repo,
+        SyncRequest(
             apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
             harness=HarnessKind.CODEX,
+            model="gpt-5.5",
             now=current_time(),
             auto_commit=False,
         )
     )
 
-    ledger = SyncLedger.model_validate_json(ledger_path.read_text(encoding="utf-8"))
-    entry = ledger.sessions[sync_ledger_key(candidate)]
     assert summary.mode == SyncMode.SYNC
-    assert summary.eligible == 1
+    assert summary.eligible == 2
     assert summary.ready == ()
-    assert summary.started[0].session_id == "session-1"
-    assert entry.status == SyncLedgerStatus.DONE
-    assert entry.last_absorbed_size == transcript.stat().st_size
-    assert entry.last_absorbed_line == 2
-    assert entry.last_job_id == summary.started[0].run_id
-    assert "Scheduled sync cursor:" in harness.requests[0].prompt
-    assert "Focus on line 1 onward." in harness.requests[0].prompt
-    assert "Sync should preserve the release blocker." in harness.requests[0].prompt
-    assert '"auto_commit": false' in harness.requests[0].prompt
-    assert "Do not run git commit." in harness.requests[0].prompt
-
-    status = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            now=current_time(),
+    assert len(summary.started) == 1
+    assert summary.started[0].repository_name == "repo"
+    assert summary.started[0].transcript_count == 2
+    assert len(spawner.requests) == 1
+    spec = app.runs.read_spec(
+        ReadRunSpecRequest(
+            run_id=summary.started[0].run_id,
         )
     )
-    assert status.eligible == 0
-    assert status.skipped[0].reason == "unchanged"
+    assert spec is not None
+    assert spec.kind == RunKind.INGEST
+    assert spec.inputs == (
+        f"transcript:{second.transcript_path}",
+        f"transcript:{first.transcript_path}",
+    )
+    assert spec.auto_commit is False
+    assert sync_completed_at(database_path) == current_time().isoformat()
+
+    next_status = app.workflows.sync.status(
+        SyncStatusRequest(
+            apps=(TranscriptApp.CODEX,),
+            now=current_time() + timedelta(minutes=1),
+        )
+    )
+    assert next_status.eligible == 0
+    assert next_status.skipped[0].reason == "inactive"
 
 
-def test_sync_background_queues_ingest_and_leaves_pending_claim(
+def test_sync_advances_scan_time_even_when_queueing_fails(
     tmp_path: Path,
     isolated_home: Path,
 ):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    harness = SyncWritingHarnessAdapter()
-    spawner = SyncWorkerSpawner()
-    app = app_with_candidates(
+    repo = initialized_repo(tmp_path, "repo")
+    candidate = transcript_candidate(repo, tmp_path / "active.jsonl", current_time())
+    database_path = isolated_home / ".codealmanac/codealmanac.db"
+    app, _, _ = app_with_sync(
         isolated_home,
-        (candidate,),
-        harness=harness,
-        worker_spawner=spawner,
+        candidates=(candidate,),
+        database_path=database_path,
+        spawner=SyncWorkerSpawner(error=OSError("spawn failed")),
     )
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    ledger_path = runtime_runs_path(isolated_home, workspace) / "sync-ledger.json"
+    initialize_repository(app, path=repo)
 
     summary = app.workflows.sync.run(
-        RunSyncRequest(
-            cwd=repo,
+        SyncRequest(
             apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
             harness=HarnessKind.CODEX,
-            execution=SyncExecution.BACKGROUND,
-            now=current_time(),
-            claim_owner="background-sync-owner",
-            auto_commit=False,
-        )
-    )
-
-    ledger = SyncLedger.model_validate_json(ledger_path.read_text(encoding="utf-8"))
-    entry = ledger.sessions[sync_ledger_key(candidate)]
-    run = app.runs.show(ShowRunRequest(cwd=repo, run_id=summary.started[0].run_id))
-
-    assert summary.eligible == 1
-    assert summary.started[0].from_line == 1
-    assert summary.started[0].to_line == 2
-    assert run.status == RunStatus.QUEUED
-    assert run.operation == RunOperation.INGEST
-    assert entry.status == SyncLedgerStatus.PENDING
-    assert entry.pending_owner == "background-sync-owner"
-    assert entry.pending_run_id == run.run_id
-    assert entry.pending_to_size == transcript.stat().st_size
-    assert entry.pending_prefix_hash == sha256_text("one\ntwo\n")
-    assert harness.requests == []
-    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
-    assert (
-        runtime_runs_path(isolated_home, workspace) / f"{run.run_id}.spec.json"
-    ).is_file()
-    spec = (
-        runtime_runs_path(isolated_home, workspace) / f"{run.run_id}.spec.json"
-    ).read_text(encoding="utf-8")
-    assert '"auto_commit": false' in spec
-    assert not (repo / "almanac/jobs").exists()
-
-
-def test_sync_background_spawn_failure_marks_run_and_ledger_failed(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    spawner = SyncWorkerSpawner(error=RuntimeError("spawn denied"))
-    app = app_with_candidates(
-        isolated_home,
-        (candidate,),
-        harness=SyncWritingHarnessAdapter(),
-        worker_spawner=spawner,
-    )
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    ledger_path = runtime_runs_path(isolated_home, workspace) / "sync-ledger.json"
-
-    summary = app.workflows.sync.run(
-        RunSyncRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            harness=HarnessKind.CODEX,
-            execution=SyncExecution.BACKGROUND,
-            now=current_time(),
-        )
-    )
-
-    ledger = SyncLedger.model_validate_json(ledger_path.read_text(encoding="utf-8"))
-    entry = ledger.sessions[sync_ledger_key(candidate)]
-    run = app.runs.show(ShowRunRequest(cwd=repo, run_id=entry.last_job_id or ""))
-
-    assert summary.started == ()
-    assert summary.needs_attention[0].reason == "worker-spawn-failed"
-    assert run.status == RunStatus.FAILED
-    assert run.error == "spawn denied"
-    assert entry.status == SyncLedgerStatus.FAILED
-    assert entry.failed_attempts == 1
-    assert entry.last_error == "spawn denied"
-    assert entry.pending_run_id is None
-
-
-def test_sync_run_writes_pending_claim_before_ingest(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    ledger_path = (
-        runtime_repo_path_for_root(isolated_home, repo) / "runs" / "sync-ledger.json"
-    )
-    harness = LedgerObservingHarnessAdapter(candidate, ledger_path)
-    app = app_with_candidates(isolated_home, (candidate,), harness=harness)
-    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    initialize_git(repo)
-    commit_all(repo, "initial wiki")
-
-    summary = app.workflows.sync.run(
-        RunSyncRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            harness=HarnessKind.CODEX,
-            now=current_time(),
-            claim_owner="test-sync-owner",
-        )
-    )
-
-    assert harness.observed_entry is not None
-    assert harness.observed_entry.status == SyncLedgerStatus.PENDING
-    assert harness.observed_entry.pending_started_at == current_time()
-    assert harness.observed_entry.pending_owner == "test-sync-owner"
-    assert harness.observed_entry.pending_run_id is not None
-    assert harness.observed_entry.pending_to_size == transcript.stat().st_size
-    assert harness.observed_entry.pending_prefix_hash == sha256_text("one\ntwo\n")
-    assert harness.observed_entry.pending_from_line == 1
-    assert harness.observed_entry.pending_to_line == 2
-    ledger = SyncLedger.model_validate_json(ledger_path.read_text(encoding="utf-8"))
-    entry = ledger.sessions[sync_ledger_key(candidate)]
-    assert entry.status == SyncLedgerStatus.DONE
-    assert entry.last_job_id == summary.started[0].run_id
-    assert entry.pending_started_at is None
-    assert entry.pending_owner is None
-    assert entry.pending_run_id is None
-    assert entry.pending_to_size is None
-    assert entry.pending_prefix_hash is None
-    assert entry.pending_from_line is None
-    assert entry.pending_to_line is None
-
-
-def test_sync_run_records_failed_attempt_after_ingest_failure(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    harness = FailedSyncHarnessAdapter()
-    app = app_with_candidates(isolated_home, (candidate,), harness=harness)
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    initialize_git(repo)
-    commit_all(repo, "initial wiki")
-
-    summary = app.workflows.sync.run(
-        RunSyncRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            harness=HarnessKind.CODEX,
-            now=current_time(),
-            claim_owner="automation-owner",
-        )
-    )
-
-    ledger_path = runtime_runs_path(isolated_home, workspace) / "sync-ledger.json"
-    ledger = SyncLedger.model_validate_json(ledger_path.read_text(encoding="utf-8"))
-    entry = ledger.sessions[sync_ledger_key(candidate)]
-    assert summary.started == ()
-    assert summary.needs_attention[0].reason == "ingest-failed"
-    assert entry.status == SyncLedgerStatus.FAILED
-    assert entry.failed_attempts == 1
-    assert entry.last_job_id is not None
-    assert entry.last_error is not None
-    assert entry.pending_owner is None
-
-
-def test_sync_status_skips_active_pending_ledger_entry(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    write_sync_ledger(
-        runtime_runs_path(isolated_home, workspace),
-        candidate,
-        last_absorbed_size=0,
-        last_absorbed_line=0,
-        prefix_hash=sha256_text(""),
-        status=SyncLedgerStatus.PENDING,
-        pending_started_at=current_time() - timedelta(minutes=30),
-        pending_owner="active-owner",
-        pending_from_line=1,
-        pending_to_line=2,
-    )
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            pending_timeout=timedelta(hours=1),
-            now=current_time(),
-        )
-    )
-
-    assert summary.eligible == 0
-    assert summary.ready == ()
-    assert summary.skipped[0].reason == "sync-already-pending"
-
-
-def test_sync_status_reports_stale_pending_ledger_entry(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    write_sync_ledger(
-        runtime_runs_path(isolated_home, workspace),
-        candidate,
-        last_absorbed_size=0,
-        last_absorbed_line=0,
-        prefix_hash=sha256_text(""),
-        status=SyncLedgerStatus.PENDING,
-        pending_started_at=current_time() - timedelta(hours=3),
-        pending_owner="stale-owner",
-        pending_from_line=1,
-        pending_to_line=2,
-    )
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            pending_timeout=timedelta(hours=1),
-            now=current_time(),
-        )
-    )
-
-    assert summary.eligible == 0
-    assert summary.ready == ()
-    assert summary.needs_attention[0].reason == "sync-pending-stale"
-
-
-def test_sync_status_skips_active_pending_run(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    run = app.runs.start(
-        StartRunRequest(cwd=repo, operation=RunOperation.INGEST, title="Sync ingest")
-    )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=run.run_id))
-    write_sync_ledger(
-        runtime_runs_path(isolated_home, workspace),
-        candidate,
-        last_absorbed_size=0,
-        last_absorbed_line=0,
-        prefix_hash=sha256_text(""),
-        status=SyncLedgerStatus.PENDING,
-        pending_started_at=current_time() - timedelta(minutes=30),
-        pending_owner="active-owner",
-        pending_run_id=run.run_id,
-        pending_to_size=transcript.stat().st_size,
-        pending_prefix_hash=sha256_text("one\ntwo\n"),
-        pending_from_line=1,
-        pending_to_line=2,
-    )
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            pending_timeout=timedelta(hours=1),
-            now=current_time(),
-        )
-    )
-
-    assert summary.eligible == 0
-    assert summary.ready == ()
-    assert summary.skipped[0].reason == "sync-pending-run-active"
-
-
-def test_sync_status_reports_done_pending_run_needs_reconcile(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    run = app.runs.start(
-        StartRunRequest(cwd=repo, operation=RunOperation.INGEST, title="Sync ingest")
-    )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=run.run_id))
-    app.runs.finish(
-        FinishRunRequest(
-            cwd=repo,
-            run_id=run.run_id,
-            status=RunStatus.DONE,
-            summary="done",
-        )
-    )
-    write_sync_ledger(
-        runtime_runs_path(isolated_home, workspace),
-        candidate,
-        last_absorbed_size=0,
-        last_absorbed_line=0,
-        prefix_hash=sha256_text(""),
-        status=SyncLedgerStatus.PENDING,
-        pending_started_at=current_time() - timedelta(minutes=30),
-        pending_owner="done-owner",
-        pending_run_id=run.run_id,
-        pending_to_size=transcript.stat().st_size,
-        pending_prefix_hash=sha256_text("one\ntwo\n"),
-        pending_from_line=1,
-        pending_to_line=2,
-    )
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            pending_timeout=timedelta(hours=1),
-            now=current_time(),
-        )
-    )
-
-    assert summary.eligible == 0
-    assert summary.ready == ()
-    assert summary.needs_attention[0].reason == "sync-pending-run-done"
-
-
-def test_sync_run_reconciles_done_pending_run_before_new_work(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    absorbed = "one\ntwo\n"
-    transcript = write_transcript(tmp_path, f"{absorbed}three\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    harness = SyncWritingHarnessAdapter()
-    app = app_with_candidates(isolated_home, (candidate,), harness=harness)
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    initialize_git(repo)
-    commit_all(repo, "initial wiki")
-    run = app.runs.start(
-        StartRunRequest(cwd=repo, operation=RunOperation.INGEST, title="Sync ingest")
-    )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=run.run_id))
-    app.runs.finish(
-        FinishRunRequest(
-            cwd=repo,
-            run_id=run.run_id,
-            status=RunStatus.DONE,
-            summary="done",
-        )
-    )
-    write_sync_ledger(
-        runtime_runs_path(isolated_home, workspace),
-        candidate,
-        last_absorbed_size=0,
-        last_absorbed_line=0,
-        prefix_hash=sha256_text(""),
-        status=SyncLedgerStatus.PENDING,
-        pending_started_at=current_time() - timedelta(minutes=30),
-        pending_owner="done-owner",
-        pending_run_id=run.run_id,
-        pending_to_size=len(absorbed.encode("utf-8")),
-        pending_prefix_hash=sha256_text(absorbed),
-        pending_from_line=1,
-        pending_to_line=2,
-    )
-
-    summary = app.workflows.sync.run(
-        RunSyncRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            harness=HarnessKind.CODEX,
-            now=current_time(),
-        )
-    )
-
-    ledger_path = runtime_runs_path(isolated_home, workspace) / "sync-ledger.json"
-    ledger = SyncLedger.model_validate_json(ledger_path.read_text(encoding="utf-8"))
-    entry = ledger.sessions[sync_ledger_key(candidate)]
-    assert summary.eligible == 1
-    assert summary.started[0].from_line == 3
-    assert summary.started[0].to_line == 3
-    assert "Focus on line 3 onward." in harness.requests[0].prompt
-    assert entry.status == SyncLedgerStatus.DONE
-    assert entry.last_absorbed_size == transcript.stat().st_size
-    assert entry.last_absorbed_line == 3
-    assert entry.last_job_id == summary.started[0].run_id
-    assert entry.pending_run_id is None
-
-
-def test_sync_run_reconciles_failed_pending_run_and_retries(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    harness = SyncWritingHarnessAdapter()
-    app = app_with_candidates(isolated_home, (candidate,), harness=harness)
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    initialize_git(repo)
-    commit_all(repo, "initial wiki")
-    run = app.runs.start(
-        StartRunRequest(cwd=repo, operation=RunOperation.INGEST, title="Sync ingest")
-    )
-    app.runs.mark_running(MarkRunRunningRequest(cwd=repo, run_id=run.run_id))
-    app.runs.finish(
-        FinishRunRequest(
-            cwd=repo,
-            run_id=run.run_id,
-            status=RunStatus.FAILED,
-            error="previous crash",
-        )
-    )
-    write_sync_ledger(
-        runtime_runs_path(isolated_home, workspace),
-        candidate,
-        last_absorbed_size=0,
-        last_absorbed_line=0,
-        prefix_hash=sha256_text(""),
-        status=SyncLedgerStatus.PENDING,
-        pending_started_at=current_time() - timedelta(minutes=30),
-        pending_owner="failed-owner",
-        pending_run_id=run.run_id,
-        pending_to_size=transcript.stat().st_size,
-        pending_prefix_hash=sha256_text("one\ntwo\n"),
-        pending_from_line=1,
-        pending_to_line=2,
-    )
-
-    summary = app.workflows.sync.run(
-        RunSyncRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            harness=HarnessKind.CODEX,
+            model="gpt-5.5",
             now=current_time(),
         )
     )
 
     assert summary.eligible == 1
-    assert summary.started[0].from_line == 1
-    assert "Focus on line 1 onward." in harness.requests[0].prompt
+    assert len(summary.started) == 1
+    assert summary.skipped[0].reason == "worker-spawn-failed: spawn failed"
+    assert sync_completed_at(database_path) == current_time().isoformat()
 
 
-def test_sync_status_reports_exhausted_retry_budget(
+def test_sync_uses_last_completed_time_before_interval_fallback(
     tmp_path: Path,
     isolated_home: Path,
 ):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    write_sync_ledger(
-        runtime_runs_path(isolated_home, workspace),
-        candidate,
-        last_absorbed_size=0,
-        last_absorbed_line=0,
-        prefix_hash=sha256_text(""),
-        status=SyncLedgerStatus.FAILED,
-        failed_attempts=3,
-    )
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            now=current_time(),
-            max_failed_attempts=3,
-        )
-    )
-
-    assert summary.eligible == 0
-    assert summary.ready == ()
-    assert summary.needs_attention[0].reason == "sync-retry-budget-exhausted"
-
-
-def test_sync_status_matches_normalized_transcript_ledger_key(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    alias = tmp_path / "alias"
-    alias.mkdir()
-    candidate = transcript_candidate(
+    repo = initialized_repo(tmp_path, "repo")
+    database_path = isolated_home / ".codealmanac/codealmanac.db"
+    previous = current_time() - timedelta(hours=8)
+    active_after_sleep = transcript_candidate(
         repo,
-        alias / ".." / transcript.name,
-        modified_at=old_time(),
+        tmp_path / "active-after-sleep.jsonl",
+        current_time() - timedelta(hours=7),
     )
-    app = app_with_candidates(isolated_home, (candidate,))
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    write_sync_ledger(
-        runtime_runs_path(isolated_home, workspace),
-        candidate,
-        last_absorbed_size=0,
-        last_absorbed_line=0,
-        prefix_hash=sha256_text(""),
-        status=SyncLedgerStatus.PENDING,
-        pending_started_at=current_time() - timedelta(minutes=30),
-        pending_owner="normalized-owner",
-        pending_from_line=1,
-        pending_to_line=2,
+    app, _, _ = app_with_sync(
+        isolated_home,
+        candidates=(active_after_sleep,),
+        database_path=database_path,
     )
+    initialize_repository(app, path=repo)
+    write_sync_completed_at(database_path, previous)
 
     summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
+        SyncStatusRequest(
             apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            pending_timeout=timedelta(hours=1),
             now=current_time(),
         )
     )
 
-    assert summary.eligible == 0
-    assert summary.ready == ()
-    assert summary.skipped[0].reason == "sync-already-pending"
+    assert summary.since == previous
+    assert summary.eligible == 1
 
 
-def test_sync_status_matches_ledger_entry_by_normalized_identity(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
+def initialized_repo(tmp_path: Path, name: str) -> Path:
+    repo = tmp_path / name
     repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    transcript_link_root = tmp_path / "transcript-link"
-    transcript_link_root.symlink_to(tmp_path, target_is_directory=True)
-    linked_transcript = transcript_link_root / transcript.name
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    write_sync_ledger(
-        runtime_runs_path(isolated_home, workspace),
-        candidate,
-        last_absorbed_size=0,
-        last_absorbed_line=0,
-        prefix_hash=sha256_text(""),
-        status=SyncLedgerStatus.PENDING,
-        pending_started_at=current_time() - timedelta(minutes=30),
-        pending_owner="linked-owner",
-        pending_from_line=1,
-        pending_to_line=2,
-        session_key=f"{candidate.app.value}:{linked_transcript}",
-        entry_transcript_path=linked_transcript,
-    )
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            pending_timeout=timedelta(hours=1),
-            now=current_time(),
-        )
-    )
-
-    assert summary.eligible == 0
-    assert summary.ready == ()
-    assert summary.skipped[0].reason == "sync-already-pending"
+    return repo
 
 
-def test_sync_status_skips_internal_lifecycle_transcripts_by_session(
-    tmp_path: Path,
+def app_with_sync(
     isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    record = app.runs.start(
-        StartRunRequest(
-            cwd=repo,
-            operation=RunOperation.INGEST,
-            title="Internal ingest",
-        )
-    )
-    app.runs.record_harness_transcript(
-        RecordRunHarnessTranscriptRequest(
-            cwd=repo,
-            run_id=record.run_id,
-            transcript=HarnessTranscriptRef(
-                kind=HarnessKind.CODEX,
-                session_id="session-1",
-            ),
-        )
-    )
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            now=current_time(),
-        )
-    )
-
-    assert summary.eligible == 0
-    assert summary.ready == ()
-    assert summary.skipped[0].reason == "internal-lifecycle-transcript"
-
-
-def test_sync_status_skips_internal_lifecycle_transcripts_by_path(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\ntwo\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    record = app.runs.start(
-        StartRunRequest(
-            cwd=repo,
-            operation=RunOperation.GARDEN,
-            title="Internal garden",
-        )
-    )
-    app.runs.record_harness_transcript(
-        RecordRunHarnessTranscriptRequest(
-            cwd=repo,
-            run_id=record.run_id,
-            transcript=HarnessTranscriptRef(
-                kind=HarnessKind.CODEX,
-                session_id="different-session",
-                transcript_path=transcript,
-            ),
-        )
-    )
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            now=current_time(),
-        )
-    )
-
-    assert summary.eligible == 0
-    assert summary.ready == ()
-    assert summary.skipped[0].reason == "internal-lifecycle-transcript"
-
-
-def test_sync_status_applies_quiet_window(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "one\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=current_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(minutes=45),
-            now=current_time(),
-        )
-    )
-
-    assert summary.eligible == 0
-    assert summary.skipped[0].reason == "quiet-window"
-
-
-def test_sync_status_reports_prefix_mismatch_from_ledger(
-    tmp_path: Path,
-    isolated_home: Path,
-):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    transcript = write_transcript(tmp_path, "new prefix\nmore\n")
-    candidate = transcript_candidate(repo, transcript, modified_at=old_time())
-    app = app_with_candidates(isolated_home, (candidate,))
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
-    write_sync_ledger(
-        runtime_runs_path(isolated_home, workspace),
-        candidate,
-        last_absorbed_size=3,
-        last_absorbed_line=1,
-        prefix_hash=sha256_text("old"),
-    )
-
-    summary = app.workflows.sync.status(
-        RunSyncStatusRequest(
-            cwd=repo,
-            apps=(TranscriptApp.CODEX,),
-            quiet=timedelta(),
-            now=current_time(),
-        )
-    )
-
-    assert summary.eligible == 0
-    assert summary.needs_attention[0].reason == "prefix-mismatch"
-
-
-def app_with_candidates(
-    isolated_home: Path,
+    *,
     candidates: tuple[TranscriptCandidate, ...],
-    harness: SyncWritingHarnessAdapter | None = None,
-    worker_spawner: SyncWorkerSpawner | None = None,
+    database_path: Path | None = None,
+    spawner: SyncWorkerSpawner | None = None,
 ):
-    return create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
-        harness_adapters=() if harness is None else (harness,),
-        transcript_discovery_adapters=(FakeTranscriptDiscoveryAdapter(candidates),),
-        worker_spawner=worker_spawner,
+    adapter = FakeTranscriptDiscoveryAdapter(candidates)
+    selected_spawner = spawner or SyncWorkerSpawner()
+    app = create_app(
+        AppConfig(
+            database_path=database_path
+            or isolated_home / ".codealmanac/codealmanac.db"
+        ),
+        transcript_discovery_adapters=(adapter,),
+        worker_spawner=selected_spawner,
     )
+    return app, adapter, selected_spawner
 
 
 def transcript_candidate(
     repo: Path,
-    transcript: Path,
+    path: Path,
     modified_at: datetime,
-    almanac_path: Path | None = None,
+    *,
+    session_id: str = "session-1",
 ) -> TranscriptCandidate:
+    path.write_text("transcript\n", encoding="utf-8")
     return TranscriptCandidate(
         app=TranscriptApp.CODEX,
-        session_id="session-1",
-        transcript_path=transcript,
+        session_id=session_id,
+        transcript_path=path,
         cwd=repo,
-        repo_root=repo,
-        almanac_path=almanac_path or repo / "almanac",
         modified_at=modified_at,
-        size_bytes=transcript.stat().st_size,
+        size_bytes=path.stat().st_size,
     )
-
-
-def write_transcript(root: Path, content: str) -> Path:
-    path = root / "session.jsonl"
-    path.write_text(content, encoding="utf-8")
-    return path
 
 
 def current_time() -> datetime:
-    return datetime(2026, 6, 29, 12, 0, tzinfo=UTC)
+    return datetime(2026, 7, 6, 12, 0, tzinfo=UTC)
 
 
-def old_time() -> datetime:
-    return current_time() - timedelta(hours=2)
+def sync_completed_at(database_path: Path) -> str | None:
+    with sqlite3.connect(database_path) as connection:
+        row = connection.execute(
+            "SELECT last_completed_at FROM sync_state WHERE name = 'sync'"
+        ).fetchone()
+    if row is None:
+        return None
+    return str(row[0])
 
 
-def write_sync_ledger(
-    runs_path: Path,
-    candidate: TranscriptCandidate,
-    last_absorbed_size: int,
-    last_absorbed_line: int,
-    prefix_hash: str,
-    status: SyncLedgerStatus = SyncLedgerStatus.DONE,
-    pending_started_at: datetime | None = None,
-    pending_owner: str | None = None,
-    pending_run_id: str | None = None,
-    pending_to_size: int | None = None,
-    pending_prefix_hash: str | None = None,
-    pending_from_line: int | None = None,
-    pending_to_line: int | None = None,
-    failed_attempts: int = 0,
-    session_key: str | None = None,
-    entry_transcript_path: Path | None = None,
-) -> None:
-    path = runs_path / "sync-ledger.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    ledger = SyncLedger(
-        version=1,
-        updated_at=current_time(),
-        sessions={
-            session_key or sync_ledger_key(candidate): SyncLedgerEntry(
-                app=candidate.app,
-                session_id=candidate.session_id,
-                transcript_path=entry_transcript_path or candidate.transcript_path,
-                status=status,
-                last_absorbed_size=last_absorbed_size,
-                last_absorbed_line=last_absorbed_line,
-                last_absorbed_prefix_hash=prefix_hash,
-                failed_attempts=failed_attempts,
-                pending_started_at=pending_started_at,
-                pending_owner=pending_owner,
-                pending_run_id=pending_run_id,
-                pending_to_size=pending_to_size,
-                pending_prefix_hash=pending_prefix_hash,
-                pending_from_line=pending_from_line,
-                pending_to_line=pending_to_line,
+def write_sync_completed_at(database_path: Path, completed_at: datetime) -> None:
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sync_state (
+                name TEXT PRIMARY KEY,
+                last_completed_at TEXT
             )
-        },
-    )
-    path.write_text(ledger.model_dump_json(indent=2), encoding="utf-8")
-
-
-def sha256_text(value: str) -> str:
-    return f"sha256:{sha256(value.encode('utf-8')).hexdigest()}"
-
-
-def sync_ledger_key(candidate: TranscriptCandidate) -> str:
-    return f"{candidate.app.value}:{normalize_path(candidate.transcript_path)}"
-
-
-def initialize_git(repo: Path) -> None:
-    subprocess_run(("git", "init", "-q"), repo)
-    subprocess_run(("git", "config", "user.email", "test@example.com"), repo)
-    subprocess_run(("git", "config", "user.name", "Test User"), repo)
-
-
-def commit_all(repo: Path, message: str) -> None:
-    subprocess_run(("git", "add", "."), repo)
-    subprocess_run(("git", "commit", "-q", "-m", message), repo)
-
-
-def subprocess_run(command: tuple[str, ...], cwd: Path) -> None:
-    subprocess.run(command, cwd=cwd, check=True)
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO sync_state (name, last_completed_at)
+            VALUES ('sync', ?)
+            ON CONFLICT(name) DO UPDATE SET
+                last_completed_at = excluded.last_completed_at
+            """,
+            (completed_at.isoformat(),),
+        )

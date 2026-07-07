@@ -39,7 +39,7 @@ export async function renderPage(context, slug) {
 
   const article = document.createElement("article");
   article.className = "wiki-page-card";
-  article.append(pageTitleBlock(page), markdown(page.html));
+  article.append(pageTitleBlock(page), markdown(page.html, page.sources));
 
   const sidePanel = document.createElement("aside");
   sidePanel.className = "wiki-side-panel";

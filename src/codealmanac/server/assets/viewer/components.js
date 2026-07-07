@@ -28,7 +28,7 @@ export function statsGrid(overview) {
   grid.append(
     statCard(String(overview.page_count), "Pages"),
     statCard(String(overview.topic_count), "Topics"),
-    statCard(overview.workspace.name, "Current wiki"),
+    statCard(overview.repository.name, "Current wiki"),
   );
   return grid;
 }
@@ -56,10 +56,11 @@ export function pageTitleBlock(page) {
   return header;
 }
 
-export function markdown(html) {
+export function markdown(html, sources = []) {
   const article = document.createElement("article");
   article.className = "wiki-markdown";
   article.innerHTML = html;
+  attachCitationHints(article, sources);
   return article;
 }
 
@@ -124,18 +125,89 @@ export function fileSideLink(path) {
 }
 
 export function sourceSideItem(source) {
-  const label = sourceLabel(source);
-  if (source.source_type === "file" && source.target) {
-    return sideLink(fileHref(source.target), label);
-  }
+  const hasTarget = Boolean(source.target);
+  const item = document.createElement(hasTarget ? "a" : "span");
+  item.className = "wiki-source-item";
+  item.id = source.source_id ? `source-${encodeURIComponent(source.source_id)}` : "";
+  item.dataset.sourceId = source.source_id || "";
   if (source.source_type === "web" && source.target) {
-    const link = sideLink(source.target, label);
-    link.rel = "noreferrer";
-    return link;
+    item.href = source.target;
+    item.rel = "noreferrer";
+  } else if (source.source_type === "file" && source.target) {
+    item.href = fileHref(source.target);
   }
-  const item = document.createElement("span");
-  item.textContent = label;
+
+  const number = document.createElement("span");
+  number.className = "wiki-source-number";
+  number.textContent =
+    source.citation_number === null || source.citation_number === undefined
+      ? "–"
+      : String(source.citation_number);
+
+  const body = document.createElement("span");
+  body.className = "wiki-source-body";
+  const title = document.createElement("strong");
+  title.textContent = sourceTitle(source);
+  const detail = document.createElement("span");
+  detail.textContent = sourceDetail(source);
+  body.append(title, detail);
+
+  item.append(number, body);
   return item;
+}
+
+function attachCitationHints(article, sources) {
+  const sourcesById = new Map(
+    sources
+      .filter((source) => source.source_id)
+      .map((source) => [source.source_id, source]),
+  );
+  for (const citation of article.querySelectorAll(".wiki-citation")) {
+    const source = sourcesById.get(citation.dataset.sourceId || "");
+    if (!source) continue;
+    const label = citationTooltip(source);
+    citation.title = label;
+    citation.setAttribute("aria-label", label);
+    citation.dataset.citationTooltip = label;
+  }
+}
+
+function citationTooltip(source) {
+  const number =
+    source.citation_number === null || source.citation_number === undefined
+      ? "Source"
+      : `Source ${source.citation_number}`;
+  const title = sourceTitle(source);
+  const detail = sourceDetail(source);
+  return detail && detail !== title ? `${number}: ${title} — ${detail}` : `${number}: ${title}`;
+}
+
+function sourceTitle(source) {
+  if (source.title) {
+    return source.title;
+  }
+  if (source.note) {
+    return source.note;
+  }
+  return humanizeSourceId(source.source_id || "untitled-source");
+}
+
+function sourceDetail(source) {
+  if (source.title && source.note) {
+    return source.note;
+  }
+  if (source.target) {
+    return source.target;
+  }
+  return source.source_type;
+}
+
+function humanizeSourceId(sourceId) {
+  return sourceId
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export function emptyState(title, body) {
@@ -209,9 +281,4 @@ function sidebarEmpty() {
   const empty = document.createElement("span");
   empty.textContent = "None";
   return empty;
-}
-
-function sourceLabel(source) {
-  const target = source.target ? ` ${source.target}` : "";
-  return `${source.source_id} [${source.source_type}]${target}`;
 }

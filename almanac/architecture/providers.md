@@ -1,6 +1,6 @@
 ---
 title: Providers
-summary: CodeAlmanac runs lifecycle agents through provider-neutral harness adapters.
+summary: CodeAlmanac runs operation agents through provider-neutral harness adapters.
 topics: [architecture, agents, operations]
 sources:
   - id: service

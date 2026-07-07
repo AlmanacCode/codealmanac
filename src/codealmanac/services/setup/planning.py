@@ -5,7 +5,6 @@ from codealmanac.services.automation.defaults import (
     duration_text,
 )
 from codealmanac.services.automation.models import AutomationTask
-from codealmanac.services.config.models import DEFAULT_HARNESS, DEFAULT_SYNC_QUIET
 from codealmanac.services.setup.automation import (
     recommendation_tasks,
     should_install_automation,
@@ -27,7 +26,8 @@ def setup_plan(request: RunSetupRequest) -> SetupPlan:
         else SetupAutomationMode.RECOMMEND
     )
     return SetupPlan(
-        default_harness=DEFAULT_HARNESS,
+        default_harness=request.harness,
+        harness_model=request.model,
         instruction_targets=request.targets,
         auto_commit=request.auto_commit,
         automation_mode=mode,
@@ -42,9 +42,6 @@ def automation_recommendations(
     sync_every = duration_text(
         request.sync_every if request.sync_every is not None else DEFAULT_SYNC_INTERVAL
     )
-    sync_quiet = duration_text(
-        request.sync_quiet if request.sync_quiet is not None else DEFAULT_SYNC_QUIET
-    )
     garden_every = duration_text(
         request.garden_every
         if request.garden_every is not None
@@ -54,7 +51,7 @@ def automation_recommendations(
     recommendations: list[SetupAutomationRecommendation] = []
     for task in recommendation_tasks(request):
         if task == AutomationTask.SYNC:
-            recommendations.append(sync_recommendation(sync_every, sync_quiet))
+            recommendations.append(sync_recommendation(sync_every))
         elif task == AutomationTask.UPDATE:
             recommendations.append(update_recommendation(update_every))
         else:
@@ -64,11 +61,10 @@ def automation_recommendations(
 
 def sync_recommendation(
     sync_every: str,
-    sync_quiet: str,
 ) -> SetupAutomationRecommendation:
     return SetupAutomationRecommendation(
         task=AutomationTask.SYNC,
-        description="scan quiet local agent transcripts and ingest durable changes",
+        description="scan recently active local agent transcripts",
         command=(
             "codealmanac",
             "automation",
@@ -76,8 +72,6 @@ def sync_recommendation(
             "sync",
             "--every",
             sync_every,
-            "--quiet",
-            sync_quiet,
         ),
     )
 

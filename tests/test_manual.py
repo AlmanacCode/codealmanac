@@ -49,15 +49,15 @@ def test_manual_install_missing_preserves_existing_files(tmp_path: Path):
     assert "how-to-write.md" in result.copied
     assert "links.md" in result.copied
     assert (target / "ingest.md").is_file()
-    assert ManualLibrary().workspace_status(target).complete
+    assert ManualLibrary().repository_status(target).complete
 
 
-def test_manual_workspace_status_reports_changed_files(tmp_path: Path):
+def test_manual_repository_status_reports_changed_files(tmp_path: Path):
     target = tmp_path / "manual"
     ManualLibrary().install_missing(target)
     (target / "README.md").write_text("local manual edit\n", encoding="utf-8")
 
-    status = ManualLibrary().workspace_status(target)
+    status = ManualLibrary().repository_status(target)
 
     assert status.complete
     assert status.changed == ("README.md",)

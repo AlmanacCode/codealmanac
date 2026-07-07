@@ -4,10 +4,6 @@ from pydantic import Field, field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.services.sources.models import SourceRef, TranscriptApp
-from codealmanac.services.workspaces.roots import (
-    DEFAULT_ALMANAC_ROOT,
-    normalized_almanac_roots,
-)
 
 
 class ResolveSourcesRequest(CodeAlmanacModel):
@@ -25,7 +21,6 @@ class ResolveSourcesRequest(CodeAlmanacModel):
 class DiscoverTranscriptsRequest(CodeAlmanacModel):
     home: Path
     apps: tuple[TranscriptApp, ...]
-    almanac_roots: tuple[Path, ...] = (DEFAULT_ALMANAC_ROOT,)
 
     @field_validator("apps")
     @classmethod
@@ -36,11 +31,6 @@ class DiscoverTranscriptsRequest(CodeAlmanacModel):
         if len(value) == 0:
             raise ValueError("at least one transcript app is required")
         return value
-
-    @field_validator("almanac_roots")
-    @classmethod
-    def validate_almanac_roots(cls, value: tuple[Path, ...]) -> tuple[Path, ...]:
-        return normalized_almanac_roots(value)
 
 
 class SourceRuntimeContext(CodeAlmanacModel):

@@ -2,23 +2,20 @@ from codealmanac.core.errors import NotFoundError
 from codealmanac.services.index.models import PageView
 from codealmanac.services.index.service import IndexService
 from codealmanac.services.pages.requests import ShowPageRequest
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.services.repositories.service import RepositoriesService
 
 
 class PagesService:
-    def __init__(self, workspaces: WorkspacesService, index: IndexService):
-        self.workspaces = workspaces
+    def __init__(self, repositories: RepositoriesService, index: IndexService):
+        self.repositories = repositories
         self.index = index
 
     def show(self, request: ShowPageRequest) -> PageView:
-        if request.wiki is None:
-            workspace = self.workspaces.resolve(request.cwd)
-        else:
-            workspace = self.workspaces.select(
-                SelectWorkspaceRequest(selector=request.wiki, base_path=request.cwd)
-            )
-        page = self.index.get_page(workspace.workspace_id, request.slug)
+        repository = self.repositories.select_for_read(
+            request.cwd,
+            request.repository_name,
+        )
+        page = self.index.get_page(repository.repository_id, request.slug)
         if page is None:
             raise NotFoundError("page", request.slug)
         return page

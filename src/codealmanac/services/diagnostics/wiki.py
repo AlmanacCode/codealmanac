@@ -1,6 +1,10 @@
 from collections.abc import Sequence
 
-from codealmanac.core.errors import CodeAlmanacError, NotFoundError
+from codealmanac.core.errors import (
+    CodeAlmanacError,
+    NoRepositorySelected,
+    NotFoundError,
+)
 from codealmanac.services.diagnostics.messages import (
     first_line,
     health_problem_count,
@@ -13,52 +17,51 @@ from codealmanac.services.diagnostics.models import (
 )
 from codealmanac.services.diagnostics.requests import DoctorRequest
 from codealmanac.services.index.service import IndexService
-from codealmanac.services.workspaces.models import Workspace, WorkspaceRegistryStatus
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
-from codealmanac.services.workspaces.service import WorkspacesService
-from codealmanac.services.workspaces.status import workspace_registry_status
+from codealmanac.services.repositories.models import Repository, RepositoryState
+from codealmanac.services.repositories.service import RepositoriesService
+from codealmanac.services.repositories.state import repository_state
 
 
 def wiki_checks(
     request: DoctorRequest,
     *,
-    workspaces: WorkspacesService,
+    repositories: RepositoriesService,
     index: IndexService,
 ) -> tuple[DoctorCheck, ...]:
-    workspace = select_workspace(request, workspaces)
-    if isinstance(workspace, DoctorCheck):
-        return (workspace,)
-    registry_status = workspace_registry_status(workspace)
+    repository = select_repository(request, repositories)
+    if isinstance(repository, DoctorCheck):
+        return (repository,)
+    state = repository_state(repository)
     checks: list[DoctorCheck] = [
         DoctorCheck(
             key="wiki.repo",
             status=DoctorStatus.INFO,
-            message=f"repo: {workspace.root_path}",
+            message=f"repo: {repository.root_path}",
         ),
-        registered_check(workspace, registry_status),
+        registered_check(repository, state),
     ]
-    if registry_status != WorkspaceRegistryStatus.AVAILABLE:
+    if state != RepositoryState.AVAILABLE:
         return tuple(checks)
-    checks.extend(index_checks(index, workspace))
-    checks.append(health_check(index, workspace))
+    checks.extend(index_checks(index, repository))
+    checks.append(health_check(index, repository))
     return tuple(checks)
 
 
-def select_workspace(
+def select_repository(
     request: DoctorRequest,
-    workspaces: WorkspacesService,
-) -> Workspace | DoctorCheck:
+    repositories: RepositoriesService,
+) -> Repository | DoctorCheck:
     try:
-        if request.wiki is None:
-            return workspaces.resolve(request.cwd)
-        return workspaces.select(
-            SelectWorkspaceRequest(selector=request.wiki, base_path=request.cwd)
+        return repositories.select_for_read(request.cwd, request.repository_name)
+    except NoRepositorySelected:
+        return DoctorCheck(
+            key="wiki.none",
+            status=DoctorStatus.INFO,
+            message="No repository selected.",
+            fix="run from a registered repository root or pass --wiki <name>",
         )
     except NotFoundError as error:
-        if request.wiki is None:
-            registered = workspaces.containing_registered(request.cwd)
-            if registered is not None:
-                return registered
+        if request.repository_name is None:
             return DoctorCheck(
                 key="wiki.none",
                 status=DoctorStatus.INFO,
@@ -80,9 +83,9 @@ def select_workspace(
         )
 
 
-def index_checks(index: IndexService, workspace: Workspace) -> Sequence[DoctorCheck]:
+def index_checks(index: IndexService, repository: Repository) -> Sequence[DoctorCheck]:
     try:
-        summary = index.summary(workspace.workspace_id)
+        summary = index.summary(repository.repository_id)
     except Exception as error:
         return (
             DoctorCheck(
@@ -101,9 +104,9 @@ def index_checks(index: IndexService, workspace: Workspace) -> Sequence[DoctorCh
     )
 
 
-def health_check(index: IndexService, workspace: Workspace) -> DoctorCheck:
+def health_check(index: IndexService, repository: Repository) -> DoctorCheck:
     try:
-        report = index.health_report(workspace.workspace_id)
+        report = index.health_report(repository.repository_id)
     except Exception as error:
         return DoctorCheck(
             key="wiki.health",
@@ -127,28 +130,28 @@ def health_check(index: IndexService, workspace: Workspace) -> DoctorCheck:
 
 
 def registered_check(
-    workspace: Workspace,
-    status: WorkspaceRegistryStatus,
+    repository: Repository,
+    state: RepositoryState,
 ) -> DoctorCheck:
     registered = (
-        f"registered as '{workspace.name}' ({workspace.almanac_root.as_posix()})"
+        f"registered as '{repository.name}' ({repository.almanac_root.as_posix()})"
     )
-    if status == WorkspaceRegistryStatus.AVAILABLE:
+    if state == RepositoryState.AVAILABLE:
         return DoctorCheck(
             key="wiki.registered",
             status=DoctorStatus.OK,
             message=registered,
         )
-    if status == WorkspaceRegistryStatus.MISSING_REPO:
+    if state == RepositoryState.MISSING_REPO:
         return DoctorCheck(
             key="wiki.registered",
             status=DoctorStatus.PROBLEM,
             message=f"{registered}, but repo path is missing",
-            fix=f"run: codealmanac list --drop {workspace.workspace_id}",
+            fix=f"registered path: {repository.root_path}",
         )
     return DoctorCheck(
         key="wiki.registered",
         status=DoctorStatus.PROBLEM,
-        message=f"{registered}, but Almanac root is missing: {workspace.almanac_path}",
+        message=f"{registered}, but Almanac root is missing: {repository.almanac_path}",
         fix="run: codealmanac init",
     )

@@ -17,7 +17,11 @@ def create_server_app(
     register_error_handlers(server)
     register_api_routes(
         server,
-        ServerApiContext(codealmanac=codealmanac, cwd=cwd, scope_wiki=wiki),
+        ServerApiContext(
+            codealmanac=codealmanac,
+            cwd=cwd,
+            scoped_repository_name=wiki,
+        ),
     )
     register_static_routes(server)
 

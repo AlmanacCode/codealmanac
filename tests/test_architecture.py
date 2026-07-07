@@ -49,6 +49,7 @@ def test_config_service_owns_pydantic_settings_imports():
         path
         for path in SRC_ROOT.rglob("*.py")
         if path.relative_to(SRC_ROOT).parts[:2] != ("services", "config")
+        and path.relative_to(SRC_ROOT).as_posix() != "settings.py"
         and imports_module(path, "pydantic_settings")
     ]
 
@@ -68,15 +69,15 @@ def test_app_composition_root_stays_scannable():
     assert create_app.end_lineno is not None
     assert create_app.end_lineno - create_app.lineno + 1 <= 40
     assert {
-        "_create_services",
-        "_create_page_run",
-        "_create_workflows",
-        "_create_app",
+        "create_services",
+        "create_operation",
+        "create_workflows",
+        "assemble_app",
     } <= set(functions)
     assert {
-        "_create_services",
-        "_create_workflows",
-        "_create_app",
+        "create_services",
+        "create_workflows",
+        "assemble_app",
     } <= {
         node.func.id
         for node in ast.walk(create_app)
@@ -263,24 +264,24 @@ def test_serve_css_does_not_scale_type_with_viewport_width():
 def test_viewer_service_keeps_scope_and_projection_boundaries():
     viewer_root = SRC_ROOT / "services/viewer"
     service_text = (viewer_root / "service.py").read_text(encoding="utf-8")
-    scope_text = (viewer_root / "workspace_scope.py").read_text(encoding="utf-8")
+    scope_text = (viewer_root / "repository_scope.py").read_text(encoding="utf-8")
     projections_text = (viewer_root / "projections.py").read_text(encoding="utf-8")
 
     assert {
         "projections.py",
-        "workspace_scope.py",
+        "repository_scope.py",
     } <= {path.name for path in viewer_root.glob("*.py")}
     assert len(service_text.splitlines()) <= 230
-    assert "ViewerWorkspaceScope(workspaces)" in service_text
+    assert "ViewerRepositoryScope(repositories)" in service_text
     assert [
         fragment
         for fragment in (
-            "WorkspaceRegistryStatus",
-            "SelectWorkspaceRequest",
-            "def select_workspace(",
-            "def select_default_workspace(",
-            "def available_registered_workspaces(",
-            "ViewerWorkspace(",
+            "RepositoryStatus",
+            "SelectRepositoryRequest",
+            "def select_repository(",
+            "def select_default_repository(",
+            "def available_registered_repositories(",
+            "ViewerRepository(",
             "ViewerTopicSummary(",
             "ViewerPageSource(",
             "SearchPageResult",
@@ -288,27 +289,27 @@ def test_viewer_service_keeps_scope_and_projection_boundaries():
         if fragment in service_text
     ] == []
 
-    assert "WorkspaceRegistryStatus.AVAILABLE" in scope_text
-    assert "SelectWorkspaceRequest(" in scope_text
+    assert "RepositoryState.AVAILABLE" in scope_text
+    assert "select_for_read(" in scope_text
     assert "def navigation(" in scope_text
     assert "def viewer_page_sources(" in projections_text
     assert "def page_summary_from_search(" in projections_text
     assert "def page_summary_from_view(" in projections_text
 
 
-def test_workspace_service_keeps_identity_selection_and_status_boundaries():
-    workspace_root = SRC_ROOT / "services/workspaces"
-    service_text = (workspace_root / "service.py").read_text(encoding="utf-8")
-    identity_text = (workspace_root / "identity.py").read_text(encoding="utf-8")
-    selection_text = (workspace_root / "selection.py").read_text(encoding="utf-8")
-    status_text = (workspace_root / "status.py").read_text(encoding="utf-8")
-    store_text = (workspace_root / "store.py").read_text(encoding="utf-8")
+def test_repository_service_keeps_identity_selection_and_status_boundaries():
+    repository_root = SRC_ROOT / "services/repositories"
+    service_text = (repository_root / "service.py").read_text(encoding="utf-8")
+    identity_text = (repository_root / "identity.py").read_text(encoding="utf-8")
+    selection_text = (repository_root / "selection.py").read_text(encoding="utf-8")
+    state_text = (repository_root / "state.py").read_text(encoding="utf-8")
+    store_text = (repository_root / "store.py").read_text(encoding="utf-8")
 
     assert {
         "identity.py",
         "selection.py",
-        "status.py",
-    } <= {path.name for path in workspace_root.glob("*.py")}
+        "state.py",
+    } <= {path.name for path in repository_root.glob("*.py")}
     assert len(service_text.splitlines()) <= 200
     assert [
         fragment
@@ -316,54 +317,54 @@ def test_workspace_service_keeps_identity_selection_and_status_boundaries():
             "sha256",
             "to_kebab_case",
             "ConflictError",
-            "WorkspaceRegistryEntry",
-            "WorkspaceRegistryStatus",
+            "RepositoryRecord",
+            "RepositoryState",
             "is_initialized_almanac_root",
             "def entry_by_",
-            "def select_registry_entry(",
+            "def select_database_entry(",
             "def explicit_selector_path(",
             "def is_path_selector(",
-            "def containing_workspace(",
+            "def containing_repository(",
             "def contains_path(",
             "def same_path(",
-            "def workspace_registry_status(",
+            "def repository_state(",
         )
         if fragment in service_text
     ] == []
 
-    assert "def workspace_name_for(" in identity_text
-    assert "def workspace_id_for(" in identity_text
+    assert "def repository_name_for(" in identity_text
+    assert "def repository_id_for(" in identity_text
     assert "sha256" in identity_text
-    assert "def select_registry_entry(" in selection_text
-    assert "def containing_workspace(" in selection_text
+    assert "def select_repository_record(" in selection_text
+    assert "def entry_by_exact_path(" in selection_text
+    assert "def contains_path(" in selection_text
     assert "ConflictError" in selection_text
-    assert "def workspace_registry_status(" in status_text
-    assert "def available_registry_entries(" in status_text
-    assert "WorkspaceRegistryStatus.AVAILABLE" in status_text
-    assert "from codealmanac.services.workspaces.service import" not in store_text
+    assert "def repository_state(" in state_text
+    assert "RepositoryState.AVAILABLE" in state_text
+    assert "from codealmanac.services.repositories.service import" not in store_text
 
 
-def test_topics_service_keeps_graph_and_workspace_boundaries():
+def test_topics_service_keeps_graph_and_repository_boundaries():
     topics_root = SRC_ROOT / "services/topics"
     service_text = (topics_root / "service.py").read_text(encoding="utf-8")
     mutations_text = (topics_root / "mutations.py").read_text(encoding="utf-8")
     graph_text = (topics_root / "graph.py").read_text(encoding="utf-8")
     read_model_text = (topics_root / "read_model.py").read_text(encoding="utf-8")
-    workspace_text = (topics_root / "workspace.py").read_text(encoding="utf-8")
+    repository_text = (topics_root / "repository.py").read_text(encoding="utf-8")
     forbidden_service_fragments = (
         "ConflictError",
         "ValidationFailed",
         "TopicMutationAction",
         "TopicDefinition",
-        "SelectWorkspaceRequest",
+        "SelectRepositoryRequest",
         "def existing_topic_slugs(",
         "def validate_parents_exist(",
         "def require_topics(",
         "def validate_not_self_parent(",
         "def reject_cycle(",
         "def ancestors_of(",
-        "def resolve_workspace(",
-        "def resolve_topic_workspace(",
+        "def resolve_repository(",
+        "def resolve_topic_repository(",
         "existing_topic_slugs(",
         "validate_parents_exist(",
         "require_topics(",
@@ -377,7 +378,7 @@ def test_topics_service_keeps_graph_and_workspace_boundaries():
         "codealmanac.services.wiki.topics",
     )
 
-    assert {"graph.py", "mutations.py", "read_model.py", "workspace.py"} <= {
+    assert {"graph.py", "mutations.py", "read_model.py", "repository.py"} <= {
         path.name for path in topics_root.glob("*.py")
     }
     assert len(service_text.splitlines()) <= 90
@@ -398,12 +399,12 @@ def test_topics_service_keeps_graph_and_workspace_boundaries():
     assert "def ancestors_of(" in graph_text
     assert "depth < 32" in graph_text
     assert "codealmanac.services.index" not in graph_text
-    assert "codealmanac.services.workspaces" not in graph_text
+    assert "codealmanac.services.repositories" not in graph_text
     assert "def existing_topic_slugs(" in read_model_text
     assert "IndexService" in read_model_text
-    assert "def resolve_topic_workspace(" in workspace_text
-    assert "SelectWorkspaceRequest(" in workspace_text
-    assert "codealmanac.services.index" not in workspace_text
+    assert "def resolve_topic_repository(" in repository_text
+    assert "select_for_read(" in repository_text
+    assert "codealmanac.services.index" not in repository_text
 
 
 def test_wiki_topics_yaml_stays_split_by_read_and_mutation():
@@ -508,8 +509,8 @@ def test_diagnostics_service_stays_facade():
         for fragment in (
             "CodeAlmanacError",
             "NotFoundError",
-            "WorkspaceRegistryStatus",
-            "SelectWorkspaceRequest",
+            "RepositoryStatus",
+            "SelectRepositoryRequest",
             "HealthReport",
             "IndexSummary",
             "def _install",
@@ -528,9 +529,9 @@ def test_diagnostics_service_stays_facade():
 
     assert "def install_checks(" in install_text
     assert "manual.inventory()" in install_text
-    assert "workspace_status(" not in install_text
+    assert "repository_status(" not in install_text
     assert "def wiki_checks(" in wiki_text
-    assert "workspace_status(" not in wiki_text
+    assert "repository_status(" not in wiki_text
     assert "health_report(" in wiki_text
     assert "manual.inventory()" not in wiki_text
     assert "def index_message(" in messages_text
@@ -560,14 +561,14 @@ def test_cli_parser_is_split_by_command_domain():
         "config.py",
         "diagnostics.py",
         "jobs.py",
-        "lifecycle.py",
+        "run_commands.py",
         "root.py",
         "setup.py",
         "updates.py",
         "wiki.py",
     }
     assert len(root.splitlines()) <= 80
-    assert "add_lifecycle_commands(subcommands)" in root
+    assert "add_run_commands(subcommands)" in root
     assert "add_wiki_commands(subcommands)" in root
     assert "add_admin_commands(subcommands)" in root
     assert "add_parser(" not in root
@@ -636,7 +637,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "dispatch/config_command.py").is_file()
     assert (cli_root / "dispatch/diagnostics.py").is_file()
     assert (cli_root / "dispatch/jobs.py").is_file()
-    assert (cli_root / "dispatch/lifecycle.py").is_file()
+    assert (cli_root / "dispatch/run_commands.py").is_file()
     assert (cli_root / "dispatch/serve.py").is_file()
     assert (cli_root / "dispatch/setup.py").is_file()
     assert (cli_root / "dispatch/sync.py").is_file()
@@ -644,7 +645,7 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "dispatch/updates.py").is_file()
     assert (cli_root / "dispatch/wiki.py").is_file()
     assert (cli_root / "dispatch/worker.py").is_file()
-    assert (cli_root / "dispatch/workspaces.py").is_file()
+    assert (cli_root / "dispatch/repositories.py").is_file()
     assert (cli_root / "render/root.py").is_file()
     assert (cli_root / "render/automation.py").is_file()
     assert (cli_root / "render/common.py").is_file()
@@ -652,14 +653,18 @@ def test_cli_has_separate_parser_dispatch_and_render_packages():
     assert (cli_root / "render/diagnostics.py").is_file()
     assert (cli_root / "render/health.py").is_file()
     assert (cli_root / "render/jobs.py").is_file()
-    assert (cli_root / "render/lifecycle.py").is_file()
+    assert (cli_root / "render/run_commands.py").is_file()
     assert (cli_root / "render/pages.py").is_file()
     assert (cli_root / "render/search.py").is_file()
+    assert (cli_root / "render/setup/__init__.py").is_file()
+    assert (cli_root / "render/setup/result.py").is_file()
+    assert (cli_root / "render/setup/screens.py").is_file()
+    assert (cli_root / "render/setup/uninstall.py").is_file()
     assert (cli_root / "render/tagging.py").is_file()
     assert (cli_root / "render/topics.py").is_file()
     assert (cli_root / "render/updates.py").is_file()
     assert (cli_root / "render/wiki.py").is_file()
-    assert (cli_root / "render/workspaces.py").is_file()
+    assert (cli_root / "render/repositories.py").is_file()
     assert (cli_root / "render/admin.py").is_file()
 
 
@@ -677,7 +682,7 @@ def test_cli_render_root_stays_facade():
         "IndexRefreshResult",
         "PageView",
         "SyncSummary",
-        "WorkspaceListResult",
+        "RepositoryListResult",
     )
 
     assert {
@@ -685,29 +690,30 @@ def test_cli_render_root_stays_facade():
         "automation.py",
         "common.py",
         "diagnostics.py",
-        "lifecycle.py",
+        "run_commands.py",
         "root.py",
         "health.py",
         "jobs.py",
         "pages.py",
         "search.py",
-        "setup.py",
+        "sync.py",
         "tagging.py",
         "topics.py",
         "updates.py",
         "wiki.py",
-        "workspaces.py",
+        "repositories.py",
     } <= module_names
+    assert (render_root / "setup/__init__.py").is_file()
     assert len(root.splitlines()) <= 80
     assert [
         fragment for fragment in forbidden_root_fragments if fragment in root
     ] == []
-    assert "render_sync_status" in (render_root / "lifecycle.py").read_text(
+    assert "render_sync_status" in (render_root / "sync.py").read_text(
         encoding="utf-8"
     )
     assert "render_page" in (render_root / "pages.py").read_text(encoding="utf-8")
-    assert "render_workspace_list" in (
-        render_root / "workspaces.py"
+    assert "render_repository_list" in (
+        render_root / "repositories.py"
     ).read_text(encoding="utf-8")
 
 
@@ -720,9 +726,9 @@ def test_cli_admin_render_stays_split_by_output_family():
         "config.py": ("ConfigSetResult", "def render_config_set("),
         "diagnostics.py": ("DoctorReport", "def render_doctor("),
         "jobs.py": ("RunRecord", "def render_runs("),
-        "setup.py": ("SetupResult", "def render_setup_result("),
-        "setup_panels.py": ("UninstallResult", "def render_uninstall_text("),
-        "setup_screens.py": ("SetupChoiceScreen", "def render_setup_choice_screen("),
+        "setup/result.py": ("SetupResult", "def render_setup_result("),
+        "setup/uninstall.py": ("UninstallResult", "def render_uninstall_text("),
+        "setup/screens.py": ("SetupChoiceScreen", "def render_setup_choice_screen("),
         "terminal.py": ("def visible_length(", "def wrap_with_prefixes("),
         "updates.py": ("UpdatePlan", "def render_update_plan("),
     }
@@ -742,11 +748,11 @@ def test_cli_admin_render_stays_split_by_output_family():
         text = (render_path / module_name).read_text(encoding="utf-8")
         assert all(fragment in text for fragment in fragments)
         line_count = len(text.splitlines())
-        if module_name == "setup.py":
+        if module_name == "setup/result.py":
             if line_count > 260:
                 oversized.append(f"{module_name}:{line_count}")
-        elif module_name == "setup_screens.py":
-            if line_count > 200:
+        elif module_name == "setup/screens.py":
+            if line_count > 220:
                 oversized.append(f"{module_name}:{line_count}")
         elif line_count > 180:
             oversized.append(f"{module_name}:{line_count}")
@@ -756,7 +762,8 @@ def test_cli_admin_render_stays_split_by_output_family():
         fragment for fragment in forbidden_admin_fragments if fragment in admin
     ] == []
     assert "from codealmanac.cli.render.automation import" in admin
-    assert "from codealmanac.cli.render.config import render_config_set" in admin
+    assert "from codealmanac.cli.render.config import" in admin
+    assert "render_config_set" in admin
     assert "from codealmanac.cli.render.jobs import" in admin
     assert oversized == []
 
@@ -807,7 +814,7 @@ def test_cli_dispatch_edge_is_split_by_command_domain():
     dispatch_root = (dispatch_path / "root.py").read_text(encoding="utf-8")
     dispatch_wiki = (dispatch_path / "wiki.py").read_text(encoding="utf-8")
     dispatch_topics = (dispatch_path / "topics.py").read_text(encoding="utf-8")
-    dispatch_workspaces = (dispatch_path / "workspaces.py").read_text(
+    dispatch_repositories = (dispatch_path / "repositories.py").read_text(
         encoding="utf-8"
     )
     dispatch_serve = (dispatch_path / "serve.py").read_text(encoding="utf-8")
@@ -821,17 +828,17 @@ def test_cli_dispatch_edge_is_split_by_command_domain():
         "RenameTopicRequest",
         "ShowTopicRequest",
         "UnlinkTopicRequest",
-        "DropWorkspaceRequest",
+        "DropRepositoryRequest",
         "uvicorn",
         "create_server_app",
     )
 
     assert len(dispatch_root.splitlines()) <= 80
     assert len(dispatch_wiki.splitlines()) <= 130
-    assert "dispatch_lifecycle(args, app)" in dispatch_root
+    assert "dispatch_run_command(args, app)" in dispatch_root
     assert "dispatch_wiki(args, app)" in dispatch_root
     assert "dispatch_admin(args, app)" in dispatch_root
-    assert "RunIngestRequest" not in dispatch_root
+    assert "IngestRequest" not in dispatch_root
     assert "SearchPagesRequest" not in dispatch_root
     assert "AutomationStatusRequest" not in dispatch_root
     assert "DoctorRequest" not in dispatch_root
@@ -844,11 +851,11 @@ def test_cli_dispatch_edge_is_split_by_command_domain():
         fragment for fragment in forbidden_wiki_fragments if fragment in dispatch_wiki
     ] == []
     assert "dispatch_topics(args, app)" in dispatch_wiki
-    assert "dispatch_workspaces(args, app)" in dispatch_wiki
+    assert "dispatch_repositories(args, app)" in dispatch_wiki
     assert "run_serve(app, args)" in dispatch_wiki
     assert "CreateTopicRequest" in dispatch_topics
     assert "ListTopicsRequest" in dispatch_topics
-    assert "DropWorkspaceRequest" in dispatch_workspaces
+    assert "list_registered()" in dispatch_repositories
     assert "create_server_app" in dispatch_serve
 
 
@@ -967,28 +974,28 @@ def test_setup_service_stays_split_from_planning_and_automation_policy():
     assert "InstallAutomationRequest" in automation
 
 
-def test_cli_lifecycle_dispatch_stays_split_by_command_family():
+def test_cli_run_command_dispatch_stays_split_by_command_family():
     dispatch_path = SRC_ROOT / "cli/dispatch"
-    lifecycle = (dispatch_path / "lifecycle.py").read_text(encoding="utf-8")
+    run_commands = (dispatch_path / "run_commands.py").read_text(encoding="utf-8")
     module_expectations = {
-        "build.py": ("InitializeWorkspaceRequest", "def dispatch_build("),
-        "operations.py": ("RunIngestRequest", "def dispatch_ingest("),
-        "sync.py": ("RunSyncRequest", "def dispatch_sync("),
+        "build.py": ("BuildRequest", "def dispatch_init("),
+        "operations.py": ("IngestRequest", "def dispatch_ingest("),
+        "sync.py": ("SyncRequest", "def dispatch_sync("),
         "worker.py": ("DrainRunQueueRequest", "def dispatch_run_worker("),
     }
-    forbidden_lifecycle_fragments = (
-        "InitializeWorkspaceRequest",
-        "RunIngestRequest",
-        "RunGardenRequest",
-        "RunSyncRequest",
-        "RunSyncStatusRequest",
+    forbidden_run_command_fragments = (
+        "BuildRequest",
+        "IngestRequest",
+        "GardenRequest",
+        "SyncRequest",
+        "SyncStatusRequest",
         "DrainRunQueueRequest",
         "TranscriptApp",
         "ValidationFailed",
         "load_cli_config",
         "resolve_harness",
         "parse_sync_apps",
-        "sync_execution",
+        "sync_queue",
         "render_",
     )
     oversized = []
@@ -1000,17 +1007,17 @@ def test_cli_lifecycle_dispatch_stays_split_by_command_family():
         if line_count > 140:
             oversized.append(f"{module_name}:{line_count}")
 
-    assert len(lifecycle.splitlines()) <= 80
+    assert len(run_commands.splitlines()) <= 80
     assert [
         fragment
-        for fragment in forbidden_lifecycle_fragments
-        if fragment in lifecycle
+        for fragment in forbidden_run_command_fragments
+        if fragment in run_commands
     ] == []
-    assert "dispatch_init(args, app)" in lifecycle
-    assert "dispatch_ingest(args, app)" in lifecycle
-    assert "dispatch_garden(args, app)" in lifecycle
-    assert "dispatch_sync(args, app)" in lifecycle
-    assert "dispatch_run_worker(args, app)" in lifecycle
+    assert "dispatch_init(args, app)" in run_commands
+    assert "dispatch_ingest(args, app)" in run_commands
+    assert "dispatch_garden(args, app)" in run_commands
+    assert "dispatch_sync(args, app)" in run_commands
+    assert "dispatch_run_worker(args, app)" in run_commands
     assert oversized == []
 
 
@@ -1024,33 +1031,33 @@ def test_cli_dispatch_files_stay_small():
     assert oversized == []
 
 
-def test_page_run_workflow_owns_shared_lifecycle_execution():
-    page_run_service = SRC_ROOT / "workflows/page_run/service.py"
-    lifecycle = SRC_ROOT / "workflows/lifecycle.py"
-    lifecycle_harness = SRC_ROOT / "workflows/lifecycle_harness.py"
-    lifecycle_mutation = SRC_ROOT / "workflows/lifecycle_mutation.py"
-    page_run_text = page_run_service.read_text(encoding="utf-8")
-    lifecycle_text = lifecycle.read_text(encoding="utf-8")
-    lifecycle_harness_text = lifecycle_harness.read_text(encoding="utf-8")
-    lifecycle_mutation_text = lifecycle_mutation.read_text(encoding="utf-8")
+def test_operation_runner_owns_shared_operation_execution():
+    operation_service = SRC_ROOT / "workflows/operations/service.py"
+    operation_commit = SRC_ROOT / "workflows/operations/commit.py"
+    operation_harness = SRC_ROOT / "workflows/operations/harness.py"
+    operation_mutation = SRC_ROOT / "workflows/operations/mutation.py"
+    operation_text = operation_service.read_text(encoding="utf-8")
+    operation_commit_text = operation_commit.read_text(encoding="utf-8")
+    operation_harness_text = operation_harness.read_text(encoding="utf-8")
+    operation_mutation_text = operation_mutation.read_text(encoding="utf-8")
 
-    assert page_run_service.is_file()
-    assert lifecycle_harness.is_file()
-    assert lifecycle_mutation.is_file()
-    assert "RunHarnessRequest" in page_run_text
-    assert "RecordRunHarnessTranscriptRequest" in page_run_text
-    assert "validate_harness_result" in page_run_text
-    assert len(lifecycle_text.splitlines()) <= 40
-    assert "from codealmanac.workflows.lifecycle_harness import" in lifecycle_text
-    assert "from codealmanac.workflows.lifecycle_mutation import" in lifecycle_text
-    assert "class LifecycleMutationPolicy" not in lifecycle_text
-    assert "def validate_harness_result(" not in lifecycle_text
-    assert "def changed_paths(" not in lifecycle_text
-    assert "class LifecycleMutationPolicy" in lifecycle_mutation_text
-    assert "def changed_paths(" in lifecycle_mutation_text
-    assert "def validate_reported_changes(" in lifecycle_mutation_text
-    assert "def validate_harness_result(" in lifecycle_harness_text
-    assert "def harness_run_event_kind(" in lifecycle_harness_text
+    assert operation_service.is_file()
+    assert operation_commit.is_file()
+    assert operation_harness.is_file()
+    assert operation_mutation.is_file()
+    assert not (SRC_ROOT / "workflows/lifecycle.py").exists()
+    assert not (SRC_ROOT / "workflows/lifecycle_commit.py").exists()
+    assert not (SRC_ROOT / "workflows/lifecycle_harness.py").exists()
+    assert not (SRC_ROOT / "workflows/lifecycle_mutation.py").exists()
+    assert "RunHarnessRequest" in operation_text
+    assert "RecordRunHarnessTranscriptRequest" in operation_text
+    assert "validate_harness_result" in operation_text
+    assert "class OperationMutationPolicy" in operation_mutation_text
+    assert "def changed_paths(" in operation_mutation_text
+    assert "def validate_reported_changes(" in operation_mutation_text
+    assert "def validate_harness_result(" in operation_harness_text
+    assert "def harness_run_event_kind(" in operation_harness_text
+    assert "def operation_commit_policy(" in operation_commit_text
 
     operation_services = (
         SRC_ROOT / "workflows/ingest/service.py",
@@ -1080,7 +1087,7 @@ def test_page_writing_workflow_services_stay_small():
     for path in (
         SRC_ROOT / "workflows/ingest/service.py",
         SRC_ROOT / "workflows/garden/service.py",
-        SRC_ROOT / "workflows/page_run/service.py",
+        SRC_ROOT / "workflows/operations/service.py",
         SRC_ROOT / "workflows/run_queue/service.py",
     ):
         line_count = len(path.read_text(encoding="utf-8").splitlines())
@@ -1531,134 +1538,100 @@ def test_automation_service_keeps_selection_and_job_construction_boundaries():
     assert "class AutomationJobFactory" in jobs_text
     assert "def program_arguments_for(" in jobs_text
     assert "def launch_path(" in jobs_text
-    assert "state_dir_for(" in jobs_text
+    assert "logs_dir_for(" in jobs_text
     assert "class InstallTaskSelection" in selection_text
     assert "def install_task_selection(" in selection_text
     assert "ValidationFailed" in selection_text
 
 
-def test_run_queue_workflow_stays_operation_dispatch_only():
-    text = (SRC_ROOT / "workflows/run_queue/service.py").read_text(encoding="utf-8")
+def test_run_queue_stays_operation_dispatch_only():
+    run_queue_root = SRC_ROOT / "workflows/run_queue"
+    service_text = (run_queue_root / "service.py").read_text(encoding="utf-8")
+    specs_text = (run_queue_root / "specs.py").read_text(encoding="utf-8")
+    worker_text = (run_queue_root / "worker.py").read_text(encoding="utf-8")
 
     forbidden_fragments = (
         "RunHarnessRequest",
         "RenderPromptRequest",
         "ResolveSourcesRequest",
         "InspectSourceRuntimeRequest",
-        "LifecycleMutationPolicy",
+        "OperationMutationPolicy",
+        "StartedIngestRequest",
+        "StartedGardenRequest",
     )
 
-    assert [fragment for fragment in forbidden_fragments if fragment in text] == []
+    assert (run_queue_root / "worker.py").is_file()
+    assert (run_queue_root / "specs.py").is_file()
+    assert len(service_text.splitlines()) <= 170
+    assert [
+        fragment for fragment in forbidden_fragments if fragment in service_text
+    ] == []
+    assert "class RunQueueWorker" in worker_text
+    assert "def drain(" in worker_text
+    assert "StartedIngestRequest" in worker_text
+    assert "StartedGardenRequest" in worker_text
+    assert "def ingest_run_spec(" in specs_text
+    assert "def garden_run_spec(" in specs_text
 
 
-def test_sync_workflow_policy_stays_out_of_service_orchestration():
+def test_sync_workflow_evaluation_stays_simple_and_separate():
     service = SRC_ROOT / "workflows/sync/service.py"
     sync_root = SRC_ROOT / "workflows/sync"
     evaluation = sync_root / "evaluation.py"
-    policy = sync_root / "policy.py"
-    policy_modules = (
-        policy,
-        sync_root / "decisions.py",
-        sync_root / "entries.py",
-        sync_root / "guidance.py",
-        sync_root / "identity.py",
-        sync_root / "reporting.py",
-        sync_root / "snapshots.py",
-    )
+    guidance = sync_root / "guidance.py"
+    summary = sync_root / "summary.py"
     service_text = service.read_text(encoding="utf-8")
     evaluation_text = evaluation.read_text(encoding="utf-8")
-    policy_text = policy.read_text(encoding="utf-8")
-    combined_policy_text = "\n".join(
-        path.read_text(encoding="utf-8") for path in policy_modules
-    )
+    guidance_text = guidance.read_text(encoding="utf-8")
+    summary_text = summary.read_text(encoding="utf-8")
 
     forbidden_service_fragments = (
-        "def evaluate_cursor(",
-        "def reconcile_pending_entry(",
-        "def pending_entry(",
-        "def absorbed_entry(",
-        "def failed_entry(",
-        "def ledger_key(",
-        "def sync_ingest_guidance(",
-        "EMPTY_SHA256",
-    )
-    forbidden_service_evaluation_fragments = (
         "DiscoverTranscriptsRequest",
+        "SelectRepositoryRequest",
+        "SyncRepositoryIngest(",
+        "def sync_ingest_guidance(",
+        "queue_ingest(",
+        "spawn_worker(",
+    )
+    forbidden_evaluation_fragments = (
         "ListRunsRequest",
-        "SelectWorkspaceRequest",
-        "SyncReady(",
-        "SyncWorkItem(",
+        "IngestRequest",
+        "RunStatus.FAILED",
         "read_transcript(",
         "quiet_window_skip(",
-        "evaluate_pending_run(",
-    )
-    forbidden_policy_imports = (
-        "codealmanac.integrations",
-        "codealmanac.workflows.ingest",
-        "codealmanac.workflows.run_queue",
-        "codealmanac.services.sources.service",
-        "codealmanac.services.runs.service",
-        "codealmanac.services.workspaces.service",
+        "ledger_key(",
     )
 
     assert evaluation.is_file()
-    assert all(path.is_file() for path in policy_modules)
+    assert guidance.is_file()
+    assert summary.is_file()
     assert len(service_text.splitlines()) <= 120
     assert "SyncEvaluator(" in service_text
     assert "class SyncEvaluator" in evaluation_text
     assert "DiscoverTranscriptsRequest" in evaluation_text
-    assert "ListRunsRequest" in evaluation_text
-    assert "SelectWorkspaceRequest" in evaluation_text
+    assert "SelectRepositoryRequest" in evaluation_text
+    assert "SyncRepositoryIngest(" in evaluation_text
+    assert "def sync_ingest_guidance(" in guidance_text
+    assert "def ready_sync_repository(" in summary_text
+    assert "def started_sync_repository(" in summary_text
     assert [
-        fragment
-        for fragment in forbidden_service_evaluation_fragments
-        if fragment in service_text
-    ] == []
-    assert len(policy_text.splitlines()) <= 80
-    assert [
-        fragment
-        for fragment in forbidden_service_fragments
-        if fragment in service_text
+        fragment for fragment in forbidden_service_fragments if fragment in service_text
     ] == []
     assert [
         fragment
-        for fragment in forbidden_policy_imports
-        if fragment in combined_policy_text
+        for fragment in forbidden_evaluation_fragments
+        if fragment in evaluation_text
     ] == []
-    assert "from codealmanac.workflows.sync.decisions import" in policy_text
-    assert "from codealmanac.workflows.sync.entries import" in policy_text
-    assert "from codealmanac.workflows.sync.guidance import" in policy_text
-    assert "from codealmanac.workflows.sync.identity import" in policy_text
-    assert "from codealmanac.workflows.sync.reporting import" in policy_text
-    assert "from codealmanac.workflows.sync.snapshots import" in policy_text
-    assert "def evaluate_cursor(" in (
-        sync_root / "decisions.py"
-    ).read_text(encoding="utf-8")
-    assert "def pending_entry(" in (sync_root / "entries.py").read_text(
-        encoding="utf-8"
-    )
-    assert "def ledger_key(" in (sync_root / "identity.py").read_text(
-        encoding="utf-8"
-    )
-    assert "def read_transcript(" in (sync_root / "snapshots.py").read_text(
-        encoding="utf-8"
-    )
-    assert "def sync_ingest_guidance(" in (sync_root / "guidance.py").read_text(
-        encoding="utf-8"
-    )
-    assert "def sync_started(" in (sync_root / "reporting.py").read_text(
-        encoding="utf-8"
-    )
 
 
-def test_sync_execution_effects_stay_out_of_service_orchestration():
+def test_sync_queue_effects_stay_out_of_service_orchestration():
     sync_root = SRC_ROOT / "workflows/sync"
     service_text = (sync_root / "service.py").read_text(encoding="utf-8")
     evaluation_text = (sync_root / "evaluation.py").read_text(encoding="utf-8")
-    execution_text = (sync_root / "execution.py").read_text(encoding="utf-8")
+    queue_text = (sync_root / "queue.py").read_text(encoding="utf-8")
     forbidden_service_fragments = (
-        "RunIngestRequest",
-        "RunIngestWithRunRequest",
+        "IngestRequest",
+        "StartedIngestRequest",
         "FinishRunRequest",
         "RunStatus.FAILED",
         "pending_entry(item",
@@ -1668,19 +1641,19 @@ def test_sync_execution_effects_stay_out_of_service_orchestration():
         "sync_ingest_title(",
         "queue_ingest(",
         "spawn_worker(",
-        "run_with_run(",
+        "run_started(",
     )
     forbidden_evaluation_fragments = (
-        "RunIngestRequest",
-        "RunIngestWithRunRequest",
+        "IngestRequest",
+        "StartedIngestRequest",
         "FinishRunRequest",
         "RunStatus.FAILED",
         "queue_ingest(",
         "spawn_worker(",
-        "run_with_run(",
+        "run_started(",
     )
 
-    assert (sync_root / "execution.py").is_file()
+    assert (sync_root / "queue.py").is_file()
     assert len(service_text.splitlines()) <= 120
     assert [
         fragment
@@ -1692,14 +1665,11 @@ def test_sync_execution_effects_stay_out_of_service_orchestration():
         for fragment in forbidden_evaluation_fragments
         if fragment in evaluation_text
     ] == []
-    assert "class SyncRunExecutor" in execution_text
-    assert "RunIngestRequest" in execution_text
-    assert "RunIngestWithRunRequest" in execution_text
-    assert "FinishRunRequest" in execution_text
-    assert "pending_entry(" in execution_text
-    assert "absorbed_entry(" in execution_text
-    assert "queue_ingest(" in execution_text
-    assert "spawn_worker(" in execution_text
+    assert "class SyncIngestQueue" in queue_text
+    assert "IngestRequest" in queue_text
+    assert "queue_ingest(" in queue_text
+    assert "spawn_worker(" in queue_text
+    assert "record_completed(" in queue_text
 
 
 def test_viewer_jobs_surface_stays_read_only():
@@ -1783,35 +1753,34 @@ def test_run_id_validation_is_owned_by_runs_models():
         encoding="utf-8"
     )
     runs_store = (SRC_ROOT / "services/runs/store.py").read_text(encoding="utf-8")
-    runs_paths = (SRC_ROOT / "services/runs/paths.py").read_text(encoding="utf-8")
     viewer_requests = (SRC_ROOT / "services/viewer/requests.py").read_text(
         encoding="utf-8"
     )
 
     assert "RunId = Annotated[" in runs_models
+    assert "RUN_ID_PATTERN" in runs_models
     assert "StringConstraints" in runs_models
     assert "run_id: RunId" in runs_requests
     assert "TypeAdapter(RunId)" not in runs_store
-    assert "TypeAdapter(RunId)" in runs_paths
     assert "run_id: RunId" in viewer_requests
     assert "SAFE_RUN_ID" not in viewer_requests
 
 
-def test_run_ledger_persistence_stays_split_by_responsibility():
+def test_run_persistence_stays_split_by_responsibility():
     runs_root = SRC_ROOT / "services/runs"
     module_names = {path.name for path in runs_root.glob("*.py")}
     store_text = (runs_root / "store.py").read_text(encoding="utf-8")
+    events_text = (runs_root / "events.py").read_text(encoding="utf-8")
     factory_text = (runs_root / "factory.py").read_text(encoding="utf-8")
-    io_text = (runs_root / "io.py").read_text(encoding="utf-8")
     locks_text = (runs_root / "locks.py").read_text(encoding="utf-8")
     queries_text = (runs_root / "queries.py").read_text(encoding="utf-8")
     service_text = (runs_root / "service.py").read_text(encoding="utf-8")
     streaming_text = (runs_root / "streaming.py").read_text(encoding="utf-8")
+    tables_text = (runs_root / "tables.py").read_text(encoding="utf-8")
     transitions_text = (runs_root / "transitions.py").read_text(encoding="utf-8")
+    worker_locks_text = (runs_root / "worker_locks.py").read_text(encoding="utf-8")
     forbidden_store_fragments = (
         "write_json_atomically",
-        "model_validate_json",
-        "worker_lock_owner_path",
         "os.kill",
         "time.sleep",
         'open("a"',
@@ -1821,46 +1790,57 @@ def test_run_ledger_persistence_stays_split_by_responsibility():
         "strftime",
         "run_log_reference_path",
         "key=lambda record",
-        "ledger.iter_records",
     )
 
     assert {
+        "events.py",
         "factory.py",
-        "io.py",
         "locks.py",
-        "paths.py",
         "queries.py",
         "streaming.py",
+        "tables.py",
         "transitions.py",
+        "worker_locks.py",
     } <= module_names
-    assert len(store_text.splitlines()) <= 240
+    assert len(store_text.splitlines()) <= 330
     assert [
         fragment for fragment in forbidden_store_fragments if fragment in store_text
     ] == []
     assert "def new_run_record(" in factory_text
     assert "uuid4" in factory_text
-    assert "run_log_reference_path" in factory_text
-    assert "write_json_atomically" in io_text
-    assert "model_validate_json" in io_text
-    assert "worker_lock_owner_path" in locks_text
-    assert "process_is_alive" in locks_text
+    assert "strftime" in factory_text
     assert "def list_run_records(" in queries_text
-    assert "def next_spec_backed_queued_run(" in queries_text
-    assert "ledger.iter_records" in queries_text
-    assert "def stream_attach(" in service_text
+    assert "def read_run_record(" in queries_text
+    assert "def next_queued_run(" in queries_text
+    assert "def start_run(" in transitions_text
+    assert "def finish_run(" in transitions_text
+    assert "def cancel_run(" in transitions_text
+    assert "ConflictError" in transitions_text
+    assert "class RunEventStore" in events_text
+    assert "run_events" in events_text
+    assert "RunWorkerLease" in locks_text
+    assert "process_is_alive" in locks_text
+    assert "class RunWorkerLockStore" in worker_locks_text
+    assert "worker_locks" in worker_locks_text
+    assert "CREATE TABLE IF NOT EXISTS runs" in tables_text
+    assert "CREATE TABLE IF NOT EXISTS run_events" in tables_text
+    assert "CREATE TABLE IF NOT EXISTS worker_locks" in tables_text
+    assert "connect_local_database" in store_text
+    assert "connect_local_database" in events_text
+    assert "connect_local_database" in worker_locks_text
+    assert "connect_local_database" not in service_text
     assert "class RunAttachStreamer" in streaming_text
     assert "time.sleep" in streaming_text
     assert "store.attach" in streaming_text
-    assert "write_record_with_event" in transitions_text
 
 
-def test_repo_almanac_root_is_workspace_owned():
-    from codealmanac.services.workspaces.roots import DEFAULT_ALMANAC_ROOT
+def test_repo_almanac_root_is_repository_owned():
+    from codealmanac.services.repositories.roots import DEFAULT_ALMANAC_ROOT
 
     core_paths = (SRC_ROOT / "core/paths.py").read_text(encoding="utf-8")
 
     assert Path("almanac") == DEFAULT_ALMANAC_ROOT
-    assert (SRC_ROOT / "services/workspaces/roots.py").is_file()
+    assert (SRC_ROOT / "services/repositories/roots.py").is_file()
     assert "nearest_almanac_root" not in core_paths
 
 

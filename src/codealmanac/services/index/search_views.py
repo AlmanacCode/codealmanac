@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 
 from codealmanac.core.slug import to_kebab_case
 from codealmanac.database import SQLiteConnection, SQLiteRow
@@ -50,7 +51,7 @@ def search_sql(request: SearchIndexRequest) -> tuple[str, tuple[object, ...]]:
         params.insert(0, build_fts_query(query))
         return (
             f"""
-            SELECT p.slug, p.title, p.summary, p.updated_at
+            SELECT p.slug, p.title, p.summary, p.file_path, p.updated_at
             FROM pages p
             JOIN fts_pages f ON f.slug = p.slug
             WHERE {" AND ".join(where_clauses)}
@@ -64,7 +65,7 @@ def search_sql(request: SearchIndexRequest) -> tuple[str, tuple[object, ...]]:
     )
     return (
         f"""
-        SELECT p.slug, p.title, p.summary, p.updated_at
+        SELECT p.slug, p.title, p.summary, p.file_path, p.updated_at
         FROM pages p
         {where_sql}
         ORDER BY p.updated_at DESC, p.slug ASC
@@ -138,6 +139,7 @@ def search_result_from_row(
         slug=row["slug"],
         title=row["title"],
         summary=row["summary"],
+        file_path=Path(row["file_path"]),
         updated_at=row["updated_at"],
         topics=topics_for_page(connection, row["slug"]),
     )

@@ -21,7 +21,7 @@ export async function renderJobs(context) {
   setRouteTitle("Jobs");
   replaceMain(
     elements,
-    pageIntro("Lifecycle runs", "Jobs", `${result.runs.length} local runs.`),
+    pageIntro("CodeAlmanac runs", "Jobs", `${result.runs.length} local runs.`),
     jobList(result.runs),
   );
   if (result.runs.some((run) => isActiveJobStatus(run.status))) {
@@ -38,7 +38,7 @@ export async function renderJob(context, runId) {
   setRouteTitle(run.title || run.run_id);
   replaceMain(
     elements,
-    pageIntro("Job", run.title || run.run_id, `${run.operation} · ${run.status}`),
+    pageIntro("Job", run.title || run.run_id, `${run.kind} · ${run.status}`),
     jobDetail(run),
     eventList(detail.events),
   );
@@ -66,12 +66,12 @@ function jobList(runs) {
   if (runs.length === 0) {
     return emptyState(
       "No jobs yet",
-      "Lifecycle runs appear here after ingest, garden, or sync.",
+      "CodeAlmanac runs appear here after ingest, garden, or sync.",
     );
   }
   const list = document.createElement("nav");
   list.className = "job-list";
-  list.setAttribute("aria-label", "Lifecycle jobs");
+  list.setAttribute("aria-label", "Jobs");
   for (const run of runs) {
     list.append(jobRow(run));
   }
@@ -97,7 +97,7 @@ function jobRow(run) {
   meta.className = "job-row-meta";
   meta.append(
     jobPill(run.status),
-    textSpan(run.operation),
+    textSpan(run.kind),
     textSpan(shortTime(run.updated_at)),
   );
 
@@ -111,9 +111,9 @@ function jobDetail(run) {
   section.append(
     detailRow("Run", run.run_id),
     detailRow("Status", run.status),
-    detailRow("Operation", run.operation),
+    detailRow("Kind", run.kind),
     detailRow("Updated", run.updated_at),
-    detailRow("Log", run.log_path),
+    detailRow("Logs", "event log below"),
   );
   if (run.harness_transcript) {
     section.append(

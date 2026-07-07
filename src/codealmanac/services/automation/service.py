@@ -20,17 +20,15 @@ from codealmanac.services.automation.selection import (
     install_task_selection,
     status_task_selection,
 )
-from codealmanac.services.workspaces.service import WorkspacesService
 
 
 class AutomationService:
     def __init__(
         self,
-        workspaces: WorkspacesService,
         scheduler: SchedulerAdapter,
     ):
         self.scheduler = scheduler
-        self.jobs = AutomationJobFactory(workspaces)
+        self.jobs = AutomationJobFactory()
 
     def install(self, request: InstallAutomationRequest) -> AutomationInstallResult:
         selection = install_task_selection(request)
@@ -39,7 +37,6 @@ class AutomationService:
                 task,
                 request,
                 selection.explicit_tasks,
-                resolve_working_directory=True,
             )
             for task in selection.tasks
         )
@@ -52,7 +49,6 @@ class AutomationService:
                 AutomationTask.GARDEN,
                 request,
                 selection.explicit_tasks,
-                resolve_working_directory=False,
             )
             self.scheduler.uninstall(garden)
             disabled = (garden,)
@@ -71,7 +67,6 @@ class AutomationService:
                 task,
                 install_request,
                 explicit_tasks=True,
-                resolve_working_directory=False,
             )
             if self.scheduler.uninstall(job):
                 removed.append(job.plist_path)
@@ -86,7 +81,6 @@ class AutomationService:
                 task,
                 install_request,
                 explicit_tasks=True,
-                resolve_working_directory=False,
             )
             statuses.append(self.scheduler.status(job))
         return AutomationStatusReport(statuses=tuple(statuses))

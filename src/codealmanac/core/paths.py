@@ -13,8 +13,12 @@ def global_state_dir() -> Path:
     return state_dir_for(home_dir())
 
 
-def default_registry_path() -> Path:
-    return global_state_dir() / "registry.json"
+def logs_dir_for(home: Path) -> Path:
+    return state_dir_for(home) / "logs"
+
+
+def default_database_path() -> Path:
+    return global_state_dir() / "codealmanac.db"
 
 
 def default_config_path() -> Path:

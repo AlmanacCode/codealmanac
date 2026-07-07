@@ -1,10 +1,9 @@
 import subprocess
 from pathlib import Path
 
-from conftest import runtime_runs_path
+from conftest import initialize_repository
 
 from codealmanac.app import create_app
-from codealmanac.core.models import AppConfig
 from codealmanac.integrations.runs.process import worker_command
 from codealmanac.services.harnesses.models import (
     HarnessKind,
@@ -21,8 +20,8 @@ from codealmanac.services.runs.requests import (
     SpawnRunWorkerRequest,
 )
 from codealmanac.services.search.requests import SearchPagesRequest
-from codealmanac.services.workspaces.requests import InitializeWorkspaceRequest
-from codealmanac.workflows.ingest.requests import RunIngestRequest
+from codealmanac.settings import AppConfig
+from codealmanac.workflows.ingest.requests import IngestRequest
 from codealmanac.workflows.run_queue import DrainRunQueueRequest
 
 
@@ -75,7 +74,7 @@ class FakeWorkerSpawner:
         )
 
 
-def test_run_queue_background_start_persists_spec_and_spawns_worker(
+def test_run_queue_start_persists_spec_and_spawns_worker(
     tmp_path: Path,
     isolated_home: Path,
 ):
@@ -84,28 +83,27 @@ def test_run_queue_background_start_persists_spec_and_spawns_worker(
     (repo / "note.md").write_text("queue design note\n", encoding="utf-8")
     spawner = FakeWorkerSpawner()
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         harness_adapters=(QueueWritingHarnessAdapter(),),
         worker_spawner=spawner,
     )
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_repository(app, repo)
 
-    result = app.workflows.queue.start_ingest_background(
-        RunIngestRequest(
+    result = app.workflows.queue.start_ingest(
+        IngestRequest(
             cwd=repo,
             inputs=("note.md",),
             harness=HarnessKind.CODEX,
+            model="gpt-5.5",
         )
     )
-    runs = app.runs.list(ListRunsRequest(cwd=repo))
+    runs = app.runs.list(ListRunsRequest(repository_name=repo.name))
 
     assert result.worker.child_pid == 4242
     assert result.run.status == RunStatus.QUEUED
     assert runs[0].run_id == result.run.run_id
-    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo, wiki=None)]
-    assert (
-        runtime_runs_path(isolated_home, workspace) / f"{result.run.run_id}.spec.json"
-    ).is_file()
+    assert spawner.requests == [SpawnRunWorkerRequest(cwd=repo)]
+    assert (isolated_home / ".codealmanac/codealmanac.db").is_file()
     assert not (repo / "almanac/jobs").exists()
 
 
@@ -118,26 +116,29 @@ def test_run_queue_drains_persisted_ingest_spec(
     (repo / "note.md").write_text("queue design note\n", encoding="utf-8")
     harness = QueueWritingHarnessAdapter()
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         harness_adapters=(harness,),
     )
-    workspace = app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_repository(app, repo)
     initialize_git(repo)
     commit_all(repo, "initial wiki")
     queued = app.workflows.queue.queue_ingest(
-        RunIngestRequest(
+        IngestRequest(
             cwd=repo,
             inputs=("note.md",),
             harness=HarnessKind.CODEX,
+            model="gpt-5.5",
             title="Ingest queued note",
             guidance="Keep the page short.",
             auto_commit=False,
         )
     )
 
-    result = app.workflows.queue.drain(DrainRunQueueRequest(cwd=repo))
-    runs = app.runs.list(ListRunsRequest(cwd=repo))
-    log = app.runs.log(ReadRunLogRequest(cwd=repo, run_id=queued.run_id))
+    result = app.workflows.queue.drain(DrainRunQueueRequest())
+    runs = app.runs.list(ListRunsRequest(repository_name=repo.name))
+    log = app.runs.log(
+        ReadRunLogRequest(repository_name=repo.name, run_id=queued.run_id)
+    )
     matches = app.search.search(SearchPagesRequest(cwd=repo, query="worker"))
 
     assert result.lock_acquired is True
@@ -153,7 +154,6 @@ def test_run_queue_drains_persisted_ingest_spec(
         "queued ingest",
         "running",
     )
-    assert not (runtime_runs_path(isolated_home, workspace) / "worker.lock").exists()
 
 
 def test_run_queue_skips_cancelled_queued_runs(
@@ -165,21 +165,22 @@ def test_run_queue_skips_cancelled_queued_runs(
     (repo / "note.md").write_text("cancelled queue note\n", encoding="utf-8")
     harness = QueueWritingHarnessAdapter()
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json"),
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         harness_adapters=(harness,),
     )
-    app.workflows.build.initialize(InitializeWorkspaceRequest(path=repo))
+    initialize_repository(app, repo)
     queued = app.workflows.queue.queue_ingest(
-        RunIngestRequest(
+        IngestRequest(
             cwd=repo,
             inputs=("note.md",),
             harness=HarnessKind.CODEX,
+            model="gpt-5.5",
         )
     )
-    app.runs.cancel(CancelRunRequest(cwd=repo, run_id=queued.run_id))
+    app.runs.cancel(CancelRunRequest(repository_name=repo.name, run_id=queued.run_id))
 
-    result = app.workflows.queue.drain(DrainRunQueueRequest(cwd=repo))
-    runs = app.runs.list(ListRunsRequest(cwd=repo))
+    result = app.workflows.queue.drain(DrainRunQueueRequest())
+    runs = app.runs.list(ListRunsRequest(repository_name=repo.name))
 
     assert result.lock_acquired is True
     assert result.processed == ()
@@ -188,7 +189,7 @@ def test_run_queue_skips_cancelled_queued_runs(
 
 
 def test_worker_command_targets_codealmanac_module(tmp_path: Path):
-    command = worker_command(SpawnRunWorkerRequest(cwd=tmp_path, wiki="docs"))
+    command = worker_command(SpawnRunWorkerRequest(cwd=tmp_path))
 
     assert command[1:] == [
         "-m",
@@ -196,8 +197,6 @@ def test_worker_command_targets_codealmanac_module(tmp_path: Path):
         "__run-worker",
         "--cwd",
         str(tmp_path),
-        "--wiki",
-        "docs",
     ]
 
 

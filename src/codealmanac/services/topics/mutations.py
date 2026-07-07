@@ -1,6 +1,7 @@
 from codealmanac.core.errors import ConflictError, NotFoundError, ValidationFailed
 from codealmanac.core.slug import to_kebab_case
 from codealmanac.services.index.service import IndexService
+from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.topics.graph import (
     reject_cycle,
     require_topics,
@@ -14,6 +15,7 @@ from codealmanac.services.topics.models import (
     TopicRewriteMutationResult,
 )
 from codealmanac.services.topics.read_model import existing_topic_slugs
+from codealmanac.services.topics.repository import resolve_topic_repository
 from codealmanac.services.topics.requests import (
     CreateTopicRequest,
     DeleteTopicRequest,
@@ -22,7 +24,6 @@ from codealmanac.services.topics.requests import (
     RenameTopicRequest,
     UnlinkTopicRequest,
 )
-from codealmanac.services.topics.workspace import resolve_topic_workspace
 from codealmanac.services.wiki.frontmatter_rewrite import (
     apply_page_topic_rewrites,
     plan_page_topic_rewrites,
@@ -31,25 +32,24 @@ from codealmanac.services.wiki.topics import (
     load_topics_file,
     title_for_slug,
 )
-from codealmanac.services.workspaces.service import WorkspacesService
 
 
 class TopicMutationExecutor:
-    def __init__(self, workspaces: WorkspacesService, index: IndexService):
-        self.workspaces = workspaces
+    def __init__(self, repositories: RepositoriesService, index: IndexService):
+        self.repositories = repositories
         self.index = index
 
     def create(self, request: CreateTopicRequest) -> TopicMutationResult:
-        workspace = resolve_topic_workspace(
-            self.workspaces,
+        repository = resolve_topic_repository(
+            self.repositories,
             request.cwd,
-            request.wiki,
+            request.repository_name,
         )
         slug = to_kebab_case(request.name)
         if not slug:
             raise ValidationFailed("topic name must contain slug-able characters")
-        existing = existing_topic_slugs(self.index, workspace.workspace_id)
-        topic_file = load_topics_file(workspace.almanac_path)
+        existing = existing_topic_slugs(self.index, repository.repository_id)
+        topic_file = load_topics_file(repository.almanac_path)
         validate_parents_exist(slug, request.parents, existing)
         for parent in request.parents:
             topic_file.ensure_topic(parent, title_for_slug(parent))
@@ -63,13 +63,13 @@ class TopicMutationExecutor:
                 reject_cycle(topic_file.definitions, slug, parent)
 
         topic_file.write()
-        self.index.ensure_fresh(workspace.workspace_id)
+        self.index.ensure_fresh(repository.repository_id)
         action = (
             TopicMutationAction.UPDATED
             if existed_before
             else TopicMutationAction.CREATED
         )
-        topic = self.index.get_topic(workspace.workspace_id, slug, False)
+        topic = self.index.get_topic(repository.repository_id, slug, False)
         return TopicMutationResult(
             action=action,
             slug=slug,
@@ -78,21 +78,21 @@ class TopicMutationExecutor:
         )
 
     def describe(self, request: DescribeTopicRequest) -> TopicMutationResult:
-        workspace = resolve_topic_workspace(
-            self.workspaces,
+        repository = resolve_topic_repository(
+            self.repositories,
             request.cwd,
-            request.wiki,
+            request.repository_name,
         )
-        existing = existing_topic_slugs(self.index, workspace.workspace_id)
+        existing = existing_topic_slugs(self.index, repository.repository_id)
         if request.slug not in existing:
             raise NotFoundError("topic", request.slug)
-        topic_file = load_topics_file(workspace.almanac_path)
+        topic_file = load_topics_file(repository.almanac_path)
         topic_file.ensure_topic(request.slug, title_for_slug(request.slug))
         description = request.description or None
         topic_file.set_description(request.slug, description)
         topic_file.write()
-        self.index.ensure_fresh(workspace.workspace_id)
-        topic = self.index.get_topic(workspace.workspace_id, request.slug, False)
+        self.index.ensure_fresh(repository.repository_id)
+        topic = self.index.get_topic(repository.repository_id, request.slug, False)
         return TopicMutationResult(
             action=TopicMutationAction.DESCRIBED,
             slug=request.slug,
@@ -101,15 +101,15 @@ class TopicMutationExecutor:
         )
 
     def link(self, request: LinkTopicRequest) -> TopicEdgeMutationResult:
-        workspace = resolve_topic_workspace(
-            self.workspaces,
+        repository = resolve_topic_repository(
+            self.repositories,
             request.cwd,
-            request.wiki,
+            request.repository_name,
         )
         validate_not_self_parent(request.child, request.parent)
-        existing = existing_topic_slugs(self.index, workspace.workspace_id)
+        existing = existing_topic_slugs(self.index, repository.repository_id)
         require_topics(existing, request.child, request.parent)
-        topic_file = load_topics_file(workspace.almanac_path)
+        topic_file = load_topics_file(repository.almanac_path)
         topic_file.ensure_topic(request.child, title_for_slug(request.child))
         topic_file.ensure_topic(request.parent, title_for_slug(request.parent))
         if not topic_file.add_parent(request.child, request.parent):
@@ -120,7 +120,7 @@ class TopicMutationExecutor:
             )
         reject_cycle(topic_file.definitions, request.child, request.parent)
         topic_file.write()
-        self.index.ensure_fresh(workspace.workspace_id)
+        self.index.ensure_fresh(repository.repository_id)
         return TopicEdgeMutationResult(
             action=TopicMutationAction.LINKED,
             child=request.child,
@@ -128,12 +128,12 @@ class TopicMutationExecutor:
         )
 
     def unlink(self, request: UnlinkTopicRequest) -> TopicEdgeMutationResult:
-        workspace = resolve_topic_workspace(
-            self.workspaces,
+        repository = resolve_topic_repository(
+            self.repositories,
             request.cwd,
-            request.wiki,
+            request.repository_name,
         )
-        topic_file = load_topics_file(workspace.almanac_path)
+        topic_file = load_topics_file(repository.almanac_path)
         if not topic_file.remove_parent(request.child, request.parent):
             return TopicEdgeMutationResult(
                 action=TopicMutationAction.NO_EDGE,
@@ -141,7 +141,7 @@ class TopicMutationExecutor:
                 parent=request.parent,
             )
         topic_file.write()
-        self.index.ensure_fresh(workspace.workspace_id)
+        self.index.ensure_fresh(repository.repository_id)
         return TopicEdgeMutationResult(
             action=TopicMutationAction.UNLINKED,
             child=request.child,
@@ -149,10 +149,10 @@ class TopicMutationExecutor:
         )
 
     def rename(self, request: RenameTopicRequest) -> TopicRewriteMutationResult:
-        workspace = resolve_topic_workspace(
-            self.workspaces,
+        repository = resolve_topic_repository(
+            self.repositories,
             request.cwd,
-            request.wiki,
+            request.repository_name,
         )
         if request.old_slug == request.new_slug:
             return TopicRewriteMutationResult(
@@ -160,7 +160,7 @@ class TopicMutationExecutor:
                 slug=request.old_slug,
                 new_slug=request.new_slug,
             )
-        existing = existing_topic_slugs(self.index, workspace.workspace_id)
+        existing = existing_topic_slugs(self.index, repository.repository_id)
         if request.old_slug not in existing:
             raise NotFoundError("topic", request.old_slug)
         if request.new_slug in existing:
@@ -170,18 +170,18 @@ class TopicMutationExecutor:
             )
 
         rewrites = plan_page_topic_rewrites(
-            workspace.almanac_path,
+            repository.almanac_path,
             lambda topics: tuple(
                 request.new_slug if topic == request.old_slug else topic
                 for topic in topics
             ),
         )
-        topic_file = load_topics_file(workspace.almanac_path)
+        topic_file = load_topics_file(repository.almanac_path)
         topic_file.rename_topic(request.old_slug, request.new_slug)
         _ = topic_file.definitions
         topic_file.write()
         pages_updated = apply_page_topic_rewrites(rewrites)
-        self.index.ensure_fresh(workspace.workspace_id)
+        self.index.ensure_fresh(repository.repository_id)
         return TopicRewriteMutationResult(
             action=TopicMutationAction.RENAMED,
             slug=request.old_slug,
@@ -190,25 +190,25 @@ class TopicMutationExecutor:
         )
 
     def delete(self, request: DeleteTopicRequest) -> TopicRewriteMutationResult:
-        workspace = resolve_topic_workspace(
-            self.workspaces,
+        repository = resolve_topic_repository(
+            self.repositories,
             request.cwd,
-            request.wiki,
+            request.repository_name,
         )
-        existing = existing_topic_slugs(self.index, workspace.workspace_id)
+        existing = existing_topic_slugs(self.index, repository.repository_id)
         if request.slug not in existing:
             raise NotFoundError("topic", request.slug)
 
         rewrites = plan_page_topic_rewrites(
-            workspace.almanac_path,
+            repository.almanac_path,
             lambda topics: tuple(topic for topic in topics if topic != request.slug),
         )
-        topic_file = load_topics_file(workspace.almanac_path)
+        topic_file = load_topics_file(repository.almanac_path)
         topic_file.delete_topic(request.slug)
         _ = topic_file.definitions
         topic_file.write()
         pages_updated = apply_page_topic_rewrites(rewrites)
-        self.index.ensure_fresh(workspace.workspace_id)
+        self.index.ensure_fresh(repository.repository_id)
         return TopicRewriteMutationResult(
             action=TopicMutationAction.DELETED,
             slug=request.slug,

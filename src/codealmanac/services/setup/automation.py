@@ -20,11 +20,9 @@ def recommendation_tasks(request: RunSetupRequest) -> tuple[AutomationTask, ...]
 
 def install_automation_request(request: RunSetupRequest) -> InstallAutomationRequest:
     return InstallAutomationRequest(
-        cwd=request.cwd,
         tasks=install_tasks(request),
         home=request.home,
         every=request.sync_every,
-        quiet=request.sync_quiet,
         garden_every=request.garden_every,
         garden_off=request.garden_off,
         env_path=request.env_path,

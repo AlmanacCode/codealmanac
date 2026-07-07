@@ -1,72 +1,21 @@
 import os
-import shutil
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from pathlib import Path
-
-from pydantic import ValidationError
 
 from codealmanac.services.runs.models import RunWorkerLockOwner
-from codealmanac.services.runs.paths import worker_lock_owner_path, worker_lock_path
 
 
 class RunWorkerLease:
-    def __init__(self, lock_path: Path, owner: RunWorkerLockOwner):
-        self.lock_path = lock_path
+    def __init__(
+        self,
+        owner: RunWorkerLockOwner,
+        release_owner: Callable[[RunWorkerLockOwner], None],
+    ):
         self.owner = owner
+        self.release_owner = release_owner
 
     def release(self) -> None:
-        current = read_worker_lock_owner(self.lock_path)
-        if current != self.owner:
-            return
-        shutil.rmtree(self.lock_path, ignore_errors=True)
-
-
-def acquire_worker_lock(
-    runtime_path: Path,
-    owner: str,
-    pid: int,
-    now: datetime,
-    stale_after: timedelta,
-) -> RunWorkerLease | None:
-    path = worker_lock_path(runtime_path)
-    lock_owner = RunWorkerLockOwner(owner=owner, pid=pid, acquired_at=now)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    for _ in range(2):
-        try:
-            path.mkdir()
-        except FileExistsError:
-            current = read_worker_lock_owner(path)
-            if current is not None and not worker_lock_is_stale(
-                current,
-                now,
-                stale_after,
-            ):
-                return None
-            shutil.rmtree(path, ignore_errors=True)
-            continue
-        write_worker_lock_owner(path, lock_owner)
-        return RunWorkerLease(path, lock_owner)
-    return None
-
-
-def write_worker_lock_owner(
-    lock_path: Path,
-    owner: RunWorkerLockOwner,
-) -> None:
-    worker_lock_owner_path(lock_path).write_text(
-        owner.model_dump_json(indent=2),
-        encoding="utf-8",
-    )
-
-
-def read_worker_lock_owner(lock_path: Path) -> RunWorkerLockOwner | None:
-    path = worker_lock_owner_path(lock_path)
-    if not path.is_file():
-        return None
-    try:
-        return RunWorkerLockOwner.model_validate_json(path.read_text(encoding="utf-8"))
-    except (OSError, ValidationError, ValueError):
-        return None
+        self.release_owner(self.owner)
 
 
 def worker_lock_is_stale(

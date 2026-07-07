@@ -89,7 +89,7 @@ def render_validate(result: ValidationResult, json_output: bool) -> None:
     else:
         status = f"{style.RED}failed{style.RST}"
     print(f"{style.BOLD}validate{style.RST}: {status}")
-    print(f"{style.DIM}wiki:{style.RST}  {result.workspace_name}")
+    print(f"{style.DIM}wiki:{style.RST}  {result.repository_name}")
     print(f"{style.DIM}path:{style.RST}  {result.almanac_path}")
     if result.index is not None:
         print(f"{style.DIM}index:{style.RST} {result.index.pages_indexed} pages")

@@ -1,5 +1,5 @@
 from codealmanac.services.index.service import IndexService
 
 
-def existing_topic_slugs(index: IndexService, workspace_id: str) -> set[str]:
-    return {topic.slug for topic in index.list_topics(workspace_id)}
+def existing_topic_slugs(index: IndexService, repository_id: str) -> set[str]:
+    return {topic.slug for topic in index.list_topics(repository_id)}

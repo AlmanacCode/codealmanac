@@ -1,26 +1,27 @@
+from codealmanac.core.errors import AlreadyExists
 from codealmanac.manual import ManualLibrary
 from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
-from codealmanac.services.index.service import IndexService
-from codealmanac.services.runs.models import RunEventKind, RunOperation
+from codealmanac.services.repositories.models import Repository
+from codealmanac.services.repositories.requests import RegisterRepositoryRequest
+from codealmanac.services.repositories.roots import RepositoryTarget
+from codealmanac.services.repositories.service import RepositoriesService
+from codealmanac.services.runs.models import RunEventKind, RunKind
 from codealmanac.services.runs.requests import StartRunRequest
 from codealmanac.services.runs.service import RunsService
 from codealmanac.services.wiki.service import WikiService
-from codealmanac.services.workspaces.models import Workspace
-from codealmanac.services.workspaces.requests import (
-    InitializeWorkspaceRequest,
-    RegisterWorkspaceRequest,
+from codealmanac.workflows.build.models import (
+    BuildPromptPayload,
+    BuildResult,
+    StartedBuild,
 )
-from codealmanac.services.workspaces.roots import AlmanacRootMatch
-from codealmanac.services.workspaces.service import WorkspacesService
-from codealmanac.workflows.build.models import BuildPromptPayload, BuildResult
-from codealmanac.workflows.build.requests import RunBuildRequest
-from codealmanac.workflows.lifecycle_commit import lifecycle_commit_policy
-from codealmanac.workflows.page_run import (
-    PageRunBeginRequest,
-    PageRunExecuteRequest,
-    PageRunRecordEventRequest,
-    PageRunWorkflow,
+from codealmanac.workflows.build.requests import BuildRequest
+from codealmanac.workflows.operations import (
+    BeginOperationRequest,
+    ExecuteOperationRequest,
+    OperationRunner,
+    RecordOperationEventRequest,
 )
+from codealmanac.workflows.operations.commit import operation_commit_policy
 
 BUILD_PROMPT_SECTIONS = (
     PromptName.BASE_KERNEL,
@@ -31,70 +32,67 @@ BUILD_PROMPT_SECTIONS = (
 class BuildWorkflow:
     def __init__(
         self,
-        workspaces: WorkspacesService,
+        repositories: RepositoriesService,
         wiki: WikiService,
-        index: IndexService,
         runs: RunsService,
-        page_runs: PageRunWorkflow,
+        operations: OperationRunner,
         prompts: PromptRenderer,
         manual: ManualLibrary,
     ):
-        self.workspaces = workspaces
+        self.repositories = repositories
         self.wiki = wiki
-        self.index = index
         self.runs = runs
-        self.page_runs = page_runs
+        self.operations = operations
         self.prompts = prompts
         self.manual = manual
 
-    def initialize(self, request: InitializeWorkspaceRequest) -> Workspace:
-        return self.initialize_ready(request).workspace
+    def run(self, request: BuildRequest) -> BuildResult:
+        return self.run_started(request, self.start(request))
 
-    def run(self, request: RunBuildRequest) -> BuildResult:
-        initialize_request = InitializeWorkspaceRequest(
-            path=request.path,
-            name=request.name,
-            description=request.description,
-        )
-        target = self.workspaces.initialization_target(
-            initialize_request.path,
-            initialize_request.almanac_root,
-        )
-        self.page_runs.mutation_policy.ensure_tracking_available(target.repo_root)
-        workspace = self._register_target(target, initialize_request)
-        started = self.runs.start(
+    def start(self, request: BuildRequest) -> StartedBuild:
+        target = self.repositories.prepare_repository_target(request.path)
+        reject_existing_almanac(target)
+        self.operations.mutation_policy.ensure_tracking_available(target.root_path)
+        repository = self.register_target(target, request)
+        self.wiki.initialize(repository.repository_id)
+        run = self.runs.start(
             StartRunRequest(
-                cwd=workspace.root_path,
-                wiki=workspace.name,
-                operation=RunOperation.BUILD,
+                repository_id=repository.repository_id,
+                kind=RunKind.BUILD,
                 title=request.title or "Build wiki",
             )
         )
-        context = self.page_runs.begin(
-            PageRunBeginRequest(
-                cwd=workspace.root_path,
-                wiki=workspace.name,
-                run_id=started.run_id,
+        return StartedBuild(repository=repository, run=run)
+
+    def run_started(
+        self,
+        request: BuildRequest,
+        start: StartedBuild,
+    ) -> BuildResult:
+        repository = start.repository
+        context = self.operations.begin(
+            BeginOperationRequest(
+                run_id=start.run.run_id,
             )
         )
         try:
-            context = self.page_runs.preflight(context)
-            self.wiki.initialize(workspace.workspace_id)
-            self.page_runs.record(
-                PageRunRecordEventRequest(
+            context = self.operations.preflight(context)
+            self.operations.record(
+                RecordOperationEventRequest(
                     context=context,
                     kind=RunEventKind.MESSAGE,
-                    message="prepared starter wiki",
+                    message="prepared minimal wiki",
                 )
             )
-            page_run = self.page_runs.execute(
-                PageRunExecuteRequest(
+            operation = self.operations.execute(
+                ExecuteOperationRequest(
                     context=context,
                     harness=request.harness,
+                    model=request.model,
                     prompt=render_build_prompt(
                         self.prompts,
                         self.manual,
-                        workspace,
+                        repository,
                         request.guidance,
                         request.auto_commit,
                     ),
@@ -103,66 +101,55 @@ class BuildWorkflow:
                 )
             )
             return BuildResult(
-                workspace=workspace,
-                run=page_run.run,
-                harness=page_run.harness,
-                safety=page_run.safety,
-                index=page_run.index,
+                repository=repository,
+                run=operation.run,
+                harness=operation.harness,
+                safety=operation.safety,
+                index=operation.index,
             )
         except Exception as error:
-            self.page_runs.fail(context, error)
+            self.operations.fail(context, error)
             raise
 
-    def build(self, request: InitializeWorkspaceRequest) -> BuildResult:
-        return self.initialize_ready(request)
-
-    def initialize_ready(self, request: InitializeWorkspaceRequest) -> BuildResult:
-        workspace = self._initialize_workspace(request)
-        index = self.index.ensure_fresh(workspace.workspace_id)
-        return BuildResult(workspace=workspace, index=index)
-
-    def _initialize_workspace(self, request: InitializeWorkspaceRequest) -> Workspace:
-        workspace = self._register_workspace(request)
-        self.wiki.initialize(workspace.workspace_id)
-        return workspace
-
-    def _register_workspace(self, request: InitializeWorkspaceRequest) -> Workspace:
-        target = self.workspaces.initialization_target(
-            request.path,
-            request.almanac_root,
-        )
-        return self._register_target(target, request)
-
-    def _register_target(
+    def register_target(
         self,
-        target: AlmanacRootMatch,
-        request: InitializeWorkspaceRequest,
-    ) -> Workspace:
-        return self.workspaces.register(
-            RegisterWorkspaceRequest(
-                root_path=target.repo_root,
-                almanac_root=target.almanac_root,
+        target: RepositoryTarget,
+        request: BuildRequest,
+    ) -> Repository:
+        return self.repositories.register(
+            RegisterRepositoryRequest(
+                root_path=target.root_path,
                 name=request.name,
                 description=request.description,
             )
         )
 
 
+def reject_existing_almanac(target: RepositoryTarget) -> None:
+    if target.almanac_path.exists():
+        raise AlreadyExists(
+            "almanac",
+            target.almanac_path.as_posix(),
+            "almanac/ already exists here.\n"
+            "Use the existing repository wiki or choose a different directory.",
+        )
+
+
 def render_build_prompt(
     prompts: PromptRenderer,
     manual: ManualLibrary,
-    workspace: Workspace,
+    repository: Repository,
     guidance: str | None,
     auto_commit: bool,
 ) -> str:
     payload = BuildPromptPayload(
-        workspace_name=workspace.name,
-        workspace_root=workspace.root_path,
-        almanac_root=workspace.almanac_path,
-        wiki_source_root=workspace.almanac_path,
-        topics_file=workspace.almanac_path / "topics.yaml",
+        repository_name=repository.name,
+        repository_root=repository.root_path,
+        almanac_root=repository.almanac_path,
+        wiki_source_root=repository.almanac_path,
+        topics_file=repository.almanac_path / "topics.yaml",
         manual_documents=manual.inventory().documents,
-        source_control=lifecycle_commit_policy(auto_commit),
+        source_control=operation_commit_policy(auto_commit),
         guidance=guidance,
     )
     return prompts.render(

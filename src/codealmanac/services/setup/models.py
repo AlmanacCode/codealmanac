@@ -79,6 +79,7 @@ class SetupAutomationRecommendation(CodeAlmanacModel):
 
 class SetupPlan(CodeAlmanacModel):
     default_harness: HarnessKind
+    harness_model: str
     instruction_targets: tuple[SetupTarget, ...]
     auto_commit: bool = True
     automation_mode: SetupAutomationMode = SetupAutomationMode.RECOMMEND
@@ -101,6 +102,7 @@ class SetupResult(CodeAlmanacModel):
     skipped_instructions: bool = False
     changes: tuple[InstructionChange, ...] = ()
     config_update: ConfigSetResult | None = None
+    config_updates: tuple[ConfigSetResult, ...] = ()
     automation_install: AutomationInstallResult | None = None
 
 

@@ -98,6 +98,7 @@ def test_codex_adapter_wraps_app_server_run_with_git_change_detection(
     adapter = CodexAppServerHarnessAdapter(runner=runner, app_server=app_server)
     request = RunHarnessRequest(
         kind=HarnessKind.CODEX,
+        model="gpt-5.5",
         cwd=tmp_path,
         prompt="Update the wiki.",
         title="Ingest note",

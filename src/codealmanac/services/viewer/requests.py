@@ -13,9 +13,9 @@ from codealmanac.services.wiki.paths import (
 
 class ViewerOverviewRequest(CodeAlmanacModel):
     cwd: Path
-    wiki: str | None = None
+    repository_name: str | None = None
     page_limit: int = 30
-    include_workspaces: bool = True
+    include_repositories: bool = True
 
     @field_validator("page_limit")
     @classmethod
@@ -28,7 +28,7 @@ class ViewerOverviewRequest(CodeAlmanacModel):
 class ViewerPageRequest(CodeAlmanacModel):
     cwd: Path
     slug: str
-    wiki: str | None = None
+    repository_name: str | None = None
 
     @field_validator("slug")
     @classmethod
@@ -38,7 +38,7 @@ class ViewerPageRequest(CodeAlmanacModel):
 
 class ViewerSearchRequest(CodeAlmanacModel):
     cwd: Path
-    wiki: str | None = None
+    repository_name: str | None = None
     query: str | None = None
     limit: int = 50
 
@@ -53,7 +53,7 @@ class ViewerSearchRequest(CodeAlmanacModel):
 class ViewerFileRequest(CodeAlmanacModel):
     cwd: Path
     path: str
-    wiki: str | None = None
+    repository_name: str | None = None
     limit: int = 50
 
     @field_validator("path")
@@ -79,7 +79,7 @@ class ViewerFileRequest(CodeAlmanacModel):
 class ViewerTopicRequest(CodeAlmanacModel):
     cwd: Path
     slug: str
-    wiki: str | None = None
+    repository_name: str | None = None
     include_descendants: bool = False
 
     @field_validator("slug")
@@ -90,7 +90,7 @@ class ViewerTopicRequest(CodeAlmanacModel):
 
 class ViewerJobsRequest(CodeAlmanacModel):
     cwd: Path
-    wiki: str | None = None
+    repository_name: str | None = None
     limit: int | None = None
 
     @field_validator("limit")
@@ -104,4 +104,4 @@ class ViewerJobsRequest(CodeAlmanacModel):
 class ViewerJobRequest(CodeAlmanacModel):
     cwd: Path
     run_id: RunId
-    wiki: str | None = None
+    repository_name: str | None = None

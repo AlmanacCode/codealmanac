@@ -44,6 +44,7 @@ def test_harnesses_service_runs_registered_adapter(tmp_path: Path):
     result = service.run(
         RunHarnessRequest(
             kind=HarnessKind.CODEX,
+                model="gpt-5.5",
             cwd=tmp_path,
             prompt="Update the wiki from these source briefs.",
             title="Ingest source brief",
@@ -77,6 +78,7 @@ def test_harnesses_service_rejects_missing_or_duplicate_adapters(tmp_path: Path)
         service.run(
             RunHarnessRequest(
                 kind=HarnessKind.CODEX,
+                model="gpt-5.5",
                 cwd=tmp_path,
                 prompt="Try a run without an adapter.",
             )

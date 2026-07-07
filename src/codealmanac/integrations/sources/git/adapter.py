@@ -36,29 +36,29 @@ class GitSourceRuntimeAdapter:
 
     def inspect(self, request: InspectSourceRuntimeRequest) -> SourceRuntime:
         if request.ref.kind == SourceKind.GIT_RANGE:
-            return self._inspect_range(request.cwd, request.ref)
+            return self.inspect_range(request.cwd, request.ref)
         if request.ref.kind == SourceKind.GIT_DIFF:
-            return self._inspect_diff(request.cwd, request.ref)
+            return self.inspect_diff(request.cwd, request.ref)
         return SourceRuntime(
             ref=request.ref,
             status=SourceRuntimeStatus.SKIPPED,
             title=f"Unsupported Git source {request.ref.identity}",
         )
 
-    def _inspect_range(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
+    def inspect_range(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
         revision_range = require_revision_range(ref)
         sections = (
             source_runtime_section(
                 "commits",
-                self._git(cwd, ("log", "--oneline", "--decorate", revision_range)),
+                self.run_git(cwd, ("log", "--oneline", "--decorate", revision_range)),
             ),
             source_runtime_section(
                 "stat",
-                self._git(cwd, ("diff", "--stat", revision_range)),
+                self.run_git(cwd, ("diff", "--stat", revision_range)),
             ),
             source_runtime_section(
                 "diff",
-                self._git(cwd, ("diff", "--no-ext-diff", revision_range)),
+                self.run_git(cwd, ("diff", "--no-ext-diff", revision_range)),
             ),
         )
         content, truncated = bounded_text("\n\n".join(sections), self.max_chars)
@@ -70,37 +70,40 @@ class GitSourceRuntimeAdapter:
             truncated=truncated,
         )
 
-    def _inspect_diff(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
+    def inspect_diff(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
         target = require_revision_range(ref)
         if target == "working-tree":
             sections = (
-                source_runtime_section("status", self._git(cwd, ("status", "--short"))),
+                source_runtime_section(
+                    "status",
+                    self.run_git(cwd, ("status", "--short")),
+                ),
                 source_runtime_section(
                     "unstaged stat",
-                    self._git(cwd, ("diff", "--stat")),
+                    self.run_git(cwd, ("diff", "--stat")),
                 ),
                 source_runtime_section(
                     "unstaged diff",
-                    self._git(cwd, ("diff", "--no-ext-diff")),
+                    self.run_git(cwd, ("diff", "--no-ext-diff")),
                 ),
                 source_runtime_section(
                     "staged stat",
-                    self._git(cwd, ("diff", "--cached", "--stat")),
+                    self.run_git(cwd, ("diff", "--cached", "--stat")),
                 ),
                 source_runtime_section(
                     "staged diff",
-                    self._git(cwd, ("diff", "--cached", "--no-ext-diff")),
+                    self.run_git(cwd, ("diff", "--cached", "--no-ext-diff")),
                 ),
             )
         else:
             sections = (
                 source_runtime_section(
                     "stat",
-                    self._git(cwd, ("diff", "--stat", target)),
+                    self.run_git(cwd, ("diff", "--stat", target)),
                 ),
                 source_runtime_section(
                     "diff",
-                    self._git(cwd, ("diff", "--no-ext-diff", target)),
+                    self.run_git(cwd, ("diff", "--no-ext-diff", target)),
                 ),
             )
         content, truncated = bounded_text("\n\n".join(sections), self.max_chars)
@@ -112,7 +115,7 @@ class GitSourceRuntimeAdapter:
             truncated=truncated,
         )
 
-    def _git(self, cwd: Path, args: tuple[str, ...]) -> str:
+    def run_git(self, cwd: Path, args: tuple[str, ...]) -> str:
         try:
             result = self.runner.run("git", args, cwd, self.timeout_seconds)
         except FileNotFoundError as error:

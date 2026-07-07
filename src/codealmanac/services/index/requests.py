@@ -21,4 +21,4 @@ class SearchIndexRequest(CodeAlmanacModel):
 
 class ReindexRequest(CodeAlmanacModel):
     cwd: Path
-    wiki: str | None = None
+    repository_name: str | None = None

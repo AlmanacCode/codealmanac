@@ -79,7 +79,7 @@ class ClaudeSdkClient:
         try:
             return asyncio.run(
                 asyncio.wait_for(
-                    self._run(request),
+                    self.run_once(request),
                     timeout=self.run_timeout_seconds,
                 )
             )
@@ -94,7 +94,7 @@ class ClaudeSdkClient:
         except ClaudeSDKError as error:
             return failed_result(str(error))
 
-    async def _run(self, request: RunHarnessRequest) -> HarnessRunResult:
+    async def run_once(self, request: RunHarnessRequest) -> HarnessRunResult:
         state = ClaudeRunState()
         events: list[HarnessEvent] = []
         announced_session_id: str | None = None
@@ -103,6 +103,7 @@ class ClaudeSdkClient:
             options=claude_options(
                 cwd=request.cwd,
                 command=self.command,
+                model=request.model,
             ),
         )
         async for message in stream:
@@ -118,10 +119,11 @@ class ClaudeSdkClient:
         return result_from_state(state, tuple(events))
 
 
-def claude_options(cwd: Path, command: str) -> ClaudeAgentOptions:
+def claude_options(cwd: Path, command: str, model: str) -> ClaudeAgentOptions:
     return ClaudeAgentOptions(
         cwd=cwd,
         cli_path=command,
+        model=model,
         tools=list(CLAUDE_ALLOWED_TOOLS),
         allowed_tools=list(CLAUDE_ALLOWED_TOOLS),
         mcp_servers={},

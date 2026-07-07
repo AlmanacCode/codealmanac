@@ -9,15 +9,14 @@ from codealmanac.services.harnesses.models import HarnessEvent, HarnessTranscrip
 from codealmanac.services.runs.models import (
     RunEventKind,
     RunId,
-    RunOperation,
+    RunKind,
     RunSpec,
     RunStatus,
 )
 
 
 class ListRunsRequest(CodeAlmanacModel):
-    cwd: Path
-    wiki: str | None = None
+    repository_name: str | None = None
     limit: int | None = None
 
     @field_validator("limit")
@@ -29,27 +28,23 @@ class ListRunsRequest(CodeAlmanacModel):
 
 
 class ShowRunRequest(CodeAlmanacModel):
-    cwd: Path
     run_id: RunId
-    wiki: str | None = None
+    repository_name: str | None = None
 
 
 class ReadRunLogRequest(CodeAlmanacModel):
-    cwd: Path
     run_id: RunId
-    wiki: str | None = None
+    repository_name: str | None = None
 
 
 class AttachRunRequest(CodeAlmanacModel):
-    cwd: Path
     run_id: RunId
-    wiki: str | None = None
+    repository_name: str | None = None
 
 
 class StreamRunAttachRequest(CodeAlmanacModel):
-    cwd: Path
     run_id: RunId
-    wiki: str | None = None
+    repository_name: str | None = None
     poll_interval_seconds: float = 0.5
 
     @field_validator("poll_interval_seconds")
@@ -61,39 +56,38 @@ class StreamRunAttachRequest(CodeAlmanacModel):
 
 
 class CancelRunRequest(CodeAlmanacModel):
-    cwd: Path
     run_id: RunId
-    wiki: str | None = None
+    repository_name: str | None = None
 
 
 class StartRunRequest(CodeAlmanacModel):
-    cwd: Path
-    operation: RunOperation
-    wiki: str | None = None
+    repository_id: str
+    kind: RunKind
     title: str | None = None
+
+    @field_validator("repository_id")
+    @classmethod
+    def require_repository_id(cls, value: str) -> str:
+        return required_text(value, "repository_id")
 
 
 class QueueRunRequest(CodeAlmanacModel):
-    cwd: Path
+    repository_id: str
     spec: RunSpec
-    wiki: str | None = None
     title: str | None = None
+
+    @field_validator("repository_id")
+    @classmethod
+    def require_repository_id(cls, value: str) -> str:
+        return required_text(value, "repository_id")
 
 
 class ReadRunSpecRequest(CodeAlmanacModel):
-    cwd: Path
     run_id: RunId
-    wiki: str | None = None
-
-
-class NextQueuedRunRequest(CodeAlmanacModel):
-    cwd: Path
-    wiki: str | None = None
+    repository_name: str | None = None
 
 
 class AcquireRunWorkerLockRequest(CodeAlmanacModel):
-    cwd: Path
-    wiki: str | None = None
     owner: str
     pid: int | None = None
     now: datetime | None = None
@@ -121,36 +115,27 @@ class AcquireRunWorkerLockRequest(CodeAlmanacModel):
 
 class SpawnRunWorkerRequest(CodeAlmanacModel):
     cwd: Path
-    wiki: str | None = None
 
 
 class RecordRunEventRequest(CodeAlmanacModel):
-    cwd: Path
     run_id: RunId
     kind: RunEventKind
     message: str
-    wiki: str | None = None
     harness_event: HarnessEvent | None = None
 
 
 class MarkRunRunningRequest(CodeAlmanacModel):
-    cwd: Path
     run_id: RunId
-    wiki: str | None = None
 
 
 class RecordRunHarnessTranscriptRequest(CodeAlmanacModel):
-    cwd: Path
     run_id: RunId
     transcript: HarnessTranscriptRef
-    wiki: str | None = None
 
 
 class FinishRunRequest(CodeAlmanacModel):
-    cwd: Path
     run_id: RunId
     status: RunStatus
-    wiki: str | None = None
     summary: str | None = None
     error: str | None = None
 

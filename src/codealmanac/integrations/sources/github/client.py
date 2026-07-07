@@ -33,12 +33,12 @@ class GitHubClient:
         ref: SourceRef,
     ) -> tuple[GitHubPullRequestPayload, str]:
         target_args = github_target_args(ref)
-        payload = self._gh_json(
+        payload = self.read_json(
             cwd,
             ("pr", "view", *target_args, "--json", PULL_REQUEST_FIELDS),
             GitHubPullRequestPayload,
         )
-        diff = self._gh_text(
+        diff = self.read_text(
             cwd,
             ("pr", "diff", *target_args, "--patch", "--color", "never"),
         )
@@ -46,24 +46,24 @@ class GitHubClient:
 
     def issue(self, cwd: Path, ref: SourceRef) -> GitHubIssuePayload:
         target_args = github_target_args(ref)
-        return self._gh_json(
+        return self.read_json(
             cwd,
             ("issue", "view", *target_args, "--json", ISSUE_FIELDS),
             GitHubIssuePayload,
         )
 
-    def _gh_json(
+    def read_json(
         self,
         cwd: Path,
         args: tuple[str, ...],
         model: type[GitHubPullRequestPayload] | type[GitHubIssuePayload],
     ) -> GitHubPullRequestPayload | GitHubIssuePayload:
         try:
-            return model.model_validate_json(self._gh_text(cwd, args))
+            return model.model_validate_json(self.read_text(cwd, args))
         except ValidationError:
             raise
 
-    def _gh_text(self, cwd: Path, args: tuple[str, ...]) -> str:
+    def read_text(self, cwd: Path, args: tuple[str, ...]) -> str:
         try:
             result = self.runner.run("gh", args, cwd, self.timeout_seconds)
         except FileNotFoundError as error:

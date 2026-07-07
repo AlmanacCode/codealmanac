@@ -11,7 +11,11 @@ class TaggingService:
 
     def tag(self, request: TagPageRequest) -> TaggingResult:
         page = self.pages.show(
-            ShowPageRequest(cwd=request.cwd, wiki=request.wiki, slug=request.slug)
+            ShowPageRequest(
+                cwd=request.cwd,
+                repository_name=request.repository_name,
+                slug=request.slug,
+            )
         )
         before = page.topics
         after = tuple(dict.fromkeys((*before, *request.topics)))
@@ -27,7 +31,11 @@ class TaggingService:
 
     def untag(self, request: UntagPageRequest) -> TaggingResult:
         page = self.pages.show(
-            ShowPageRequest(cwd=request.cwd, wiki=request.wiki, slug=request.slug)
+            ShowPageRequest(
+                cwd=request.cwd,
+                repository_name=request.repository_name,
+                slug=request.slug,
+            )
         )
         before = page.topics
         remove = set(request.topics)

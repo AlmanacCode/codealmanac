@@ -57,8 +57,7 @@ def test_codex_transcript_discovery_reads_metadata_and_skips_subagents(
     assert len(candidates) == 1
     assert candidates[0].app == TranscriptApp.CODEX
     assert candidates[0].session_id == "codex-1"
-    assert candidates[0].repo_root == repo
-    assert candidates[0].almanac_path == repo / "almanac"
+    assert candidates[0].cwd == repo
     assert candidates[0].transcript_path == transcript
 
 
@@ -91,12 +90,11 @@ def test_claude_transcript_discovery_reads_metadata_and_skips_subagents(
     assert len(candidates) == 1
     assert candidates[0].app == TranscriptApp.CLAUDE
     assert candidates[0].session_id == "claude-1"
-    assert candidates[0].repo_root == repo
-    assert candidates[0].almanac_path == repo / "almanac"
+    assert candidates[0].cwd == repo
     assert candidates[0].transcript_path == transcript
 
 
-def test_transcript_discovery_ignores_retired_alternate_roots(tmp_path: Path):
+def test_transcript_discovery_reads_cwd_without_root_filtering(tmp_path: Path):
     home = tmp_path / "home"
     repo = tmp_path / "repo"
     (repo / "docs/almanac").mkdir(parents=True)
@@ -116,4 +114,5 @@ def test_transcript_discovery_ignores_retired_alternate_roots(tmp_path: Path):
         DiscoverTranscriptsRequest(home=home, apps=(TranscriptApp.CODEX,))
     )
 
-    assert default_candidates == ()
+    assert len(default_candidates) == 1
+    assert default_candidates[0].cwd == repo

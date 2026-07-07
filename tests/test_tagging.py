@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from codealmanac.app import create_app
-from codealmanac.core.models import AppConfig
 from codealmanac.services.tagging.requests import TagPageRequest, UntagPageRequest
+from codealmanac.settings import AppConfig
 
 
 def test_tag_adds_topic_preserves_body_and_frontmatter_comment(
@@ -17,7 +17,7 @@ def test_tag_adds_topic_preserves_body_and_frontmatter_comment(
         encoding="utf-8",
     )
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     result = app.tagging.tag(
@@ -45,7 +45,7 @@ def test_untag_removes_topic_and_allows_orphan_page(
         encoding="utf-8",
     )
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     result = app.tagging.untag(
@@ -65,7 +65,7 @@ def test_tag_adds_frontmatter_when_page_has_none(
     page = repo / "almanac/note.md"
     page.write_text("# Note\n\nBody.\n", encoding="utf-8")
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     app.tagging.tag(TagPageRequest(cwd=repo, slug="note", topics=("concepts",)))
@@ -83,7 +83,7 @@ def test_tag_handles_frontmatter_closing_fence_at_eof(
     page = repo / "almanac/note.md"
     page.write_text("---\ntitle: Note\n---", encoding="utf-8")
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     app.tagging.tag(TagPageRequest(cwd=repo, slug="note", topics=("concepts",)))
@@ -106,7 +106,7 @@ def test_tag_preserves_crlf_frontmatter_and_body(
         encoding="utf-8",
     )
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     app.tagging.tag(TagPageRequest(cwd=repo, slug="auth-flow", topics=("sessions",)))

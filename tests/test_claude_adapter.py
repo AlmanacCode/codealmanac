@@ -165,6 +165,7 @@ def test_claude_adapter_wraps_sdk_run_with_git_change_detection(tmp_path: Path):
     adapter = ClaudeSdkHarnessAdapter(runner=runner, client=client)
     request = RunHarnessRequest(
         kind=HarnessKind.CLAUDE,
+        model="claude-sonnet-4-6",
         cwd=tmp_path,
         prompt="Update the wiki.",
         title="Ingest note",
@@ -352,6 +353,7 @@ def successful_result() -> ResultMessage:
 def run_request(tmp_path: Path) -> RunHarnessRequest:
     return RunHarnessRequest(
         kind=HarnessKind.CLAUDE,
+            model="claude-sonnet-4-6",
         cwd=tmp_path,
         prompt="Update the wiki.",
     )

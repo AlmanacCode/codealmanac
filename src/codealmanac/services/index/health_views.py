@@ -19,12 +19,12 @@ from codealmanac.services.index.models import HealthReport
 
 def build_health_report(
     connection: SQLiteConnection,
-    repo_root: Path,
+    repository_root: Path,
     registered_wikis: set[str],
 ) -> HealthReport:
     return HealthReport(
         orphans=orphan_pages(connection),
-        dead_refs=dead_file_refs(connection, repo_root),
+        dead_refs=dead_file_refs(connection, repository_root),
         broken_links=broken_page_links(connection),
         broken_xwiki=broken_cross_wiki_links(connection, registered_wikis),
         empty_topics=empty_topics(connection),

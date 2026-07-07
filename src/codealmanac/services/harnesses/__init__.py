@@ -1,1 +1,1 @@
-"""Normalized AI harness contracts for lifecycle workflows."""
+"""Normalized AI harness contracts for run workflows."""

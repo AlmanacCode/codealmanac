@@ -2,12 +2,14 @@ from codealmanac.core.errors import NotFoundError
 from codealmanac.core.slug import to_kebab_case
 from codealmanac.services.index.models import TopicDetail, TopicSummary
 from codealmanac.services.index.service import IndexService
+from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.topics.models import (
     TopicEdgeMutationResult,
     TopicMutationResult,
     TopicRewriteMutationResult,
 )
 from codealmanac.services.topics.mutations import TopicMutationExecutor
+from codealmanac.services.topics.repository import resolve_topic_repository
 from codealmanac.services.topics.requests import (
     CreateTopicRequest,
     DeleteTopicRequest,
@@ -18,33 +20,31 @@ from codealmanac.services.topics.requests import (
     ShowTopicRequest,
     UnlinkTopicRequest,
 )
-from codealmanac.services.topics.workspace import resolve_topic_workspace
-from codealmanac.services.workspaces.service import WorkspacesService
 
 
 class TopicsService:
-    def __init__(self, workspaces: WorkspacesService, index: IndexService):
-        self.workspaces = workspaces
+    def __init__(self, repositories: RepositoriesService, index: IndexService):
+        self.repositories = repositories
         self.index = index
-        self.mutations = TopicMutationExecutor(workspaces, index)
+        self.mutations = TopicMutationExecutor(repositories, index)
 
     def list(self, request: ListTopicsRequest) -> tuple[TopicSummary, ...]:
-        workspace = resolve_topic_workspace(
-            self.workspaces,
+        repository = resolve_topic_repository(
+            self.repositories,
             request.cwd,
-            request.wiki,
+            request.repository_name,
         )
-        return self.index.list_topics(workspace.workspace_id)
+        return self.index.list_topics(repository.repository_id)
 
     def show(self, request: ShowTopicRequest) -> TopicDetail:
-        workspace = resolve_topic_workspace(
-            self.workspaces,
+        repository = resolve_topic_repository(
+            self.repositories,
             request.cwd,
-            request.wiki,
+            request.repository_name,
         )
         slug = to_kebab_case(request.slug)
         topic = self.index.get_topic(
-            workspace.workspace_id,
+            repository.repository_id,
             slug,
             request.include_descendants,
         )

@@ -6,15 +6,14 @@ from ruamel.yaml import YAML
 
 from codealmanac.app import create_app
 from codealmanac.cli.main import build_parser
-from codealmanac.core.models import AppConfig
-from codealmanac.services.runs.models import RunOperation
+from codealmanac.services.repositories.roots import (
+    DEFAULT_ALMANAC_ROOT,
+    require_default_almanac_root,
+)
+from codealmanac.services.runs.models import RunKind
 from codealmanac.services.sources.models import SourceKind
 from codealmanac.services.sources.requests import ResolveSourcesRequest
-from codealmanac.services.workspaces.roots import (
-    CONVENTIONAL_ALMANAC_ROOTS,
-    DEFAULT_ALMANAC_ROOT,
-    normalize_almanac_root,
-)
+from codealmanac.settings import AppConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = PROJECT_ROOT / "src/codealmanac"
@@ -41,7 +40,7 @@ README_REQUIRED_FRAGMENTS = (
     "uv tool install codealmanac",
     "codealmanac setup --yes",
     "codealmanac setup --yes --no-auto-update",
-    "codealmanac setup --yes --sync-every 5h --sync-quiet 45m",
+    "codealmanac setup --yes --sync-every 5h",
     "codealmanac setup --yes --sync-off",
     "codealmanac init",
     'codealmanac search "getting"',
@@ -160,7 +159,7 @@ def test_python_package_metadata_declares_readme_and_license():
 def test_default_user_state_paths_are_product_specific(isolated_home: Path):
     config = AppConfig()
 
-    assert config.registry_path == isolated_home / ".codealmanac/registry.json"
+    assert config.database_path == isolated_home / ".codealmanac/codealmanac.db"
     assert config.config_path == isolated_home / ".codealmanac/config.toml"
 
 
@@ -176,14 +175,13 @@ def test_readme_documents_python_local_public_surface():
 
 def test_almanac_root_is_not_configurable():
     assert Path("almanac") == DEFAULT_ALMANAC_ROOT
-    assert (Path("almanac"),) == CONVENTIONAL_ALMANAC_ROOTS
-    assert normalize_almanac_root(None) == Path("almanac")
+    assert require_default_almanac_root(None) == Path("almanac")
 
     with pytest.raises(ValueError, match="fixed at almanac"):
-        normalize_almanac_root(Path("docs/almanac"))
+        require_default_almanac_root(Path("docs/almanac"))
 
     with pytest.raises(ValueError, match="fixed at almanac"):
-        normalize_almanac_root(Path(".almanac"))
+        require_default_almanac_root(Path(".almanac"))
 
 
 def test_init_does_not_accept_root_flag(capsys):
@@ -206,8 +204,8 @@ def test_build_is_not_a_public_command(capsys):
     assert "invalid choice: 'build'" in output.err
 
 
-def test_internal_run_operations_are_only_build_ingest_and_garden():
-    assert tuple(operation.value for operation in RunOperation) == (
+def test_internal_run_kinds_are_only_build_ingest_and_garden():
+    assert tuple(kind.value for kind in RunKind) == (
         "build",
         "ingest",
         "garden",
@@ -389,8 +387,8 @@ def test_github_workflows_are_parseable_python_workflows():
 def test_package_build_artifacts_are_ignored():
     gitignore = (PROJECT_ROOT / ".gitignore").read_text(encoding="utf-8")
 
-    assert "\ndist/\n" in gitignore
-    assert "\nbuild/\n" in gitignore
+    assert "\n/dist/\n" in gitignore
+    assert "\n/build/\n" in gitignore
 
 
 @pytest.mark.parametrize("command", FORBIDDEN_TOP_LEVEL_COMMANDS)

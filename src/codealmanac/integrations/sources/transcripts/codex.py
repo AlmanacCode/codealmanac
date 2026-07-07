@@ -36,7 +36,6 @@ class CodexTranscriptDiscoveryAdapter:
                 path,
                 meta.session_id,
                 meta.cwd,
-                request.almanac_roots,
             )
             if candidate is not None:
                 candidates.append(candidate)

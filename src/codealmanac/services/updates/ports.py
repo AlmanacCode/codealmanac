@@ -13,5 +13,4 @@ class PackageInstallMetadataProvider(Protocol):
 
 class PackageCommandRunner(Protocol):
     def run(self, command: tuple[str, ...]) -> PackageCommandResult:
-        """Run a foreground package-manager command."""
-
+        """Run a package-manager command."""

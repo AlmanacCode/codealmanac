@@ -6,21 +6,21 @@ from pydantic import ValidationError
 from pydantic_settings import TomlConfigSettingsSource
 
 from codealmanac.core.errors import ValidationFailed
-from codealmanac.services.config.models import CodeAlmanacConfig
+from codealmanac.services.config.models import UserConfig
 
 
 class ConfigStore:
-    def load(self, paths: tuple[Path, ...]) -> CodeAlmanacConfig:
+    def load(self, paths: tuple[Path, ...]) -> UserConfig:
         try:
             sources = tuple(
                 TomlConfigSettingsSource(
-                    CodeAlmanacConfig,
+                    UserConfig,
                     toml_file=path,
                     deep_merge=True,
                 )
                 for path in paths
             )
-            return CodeAlmanacConfig(_build_sources=(sources, {}))
+            return UserConfig(_build_sources=(sources, {}))
         except TOMLDecodeError as error:
             raise ValidationFailed(f"invalid config TOML: {error}") from error
         except ValidationError as error:

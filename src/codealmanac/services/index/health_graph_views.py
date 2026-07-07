@@ -28,7 +28,7 @@ def orphan_pages(connection: SQLiteConnection) -> tuple[OrphanPage, ...]:
 
 def dead_file_refs(
     connection: SQLiteConnection,
-    repo_root: Path,
+    repository_root: Path,
 ) -> tuple[DeadFileReference, ...]:
     rows = connection.execute(
         """
@@ -40,7 +40,7 @@ def dead_file_refs(
     ).fetchall()
     findings: list[DeadFileReference] = []
     for row in rows:
-        path = repo_root / row["original_path"]
+        path = repository_root / row["original_path"]
         exists = path.is_dir() if row["is_dir"] else path.is_file()
         if not exists:
             findings.append(

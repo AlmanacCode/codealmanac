@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import StrEnum
-from pathlib import Path
 from typing import Annotated
 
 from pydantic import StringConstraints, field_validator, model_validator
@@ -20,7 +19,7 @@ RunId = Annotated[
 ]
 
 
-class RunOperation(StrEnum):
+class RunKind(StrEnum):
     BUILD = "build"
     INGEST = "ingest"
     GARDEN = "garden"
@@ -50,8 +49,8 @@ class PageChangeSet(CodeAlmanacModel):
 
 class RunRecord(CodeAlmanacModel):
     run_id: RunId
-    workspace_id: str
-    operation: RunOperation
+    repository_id: str
+    kind: RunKind
     status: RunStatus
     title: str | None
     summary: str | None = None
@@ -60,14 +59,13 @@ class RunRecord(CodeAlmanacModel):
     updated_at: datetime
     started_at: datetime | None = None
     finished_at: datetime | None = None
-    log_path: Path
     page_changes: PageChangeSet | None = None
     harness_transcript: HarnessTranscriptRef | None = None
 
-    @field_validator("workspace_id")
+    @field_validator("repository_id")
     @classmethod
-    def require_workspace_id(cls, value: str) -> str:
-        return required_text(value, "workspace_id")
+    def require_repository_id(cls, value: str) -> str:
+        return required_text(value, "repository_id")
 
 
 class RunLogEvent(CodeAlmanacModel):
@@ -115,10 +113,9 @@ class RunAttachUpdate(CodeAlmanacModel):
 
 class RunSpec(CodeAlmanacModel):
     version: int = 1
-    operation: RunOperation
-    cwd: Path
+    kind: RunKind
     harness: HarnessKind
-    wiki: str | None = None
+    model: str
     inputs: tuple[str, ...] = ()
     title: str | None = None
     guidance: str | None = None
@@ -131,7 +128,7 @@ class RunSpec(CodeAlmanacModel):
             required_text(item, "run spec input")
         return value
 
-    @field_validator("title", "guidance")
+    @field_validator("model", "title", "guidance")
     @classmethod
     def require_optional_text(cls, value: str | None) -> str | None:
         if value is None:
@@ -139,18 +136,18 @@ class RunSpec(CodeAlmanacModel):
         return required_text(value, "run spec text")
 
     @model_validator(mode="after")
-    def validate_operation_payload(self) -> "RunSpec":
+    def validate_kind_payload(self) -> "RunSpec":
         if self.version != 1:
             raise ValueError("run spec version must be 1")
-        if self.operation == RunOperation.INGEST:
+        if self.kind == RunKind.INGEST:
             if len(self.inputs) == 0:
                 raise ValueError("ingest run spec requires inputs")
             return self
-        if self.operation == RunOperation.GARDEN:
+        if self.kind == RunKind.GARDEN:
             if len(self.inputs) > 0:
                 raise ValueError("garden run spec does not accept inputs")
             return self
-        raise ValueError(f"unsupported queued run operation: {self.operation.value}")
+        raise ValueError(f"unsupported queued run kind: {self.kind.value}")
 
 
 class QueuedRun(CodeAlmanacModel):

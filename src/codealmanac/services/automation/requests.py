@@ -13,15 +13,13 @@ class AutomationSelectionRequest(CodeAlmanacModel):
 
 
 class InstallAutomationRequest(AutomationSelectionRequest):
-    cwd: Path
     every: timedelta | None = None
-    quiet: timedelta | None = None
     garden_every: timedelta | None = None
     garden_off: bool = False
     env_path: str | None = None
     python_executable: Path | None = None
 
-    @field_validator("every", "quiet", "garden_every")
+    @field_validator("every", "garden_every")
     @classmethod
     def non_negative_duration(
         cls,

@@ -59,9 +59,10 @@ makes that structure necessary.
 Runtime state is local and rebuildable:
 
 ```text
+~/.codealmanac/codealmanac.db
 ~/.codealmanac/repos/<repo-id>/index.db
-~/.codealmanac/repos/<repo-id>/runs/
 ```
 
-Runtime files contain foreground run logs, queued background specs, worker
-locks, and sync ledger state. They are not wiki source.
+The local database records repositories, runs, run events, worker locks, and
+sync state. Per-repository runtime files contain derived indexes. They are not
+wiki source.

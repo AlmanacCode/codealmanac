@@ -9,11 +9,12 @@ from codealmanac.services.harnesses.models import HarnessKind
 
 class RunHarnessRequest(CodeAlmanacModel):
     kind: HarnessKind
+    model: str
     cwd: Path
     prompt: str
     title: str | None = None
 
-    @field_validator("prompt")
+    @field_validator("model", "prompt")
     @classmethod
-    def require_prompt(cls, value: str) -> str:
-        return required_text(value, "harness prompt")
+    def require_text(cls, value: str) -> str:
+        return required_text(value, "harness request text")

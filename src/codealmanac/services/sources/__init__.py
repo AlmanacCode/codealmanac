@@ -1,1 +1,1 @@
-"""Source input contracts for lifecycle workflows."""
+"""Source input contracts for run workflows."""

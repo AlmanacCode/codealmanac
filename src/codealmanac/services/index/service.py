@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from codealmanac.services.index.models import (
     HealthReport,
     IndexRefreshResult,
@@ -9,47 +11,45 @@ from codealmanac.services.index.models import (
 )
 from codealmanac.services.index.requests import ReindexRequest, SearchIndexRequest
 from codealmanac.services.index.store import IndexStore
-from codealmanac.services.workspaces.requests import SelectWorkspaceRequest
-from codealmanac.services.workspaces.runtime import WorkspaceRuntimePaths
-from codealmanac.services.workspaces.service import WorkspacesService
+from codealmanac.services.repositories.models import Repository
+from codealmanac.services.repositories.service import RepositoriesService
+from codealmanac.settings import LocalStatePaths
 
 
 class IndexService:
     def __init__(
         self,
-        workspaces: WorkspacesService,
+        repositories: RepositoriesService,
         store: IndexStore,
-        runtime_paths: WorkspaceRuntimePaths,
+        local_state: LocalStatePaths,
     ):
-        self.workspaces = workspaces
+        self.repositories = repositories
         self.store = store
-        self.runtime_paths = runtime_paths
+        self.local_state = local_state
 
-    def ensure_fresh(self, workspace_id: str) -> IndexRefreshResult:
-        workspace = self.workspaces.get(workspace_id)
+    def ensure_fresh(self, repository_id: str) -> IndexRefreshResult:
+        repository = self.repositories.get(repository_id)
         return self.store.refresh(
-            workspace.almanac_path,
-            self.runtime_paths.repo_dir(workspace),
+            repository.almanac_path,
+            self.runtime_path(repository),
         )
 
     def reindex(self, request: ReindexRequest) -> IndexRefreshResult:
-        if request.wiki is None:
-            workspace = self.workspaces.resolve(request.cwd)
-        else:
-            workspace = self.workspaces.select(
-                SelectWorkspaceRequest(selector=request.wiki, base_path=request.cwd)
-            )
+        repository = self.repositories.select_for_read(
+            request.cwd,
+            request.repository_name,
+        )
         return self.store.rebuild(
-            workspace.almanac_path,
-            self.runtime_paths.repo_dir(workspace),
+            repository.almanac_path,
+            self.runtime_path(repository),
         )
 
-    def summary(self, workspace_id: str) -> IndexSummary:
-        workspace = self.workspaces.get(workspace_id)
-        refresh = self.ensure_fresh(workspace_id)
+    def summary(self, repository_id: str) -> IndexSummary:
+        repository = self.repositories.get(repository_id)
+        refresh = self.refresh(repository)
         counts = self.store.counts(
-            workspace.almanac_path,
-            self.runtime_paths.repo_dir(workspace),
+            repository.almanac_path,
+            self.runtime_path(repository),
         )
         return IndexSummary(
             pages=counts.pages,
@@ -60,56 +60,65 @@ class IndexService:
 
     def search(
         self,
-        workspace_id: str,
+        repository_id: str,
         request: SearchIndexRequest,
     ) -> tuple[SearchPageResult, ...]:
-        self.ensure_fresh(workspace_id)
-        workspace = self.workspaces.get(workspace_id)
+        repository = self.repositories.get(repository_id)
+        self.refresh(repository)
         return self.store.search(
-            workspace.almanac_path,
-            self.runtime_paths.repo_dir(workspace),
+            repository.almanac_path,
+            self.runtime_path(repository),
             request,
         )
 
-    def get_page(self, workspace_id: str, slug: str) -> PageView | None:
-        self.ensure_fresh(workspace_id)
-        workspace = self.workspaces.get(workspace_id)
+    def get_page(self, repository_id: str, slug: str) -> PageView | None:
+        repository = self.repositories.get(repository_id)
+        self.refresh(repository)
         return self.store.get_page(
-            workspace.almanac_path,
-            self.runtime_paths.repo_dir(workspace),
+            repository.almanac_path,
+            self.runtime_path(repository),
             slug,
         )
 
-    def list_topics(self, workspace_id: str) -> tuple[TopicSummary, ...]:
-        self.ensure_fresh(workspace_id)
-        workspace = self.workspaces.get(workspace_id)
+    def list_topics(self, repository_id: str) -> tuple[TopicSummary, ...]:
+        repository = self.repositories.get(repository_id)
+        self.refresh(repository)
         return self.store.list_topics(
-            workspace.almanac_path,
-            self.runtime_paths.repo_dir(workspace),
+            repository.almanac_path,
+            self.runtime_path(repository),
         )
 
     def get_topic(
         self,
-        workspace_id: str,
+        repository_id: str,
         slug: str,
         include_descendants: bool,
     ) -> TopicDetail | None:
-        self.ensure_fresh(workspace_id)
-        workspace = self.workspaces.get(workspace_id)
+        repository = self.repositories.get(repository_id)
+        self.refresh(repository)
         return self.store.get_topic(
-            workspace.almanac_path,
-            self.runtime_paths.repo_dir(workspace),
+            repository.almanac_path,
+            self.runtime_path(repository),
             slug,
             include_descendants,
         )
 
-    def health_report(self, workspace_id: str) -> HealthReport:
-        self.ensure_fresh(workspace_id)
-        workspace = self.workspaces.get(workspace_id)
-        registered_wikis = {workspace.name for workspace in self.workspaces.list()}
+    def health_report(self, repository_id: str) -> HealthReport:
+        repository = self.repositories.get(repository_id)
+        self.refresh(repository)
+        registered_wikis = {repository.name for repository in self.repositories.list()}
         return self.store.health_report(
-            workspace.almanac_path,
-            self.runtime_paths.repo_dir(workspace),
-            workspace.root_path,
+            repository.almanac_path,
+            self.runtime_path(repository),
+            repository.root_path,
             registered_wikis,
         )
+
+    def refresh(self, repository: Repository) -> IndexRefreshResult:
+        return self.store.refresh(
+            repository.almanac_path,
+            self.runtime_path(repository),
+        )
+
+    def runtime_path(self, repository: Repository) -> Path:
+        return self.local_state.repository_dir(repository.repository_id)

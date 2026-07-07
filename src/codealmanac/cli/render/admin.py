@@ -3,7 +3,11 @@ from codealmanac.cli.render.automation import (
     render_automation_status,
     render_automation_uninstall,
 )
-from codealmanac.cli.render.config import render_config_set
+from codealmanac.cli.render.config import (
+    render_config_entry,
+    render_config_set,
+    render_config_values,
+)
 from codealmanac.cli.render.diagnostics import render_doctor
 from codealmanac.cli.render.job_logs import (
     render_run_attach,
@@ -23,6 +27,8 @@ __all__ = [
     "render_automation_status",
     "render_automation_uninstall",
     "render_config_set",
+    "render_config_entry",
+    "render_config_values",
     "render_doctor",
     "render_run",
     "render_run_attach",

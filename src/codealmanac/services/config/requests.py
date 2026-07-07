@@ -9,17 +9,17 @@ from codealmanac.services.config.models import ConfigKey
 
 class LoadConfigRequest(CodeAlmanacModel):
     cwd: Path
-    wiki: str | None = Field(
+    repository_name: str | None = Field(
         default=None,
-        description="None means use the nearest project config.",
+        description="None means use config for the current repository root.",
     )
 
-    @field_validator("wiki")
+    @field_validator("repository_name")
     @classmethod
-    def require_wiki(cls, value: str | None) -> str | None:
+    def require_repository_name(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        return required_text(value, "wiki selector")
+        return required_text(value, "repository name")
 
 
 class SetConfigValueRequest(CodeAlmanacModel):
@@ -30,3 +30,7 @@ class SetConfigValueRequest(CodeAlmanacModel):
     @classmethod
     def require_value(cls, value: str) -> str:
         return required_text(value, "config value")
+
+
+class GetConfigValueRequest(CodeAlmanacModel):
+    key: ConfigKey

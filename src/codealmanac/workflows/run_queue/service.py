@@ -1,183 +1,148 @@
 from pathlib import Path
 
+from codealmanac.core.errors import error_summary
+from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.runs.models import (
-    QueuedRun,
-    RunOperation,
+    RunKind,
     RunQueueDrainResult,
     RunRecord,
-    RunSpec,
-    RunStatus,
+    RunWorkerSpawnResult,
 )
 from codealmanac.services.runs.ports import RunWorkerSpawner
 from codealmanac.services.runs.requests import (
-    AcquireRunWorkerLockRequest,
-    FinishRunRequest,
-    NextQueuedRunRequest,
     QueueRunRequest,
     SpawnRunWorkerRequest,
 )
 from codealmanac.services.runs.service import RunsService
 from codealmanac.workflows.garden.requests import (
-    RunGardenRequest,
-    RunGardenWithRunRequest,
+    GardenRequest,
 )
 from codealmanac.workflows.garden.service import GardenWorkflow
 from codealmanac.workflows.ingest.requests import (
-    RunIngestRequest,
-    RunIngestWithRunRequest,
+    IngestRequest,
 )
 from codealmanac.workflows.ingest.service import IngestWorkflow
-from codealmanac.workflows.run_queue.models import RunQueueStartResult
-from codealmanac.workflows.run_queue.requests import DrainRunQueueRequest
+from codealmanac.workflows.run_queue.models import (
+    RunQueueStartResult,
+    ScheduledGardenResult,
+)
+from codealmanac.workflows.run_queue.requests import (
+    DrainRunQueueRequest,
+    ScheduledGardenRequest,
+)
+from codealmanac.workflows.run_queue.specs import (
+    garden_run_spec,
+    garden_run_title,
+    ingest_run_spec,
+    ingest_run_title,
+)
+from codealmanac.workflows.run_queue.worker import RunQueueWorker
 
 
-class RunQueueWorkflow:
+class RunQueue:
     def __init__(
         self,
+        repositories: RepositoriesService,
         runs: RunsService,
         ingest: IngestWorkflow,
         garden: GardenWorkflow,
         spawner: RunWorkerSpawner,
     ):
+        self.repositories = repositories
         self.runs = runs
         self.ingest = ingest
         self.garden = garden
         self.spawner = spawner
+        self.worker = RunQueueWorker(runs, ingest, garden)
 
-    def queue_ingest(self, request: RunIngestRequest) -> RunRecord:
+    def queue_ingest(self, request: IngestRequest) -> RunRecord:
+        repository = self.repositories.select_for_operation(
+            request.cwd,
+            request.repository_name,
+        )
         return self.runs.queue(
             QueueRunRequest(
-                cwd=request.cwd,
-                wiki=request.wiki,
-                title=request.title or default_ingest_title(request.inputs),
-                spec=RunSpec(
-                    operation=RunOperation.INGEST,
-                    cwd=request.cwd,
-                    wiki=request.wiki,
-                    harness=request.harness,
-                    inputs=request.inputs,
-                    title=request.title,
-                    guidance=request.guidance,
-                    auto_commit=request.auto_commit,
-                ),
+                repository_id=repository.repository_id,
+                title=ingest_run_title(request),
+                spec=ingest_run_spec(request),
             )
         )
 
-    def start_ingest_background(self, request: RunIngestRequest) -> RunQueueStartResult:
+    def start_ingest(self, request: IngestRequest) -> RunQueueStartResult:
         run = self.queue_ingest(request)
-        worker = self.spawn_worker(request.cwd, request.wiki)
-        return RunQueueStartResult(run=run, worker=worker)
+        worker = self.spawn_worker(request.cwd)
+        return self.start_result(run, worker)
 
-    def queue_garden(self, request: RunGardenRequest) -> RunRecord:
+    def queue_garden(self, request: GardenRequest) -> RunRecord:
+        repository = self.repositories.select_for_operation(
+            request.cwd,
+            request.repository_name,
+        )
         return self.runs.queue(
             QueueRunRequest(
-                cwd=request.cwd,
-                wiki=request.wiki,
-                title=request.title or "Garden wiki",
-                spec=RunSpec(
-                    operation=RunOperation.GARDEN,
-                    cwd=request.cwd,
-                    wiki=request.wiki,
-                    harness=request.harness,
-                    title=request.title,
-                    guidance=request.guidance,
-                    auto_commit=request.auto_commit,
-                ),
+                repository_id=repository.repository_id,
+                title=garden_run_title(request),
+                spec=garden_run_spec(request),
             )
         )
 
-    def start_garden_background(self, request: RunGardenRequest) -> RunQueueStartResult:
+    def start_garden(self, request: GardenRequest) -> RunQueueStartResult:
         run = self.queue_garden(request)
-        worker = self.spawn_worker(request.cwd, request.wiki)
-        return RunQueueStartResult(run=run, worker=worker)
+        worker = self.spawn_worker(request.cwd)
+        return self.start_result(run, worker)
 
-    def spawn_worker(self, cwd: Path, wiki: str | None):
-        return self.spawner.spawn(SpawnRunWorkerRequest(cwd=cwd, wiki=wiki))
+    def start_scheduled_garden(
+        self,
+        request: ScheduledGardenRequest,
+    ) -> ScheduledGardenResult:
+        runs: list[RunRecord] = []
+        skipped = []
+        worker_cwd = None
+        for repository in self.repositories.list():
+            if self.runs.has_active_run(repository.repository_id, RunKind.GARDEN):
+                skipped.append(repository)
+                continue
+            run = self.queue_garden(
+                GardenRequest(
+                    cwd=repository.root_path,
+                    repository_name=repository.name,
+                    harness=request.harness,
+                    model=request.model,
+                    auto_commit=request.auto_commit,
+                )
+            )
+            runs.append(run)
+            worker_cwd = worker_cwd or repository.root_path
+        if worker_cwd is None:
+            return ScheduledGardenResult(runs=tuple(runs), skipped=tuple(skipped))
+        try:
+            worker = self.spawn_worker(worker_cwd)
+        except Exception as error:
+            return ScheduledGardenResult(
+                runs=tuple(runs),
+                skipped=tuple(skipped),
+                worker_error=error_summary(error),
+            )
+        return ScheduledGardenResult(
+            runs=tuple(runs),
+            skipped=tuple(skipped),
+            worker=worker,
+        )
+
+    def spawn_worker(self, cwd: Path) -> RunWorkerSpawnResult:
+        return self.spawner.spawn(SpawnRunWorkerRequest(cwd=cwd))
+
+    def start_result(
+        self,
+        run: RunRecord,
+        worker: RunWorkerSpawnResult,
+    ) -> RunQueueStartResult:
+        return RunQueueStartResult(
+            run=run,
+            repository=self.runs.repository_for(run),
+            runs_ahead=self.runs.queued_before(run),
+            worker=worker,
+        )
 
     def drain(self, request: DrainRunQueueRequest) -> RunQueueDrainResult:
-        lease = self.runs.acquire_worker_lock(
-            AcquireRunWorkerLockRequest(
-                cwd=request.cwd,
-                wiki=request.wiki,
-                owner=request.owner,
-                pid=request.pid,
-                now=request.now,
-                stale_after=request.stale_after,
-            )
-        )
-        if lease is None:
-            return RunQueueDrainResult(lock_acquired=False)
-        processed: list[RunRecord] = []
-        try:
-            while request.max_runs is None or len(processed) < request.max_runs:
-                queued = self.runs.next_queued(
-                    NextQueuedRunRequest(cwd=request.cwd, wiki=request.wiki)
-                )
-                if queued is None:
-                    break
-                processed.append(self.run_one(queued, request))
-            return RunQueueDrainResult(
-                lock_acquired=True,
-                processed=tuple(processed),
-            )
-        finally:
-            lease.release()
-
-    def run_one(
-        self,
-        queued: QueuedRun,
-        request: DrainRunQueueRequest,
-    ) -> RunRecord:
-        spec = queued.spec
-        if spec is None:
-            return self.runs.finish(
-                FinishRunRequest(
-                    cwd=request.cwd,
-                    wiki=request.wiki,
-                    run_id=queued.record.run_id,
-                    status=RunStatus.FAILED,
-                    error="queued run is missing its durable spec",
-                )
-            )
-        if spec.operation == RunOperation.INGEST:
-            result = self.ingest.run_with_run(
-                RunIngestWithRunRequest(
-                    cwd=spec.cwd,
-                    wiki=spec.wiki,
-                    inputs=spec.inputs,
-                    harness=spec.harness,
-                    title=spec.title,
-                    guidance=spec.guidance,
-                    auto_commit=spec.auto_commit,
-                    run_id=queued.record.run_id,
-                )
-            )
-            return result.run
-        if spec.operation == RunOperation.GARDEN:
-            result = self.garden.run_with_run(
-                RunGardenWithRunRequest(
-                    cwd=spec.cwd,
-                    wiki=spec.wiki,
-                    harness=spec.harness,
-                    title=spec.title,
-                    guidance=spec.guidance,
-                    auto_commit=spec.auto_commit,
-                    run_id=queued.record.run_id,
-                )
-            )
-            return result.run
-        return self.runs.finish(
-            FinishRunRequest(
-                cwd=request.cwd,
-                wiki=request.wiki,
-                run_id=queued.record.run_id,
-                status=RunStatus.FAILED,
-                error=f"unsupported queued run operation: {spec.operation.value}",
-            )
-        )
-
-
-def default_ingest_title(inputs: tuple[str, ...]) -> str:
-    if len(inputs) == 1:
-        return f"Ingest {inputs[0]}"
-    return f"Ingest {len(inputs)} sources"
+        return self.worker.drain(request)

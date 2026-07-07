@@ -7,7 +7,7 @@ from codealmanac.core.models import CodeAlmanacModel
 
 class SearchPagesRequest(CodeAlmanacModel):
     cwd: Path
-    wiki: str | None = None
+    repository_name: str | None = None
     query: str | None = None
     topics: tuple[str, ...] = ()
     mentions: str | None = None

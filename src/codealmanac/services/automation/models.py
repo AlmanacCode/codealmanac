@@ -14,11 +14,6 @@ class AutomationTask(StrEnum):
     UPDATE = "update"
 
 
-class AutomationWorkingDirectory(StrEnum):
-    NONE = "none"
-    CURRENT_WIKI = "current_wiki"
-
-
 class EnvironmentVariable(CodeAlmanacModel):
     name: str
     value: str
@@ -38,7 +33,6 @@ class ScheduledJob(CodeAlmanacModel):
     environment: tuple[EnvironmentVariable, ...]
     stdout_path: Path
     stderr_path: Path
-    working_directory: Path | None = None
 
     @field_validator("label")
     @classmethod
@@ -67,7 +61,6 @@ class ScheduledJobStatus(CodeAlmanacModel):
     installed: bool
     loaded: bool
     interval: timedelta | None = None
-    quiet: timedelta | None = None
 
 
 class AutomationInstallResult(CodeAlmanacModel):

@@ -30,7 +30,7 @@ Start with these pages:
 - [Local-First Python](decisions/local-first-python) for the fork-point and product contract.
 - [Wiki Tree](architecture/wiki-tree) for page identity, folder layout, and root detection.
 - [Indexing](architecture/indexing) for the derived SQLite read model.
-- [Lifecycle Runs](architecture/lifecycle-runs) for ingest, garden, harness execution, and run records.
+- [Runs](architecture/runs) for build, ingest, garden, harness execution, and run records.
 - [Providers](architecture/providers) for Codex and Claude harness boundaries.
 - [Prompt Intelligence](decisions/prompt-intelligence) for the no-pipeline rule.
 - [Source Provenance](decisions/source-provenance) for `sources:` and file evidence.

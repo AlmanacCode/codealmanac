@@ -27,7 +27,7 @@ class JsonRpcLineProcess:
         self.messages: queue.Queue[JsonObject | ProcessStreamClosed] = queue.Queue()
         self.stderr_chunks: list[str] = []
         self._next_request_id = 1
-        self._start_reader_threads()
+        self.start_reader_threads()
 
     @classmethod
     def start(
@@ -103,11 +103,11 @@ class JsonRpcLineProcess:
             return first_stderr
         return f"codex app-server exited {self.child.returncode or 1}"
 
-    def _start_reader_threads(self) -> None:
-        threading.Thread(target=self._read_stdout, daemon=True).start()
-        threading.Thread(target=self._read_stderr, daemon=True).start()
+    def start_reader_threads(self) -> None:
+        threading.Thread(target=self.read_stdout, daemon=True).start()
+        threading.Thread(target=self.read_stderr, daemon=True).start()
 
-    def _read_stdout(self) -> None:
+    def read_stdout(self) -> None:
         try:
             if self.child.stdout is None:
                 return
@@ -118,7 +118,7 @@ class JsonRpcLineProcess:
         finally:
             self.messages.put(ProcessStreamClosed())
 
-    def _read_stderr(self) -> None:
+    def read_stderr(self) -> None:
         if self.child.stderr is None:
             return
         for chunk in self.child.stderr:

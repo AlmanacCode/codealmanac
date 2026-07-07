@@ -43,23 +43,23 @@ class GitHubSourceRuntimeAdapter:
 
     def inspect(self, request: InspectSourceRuntimeRequest) -> SourceRuntime:
         if request.ref.kind == SourceKind.GITHUB_PULL_REQUEST:
-            return self._inspect_pull_request(request.cwd, request.ref)
+            return self.inspect_pull_request(request.cwd, request.ref)
         if request.ref.kind == SourceKind.GITHUB_ISSUE:
-            return self._inspect_issue(request.cwd, request.ref)
+            return self.inspect_issue(request.cwd, request.ref)
         return SourceRuntime(
             ref=request.ref,
             status=SourceRuntimeStatus.SKIPPED,
             title=f"Unsupported GitHub source {request.ref.identity}",
         )
 
-    def _inspect_pull_request(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
+    def inspect_pull_request(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
         try:
             payload, diff = self.client.pull_request(cwd, ref)
         except (ExecutionFailed, ValidationError, json.JSONDecodeError) as error:
             return unavailable_runtime(ref, "GitHub pull request unavailable", error)
         return render_pull_request_runtime(ref, payload, diff, self.max_chars)
 
-    def _inspect_issue(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
+    def inspect_issue(self, cwd: Path, ref: SourceRef) -> SourceRuntime:
         try:
             payload = self.client.issue(cwd, ref)
         except (ExecutionFailed, ValidationError, json.JSONDecodeError) as error:

@@ -44,11 +44,11 @@ def render_runs(records: tuple[RunRecord, ...], json_output: bool) -> None:
         print("# 0 jobs", file=sys.stderr)
         return
     lines = table(
-        ("ID", "OPERATION", "STATUS", "ELAPSED", "TITLE"),
+        ("ID", "KIND", "STATUS", "ELAPSED", "TITLE"),
         [
             (
                 f"{style.BLUE}{record.run_id}{style.RST}",
-                record.operation.value,
+                record.kind.value,
                 status_label(record.status),
                 elapsed_label(record),
                 record.title or "",
@@ -67,7 +67,7 @@ def render_run(record: RunRecord, json_output: bool) -> None:
     dim = style.DIM
     rst = style.RST
     print(f"{dim}job:{rst}        {style.BLUE}{record.run_id}{rst}")
-    print(f"{dim}operation:{rst}  {record.operation.value}")
+    print(f"{dim}kind:{rst}       {record.kind.value}")
     print(f"{dim}status:{rst}     {status_label(record.status)}")
     print(f"{dim}elapsed:{rst}    {elapsed_label(record)}")
     if record.title is not None:
@@ -84,7 +84,7 @@ def render_run(record: RunRecord, json_output: bool) -> None:
         )
         if transcript.transcript_path is not None:
             print(f"{dim}transcript:{rst} {transcript.transcript_path}")
-    print(f"{dim}log:{rst}        {record.log_path}")
+    print(f"{dim}logs:{rst}       codealmanac jobs logs {record.run_id}")
     print(f"{dim}created:{rst}    {record.created_at.isoformat()}")
     print(f"{dim}updated:{rst}    {record.updated_at.isoformat()}")
     if record.error is not None:

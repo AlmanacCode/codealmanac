@@ -8,15 +8,16 @@ from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.services.runs.models import RunId
 
 
-class RunGardenRequest(CodeAlmanacModel):
+class GardenRequest(CodeAlmanacModel):
     cwd: Path
     harness: HarnessKind
-    wiki: str | None = None
+    model: str
+    repository_name: str | None = None
     title: str | None = None
     guidance: str | None = None
     auto_commit: bool = True
 
-    @field_validator("title", "guidance")
+    @field_validator("model", "title", "guidance")
     @classmethod
     def require_optional_text(cls, value: str | None) -> str | None:
         if value is None:
@@ -24,5 +25,5 @@ class RunGardenRequest(CodeAlmanacModel):
         return required_text(value, "garden request text")
 
 
-class RunGardenWithRunRequest(RunGardenRequest):
+class StartedGardenRequest(GardenRequest):
     run_id: RunId

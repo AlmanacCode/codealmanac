@@ -1,8 +1,9 @@
 from codealmanac.manual import ManualLibrary
 from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
+from codealmanac.services.repositories.models import Repository
 from codealmanac.services.runs.models import (
     RunEventKind,
-    RunOperation,
+    RunKind,
     RunRecord,
 )
 from codealmanac.services.runs.requests import StartRunRequest
@@ -14,19 +15,18 @@ from codealmanac.services.sources.requests import (
     SourceRuntimeContext,
 )
 from codealmanac.services.sources.service import SourcesService
-from codealmanac.services.workspaces.models import Workspace
 from codealmanac.workflows.ingest.models import IngestPromptPayload, IngestResult
 from codealmanac.workflows.ingest.requests import (
-    RunIngestRequest,
-    RunIngestWithRunRequest,
+    IngestRequest,
+    StartedIngestRequest,
 )
-from codealmanac.workflows.lifecycle_commit import lifecycle_commit_policy
-from codealmanac.workflows.page_run import (
-    PageRunBeginRequest,
-    PageRunExecuteRequest,
-    PageRunRecordEventRequest,
-    PageRunWorkflow,
+from codealmanac.workflows.operations import (
+    BeginOperationRequest,
+    ExecuteOperationRequest,
+    OperationRunner,
+    RecordOperationEventRequest,
 )
+from codealmanac.workflows.operations.commit import operation_commit_policy
 
 INGEST_PROMPT_SECTIONS = (
     PromptName.BASE_KERNEL,
@@ -39,24 +39,25 @@ class IngestWorkflow:
         self,
         sources: SourcesService,
         runs: RunsService,
-        page_runs: PageRunWorkflow,
+        operations: OperationRunner,
         prompts: PromptRenderer,
         manual: ManualLibrary,
     ):
         self.sources = sources
         self.runs = runs
-        self.page_runs = page_runs
+        self.operations = operations
         self.prompts = prompts
         self.manual = manual
 
-    def run(self, request: RunIngestRequest) -> IngestResult:
+    def run(self, request: IngestRequest) -> IngestResult:
         started = self.start(request)
-        return self.run_with_run(
-            RunIngestWithRunRequest(
+        return self.run_started(
+            StartedIngestRequest(
                 cwd=request.cwd,
                 inputs=request.inputs,
                 harness=request.harness,
-                wiki=request.wiki,
+                model=request.model,
+                repository_name=request.repository_name,
                 title=request.title,
                 guidance=request.guidance,
                 auto_commit=request.auto_commit,
@@ -64,40 +65,41 @@ class IngestWorkflow:
             )
         )
 
-    def start(self, request: RunIngestRequest) -> RunRecord:
+    def start(self, request: IngestRequest) -> RunRecord:
+        repository = self.operations.resolve_repository(
+            request.cwd,
+            request.repository_name,
+        )
         return self.runs.start(
             StartRunRequest(
-                cwd=request.cwd,
-                wiki=request.wiki,
-                operation=RunOperation.INGEST,
+                repository_id=repository.repository_id,
+                kind=RunKind.INGEST,
                 title=request.title or default_title(request.inputs),
             )
         )
 
-    def run_with_run(self, request: RunIngestWithRunRequest) -> IngestResult:
+    def run_started(self, request: StartedIngestRequest) -> IngestResult:
         run_id = request.run_id
-        context = self.page_runs.begin(
-            PageRunBeginRequest(
-                cwd=request.cwd,
-                wiki=request.wiki,
+        context = self.operations.begin(
+            BeginOperationRequest(
                 run_id=run_id,
             )
         )
         try:
-            context = self.page_runs.preflight(context)
+            context = self.operations.preflight(context)
             sources = self.sources.resolve(
                 ResolveSourcesRequest(cwd=request.cwd, inputs=request.inputs)
             )
-            self.page_runs.record(
-                PageRunRecordEventRequest(
+            self.operations.record(
+                RecordOperationEventRequest(
                     context=context,
                     kind=RunEventKind.MESSAGE,
                     message=f"resolved {len(sources)} {source_word(len(sources))}",
                 )
             )
-            source_runtime = self.inspect_source_runtime(context.workspace, sources)
-            self.page_runs.record(
-                PageRunRecordEventRequest(
+            source_runtime = self.inspect_source_runtime(context.repository, sources)
+            self.operations.record(
+                RecordOperationEventRequest(
                     context=context,
                     kind=RunEventKind.MESSAGE,
                     message=(
@@ -106,13 +108,14 @@ class IngestWorkflow:
                     ),
                 )
             )
-            page_run = self.page_runs.execute(
-                PageRunExecuteRequest(
+            operation = self.operations.execute(
+                ExecuteOperationRequest(
                     context=context,
                     harness=request.harness,
+                    model=request.model,
                     prompt=render_ingest_prompt(
                         self.prompts,
-                        context.workspace,
+                        context.repository,
                         sources,
                         source_runtime,
                         request.guidance,
@@ -124,29 +127,29 @@ class IngestWorkflow:
                 )
             )
             return IngestResult(
-                run=page_run.run,
+                run=operation.run,
                 sources=sources,
                 source_runtime=source_runtime,
-                harness=page_run.harness,
-                safety=page_run.safety,
-                index=page_run.index,
+                harness=operation.harness,
+                safety=operation.safety,
+                index=operation.index,
             )
         except Exception as error:
-            self.page_runs.fail(context, error)
+            self.operations.fail(context, error)
             raise
 
     def inspect_source_runtime(
         self,
-        workspace: Workspace,
+        repository: Repository,
         sources: tuple[SourceBrief, ...],
     ) -> tuple[SourceRuntime, ...]:
         return tuple(
             self.sources.inspect_runtime(
                 InspectSourceRuntimeRequest(
-                    cwd=workspace.root_path,
+                    cwd=repository.root_path,
                     ref=source.ref,
                     context=SourceRuntimeContext(
-                        ignored_directories=(workspace.almanac_root,)
+                        ignored_directories=(repository.almanac_root,)
                     ),
                 )
             )
@@ -156,7 +159,7 @@ class IngestWorkflow:
 
 def render_ingest_prompt(
     prompts: PromptRenderer,
-    workspace: Workspace,
+    repository: Repository,
     sources: tuple[SourceBrief, ...],
     source_runtime: tuple[SourceRuntime, ...],
     guidance: str | None,
@@ -164,13 +167,13 @@ def render_ingest_prompt(
     manual: ManualLibrary,
 ) -> str:
     payload = IngestPromptPayload(
-        workspace_name=workspace.name,
-        workspace_root=workspace.root_path,
-        almanac_root=workspace.almanac_path,
+        repository_name=repository.name,
+        repository_root=repository.root_path,
+        almanac_root=repository.almanac_path,
         sources=sources,
         source_runtime=source_runtime,
         manual_documents=manual.inventory().documents,
-        source_control=lifecycle_commit_policy(auto_commit),
+        source_control=operation_commit_policy(auto_commit),
         guidance=guidance,
     )
     return prompts.render(

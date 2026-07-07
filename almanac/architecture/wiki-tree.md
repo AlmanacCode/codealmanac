@@ -13,7 +13,7 @@ sources:
     note: Index-source loader and route-collision detection.
   - id: roots
     type: file
-    path: src/codealmanac/services/workspaces/roots.py
+    path: src/codealmanac/services/repositories/roots.py
     note: Almanac root normalization and initialized-root detection.
   - id: templates
     type: file
@@ -33,4 +33,4 @@ Every Markdown file under `almanac/` is a page unless it is under a reserved sou
 
 Route collisions fail during source loading. For example, `almanac/architecture.md` and `almanac/architecture/README.md` both map to `architecture`, so the loader raises a validation error instead of choosing one page [@sources].
 
-`codealmanac init` writes starter `README.md`, `topics.yaml`, and `getting-started.md` files only when those files are missing [@templates]. The prompt kernel tells agents to write normal Markdown pages in the source tree and to identify pages by their path under `almanac/` [@kernel].
+`codealmanac init` writes starter `README.md` and `topics.yaml` files, then starts the build run that creates the first real wiki pages [@templates]. The prompt kernel tells agents to write normal Markdown pages in the source tree and to identify pages by their path under `almanac/` [@kernel].

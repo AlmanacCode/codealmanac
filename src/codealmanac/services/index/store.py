@@ -25,7 +25,7 @@ from codealmanac.services.index.views import (
     list_topic_summaries,
     search_pages,
 )
-from codealmanac.services.workspaces.roots import is_initialized_almanac_root
+from codealmanac.services.repositories.roots import is_initialized_almanac_root
 
 
 class IndexStore:
@@ -114,12 +114,16 @@ class IndexStore:
         self,
         almanac_path: Path,
         runtime_path: Path,
-        repo_root: Path,
+        repository_root: Path,
         registered_wikis: set[str],
     ) -> HealthReport:
         require_initialized_almanac_root(almanac_path)
         with connect_index(index_db_path(runtime_path)) as connection:
-            return build_health_report(connection, repo_root, registered_wikis)
+            return build_health_report(
+                connection,
+                repository_root,
+                registered_wikis,
+            )
 
 
 def require_initialized_almanac_root(almanac_path: Path) -> None:

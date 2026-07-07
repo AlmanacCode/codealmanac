@@ -1,6 +1,5 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from pathlib import Path
 
 from codealmanac.core.errors import ValidationFailed
 from codealmanac.services.automation.models import AutomationTask
@@ -54,7 +53,6 @@ def base_install_request(
     request: AutomationSelectionRequest,
 ) -> InstallAutomationRequest:
     return InstallAutomationRequest(
-        cwd=Path.cwd(),
         tasks=request.tasks,
         home=request.home,
     )
@@ -69,8 +67,6 @@ def validate_install_selection(
         raise ValidationFailed(
             "--garden-off can only be used with the default automation install"
         )
-    if request.quiet is not None and request.quiet.total_seconds() < 0:
-        raise ValidationFailed("quiet window must be zero or greater")
 
 
 def selected_tasks(

@@ -62,9 +62,9 @@ When you introduce a file, class, command, state, or contract, add enough
 context for a reader new to this repo to place it. One concise clause is often
 enough.
 
-Bad: `PageRunWorkflow` calls `harnesses.run(...)`.
+Bad: `OperationRunner` runs the harness.
 
-Better: `PageRunWorkflow` calls `harnesses.run(...)`, so build, ingest, and
+Better: `OperationRunner` calls `harnesses.run(...)`, so build, ingest, and
 garden can use Codex or Claude without knowing provider-specific execution
 details.
 

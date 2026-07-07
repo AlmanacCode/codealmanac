@@ -12,7 +12,7 @@ class ValidationIssue(CodeAlmanacModel):
 
 
 class ValidationResult(CodeAlmanacModel):
-    workspace_name: str
+    repository_name: str
     almanac_path: Path
     index: IndexRefreshResult | None = None
     issues: tuple[ValidationIssue, ...] = ()

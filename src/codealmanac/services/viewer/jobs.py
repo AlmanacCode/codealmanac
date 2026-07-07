@@ -16,7 +16,7 @@ from codealmanac.services.viewer.models import (
 def viewer_job_run(record: RunRecord) -> ViewerJobRun:
     return ViewerJobRun(
         run_id=record.run_id,
-        operation=record.operation.value,
+        kind=record.kind.value,
         status=record.status.value,
         title=record.title,
         summary=record.summary,
@@ -25,7 +25,6 @@ def viewer_job_run(record: RunRecord) -> ViewerJobRun:
         updated_at=timestamp(record.updated_at),
         started_at=optional_timestamp(record.started_at),
         finished_at=optional_timestamp(record.finished_at),
-        log_path=record.log_path,
         page_changes=viewer_page_changes(record.page_changes),
         harness_transcript=viewer_harness_transcript(record),
     )

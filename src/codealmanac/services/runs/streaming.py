@@ -1,6 +1,5 @@
 import time
 from collections.abc import Iterator
-from pathlib import Path
 
 from codealmanac.services.runs.models import (
     RunAttachUpdate,
@@ -19,14 +18,13 @@ class RunAttachStreamer:
 
     def stream(
         self,
-        runtime_path: Path,
         run_id: str,
         poll_interval_seconds: float,
     ) -> Iterator[RunAttachUpdate]:
         last_sequence = 0
         terminal_settle_polls = TERMINAL_SETTLE_POLLS
         while True:
-            snapshot = self.store.attach(runtime_path, run_id)
+            snapshot = self.store.attach(run_id)
             if (
                 snapshot.terminal
                 and terminal_settle_polls > 0

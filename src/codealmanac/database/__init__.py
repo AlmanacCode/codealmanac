@@ -1,3 +1,4 @@
+from codealmanac.database.local import connect_local_database
 from codealmanac.database.sqlite import (
     SQLiteConnection,
     SQLiteMigration,
@@ -11,5 +12,6 @@ __all__ = (
     "SQLiteMigration",
     "SQLiteRow",
     "apply_migrations",
+    "connect_local_database",
     "connect_sqlite",
 )

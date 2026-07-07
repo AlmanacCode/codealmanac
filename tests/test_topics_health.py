@@ -1,15 +1,15 @@
 from pathlib import Path
 
 from codealmanac.app import create_app
-from codealmanac.core.models import AppConfig
 from codealmanac.services.health.requests import HealthCheckRequest
 from codealmanac.services.topics.requests import ListTopicsRequest, ShowTopicRequest
+from codealmanac.settings import AppConfig
 
 
 def test_topics_list_and_show_descendants(tmp_path: Path, isolated_home: Path):
     repo = make_topic_repo(tmp_path)
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     topics = app.topics.list(ListTopicsRequest(cwd=repo))
@@ -29,7 +29,7 @@ def test_topics_list_and_show_descendants(tmp_path: Path, isolated_home: Path):
 def test_health_reports_read_model_problems(tmp_path: Path, isolated_home: Path):
     repo = make_topic_repo(tmp_path)
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     report = app.health.check(HealthCheckRequest(cwd=repo))
@@ -84,7 +84,7 @@ The page cites one real source and one missing source. [@declared] [@missing]
         encoding="utf-8",
     )
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     report = app.health.check(HealthCheckRequest(cwd=repo))
@@ -115,7 +115,7 @@ def test_malformed_topics_yaml_does_not_break_reads(
     (repo / "almanac/topics.yaml").write_text("topics: [", encoding="utf-8")
     (pages / "note.md").write_text("# Note\n\nBody.\n", encoding="utf-8")
     app = create_app(
-        AppConfig(registry_path=isolated_home / ".codealmanac/registry.json")
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
 
     topics = app.topics.list(ListTopicsRequest(cwd=repo))

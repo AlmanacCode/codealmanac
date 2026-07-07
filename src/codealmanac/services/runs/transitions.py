@@ -1,100 +1,79 @@
 from datetime import datetime
-from pathlib import Path
 
-from codealmanac.services.harnesses.models import HarnessEvent
-from codealmanac.services.runs.io import RunLedgerIO
+from codealmanac.core.errors import ConflictError
+from codealmanac.services.harnesses.models import HarnessTranscriptRef
 from codealmanac.services.runs.models import (
-    RunEventKind,
-    RunLogEvent,
+    TERMINAL_RUN_STATUSES,
+    RunCancelResult,
+    RunKind,
     RunRecord,
+    RunStatus,
 )
 
 
-class RunTransitionWriter:
-    def __init__(self, ledger: RunLedgerIO):
-        self.ledger = ledger
+def queued_message(kind: RunKind) -> str:
+    return f"queued {kind.value}"
 
-    def write_queued_record(
-        self,
-        runtime_path: Path,
-        record: RunRecord,
-        timestamp: datetime,
-    ) -> None:
-        event = self.new_event(
-            runtime_path,
-            record.run_id,
-            timestamp,
-            RunEventKind.STATUS,
-            f"queued {record.operation.value}",
-        )
-        self.write_record_with_event(
-            runtime_path,
-            previous=None,
-            record=record,
-            event=event,
-        )
 
-    def write_status_transition(
-        self,
-        runtime_path: Path,
-        previous: RunRecord,
-        record: RunRecord,
-        timestamp: datetime,
-        message: str,
-    ) -> None:
-        event = self.new_event(
-            runtime_path,
-            record.run_id,
-            timestamp,
-            RunEventKind.STATUS,
-            message,
+def start_run(record: RunRecord, now: datetime) -> RunRecord:
+    if record.status == RunStatus.RUNNING:
+        return record
+    if record.status != RunStatus.QUEUED:
+        raise ConflictError(
+            f"run {record.run_id} cannot start from {record.status.value}"
         )
-        self.write_record_with_event(
-            runtime_path,
-            previous=previous,
-            record=record,
-            event=event,
-        )
+    return record.model_copy(
+        update={
+            "status": RunStatus.RUNNING,
+            "updated_at": now,
+            "started_at": now,
+        }
+    )
 
-    def write_record_with_event(
-        self,
-        runtime_path: Path,
-        previous: RunRecord | None,
-        record: RunRecord,
-        event: RunLogEvent,
-    ) -> None:
-        self.ledger.write_record(runtime_path, record)
-        try:
-            self.ledger.append_event(runtime_path, event)
-        except Exception:
-            self.restore_record(runtime_path, previous, record.run_id)
-            raise
 
-    def new_event(
-        self,
-        runtime_path: Path,
-        run_id: str,
-        timestamp: datetime,
-        kind: RunEventKind,
-        message: str,
-        harness_event: HarnessEvent | None = None,
-    ) -> RunLogEvent:
-        return RunLogEvent(
-            run_id=run_id,
-            sequence=self.ledger.next_sequence(runtime_path, run_id),
-            timestamp=timestamp,
-            kind=kind,
-            message=message,
-            harness_event=harness_event,
-        )
+def attach_harness_transcript(
+    record: RunRecord,
+    transcript: HarnessTranscriptRef,
+    now: datetime,
+) -> RunRecord:
+    return record.model_copy(
+        update={
+            "harness_transcript": transcript,
+            "updated_at": now,
+        }
+    )
 
-    def restore_record(
-        self,
-        runtime_path: Path,
-        previous: RunRecord | None,
-        run_id: str,
-    ) -> None:
-        if previous is None:
-            self.ledger.delete_record(runtime_path, run_id)
-            return
-        self.ledger.write_record(runtime_path, previous)
+
+def finish_run(
+    record: RunRecord,
+    status: RunStatus,
+    summary: str | None,
+    error: str | None,
+    now: datetime,
+) -> RunRecord:
+    if record.status == RunStatus.CANCELLED:
+        return record
+    return record.model_copy(
+        update={
+            "status": status,
+            "summary": summary,
+            "error": error,
+            "updated_at": now,
+            "finished_at": now,
+        }
+    )
+
+
+def cancel_run(record: RunRecord, now: datetime) -> RunCancelResult:
+    if record.status in TERMINAL_RUN_STATUSES:
+        return RunCancelResult(record=record, changed=False)
+    cancelled = record.model_copy(
+        update={
+            "status": RunStatus.CANCELLED,
+            "updated_at": now,
+            "finished_at": now,
+            "summary": record.summary,
+            "error": record.error,
+        }
+    )
+    return RunCancelResult(record=cancelled, changed=True)
