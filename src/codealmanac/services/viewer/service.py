@@ -91,6 +91,7 @@ class ViewerService:
         rendered = self.renderer.render(
             page.body,
             page_id=page.slug,
+            title=page.title,
             source_is_folder_landing=page.file_path.name == "README.md",
         )
         return ViewerPage(

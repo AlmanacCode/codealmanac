@@ -1,10 +1,15 @@
 from codealmanac.services.viewer.renderer import MarkdownRenderer
 
 
-def render_markdown(body: str, page_id: str = "architecture/indexing"):
+def render_markdown(
+    body: str,
+    page_id: str = "architecture/indexing",
+    title: str = "Indexing",
+):
     return MarkdownRenderer().render(
         body,
         page_id=page_id,
+        title=title,
         source_is_folder_landing=False,
     )
 
@@ -63,3 +68,40 @@ def test_markdown_renderer_leaves_code_citations_alone():
     assert "<code>[@source-a]</code>" in rendered.html
     assert 'data-source-id="source-a"' not in rendered.html
     assert rendered.citation_order == ("source-b",)
+
+
+def test_markdown_renderer_drops_leading_title_heading():
+    rendered = render_markdown(
+        "# Indexing\n\nThe indexer keeps the search index fresh.",
+        title="Indexing",
+    )
+
+    assert "<h1>Indexing</h1>" not in rendered.html
+    assert "<p>The indexer keeps the search index fresh.</p>" in rendered.html
+
+
+def test_markdown_renderer_keeps_leading_heading_that_differs_from_title():
+    rendered = render_markdown("# Overview\n\nBody.", title="Indexing")
+
+    assert "<h1>Overview</h1>" in rendered.html
+
+
+def test_markdown_renderer_keeps_later_title_headings():
+    rendered = render_markdown(
+        "Intro paragraph.\n\n# Indexing\n\nBody.",
+        title="Indexing",
+    )
+
+    assert "<h1>Indexing</h1>" in rendered.html
+
+
+def test_markdown_renderer_renders_gfm_pipe_tables():
+    rendered = render_markdown(
+        "| Method | Path |\n|--------|------|\n| GET | /article/{id} |\n"
+    )
+
+    assert "<table>" in rendered.html
+    assert "<th>Method</th>" in rendered.html
+    assert "<td>/article/{id}</td>" in rendered.html
+    # The raw pipe/separator syntax must not leak through as body text.
+    assert "|--------|" not in rendered.html

@@ -37,18 +37,23 @@ class RenderContext:
 
 class MarkdownRenderer:
     def __init__(self):
+        # CommonMark has no tables; enable GFM pipe tables so wiki pages that
+        # document APIs, schemas, and comparisons render as real <table>s
+        # instead of leaking raw `| col | col |` pipe syntax as body text.
         self.markdown = MarkdownIt("commonmark", {"html": False, "linkify": False})
+        self.markdown.enable("table")
 
     def render(
         self,
         body: str,
         *,
         page_id: str,
+        title: str,
         source_is_folder_landing: bool,
     ) -> RenderedMarkdown:
         env: dict[str, object] = {}
         context = RenderContext()
-        tokens = self.markdown.parse(body, env)
+        tokens = drop_leading_title_heading(self.markdown.parse(body, env), title)
         for token in tokens:
             if token.type == "inline" and token.children is not None:
                 token.children = rewrite_citations(token.children, context)
@@ -59,6 +64,26 @@ class MarkdownRenderer:
                 )
         html = self.markdown.renderer.render(tokens, self.markdown.options, env)
         return RenderedMarkdown(html=html, citation_order=context.citation_order)
+
+
+def drop_leading_title_heading(tokens: list[Token], title: str) -> list[Token]:
+    """Drop a leading ``# <title>`` heading that only repeats the page title.
+
+    Pages open with an H1 matching their frontmatter title, and the viewer
+    already renders that title in the page header, so the body's copy is pure
+    duplication. Only an exact match is removed; a first heading that differs
+    from the title (or isn't an H1) is left untouched.
+    """
+    if (
+        len(tokens) >= 3
+        and tokens[0].type == "heading_open"
+        and tokens[0].tag == "h1"
+        and tokens[1].type == "inline"
+        and tokens[2].type == "heading_close"
+        and tokens[1].content.strip() == title.strip()
+    ):
+        return tokens[3:]
+    return tokens
 
 
 def rewrite_citations(tokens: list[Token], context: RenderContext) -> list[Token]:
