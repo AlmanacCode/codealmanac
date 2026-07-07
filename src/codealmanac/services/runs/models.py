@@ -143,11 +143,9 @@ class RunSpec(CodeAlmanacModel):
             if len(self.inputs) == 0:
                 raise ValueError("ingest run spec requires inputs")
             return self
-        if self.kind == RunKind.GARDEN:
-            if len(self.inputs) > 0:
-                raise ValueError("garden run spec does not accept inputs")
-            return self
-        raise ValueError(f"unsupported queued run kind: {self.kind.value}")
+        if len(self.inputs) > 0:
+            raise ValueError(f"{self.kind.value} run spec does not accept inputs")
+        return self
 
 
 class QueuedRun(CodeAlmanacModel):

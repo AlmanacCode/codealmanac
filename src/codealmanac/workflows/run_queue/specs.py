@@ -1,6 +1,22 @@
 from codealmanac.services.runs.models import RunKind, RunSpec
+from codealmanac.workflows.build.requests import BuildRequest
 from codealmanac.workflows.garden.requests import GardenRequest
 from codealmanac.workflows.ingest.requests import IngestRequest
+
+
+def build_run_title(request: BuildRequest) -> str:
+    return request.title or "Build wiki"
+
+
+def build_run_spec(request: BuildRequest) -> RunSpec:
+    return RunSpec(
+        kind=RunKind.BUILD,
+        harness=request.harness,
+        model=request.model,
+        title=request.title,
+        guidance=request.guidance,
+        auto_commit=request.auto_commit,
+    )
 
 
 def ingest_run_title(request: IngestRequest) -> str:

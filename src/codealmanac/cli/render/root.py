@@ -2,13 +2,7 @@ from codealmanac.cli.render.repositories import (
     render_repository_list,
 )
 from codealmanac.cli.render.run_commands import (
-    render_garden,
-    render_ingest,
-    render_init,
-    render_init_json,
     render_run_queue_start,
-    render_run_queued,
-    render_run_started,
     render_scheduled_garden,
 )
 from codealmanac.cli.render.sync import render_sync_status
@@ -27,13 +21,7 @@ from codealmanac.cli.render.wiki import (
 )
 
 __all__ = [
-    "render_garden",
     "render_health",
-    "render_ingest",
-    "render_init",
-    "render_init_json",
-    "render_run_started",
-    "render_run_queued",
     "render_page",
     "render_reindex",
     "render_run_queue_start",

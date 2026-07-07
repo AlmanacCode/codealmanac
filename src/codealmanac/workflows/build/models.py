@@ -21,11 +21,6 @@ class BuildPromptPayload(CodeAlmanacModel):
     guidance: str | None = None
 
 
-class StartedBuild(CodeAlmanacModel):
-    repository: Repository
-    run: RunRecord
-
-
 class BuildResult(CodeAlmanacModel):
     repository: Repository
     index: IndexRefreshResult

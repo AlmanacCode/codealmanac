@@ -13,6 +13,11 @@ def add_setup_commands(subcommands: argparse._SubParsersAction) -> None:
     )
     setup.add_argument("--yes", action="store_true", help="run without prompts")
     setup.add_argument(
+        "--runner",
+        choices=("codex", "claude"),
+        help="agent that runs CodeAlmanac jobs (default: codex)",
+    )
+    setup.add_argument(
         "--no-auto-commit",
         action="store_true",
         help="tell run agents not to commit wiki changes",

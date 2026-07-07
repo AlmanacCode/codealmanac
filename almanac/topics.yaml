@@ -1,50 +1,141 @@
 topics:
+  - slug: overview
+    title: Overview
+    description: Entry points and reading paths for the wiki
+    parents: []
+  - slug: concepts
+    title: Concepts
+    description: Core vocabulary and mental models for this codebase
+    parents: []
   - slug: architecture
     title: Architecture
-    description: Current Python subsystem boundaries, flows, and invariants.
+    description: System areas, ownership boundaries, and runtime flows
     parents: []
-
   - slug: decisions
     title: Decisions
-    description: Product and engineering choices that future work must preserve.
+    description: Architectural choices future work must respect
     parents: []
-
-  - slug: operations
-    title: Operations
-    description: Lifecycle commands, background jobs, setup, diagnostics, and update behavior.
+  - slug: guides
+    title: Guides
+    description: Task-oriented procedures for maintainers
+    parents: []
+  - slug: reference
+    title: Reference
+    description: Exact lookup material for commands, formats, and states
+    parents: []
+  - slug: wiki
+    title: Wiki
+    description: Authored Markdown, page graph, topics, links, and validation
     parents: [architecture]
-
-  - slug: agents
-    title: Agents
-    description: Harness providers, prompts, manual guidance, and agent-facing contracts.
-    parents: [operations]
-
-  - slug: storage
-    title: Storage
-    description: SQLite index state, source metadata, repositories, runs, and sync state.
+  - slug: wiki-build
+    title: Wiki Build
+    description: First-build inventory and build context
+    parents: [wiki]
+  - slug: page-format
+    title: Page Format
+    description: Frontmatter, sources, citations, page links, and routes
+    parents: [wiki, reference]
+  - slug: links
+    title: Links
+    description: Markdown page links and route resolution
+    parents: [page-format]
+  - slug: pages
+    title: Pages
+    description: Page identity and Markdown route behavior
+    parents: [wiki]
+  - slug: sources
+    title: Sources
+    description: Source material, source addresses, and page evidence
     parents: [architecture]
-
-  - slug: wiki-design
-    title: Wiki Design
-    description: Page layout, topics, links, sources, and local wiki authoring rules.
-    parents: [architecture, decisions]
-
+  - slug: agent-runs
+    title: Agent Runs
+    description: Harness contracts, provider adapters, and normalized agent events
+    parents: [architecture]
+  - slug: harnesses
+    title: Harnesses
+    description: Local Codex and Claude runner integration boundaries
+    parents: [agent-runs]
+  - slug: providers
+    title: Providers
+    description: Provider-specific edges behind service-owned ports
+    parents: [agent-runs]
+  - slug: lifecycle
+    title: Lifecycle
+    description: Build, ingest, garden, sync, and shared operation execution
+    parents: [architecture]
+  - slug: ingest
+    title: Ingest
+    description: Source-material lifecycle work and input handling
+    parents: [lifecycle, sources]
+  - slug: runs
+    title: Runs
+    description: Run records, job commands, queueing, logs, and events
+    parents: [lifecycle]
   - slug: cli
     title: CLI
-    description: Public command surface and command adapter behavior.
-    parents: [operations]
-
+    description: Public command surface and terminal adapter behavior
+    parents: [architecture]
+  - slug: product
+    title: Product
+    description: Product scope and public surface decisions
+    parents: []
+  - slug: config
+    title: Config
+    description: User and project configuration keys
+    parents: [product, local-state]
+  - slug: repositories
+    title: Repositories
+    description: Repository selection, registration, and local roots
+    parents: [architecture]
+  - slug: local-state
+    title: Local State
+    description: Runtime files and local databases outside the wiki tree
+    parents: [repositories]
+  - slug: automation
+    title: Automation
+    description: Local scheduled sync, Garden, and update tasks
+    parents: [architecture, lifecycle]
+  - slug: setup
+    title: Setup
+    description: Local setup, uninstall, and machine configuration workflows
+    parents: [architecture]
+  - slug: runtime-resources
+    title: Runtime Resources
+    description: Packaged prompts, manuals, and operation prompt rendering
+    parents: [architecture]
+  - slug: prompts
+    title: Prompts
+    description: Operation prompts and agent-facing instructions
+    parents: [runtime-resources]
+  - slug: manuals
+    title: Manuals
+    description: Packaged writing manuals used by lifecycle operations
+    parents: [runtime-resources]
+  - slug: health
+    title: Health
+    description: Wiki validation and graph health checks
+    parents: [wiki]
+  - slug: search
+    title: Search
+    description: Read-side page, topic, full-text, and mention queries
+    parents: [wiki]
+  - slug: index
+    title: Index
+    description: Derived SQLite read model for wiki queries
+    parents: [wiki, persistence]
+  - slug: persistence
+    title: Persistence
+    description: SQLite store boundaries and durable local records
+    parents: [architecture]
+  - slug: safety
+    title: Safety
+    description: Mutation boundaries, validation gates, and guarded lifecycle writes
+    parents: [architecture, lifecycle]
+  - slug: topics
+    title: Topics
+    description: Topic metadata, browsing neighborhoods, and topic maintenance
+    parents: [wiki]
   - slug: viewer
     title: Viewer
-    description: Read-only browser surface served by codealmanac serve.
-    parents: [architecture, cli]
-
-  - slug: migration
-    title: Migration
-    description: Notes about replacing the old repo wiki and dropping retired product assumptions.
-    parents: [decisions]
-
-  - slug: style
-    title: Style
-    description: Standing code-style principles for writing and refactoring codealmanac.
-    parents: [decisions]
+    description: Local web projection over wiki pages, topics, files, and jobs
+    parents: [architecture]

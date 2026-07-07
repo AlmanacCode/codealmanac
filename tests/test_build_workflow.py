@@ -8,6 +8,7 @@ from conftest import initialize_repository, runtime_index_path
 from codealmanac.app import create_app
 from codealmanac.core.errors import (
     AlreadyExists,
+    ExecutionFailed,
     NoRepositorySelected,
     ValidationFailed,
 )
@@ -24,7 +25,7 @@ from codealmanac.services.repositories.requests import RegisterRepositoryRequest
 from codealmanac.services.repositories.roots import is_initialized_almanac_root
 from codealmanac.services.runs.models import RunKind, RunStatus
 from codealmanac.settings import AppConfig
-from codealmanac.workflows.build.requests import BuildRequest
+from codealmanac.workflows.build.requests import BuildRequest, StartedBuildRequest
 
 
 class BuildWritingHarnessAdapter:
@@ -117,7 +118,7 @@ def test_initialize_rejects_existing_almanac(
     readme.write_text("user edit\n", encoding="utf-8")
 
     with pytest.raises(AlreadyExists):
-        app.workflows.build.start(
+        app.workflows.queue.queue_build(
             BuildRequest(
                 path=repo,
                 harness=HarnessKind.CODEX,
@@ -149,7 +150,7 @@ def test_initialized_wiki_requires_topics_yaml_and_readme(tmp_path: Path) -> Non
     assert is_initialized_almanac_root(initialized) is True
 
 
-def test_run_build_uses_harness_prompt_and_records_build_operation(
+def test_queued_build_uses_harness_prompt_and_records_build_operation(
     tmp_path: Path,
     isolated_home: Path,
 ) -> None:
@@ -161,13 +162,21 @@ def test_run_build_uses_harness_prompt_and_records_build_operation(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         harness_adapters=(adapter,),
     )
-
-    result = app.workflows.build.run(
+    queued = app.workflows.queue.queue_build(
         BuildRequest(
             path=repo,
             harness=HarnessKind.CODEX,
             model="gpt-5.5",
             name="repo",
+            guidance="Write the smallest useful first wiki.",
+        )
+    )
+
+    result = app.workflows.build.run_started(
+        StartedBuildRequest(
+            run_id=queued.run_id,
+            harness=HarnessKind.CODEX,
+            model="gpt-5.5",
             guidance="Write the smallest useful first wiki.",
         )
     )
@@ -186,6 +195,53 @@ def test_run_build_uses_harness_prompt_and_records_build_operation(
     assert "Write the smallest useful first wiki." in adapter.requests[0].prompt
 
 
+class BrokenHarnessAdapter:
+    kind = HarnessKind.CODEX
+
+    def __init__(self):
+        self.requests: list[RunHarnessRequest] = []
+
+    def check(self) -> HarnessReadiness:
+        return HarnessReadiness(
+            kind=self.kind,
+            available=False,
+            message="Error: spawn codex ENOENT",
+            repair="reinstall with `npm install -g @openai/codex`",
+        )
+
+    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
+        self.requests.append(request)
+        raise AssertionError("a broken harness never runs")
+
+
+def test_queue_build_fails_before_queueing_when_harness_is_broken(
+    tmp_path: Path,
+    isolated_home: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    initialize_git(repo)
+    adapter = BrokenHarnessAdapter()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        harness_adapters=(adapter,),
+    )
+
+    with pytest.raises(ExecutionFailed, match="harness codex is not available"):
+        app.workflows.queue.queue_build(
+            BuildRequest(
+                path=repo,
+                harness=HarnessKind.CODEX,
+                model="gpt-5.5",
+                name="repo",
+            )
+        )
+
+    assert app.repositories.list() == []
+    assert not (repo / "almanac").exists()
+    assert adapter.requests == []
+
+
 def test_run_build_rejects_non_git_repo_without_registering(
     tmp_path: Path,
     isolated_home: Path,
@@ -199,7 +255,7 @@ def test_run_build_rejects_non_git_repo_without_registering(
     )
 
     with pytest.raises(ValidationFailed, match="build requires Git change tracking"):
-        app.workflows.build.run(
+        app.workflows.queue.queue_build(
             BuildRequest(
                 path=repo,
                 harness=HarnessKind.CODEX,

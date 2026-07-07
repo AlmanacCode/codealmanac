@@ -1825,10 +1825,10 @@ def test_run_persistence_stays_split_by_responsibility():
     assert "CREATE TABLE IF NOT EXISTS runs" in tables_text
     assert "CREATE TABLE IF NOT EXISTS run_events" in tables_text
     assert "CREATE TABLE IF NOT EXISTS worker_locks" in tables_text
-    assert "connect_local_database" in store_text
-    assert "connect_local_database" in events_text
-    assert "connect_local_database" in worker_locks_text
-    assert "connect_local_database" not in service_text
+    assert "open_local_database" in store_text
+    assert "open_local_database" in events_text
+    assert "open_local_database" in worker_locks_text
+    assert "open_local_database" not in service_text
     assert "class RunAttachStreamer" in streaming_text
     assert "time.sleep" in streaming_text
     assert "store.attach" in streaming_text

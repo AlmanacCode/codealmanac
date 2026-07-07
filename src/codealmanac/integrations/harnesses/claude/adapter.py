@@ -29,6 +29,17 @@ from codealmanac.services.harnesses.requests import RunHarnessRequest
 
 CLAUDE_STATUS_TIMEOUT_SECONDS = 10
 ANTHROPIC_API_KEY = "ANTHROPIC_API_KEY"
+CLAUDE_INSTALL_REPAIR = (
+    "install the Claude Code CLI: npm install -g @anthropic-ai/claude-code"
+)
+CLAUDE_STATUS_REPAIR = (
+    "check `claude --version` — reinstall with "
+    "`npm install -g @anthropic-ai/claude-code` if it fails, "
+    "or sign in with `claude auth login`"
+)
+CLAUDE_LOGIN_REPAIR = (
+    f"sign in with `claude auth login` or set {ANTHROPIC_API_KEY}"
+)
 
 
 class ClaudeAuthStatus(BaseModel):
@@ -76,12 +87,14 @@ class ClaudeSdkHarnessAdapter:
                 kind=self.kind,
                 available=False,
                 message="claude not found on PATH",
+                repair=CLAUDE_INSTALL_REPAIR,
             )
         except subprocess.TimeoutExpired:
             return HarnessReadiness(
                 kind=self.kind,
                 available=False,
                 message="claude auth status timed out",
+                repair=CLAUDE_STATUS_REPAIR,
             )
         if result.returncode != 0:
             if has_anthropic_api_key():
@@ -91,6 +104,7 @@ class ClaudeSdkHarnessAdapter:
                 available=False,
                 message=first_line(result.stderr, result.stdout)
                 or f"claude auth status exited {result.returncode}",
+                repair=CLAUDE_STATUS_REPAIR,
             )
         try:
             status = ClaudeAuthStatus.from_json(result.stdout)
@@ -101,6 +115,7 @@ class ClaudeSdkHarnessAdapter:
                 kind=self.kind,
                 available=False,
                 message=str(error),
+                repair=CLAUDE_STATUS_REPAIR,
             )
         if not status.logged_in:
             if has_anthropic_api_key():
@@ -109,6 +124,7 @@ class ClaudeSdkHarnessAdapter:
                 kind=self.kind,
                 available=False,
                 message="claude is not logged in",
+                repair=CLAUDE_LOGIN_REPAIR,
             )
         return HarnessReadiness(
             kind=self.kind,

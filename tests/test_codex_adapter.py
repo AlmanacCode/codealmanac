@@ -66,6 +66,7 @@ def test_codex_adapter_reports_not_ready_when_command_is_missing():
 
     assert readiness.available is False
     assert readiness.message == "codex not found on PATH"
+    assert readiness.repair == "install the Codex CLI: npm install -g @openai/codex"
 
 
 def test_codex_adapter_reports_not_ready_when_login_status_times_out():
@@ -76,6 +77,26 @@ def test_codex_adapter_reports_not_ready_when_login_status_times_out():
 
     assert readiness.available is False
     assert readiness.message == "codex login status timed out"
+    assert readiness.repair is not None
+
+
+def test_codex_adapter_repairs_broken_binary_with_reinstall_hint():
+    runner = FakeCommandRunner(
+        (
+            CommandResult(
+                returncode=1,
+                stderr="Error: spawn .../codex-darwin-arm64/.../codex ENOENT\n",
+            ),
+        )
+    )
+    adapter = CodexAppServerHarnessAdapter(runner=runner)
+
+    readiness = adapter.check()
+
+    assert readiness.available is False
+    assert readiness.message.startswith("Error: spawn")
+    assert readiness.repair is not None
+    assert "npm install -g @openai/codex" in readiness.repair
 
 
 def test_codex_adapter_wraps_app_server_run_with_git_change_detection(

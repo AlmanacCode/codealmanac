@@ -148,6 +148,20 @@ class CliNoopHarnessAdapter:
         )
 
 
+class CliUnavailableHarnessAdapter:
+    kind = HarnessKind.CODEX
+
+    def check(self) -> HarnessReadiness:
+        return HarnessReadiness(
+            kind=self.kind,
+            available=False,
+            message="codex not found on PATH",
+        )
+
+    def run(self, request: RunHarnessRequest) -> HarnessRunResult:
+        raise AssertionError("an unavailable harness never runs")
+
+
 class CliWorkerSpawner:
     def __init__(self):
         self.requests: list[SpawnRunWorkerRequest] = []
@@ -254,8 +268,10 @@ def default_cli_app(monkeypatch, isolated_home):
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         harness_adapters=(CliNoopHarnessAdapter(),),
+        worker_spawner=CliWorkerSpawner(),
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    return app
 
 
 def repository_id_for(app, repo: Path) -> str:
@@ -275,12 +291,10 @@ def test_cli_init_creates_wiki_and_prints_name(
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "◆ init started: build-" in captured.out
-    assert "the agent is working in this terminal" in captured.out
-    assert f"wiki: {repo / 'almanac'}\n" in captured.out
-    database_path = isolated_home / ".codealmanac/codealmanac.db"
-    assert f"database: {database_path}\n" in captured.out
-    assert "summary: completed through CLI\n" in captured.out
+    assert "◆ build queued: build-" in captured.out
+    assert "repo:    my-repo" in captured.out
+    assert "follow:  codealmanac jobs attach build-" in captured.out
+    assert "◇ every codebase deserves a biography" in captured.out
     assert captured.err == ""
     assert (repo / "almanac/README.md").is_file()
     assert (repo / "almanac/topics.yaml").is_file()
@@ -314,6 +328,7 @@ def test_cli_setup_and_uninstall_codex_instructions(
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         scheduler=scheduler,
+        harness_adapters=(CliNoopHarnessAdapter(),),
         package_uninstaller=package_uninstaller,
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
@@ -387,6 +402,7 @@ def test_cli_uninstall_without_yes_is_non_destructive_in_noninteractive_shell(
     app = create_app(
         AppConfig(database_path=state_dir / "codealmanac.db"),
         scheduler=scheduler,
+        harness_adapters=(CliNoopHarnessAdapter(),),
         package_uninstaller=package_uninstaller,
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
@@ -425,6 +441,7 @@ def test_cli_uninstall_returns_nonzero_when_package_uninstall_fails(
     app = create_app(
         AppConfig(database_path=state_dir / "codealmanac.db"),
         scheduler=CliSchedulerAdapter(),
+        harness_adapters=(CliNoopHarnessAdapter(),),
         package_uninstaller=package_uninstaller,
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
@@ -445,6 +462,7 @@ def test_cli_setup_interactive_choices_can_disable_update_and_commits(
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         scheduler=scheduler,
+        harness_adapters=(CliNoopHarnessAdapter(),),
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
     monkeypatch.setattr(
@@ -488,6 +506,50 @@ def test_cli_setup_interactive_choices_can_disable_update_and_commits(
     assert 'model = "gpt-5.5"\n' in config_text
 
 
+def test_cli_setup_warns_when_default_runner_is_unavailable(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        scheduler=CliSchedulerAdapter(),
+        harness_adapters=(CliUnavailableHarnessAdapter(),),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert main(["setup", "--yes", "--target", "codex"]) == 0
+
+    captured = capsys.readouterr()
+    assert "codex unavailable" in captured.out
+    assert "codex not found on PATH" in captured.out
+    assert "codealmanac doctor" in captured.out
+
+
+def test_cli_setup_runner_flag_selects_claude_without_prompts(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        scheduler=CliSchedulerAdapter(),
+        harness_adapters=(CliNoopHarnessAdapter(),),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert main(["setup", "--yes", "--runner", "claude", "--json"]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["plan"]["default_harness"] == "claude"
+    assert payload["plan"]["harness_model"] == "claude-sonnet-4-6"
+    assert payload["runner_readiness"]["available"] is False
+    assert (
+        payload["runner_readiness"]["message"]
+        == "no claude harness adapter is registered"
+    )
+
+
 def test_cli_setup_json_does_not_prompt_for_auto_update(
     isolated_home: Path,
     monkeypatch,
@@ -497,6 +559,7 @@ def test_cli_setup_json_does_not_prompt_for_auto_update(
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         scheduler=scheduler,
+        harness_adapters=(CliNoopHarnessAdapter(),),
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
     monkeypatch.setattr("codealmanac.cli.dispatch.setup.sys.stdin", InteractiveInput())
@@ -531,6 +594,7 @@ def test_cli_setup_does_not_initialize_repo_almanac(
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         scheduler=CliSchedulerAdapter(),
+        harness_adapters=(CliNoopHarnessAdapter(),),
     )
     monkeypatch.chdir(repo)
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
@@ -550,6 +614,7 @@ def test_cli_setup_no_auto_commit_writes_user_config(
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         scheduler=CliSchedulerAdapter(),
+        harness_adapters=(CliNoopHarnessAdapter(),),
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
 
@@ -570,6 +635,7 @@ def test_cli_setup_skip_instructions_json(isolated_home: Path, monkeypatch, caps
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         scheduler=CliSchedulerAdapter(),
+        harness_adapters=(CliNoopHarnessAdapter(),),
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
 
@@ -609,6 +675,7 @@ def test_cli_setup_installs_automation_with_explicit_flags(
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         scheduler=scheduler,
+        harness_adapters=(CliNoopHarnessAdapter(),),
         package_uninstaller=CliPackageUninstaller(),
     )
     initialize_repository(app, path=repo)
@@ -664,6 +731,7 @@ def test_cli_setup_can_skip_update_automation(
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         scheduler=scheduler,
+        harness_adapters=(CliNoopHarnessAdapter(),),
     )
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
 
@@ -689,6 +757,7 @@ def test_cli_setup_can_skip_sync_automation(
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         scheduler=scheduler,
+        harness_adapters=(CliNoopHarnessAdapter(),),
     )
     initialize_repository(app, path=repo)
     monkeypatch.chdir(repo)
@@ -796,8 +865,7 @@ def test_cli_init_and_reindex_commands(
 
     assert main(["init", str(repo)]) == 0
     init_output = capsys.readouterr()
-    assert "◆ init started: build-" in init_output.out
-    assert (runtime_repo_path_for_root(isolated_home, repo) / "index.db").is_file()
+    assert "◆ build queued: build-" in init_output.out
     assert not (repo / "almanac/index.db").exists()
 
     (repo / "almanac/note.md").write_text(
@@ -809,6 +877,7 @@ def test_cli_init_and_reindex_commands(
     assert main(["reindex"]) == 0
     reindex_output = capsys.readouterr()
     assert reindex_output.out == "reindexed: 2 pages (2 updated, 0 removed)\n"
+    assert (runtime_repo_path_for_root(isolated_home, repo) / "index.db").is_file()
 
     assert main(["reindex", "--json"]) == 0
     json_output = capsys.readouterr()
@@ -1376,6 +1445,7 @@ def test_cli_automation_install_status_and_uninstall(
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         scheduler=scheduler,
+        harness_adapters=(CliNoopHarnessAdapter(),),
     )
     initialize_repository(app, path=repo)
     monkeypatch.chdir(repo)

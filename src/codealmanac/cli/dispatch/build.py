@@ -7,11 +7,7 @@ from codealmanac.cli.dispatch.config import (
     resolve_harness,
     resolve_harness_model,
 )
-from codealmanac.cli.render.root import (
-    render_init,
-    render_init_json,
-    render_run_started,
-)
+from codealmanac.cli.render.root import render_run_queue_start
 from codealmanac.workflows.build.requests import BuildRequest
 
 
@@ -27,12 +23,6 @@ def dispatch_init(args: argparse.Namespace, app: CodeAlmanac) -> int:
         guidance=args.guidance,
         auto_commit=cli_config.auto_commit,
     )
-    start = app.workflows.build.start(request)
-    if not args.json:
-        render_run_started(start.run, label="init")
-    result = app.workflows.build.run_started(request, start)
-    if args.json:
-        render_init_json(result, app.local_state.database_path)
-        return 0
-    render_init(result, app.local_state.database_path)
+    result = app.workflows.queue.start_build(request)
+    render_run_queue_start(result, json_output=args.json)
     return 0

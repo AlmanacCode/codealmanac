@@ -8,6 +8,7 @@
   <a href="https://github.com/AlmanacCode/codealmanac"><img alt="GitHub stars" src="https://img.shields.io/github/stars/AlmanacCode/codealmanac?style=social"></a>
   <a href="https://discord.com/invite/jjuxtrGvJ"><img alt="Discord" src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white"></a>
   <a href="https://www.linkedin.com/company/codealmanac/"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-CodeAlmanac-0A66C2?logo=linkedin&logoColor=white"></a>
+  <a href="https://www.ycombinator.com"><img alt="Y Combinator S26" src="https://img.shields.io/badge/Y%20Combinator-S26-f26625?logo=ycombinator&logoColor=white"></a>
   <a href="./LICENSE.md"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-df7b40"></a>
 </p>
 
@@ -23,41 +24,28 @@ indexed locally, and reviewed in Git like any other code change.
 ## Quickstart
 
 ```bash
-uv tool install codealmanac
+curl -fsSL https://codealmanac.com/install.sh | sh
+codealmanac setup --yes
 
 cd your-repo
-codealmanac init
-codealmanac search "getting"
-codealmanac show getting-started
-codealmanac serve
+codealmanac init                     # Makes your wiki, if you don't have one
+codealmanac search "getting started" # Shows matching wiki pages.
+codealmanac show getting-started     # Opens one page in the terminal
+codealmanac serve                    # Shows the wiki in local web viewer.
 ```
-
-That is the first path: install CodeAlmanac, build the first repo wiki, search
-it, read a page, and open the local viewer.
-
-## Why Star It
-
-AI coding agents can read code. They still miss the durable project memory that
-maintainers carry in their heads: tradeoffs, incidents, gotchas, boundaries,
-and "do not break this again" rules.
-
-CodeAlmanac makes that memory part of the repo:
-
-- **Repo-owned knowledge**: pages live under `almanac/`, not in a vendor silo.
-- **Agent-native context**: pages are short, linked, sourced, and meant to be
-  read before edits.
-- **Local-first workflow**: no hosted service is required to build, search, or
-  maintain a wiki.
-- **Git-reviewed output**: wiki changes appear in your working tree.
-- **Fast lookup**: local SQLite indexing powers search, backlinks, topics, and
-  file-reference navigation.
 
 ## Install
 
-From a published package:
+With the install script:
 
 ```bash
-uv tool install codealmanac
+curl -fsSL https://codealmanac.com/install.sh | sh
+```
+
+or directly:
+
+```bash
+uv tool install codealmanac@latest
 ```
 
 or:
@@ -88,15 +76,20 @@ codealmanac setup --yes --target claude
 Plain setup installs local agent instructions plus the default local automation:
 sync, Garden, and daily package update. It does not connect to a hosted service.
 
+`--yes` picks Codex as the AI runner. If you don't have Codex or prefer Claude:
+
+```bash
+codealmanac setup --yes --runner claude
+```
+
+Other setup flags:
+
 ```bash
 codealmanac setup --yes --sync-every 5h
 codealmanac setup --yes --sync-off
 codealmanac setup --yes --garden-off
 codealmanac setup --yes --no-auto-update
 ```
-
-During interactive onboarding, setup asks whether to keep CodeAlmanac up to
-date automatically. `--yes` chooses the default happy path and enables it.
 
 To uninstall CodeAlmanac-owned local artifacts:
 
@@ -276,6 +269,40 @@ The viewer is read-only. It renders pages, search, topics, backlinks, and
 file-reference navigation from local wiki data. By default it can switch across
 available registered local wikis. Use `codealmanac serve --wiki <name>` to
 narrow the viewer to one wiki.
+
+## Troubleshooting
+
+### `harness codex failed with status failed: Error: spawn ... codex ENOENT`
+
+The Codex CLI on this machine is broken or missing: the `@openai/codex`
+package is installed but its native binary is gone (a common result of an
+interrupted install or a Node version switch under nvm/volta/fnm). Verify
+with:
+
+```bash
+codex --version
+```
+
+If that fails with the same `spawn ... ENOENT`, reinstall the Codex CLI:
+
+```bash
+npm install -g @openai/codex
+codex --version       # confirm the binary runs
+codex login status    # confirm you are still signed in
+```
+
+Reinstalling does not sign you out: codex keeps its login under `~/.codex`,
+outside the npm package.
+
+Or switch CodeAlmanac to the Claude harness instead:
+
+```bash
+codealmanac config set harness.default claude
+```
+
+The same applies to `harness claude failed` errors: check
+`claude --version`, reinstall the Claude Code CLI if broken, or switch the
+default harness. `codealmanac doctor` reports harness availability.
 
 ## Current Contract
 

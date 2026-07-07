@@ -5,16 +5,13 @@ from codealmanac.services.repositories.models import Repository
 from codealmanac.services.repositories.requests import RegisterRepositoryRequest
 from codealmanac.services.repositories.roots import RepositoryTarget
 from codealmanac.services.repositories.service import RepositoriesService
-from codealmanac.services.runs.models import RunEventKind, RunKind
-from codealmanac.services.runs.requests import StartRunRequest
-from codealmanac.services.runs.service import RunsService
+from codealmanac.services.runs.models import RunEventKind
 from codealmanac.services.wiki.service import WikiService
 from codealmanac.workflows.build.models import (
     BuildPromptPayload,
     BuildResult,
-    StartedBuild,
 )
-from codealmanac.workflows.build.requests import BuildRequest
+from codealmanac.workflows.build.requests import BuildRequest, StartedBuildRequest
 from codealmanac.workflows.operations import (
     BeginOperationRequest,
     ExecuteOperationRequest,
@@ -34,45 +31,30 @@ class BuildWorkflow:
         self,
         repositories: RepositoriesService,
         wiki: WikiService,
-        runs: RunsService,
         operations: OperationRunner,
         prompts: PromptRenderer,
         manual: ManualLibrary,
     ):
         self.repositories = repositories
         self.wiki = wiki
-        self.runs = runs
         self.operations = operations
         self.prompts = prompts
         self.manual = manual
 
-    def run(self, request: BuildRequest) -> BuildResult:
-        return self.run_started(request, self.start(request))
-
-    def start(self, request: BuildRequest) -> StartedBuild:
+    def prepare(self, request: BuildRequest) -> Repository:
+        """Validate, register, and scaffold the wiki before the run is queued."""
         target = self.repositories.prepare_repository_target(request.path)
         reject_existing_almanac(target)
         self.operations.mutation_policy.ensure_tracking_available(target.root_path)
+        self.operations.harnesses.ensure_ready(request.harness)
         repository = self.register_target(target, request)
         self.wiki.initialize(repository.repository_id)
-        run = self.runs.start(
-            StartRunRequest(
-                repository_id=repository.repository_id,
-                kind=RunKind.BUILD,
-                title=request.title or "Build wiki",
-            )
-        )
-        return StartedBuild(repository=repository, run=run)
+        return repository
 
-    def run_started(
-        self,
-        request: BuildRequest,
-        start: StartedBuild,
-    ) -> BuildResult:
-        repository = start.repository
+    def run_started(self, request: StartedBuildRequest) -> BuildResult:
         context = self.operations.begin(
             BeginOperationRequest(
-                run_id=start.run.run_id,
+                run_id=request.run_id,
             )
         )
         try:
@@ -92,7 +74,7 @@ class BuildWorkflow:
                     prompt=render_build_prompt(
                         self.prompts,
                         self.manual,
-                        repository,
+                        context.repository,
                         request.guidance,
                         request.auto_commit,
                     ),
@@ -101,7 +83,7 @@ class BuildWorkflow:
                 )
             )
             return BuildResult(
-                repository=repository,
+                repository=context.repository,
                 run=operation.run,
                 harness=operation.harness,
                 safety=operation.safety,

@@ -211,6 +211,11 @@ def create_services(
         local_state.update_lock_path,
         local_state.database_path,
     )
+    harnesses = HarnessesService(
+        default_harness_adapters()
+        if adapters.harness_adapters is None
+        else adapters.harness_adapters
+    )
     setup = SetupService(
         adapters.instruction_installer or FileInstructionInstaller(),
         automation,
@@ -219,6 +224,7 @@ def create_services(
         adapters.package_uninstaller
         or PackageToolUninstaller(package_metadata, package_runner),
         config_service,
+        runner_probe=harnesses,
     )
     runs = RunsService(repositories, RunStore(local_state.database_path))
     viewer = ViewerService(repositories, index, runs, MarkdownRenderer())
@@ -231,11 +237,6 @@ def create_services(
         else adapters.source_runtime_adapters,
     )
     prompts = PromptRenderer()
-    harnesses = HarnessesService(
-        default_harness_adapters()
-        if adapters.harness_adapters is None
-        else adapters.harness_adapters
-    )
     return Services(
         local_state=local_state,
         automation=automation,
@@ -296,7 +297,6 @@ def create_workflows(
     build = BuildWorkflow(
         services.repositories,
         services.wiki,
-        services.runs,
         build_operations,
         services.prompts,
         services.manual,
@@ -304,6 +304,7 @@ def create_workflows(
     queue = RunQueue(
         services.repositories,
         services.runs,
+        build,
         ingest,
         garden,
         adapters.worker_spawner or SubprocessRunWorkerSpawner(),

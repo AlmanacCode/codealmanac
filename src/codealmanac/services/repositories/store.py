@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from codealmanac.core.paths import normalize_path
-from codealmanac.database.local import connect_local_database
+from codealmanac.database.local import open_local_database
 from codealmanac.services.repositories.models import Repository, RepositoryRecord
 from codealmanac.services.repositories.records import (
     repository_record_for,
@@ -85,7 +85,4 @@ class RepositoryStore:
         return [repository_record_from_row(row) for row in rows]
 
     def connect(self):
-        connection = connect_local_database(self.database_path)
-        connection.executescript(REPOSITORY_TABLES)
-        connection.commit()
-        return connection
+        return open_local_database(self.database_path, REPOSITORY_TABLES)

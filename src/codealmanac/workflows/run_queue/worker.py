@@ -10,6 +10,8 @@ from codealmanac.services.runs.requests import (
     FinishRunRequest,
 )
 from codealmanac.services.runs.service import RunsService
+from codealmanac.workflows.build.requests import StartedBuildRequest
+from codealmanac.workflows.build.service import BuildWorkflow
 from codealmanac.workflows.garden.requests import StartedGardenRequest
 from codealmanac.workflows.garden.service import GardenWorkflow
 from codealmanac.workflows.ingest.requests import StartedIngestRequest
@@ -21,10 +23,12 @@ class RunQueueWorker:
     def __init__(
         self,
         runs: RunsService,
+        build: BuildWorkflow,
         ingest: IngestWorkflow,
         garden: GardenWorkflow,
     ):
         self.runs = runs
+        self.build = build
         self.ingest = ingest
         self.garden = garden
 
@@ -61,6 +65,18 @@ class RunQueueWorker:
                 "queued run is missing its durable spec",
             )
         repository = self.runs.repository_for(queued.record)
+        if spec.kind == RunKind.BUILD:
+            result = self.build.run_started(
+                StartedBuildRequest(
+                    run_id=queued.record.run_id,
+                    harness=spec.harness,
+                    model=spec.model,
+                    title=spec.title,
+                    guidance=spec.guidance,
+                    auto_commit=spec.auto_commit,
+                )
+            )
+            return result.run
         if spec.kind == RunKind.INGEST:
             result = self.ingest.run_started(
                 StartedIngestRequest(

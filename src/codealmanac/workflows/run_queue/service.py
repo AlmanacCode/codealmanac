@@ -14,6 +14,8 @@ from codealmanac.services.runs.requests import (
     SpawnRunWorkerRequest,
 )
 from codealmanac.services.runs.service import RunsService
+from codealmanac.workflows.build.requests import BuildRequest
+from codealmanac.workflows.build.service import BuildWorkflow
 from codealmanac.workflows.garden.requests import (
     GardenRequest,
 )
@@ -31,6 +33,8 @@ from codealmanac.workflows.run_queue.requests import (
     ScheduledGardenRequest,
 )
 from codealmanac.workflows.run_queue.specs import (
+    build_run_spec,
+    build_run_title,
     garden_run_spec,
     garden_run_title,
     ingest_run_spec,
@@ -44,16 +48,33 @@ class RunQueue:
         self,
         repositories: RepositoriesService,
         runs: RunsService,
+        build: BuildWorkflow,
         ingest: IngestWorkflow,
         garden: GardenWorkflow,
         spawner: RunWorkerSpawner,
     ):
         self.repositories = repositories
         self.runs = runs
+        self.build = build
         self.ingest = ingest
         self.garden = garden
         self.spawner = spawner
-        self.worker = RunQueueWorker(runs, ingest, garden)
+        self.worker = RunQueueWorker(runs, build, ingest, garden)
+
+    def queue_build(self, request: BuildRequest) -> RunRecord:
+        repository = self.build.prepare(request)
+        return self.runs.queue(
+            QueueRunRequest(
+                repository_id=repository.repository_id,
+                title=build_run_title(request),
+                spec=build_run_spec(request),
+            )
+        )
+
+    def start_build(self, request: BuildRequest) -> RunQueueStartResult:
+        run = self.queue_build(request)
+        worker = self.spawn_worker(request.path)
+        return self.start_result(run, worker)
 
     def queue_ingest(self, request: IngestRequest) -> RunRecord:
         repository = self.repositories.select_for_operation(

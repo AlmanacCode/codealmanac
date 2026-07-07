@@ -5,6 +5,120 @@ list; see `docs/bugs/codealmanac-install-audit.md` for the historical audit.
 
 ---
 
+## Smoke run 2026-07-07 — `codealmanac init` on v0.3.1
+
+Environment: macOS arm64, Node v22.22.2 via nvm, `codealmanac 0.3.1`,
+`~/.codealmanac/config.toml` → `harness.default = "codex"`,
+`harness.model = "gpt-5.4-mini"`. Run in this repo's checkout. Job:
+`build-20260707051020-7c12ba63`.
+
+### S1. `init` fails hard when the codex CLI binary is missing (root cause: broken codex install, environmental)
+
+```text
+codealmanac: harness codex failed with status failed: Error: spawn
+/Users/divitsheth/.nvm/versions/node/v22.22.2/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex/codex ENOENT
+```
+
+The `@openai/codex` global npm package is broken on this machine: the
+platform package `@openai/codex-darwin-arm64` is installed and its
+`vendor/aarch64-apple-darwin/codex/` directory exists but is **empty** — the
+native binary was never extracted (or was removed, e.g. by an interrupted
+install/update or a disk cleanup). `codex --version` run directly fails with
+the exact same spawn ENOENT, so every codex invocation on this machine fails,
+not just ours. codealmanac correctly surfaced a real harness failure.
+
+**Repaired 2026-07-07:** `npm install -g @openai/codex` restored the binary in
+seconds (`codex-cli 0.142.5`) and the ChatGPT login survived — codex keeps
+auth under `~/.codex`, outside the npm package. The README troubleshooting
+entry documents this repair.
+
+### S2. `init` does not preflight the configured harness before starting the build job — FIXED 2026-07-07
+
+`init` announced the job id, printed the tagline ("every codebase deserves a
+biography"), created the job record, and only then died — in 0s — because the
+harness executable can't spawn.
+
+**Fix:** `BuildWorkflow.start` calls `HarnessesService.ensure_ready` before
+registering the repository or creating the run record, and
+`HarnessesService.run` re-checks readiness before every harness run (covers
+queued ingest/garden and sync runs picked up later by the worker). Verified
+end-to-end against the broken codex install: init exits 1 with a repair
+message, no job record, no `almanac/` scaffold.
+
+### S3. Harness failure error is raw and gives no remediation — FIXED 2026-07-07
+
+The user-facing error was the wrapped Node `spawn ... ENOENT` string with no
+repair path, stored verbatim in the job's `error:` field.
+
+**Fix:** `HarnessReadiness` gained an adapter-owned `repair` hint; the
+unavailable-harness error now reads (one line, so run records keep it whole):
+`harness codex is not available: <cause> — <repair>; or switch harness:
+codealmanac config set harness.default claude`. Runtime failures after a
+passing preflight still surface the honest raw output.
+
+### S4. Registry `almanac_root` is `.almanac`, contradicting the `almanac/`-only decision — RESOLVED, stale legacy file
+
+`~/.codealmanac/registry.json` (with `"almanac_root": ".almanac"`) is a
+leftover from the retired npm CLI. The Python CLI references it nowhere;
+repositories live in `~/.codealmanac/codealmanac.db` and `almanac_root` is
+validated to be exactly `almanac` (`require_default_almanac_root`). The stale
+file can be deleted by hand; nothing reads it.
+
+### S5. README quickstart drifted from the public-contract tests — FIXED 2026-07-07
+
+Found while landing S2/S3: `df627dfd` (2026-07-06) reworded the quickstart to
+`codealmanac search "getting started"` without running the gates, so
+`tests/test_public_contract.py` had two failures sitting on main. The tests
+were updated to the newer README wording. Related: the blanket
+`"npm install"` README ban was narrowed to `npm install codealmanac` forms —
+harness CLIs (codex, claude) are npm packages and the new troubleshooting
+section legitimately names their reinstall commands.
+
+### S6. SQLite connection leak crashed a 40-minute build at event recording — FIXED 2026-07-07
+
+Job `build-20260707063602-deac88ea`: the codex agent finished and committed
+the wiki, then init crashed with `sqlite3.OperationalError: unable to open
+database file` while recording harness events, leaving the job stuck at
+`running` and a raw Python traceback in the terminal.
+
+Root cause: every store used `with self.connect() as connection:` where
+`connect()` returned a raw `sqlite3.Connection`. Python's sqlite3 context
+manager scopes a **transaction**, not the connection — nothing ever closed.
+Each recorded event opened two connections (sequence read + insert), each
+holding db/WAL/shm descriptors; a long run's hundreds of events exhausted the
+process fd limit and `sqlite3.connect` itself started failing.
+
+**Fix:** `codealmanac.database.open_local_database(path, schema)` is a real
+context manager that opens, applies the store's schema, and always closes.
+All five stores (repositories, runs, run events, worker locks, sync state)
+route through it; regression test asserts every opened connection is closed.
+
+**Still open from this incident:** (a) a hard crash mid-run leaves the run
+record at `running` forever — runs need pid-liveness reconciliation like
+worker locks already have; (b) unexpected non-CodeAlmanacError exceptions
+reach the user as raw tracebacks; (c) event recording opens two connections
+per event — correct now, but worth batching for long runs.
+
+### S7. Concurrent runs on one repo, and safety validation misattributes foreign edits — OPEN
+
+Found in the same session's ledger: scheduled garden
+`garden-20260707064814-10359b5f` executed against this repo while build
+`build-20260707063602-deac88ea` was still running. Two problems:
+
+- **No cross-kind run exclusion per repository.** `has_active_run` guards
+  garden-vs-garden only, so a scheduled garden gardened a half-built wiki
+  while the build agent was mid-write. Lifecycle runs on one repository
+  should be mutually exclusive regardless of kind.
+- **Mutation safety blames the harness for concurrent edits.** The guard
+  diffs whole-repo git status snapshots around the agent run; a human (or
+  another agent) editing source concurrently fails the run with "harness
+  reported change outside almanac/: src/..." even though the harness never
+  touched that file. Fail-safe is the right default, but the attribution and
+  message are wrong, and the run had already committed its wiki changes by
+  then.
+
+---
+
 ## Must-fix
 
 ### 1. better-sqlite3 native binding can break across Node installs
@@ -166,3 +280,33 @@ Decision for now: keep `better-sqlite3` plus guardrails, and revisit once
 
 `bootstrap` and `capture` are planned to become `almanac ingest` in a future
 release. This is product direction, not a current 0.1.6 bug.
+
+---
+
+## Deferred 2026-07-07 — `jobs cancel` does not stop a running job
+
+`codealmanac jobs cancel <run-id>` is a database-only status flip. For a
+**queued** run this works: the worker selects only `status = 'queued'`, so a
+cancelled queued run is never picked up. For a **running** run it is
+cosmetic: the worker never re-reads run status after starting, the harness
+subprocess PID is not recorded anywhere, and no signal is sent — the agent
+keeps running, keeps editing `almanac/`, and may still auto-commit.
+`finish_run` refuses to overwrite `CANCELLED`, so the record stays cancelled
+while the work actually completed: the status lies in the opposite direction.
+
+Deliberately deferred (2026-07-07 ship). Agreed direction when picked up:
+
+1. First commit: `jobs cancel` on a `RUNNING` job states plainly that it
+   cannot stop an executing run (no false promise).
+2. Real fix: stamp the worker pid on the run record at start; cancel flips
+   status, then signals the worker process group (SIGTERM, grace, SIGKILL)
+   after a liveness check to guard against pid reuse. Killed runs leave
+   uncommitted worktree changes for the user to review — consistent with the
+   "read the diff in git status" philosophy. Decide whether cancel respawns
+   the worker when other runs remain queued.
+3. Skip cooperative-checkpoint half-measures: they add machinery but still
+   let the agent burn tokens and finish the work.
+
+Relevant code: `services/runs/transitions.py` (`cancel_run`, `finish_run`),
+`workflows/run_queue/worker.py` (no status re-read), `services/runs/store.py`
+(`next_queued`).

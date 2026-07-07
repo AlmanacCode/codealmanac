@@ -43,7 +43,7 @@ README_REQUIRED_FRAGMENTS = (
     "codealmanac setup --yes --sync-every 5h",
     "codealmanac setup --yes --sync-off",
     "codealmanac init",
-    'codealmanac search "getting"',
+    'codealmanac search "getting started"',
     "codealmanac serve",
     "codealmanac ingest README.md --using codex",
     "codealmanac ingest github:pr:123 --using claude",
@@ -57,7 +57,10 @@ README_REQUIRED_FRAGMENTS = (
 
 README_FORBIDDEN_FRAGMENTS = (
     "npx codealmanac",
-    "npm install",
+    # codealmanac itself is never installed from npm; harness CLIs (codex,
+    # claude) are npm packages and their repair hints may name npm.
+    "npm install codealmanac",
+    "npm install -g codealmanac",
     "Node 20",
     "`almanac ",
     "`alm`",
@@ -262,7 +265,7 @@ def test_readme_quickstart_uses_search_that_works_after_init():
 
     quickstart = readme_section(readme, "## Quickstart")
 
-    assert 'codealmanac search "getting"' in quickstart
+    assert 'codealmanac search "getting started"' in quickstart
     assert "codealmanac show getting-started" in quickstart
     assert 'codealmanac search "auth"' not in quickstart
 

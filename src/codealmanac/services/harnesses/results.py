@@ -12,6 +12,7 @@ class HarnessReadiness(CodeAlmanacModel):
     kind: HarnessKind
     available: bool
     message: str
+    repair: str | None = None
 
     @field_validator("message")
     @classmethod

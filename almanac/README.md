@@ -1,50 +1,51 @@
 ---
 title: CodeAlmanac Wiki
-summary: Reading path for the local-first Python CodeAlmanac product.
-topics: [architecture, decisions, operations]
+topics: [wiki, overview]
 sources:
-  - id: readme
+  - id: repo-readme
     type: file
     path: README.md
-    note: Public product contract for the local alpha.
-  - id: agreement
+    note: Public product overview, commands, and local state description.
+  - id: live-agreement
     type: file
     path: docs/python-port-live-agreement.md
-    note: Living agreement for the Python rewrite.
-  - id: manual
+    note: Current Python rewrite constraints and local-only decisions.
+  - id: kernel-prompt
     type: file
-    path: MANUAL.md
-    note: Repo-specific build rules and product constraints.
+    path: src/codealmanac/prompts/base/kernel.md
+    note: Runtime rules for wiki-writing agents.
+  - id: coverage-map
+    type: file
+    path: almanac/coverage-map.md
+    note: Frozen page inventory for this wiki build.
 ---
 
 # CodeAlmanac Wiki
 
-CodeAlmanac is a local-first Python CLI that keeps a codebase wiki in `almanac/` and user-level state in `~/.codealmanac/` [@readme] [@agreement]. The product does not include hosted login, connect, upload, a public SDK surface, MCP, alternate roots, command aliases, or migration compatibility in this branch [@agreement] [@manual].
+The CodeAlmanac wiki is the committed knowledge base for this repository. It is a nested Markdown tree under `almanac/`, written for future coding agents who need the decisions, flows, invariants, and gotchas that code alone does not explain [@repo-readme] [@kernel-prompt]. This wiki routes readers from product concepts to architecture, guides, decisions, and reference pages so they can work in the Python rewrite without rediscovering the same context.
 
-This wiki is the durable project memory for the current product. It carries forward useful knowledge from the old repository wiki, but its page shape follows the new nested `almanac/` model.
+CodeAlmanac is local-first in this version. The repo-owned wiki source lives in `almanac/`, while derived indexes, run records, and scheduler state live under `~/.codealmanac/` [@repo-readme] [@live-agreement]. That split is the main fact to keep in mind when reading the pages here: Markdown is the durable source, local databases are runtime state.
 
-## Reading Path
+## Start Here
 
-Start with these pages:
+Begin with [Getting started](getting-started). It gives the shortest reading path for future agents and points to the dense clusters that matter first.
 
-- [Local-First Python](decisions/local-first-python) for the fork-point and product contract.
-- [Wiki Tree](architecture/wiki-tree) for page identity, folder layout, and root detection.
-- [Indexing](architecture/indexing) for the derived SQLite read model.
-- [Local Viewer](architecture/viewer) for `codealmanac serve` and the read-only browser API.
-- [Runs](architecture/runs) for build, ingest, garden, harness execution, and run records.
-- [Providers](architecture/providers) for Codex and Claude harness boundaries, auth requirements, and agent instruction installation.
-- [Prompt Intelligence](decisions/prompt-intelligence) for the no-pipeline rule.
-- [Source Provenance](decisions/source-provenance) for `sources:` and file evidence.
-- [Configuration](reference/configuration) for config file locations, keys, defaults, and precedence.
+The core idea is the [local repo wiki](concepts/local-repo-wiki): a browseable Markdown wiki committed with the code, plus derived local state for search and runs. That concept explains why page identity comes from paths, why `README.md` files are landing pages, and why file evidence belongs in `sources:`.
 
-## Notability Bar
+For implementation work, read [Service boundaries](architecture/service-boundaries). It explains how the CLI, app composition root, workflows, services, stores, ports, and integrations divide responsibility. For command behavior, use [CLI public command surface](reference/cli/public-command-surface). For config defaults and precedence, use [Config keys](reference/config-keys).
 
-Write a page when it preserves non-obvious project knowledge that will help a future agent work safely. Good pages explain a decision, cross-file flow, invariant, failure mode, external dependency, or product constraint.
+## Main Clusters
 
-Do not write pages that restate nearby code. Do not preserve hosted or cloud-era assumptions unless the page is explicitly explaining why they are out of scope.
+The wiki is organized by page role, not by source file:
 
-## Page Shape
+- `concepts/` defines repo-specific vocabulary such as local repo wiki, lifecycle operation, and source material.
+- `architecture/` explains ownership, flows, persistence, provider edges, and runtime resources.
+- `guides/` gives task-oriented procedures for changing or verifying the wiki.
+- `decisions/` records constraints that shape future work.
+- `reference/` documents exact contracts, commands, formats, and state shapes.
 
-Pages are Markdown files under `almanac/`. A nested page such as `almanac/architecture/indexing.md` has the page id `architecture/indexing`; a folder landing page such as `almanac/architecture/README.md` has the page id `architecture`.
+This first wiki build uses `almanac/coverage-map.md` as its page inventory. The map names each planned page, its purpose, nearby links, and evidence files [@coverage-map]. Treat it as build context, not as product documentation.
 
-Use Markdown links between pages. Use `sources:` entries for evidence.
+## Reading Rule
+
+Use the wiki as maintained synthesis, then verify behavior against current code when the two disagree. The runtime kernel gives the same rule to writing agents: code is authoritative for behavior, Markdown links are the page-link syntax, and file evidence belongs in structured `sources:` entries [@kernel-prompt].

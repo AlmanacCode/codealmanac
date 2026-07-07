@@ -122,6 +122,23 @@ def test_claude_adapter_reports_not_ready_when_command_is_missing(monkeypatch):
 
     assert readiness.available is False
     assert readiness.message == "claude not found on PATH"
+    assert readiness.repair is not None
+    assert "npm install -g @anthropic-ai/claude-code" in readiness.repair
+
+
+def test_claude_adapter_repairs_logged_out_cli_with_login_hint(monkeypatch):
+    monkeypatch.delenv(ANTHROPIC_API_KEY, raising=False)
+    runner = FakeCommandRunner(
+        (CommandResult(returncode=0, stdout='{"loggedIn": false}'),)
+    )
+    adapter = ClaudeSdkHarnessAdapter(runner=runner)
+
+    readiness = adapter.check()
+
+    assert readiness.available is False
+    assert readiness.message == "claude is not logged in"
+    assert readiness.repair is not None
+    assert "claude auth login" in readiness.repair
 
 
 def test_claude_adapter_reports_api_key_ready_when_cli_is_not_logged_in(

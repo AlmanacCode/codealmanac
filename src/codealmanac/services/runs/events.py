@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from codealmanac.core.paths import normalize_path
-from codealmanac.database.local import connect_local_database
+from codealmanac.database.local import open_local_database
 from codealmanac.services.harnesses.models import HarnessEvent
 from codealmanac.services.runs.models import RunEventKind, RunLogEvent
 from codealmanac.services.runs.tables import RUN_EVENT_TABLES
@@ -79,7 +79,4 @@ class RunEventStore:
         return tuple(RunLogEvent.model_validate_json(row["event_json"]) for row in rows)
 
     def connect(self):
-        connection = connect_local_database(self.database_path)
-        connection.executescript(RUN_EVENT_TABLES)
-        connection.commit()
-        return connection
+        return open_local_database(self.database_path, RUN_EVENT_TABLES)

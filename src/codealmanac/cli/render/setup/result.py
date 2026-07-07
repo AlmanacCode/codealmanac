@@ -1,22 +1,19 @@
-from dataclasses import dataclass
-
 from codealmanac.cli.render.brand import (
     BAR,
     BLUE,
     BLUE_DIM,
-    DIM,
     RST,
     WHITE_BOLD,
     print_badge,
     print_banner,
 )
 from codealmanac.cli.render.common import print_json_model
+from codealmanac.cli.render.setup.steps import SetupStep, render_setup_step
 from codealmanac.cli.render.setup.uninstall import render_uninstall_text
 from codealmanac.cli.render.terminal import (
     shell_command,
     terminal_width,
     visible_length,
-    wrap_with_prefixes,
     write_line,
 )
 from codealmanac.services.automation.models import (
@@ -26,13 +23,6 @@ from codealmanac.services.setup.models import (
     SetupResult,
     UninstallResult,
 )
-
-
-@dataclass(frozen=True)
-class SetupStep:
-    label: str
-    status: str
-    detail: str
 
 
 def render_setup_result(result: SetupResult, json_output: bool) -> None:
@@ -62,30 +52,6 @@ def render_setup_text(result: SetupResult) -> None:
             write_line(BAR)
     write_line("")
     render_next_steps_box(next_step_lines(result))
-
-
-def render_setup_step(step: SetupStep) -> None:
-    marker = "◇"
-    marker_style = BLUE
-    label_style = WHITE_BOLD
-    status_style = BLUE
-    if step.status in {"skipped", "disabled", "off"}:
-        marker = "○"
-        marker_style = DIM
-        label_style = DIM
-        status_style = DIM
-    write_line(
-        f"  {marker_style}{marker}{RST}  "
-        f"{label_style}{step.label}{RST} "
-        f"{status_style}{step.status}{RST}"
-    )
-    for detail in wrap_step_detail(step.detail):
-        write_line(detail)
-
-
-def wrap_step_detail(detail: str) -> tuple[str, ...]:
-    width = max(40, terminal_width() - 6)
-    return tuple(wrap_with_prefixes(detail, f"{BAR}   ", f"{BAR}   ", width))
 
 
 def next_step_lines(result: SetupResult) -> tuple[str, ...]:
@@ -149,9 +115,19 @@ def instruction_detail(result: SetupResult) -> str:
 
 
 def ai_runner_step(result: SetupResult) -> SetupStep:
+    readiness = result.runner_readiness
+    runner = result.plan.default_harness.value
+    if readiness is not None and not readiness.available:
+        return SetupStep(
+            "AI runner",
+            f"{runner} unavailable",
+            f"{readiness.message}; install {runner} or rerun setup "
+            "with --runner, then verify with: codealmanac doctor",
+            warning=True,
+        )
     return SetupStep(
         "AI runner",
-        result.plan.default_harness.value,
+        runner,
         f"{result.plan.harness_model} will run CodeAlmanac jobs",
     )
 

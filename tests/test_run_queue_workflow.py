@@ -21,6 +21,7 @@ from codealmanac.services.runs.requests import (
 )
 from codealmanac.services.search.requests import SearchPagesRequest
 from codealmanac.settings import AppConfig
+from codealmanac.workflows.build.requests import BuildRequest
 from codealmanac.workflows.ingest.requests import IngestRequest
 from codealmanac.workflows.run_queue import DrainRunQueueRequest
 
@@ -154,6 +155,41 @@ def test_run_queue_drains_persisted_ingest_spec(
         "queued ingest",
         "running",
     )
+
+
+def test_run_queue_drains_persisted_build_spec(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    initialize_git(repo)
+    harness = QueueWritingHarnessAdapter()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        harness_adapters=(harness,),
+    )
+    queued = app.workflows.queue.queue_build(
+        BuildRequest(
+            path=repo,
+            harness=HarnessKind.CODEX,
+            model="gpt-5.5",
+            name="repo",
+            guidance="Write the smallest useful first wiki.",
+        )
+    )
+
+    result = app.workflows.queue.drain(DrainRunQueueRequest())
+    runs = app.runs.list(ListRunsRequest(repository_name="repo"))
+
+    assert queued.status == RunStatus.QUEUED
+    assert (repo / "almanac/README.md").is_file()
+    assert result.lock_acquired is True
+    assert [record.run_id for record in result.processed] == [queued.run_id]
+    assert runs[0].status == RunStatus.DONE
+    assert len(harness.requests) == 1
+    assert "Build Operation" in harness.requests[0].prompt
+    assert "Write the smallest useful first wiki." in harness.requests[0].prompt
 
 
 def test_run_queue_skips_cancelled_queued_runs(

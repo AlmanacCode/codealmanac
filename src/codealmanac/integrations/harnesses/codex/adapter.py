@@ -22,6 +22,11 @@ from codealmanac.services.harnesses.requests import RunHarnessRequest
 
 CODEX_COMMAND = "codex"
 CODEX_STATUS_TIMEOUT_SECONDS = 10
+CODEX_INSTALL_REPAIR = "install the Codex CLI: npm install -g @openai/codex"
+CODEX_STATUS_REPAIR = (
+    "check `codex --version` — reinstall with `npm install -g @openai/codex` "
+    "if it fails, or sign in with `codex login`"
+)
 
 
 class CodexAppServerHarnessAdapter:
@@ -52,12 +57,14 @@ class CodexAppServerHarnessAdapter:
                 kind=self.kind,
                 available=False,
                 message="codex not found on PATH",
+                repair=CODEX_INSTALL_REPAIR,
             )
         except subprocess.TimeoutExpired:
             return HarnessReadiness(
                 kind=self.kind,
                 available=False,
                 message="codex login status timed out",
+                repair=CODEX_STATUS_REPAIR,
             )
         if result.returncode != 0:
             return HarnessReadiness(
@@ -65,6 +72,7 @@ class CodexAppServerHarnessAdapter:
                 available=False,
                 message=first_line(result.stderr, result.stdout)
                 or f"codex login status exited {result.returncode}",
+                repair=CODEX_STATUS_REPAIR,
             )
         return HarnessReadiness(
             kind=self.kind,
