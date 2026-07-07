@@ -3,10 +3,8 @@ from pathlib import Path
 from codealmanac.core.errors import error_summary
 from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.runs.models import (
-    RunKind,
     RunQueueDrainResult,
     RunRecord,
-    RunSpec,
     RunWorkerSpawnResult,
 )
 from codealmanac.services.runs.ports import RunWorkerSpawner
@@ -30,6 +28,12 @@ from codealmanac.workflows.run_queue.models import (
 from codealmanac.workflows.run_queue.requests import (
     DrainRunQueueRequest,
     ScheduledGardenRequest,
+)
+from codealmanac.workflows.run_queue.specs import (
+    garden_run_spec,
+    garden_run_title,
+    ingest_run_spec,
+    ingest_run_title,
 )
 from codealmanac.workflows.run_queue.worker import RunQueueWorker
 
@@ -58,15 +62,8 @@ class RunQueue:
         return self.runs.queue(
             QueueRunRequest(
                 repository_id=repository.repository_id,
-                title=request.title or default_ingest_title(request.inputs),
-                spec=RunSpec(
-                    kind=RunKind.INGEST,
-                    harness=request.harness,
-                    inputs=request.inputs,
-                    title=request.title,
-                    guidance=request.guidance,
-                    auto_commit=request.auto_commit,
-                ),
+                title=ingest_run_title(request),
+                spec=ingest_run_spec(request),
             )
         )
 
@@ -83,14 +80,8 @@ class RunQueue:
         return self.runs.queue(
             QueueRunRequest(
                 repository_id=repository.repository_id,
-                title=request.title or "Garden wiki",
-                spec=RunSpec(
-                    kind=RunKind.GARDEN,
-                    harness=request.harness,
-                    title=request.title,
-                    guidance=request.guidance,
-                    auto_commit=request.auto_commit,
-                ),
+                title=garden_run_title(request),
+                spec=garden_run_spec(request),
             )
         )
 
@@ -144,9 +135,3 @@ class RunQueue:
 
     def drain(self, request: DrainRunQueueRequest) -> RunQueueDrainResult:
         return self.worker.drain(request)
-
-
-def default_ingest_title(inputs: tuple[str, ...]) -> str:
-    if len(inputs) == 1:
-        return f"Ingest {inputs[0]}"
-    return f"Ingest {len(inputs)} sources"

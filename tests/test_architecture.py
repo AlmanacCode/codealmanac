@@ -1545,6 +1545,7 @@ def test_automation_service_keeps_selection_and_job_construction_boundaries():
 def test_run_queue_stays_operation_dispatch_only():
     run_queue_root = SRC_ROOT / "workflows/run_queue"
     service_text = (run_queue_root / "service.py").read_text(encoding="utf-8")
+    specs_text = (run_queue_root / "specs.py").read_text(encoding="utf-8")
     worker_text = (run_queue_root / "worker.py").read_text(encoding="utf-8")
 
     forbidden_fragments = (
@@ -1558,6 +1559,7 @@ def test_run_queue_stays_operation_dispatch_only():
     )
 
     assert (run_queue_root / "worker.py").is_file()
+    assert (run_queue_root / "specs.py").is_file()
     assert len(service_text.splitlines()) <= 170
     assert [
         fragment for fragment in forbidden_fragments if fragment in service_text
@@ -1566,6 +1568,8 @@ def test_run_queue_stays_operation_dispatch_only():
     assert "def drain(" in worker_text
     assert "StartedIngestRequest" in worker_text
     assert "StartedGardenRequest" in worker_text
+    assert "def ingest_run_spec(" in specs_text
+    assert "def garden_run_spec(" in specs_text
 
 
 def test_sync_workflow_policy_stays_out_of_service_orchestration():
