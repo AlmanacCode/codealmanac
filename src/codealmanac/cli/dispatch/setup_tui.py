@@ -1,32 +1,28 @@
 import argparse
-import os
-import select
-import sys
-import termios
-import tty
-from collections.abc import Iterator
-from contextlib import contextmanager
-from dataclasses import dataclass
 
+from codealmanac.cli.dispatch.setup_wizard.models import (
+    SetupCancelled,
+    SetupSelections,
+)
+from codealmanac.cli.dispatch.setup_wizard.options import (
+    change_options,
+    maintenance_options,
+    parse_setup_targets,
+    shortcut_option_index,
+    target_default_index,
+    target_options,
+    targets_for_index,
+    update_options,
+)
+from codealmanac.cli.dispatch.setup_wizard.terminal import (
+    read_setup_key,
+    supports_interactive_setup,
+    wizard_terminal,
+)
 from codealmanac.cli.render.setup import (
-    SetupChoiceOption,
     SetupChoiceScreen,
     render_setup_choice_screen,
 )
-from codealmanac.services.setup.models import SetupTarget
-
-
-@dataclass(frozen=True)
-class SetupSelections:
-    targets: tuple[SetupTarget, ...]
-    auto_update: bool
-    auto_commit: bool
-    sync_off: bool
-    garden_off: bool
-
-
-class SetupCancelled(Exception):
-    pass
 
 
 def resolve_setup_selections(args: argparse.Namespace) -> SetupSelections:
@@ -46,40 +42,12 @@ def default_setup_selections(args: argparse.Namespace) -> SetupSelections:
     )
 
 
-def supports_interactive_setup() -> bool:
-    return sys.stdin.isatty() and sys.stdout.isatty()
-
-
 def interactive_setup_selections(defaults: SetupSelections) -> SetupSelections:
     try:
         with wizard_terminal():
             return wizard_selections(defaults)
     except KeyboardInterrupt as error:
         raise SetupCancelled() from error
-
-
-@contextmanager
-def wizard_terminal() -> Iterator[None]:
-    """Own the terminal for the wizard's lifetime.
-
-    cbreak keeps keys immediate and unechoed while leaving output newline
-    translation on; the alternate screen keeps repaints out of scrollback.
-    """
-    try:
-        fd = sys.stdin.fileno()
-        previous = termios.tcgetattr(fd)
-    except (OSError, termios.error):
-        yield
-        return
-    sys.stdout.write("\x1b[?1049h\x1b[?25l")
-    sys.stdout.flush()
-    tty.setcbreak(fd)
-    try:
-        yield
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, previous)
-        sys.stdout.write("\x1b[?25h\x1b[?1049l")
-        sys.stdout.flush()
 
 
 def wizard_selections(defaults: SetupSelections) -> SetupSelections:
@@ -129,47 +97,6 @@ def wizard_selections(defaults: SetupSelections) -> SetupSelections:
     )
 
 
-def target_options() -> tuple[SetupChoiceOption, ...]:
-    return (
-        SetupChoiceOption(
-            "Codex + Claude",
-            (),
-            ("b",),
-        ),
-        SetupChoiceOption(
-            "Codex only",
-            (),
-            ("c",),
-        ),
-        SetupChoiceOption(
-            "Claude only",
-            (),
-            ("l",),
-        ),
-    )
-
-
-def maintenance_options() -> tuple[SetupChoiceOption, ...]:
-    return (
-        SetupChoiceOption("Automatic", ()),
-        SetupChoiceOption("Manual", ()),
-    )
-
-
-def update_options() -> tuple[SetupChoiceOption, ...]:
-    return (
-        SetupChoiceOption("Automatic", ()),
-        SetupChoiceOption("Manual", ()),
-    )
-
-
-def change_options() -> tuple[SetupChoiceOption, ...]:
-    return (
-        SetupChoiceOption("Commit changes", ()),
-        SetupChoiceOption("Leave in worktree", ()),
-    )
-
-
 def choose_setup_option(screen: SetupChoiceScreen, initial_index: int) -> int:
     selected_index = initial_index
     render_setup_choice_screen(screen, selected_index)
@@ -190,47 +117,3 @@ def choose_setup_option(screen: SetupChoiceScreen, initial_index: int) -> int:
         if next_index != selected_index:
             selected_index = next_index
             render_setup_choice_screen(screen, selected_index)
-
-
-def read_setup_key() -> str:
-    fd = sys.stdin.fileno()
-    sys.stdout.flush()
-    key = os.read(fd, 1).decode("utf-8", errors="ignore")
-    if key != "\x1b":
-        return key
-    for _ in range(2):
-        ready, _, _ = select.select([fd], [], [], 0.05)
-        if len(ready) == 0:
-            return key
-        key += os.read(fd, 1).decode("utf-8", errors="ignore")
-    return key
-
-
-def shortcut_option_index(screen: SetupChoiceScreen, key: str) -> int | None:
-    normalized = key.casefold()
-    for index, option in enumerate(screen.options):
-        if normalized in option.shortcuts:
-            return index
-    return None
-
-
-def target_default_index(targets: tuple[SetupTarget, ...]) -> int:
-    if targets == (SetupTarget.CODEX,):
-        return 1
-    if targets == (SetupTarget.CLAUDE,):
-        return 2
-    return 0
-
-
-def targets_for_index(index: int) -> tuple[SetupTarget, ...]:
-    if index == 1:
-        return (SetupTarget.CODEX,)
-    if index == 2:
-        return (SetupTarget.CLAUDE,)
-    return (SetupTarget.CODEX, SetupTarget.CLAUDE)
-
-
-def parse_setup_targets(value: str) -> tuple[SetupTarget, ...]:
-    if value == "all":
-        return (SetupTarget.CODEX, SetupTarget.CLAUDE)
-    return (SetupTarget(value),)
