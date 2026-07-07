@@ -5,6 +5,72 @@ list; see `docs/bugs/codealmanac-install-audit.md` for the historical audit.
 
 ---
 
+## Smoke run 2026-07-07 — `codealmanac init` on v0.3.1
+
+Environment: macOS arm64, Node v22.22.2 via nvm, `codealmanac 0.3.1`,
+`~/.codealmanac/config.toml` → `harness.default = "codex"`,
+`harness.model = "gpt-5.4-mini"`. Run in this repo's checkout. Job:
+`build-20260707051020-7c12ba63`.
+
+### S1. `init` fails hard when the codex CLI binary is missing (root cause: broken codex install, environmental)
+
+```text
+codealmanac: harness codex failed with status failed: Error: spawn
+/Users/divitsheth/.nvm/versions/node/v22.22.2/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex/codex ENOENT
+```
+
+The `@openai/codex` global npm package is broken on this machine: the
+platform package `@openai/codex-darwin-arm64` is installed and its
+`vendor/aarch64-apple-darwin/codex/` directory exists but is **empty** — the
+native binary was never extracted (or was removed, e.g. by an interrupted
+install/update or a disk cleanup). `codex --version` run directly fails with
+the exact same spawn ENOENT, so every codex invocation on this machine fails,
+not just ours. codealmanac correctly surfaced a real harness failure.
+
+### S2. `init` does not preflight the configured harness before starting the build job — FIXED 2026-07-07
+
+`init` announced the job id, printed the tagline ("every codebase deserves a
+biography"), created the job record, and only then died — in 0s — because the
+harness executable can't spawn.
+
+**Fix:** `BuildWorkflow.start` calls `HarnessesService.ensure_ready` before
+registering the repository or creating the run record, and
+`HarnessesService.run` re-checks readiness before every harness run (covers
+queued ingest/garden and sync runs picked up later by the worker). Verified
+end-to-end against the broken codex install: init exits 1 with a repair
+message, no job record, no `almanac/` scaffold.
+
+### S3. Harness failure error is raw and gives no remediation — FIXED 2026-07-07
+
+The user-facing error was the wrapped Node `spawn ... ENOENT` string with no
+repair path, stored verbatim in the job's `error:` field.
+
+**Fix:** `HarnessReadiness` gained an adapter-owned `repair` hint; the
+unavailable-harness error now reads (one line, so run records keep it whole):
+`harness codex is not available: <cause> — <repair>; or switch harness:
+codealmanac config set harness.default claude`. Runtime failures after a
+passing preflight still surface the honest raw output.
+
+### S4. Registry `almanac_root` is `.almanac`, contradicting the `almanac/`-only decision — RESOLVED, stale legacy file
+
+`~/.codealmanac/registry.json` (with `"almanac_root": ".almanac"`) is a
+leftover from the retired npm CLI. The Python CLI references it nowhere;
+repositories live in `~/.codealmanac/codealmanac.db` and `almanac_root` is
+validated to be exactly `almanac` (`require_default_almanac_root`). The stale
+file can be deleted by hand; nothing reads it.
+
+### S5. README quickstart drifted from the public-contract tests — FIXED 2026-07-07
+
+Found while landing S2/S3: `df627dfd` (2026-07-06) reworded the quickstart to
+`codealmanac search "getting started"` without running the gates, so
+`tests/test_public_contract.py` had two failures sitting on main. The tests
+were updated to the newer README wording. Related: the blanket
+`"npm install"` README ban was narrowed to `npm install codealmanac` forms —
+harness CLIs (codex, claude) are npm packages and the new troubleshooting
+section legitimately names their reinstall commands.
+
+---
+
 ## Must-fix
 
 ### 1. better-sqlite3 native binding can break across Node installs

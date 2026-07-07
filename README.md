@@ -270,6 +270,35 @@ file-reference navigation from local wiki data. By default it can switch across
 available registered local wikis. Use `codealmanac serve --wiki <name>` to
 narrow the viewer to one wiki.
 
+## Troubleshooting
+
+### `harness codex failed with status failed: Error: spawn ... codex ENOENT`
+
+The Codex CLI on this machine is broken or missing: the `@openai/codex`
+package is installed but its native binary is gone (a common result of an
+interrupted install or a Node version switch under nvm/volta/fnm). Verify
+with:
+
+```bash
+codex --version
+```
+
+If that fails with the same `spawn ... ENOENT`, reinstall the Codex CLI:
+
+```bash
+npm install -g @openai/codex
+```
+
+Or switch CodeAlmanac to the Claude harness instead:
+
+```bash
+codealmanac config set harness.default claude
+```
+
+The same applies to `harness claude failed` errors: check
+`claude --version`, reinstall the Claude Code CLI if broken, or switch the
+default harness. `codealmanac doctor` reports harness availability.
+
 ## Current Contract
 
 This rewrite is local-only for now.
