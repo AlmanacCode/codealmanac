@@ -1817,6 +1817,7 @@ def test_run_persistence_stays_split_by_responsibility():
     events_text = (runs_root / "events.py").read_text(encoding="utf-8")
     factory_text = (runs_root / "factory.py").read_text(encoding="utf-8")
     locks_text = (runs_root / "locks.py").read_text(encoding="utf-8")
+    queries_text = (runs_root / "queries.py").read_text(encoding="utf-8")
     service_text = (runs_root / "service.py").read_text(encoding="utf-8")
     streaming_text = (runs_root / "streaming.py").read_text(encoding="utf-8")
     tables_text = (runs_root / "tables.py").read_text(encoding="utf-8")
@@ -1839,6 +1840,7 @@ def test_run_persistence_stays_split_by_responsibility():
         "events.py",
         "factory.py",
         "locks.py",
+        "queries.py",
         "streaming.py",
         "tables.py",
         "transitions.py",
@@ -1851,6 +1853,9 @@ def test_run_persistence_stays_split_by_responsibility():
     assert "def new_run_record(" in factory_text
     assert "uuid4" in factory_text
     assert "strftime" in factory_text
+    assert "def list_run_records(" in queries_text
+    assert "def read_run_record(" in queries_text
+    assert "def next_queued_run(" in queries_text
     assert "def start_run(" in transitions_text
     assert "def finish_run(" in transitions_text
     assert "def cancel_run(" in transitions_text

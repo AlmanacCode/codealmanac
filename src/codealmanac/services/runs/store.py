@@ -22,6 +22,13 @@ from codealmanac.services.runs.models import (
     RunSpec,
     RunStatus,
 )
+from codealmanac.services.runs.queries import (
+    count_queued_runs_before,
+    list_run_records,
+    next_queued_run,
+    read_run_record,
+    read_run_with_spec,
+)
 from codealmanac.services.runs.tables import RUN_TABLES
 from codealmanac.services.runs.transitions import (
     attach_harness_transcript,
@@ -73,89 +80,31 @@ class RunStore:
         limit: int | None,
         repository_id: str | None = None,
     ) -> tuple[RunRecord, ...]:
-        query = """
-            SELECT record_json
-            FROM runs
-        """
-        parameters: tuple[object, ...]
-        if repository_id is None:
-            parameters = ()
-        else:
-            query = f"{query} WHERE repository_id = ?"
-            parameters = (repository_id,)
-        query = f"""
-            {query}
-            ORDER BY created_at DESC, run_id DESC
-        """
-        if limit is not None:
-            query = f"{query} LIMIT ?"
-            parameters = (*parameters, limit)
         with self.connect() as connection:
-            rows = connection.execute(query, parameters).fetchall()
-        return tuple(run_record_from_json(row["record_json"]) for row in rows)
+            return list_run_records(connection, limit, repository_id)
 
     def read(self, run_id: str) -> RunRecord:
         with self.connect() as connection:
-            row = connection.execute(
-                "SELECT record_json FROM runs WHERE run_id = ?",
-                (run_id,),
-            ).fetchone()
-        if row is None:
+            record = read_run_record(connection, run_id)
+        if record is None:
             raise NotFoundError("run", run_id)
-        return run_record_from_json(row["record_json"])
+        return record
 
     def read_spec(self, run_id: str) -> RunSpec | None:
         with self.connect() as connection:
-            row = connection.execute(
-                "SELECT spec_json FROM runs WHERE run_id = ?",
-                (run_id,),
-            ).fetchone()
-        if row is None:
+            result = read_run_with_spec(connection, run_id)
+        if result is None:
             raise NotFoundError("run", run_id)
-        if row["spec_json"] is None:
-            return None
-        return RunSpec.model_validate_json(row["spec_json"])
+        _, spec = result
+        return spec
 
     def next_queued(self) -> QueuedRun | None:
         with self.connect() as connection:
-            row = connection.execute(
-                """
-                SELECT record_json, spec_json
-                FROM runs
-                WHERE status = ? AND spec_json IS NOT NULL
-                ORDER BY created_at ASC, run_id ASC
-                LIMIT 1
-                """,
-                (RunStatus.QUEUED.value,),
-            ).fetchone()
-        if row is None:
-            return None
-        return QueuedRun(
-            record=run_record_from_json(row["record_json"]),
-            spec=RunSpec.model_validate_json(row["spec_json"]),
-        )
+            return next_queued_run(connection)
 
     def queued_before(self, record: RunRecord) -> int:
         with self.connect() as connection:
-            row = connection.execute(
-                """
-                SELECT COUNT(*)
-                FROM runs
-                WHERE status = ?
-                  AND spec_json IS NOT NULL
-                  AND (
-                    created_at < ?
-                    OR (created_at = ? AND run_id < ?)
-                  )
-                """,
-                (
-                    RunStatus.QUEUED.value,
-                    record.created_at.isoformat(),
-                    record.created_at.isoformat(),
-                    record.run_id,
-                ),
-            ).fetchone()
-        return int(row[0])
+            return count_queued_runs_before(connection, record)
 
     def acquire_worker_lock(
         self,
@@ -280,7 +229,3 @@ class RunStore:
         connection.executescript(RUN_TABLES)
         connection.commit()
         return connection
-
-
-def run_record_from_json(value: str) -> RunRecord:
-    return RunRecord.model_validate_json(value)
