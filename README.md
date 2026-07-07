@@ -23,7 +23,7 @@ indexed locally, and reviewed in Git like any other code change.
 ## Quickstart
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AlmanacCode/codealmanac/main/install.sh | sh
+curl -fsSL https://codealmanac.com/install.sh | sh
 
 cd your-repo
 codealmanac setup --yes
@@ -38,7 +38,7 @@ codealmanac serve
 With the install script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AlmanacCode/codealmanac/main/install.sh | sh
+curl -fsSL https://codealmanac.com/install.sh | sh
 ```
 
 or directly:
