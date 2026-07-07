@@ -6,6 +6,10 @@ sources:
     type: file
     path: README.md
     note: User-facing setup, automation, sync, jobs, and runtime-state commands.
+  - id: pyproject
+    type: file
+    path: pyproject.toml
+    note: Python version requirement and console script entry point.
   - id: setup-parser
     type: file
     path: src/codealmanac/cli/parser/setup.py
@@ -33,6 +37,12 @@ sources:
 Use this guide to install and verify CodeAlmanac's local scheduled work. Setup can install agent instructions, write the default runner config, and install scheduled `sync`, `garden`, and `update` tasks [@setup-service] [@setup-automation]. Automation is local machine state, not cloud sync, and its scheduler logs live under `~/.codealmanac/logs/` [@readme].
 
 The usual successful state is simple: setup has selected a runner, scheduled the tasks you want, `automation status` reports them installed, and `sync status` or `jobs` can show local lifecycle activity. For background, see [Automation and update](../architecture/setup/automation-and-update), [Config keys](../reference/config-keys), and [Run queue and sync](../architecture/lifecycle/run-queue-and-sync).
+
+## Install The CLI
+
+Install CodeAlmanac before running setup. The public README supports three install paths: the install script, `uv tool install codealmanac@latest`, or `python -m pip install codealmanac` [@readme]. From this checkout, use `uv sync` and then run commands through `uv run codealmanac ...` [@readme].
+
+The package requires Python 3.12 or newer, and the package metadata exposes `codealmanac` as the console script [@pyproject].
 
 ## Run Setup
 
