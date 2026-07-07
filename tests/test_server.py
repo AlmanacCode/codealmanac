@@ -55,10 +55,10 @@ def test_server_serves_static_assets_and_viewer_api(
     assert "clearJobPolling" in jobs_module.text
     assert "setTimeout" in jobs_module.text
     assert '"queued", "running"' in jobs_module.text
-    assert "Run output" in jobs_module.text
-    assert "stepMeta" in jobs_module.text
+    assert "Transcript" in jobs_module.text
+    assert "renderMarkdown" in jobs_module.text
     assert "Intl.DateTimeFormat" in jobs_module.text
-    assert "timeZoneName" in jobs_module.text
+    assert "groupByDay" in jobs_module.text
     assert 'replace("T", " ")' not in jobs_module.text
     assert overview.json()["repository"]["name"] == "repo"
     assert overview.json()["repositories"][0]["name"] == "repo"

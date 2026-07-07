@@ -1544,10 +1544,9 @@ def test_cli_jobs_inspects_local_run_records(
 
     assert main(["jobs", "logs", record.run_id]) == 0
     log_output = capsys.readouterr()
-    assert "   1  status  Queued Ingest\n" in log_output.out
-    assert "      queued ingest\n" in log_output.out
-    assert "   2  status  Read Note\n" in log_output.out
-    assert "      read note\n" in log_output.out
+    assert "  · Queued Ingest\n" in log_output.out
+    assert "  · Read Note\n" in log_output.out
+    assert "      queued ingest\n" not in log_output.out
 
     assert main(["jobs", "logs", record.run_id, "--json"]) == 0
     logs_json_output = capsys.readouterr()
@@ -1566,9 +1565,9 @@ def test_cli_jobs_inspects_local_run_records(
 
     assert main(["jobs", "attach", record.run_id]) == 0
     attach_output = capsys.readouterr()
-    assert "   1  status  Queued Ingest\n" in attach_output.out
-    assert "   2  status  Read Note\n" in attach_output.out
-    assert "   3  status  Done\n" in attach_output.out
+    assert "  · Queued Ingest\n" in attach_output.out
+    assert "  · Read Note\n" in attach_output.out
+    assert "  · Done\n" in attach_output.out
     assert "status: done\n" in attach_output.out
     assert "summary: digest complete\n" in attach_output.out
 

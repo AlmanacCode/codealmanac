@@ -64,39 +64,114 @@ def print_terminal_status(record: RunRecord) -> None:
         print(f"summary: {record.summary}")
 
 
+TOOL_VERBS = {
+    "read": "Read",
+    "write": "Wrote",
+    "edit": "Edited",
+    "search": "Searched",
+    "shell": "Ran",
+    "agent": "Delegated",
+    "web": "Fetched",
+    "mcp": "Called",
+    "image": "Viewed",
+}
+
+
 def render_run_step(step: RunStep) -> None:
-    sequence = f"{style.DIM}{step.sequence:>4}{style.RST}"
-    kind = step_kind_label(step)
-    print(f"{sequence}  {kind}  {step.title}")
+    if step.kind == RunStepKind.ASSISTANT:
+        render_assistant_step(step)
+    elif step.kind in {RunStepKind.TOOL, RunStepKind.AGENT}:
+        render_tool_step(step)
+    else:
+        render_note_step(step)
+
+
+def render_assistant_step(step: RunStep) -> None:
+    actor = step.actor or "assistant"
+    print(f"  {style.BLUE}▌{style.RST} {style.DIM}{actor}{style.RST}")
     if step.body:
-        print_indented(step.body)
-    meta = step_meta(step)
+        print_indented(step.body.strip(), dim=False)
+
+
+def render_tool_step(step: RunStep) -> None:
+    mark = tool_mark(step)
+    verb = tool_verb(step)
+    line = f"  {mark} {style.BOLD}{verb}{style.RST}"
+    target = tool_target(step)
+    if target:
+        line += f"  {target}"
+    print(line)
+    meta = tool_meta(step)
     if meta:
         print(f"      {style.DIM}{meta}{style.RST}")
 
 
-def step_kind_label(step: RunStep) -> str:
-    if step.error or step.kind == RunStepKind.ERROR:
-        return f"{style.RED}error{style.RST}"
-    if step.kind == RunStepKind.TOOL:
-        return f"{style.BLUE}tool{style.RST}"
+def render_note_step(step: RunStep) -> None:
+    errored = step.error or step.kind == RunStepKind.ERROR
+    mark = f"{style.RED}✕{style.RST}" if errored else f"{style.DIM}·{style.RST}"
+    print(f"  {mark} {step.title}")
+    if step.body and step.body.strip().lower() != step.title.lower():
+        print_indented(step.body.strip(), dim=True)
+    if step.detail:
+        print_indented(step.detail.strip(), dim=True)
+
+
+def tool_mark(step: RunStep) -> str:
+    status = (step.status or "").lower()
+    if step.error or status == "failed":
+        return f"{style.RED}✕{style.RST}"
+    if status in {"completed", "done"}:
+        return f"{style.GREEN}●{style.RST}"
+    return f"{style.BLUE}◐{style.RST}"
+
+
+def tool_verb(step: RunStep) -> str:
     if step.kind == RunStepKind.AGENT:
-        return f"{style.BLUE}agent{style.RST}"
-    if step.kind == RunStepKind.STATUS:
-        return f"{style.DIM}status{style.RST}"
-    return f"{style.BLUE}text{style.RST}"
+        return step.title
+    verb = TOOL_VERBS.get((step.tool or "").lower())
+    return verb or step.title
 
 
-def step_meta(step: RunStep) -> str:
-    parts = [
-        step.status,
-        step.tool,
-        step.target,
-        step.detail,
+def tool_target(step: RunStep) -> str | None:
+    if step.kind == RunStepKind.AGENT or step.target is None:
+        return None
+    return truncate_middle(step.target, 68)
+
+
+def tool_meta(step: RunStep) -> str:
+    parts: list[str] = []
+    if step.tool:
+        parts.append(step.tool)
+    status = (step.status or "").lower()
+    if status and status not in {"completed", "started"}:
+        parts.append(status)
+    extras = detail_extras(step.detail, step.target)
+    if extras:
+        parts.append(extras)
+    return " · ".join(parts)
+
+
+def detail_extras(detail: str | None, target: str | None) -> str | None:
+    if not detail:
+        return None
+    kept = [
+        token
+        for token in detail.split(" · ")
+        if token and token != target and "/" not in token
     ]
-    return " · ".join(part for part in parts if part)
+    return " · ".join(kept) or None
 
 
-def print_indented(value: str) -> None:
+def truncate_middle(value: str, limit: int) -> str:
+    if len(value) <= limit:
+        return value
+    head = (limit - 1) * 6 // 10
+    tail = max(8, limit - head - 1)
+    return f"{value[:head]}…{value[-tail:]}"
+
+
+def print_indented(value: str, *, dim: bool) -> None:
+    prefix = style.DIM if dim else ""
+    suffix = style.RST if dim else ""
     for line in value.splitlines() or [value]:
-        print(f"      {line}")
+        print(f"      {prefix}{line}{suffix}")
