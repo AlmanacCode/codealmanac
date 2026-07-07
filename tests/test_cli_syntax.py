@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 from codealmanac.cli.main import build_parser, main
@@ -71,3 +73,17 @@ def test_parser_raises_shaped_syntax_problem_without_rendering(capsys):
     assert output.err == ""
     assert error.value.problem.kind == SyntaxProblemKind.UNKNOWN_COMMAND
     assert error.value.problem.replacement == "codealmanac search"
+
+
+def test_syntax_screen_uses_blue_hierarchy_for_terminal(monkeypatch, capsys):
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+
+    assert main(["jobs", "list"]) == 2
+
+    output = capsys.readouterr()
+    assert "\x1b[38;5;75m\x1b[1mUnknown command\x1b[0m" in output.err
+    assert "\x1b[38;5;75mUse this instead:\x1b[0m" in output.err
+    assert "\x1b[38;5;75m\x1b[1mJobs commands\x1b[0m" in output.err
+    assert "\x1b[38;5;75m\x1b[1mCOMMAND" in output.err
+    assert "\x1b[38;5;75mcodealmanac jobs show <run-id>\x1b[0m" in output.err

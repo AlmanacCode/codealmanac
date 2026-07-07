@@ -82,7 +82,7 @@ def table(headers: tuple[str, ...], rows: list[tuple[str, ...]]) -> list[str]:
     ]
     header_line = table_row(headers, widths)
     if use_color():
-        header_line = f"{style.BOLD}{header_line}{style.RST}"
+        header_line = f"{style.BLUE}{style.BOLD}{header_line}{style.RST}"
     return [header_line, *(table_row(row, widths) for row in rows)]
 
 
