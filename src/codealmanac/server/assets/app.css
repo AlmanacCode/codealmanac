@@ -412,7 +412,7 @@ button {
 }
 
 .wiki-rail-list a.is-active {
-  box-shadow: inset 2px 0 0 var(--accent);
+  background: rgba(42, 46, 28, 0.08);
   font-weight: 650;
 }
 
