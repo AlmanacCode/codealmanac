@@ -1,6 +1,6 @@
 ---
 title: Add A Source Runtime Adapter
-topics: [guides, sources]
+topics: [guides, sources, ingest]
 sources:
   - id: source-port
     type: file

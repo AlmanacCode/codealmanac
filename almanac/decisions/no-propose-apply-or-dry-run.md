@@ -30,9 +30,9 @@ sources:
 
 # No Propose/Apply Or Dry-Run
 
-CodeAlmanac does not wrap wiki-writing agents in proposal files, apply steps, dry-run rehearsals, or approve/revise/reject state machines. When an operation needs judgment, the product gives an agent concrete source material, manuals, prompts, and constraints, then expects the agent to write or no-op directly [@manual][@live_agreement].
+CodeAlmanac does not wrap wiki-writing agents in proposal files, apply steps, dry-run rehearsals, or approve/revise/reject state machines. When an operation needs judgment, the product gives an agent concrete source material, [prompts and manuals](../architecture/runtime-resources/prompts-and-manuals), and constraints, then expects the agent to write or no-op directly [@manual][@live_agreement].
 
-The decision is structural. CodeAlmanac owns deterministic mechanics such as repository selection, source loading, harness execution, run logging, mutation safety, indexing, and validation. The agent owns editorial judgment: what matters, what page should change, what links and topics make sense, and whether the best result is no change [@ingest_prompt][@garden_prompt].
+The decision is structural. CodeAlmanac owns deterministic mechanics such as repository selection, source loading, harness execution, run logging, prompt rendering, indexing, and validation. The agent owns editorial judgment: what matters, what page should change, what links and topics make sense, and whether the best result is no change [@ingest_prompt][@garden_prompt].
 
 ## Context
 
@@ -52,6 +52,6 @@ The base kernel prompt reinforces the contract. It tells agents to write or edit
 
 The product avoids a second editing language. There are no proposal JSON files for the agent to emit, no `--apply` flag that turns proposals into pages, and no dry-run output that pretends to be a safe substitute for doing the work. If the agent changes the wiki badly, the user reviews the normal Git diff and fixes or reverts the ordinary files.
 
-The benefit is a smaller system with fewer stale intermediate contracts. Prompt text can evolve as writing standards change, while deterministic code stays focused on capabilities that prompts cannot provide: local state, source snapshots, run records, safety checks, and index refresh.
+The benefit is a smaller system with fewer stale intermediate contracts. Prompt text can evolve as writing standards change, while deterministic code stays focused on capabilities that prompts cannot provide: local state, source snapshots, run records, validation checks, and index refresh.
 
 The cost is that prompts must be strong. Ingest and Garden have to describe durable knowledge, source handling, graph hygiene, validation, and no-op behavior clearly because there is no proposal schema to compensate for weak instructions [@ingest_prompt][@garden_prompt]. [Auto-commit is prompt policy](auto-commit-is-prompt-policy) follows from the same choice: the product gives the writer permission and constraints through a prompt-rendered source-control policy, not a hidden committer [@commit_policy].

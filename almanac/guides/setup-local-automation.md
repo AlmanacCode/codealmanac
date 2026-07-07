@@ -1,6 +1,6 @@
 ---
 title: Setup Local Automation
-topics: [guides]
+topics: [guides, setup, automation]
 sources:
   - id: readme
     type: file

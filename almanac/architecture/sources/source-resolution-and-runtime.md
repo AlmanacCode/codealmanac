@@ -1,6 +1,6 @@
 ---
 title: Source Resolution And Runtime
-topics: [architecture, sources]
+topics: [architecture, sources, ingest]
 sources:
   - id: source_service
     type: file

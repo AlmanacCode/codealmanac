@@ -46,7 +46,7 @@ This decision keeps authorship and judgment together. Lifecycle agents decide wh
 
 The active Python agreement states the rule directly: intelligence lives in prompts, and auto-commit is prompt policy rather than CodeAlmanac staging or smart Git orchestration [@live_agreement]. It also records the default as `auto_commit = true`, with `setup --no-auto-commit` and `config set auto_commit false` changing only the prompt permission [@live_agreement].
 
-The base prompt follows the same contract. It tells the agent to follow the runtime `source_control` policy, and if committing is allowed, to use normal Git commands and commit only the allowed wiki source files named by that policy [@kernel].
+The base prompt follows the same contract. It tells the agent to follow the runtime `source_control` policy, and if committing is allowed, to use normal Git commands and commit only the allowed wiki source files named by that policy [@kernel]. The broader prompt and manual packaging path is described in [Prompts and manuals](../architecture/runtime-resources/prompts-and-manuals).
 
 ## Decision
 
