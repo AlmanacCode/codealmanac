@@ -90,16 +90,16 @@ def handshake():
         fail(f"thread is not ephemeral: {thread_params}")
     if thread_params.get("approvalPolicy") != "never":
         fail(f"approval policy is not never: {thread_params}")
-    if thread_params.get("sandbox") != "repository-write":
+    if thread_params.get("sandbox") != "danger-full-access":
         fail(f"bad thread sandbox: {thread_params}")
     respond(thread, {"thread": {"id": "thread-root"}})
 
     turn = expect_request("turn/start")
     turn_params = turn.get("params", {})
     sandbox = turn_params.get("sandboxPolicy", {})
-    if sandbox.get("type") != "repositoryWrite":
+    if sandbox.get("type") != "dangerFullAccess":
         fail(f"bad turn sandbox type: {turn_params}")
-    if sandbox.get("networkAccess") is not False:
+    if "networkAccess" in sandbox:
         fail(f"turn has network access: {turn_params}")
     inputs = turn_params.get("input", [])
     if inputs[0].get("text") != "Update the wiki.":
@@ -418,7 +418,7 @@ def fake_codex_path(tmp_path: Path, scenario: str) -> str:
 def run_request(tmp_path: Path) -> RunHarnessRequest:
     return RunHarnessRequest(
         kind=HarnessKind.CODEX,
-                model="gpt-5.5",
+        model="gpt-5.5",
         cwd=tmp_path,
         prompt="Update the wiki.",
     )
