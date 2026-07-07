@@ -20,6 +20,7 @@ class ViewerPageSummary(CodeAlmanacModel):
     slug: str
     title: str | None
     summary: str | None
+    path: str
     topics: tuple[str, ...]
 
 
@@ -51,6 +52,7 @@ class ViewerOverview(CodeAlmanacModel):
     page_count: int
     topic_count: int
     pages: tuple[ViewerPageSummary, ...]
+    navigation_pages: tuple[ViewerPageSummary, ...]
     topics: tuple[ViewerTopicSummary, ...]
     featured_page: ViewerPageSummary | None
 

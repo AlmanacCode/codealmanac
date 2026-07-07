@@ -689,7 +689,7 @@ button {
   bottom: calc(100% + 8px);
   left: 50%;
   width: max-content;
-  max-width: min(22rem, 72vw);
+  max-width: 22rem;
   transform: translateX(-50%);
   border: 1px solid var(--border);
   border-radius: 6px;

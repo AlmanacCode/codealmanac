@@ -61,6 +61,10 @@ class ViewerService:
             repository.repository_id,
             SearchIndexRequest(limit=request.page_limit),
         )
+        navigation_pages = self.index.search(
+            repository.repository_id,
+            SearchIndexRequest(),
+        )
         topics = self.index.list_topics(repository.repository_id)
         return ViewerOverview(
             repository=viewer_repository(repository),
@@ -70,7 +74,11 @@ class ViewerService:
             ),
             page_count=summary.pages,
             topic_count=summary.topics,
-            pages=tuple(page_summary_from_search(page) for page in pages),
+            pages=tuple(page_summary_from_search(repository, page) for page in pages),
+            navigation_pages=tuple(
+                page_summary_from_search(repository, page)
+                for page in navigation_pages
+            ),
             topics=tuple(viewer_topic_summary(topic) for topic in topics),
             featured_page=self.get_featured_page(repository),
         )
@@ -111,7 +119,7 @@ class ViewerService:
         return ViewerSearch(
             repository=viewer_repository(repository),
             query=request.query,
-            pages=tuple(page_summary_from_search(page) for page in pages),
+            pages=tuple(page_summary_from_search(repository, page) for page in pages),
         )
 
     def file(self, request: ViewerFileRequest) -> ViewerFile:
@@ -129,7 +137,7 @@ class ViewerService:
             repository=viewer_repository(repository),
             path=request.path,
             kind=kind,
-            pages=tuple(page_summary_from_search(page) for page in pages),
+            pages=tuple(page_summary_from_search(repository, page) for page in pages),
         )
 
     def topic(self, request: ViewerTopicRequest) -> ViewerTopic:
@@ -198,7 +206,7 @@ class ViewerService:
         page = self.index.get_page(repository.repository_id, slug)
         if page is None:
             return None
-        return page_summary_from_view(page)
+        return page_summary_from_view(repository, page)
 
     def get_featured_page(self, repository: Repository) -> ViewerPageSummary | None:
         return self.page_summary(repository, "README")

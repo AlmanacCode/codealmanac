@@ -21,6 +21,7 @@ class SearchPageResult(CodeAlmanacModel):
     slug: str
     title: str | None
     summary: str | None
+    file_path: Path
     updated_at: int
     topics: tuple[str, ...]
 
