@@ -71,6 +71,17 @@ def test_harnesses_service_reports_readiness():
     assert all(check.available for check in checks)
 
 
+def test_harnesses_service_readiness_answers_for_unregistered_kind():
+    service = HarnessesService((FakeHarnessAdapter(HarnessKind.CODEX),))
+
+    registered = service.readiness(HarnessKind.CODEX)
+    unregistered = service.readiness(HarnessKind.CLAUDE)
+
+    assert registered.available is True
+    assert unregistered.available is False
+    assert unregistered.message == "no claude harness adapter is registered"
+
+
 def test_harnesses_service_rejects_missing_or_duplicate_adapters(tmp_path: Path):
     service = HarnessesService()
 

@@ -17,6 +17,17 @@ class HarnessesService:
     def check(self) -> tuple[HarnessReadiness, ...]:
         return tuple(adapter.check() for adapter in self.adapters.values())
 
+    def readiness(self, kind: HarnessKind) -> HarnessReadiness:
+        try:
+            adapter = self.adapter_for(kind)
+        except NotFoundError:
+            return HarnessReadiness(
+                kind=kind,
+                available=False,
+                message=f"no {kind.value} harness adapter is registered",
+            )
+        return adapter.check()
+
     def run(self, request: RunHarnessRequest) -> HarnessRunResult:
         return self.adapter_for(request.kind).run(request)
 

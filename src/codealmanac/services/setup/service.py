@@ -2,6 +2,7 @@ from codealmanac.services.automation.requests import UninstallAutomationRequest
 from codealmanac.services.config.models import ConfigKey, ConfigSetResult
 from codealmanac.services.config.requests import SetConfigValueRequest
 from codealmanac.services.config.service import ConfigService
+from codealmanac.services.harnesses.models import HarnessReadiness
 from codealmanac.services.setup.automation import (
     install_automation_request,
     should_install_automation,
@@ -12,6 +13,7 @@ from codealmanac.services.setup.ports import (
     GlobalStateRemover,
     InstructionInstaller,
     PackageUninstaller,
+    RunnerReadinessProbe,
     SetupAutomationManager,
 )
 from codealmanac.services.setup.requests import (
@@ -29,17 +31,17 @@ class SetupService:
         global_state: GlobalStateRemover,
         package_uninstaller: PackageUninstaller,
         config: ConfigService | None = None,
+        runner_probe: RunnerReadinessProbe | None = None,
     ):
         self._instructions = instructions
         self._automation = automation
         self._global_state = global_state
         self._package_uninstaller = package_uninstaller
         self._config = config
+        self._runner_probe = runner_probe
 
     def run(self, request: RunSetupRequest) -> SetupResult:
-        plan = setup_plan(request)
         config_updates = self.set_config(request)
-        config_update = config_updates[0] if len(config_updates) > 0 else None
         changes = ()
         if not request.skip_instructions:
             changes = self._instructions.install(request.targets)
@@ -48,21 +50,20 @@ class SetupService:
             automation_install = self._automation.install(
                 install_automation_request(request)
             )
-        if request.skip_instructions:
-            return SetupResult(
-                plan=plan,
-                skipped_instructions=True,
-                config_update=config_update,
-                config_updates=config_updates,
-                automation_install=automation_install,
-            )
         return SetupResult(
-            plan=plan,
+            plan=setup_plan(request),
+            skipped_instructions=request.skip_instructions,
             changes=changes,
-            config_update=config_update,
+            config_update=config_updates[0] if len(config_updates) > 0 else None,
             config_updates=config_updates,
             automation_install=automation_install,
+            runner_readiness=self.runner_readiness(request),
         )
+
+    def runner_readiness(self, request: RunSetupRequest) -> HarnessReadiness | None:
+        if self._runner_probe is None:
+            return None
+        return self._runner_probe.readiness(request.harness)
 
     def uninstall(self, request: RunUninstallRequest) -> UninstallResult:
         changes = self._instructions.uninstall(DEFAULT_SETUP_TARGETS)

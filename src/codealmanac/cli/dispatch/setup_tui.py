@@ -29,7 +29,8 @@ from codealmanac.cli.render.setup import (
     SetupChoiceScreen,
     render_setup_choice_screen,
 )
-from codealmanac.services.config.models import DEFAULT_HARNESS, DEFAULT_HARNESS_MODEL
+from codealmanac.services.config.models import DEFAULT_HARNESS, DEFAULT_HARNESS_MODELS
+from codealmanac.services.harnesses.models import HarnessKind
 
 
 def resolve_setup_selections(args: argparse.Namespace) -> SetupSelections:
@@ -40,10 +41,11 @@ def resolve_setup_selections(args: argparse.Namespace) -> SetupSelections:
 
 
 def default_setup_selections(args: argparse.Namespace) -> SetupSelections:
+    harness = DEFAULT_HARNESS if args.runner is None else HarnessKind(args.runner)
     return SetupSelections(
         targets=parse_setup_targets(args.target),
-        harness=DEFAULT_HARNESS,
-        model=DEFAULT_HARNESS_MODEL,
+        harness=harness,
+        model=DEFAULT_HARNESS_MODELS[harness],
         auto_update=not args.no_auto_update,
         auto_commit=not args.no_auto_commit,
         sync_off=args.sync_off,

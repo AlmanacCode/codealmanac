@@ -11,7 +11,7 @@ from codealmanac.services.automation.models import (
     AutomationUninstallResult,
 )
 from codealmanac.services.config.models import ConfigSetResult
-from codealmanac.services.harnesses.models import HarnessKind
+from codealmanac.services.harnesses.models import HarnessKind, HarnessReadiness
 from codealmanac.services.updates.models import UpdateInstallMethod
 
 
@@ -104,6 +104,7 @@ class SetupResult(CodeAlmanacModel):
     config_update: ConfigSetResult | None = None
     config_updates: tuple[ConfigSetResult, ...] = ()
     automation_install: AutomationInstallResult | None = None
+    runner_readiness: HarnessReadiness | None = None
 
 
 class GlobalStateRemovalResult(CodeAlmanacModel):

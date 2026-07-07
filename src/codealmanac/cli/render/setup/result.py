@@ -4,6 +4,7 @@ from codealmanac.cli.render.brand import (
     BAR,
     BLUE,
     BLUE_DIM,
+    DIFF_RED,
     DIM,
     RST,
     WHITE_BOLD,
@@ -33,6 +34,7 @@ class SetupStep:
     label: str
     status: str
     detail: str
+    warning: bool = False
 
 
 def render_setup_result(result: SetupResult, json_output: bool) -> None:
@@ -74,6 +76,10 @@ def render_setup_step(step: SetupStep) -> None:
         marker_style = DIM
         label_style = DIM
         status_style = DIM
+    if step.warning:
+        marker = "▲"
+        marker_style = DIFF_RED
+        status_style = DIFF_RED
     write_line(
         f"  {marker_style}{marker}{RST}  "
         f"{label_style}{step.label}{RST} "
@@ -149,9 +155,19 @@ def instruction_detail(result: SetupResult) -> str:
 
 
 def ai_runner_step(result: SetupResult) -> SetupStep:
+    readiness = result.runner_readiness
+    runner = result.plan.default_harness.value
+    if readiness is not None and not readiness.available:
+        return SetupStep(
+            "AI runner",
+            f"{runner} unavailable",
+            f"{readiness.message}; install {runner} or rerun setup "
+            "with --runner, then verify with: codealmanac doctor",
+            warning=True,
+        )
     return SetupStep(
         "AI runner",
-        result.plan.default_harness.value,
+        runner,
         f"{result.plan.harness_model} will run CodeAlmanac jobs",
     )
 

@@ -24,6 +24,7 @@ from codealmanac.services.automation.requests import (
     InstallAutomationRequest,
     UninstallAutomationRequest,
 )
+from codealmanac.services.harnesses.models import HarnessKind, HarnessReadiness
 from codealmanac.services.setup.models import (
     PackageUninstallResult,
     PackageUninstallStatus,
@@ -334,6 +335,26 @@ def test_package_uninstaller_reports_failed_command():
     assert result.stderr == "permission denied"
 
 
+def test_setup_reports_unavailable_runner_readiness(home: Path):
+    probe = FakeRunnerProbe(available=False, message="codex not found on PATH")
+    service = setup_service(home, runner_probe=probe)
+
+    result = service.run(RunSetupRequest(targets=(SetupTarget.CODEX,)))
+
+    assert probe.checked == [HarnessKind.CODEX]
+    assert result.runner_readiness is not None
+    assert result.runner_readiness.available is False
+    assert result.runner_readiness.message == "codex not found on PATH"
+
+
+def test_setup_without_probe_reports_no_readiness(home: Path):
+    service = setup_service(home)
+
+    result = service.run(RunSetupRequest(targets=(SetupTarget.CODEX,)))
+
+    assert result.runner_readiness is None
+
+
 @pytest.fixture
 def home(tmp_path: Path) -> Path:
     return tmp_path / "home"
@@ -343,13 +364,30 @@ def setup_service(
     home: Path,
     automation: "FakeSetupAutomationManager | None" = None,
     package_uninstaller: "FakePackageUninstaller | None" = None,
+    runner_probe: "FakeRunnerProbe | None" = None,
 ) -> SetupService:
     return SetupService(
         FileInstructionInstaller(home),
         automation or FakeSetupAutomationManager(home),
         FilesystemGlobalStateRemover(home / ".codealmanac"),
         package_uninstaller or FakePackageUninstaller(skipped_package_result()),
+        runner_probe=runner_probe,
     )
+
+
+class FakeRunnerProbe:
+    def __init__(self, available: bool, message: str):
+        self.available = available
+        self.message = message
+        self.checked: list[HarnessKind] = []
+
+    def readiness(self, kind: HarnessKind) -> HarnessReadiness:
+        self.checked.append(kind)
+        return HarnessReadiness(
+            kind=kind,
+            available=self.available,
+            message=self.message,
+        )
 
 
 class FakeSetupAutomationManager:

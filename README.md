@@ -77,6 +77,7 @@ Plain setup installs local agent instructions plus the default local automation:
 sync, Garden, and daily package update. It does not connect to a hosted service.
 
 ```bash
+codealmanac setup --yes --runner claude
 codealmanac setup --yes --sync-every 5h
 codealmanac setup --yes --sync-off
 codealmanac setup --yes --garden-off
