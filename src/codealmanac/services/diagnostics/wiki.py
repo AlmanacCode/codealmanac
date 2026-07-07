@@ -52,7 +52,7 @@ def select_repository(
     repositories: RepositoriesService,
 ) -> Repository | DoctorCheck:
     try:
-        return repositories.select_read_repository(request.cwd, request.repository_name)
+        return repositories.select_for_read(request.cwd, request.repository_name)
     except NoRepositorySelected:
         return DoctorCheck(
             key="wiki.none",

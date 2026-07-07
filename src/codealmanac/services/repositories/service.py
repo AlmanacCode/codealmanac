@@ -82,13 +82,13 @@ class RepositoriesService:
             raise NotFoundError("repository", repository_id)
         return entry.to_repository()
 
-    def find_by_path(self, path: Path) -> Repository | None:
-        entry = self.store.find_by_path(path)
+    def find_by_root_path(self, path: Path) -> Repository | None:
+        entry = self.store.find_by_root_path(path)
         if entry is None:
             return None
         return entry.to_repository()
 
-    def select(self, request: SelectRepositoryRequest) -> Repository:
+    def select_by_name(self, request: SelectRepositoryRequest) -> Repository:
         entries = self.store.list()
         selected = select_repository_record(request, entries)
         if selected is not None:
@@ -102,17 +102,17 @@ class RepositoriesService:
             return exact.to_repository()
         raise NoRepositorySelected()
 
-    def select_operation_repository(
+    def select_for_operation(
         self,
         cwd: Path,
         repository_name: str | None,
     ) -> Repository:
         if repository_name is None:
             return self.resolve(cwd)
-        return self.select(SelectRepositoryRequest(name=repository_name))
+        return self.select_by_name(SelectRepositoryRequest(name=repository_name))
 
-    def resolve_read_repository(self, path: Path) -> Repository:
-        registered = self.find_by_path(path)
+    def repository_for_read_path(self, path: Path) -> Repository:
+        registered = self.find_by_root_path(path)
         if registered is not None:
             return registered
         normalized = normalize_path(path)
@@ -125,14 +125,14 @@ class RepositoriesService:
             )
         raise NoRepositorySelected()
 
-    def select_read_repository(
+    def select_for_read(
         self,
         cwd: Path,
         repository_name: str | None,
     ) -> Repository:
         if repository_name is None:
-            return self.resolve_read_repository(cwd)
-        return self.select(SelectRepositoryRequest(name=repository_name))
+            return self.repository_for_read_path(cwd)
+        return self.select_by_name(SelectRepositoryRequest(name=repository_name))
 
     def validate_path(self, repository_id: str, path: Path) -> Path:
         repository = self.get(repository_id)

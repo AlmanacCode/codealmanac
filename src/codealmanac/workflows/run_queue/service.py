@@ -51,7 +51,7 @@ class RunQueue:
         self.worker = RunQueueWorker(runs, ingest, garden)
 
     def queue_ingest(self, request: IngestRequest) -> RunRecord:
-        repository = self.repositories.select_operation_repository(
+        repository = self.repositories.select_for_operation(
             request.cwd,
             request.repository_name,
         )
@@ -76,7 +76,7 @@ class RunQueue:
         return self.start_result(run, worker)
 
     def queue_garden(self, request: GardenRequest) -> RunRecord:
-        repository = self.repositories.select_operation_repository(
+        repository = self.repositories.select_for_operation(
             request.cwd,
             request.repository_name,
         )

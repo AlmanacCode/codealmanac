@@ -153,7 +153,9 @@ class RunsService:
     def selected_repository(self, repository_name: str | None) -> Repository | None:
         if repository_name is None:
             return None
-        return self.repositories.select(SelectRepositoryRequest(name=repository_name))
+        return self.repositories.select_by_name(
+            SelectRepositoryRequest(name=repository_name)
+        )
 
     def require_selected_run(
         self,

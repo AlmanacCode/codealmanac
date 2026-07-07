@@ -57,7 +57,7 @@ class HealthService:
         return result
 
     def select_repository(self, cwd: Path, repository_name: str | None) -> Repository:
-        return self.repositories.select_read_repository(cwd, repository_name)
+        return self.repositories.select_for_read(cwd, repository_name)
 
 
 def validation_result(

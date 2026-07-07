@@ -35,7 +35,7 @@ class IndexService:
         )
 
     def reindex(self, request: ReindexRequest) -> IndexRefreshResult:
-        repository = self.repositories.select_read_repository(
+        repository = self.repositories.select_for_read(
             request.cwd,
             request.repository_name,
         )

@@ -56,7 +56,7 @@ class RepositoryStore:
             return None
         return repository_record_from_row(row)
 
-    def find_by_path(self, path: Path) -> RepositoryRecord | None:
+    def find_by_root_path(self, path: Path) -> RepositoryRecord | None:
         normalized = normalize_path(path)
         with self.connect() as connection:
             row = connection.execute(
