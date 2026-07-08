@@ -2,6 +2,10 @@
 title: Setup Automation And Update
 topics: [architecture, setup, automation]
 sources:
+  - id: app
+    type: file
+    path: src/codealmanac/app.py
+    note: Composition root wiring for the default scheduler and setup services.
   - id: setup_service
     type: file
     path: src/codealmanac/services/setup/service.py
@@ -30,6 +34,10 @@ sources:
     type: file
     path: src/codealmanac/services/updates/service.py
     note: Manual and scheduled package update behavior.
+  - id: update_metadata
+    type: file
+    path: src/codealmanac/integrations/updates/package.py
+    note: Installed package metadata and direct_url.json parsing.
   - id: update_tests
     type: file
     path: tests/test_update_service.py
@@ -62,11 +70,15 @@ The job factory gives each task concrete local execution details. Sync runs `pyt
 
 The macOS implementation writes launchd plists under `~/Library/LaunchAgents`, creates stdout and stderr log directories, bootouts any existing job, bootstraps the new job, and reads status back from launchd [@launchd]. The generated plist contains the label, program arguments, start interval, environment variables, `RunAtLoad`, and log paths [@launchd]. This keeps the service boundary scheduler-neutral while the adapter owns launchd mechanics.
 
+The default application wiring is currently launchd-backed. `create_services` constructs `AutomationService` with `LaunchdSchedulerAdapter` when no scheduler adapter is injected, and the adapter shells out to `launchctl` for install, uninstall, and status checks [@app][@launchd]. That means the production setup and automation path is macOS-specific until another scheduler adapter is added and wired.
+
 ## Update Safety
 
 Manual update and scheduled update share the same planning logic. `plan_update` refuses editable installs, maps uv installs to `uv tool upgrade codealmanac`, maps pip installs to `python -m pip install --upgrade codealmanac`, and refuses unknown installers with a suggested manual command [@updates].
 
 Scheduled update adds safety checks before running the package command. It skips if the install is not ready, if an update lock is already held, or if the local database shows active CodeAlmanac jobs [@updates]. After a successful scheduled package update, it runs two smoke checks: `codealmanac --version` and `codealmanac doctor --json` [@updates]. Tests cover the uv and pip plans, editable-install refusal, active-job skip, held-lock skip, smoke success, and smoke failure paths [@update_tests].
+
+The editable-install guard does not cover every PEP 610 direct-url install. The metadata reader records `source_url` from `direct_url.json`, but `update_method` only uses the `editable` flag before falling through to the installer-based uv or pip plan [@update_metadata][@updates]. A non-editable local path, VCS, or direct archive install with `INSTALLER` set to `uv` or `pip` can therefore still be upgraded through the normal package command.
 
 This shape matches the active agreement: scheduled auto-update is an explicit local automation task, not a sync or Garden side effect. The agreement also states that scheduled update should skip editable installs, skip active lifecycle jobs, use a global lock, support uv tool and pip installs, and run the same two smoke checks [@live_agreement].
 

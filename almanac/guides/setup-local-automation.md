@@ -2,6 +2,10 @@
 title: Setup Local Automation
 topics: [guides, setup, automation]
 sources:
+  - id: app
+    type: file
+    path: src/codealmanac/app.py
+    note: Composition root wiring for the default scheduler.
   - id: readme
     type: file
     path: README.md
@@ -30,6 +34,10 @@ sources:
     type: file
     path: src/codealmanac/services/automation/defaults.py
     note: Default sync, garden, and update intervals.
+  - id: launchd
+    type: file
+    path: src/codealmanac/integrations/automation/scheduler/launchd.py
+    note: launchd scheduler adapter used by the default app wiring.
 ---
 
 # Setup Local Automation
@@ -43,6 +51,14 @@ The usual successful state is simple: setup has selected a runner, scheduled the
 Install CodeAlmanac before running setup. The public README supports three install paths: the install script, `uv tool install codealmanac@latest`, or `python -m pip install codealmanac` [@readme]. From this checkout, use `uv sync` and then run commands through `uv run codealmanac ...` [@readme].
 
 The package requires Python 3.12 or newer, and the package metadata exposes `codealmanac` as the console script [@pyproject].
+
+## Platform Boundary
+
+Local automation currently assumes macOS launchd. The default composition root wires `AutomationService` to `LaunchdSchedulerAdapter`, and that adapter runs `launchctl` for scheduler operations [@app][@launchd]. On Linux or another non-launchd system, avoid setup-managed automation until a non-launchd scheduler adapter exists:
+
+```bash
+codealmanac setup --yes --sync-off --garden-off --no-auto-update
+```
 
 ## Run Setup
 
