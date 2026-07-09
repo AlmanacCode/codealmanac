@@ -18,14 +18,74 @@ sources:
     type: file
     path: almanac/architecture/composition-root.md
     note: Architecture page for application graph assembly.
-  - id: lifecycle-workflows
+  - id: lifecycle
     type: file
-    path: almanac/architecture/lifecycle/workflows.md
-    note: Architecture page for build, ingest, garden, sync, and operation execution.
+    path: almanac/architecture/lifecycle/README.md
+    note: Architecture hub for build, ingest, garden, sync, queueing, operation execution, and mutation safety.
   - id: index-search
     type: file
     path: almanac/architecture/wiki/index-refresh-and-search.md
     note: Architecture page for index refresh and read-side search.
+  - id: operation-runner
+    type: wiki
+    path: architecture/lifecycle/operation-runner
+    note: Architecture page for the shared lifecycle run-execution path.
+  - id: mutation-safety
+    type: wiki
+    path: architecture/lifecycle/mutation-safety
+    note: Architecture page for lifecycle write boundaries and validation.
+  - id: page-identity
+    type: wiki
+    path: architecture/wiki/page-identity
+    note: Architecture page for Markdown page routes.
+  - id: path-normalization
+    type: wiki
+    path: architecture/wiki/path-normalization-and-file-refs
+    note: Architecture page for normalized paths and file references.
+  - id: topics-dag
+    type: wiki
+    path: architecture/wiki/topics-dag
+    note: Architecture page for topic graph behavior.
+  - id: health-validation
+    type: wiki
+    path: architecture/wiki/health-and-validation
+    note: Architecture page for graph health and validation.
+  - id: cli-adapter
+    type: wiki
+    path: architecture/cli/adapter-boundary
+    note: Architecture page for CLI dispatch boundaries.
+  - id: terminal-output
+    type: wiki
+    path: architecture/cli/terminal-output
+    note: Architecture page for human and JSON terminal rendering.
+  - id: harness-contract
+    type: wiki
+    path: architecture/agent-runs/harness-contract
+    note: Architecture page for normalized harness execution.
+  - id: provider-adapters
+    type: wiki
+    path: architecture/agent-runs/provider-adapters
+    note: Architecture page for Codex and Claude provider adapters.
+  - id: source-runtime
+    type: wiki
+    path: architecture/sources/source-resolution-and-runtime
+    note: Architecture page for ingest source resolution and runtime snapshots.
+  - id: local-state
+    type: wiki
+    path: architecture/repositories/local-state
+    note: Architecture page for repository-local runtime state.
+  - id: selection-root
+    type: wiki
+    path: architecture/repositories/selection-and-root
+    note: Architecture page for repository selection and the fixed wiki root.
+  - id: sqlite-stores
+    type: wiki
+    path: architecture/persistence/sqlite-store-boundaries
+    note: Architecture page for SQLite store ownership.
+  - id: local-viewer
+    type: wiki
+    path: architecture/viewer/local-viewer
+    note: Architecture page for the local browser viewer.
 ---
 
 # Architecture
@@ -42,18 +102,18 @@ Start with [Service boundaries](service-boundaries). It explains the main depend
 
 ## Page-Writing Operations
 
-[Lifecycle workflows](lifecycle/workflows) is the entry point for build, ingest, garden, and sync. Build, ingest, and garden are page-writing operation families; sync is a scanner that queues ingest work instead of writing pages itself [@lifecycle-workflows].
+[Lifecycle](lifecycle/) is the entry point for build, ingest, garden, sync, queued runs, operation execution, and mutation safety. Build, ingest, and garden are page-writing operation families; sync is a scanner that queues ingest work instead of writing pages itself [@lifecycle].
 
-Use [Operation runner](lifecycle/operation-runner) when changing the shared run-execution path. Use [Mutation safety](lifecycle/mutation-safety) when changing the checks that keep lifecycle writes inside the allowed wiki source files.
+Use [Operation runner](lifecycle/operation-runner) when changing the shared run-execution path [@operation-runner]. Use [Mutation safety](lifecycle/mutation-safety) when changing the checks that keep lifecycle writes inside the allowed wiki source files [@mutation-safety].
 
 ## Read Side And Wiki Graph
 
 [Index refresh and search](wiki/index-refresh-and-search) explains the derived SQLite read model, implicit refresh before read commands, FTS search, topic filters, and mention search [@index-search].
 
-For authored wiki contracts, read [Page identity](wiki/page-identity), [Path normalization and file refs](wiki/path-normalization-and-file-refs), [Topics DAG](wiki/topics-dag), and [Health and validation](wiki/health-and-validation). These pages define how Markdown routes, sources, topics, and validation fit together.
+For authored wiki contracts, read [Page identity](wiki/page-identity), [Path normalization and file refs](wiki/path-normalization-and-file-refs), [Topics DAG](wiki/topics-dag), and [Health and validation](wiki/health-and-validation). These pages define how Markdown routes, sources, topics, and validation fit together [@page-identity] [@path-normalization] [@topics-dag] [@health-validation].
 
 ## Edges And Interfaces
 
-Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering. Use [Harness contract](agent-runs/harness-contract) and [Provider adapters](agent-runs/provider-adapters) for Codex and Claude execution boundaries. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters.
+Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Harness contract](agent-runs/harness-contract) and [Provider adapters](agent-runs/provider-adapters) for Codex and Claude execution boundaries [@harness-contract] [@provider-adapters]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
 
-[Local state](repositories/local-state), [Selection and root](repositories/selection-and-root), and [SQLite store boundaries](persistence/sqlite-store-boundaries) explain repository selection, runtime paths, and persistence ownership. [Local viewer](viewer/local-viewer) explains the browser UI that projects the same wiki, topics, files, and jobs.
+[Local state](repositories/local-state), [Selection and root](repositories/selection-and-root), and [SQLite store boundaries](persistence/sqlite-store-boundaries) explain repository selection, runtime paths, and persistence ownership [@local-state] [@selection-root] [@sqlite-stores]. [Local viewer](viewer/local-viewer) explains the browser UI that projects the same wiki, topics, files, and jobs [@local-viewer].

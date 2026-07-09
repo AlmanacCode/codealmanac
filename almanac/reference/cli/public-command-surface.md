@@ -6,6 +6,10 @@ sources:
     type: file
     path: pyproject.toml
     note: Package script entrypoint for the CodeAlmanac CLI.
+  - id: repo_readme
+    type: file
+    path: README.md
+    note: Public quickstart and product language for CodeAlmanac commands.
   - id: parser_root
     type: file
     path: src/codealmanac/cli/parser/root.py
@@ -66,7 +70,7 @@ The root parser registers three command families: run commands, wiki commands, a
 
 | Command | Purpose | Main options |
 |---|---|---|
-| `init [path]` | Initialize a local Almanac wiki. | `--name`, `--description`, `--using`, `--guidance`, `--json` [@parser_run] |
+| `init [path]` | Initialize a local CodeAlmanac wiki [@repo_readme]. | `--name`, `--description`, `--using`, `--guidance`, `--json` [@parser_run] |
 | `ingest <inputs...>` | Queue ingest work over local material. | `--wiki`, `--using`, `--title`, `--guidance`, `--json` [@parser_run] |
 | `garden` | Queue wiki improvement work. | `--wiki`, `--using`, `--title`, `--guidance`, `--json` [@parser_run] |
 | `sync` | Sync recently active transcripts into wiki work. | `--wiki`, `--from`, `--using`, `--json`; subcommand `status` [@parser_run] |

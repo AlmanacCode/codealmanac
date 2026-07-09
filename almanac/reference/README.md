@@ -10,10 +10,22 @@ sources:
     type: wiki
     path: reference/cli/public-command-surface
     note: Command reference for public CLI names, flags, hidden entries, and intentionally absent legacy surface.
+  - id: json-output
+    type: wiki
+    path: reference/cli/json-output-contract
+    note: Reference page for command JSON output behavior.
+  - id: error-exit
+    type: wiki
+    path: reference/cli/error-and-exit-code-contract
+    note: Reference page for CLI error messages and exit codes.
   - id: page-format
     type: wiki
     path: reference/page-format/frontmatter-and-sources
     note: Page metadata, evidence source, citation, and file reference contract.
+  - id: links-routes
+    type: wiki
+    path: reference/page-format/links-and-routes
+    note: Reference page for Markdown page links and route resolution.
   - id: run-states
     type: wiki
     path: reference/runs/run-states-and-events
@@ -34,6 +46,14 @@ sources:
     type: wiki
     path: reference/topics-yaml
     note: Authored topic file schema and mutation behavior.
+  - id: harness-events
+    type: wiki
+    path: reference/harness-event-shape
+    note: Reference page for normalized harness event payloads.
+  - id: cosmic-python
+    type: wiki
+    path: reference/cosmic-python-translation
+    note: Reference page for the local Architecture Patterns with Python translation.
 ---
 
 # Reference
@@ -55,7 +75,7 @@ instead; for task steps, start with the relevant guide.
 flags that are intentionally absent [@command-surface]. Pair it with [JSON
 output contract](cli/json-output-contract) when a command needs machine-readable
 output, or [Error and exit code contract](cli/error-and-exit-code-contract)
-when changing terminal failures.
+when changing terminal failures [@json-output] [@error-exit].
 
 [Config keys](config-keys) defines `auto_commit`, `harness.default`, and
 `harness.model`, including precedence between CLI flags, project config, user
@@ -67,7 +87,7 @@ config, and built-in defaults [@config-keys].
 supported page metadata fields, source entry shape, file-source indexing, and
 inline citation checks [@page-format]. [Links and routes](page-format/links-and-routes)
 defines Markdown page links, `README.md` folder routes, and the route forms the
-viewer and index resolve.
+viewer and index resolve [@links-routes].
 
 [Topics YAML](topics-yaml) defines the authored `topics.yaml` schema, topic
 slug normalization, parent DAG constraints, and mutation behavior for topic
@@ -91,4 +111,4 @@ and the rejection rules for malformed inputs [@source-addresses].
 [Harness event shape](harness-event-shape) defines the normalized event payload
 shared by provider adapters and run logging. [Cosmic Python translation](cosmic-python-translation)
 maps local architecture terms to the Architecture Patterns with Python ideas
-used in this rewrite.
+used in this rewrite [@harness-events] [@cosmic-python].

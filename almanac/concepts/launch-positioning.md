@@ -29,7 +29,7 @@ sources:
   - id: openwiki-stargazers-csv
     type: file
     path: docs/research/openwiki-launch-traction/openwiki-stargazers.csv
-    note: Exported OpenWiki stargazer data with one header row and 10,807 total lines in the current checkout.
+    note: Exported OpenWiki stargazer data with 10,807 data rows plus one header row in the current checkout.
   - id: combined-stargazers-csv
     type: file
     path: docs/research/openwiki-launch-traction/combined-stargazers-deduped.csv
@@ -72,7 +72,7 @@ For demo structure, use [Demo CodeAlmanac in a launch video](../guides/demo-code
 
 ## Market Comparison Notes
 
-OpenWiki research is raw launch analysis, not a final report. The useful reusable conclusion is that OpenWiki's early growth looked like a developer-viral open-source launch: the notes record about 9k GitHub stars in roughly a week, Trendshift daily rankings, HN activity, and LinkedIn/X repost waves, while also stating that exact referral sources are not public without repository-owner traffic data [@openwiki-notes]. A later export script fetched GitHub stargazers through GraphQL in `STARRED_AT` order with public profile fields such as login, location, company, bio, follower counts, and public repository count [@openwiki-export-script]. The current `openwiki-stargazers.csv` file has 10,807 total lines, including its header row [@openwiki-stargazers-csv].
+OpenWiki research is raw launch analysis, not a final report. The useful reusable conclusion is that OpenWiki's early growth looked like a developer-viral open-source launch: the notes record about 9k GitHub stars in roughly a week, Trendshift daily rankings, HN activity, and LinkedIn/X repost waves, while also stating that exact referral sources are not public without repository-owner traffic data [@openwiki-notes]. A later export script fetched GitHub stargazers through GraphQL in `STARRED_AT` order with public profile fields such as login, location, company, bio, follower counts, and public repository count [@openwiki-export-script]. The current `openwiki-stargazers.csv` file has 10,807 data rows plus one header row [@openwiki-stargazers-csv].
 
 The later stargazer export broadened the comparison set to OpenWiki, Graphify, CodeAlmanac, and Google OKF. The combined export stores one row per lowercased GitHub login, boolean membership columns for the four repositories, per-repo `starred_at` fields, a `repo_count`, and a pipe-separated `repos_starred` field [@stargazer-combine-script] [@combined-stargazers-csv]. The validated combined file contains 92,576 unique GitHub accounts: 9,774 starred OpenWiki, 80,469 starred Graphify, 241 starred CodeAlmanac, and 6,513 starred Google OKF; 4,043 accounts appear in more than one of those four datasets [@traction-export-transcript]. The same validation found 8,085 Twitter usernames, 1,456 LinkedIn URLs, and zero email values in the combined file because the GitHub token used by the export could not read the `email` field [@openwiki-export-script] [@traction-export-transcript].
 
