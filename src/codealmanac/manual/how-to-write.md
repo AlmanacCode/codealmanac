@@ -110,3 +110,8 @@ Most pages should include enough connective tissue to orient the reader:
 
 These are page shapes, not mandatory headings. Use the shape when it helps the
 reader.
+
+## Frontmatter
+
+Quote any frontmatter string that contains `:`, `"`, `'`, `[`, `]`, `{`, or
+`}`. When unsure, quote `title:` and `summary:` values.

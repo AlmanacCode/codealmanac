@@ -286,6 +286,7 @@ def test_claude_sdk_client_maps_typed_message_stream(tmp_path: Path):
     assert options.mcp_servers == {}
     assert options.tools == list(CLAUDE_ALLOWED_TOOLS)
     assert options.allowed_tools == list(CLAUDE_ALLOWED_TOOLS)
+    assert "Agent" in options.allowed_tools
 
 
 def test_claude_sdk_client_maps_result_failure(tmp_path: Path):

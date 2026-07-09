@@ -25,6 +25,20 @@ Make a coverage map before writing pages. Write it to
 `almanac/coverage-map.md`, then treat it as the contract for the rest of the
 run.
 
+Write `coverage-map.md` with valid page frontmatter:
+
+```yaml
+---
+title: Coverage Map
+summary: Frozen page inventory for this first wiki build.
+topics: [build, wiki, reference]
+sources: []
+---
+```
+
+Even though `coverage-map.md` is working state, it lives under `almanac/` and
+must pass normal page validation.
+
 Write `coverage-map.md` with one main section:
 
 ## Page Inventory
@@ -138,8 +152,28 @@ For each writing sub-agent, provide:
 - the evidence files listed for those pages
 - the planned links to nearby pages
 
+Do not summarize, paraphrase, or compress the manual guidance when prompting
+writing sub-agents. Include the relevant manual text directly in the sub-agent
+prompt, including `how-to-write.md`, `evidence.md`, `links.md`, and every
+folder-specific manual needed for that batch.
+
+Every writing sub-agent prompt must include the exact source frontmatter shape:
+
+```yaml
+sources:
+  - id: source-id
+    type: file
+    path: path/to/file.py
+```
+
+Use `type`, not `kind`. Directory evidence is still `type: file`; mark it with a
+trailing slash in `path`.
+
 When a batch contains pages from different folders, include every relevant
 folder-specific manual in the sub-agent prompt.
+
+A writing batch is not fully assigned until its sub-agent prompt includes the
+full manual packet and the exact source schema example.
 
 The sub-agent's task is to write encyclopedia-quality articles about this
 codebase. Each page should feel like a focused Wikipedia article for one
@@ -175,9 +209,10 @@ Use simple, direct prose. Avoid jargon when plain language works. Structure
 sections so each page has a clear through line and later sections build on
 earlier sections without simply repeating them.
 
-Use inline citations for non-obvious claims. Use Markdown links for related
-wiki pages. Put relevant files and folders in `sources:` frontmatter entries
-with `type: file`.
+Use inline citations for non-obvious claims. Put only cited evidence in
+`sources:` frontmatter entries. Do not use `sources:` as a context list or
+bibliography. Every `sources:` entry must be cited in the page body with
+`[@source-id]`, or removed. Directory source paths must end with `/`.
 
 Assign `almanac/getting-started.md` to a writing sub-agent as the front door to
 the finished wiki. If it is drafted early, send it back to a writing or repair
@@ -201,6 +236,10 @@ weak or incomplete leads, pages that are only lists or component summaries,
 missing citations, missing links between related pages, duplicate or overlapping
 explanations, terminology drift, or wrong folder placement, dispatch repair
 sub-agents with the exact pages and changes needed.
+
+Run `codealmanac validate` before committing. If validation fails, do not commit.
+Fix validation issues first, rerun validation, and commit only after validation
+passes.
 
 Before stopping, make sure every missing planned page has an exact
 repo-evidence removal reason in `coverage-map.md`, or write the missing page.

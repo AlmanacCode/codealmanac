@@ -42,7 +42,7 @@ from codealmanac.services.harnesses.ports import HarnessEventSink
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 
 CLAUDE_COMMAND = "claude"
-CLAUDE_RUN_TIMEOUT_SECONDS = 900
+CLAUDE_RUN_TIMEOUT_SECONDS = 90 * 60
 CLAUDE_ALLOWED_TOOLS = (
     "Read",
     "Write",
@@ -52,6 +52,7 @@ CLAUDE_ALLOWED_TOOLS = (
     "Grep",
     "LS",
     "Bash",
+    "Agent",
 )
 CLAUDE_MAX_TURNS = 100
 

@@ -26,6 +26,15 @@ inside the same documentation neighborhood:
 [Page format](../reference/page-format)
 ```
 
+Markdown links should point to actual wiki pages, not folders. Folders are only
+for organizing page files. If no page exists for a subject, mention it as plain
+text instead of linking it.
+
+Do not link to `README` in Markdown links. A folder README is addressed by the
+folder route, such as `architecture`, not `architecture/README`.
+
+Use kebab-case page routes. Do not invent underscore slugs.
+
 Only link real targets. Do not leave placeholder links in finished pages. If a
 subject is useful but does not yet deserve a page, mention it as plain text.
 
