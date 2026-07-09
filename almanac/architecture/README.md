@@ -86,6 +86,18 @@ sources:
     type: wiki
     path: architecture/viewer/local-viewer
     note: Architecture page for the local browser viewer.
+  - id: request-models
+    type: wiki
+    path: architecture/request-models
+    note: Architecture page for typed request objects at service and workflow boundaries.
+  - id: prompts-manuals
+    type: wiki
+    path: architecture/runtime-resources/prompts-and-manuals
+    note: Architecture page for packaged prompt and manual runtime resources.
+  - id: setup-automation
+    type: wiki
+    path: architecture/setup/automation-and-update
+    note: Architecture page for setup-owned automation and update behavior.
 ---
 
 # Architecture
@@ -99,6 +111,8 @@ The architecture topic has focused child neighborhoods for wiki behavior, lifecy
 Start with [Service boundaries](service-boundaries). It explains the main dependency direction: CLI adapters enter through the app, workflows coordinate product operations, services own product verbs, stores own persistence, ports describe outside capabilities, and integrations implement those ports [@service-boundaries].
 
 [Composition root](composition-root) is the companion page for construction. It explains how `src/codealmanac/app.py` assembles stores, services, adapters, operation runners, and workflows into one application graph [@composition-root].
+
+[Request models](request-models) explains the typed request objects that protect service and workflow boundaries from loose dictionaries and raw CLI shapes [@request-models].
 
 ## Page-Writing Operations
 
@@ -115,5 +129,7 @@ For authored wiki contracts, read [Page identity](wiki/page-identity), [Path nor
 ## Edges And Interfaces
 
 Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Harness contract](agent-runs/harness-contract) and [Provider adapters](agent-runs/provider-adapters) for Codex and Claude execution boundaries [@harness-contract] [@provider-adapters]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
+
+[Prompts and manuals](runtime-resources/prompts-and-manuals) covers the packaged runtime resources handed to lifecycle agents, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@prompts-manuals] [@setup-automation].
 
 [Local state](repositories/local-state), [Selection and root](repositories/selection-and-root), and [SQLite store boundaries](persistence/sqlite-store-boundaries) explain repository selection, runtime paths, and persistence ownership [@local-state] [@selection-root] [@sqlite-stores]. [Local viewer](viewer/local-viewer) explains the browser UI that projects the same wiki, topics, files, and jobs [@local-viewer].

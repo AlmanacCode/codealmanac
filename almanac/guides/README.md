@@ -42,6 +42,10 @@ sources:
     type: wiki
     path: guides/demo-codealmanac-in-launch-video
     note: Procedure for demonstrating CodeAlmanac in a launch video.
+  - id: launch-positioning
+    type: wiki
+    path: concepts/launch-positioning
+    note: Product-story concept page used by launch and demo framing.
 ---
 
 # Guides
@@ -88,4 +92,6 @@ before adding behavior [@refactoring].
 
 [Demo CodeAlmanac in a launch video](demo-codealmanac-in-launch-video) is the
 product-demonstration guide for showing the local viewer and terminal query
-flow in a launch video [@launch-demo].
+flow in a launch video [@launch-demo]. Use [Launch positioning](../concepts/launch-positioning)
+when the work needs the broader product story, comparison frame, or launch
+audience notes behind that demo [@launch-positioning].

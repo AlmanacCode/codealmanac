@@ -34,11 +34,11 @@ For implementation work, read [Architecture](architecture/) first, then follow t
 
 The wiki is organized by page role, not by source file:
 
-- `concepts/` defines repo-specific vocabulary such as local repo wiki, lifecycle operation, and source material.
-- `architecture/` explains ownership, flows, persistence, provider edges, and runtime resources.
-- `guides/` gives task-oriented procedures for changing or verifying the wiki.
-- `decisions/` records constraints that shape future work.
-- `reference/` documents exact contracts, commands, formats, and state shapes.
+- [Concepts](concepts/local-repo-wiki) defines repo-specific vocabulary such as local repo wiki, lifecycle operation, and source material.
+- [Architecture](architecture/) explains ownership, flows, persistence, provider edges, and runtime resources.
+- [Guides](guides/) gives task-oriented procedures for changing or verifying the wiki.
+- [Decisions](decisions/) records constraints that shape future work.
+- [Reference](reference/) documents exact contracts, commands, formats, and state shapes.
 
 ## Reading Rule
 
