@@ -10,11 +10,6 @@ from codealmanac.integrations.harnesses.codex.events import (
     map_codex_notification,
     provider_session_event,
 )
-from codealmanac.integrations.harnesses.codex.fields import (
-    JsonObject,
-    as_record,
-    string_field,
-)
 from codealmanac.integrations.harnesses.codex.responses import (
     noninteractive_response,
 )
@@ -31,14 +26,19 @@ from codealmanac.integrations.harnesses.codex.sandbox import (
     resolve_sandbox_mode,
     sandbox_policy,
 )
-from codealmanac.integrations.harnesses.codex.stream import (
-    append_event,
-    append_events,
-    emit_result,
-)
 from codealmanac.integrations.harnesses.codex.timeouts import env_milliseconds
 from codealmanac.integrations.harnesses.codex.turn_completion import (
     root_turn_completion,
+)
+from codealmanac.integrations.harnesses.fields import (
+    JsonObject,
+    as_record,
+    string_field,
+)
+from codealmanac.integrations.harnesses.stream import (
+    append_event,
+    append_events,
+    emit_result,
 )
 from codealmanac.services.harnesses.models import HarnessEvent, HarnessRunResult
 from codealmanac.services.harnesses.ports import HarnessEventSink

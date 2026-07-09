@@ -1,14 +1,14 @@
 from codealmanac.integrations.harnesses.codex.failures import (
     failure_from_error_record,
 )
-from codealmanac.integrations.harnesses.codex.fields import (
+from codealmanac.integrations.harnesses.codex.item_events import output_delta
+from codealmanac.integrations.harnesses.codex.result import record_failure
+from codealmanac.integrations.harnesses.codex.state import CodexRunState
+from codealmanac.integrations.harnesses.fields import (
     JsonObject,
     as_record,
     string_field,
 )
-from codealmanac.integrations.harnesses.codex.item_events import output_delta
-from codealmanac.integrations.harnesses.codex.result import record_failure
-from codealmanac.integrations.harnesses.codex.state import CodexRunState
 from codealmanac.services.harnesses.models import (
     HarnessEvent,
     HarnessEventKind,

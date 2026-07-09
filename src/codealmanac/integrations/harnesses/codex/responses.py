@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from codealmanac.integrations.harnesses.codex.fields import JsonObject
+from codealmanac.integrations.harnesses.fields import JsonObject
 
 
 @dataclass(frozen=True)

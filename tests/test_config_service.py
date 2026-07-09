@@ -294,6 +294,12 @@ def test_config_set_rejects_invalid_values_without_writing(
         app.config.set(set_request(ConfigKey.AUTOMATION_SYNC_EVERY, "0s"))
     with pytest.raises(ValidationFailed, match="harness.default must be one of"):
         app.config.set(set_request(ConfigKey.HARNESS_DEFAULT, "gpt"))
+    with pytest.raises(
+        ValidationFailed, match="harness.model for codex must be one of"
+    ):
+        app.config.set(set_request(ConfigKey.HARNESS_MODEL, "provider"))
+    with pytest.raises(ValidationFailed, match="auto_commit must be true or false"):
+        app.config.set(set_request(ConfigKey.AUTO_COMMIT, "maybe"))
 
     assert not path.exists()
 

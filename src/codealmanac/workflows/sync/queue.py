@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from codealmanac.core.errors import error_summary
+from codealmanac.services.sources.transcripts import transcript_address
 from codealmanac.workflows.ingest.requests import IngestRequest
 from codealmanac.workflows.run_queue.service import RunQueue
 from codealmanac.workflows.sync.guidance import sync_ingest_guidance
@@ -78,7 +79,7 @@ def sync_ingest_request(
     return IngestRequest(
         cwd=item.repository.root_path,
         inputs=tuple(
-            f"transcript:{candidate.transcript_path}"
+            f"transcript:{transcript_address(candidate)}"
             for candidate in item.transcripts
         ),
         harness=request.harness,

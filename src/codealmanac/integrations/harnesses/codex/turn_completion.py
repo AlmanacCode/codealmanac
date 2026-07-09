@@ -1,9 +1,9 @@
-from codealmanac.integrations.harnesses.codex.fields import (
+from codealmanac.integrations.harnesses.codex.state import CodexRunState
+from codealmanac.integrations.harnesses.fields import (
     JsonObject,
     as_record,
     string_field,
 )
-from codealmanac.integrations.harnesses.codex.state import CodexRunState
 
 
 def root_turn_completion(message: JsonObject, state: CodexRunState) -> bool:

@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Protocol
@@ -32,8 +33,13 @@ class SubprocessCommandRunner:
         timeout_seconds: int,
         stdin: str | None = None,
     ) -> CommandResult:
+        # Windows: npm-installed CLIs (codex/claude/opencode) ship as .cmd/.ps1
+        # shims, and subprocess.run(shell=False) can't launch a bare command
+        # name through CreateProcess the way a shell would. Resolving through
+        # PATH/PATHEXT first fixes all three harnesses' check(), not just one.
+        resolved = shutil.which(command) or command
         completed = subprocess.run(
-            (command, *args),
+            (resolved, *args),
             cwd=cwd,
             text=True,
             input=stdin,

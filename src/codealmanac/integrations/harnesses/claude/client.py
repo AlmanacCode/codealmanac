@@ -31,6 +31,7 @@ from codealmanac.integrations.harnesses.claude.sdk_messages import (
     session_id_for_message,
 )
 from codealmanac.integrations.harnesses.claude.state import ClaudeRunState
+from codealmanac.integrations.harnesses.stream import append_event, emit_result
 from codealmanac.services.harnesses.models import (
     HarnessEvent,
     HarnessEventKind,
@@ -176,23 +177,3 @@ def failed_result(output_text: str) -> HarnessRunResult:
             ),
         ),
     )
-
-
-def append_event(
-    events: list[HarnessEvent],
-    event: HarnessEvent,
-    on_event: HarnessEventSink | None,
-) -> None:
-    events.append(event)
-    if on_event is not None:
-        on_event(event)
-
-
-def emit_result(
-    result: HarnessRunResult,
-    on_event: HarnessEventSink | None,
-) -> HarnessRunResult:
-    if on_event is not None:
-        for event in result.events:
-            on_event(event)
-    return result

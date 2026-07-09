@@ -1,4 +1,4 @@
-from codealmanac.integrations.harnesses.codex.fields import (
+from codealmanac.integrations.harnesses.fields import (
     JsonObject,
     as_record,
     number_field,

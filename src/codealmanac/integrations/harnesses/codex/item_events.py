@@ -7,14 +7,14 @@ from codealmanac.integrations.harnesses.codex.display import (
     item_type_tool_name,
     tool_use_event,
 )
-from codealmanac.integrations.harnesses.codex.fields import (
+from codealmanac.integrations.harnesses.codex.state import CodexRunState
+from codealmanac.integrations.harnesses.fields import (
     JsonObject,
     as_record,
     boolean_field,
     first_present,
     string_field,
 )
-from codealmanac.integrations.harnesses.codex.state import CodexRunState
 from codealmanac.services.harnesses.models import (
     HarnessActorRole,
     HarnessAgentTrace,

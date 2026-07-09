@@ -46,7 +46,7 @@ def dispatch_sync_status(args: argparse.Namespace, app: CodeAlmanac) -> int:
 
 def parse_sync_apps(value: str | None) -> tuple[TranscriptApp, ...]:
     if value is None or value.strip() == "":
-        return (TranscriptApp.CLAUDE, TranscriptApp.CODEX)
+        return (TranscriptApp.CLAUDE, TranscriptApp.CODEX, TranscriptApp.OPENCODE)
     apps: list[TranscriptApp] = []
     for raw in value.split(","):
         item = raw.strip()
@@ -54,7 +54,7 @@ def parse_sync_apps(value: str | None) -> tuple[TranscriptApp, ...]:
             app = TranscriptApp(item)
         except ValueError as error:
             raise ValidationFailed(
-                f'invalid --from "{value}" (expected claude,codex)'
+                f'invalid --from "{value}" (expected claude,codex,opencode)'
             ) from error
         if app not in apps:
             apps.append(app)

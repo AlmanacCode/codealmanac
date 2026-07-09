@@ -9,12 +9,14 @@ BLUE_DIM = "\x1b[38;5;69m"
 ACCENT_BG = "\x1b[48;5;252m\x1b[38;5;16m"
 CLAUDE_CORAL = "\x1b[38;5;173m"
 CODEX_PERIWINKLE = "\x1b[38;5;105m"
+OPENCODE_MINT = "\x1b[38;5;121m"
 DIFF_RED = "\x1b[38;5;203m"
 DIFF_GREEN = "\x1b[38;5;76m"
 
 BRAND_COLORS = {
     "Codex": CODEX_PERIWINKLE,
     "Claude": CLAUDE_CORAL,
+    "OpenCode": OPENCODE_MINT,
 }
 
 GRADIENT = (

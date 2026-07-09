@@ -40,6 +40,7 @@ class SourceRuntimeStatus(StrEnum):
 class TranscriptApp(StrEnum):
     CLAUDE = "claude"
     CODEX = "codex"
+    OPENCODE = "opencode"
 
 
 class SourceAddress(CodeAlmanacModel):
@@ -110,6 +111,12 @@ class TranscriptCandidate(CodeAlmanacModel):
     cwd: Path
     modified_at: datetime
     size_bytes: int
+    # Set by a discovery adapter when transcript_path alone can't address one
+    # session (e.g. OpenCode: many sessions share one database file) — see
+    # OpencodeTranscriptDiscoveryAdapter. None means transcript_path is
+    # itself the address, true for every app that writes one file per
+    # session (Claude, Codex).
+    address_override: str | None = None
 
     @field_validator("session_id")
     @classmethod
@@ -122,3 +129,10 @@ class TranscriptCandidate(CodeAlmanacModel):
         if value < 0:
             raise ValueError("transcript size must be non-negative")
         return value
+
+    @field_validator("address_override")
+    @classmethod
+    def require_optional_address(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return required_text(value, "transcript address override")

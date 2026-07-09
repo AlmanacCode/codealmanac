@@ -906,6 +906,7 @@ def test_setup_instruction_adapter_stays_split_by_target_family():
     instructions = (setup_root / "instructions.py").read_text(encoding="utf-8")
     codex = (setup_root / "codex.py").read_text(encoding="utf-8")
     claude = (setup_root / "claude.py").read_text(encoding="utf-8")
+    opencode = (setup_root / "opencode.py").read_text(encoding="utf-8")
     managed_blocks = (setup_root / "managed_blocks.py").read_text(encoding="utf-8")
     guide = (setup_root / "guide.py").read_text(encoding="utf-8")
 
@@ -913,6 +914,7 @@ def test_setup_instruction_adapter_stays_split_by_target_family():
         "instructions.py",
         "codex.py",
         "claude.py",
+        "opencode.py",
         "managed_blocks.py",
         "guide.py",
         "text_files.py",
@@ -921,6 +923,7 @@ def test_setup_instruction_adapter_stays_split_by_target_family():
     assert "class FileInstructionInstaller" in instructions
     assert "install_codex_instructions" in instructions
     assert "install_claude_instructions" in instructions
+    assert "install_opencode_instructions" in instructions
     assert "resources.files" not in instructions
     assert "write_text" not in instructions
     assert "read_text" not in instructions
@@ -933,6 +936,14 @@ def test_setup_instruction_adapter_stays_split_by_target_family():
     assert "CLAUDE_IMPORT_LINE" in claude
     assert "codealmanac.md" in claude
     assert "AGENTS.override.md" not in claude
+    # opencode.py mirrors codex.py's managed-block shape, not claude.py's
+    # import-line shape, but has no AGENTS.override.md-style convention of
+    # its own (no upstream equivalent found in the research this repo's
+    # plan docs cite) — confirm it doesn't quietly grow either sibling's
+    # provider-specific machinery instead of staying its own thing.
+    assert "install_opencode_instructions" in opencode
+    assert "AGENTS.override.md" not in opencode
+    assert "CLAUDE_IMPORT_LINE" not in opencode
     assert "CODEALMANAC_START" in managed_blocks
     assert "def upsert_managed_block" in managed_blocks
     assert "resources.files" in guide

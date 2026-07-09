@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Literal
 
 from codealmanac.integrations.harnesses.codex.errors import CodexAppServerError
-from codealmanac.integrations.harnesses.codex.fields import JsonObject
+from codealmanac.integrations.harnesses.fields import JsonObject
 
 CODEX_APP_SERVER_SANDBOX_MODE_ENV = "CODEALMANAC_CODEX_APP_SERVER_SANDBOX_MODE"
 

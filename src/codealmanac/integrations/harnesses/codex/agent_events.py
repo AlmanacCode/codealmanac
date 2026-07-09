@@ -1,10 +1,10 @@
 from codealmanac.integrations.harnesses.codex.actors import helper_label
-from codealmanac.integrations.harnesses.codex.fields import (
+from codealmanac.integrations.harnesses.codex.state import CodexRunState
+from codealmanac.integrations.harnesses.fields import (
     JsonObject,
     string_array_field,
     string_field,
 )
-from codealmanac.integrations.harnesses.codex.state import CodexRunState
 from codealmanac.services.harnesses.models import (
     HarnessAgentTrace,
     HarnessEvent,

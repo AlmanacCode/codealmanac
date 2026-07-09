@@ -12,7 +12,7 @@ from pathlib import Path
 from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from codealmanac.integrations.harnesses.codex.errors import CodexAppServerError
-from codealmanac.integrations.harnesses.codex.fields import (
+from codealmanac.integrations.harnesses.fields import (
     JsonObject,
     as_record,
     string_field,

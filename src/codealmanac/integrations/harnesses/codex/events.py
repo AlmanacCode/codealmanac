@@ -1,9 +1,4 @@
 from codealmanac.integrations.harnesses.codex.actors import actor_for_codex_thread
-from codealmanac.integrations.harnesses.codex.fields import (
-    JsonObject,
-    as_record,
-    string_field,
-)
 from codealmanac.integrations.harnesses.codex.item_events import (
     map_completed_item,
     map_started_item,
@@ -23,6 +18,11 @@ from codealmanac.integrations.harnesses.codex.result import (
     provider_session_event,
 )
 from codealmanac.integrations.harnesses.codex.state import CodexRunState
+from codealmanac.integrations.harnesses.fields import (
+    JsonObject,
+    as_record,
+    string_field,
+)
 from codealmanac.services.harnesses.models import (
     HarnessEvent,
 )
