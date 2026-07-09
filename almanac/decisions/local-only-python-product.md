@@ -18,10 +18,6 @@ sources:
     type: file
     path: MANUAL.md
     note: Repo engineering rules and local product constraints.
-  - id: team_discussion
-    type: conversation
-    path: "/Users/divitsheth/.codex/sessions/2026/07/08/rollout-2026-07-08T10-31-30-019f42c8-e846-7d51-aae4-eb8ba0449462.jsonl"
-    note: Product discussion about proving the individual local workflow before team collaboration.
 ---
 
 # Local-Only Python Product
@@ -49,5 +45,3 @@ The local product makes [Local repo wiki](../concepts/local-repo-wiki) the centr
 The decision also narrows public language. Docs and commands should not mention hosted dashboards, cloud upload, `capture`, legacy `almanac` or `alm` aliases, or Node-era installation paths as active product surfaces [@live_agreement]. This keeps [Local state](../architecture/repositories/local-state) and [Only almanac root](only-almanac-root) from carrying compatibility branches for retired product shapes.
 
 The cost is that remote collaboration, hosted capture, and cloud account flows are intentionally deferred. The benefit is a smaller, testable product whose state boundaries are visible on disk and in the local database.
-
-Team collaboration is not just a larger version of the single-user Markdown wiki. It introduces approval, versioning, race handling, and Git sync questions, so the current product direction is to prove the individual local workflow before adding team or multi-agent collaboration machinery [@team_discussion].

@@ -28,7 +28,7 @@ Begin with [Getting started](getting-started). It gives the shortest reading pat
 
 The core idea is the [local repo wiki](concepts/local-repo-wiki): a browseable Markdown wiki committed with the code, plus derived local state for search and runs. That concept explains why page identity comes from paths, why `README.md` files are landing pages, and why file evidence belongs in `sources:`.
 
-For implementation work, read [Service boundaries](architecture/service-boundaries). It explains how the CLI, app composition root, workflows, services, stores, ports, and integrations divide responsibility. For command behavior, use [CLI public command surface](reference/cli/public-command-surface). For config defaults and precedence, use [Config keys](reference/config-keys).
+For implementation work, read [Architecture overview](architecture/) and then [Service boundaries](architecture/service-boundaries). They explain how the CLI, app composition root, workflows, services, stores, ports, and integrations divide responsibility. For command behavior, use [CLI public command surface](reference/cli/public-command-surface). For config defaults and precedence, use [Config keys](reference/config-keys).
 
 ## Main Clusters
 
