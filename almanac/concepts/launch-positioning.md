@@ -22,10 +22,26 @@ sources:
     type: file
     path: docs/research/openwiki-launch-traction/fetch-github-stargazers.mjs
     note: Script that exports GitHub stargazers with starred timestamps and public profile fields.
+  - id: stargazer-combine-script
+    type: file
+    path: docs/research/openwiki-launch-traction/combine-stargazers.mjs
+    note: Script that combines enriched stargazer exports for OpenWiki, Graphify, CodeAlmanac, and Google OKF.
   - id: openwiki-stargazers-csv
     type: file
     path: docs/research/openwiki-launch-traction/openwiki-stargazers.csv
     note: Exported OpenWiki stargazer data with one header row and 10,807 total lines in the current checkout.
+  - id: combined-stargazers-csv
+    type: file
+    path: docs/research/openwiki-launch-traction/combined-stargazers-deduped.csv
+    note: Deduplicated enriched GitHub stargazer export across OpenWiki, Graphify, CodeAlmanac, and Google OKF.
+  - id: sqlite-framing-transcript
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/08/rollout-2026-07-08T20-50-32-019f44ff-a4ea-7713-8f45-c0beb43c73ee.jsonl
+    note: Launch-copy discussion that placed SQLite index language in the How it works section instead of the opener.
+  - id: traction-export-transcript
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/07/rollout-2026-07-07T11-48-21-019f3de8-e706-7c10-ab2d-f4cffe903abf.jsonl
+    note: Stargazer export and validation run that produced the enriched and combined CSV summaries.
   - id: tagit
     type: web
     url: https://github.com/liliang-cn/tagit
@@ -46,6 +62,8 @@ The Bookface draft frames CodeAlmanac as open source, local, and free, then cont
 
 The strongest example pattern is a future agent being asked to add Okta SSO and finding a previous WorkOS decision plus a webhook replay gotcha before coding [@bookface-post]. That example works because it names a concrete task, a concrete prior decision, and a concrete failure mode instead of only restating the product category.
 
+SQLite belongs in the "How it works" explanation, not in the opening definition. The opener should say that CodeAlmanac is a self-updating wiki that lives in the repo as Markdown; the mechanics section can then say that the agent queries the wiki through a local SQLite index with `codealmanac search` and `codealmanac show` [@repo-readme] [@sqlite-framing-transcript].
+
 ## Demo Asset
 
 The launch demo asset is a 35-second product video under `docs/launch/bookface-s26/assets/`, with MP4 and GIF versions present in the launch folder [@launch-assets]. The GIF asset is 17 MB in the current checkout, which leaves little headroom for platforms that recompress uploads [@launch-assets].
@@ -55,5 +73,7 @@ For demo structure, use [Demo CodeAlmanac in a launch video](../guides/demo-code
 ## Market Comparison Notes
 
 OpenWiki research is raw launch analysis, not a final report. The useful reusable conclusion is that OpenWiki's early growth looked like a developer-viral open-source launch: the notes record about 9k GitHub stars in roughly a week, Trendshift daily rankings, HN activity, and LinkedIn/X repost waves, while also stating that exact referral sources are not public without repository-owner traffic data [@openwiki-notes]. A later export script fetched GitHub stargazers through GraphQL in `STARRED_AT` order with public profile fields such as login, location, company, bio, follower counts, and public repository count [@openwiki-export-script]. The current `openwiki-stargazers.csv` file has 10,807 total lines, including its header row [@openwiki-stargazers-csv].
+
+The later stargazer export broadened the comparison set to OpenWiki, Graphify, CodeAlmanac, and Google OKF. The combined export stores one row per lowercased GitHub login, boolean membership columns for the four repositories, per-repo `starred_at` fields, a `repo_count`, and a pipe-separated `repos_starred` field [@stargazer-combine-script] [@combined-stargazers-csv]. The validated combined file contains 92,576 unique GitHub accounts: 9,774 starred OpenWiki, 80,469 starred Graphify, 241 starred CodeAlmanac, and 6,513 starred Google OKF; 4,043 accounts appear in more than one of those four datasets [@traction-export-transcript]. The same validation found 8,085 Twitter usernames, 1,456 LinkedIn URLs, and zero email values in the combined file because the GitHub token used by the export could not read the `email` field [@openwiki-export-script] [@traction-export-transcript].
 
 The agent-chat comparison set from the July 8 lookup has two useful anchors. TagIt positions itself as a self-hosted chat interface where a team can `@mention` coding agents, register Claude Code and Codex CLIs, and route Slack or Feishu messages to the configured agent [@tagit]. agentchattr is the Slack-like local chat comparison: its README describes `@claude`, `@codex`, and other agent mentions, shared channels, and agent-to-agent wakeups through a local chat server [@agentchattr]. These tools are not direct wiki-memory substitutes, but they are relevant when launch copy mentions teams routing work to multiple agents.
