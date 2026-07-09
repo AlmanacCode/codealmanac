@@ -1,6 +1,6 @@
 ---
 title: Controlled Model Catalog
-topics: [decisions]
+topics: [decisions, config, harnesses]
 sources:
   - id: config-models
     type: file
