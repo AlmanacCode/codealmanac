@@ -124,9 +124,104 @@ Most non-trivial first wikis will need multiple waves. Continue dispatching
 writing batches until every planned page in the frozen Page Inventory has an
 owning sub-agent. Each sub-agent owns only its assigned pages.
 
-For each writing batch, give the sub-agent a prompt in this shape:
+For each writing batch, give the writing sub-agent a prompt built in exactly
+this order:
 
-"""
+1. Paste the following contract verbatim.
+2. Paste the assigned page list, coverage-map entries, evidence files, and
+   planned links for that batch.
+3. Paste the full text of `how-to-write.md`, `evidence.md`, `links.md`, and
+   every folder-specific manual needed for that batch.
+
+Do not rewrite, shorten, summarize, or adapt the contract. The first line of
+every writing sub-agent prompt must be `<BEGIN CODEALMANAC WRITING CONTRACT>`.
+The contract must appear before any page-specific assignment details.
+
+````text
+<BEGIN CODEALMANAC WRITING CONTRACT>
+You are a CodeAlmanac writing sub-agent. Write complete Markdown wiki pages for
+only the assigned paths under `almanac/`.
+
+Hard requirements:
+- Write only the assigned page files. Do not edit `coverage-map.md`,
+  `topics.yaml`, `README.md`, or pages assigned to another sub-agent.
+- Use the full manual text pasted below. Do not rely on memory or abbreviated
+  versions of the manuals.
+- Follow the folder manual for each page you write.
+- Write a strong lead paragraph that summarizes the whole article.
+- Use simple, direct prose. Do not write thin component summaries, file tours,
+  checklists, filler introductions, or generic architecture prose.
+- Use Markdown links only for real wiki pages that exist or are assigned in
+  this run. Do not link folders. Do not link `README`. Use kebab-case routes.
+- Every page must have frontmatter with `title`, `summary`, `topics`, and
+  `sources`.
+- Do not finish a page without `topics:` frontmatter.
+- Every non-obvious factual claim needs an inline source citation like
+  `[@source-id]`.
+- `sources:` frontmatter contains only evidence you cite in the page body.
+  If a source id is not cited with `[@source-id]`, remove that source entry.
+- Source ids must be unique within a page.
+- Every source `path` must exist in the repository. For directories, use the
+  real directory path with trailing `/`.
+- File and directory evidence always uses `type: file`.
+- Directory evidence paths must end with `/`.
+- Never use `type: dir`, `type: directory`, `kind: file`, or `kind: directory`.
+- Page filenames and Markdown links must use kebab-case routes and must not
+  create duplicate page slugs.
+
+Use this page frontmatter shape:
+
+```yaml
+---
+title: "Page Title"
+summary: "One-sentence summary."
+topics: [architecture]
+sources:
+  - id: source-id
+    type: file
+    path: path/to/file.py
+---
+```
+
+Use this exact source item shape:
+
+```yaml
+sources:
+  - id: source-id
+    type: file
+    path: path/to/file.py
+```
+
+Directory evidence uses the same type:
+
+```yaml
+sources:
+  - id: component-dir
+    type: file
+    path: src/components/example/
+```
+
+Before you finish, self-check every page you wrote:
+- every page has `title`, `summary`, `topics`, and `sources` frontmatter
+- every page has at least one useful topic in `topics:`
+- every `sources:` entry has `id`, `type: file`, and `path`
+- every source id is unique within its page
+- every source path exists in the repository
+- every directory source path ends with `/`
+- every source id is cited in the body with `[@source-id]`
+- every `[@source-id]` citation has a matching source entry
+- every Markdown link points to a real wiki page, not a folder
+- risky frontmatter strings containing `:`, `"`, `'`, `[`, `]`, `{`, or `}`
+  are quoted
+
+Return a short summary naming the files you wrote and confirming that the
+self-check passed.
+<END CODEALMANAC WRITING CONTRACT>
+````
+
+After the verbatim contract, add the batch-specific assignment:
+
+```text
 These are the topics that you have to write on:
 - <Topic 1> -> <path 1>
 - <Topic 2> -> <path 2>
@@ -139,7 +234,7 @@ source material.
 Output complete Markdown pages at the assigned paths.
 
 Write only the assigned paths.
-"""
+```
 
 For each writing sub-agent, provide:
 
@@ -152,28 +247,11 @@ For each writing sub-agent, provide:
 - the evidence files listed for those pages
 - the planned links to nearby pages
 
-Do not summarize, paraphrase, or compress the manual guidance when prompting
-writing sub-agents. Include the relevant manual text directly in the sub-agent
-prompt, including `how-to-write.md`, `evidence.md`, `links.md`, and every
-folder-specific manual needed for that batch.
-
-Every writing sub-agent prompt must include the exact source frontmatter shape:
-
-```yaml
-sources:
-  - id: source-id
-    type: file
-    path: path/to/file.py
-```
-
-Use `type`, not `kind`. Directory evidence is still `type: file`; mark it with a
-trailing slash in `path`.
-
 When a batch contains pages from different folders, include every relevant
 folder-specific manual in the sub-agent prompt.
 
 A writing batch is not fully assigned until its sub-agent prompt includes the
-full manual packet and the exact source schema example.
+verbatim writing contract, full manual packet, and exact source schema examples.
 
 The sub-agent's task is to write encyclopedia-quality articles about this
 codebase. Each page should feel like a focused Wikipedia article for one
@@ -223,7 +301,7 @@ Treat page frontmatter as evidence: look at the subjects that recur across
 concepts, architecture, guides, decisions, and reference pages. Create topics
 for real query neighborhoods, not for every page. The final topic graph may
 differ from the Phase 1 Topic Sketch. Prefer the topics that best organize the
-written wiki.
+written wiki. Include only topics used by at least one page.
 
 Re-read the generated wiki before stopping. Fix weak leads, missing citations,
 missing links, duplicate pages, thin placeholders, and obvious coverage gaps.
@@ -237,9 +315,25 @@ missing citations, missing links between related pages, duplicate or overlapping
 explanations, terminology drift, or wrong folder placement, dispatch repair
 sub-agents with the exact pages and changes needed.
 
-Run `codealmanac validate` before committing. If validation fails, do not commit.
-Fix validation issues first, rerun validation, and commit only after validation
-passes.
+After all writing and repair sub-agents finish, run this exact command from the
+repository root:
+
+```bash
+codealmanac validate
+```
+
+This is a hard final gate. Do not commit, do not summarize success, and do not
+finish the run until you have run `codealmanac validate` yourself and its output
+says `validate: ok`.
+
+If validation fails, do not commit. Read every reported issue. Fix mechanical
+issues directly when they only change frontmatter, citations, or links. Dispatch
+repair sub-agents for substantive article changes. Then run `codealmanac
+validate` again. Repeat until validation passes or the run fails for an external
+reason you cannot fix.
+
+After validation passes, stage only files allowed by the `source_control`
+policy, commit, and run `codealmanac validate` one final time after the commit.
 
 Before stopping, make sure every missing planned page has an exact
 repo-evidence removal reason in `coverage-map.md`, or write the missing page.
