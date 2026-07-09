@@ -17,8 +17,8 @@ CONTROLLED_HARNESS_MODELS = frozenset(
         "gpt-5.4",
         "gpt-5.4-mini",
         "gpt-5.3-codex-spark",
+        "claude-sonnet-5",
         "claude-opus-4-7",
-        "claude-sonnet-4-6",
         "claude-haiku-4-5",
     )
 )
@@ -30,14 +30,14 @@ HARNESS_MODELS = {
         "gpt-5.3-codex-spark",
     ),
     HarnessKind.CLAUDE: (
-        "claude-sonnet-4-6",
+        "claude-sonnet-5",
         "claude-opus-4-7",
         "claude-haiku-4-5",
     ),
 }
 DEFAULT_HARNESS_MODELS = {
     HarnessKind.CODEX: DEFAULT_HARNESS_MODEL,
-    HarnessKind.CLAUDE: "claude-sonnet-4-6",
+    HarnessKind.CLAUDE: "claude-sonnet-5",
 }
 
 

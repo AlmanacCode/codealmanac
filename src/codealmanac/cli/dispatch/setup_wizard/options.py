@@ -142,7 +142,7 @@ MODEL_LABELS = {
     "gpt-5.4": "GPT-5.4",
     "gpt-5.4-mini": "GPT-5.4-Mini",
     "gpt-5.3-codex-spark": "GPT-5.3-Codex-Spark",
-    "claude-sonnet-4-6": "Claude Sonnet 4.6",
+    "claude-sonnet-5": "Claude Sonnet 5",
     "claude-opus-4-7": "Claude Opus 4.7",
     "claude-haiku-4-5": "Claude Haiku 4.5",
 }
@@ -155,7 +155,7 @@ MODEL_DETAILS = {
     "gpt-5.4": "strong general runner",
     "gpt-5.4-mini": "faster routine maintenance",
     "gpt-5.3-codex-spark": "lightweight small updates",
-    "claude-sonnet-4-6": "recommended maintenance runner",
+    "claude-sonnet-5": "recommended maintenance runner",
     "claude-opus-4-7": "deep rebuilds and hard gardens",
     "claude-haiku-4-5": "small routine updates",
 }

@@ -28,6 +28,11 @@ def test_harness_config_rejects_other_provider_models() -> None:
         HarnessConfig(default=HarnessKind.CLAUDE, model="gpt-5.5")
 
 
+def test_harness_config_rejects_deprecated_claude_models() -> None:
+    with pytest.raises(ValueError, match="harness.model must be one of"):
+        HarnessConfig(default=HarnessKind.CLAUDE, model="claude-sonnet-4-6")
+
+
 def test_config_set_harness_default_resets_model_to_provider_default(
     tmp_path: Path,
 ) -> None:
@@ -41,7 +46,7 @@ def test_config_set_harness_default_resets_model_to_provider_default(
 
     entries = {entry.key: entry.value for entry in service.list()}
     assert entries[ConfigKey.HARNESS_DEFAULT] == "claude"
-    assert entries[ConfigKey.HARNESS_MODEL] == "claude-sonnet-4-6"
+    assert entries[ConfigKey.HARNESS_MODEL] == "claude-sonnet-5"
 
 
 def test_config_set_harness_model_rejects_other_provider_models(tmp_path: Path) -> None:
@@ -57,4 +62,3 @@ def test_config_set_harness_model_rejects_other_provider_models(tmp_path: Path) 
         match="harness.model for claude must be one of",
     ):
         service.set(SetConfigValueRequest(key=ConfigKey.HARNESS_MODEL, value="gpt-5.5"))
-

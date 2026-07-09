@@ -70,7 +70,7 @@ This page defines the current keys, defaults, validation, and precedence. Machin
 | Harness | Allowed models | Harness default |
 | --- | --- | --- |
 | `codex` | `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex-spark` | `gpt-5.5` |
-| `claude` | `claude-sonnet-4-6`, `claude-opus-4-7`, `claude-haiku-4-5` | `claude-sonnet-4-6` |
+| `claude` | `claude-sonnet-5`, `claude-opus-4-7`, `claude-haiku-4-5` | `claude-sonnet-5` |
 
 The model validator rejects unknown model names and rejects known model names that do not match the selected harness [@config-models]. The service-level parser raises the same product errors when a user runs `config set harness.model ...` [@config-service].
 
