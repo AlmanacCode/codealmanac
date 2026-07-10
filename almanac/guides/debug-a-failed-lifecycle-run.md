@@ -30,4 +30,4 @@ If the run is still active, `codealmanac jobs attach <run-id>` reads the same re
 
 Harness errors appear as run error or tool events because the operation runner records harness output before it validates success [@operation_runner]. Validation errors mean the Markdown tree could not pass the same checks described in [Health And Validation](../architecture/wiki/health-and-validation). Indexing errors usually point to page route collisions or malformed wiki source that prevented the derived index from refreshing.
 
-After fixing wiki source, run [Verify A Wiki Change](verify-a-wiki-change). If the failure was provider readiness or authentication, fix the local harness environment and queue a new lifecycle run.
+After fixing wiki source, run [Verify A Wiki Change](verify-a-wiki-change). If the failure was provider readiness or authentication, run `codealmanac doctor` to see which harness is unavailable and why, repair the reported issue (missing binary, expired login, missing API key), then queue a new lifecycle run with `codealmanac ingest` or `codealmanac garden`.

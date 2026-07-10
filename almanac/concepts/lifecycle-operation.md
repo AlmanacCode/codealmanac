@@ -48,8 +48,8 @@ That shared path makes lifecycle operations one product family. The operation-sp
 
 Sync is related, but it is not a lifecycle operation. The live agreement defines sync as a scanner that reads local Claude and Codex transcript stores, groups active transcripts by registered repository, and queues ordinary ingest runs [@live-agreement]. In other words, sync can trigger ingest, but ingest is the page-writing operation.
 
-This distinction keeps background discovery separate from wiki authorship. If a future page explains queued runs and workers, it should treat sync as a producer of run specs, not as a fourth agent-writing operation.
+This distinction keeps background discovery separate from wiki authorship. Sync is a producer of queued ingest run specs, not a fourth agent-writing operation; [Run queue and sync](../architecture/lifecycle/run-queue-and-sync) covers the worker and queue mechanics that turn a sync scan into queued runs.
 
 ## Related Pages
 
-The architecture view is [Lifecycle workflows](../architecture/lifecycle/workflows). The shared runner is covered by [Operation runner](../architecture/lifecycle/operation-runner). The persisted states and events are listed in [Run states and events](../reference/runs/run-states-and-events).
+The architecture view is [Lifecycle workflows](../architecture/lifecycle/workflows). The shared runner is covered by [Operation runner](../architecture/lifecycle/operation-runner). Queueing and the sync scanner are covered by [Run queue and sync](../architecture/lifecycle/run-queue-and-sync). The persisted states and events are listed in [Run states and events](../reference/runs/run-states-and-events).

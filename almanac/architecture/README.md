@@ -53,3 +53,5 @@ When work touches agent execution, use [Harness contract](agent-runs/harness-con
 When work touches source inputs, use [Source resolution and runtime](sources/source-resolution-and-runtime). When work touches repository selection or runtime files, use [Repository selection and root](repositories/selection-and-root), [Repository local state](repositories/local-state), and [SQLite store boundaries](persistence/sqlite-store-boundaries).
 
 When work touches user surfaces, use [CLI adapter boundary](cli/adapter-boundary), [Terminal output](cli/terminal-output), [Setup automation and update](setup/automation-and-update), and [Local viewer](viewer/local-viewer). These pages explain adapter behavior at the edges without making the edge the product core.
+
+When work touches the Markdown a lifecycle operation renders into a prompt, use [Prompts and manuals](runtime-resources/prompts-and-manuals). It explains how packaged operation prompts and writing manuals are assembled into the context a harness receives.

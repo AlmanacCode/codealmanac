@@ -46,7 +46,7 @@ The contract is command-specific. Some commands print Pydantic models through sh
 
 ## Command-Specific Receipts
 
-Some JSON outputs are receipts rather than direct service model dumps. `init --json` prints repository name, wiki path, database path, indexed page count, run id, run status, and summary when present [@run_render]. Queued lifecycle runs such as `ingest --json` print `run_id`, `repository`, `runs_ahead`, `status`, and `child_pid` [@run_render].
+Some JSON outputs are receipts rather than direct service model dumps. `init` now queues a build run through the same run-worker path as `ingest` and `garden`, so `init --json` prints the same queue receipt shape: `run_id`, `repository`, `runs_ahead`, `status`, and `child_pid` [@run_render]. It no longer prints wiki path, database path, indexed page count, or a summary; the caller follows up with `codealmanac jobs show <run-id>` for the completed build's result.
 
 `list --json` prints an array of objects. Each row contains a dumped `repository` object and a `status` value such as `available` [@repositories_render]. Tests assert fields including repository `name`, `almanac_root`, and row `status` [@cli_tests].
 

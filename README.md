@@ -21,6 +21,8 @@ shaped the way it is, what broke before, which invariants matter, and how
 workflows cross files and services. The wiki is plain markdown in your repo,
 indexed locally, and reviewed in Git like any other code change.
 
+**Supported today:** macOS with Codex or Claude Code. Requires Python 3.12+.
+
 ## Quickstart
 
 Give this prompt to your coding agent:

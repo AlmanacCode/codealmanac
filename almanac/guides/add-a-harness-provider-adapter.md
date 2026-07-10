@@ -54,6 +54,8 @@ The goal is not to add provider branching to workflows. Build, ingest, and garde
 
 Every adapter has a `kind: HarnessKind` [@harness-port]. If the provider is new, add it to `HarnessKind` and update any public configuration or CLI choices that expose harness selection. `HarnessRunStatus` is provider-neutral and should stay limited to succeeded, failed, and cancelled unless the service contract itself changes [@harness-kinds].
 
+Adding a `HarnessKind` also means adding the new provider to the controlled model catalog. `HarnessConfig.model_matches_harness` looks up `HARNESS_MODELS[self.default]` with no fallback, so a harness kind with no catalog entry raises `KeyError` the first time config validates it as the default. Add entries for the new kind to `HARNESS_MODELS`, `DEFAULT_HARNESS_MODELS`, and the controlled model list before wiring the adapter into setup or config; see [Controlled model catalog](../decisions/controlled-model-catalog) for why the model list is closed rather than open-ended.
+
 Do not encode provider names in workflow logic. `HarnessesService` indexes adapters by `HarnessKind`, rejects duplicate kinds, checks readiness before running, and raises a clear error when the requested kind is missing or unavailable [@harness-service].
 
 ## Implement Readiness

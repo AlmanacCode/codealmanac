@@ -54,7 +54,7 @@ Garden does not resolve external source material. Its job is to improve structur
 
 ## Sync Is Not An Operation
 
-Sync is related to lifecycle work, but it is not a page-writing operation. `SyncWorkflow` evaluates local transcript candidates and uses `SyncIngestQueue` to queue ingest runs; it does not render a writing prompt or call the harness itself [@sync-workflow].
+Sync is related to lifecycle work, but it is not a page-writing operation. `SyncWorkflow` evaluates local transcript candidates and uses `SyncIngestQueue` to queue ingest runs; it does not render a writing prompt or call the harness itself [@sync-workflow]. [Run queue and sync](run-queue-and-sync) covers that queue boundary and the worker that drains it.
 
 The live agreement says the same thing as product design: sync is a scanner and trigger, not agent work and not a run [@live-agreement]. That distinction keeps discovery separate from authorship. Sync can decide that a transcript should become an ingest run, but ingest remains the lifecycle operation that writes wiki pages.
 
