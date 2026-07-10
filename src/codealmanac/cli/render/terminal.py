@@ -53,6 +53,31 @@ def wrap_with_prefixes(
     return tuple(lines)
 
 
+def wrap_text(text: str, width: int) -> tuple[str, ...]:
+    words = tuple(
+        _fit_word(word, width) for word in text.split(" ") if len(word) > 0
+    )
+    if len(words) == 0:
+        return ("",)
+    lines: list[str] = []
+    line = words[0]
+    for word in words[1:]:
+        candidate = f"{line} {word}"
+        if visible_length(candidate) > width:
+            lines.append(line)
+            line = word
+            continue
+        line = candidate
+    lines.append(line)
+    return tuple(lines)
+
+
+def _fit_word(word: str, width: int) -> str:
+    if visible_length(word) <= width or width <= 1:
+        return word
+    return f"{word[: width - 1]}…"
+
+
 def card_row(content: str, width: int, border: str, reset: str) -> str:
     padding = max(0, width - visible_length(content))
     return f"{border}│{reset}{content}{' ' * padding}{border}│{reset}"
@@ -68,6 +93,24 @@ def card_center_row(content: str, width: int, border: str, reset: str) -> str:
     left = max(0, (width - visible) // 2)
     right = max(0, width - visible - left)
     return f"{border}│{reset}{' ' * left}{content}{' ' * right}{border}│{reset}"
+
+
+def selected_indicator(width: int, style: str, reset: str) -> str:
+    text = "◆ selected"
+    left_padding = max(0, (width + 2 - len(text)) // 2)
+    right_padding = max(0, width + 2 - left_padding - len(text))
+    return f"{' ' * left_padding}{style}{text}{reset}{' ' * right_padding}"
+
+
+def card_width_for(count: int) -> int:
+    # A row of cards is: 3 leading spaces, each card is width+2 (borders),
+    # plus a 3-space gap between cards. Solving row_width = n*(width+5) for
+    # width keeps every option-count screen close to an 80-col terminal.
+    row_width = 78
+    min_width = 18
+    if count <= 0:
+        return min_width
+    return max(min_width, row_width // count - 5)
 
 
 def shell_command(command: tuple[str, ...]) -> str:
