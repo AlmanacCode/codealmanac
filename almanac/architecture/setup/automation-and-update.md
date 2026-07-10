@@ -22,6 +22,18 @@ sources:
     type: file
     path: src/codealmanac/services/config/service.py
     note: User config writes and automation reconciliation.
+  - id: codex_instructions
+    type: file
+    path: src/codealmanac/integrations/setup/codex.py
+    note: Codex AGENTS.md managed-block installation and removal.
+  - id: claude_instructions
+    type: file
+    path: src/codealmanac/integrations/setup/claude.py
+    note: Claude guide file and import-line installation and removal.
+  - id: setup_tests
+    type: file
+    path: tests/test_setup_service.py
+    note: Tests for instruction installation, override handling, idempotence, and uninstall preservation.
   - id: automation_service
     type: file
     path: src/codealmanac/services/automation/service.py
@@ -73,6 +85,10 @@ The area matters because it is local-only product infrastructure. Scheduled work
 The request model defaults to both instruction targets, Codex as the harness, auto-commit enabled, and all three automation tasks enabled. It accepts setup-time interval and disable controls and validates positive durations [@setup_requests].
 
 Setup's automation policy lives outside the service. The default tasks are sync, Garden, and update. `selected_setup_tasks` reflects the three enable/disable choices, which are persisted in TOML before scheduler reconciliation [@setup_automation].
+
+Setup-owned instruction writes are narrow. For Codex, setup writes a managed CodeAlmanac block into `~/.codex/AGENTS.md`, or into `~/.codex/AGENTS.override.md` when that override file already has content [@codex_instructions]. For Claude, setup writes `~/.claude/codealmanac.md` and adds the `@~/.claude/codealmanac.md` import line to `~/.claude/CLAUDE.md` [@claude_instructions]. Tests keep both paths idempotent and verify uninstall removes only the setup-owned block, guide, or import line while preserving user-authored content in the same files [@setup_tests].
+
+This means setup installs global agent guidance; it does not discover, merge, or rewrite repository-local instruction files. Repository instruction discovery remains outside the setup service boundary [@setup_service] [@codex_instructions] [@claude_instructions].
 
 ## Scheduled Jobs
 

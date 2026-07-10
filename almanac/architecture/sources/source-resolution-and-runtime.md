@@ -34,6 +34,30 @@ sources:
     type: file
     path: src/codealmanac/workflows/ingest/service.py
     note: Ingest workflow use of source resolution and runtime inspection.
+  - id: transcript_runtime
+    type: file
+    path: src/codealmanac/integrations/sources/transcripts/runtime.py
+    note: Transcript source runtime adapter.
+  - id: transcript_rendering
+    type: file
+    path: src/codealmanac/integrations/sources/transcripts/rendering.py
+    note: Transcript runtime rendering and tail truncation.
+  - id: transcript_tests
+    type: file
+    path: tests/test_transcript_source_runtime.py
+    note: Tests for Codex and Claude transcript source runtime behavior.
+  - id: discovery_tests
+    type: file
+    path: tests/test_transcript_discovery.py
+    note: Tests for transcript discovery and subagent filtering.
+  - id: operation_runner
+    type: file
+    path: src/codealmanac/workflows/operations/service.py
+    note: Lifecycle harness execution and run-event recording.
+  - id: harness_events
+    type: file
+    path: src/codealmanac/services/harnesses/events.py
+    note: Normalized harness event model used for live agent runs.
 ---
 
 # Source Resolution And Runtime
@@ -52,6 +76,12 @@ Runtime inspection is adapter-based. `SourcesService.inspect_runtime(...)` asks 
 
 Ingest uses this boundary before it renders the writing prompt. It resolves the requested inputs, records preparation events, inspects runtime snapshots, and passes both briefs and snapshots into the operation prompt [@ingest_workflow].
 
+## Transcript Runtime
+
+Transcript runtime inspection is for historical local session files selected as ingest source material. `TranscriptSourceRuntimeAdapter` supports only `SourceKind.TRANSCRIPT`, resolves the transcript path relative to the operation cwd when needed, reads readable JSONL entries, and returns a bounded text snapshot for the prompt [@transcript_runtime]. The renderer includes metadata and transcript sections, then keeps the tail when the snapshot exceeds its character budget so recent lines survive truncation [@transcript_rendering].
+
+This boundary prevents a common confusion. Live lifecycle runs record normalized harness events through the operation runner, using the event model described by [Harness event shape](../../reference/harness-event-shape) [@operation_runner] [@harness_events]. Transcript source runtime turns an already-written local session file into bounded ingest material. The former records the run currently being executed, while the latter supplies past conversation evidence to an ingest prompt [@transcript_runtime].
+
 ## Transcript Discovery
 
 Transcript discovery is a separate source path used by sync. The default discovery set has two adapters: Claude and Codex [@transcript_adapters]. The source model has the same two transcript app values, `claude` and `codex`, so there is no separate app identity for Codex app, Claude Desktop, Claude web, or editor-specific surfaces [@source_models].
@@ -59,6 +89,8 @@ Transcript discovery is a separate source path used by sync. The default discove
 The Codex adapter scans `.codex/sessions` under the configured home directory, reads the first JSONL lines for session metadata, and skips transcripts whose metadata marks `thread_source` as `subagent` [@codex_transcripts]. The Claude adapter scans `.claude/projects` under the configured home directory and skips paths that contain `subagents` [@claude_transcripts].
 
 Sync does not ingest every discovered transcript. It matches each transcript `cwd` to a registered repository root, skips unregistered working directories, and skips transcripts older than the active sync window as `inactive` [@sync_evaluation]. That means a transcript can be discovered correctly but still not become ingest input for the current sync run.
+
+Tests cover Codex and Claude transcript runtime loading, missing transcript diagnostics, tail truncation, and subagent filtering during discovery [@transcript_tests] [@discovery_tests].
 
 ## Related Reference
 
