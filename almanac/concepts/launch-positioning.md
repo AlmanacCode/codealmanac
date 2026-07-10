@@ -34,6 +34,18 @@ sources:
     type: file
     path: docs/research/openwiki-launch-traction/combined-stargazers-deduped.csv
     note: Deduplicated enriched GitHub stargazer export across OpenWiki, Graphify, CodeAlmanac, and Google OKF.
+  - id: twitter-sample-script
+    type: file
+    path: docs/research/openwiki-launch-traction/sample-twitter-stargazers.mjs
+    note: Script that builds the launch outreach Twitter sample and owner assignments.
+  - id: twitter-sample-csv
+    type: file
+    path: docs/research/openwiki-launch-traction/twitter-stargazers-sample-300-assigned.csv
+    note: Current sampled Twitter outreach CSV with owner assignments and review_status values.
+  - id: mark-twitter-dm-sent-script
+    type: file
+    path: docs/research/openwiki-launch-traction/mark-twitter-dm-sent.mjs
+    note: Script that marks a contacted GitHub login as DM_SENT in both Twitter outreach CSVs.
   - id: sqlite-framing-transcript
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/07/08/rollout-2026-07-08T20-50-32-019f44ff-a4ea-7713-8f45-c0beb43c73ee.jsonl
@@ -77,5 +89,7 @@ For demo structure, use [Demo CodeAlmanac in a launch video](../guides/demo-code
 OpenWiki research is raw launch analysis, not a final report. The useful reusable conclusion is that OpenWiki's early growth looked like a developer-viral open-source launch: the notes record about 9k GitHub stars in roughly a week, Trendshift daily rankings, HN activity, and LinkedIn/X repost waves, while also stating that exact referral sources are not public without repository-owner traffic data [@openwiki-notes]. A later export script fetched GitHub stargazers through GraphQL in `STARRED_AT` order with public profile fields such as login, location, company, bio, follower counts, and public repository count [@openwiki-export-script]. The current `openwiki-stargazers.csv` file has 10,807 data rows plus one header row [@openwiki-stargazers-csv].
 
 The later stargazer export broadened the comparison set to OpenWiki, Graphify, CodeAlmanac, and Google OKF. The combined export stores one row per lowercased GitHub login, boolean membership columns for the four repositories, per-repo `starred_at` fields, a `repo_count`, and a pipe-separated `repos_starred` field [@stargazer-combine-script] [@combined-stargazers-csv]. The validated combined file contains 92,576 unique GitHub accounts: 9,774 starred OpenWiki, 80,469 starred Graphify, 241 starred CodeAlmanac, and 6,513 starred Google OKF; 4,043 accounts appear in more than one of those four datasets [@traction-export-transcript]. The same validation found 8,085 Twitter usernames, 1,456 LinkedIn URLs, and zero email values in the combined file because the GitHub token used by the export could not read the `email` field [@openwiki-export-script] [@traction-export-transcript].
+
+The Twitter outreach sample is derived from the combined stargazer export, filtered to rows with `twitter_username`, shuffled with seed `20260709`, and cut to 300 profiles assigned evenly across Rohan, Kushagra, and Divit [@twitter-sample-script]. The sampled CSV adds `sampled_for_review`, `sample_number`, `assigned_to`, `assignee_sample_number`, and `review_status` columns before the GitHub profile fields [@twitter-sample-script] [@twitter-sample-csv]. After a DM is sent, `mark-twitter-dm-sent.mjs --login <github-login>` updates `review_status` to `DM_SENT` in both `twitter-stargazers.csv` and `twitter-stargazers-sample-300-assigned.csv`; the script errors unless each file has exactly one row for that lowercased login [@mark-twitter-dm-sent-script].
 
 The agent-chat comparison set from the July 8 lookup has two useful anchors. TagIt positions itself as a self-hosted chat interface where a team can `@mention` coding agents, register Claude Code and Codex CLIs, and route Slack or Feishu messages to the configured agent [@tagit]. agentchattr is the Slack-like local chat comparison: its README describes `@claude`, `@codex`, and other agent mentions, shared channels, and agent-to-agent wakeups through a local chat server [@agentchattr]. These tools are not direct wiki-memory substitutes, but they are relevant when launch copy mentions teams routing work to multiple agents.
