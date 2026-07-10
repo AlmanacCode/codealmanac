@@ -23,14 +23,32 @@ indexed locally, and reviewed in Git like any other code change.
 
 ## Quickstart
 
-```bash
+Give this prompt to your coding agent:
+
+```text
+Install and set up CodeAlmanac for this repository.
+
+Use the official installer:
 curl -fsSL https://codealmanac.com/install.sh | sh
 
-# Choose one setup path:
-codealmanac setup                       # Interactive setup
-codealmanac setup --yes                 # Quick install; uses Codex as the AI runner
-codealmanac setup --yes --runner claude # Quick install; uses Claude as the AI runner
+Then run `codealmanac setup` without `--yes`. Walk me through its interactive
+setup and wait for my choices instead of selecting defaults for me.
 
+Initialize this repository if it does not already have an almanac/ directory,
+then verify the installation with `codealmanac doctor`.
+```
+
+Prefer to do it yourself?
+
+```bash
+curl -fsSL https://codealmanac.com/install.sh | sh && codealmanac setup
+```
+
+See [Install](#install) and [Setup](#setup) for more options.
+
+Once CodeAlmanac is set up:
+
+```bash
 cd your-repo
 codealmanac init                     # Makes your wiki, if you don't have one
 codealmanac search "getting started" # Shows matching wiki pages.
@@ -113,8 +131,17 @@ codealmanac setup --yes
 codealmanac setup --yes --runner claude
 ```
 
-Setup installs local agent instructions plus the default local automation: sync,
-Garden, and daily package update. It does not connect to a hosted service.
+Setup installs agent instructions for your chosen tools and three local macOS
+`launchd` jobs. Nothing runs in the cloud.
+
+| Job | Default schedule | What it does |
+| --- | ---: | --- |
+| Sync | Every 5 hours | Scans recent Codex and Claude conversations and queues useful knowledge for the relevant registered wiki. |
+| Garden | Every 4 hours | Reviews every registered wiki for stale, duplicated, or poorly connected knowledge. |
+| Update | Every 24 hours | Checks for and installs CodeAlmanac CLI updates when it is safe to do so. |
+
+These schedules run locally in the background. Use
+`codealmanac automation status` to see what is installed.
 
 If you don't have Codex or prefer Claude, use `--runner claude`.
 
@@ -126,12 +153,19 @@ codealmanac setup --yes --target codex
 codealmanac setup --yes --target claude
 ```
 
-Other setup flags:
+Customize automatic work during setup:
 
 ```bash
+# Change how often recent agent conversations are scanned
 codealmanac setup --yes --sync-every 5h
+
+# Do not install automatic transcript sync
 codealmanac setup --yes --sync-off
+
+# Do not install automatic wiki cleanup
 codealmanac setup --yes --garden-off
+
+# Do not install automatic CodeAlmanac updates
 codealmanac setup --yes --no-auto-update
 ```
 
@@ -184,20 +218,40 @@ should leave the wiki unchanged.
 
 ## Sync And Automation
 
-`sync` scans local Claude and Codex transcript stores, finds conversations active
-since the last completed sync, and queues ordinary local ingest runs.
+CodeAlmanac can keep registered wikis current without requiring you to remember
+maintenance commands.
+
+**Sync** scans local Codex and Claude transcript stores for conversations active
+since the previous completed sync. Conversations associated with registered
+repositories are queued as ordinary ingest jobs. Sync may decide that a
+conversation contains no durable knowledge and leave the wiki unchanged.
+
+**Garden** periodically queues a maintenance job for each registered wiki. It
+improves stale pages, weak links, topics, duplicated knowledge, and graph
+structure.
+
+**Update** keeps the locally installed CodeAlmanac CLI current. Scheduled
+updates are skipped when an update would be unsafe, such as while lifecycle
+work is active.
+
+Automation is implemented with local macOS `launchd` jobs, not a hosted service
+or cloud sync. Logs are stored under `~/.codealmanac/logs/`.
 
 ```bash
-codealmanac sync status --from codex
-codealmanac sync --from codex --using codex
-codealmanac automation install sync --every 5h
-codealmanac automation install update --every 24h
+# See installed schedules
 codealmanac automation status
+
+# Change a schedule
+codealmanac automation install sync --every 5h
+codealmanac automation install garden --every 4h
+codealmanac automation install update --every 24h
+
+# Remove a schedule
+codealmanac automation uninstall sync
 ```
 
-Scheduled automation launches local `sync`, `garden`, or `update` commands with
-explicit unattended policy. It is local scheduler state, not cloud sync.
-Scheduler logs live under `~/.codealmanac/logs/`.
+Automation creates individual background runs. Inspect those runs separately
+with `codealmanac jobs`.
 
 ## Jobs
 
