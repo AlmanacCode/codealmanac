@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 from collections.abc import Sequence
 from datetime import timedelta
@@ -80,13 +81,25 @@ def program_arguments_for(
     task: AutomationTask,
     request: InstallAutomationRequest,
 ) -> tuple[str, ...]:
-    executable = request.python_executable or Path(sys.executable)
-    base = (str(executable), "-m", "codealmanac.cli.main")
+    executable = codealmanac_executable(request)
+    base = (str(executable),)
     if task == AutomationTask.SYNC:
         return (*base, "sync")
     if task == AutomationTask.UPDATE:
         return (*base, "update", "--scheduled")
     return (*base, "__garden-scheduler")
+
+
+def codealmanac_executable(request: InstallAutomationRequest) -> Path:
+    if request.codealmanac_executable is not None:
+        return request.codealmanac_executable
+    invoked = Path(sys.argv[0])
+    if invoked.name == "codealmanac":
+        return invoked.resolve()
+    discovered = shutil.which("codealmanac")
+    if discovered is not None:
+        return Path(discovered).resolve()
+    return Path(sys.executable).with_name("codealmanac")
 
 
 def plist_path_for(task: AutomationTask, home: Path) -> Path:

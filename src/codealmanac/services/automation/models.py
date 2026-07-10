@@ -14,6 +14,12 @@ class AutomationTask(StrEnum):
     UPDATE = "update"
 
 
+class ScheduledJobState(StrEnum):
+    RUNNING = "running"
+    IDLE = "idle"
+    UNKNOWN = "unknown"
+
+
 class EnvironmentVariable(CodeAlmanacModel):
     name: str
     value: str
@@ -61,6 +67,10 @@ class ScheduledJobStatus(CodeAlmanacModel):
     installed: bool
     loaded: bool
     interval: timedelta | None = None
+    state: ScheduledJobState | None = None
+    run_count: int | None = None
+    last_exit_code: int | None = None
+    pid: int | None = None
 
 
 class AutomationInstallResult(CodeAlmanacModel):

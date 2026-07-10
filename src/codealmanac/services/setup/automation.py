@@ -26,7 +26,7 @@ def install_automation_request(request: RunSetupRequest) -> InstallAutomationReq
         garden_every=request.garden_every,
         garden_off=request.garden_off,
         env_path=request.env_path,
-        python_executable=request.python_executable,
+        codealmanac_executable=request.codealmanac_executable,
     )
 
 

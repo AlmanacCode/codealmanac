@@ -67,6 +67,17 @@ def render_automation_job_status(status: ScheduledJobStatus) -> None:
     print(f"  launchd loaded: {'yes' if status.loaded else 'no'}")
     if status.interval is not None:
         print(f"  interval: {duration_label(status.interval)}")
+    if status.state is not None:
+        print(f"  state: {status.state.value}")
+    if status.run_count is not None:
+        print(f"  runs: {status.run_count}")
+    if status.last_exit_code is not None:
+        result = "succeeded" if status.last_exit_code == 0 else "failed"
+        print(f"  last result: {result} (exit {status.last_exit_code})")
+    elif status.run_count == 0:
+        print("  last result: not run yet")
+    if status.pid is not None:
+        print(f"  pid: {status.pid}")
 
 
 def duration_label(value: timedelta) -> str:

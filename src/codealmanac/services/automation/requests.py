@@ -17,7 +17,7 @@ class InstallAutomationRequest(AutomationSelectionRequest):
     garden_every: timedelta | None = None
     garden_off: bool = False
     env_path: str | None = None
-    python_executable: Path | None = None
+    codealmanac_executable: Path | None = None
 
     @field_validator("every", "garden_every")
     @classmethod
