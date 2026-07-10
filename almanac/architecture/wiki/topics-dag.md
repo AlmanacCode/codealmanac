@@ -30,7 +30,7 @@ sources:
 
 # Topics DAG
 
-The topics DAG is the browseable topic graph for a repo wiki. It is built from `almanac/topics.yaml` plus page `topics:` frontmatter, and it gives pages a subject map that is separate from the folder tree. The graph is a directed acyclic graph: a topic may have parents, but parent links cannot form a cycle [@topic-graph].
+The topics DAG is the browseable topic graph for a repo wiki. It is built from `almanac/topics.yaml` plus page `topics:` frontmatter, and it gives pages a subject map that is separate from the folder tree. The graph is a directed acyclic graph: a topic may have parents, but parent links cannot form a cycle [@topic-graph]. The exact YAML shape is documented in [Topics YAML](../../reference/topics-yaml), and maintainer steps live in [Maintain topics](../../guides/maintain-topics).
 
 This area is split into read and write responsibilities. `TopicsService` is the service-facing facade for list, show, create, describe, link, unlink, rename, and delete [@topics-service]. The mutation executor owns file writes, page frontmatter rewrites, graph checks, and index refresh after topic changes [@topic-mutations]. That split keeps topic commands deterministic while the derived index remains the read model.
 
@@ -65,3 +65,5 @@ The live agreement makes this split explicit: topic read orchestration, graph me
 When changing this area, keep that boundary intact. Reads should stay index-backed. Mutations should update authored Markdown/YAML, refresh the index, and reject graph shapes that would make topic browsing ambiguous.
 
 For task steps, use [Maintain topics](../../guides/maintain-topics). For the exact `topics.yaml` schema and mutation contract, use [Topics YAML](../../reference/topics-yaml).
+
+After changing topic source, verify the graph with [Verify a wiki change](../../guides/verify-a-wiki-change).

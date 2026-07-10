@@ -30,11 +30,11 @@ sources:
 
 # Release Package
 
-Use this guide when publishing the `codealmanac` Python package to PyPI. A release publishes the local CLI package and its packaged resources; it does not publish a hosted service, npm package, SDK, MCP package, or legacy command alias, matching the [Local-only Python product](../decisions/local-only-python-product) decision [@release-doc] [@public-contract-tests]. The release is not done when PyPI accepts files. It is done when clean installed artifacts and the public install path can run the `codealmanac` command outside the repo developer environment [@release-doc] [@readme].
+Use this guide when publishing the `codealmanac` Python package to PyPI. A release publishes the local CLI package and its packaged resources; it follows the [Local-only Python product](../decisions/local-only-python-product) decision and does not publish a hosted service, npm package, SDK, MCP package, or legacy command alias [@release-doc] [@public-contract-tests]. The release is not done when PyPI accepts files. It is done when clean installed artifacts and the public install path can run the `codealmanac` command outside the repo developer environment [@release-doc] [@readme].
 
 ## Preconditions
 
-Start from a clean checkout of the release branch. `pyproject.toml` owns the package version, requires Python 3.12 or newer, and exposes exactly one console script: `codealmanac = "codealmanac.cli.main:main"` [@pyproject]. The release document states that stable releases publish from `main` to the normal PyPI release channel and that version numbers must not be reused [@release-doc].
+Start from a clean checkout of the release branch. `pyproject.toml` owns the package version, requires Python 3.12 or newer, and exposes exactly one console script: `codealmanac = "codealmanac.cli.main:main"` [@pyproject]. The [public command surface](../reference/cli/public-command-surface) is the contract that release smoke should prove from installed artifacts. The release document states that stable releases publish from `main` to the normal PyPI release channel and that version numbers must not be reused [@release-doc].
 
 Keep the package surface narrow. Public-contract tests reject npm release language, old install surfaces, hosted commands, legacy aliases, and public SDK or MCP modules [@public-contract-tests]. If those tests fail, fix the public contract before publishing.
 
