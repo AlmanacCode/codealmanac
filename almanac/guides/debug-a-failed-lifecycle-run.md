@@ -26,6 +26,8 @@ Start with `codealmanac jobs`, then run `codealmanac jobs show <run-id>` and `co
 
 If the run is still active, `codealmanac jobs attach <run-id>` reads the same record and events plus a terminal flag [@run_store]. Attach is useful for watching a long harness run, but a failed run is usually debugged from `jobs logs`.
 
+If a run is stuck rather than failed, `codealmanac jobs cancel <run-id>` only marks the record `cancelled`; it does not stop the harness process actually doing the work [@run_store]. See [Run States And Events](../reference/runs/run-states-and-events) for the exact cancellation contract. To stop the work itself, kill the `child_pid` reported when the run was queued.
+
 ## Interpret The Failure
 
 Harness errors appear as run error or tool events because the operation runner records harness output before it validates success [@operation_runner]. Validation errors mean the Markdown tree could not pass the same checks described in [Health And Validation](../architecture/wiki/health-and-validation). Indexing errors usually point to page route collisions or malformed wiki source that prevented the derived index from refreshing.

@@ -26,6 +26,10 @@ sources:
     type: file
     path: tests/test_runs_service.py
     note: Tests for transitions, queue specs, attach, cancellation, and run-id validation.
+  - id: run-worker-spawner
+    type: file
+    path: src/codealmanac/integrations/runs/process.py
+    note: Detached subprocess spawn with no stored handle for later termination.
 ---
 
 # Run States And Events
@@ -81,6 +85,8 @@ A queued run with no stored spec is not valid worker work. The run queue treats 
 Cancellation is allowed for queued or running runs. It changes the record to `cancelled`, sets `finished_at`, preserves existing summary and error fields, and appends a `cancelled` status event [@run-transitions] [@run-store]. Cancelling an already terminal run is a no-op result with `changed: false` [@run-transitions].
 
 Tests cover queued cancellation, cancelled-run preservation during later finish calls, and rejection of unsafe run ids such as path-shaped identifiers [@run-tests]. Run ids must match the `^[A-Za-z0-9_-]+$` pattern [@run-models].
+
+Cancellation writes durable state only; it does not signal or terminate the worker process executing the run. `SubprocessRunWorkerSpawner` starts each build, ingest, or garden run as a detached subprocess (`start_new_session=True`) and keeps no handle for later termination beyond the returned `child_pid` [@run-worker-spawner]. Neither the worker drain loop nor `RunsService.cancel` sends that process a signal, so a run cancelled while `running` keeps executing until its harness call returns on its own [@run-store]. When it finally returns, `finish` sees the record is already `cancelled` and returns it unchanged rather than overwriting it with `done` or `failed` [@run-transitions]. Stopping the underlying harness process early requires killing the recorded `child_pid` directly; `jobs cancel` alone does not do this.
 
 ## Attach And Logs
 

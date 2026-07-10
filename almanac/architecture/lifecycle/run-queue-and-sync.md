@@ -18,6 +18,10 @@ sources:
     type: file
     path: src/codealmanac/workflows/sync/service.py
     note: Transcript sync workflow and queue integration.
+  - id: cancellation_plan
+    type: file
+    path: docs/plans/slice-139-real-job-cancellation.md
+    note: Pending plan to split queue management from one-run execution so cancellation can kill the harness process tree.
 ---
 
 # Run Queue And Sync
@@ -39,6 +43,10 @@ Scheduled Garden iterates registered repositories and skips repositories that al
 `RunQueueWorker.drain(...)` acquires a worker lock through the run service before it drains queued records [@run_worker]. If the lock is unavailable, the drain result reports `lock_acquired=False` [@run_worker] [@run_models].
 
 For each queued run, the worker reads the stored spec and calls `BuildWorkflow.execute_started(...)`, `IngestWorkflow.execute_started(...)`, or `GardenWorkflow.execute_started(...)` with the existing run id [@run_worker]. A queued run without a durable spec is marked failed rather than guessed from process state [@run_worker].
+
+The drain loop has no cancellation hook: it does not check whether a run it is executing has been marked `cancelled` in the meantime, and nothing in this path signals the spawned worker process to stop. Cancelling a running run only changes durable state; see [Run States And Events](../../reference/runs/run-states-and-events) for the exact contract.
+
+A pending plan, `docs/plans/slice-139-real-job-cancellation.md`, proposes splitting this worker's two responsibilities apart: keep `__run-worker` as a detached queue manager, and add a hidden `__run-executor <run-id>` process that runs exactly one queued spec and can be terminated on its own [@cancellation_plan]. The plan also adds a durable `RunExecutionRef` (pid, execution id, process start time) so a process controller can verify identity before signaling, an atomic queued-to-running claim to close a cancel/claim race, and a non-terminal `cancellation_requested_at` fact so the terminal `cancelled` event is only appended after termination is confirmed [@cancellation_plan]. As of this writing that split is not implemented; the worker still executes runs inline as described above.
 
 ## Sync Boundary
 
