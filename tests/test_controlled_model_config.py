@@ -13,9 +13,9 @@ from codealmanac.services.config.store import ConfigStore
 from codealmanac.services.harnesses.models import HarnessKind
 
 
-class UnusedRepositories:
-    def select_for_read(self, cwd: Path, repository_name: str | None):
-        raise AssertionError("project config lookup is not used in these tests")
+class UnusedAutomation:
+    def reconcile_task(self, request):
+        raise AssertionError("automation is not used for harness config")
 
 
 def test_harness_config_rejects_unknown_models() -> None:
@@ -37,9 +37,9 @@ def test_config_set_harness_default_resets_model_to_provider_default(
     tmp_path: Path,
 ) -> None:
     service = ConfigService(
-        repositories=UnusedRepositories(),
         store=ConfigStore(),
         user_config_path=tmp_path / "config.toml",
+        automation=UnusedAutomation(),
     )
 
     service.set(SetConfigValueRequest(key=ConfigKey.HARNESS_DEFAULT, value="claude"))
@@ -51,9 +51,9 @@ def test_config_set_harness_default_resets_model_to_provider_default(
 
 def test_config_set_harness_model_rejects_other_provider_models(tmp_path: Path) -> None:
     service = ConfigService(
-        repositories=UnusedRepositories(),
         store=ConfigStore(),
         user_config_path=tmp_path / "config.toml",
+        automation=UnusedAutomation(),
     )
     service.set(SetConfigValueRequest(key=ConfigKey.HARNESS_DEFAULT, value="claude"))
 

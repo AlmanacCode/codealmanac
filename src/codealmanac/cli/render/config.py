@@ -1,6 +1,10 @@
 from codealmanac.cli.render.common import print_json_model, print_json_rows
 from codealmanac.cli.render.style import table
-from codealmanac.services.config.models import ConfigEntry, ConfigSetResult
+from codealmanac.services.config.models import (
+    ConfigApplyResult,
+    ConfigEntry,
+    ConfigSetResult,
+)
 
 
 def render_config_values(
@@ -29,3 +33,13 @@ def render_config_set(result: ConfigSetResult, json_output: bool) -> None:
         print_json_model(result)
         return
     print(f"config: {result.key.value} = {result.value}")
+
+
+def render_config_apply(result: ConfigApplyResult, json_output: bool) -> None:
+    if json_output:
+        print_json_model(result)
+        return
+    print("config applied")
+    for task in result.automation:
+        state = "enabled" if task.enabled else "disabled"
+        print(f"  {task.task.value}: {state}")

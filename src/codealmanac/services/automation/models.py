@@ -73,12 +73,15 @@ class ScheduledJobStatus(CodeAlmanacModel):
     pid: int | None = None
 
 
-class AutomationInstallResult(CodeAlmanacModel):
-    jobs: tuple[ScheduledJob, ...]
-    disabled: tuple[ScheduledJob, ...] = ()
+class AutomationTaskApplyResult(CodeAlmanacModel):
+    task: AutomationTask
+    enabled: bool
+    interval: timedelta
+    plist_path: Path
+    changed: bool
 
 
-class AutomationUninstallResult(CodeAlmanacModel):
+class AutomationRemoveResult(CodeAlmanacModel):
     tasks: tuple[AutomationTask, ...]
     removed: tuple[Path, ...]
 

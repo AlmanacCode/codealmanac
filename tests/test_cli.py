@@ -1,7 +1,7 @@
 import json
 import shutil
 import subprocess
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -579,7 +579,8 @@ def test_cli_setup_json_does_not_prompt_for_auto_update(
     assert main(["setup", "--json", "--target", "codex"]) == 0
 
     payload = json.loads(capsys.readouterr().out)
-    assert [job["task"] for job in payload["automation_install"]["jobs"]] == [
+    assert "automation" not in payload
+    assert [item["task"] for item in payload["config_update"]["automation"]] == [
         "sync",
         "garden",
         "update",
@@ -656,15 +657,18 @@ def test_cli_setup_skip_instructions_json(isolated_home: Path, monkeypatch, caps
     assert payload["changes"] == []
     assert payload["plan"]["default_harness"] == "codex"
     assert payload["plan"]["auto_commit"] is True
-    assert payload["config_update"]["key"] == "auto_commit"
-    assert payload["config_update"]["value"] == "true"
+    entries = {
+        item["key"]: item["value"] for item in payload["config_update"]["entries"]
+    }
+    assert entries["auto_commit"] == "true"
     assert payload["plan"]["instruction_targets"] == ["codex", "claude"]
     assert [item["task"] for item in payload["plan"]["automation"]] == [
         "sync",
         "garden",
         "update",
     ]
-    assert [job["task"] for job in payload["automation_install"]["jobs"]] == [
+    assert "automation" not in payload
+    assert [item["task"] for item in payload["config_update"]["automation"]] == [
         "sync",
         "garden",
         "update",
@@ -1446,7 +1450,7 @@ def test_cli_sync_queues_ingest_for_ready_transcripts(
     assert not (repo / "almanac/jobs").exists()
 
 
-def test_cli_automation_install_status_and_uninstall(
+def test_cli_config_controls_automation_and_status_is_read_only(
     tmp_path: Path,
     isolated_home: Path,
     monkeypatch,
@@ -1464,39 +1468,38 @@ def test_cli_automation_install_status_and_uninstall(
     monkeypatch.chdir(repo)
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
 
-    assert (
-        main(
-            [
-                "automation",
-                "install",
-                "--every",
-                "1m",
-                "--garden-every",
-                "2m",
-            ]
-        )
-        == 0
-    )
-    install_output = capsys.readouterr()
-    assert "automation installed\n" in install_output.out
-    assert "sync interval: 1m\n" in install_output.out
-    assert "garden interval: 2m\n" in install_output.out
-    assert "update interval: 1d\n" in install_output.out
-    assert tuple(job.task.value for job in scheduler.installed) == (
-        "sync",
-        "garden",
-        "update",
-    )
+    assert main(["config", "set", "automation.sync.every", "1m"]) == 0
+    sync_output = capsys.readouterr()
+    assert sync_output.out == "config: automation.sync.every = 1m\n"
+    assert scheduler.installed[-1].task == AutomationTask.SYNC
+    assert scheduler.installed[-1].interval == timedelta(minutes=1)
+
+    assert main(["config", "set", "automation.garden.every", "2m"]) == 0
+    capsys.readouterr()
+    assert scheduler.installed[-1].task == AutomationTask.GARDEN
+    assert scheduler.installed[-1].interval == timedelta(minutes=2)
+
+    assert main(["config", "apply"]) == 0
+    apply_output = capsys.readouterr()
+    assert "config applied\n" in apply_output.out
+    assert {job.task for job in scheduler.installed[-3:]} == set(AutomationTask)
 
     assert main(["automation", "status", "--json"]) == 0
     status_output = capsys.readouterr()
     assert '"statuses": [' in status_output.out
     assert '"task": "sync"' in status_output.out
 
-    assert main(["automation", "uninstall", "sync"]) == 0
-    uninstall_output = capsys.readouterr()
-    assert "automation not installed\n" in uninstall_output.out
+    assert main(["config", "set", "automation.sync.enabled", "false"]) == 0
+    capsys.readouterr()
     assert scheduler.uninstalled[-1].task.value == "sync"
+
+    assert main(["automation", "install"]) == 2
+    removed_output = capsys.readouterr()
+    assert "Unknown command" in removed_output.err
+
+    assert main(["automation", "uninstall"]) == 2
+    removed_output = capsys.readouterr()
+    assert "Unknown command" in removed_output.err
 
 
 def test_cli_jobs_inspects_local_run_records(
@@ -1777,9 +1780,7 @@ def test_cli_topics_and_health_read_current_repo_wiki(
     assert topics_header.startswith("TOPIC")
     assert "PAGES" in topics_header
     auth_row = next(
-        line
-        for line in topics_output.out.splitlines()
-        if line.startswith("auth ")
+        line for line in topics_output.out.splitlines() if line.startswith("auth ")
     )
     assert "(1 page)" in auth_row
 
@@ -1790,10 +1791,7 @@ def test_cli_topics_and_health_read_current_repo_wiki(
     assert main(["health"]) == 0
     health_text_output = capsys.readouterr()
     assert "broken-links (1):" in health_text_output.out
-    assert (
-        "auth-flow -> missing-page (target does not exist)"
-        in health_text_output.out
-    )
+    assert "auth-flow -> missing-page (target does not exist)" in health_text_output.out
     assert "dead-refs (0): ok" in health_text_output.out
 
     assert main(["health", "--json"]) == 0

@@ -1,4 +1,5 @@
 import tomllib
+from dataclasses import dataclass
 from pathlib import Path
 from tomllib import TOMLDecodeError
 
@@ -10,17 +11,14 @@ from codealmanac.services.config.models import UserConfig
 
 
 class ConfigStore:
-    def load(self, paths: tuple[Path, ...]) -> UserConfig:
+    def load(self, path: Path) -> UserConfig:
         try:
-            sources = tuple(
-                TomlConfigSettingsSource(
-                    UserConfig,
-                    toml_file=path,
-                    deep_merge=True,
-                )
-                for path in paths
+            source = TomlConfigSettingsSource(
+                UserConfig,
+                toml_file=path,
+                deep_merge=True,
             )
-            return UserConfig(_build_sources=(sources, {}))
+            return UserConfig(_build_sources=((source,), {}))
         except TOMLDecodeError as error:
             raise ValidationFailed(f"invalid config TOML: {error}") from error
         except ValidationError as error:
@@ -33,6 +31,13 @@ class ConfigStore:
         key: str,
         literal: str,
     ) -> None:
+        self.set_values(path, (TomlValueUpdate(table, key, literal),))
+
+    def set_values(
+        self,
+        path: Path,
+        updates: tuple["TomlValueUpdate", ...],
+    ) -> None:
         body = ""
         if path.exists():
             try:
@@ -42,12 +47,36 @@ class ConfigStore:
                 raise ValidationFailed(f"invalid config TOML: {error}") from error
             except OSError as error:
                 raise ValidationFailed(f"cannot read config: {error}") from error
-        updated = update_toml_value(body=body, table=table, key=key, literal=literal)
+        updated = body
+        for update in updates:
+            updated = update_toml_value(
+                body=updated,
+                table=update.table,
+                key=update.key,
+                literal=update.literal,
+            )
+        validate_config_body(updated)
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(updated, encoding="utf-8")
         except OSError as error:
             raise ValidationFailed(f"cannot write config: {error}") from error
+
+
+@dataclass(frozen=True)
+class TomlValueUpdate:
+    table: str | None
+    key: str
+    literal: str
+
+
+def validate_config_body(body: str) -> None:
+    try:
+        UserConfig.model_validate(tomllib.loads(body))
+    except TOMLDecodeError as error:
+        raise ValidationFailed(f"invalid config TOML: {error}") from error
+    except ValidationError as error:
+        raise ValidationFailed(f"invalid config: {error}") from error
 
 
 def update_toml_value(body: str, table: str | None, key: str, literal: str) -> str:

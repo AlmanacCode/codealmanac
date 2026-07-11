@@ -244,13 +244,17 @@ or cloud sync. Logs are stored under `~/.codealmanac/logs/`.
 codealmanac automation status
 
 # Change a schedule
-codealmanac automation install sync --every 5h
-codealmanac automation install garden --every 4h
-codealmanac automation install update --every 24h
+codealmanac config set automation.sync.every 5h
+codealmanac config set automation.garden.every 4h
+codealmanac config set automation.update.every 24h
 
-# Remove a schedule
-codealmanac automation uninstall sync
+# Disable or re-enable a schedule
+codealmanac config set automation.sync.enabled false
+codealmanac config set automation.sync.enabled true
 ```
+
+`config set` updates the user TOML and immediately makes launchd match. If you
+edit the TOML directly, run `codealmanac config apply` afterward.
 
 Automation creates individual background runs. Inspect those runs separately
 with `codealmanac jobs`.
@@ -345,22 +349,37 @@ User config lives at:
 ~/.codealmanac/config.toml
 ```
 
-Project config lives at:
-
-```text
-almanac/config.toml
-```
-
-The first supported defaults are:
+The supported defaults are:
 
 ```toml
 auto_commit = true
 
 [harness]
 default = "codex"
+model = "gpt-5.5"
+
+[automation.sync]
+enabled = true
+every = "5h"
+
+[automation.garden]
+enabled = true
+every = "4h"
+
+[automation.update]
+enabled = true
+every = "24h"
 ```
 
 CLI flags still win over config.
+
+Use `codealmanac config set <key> <value>` for normal changes. It applies
+automation changes to launchd immediately. Direct file edits are supported but
+must be followed by:
+
+```bash
+codealmanac config apply
+```
 
 `auto_commit` means lifecycle prompts may tell the selected agent to use normal
 Git commands for wiki source changes. CodeAlmanac does not stage files, split

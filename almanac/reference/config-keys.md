@@ -13,11 +13,11 @@ sources:
   - id: config-service
     type: file
     path: src/codealmanac/services/config/service.py
-    note: Config load precedence, set behavior, and project config path.
+    note: User config reads, writes, and automation reconciliation.
   - id: config-store
     type: file
     path: src/codealmanac/services/config/store.py
-    note: TOML loading, deep merge, and write behavior.
+    note: TOML loading, validation, and batch write behavior.
   - id: config-dispatch
     type: file
     path: src/codealmanac/cli/dispatch/config.py
@@ -29,12 +29,12 @@ sources:
   - id: config-tests
     type: file
     path: tests/test_config_service.py
-    note: Tests for defaults, precedence, set behavior, and invalid values.
+    note: Tests for defaults, user-only behavior, reconciliation, and invalid values.
 ---
 
 # Config Keys
 
-Config keys are the small TOML surface that controls default lifecycle execution. CodeAlmanac currently supports `auto_commit`, `harness.default`, and `harness.model` [@config-models]. User config lives at `~/.codealmanac/config.toml`, project config may live at `almanac/config.toml`, and CLI flags still take precedence over config [@readme].
+Config keys are the user-level TOML surface for lifecycle and machine-automation preferences. CodeAlmanac reads one file at `~/.codealmanac/config.toml`; repository-level config is not supported [@readme] [@config-service]. CLI flags still override config for one command.
 
 This page defines the current keys, defaults, validation, and precedence. Machine-level setup is described in [Automation and update](../architecture/setup/automation-and-update), and the model allowlist decision is described in [Controlled model catalog](../decisions/controlled-model-catalog).
 
@@ -43,13 +43,14 @@ This page defines the current keys, defaults, validation, and precedence. Machin
 | Layer | Path or source | Notes |
 | --- | --- | --- |
 | CLI flags | Command-specific flags such as `--using` | Highest precedence for that command [@readme] [@config-dispatch]. |
-| Project config | `almanac/config.toml` | Loaded when a repository can be selected [@config-service]. |
 | User config | `~/.codealmanac/config.toml` | Global user defaults [@readme] [@config-service]. |
 | Built-in defaults | Pydantic defaults | Used when no config file sets the value [@config-models]. |
 
-`ConfigService.load` looks for project config through repository selection, then passes project and user paths to the config store [@config-service]. The store loads TOML sources with deep merge behavior, so project values can override user values while leaving unspecified user values in place [@config-store] [@config-tests].
+`ConfigService.load_user` validates the one user file through `UserConfig`. `config list` and `config get` inspect desired values. `config set` writes one value and immediately reconciles its automation task when the key is under `automation.*`. `config apply` validates direct TOML edits and reconciles all three tasks [@config-service] [@config-parser].
 
-`codealmanac config set` writes only the user config path. It does not edit `almanac/config.toml` [@config-service]. `config list`, `config get`, and `config set` expose only the three supported keys [@config-parser] [@config-service].
+Service tests cover built-in defaults, rejection of repository config, immediate
+single-task reconciliation, explicit apply, and invalid values that must not be
+written [@config-tests].
 
 ## Supported Keys
 
@@ -58,6 +59,12 @@ This page defines the current keys, defaults, validation, and precedence. Machin
 | `auto_commit` | Boolean | `true` | `true` or `false` |
 | `harness.default` | Harness name | `codex` | `codex` or `claude` |
 | `harness.model` | Model name | `gpt-5.5` | One model from the selected harness catalog |
+| `automation.sync.enabled` | Boolean | `true` | `true` or `false` |
+| `automation.sync.every` | Duration | `5h` | Positive human duration |
+| `automation.garden.enabled` | Boolean | `true` | `true` or `false` |
+| `automation.garden.every` | Duration | `4h` | Positive human duration |
+| `automation.update.enabled` | Boolean | `true` | `true` or `false` |
+| `automation.update.every` | Duration | `24h` | Positive human duration |
 
 `auto_commit` is prompt policy. It means lifecycle prompts may tell the selected agent to use normal Git commands for wiki source changes; CodeAlmanac itself does not stage, split, or commit diffs [@readme].
 
@@ -84,12 +91,26 @@ auto_commit = true
 [harness]
 default = "codex"
 model = "gpt-5.5"
+
+[automation.sync]
+enabled = true
+every = "5h"
+
+[automation.garden]
+enabled = true
+every = "4h"
+
+[automation.update]
+enabled = true
+every = "24h"
 ```
 
-`ConfigStore` rejects invalid TOML and invalid model values as validation failures [@config-store]. When it writes a key, it preserves existing valid TOML structure where possible, creates missing parent directories, and validates the resulting file by reloading it [@config-store] [@config-service].
+`ConfigStore` rejects invalid TOML and invalid typed values, including non-positive automation intervals. Batch setup updates perform one TOML write. `ConfigService` then asks `AutomationService` to install enabled tasks and remove disabled tasks [@config-store] [@config-service].
+
+Direct edits do not reload launchd by themselves. Run `codealmanac config apply` after editing the file. `codealmanac automation status` reports actual scheduler state [@readme].
 
 ## CLI Resolution
 
-Lifecycle dispatch loads config for the selected wiki and resolves a harness flag over that config. If the command does not pass a harness value, `resolve_harness` returns `config.harness.default`; if a command selects a different harness, `resolve_harness_model` uses that harness's default model instead of the configured model for another harness [@config-dispatch].
+Lifecycle dispatch loads user config and resolves a harness flag over it. If the command does not pass a harness value, `resolve_harness` returns `config.harness.default`; if a command selects a different harness, `resolve_harness_model` uses that harness's default model instead of the configured model for another harness [@config-dispatch].
 
 Scheduled automation and local setup use these same defaults when launching unattended work. See [Setup local automation](../guides/setup-local-automation) for the operational path.

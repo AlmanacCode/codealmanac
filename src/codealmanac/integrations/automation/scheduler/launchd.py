@@ -35,11 +35,10 @@ class LaunchdSchedulerAdapter:
         return self.status(job)
 
     def uninstall(self, job: ScheduledJob) -> bool:
-        if not job.plist_path.exists():
-            return False
-        self.bootout(job)
+        plist_existed = job.plist_path.exists()
+        service_removed = self.bootout(job)
         job.plist_path.unlink(missing_ok=True)
-        return True
+        return plist_existed or service_removed
 
     def status(self, job: ScheduledJob) -> ScheduledJobStatus:
         inspection = self.inspect(job)
@@ -75,8 +74,15 @@ class LaunchdSchedulerAdapter:
                 f"{job.label}: {surface_process_error(result)}"
             )
 
-    def bootout(self, job: ScheduledJob) -> None:
-        self.run_launchctl(("bootout", launchd_target(), str(job.plist_path)))
+    def bootout(self, job: ScheduledJob) -> bool:
+        result = self.run_launchctl(("bootout", f"{launchd_target()}/{job.label}"))
+        if result.returncode == 0:
+            return True
+        if service_not_found(result):
+            return False
+        raise ExecutionFailed(
+            f"launchctl bootout failed for {job.label}: {surface_process_error(result)}"
+        )
 
     def is_loaded(self, job: ScheduledJob) -> bool:
         return self.inspect(job).loaded
@@ -193,3 +199,15 @@ def surface_process_error(result: subprocess.CompletedProcess[str]) -> str:
     if len(text) > 500:
         return f"{text[:500]}..."
     return text or f"exit {result.returncode}"
+
+
+def service_not_found(result: subprocess.CompletedProcess[str]) -> bool:
+    message = f"{result.stderr}\n{result.stdout}".casefold()
+    return any(
+        marker in message
+        for marker in (
+            "no such process",
+            "could not find service",
+            "service not found",
+        )
+    )

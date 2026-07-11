@@ -12,26 +12,26 @@ class AutomationSelectionRequest(CodeAlmanacModel):
     home: Path | None = None
 
 
-class InstallAutomationRequest(AutomationSelectionRequest):
-    every: timedelta | None = None
-    garden_every: timedelta | None = None
-    garden_off: bool = False
+class ReconcileAutomationTaskRequest(CodeAlmanacModel):
+    task: AutomationTask
+    enabled: bool
+    every: timedelta
+    home: Path | None = None
     env_path: str | None = None
     codealmanac_executable: Path | None = None
 
-    @field_validator("every", "garden_every")
+    @field_validator("every")
     @classmethod
-    def non_negative_duration(
-        cls,
-        value: timedelta | None,
-    ) -> timedelta | None:
-        if value is not None and value.total_seconds() < 0:
-            raise ValueError("automation duration must be non-negative")
+    def positive_duration(cls, value: timedelta) -> timedelta:
+        if value.total_seconds() <= 0:
+            raise ValueError("automation duration must be greater than zero")
         return value
 
 
-class UninstallAutomationRequest(AutomationSelectionRequest):
-    pass
+class RemoveAllAutomationRequest(CodeAlmanacModel):
+    home: Path | None = None
+    env_path: str | None = None
+    codealmanac_executable: Path | None = None
 
 
 class AutomationStatusRequest(AutomationSelectionRequest):

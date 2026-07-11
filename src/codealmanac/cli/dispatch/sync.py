@@ -2,7 +2,7 @@ import argparse
 
 from codealmanac.app import CodeAlmanac
 from codealmanac.cli.dispatch.config import (
-    load_cli_config,
+    load_user_cli_config,
     resolve_harness,
     resolve_harness_model,
 )
@@ -18,7 +18,7 @@ from codealmanac.workflows.sync.requests import (
 def dispatch_sync(args: argparse.Namespace, app: CodeAlmanac) -> int:
     if args.sync_command == "status":
         return dispatch_sync_status(args, app)
-    cli_config = load_cli_config(app, args.wiki)
+    cli_config = load_user_cli_config(app)
     harness = resolve_harness(args.using, cli_config)
     result = app.workflows.sync.run(
         SyncRequest(

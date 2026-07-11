@@ -3,7 +3,6 @@ from codealmanac.core.models import CodeAlmanacModel
 ALLOWED_WIKI_SOURCE_FILES = (
     "almanac/**/*.md",
     "almanac/topics.yaml",
-    "almanac/config.toml",
 )
 FORBIDDEN_COMMIT_FILES = (
     "runtime state under ~/.codealmanac/",

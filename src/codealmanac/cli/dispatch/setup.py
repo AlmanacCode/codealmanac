@@ -20,8 +20,9 @@ from codealmanac.services.setup.requests import RunSetupRequest, RunUninstallReq
 
 def dispatch_setup(args: argparse.Namespace, app: CodeAlmanac) -> int:
     try:
+        user_config = app.config.load_user()
         runner_status = () if args.yes or args.json else app.harnesses.check()
-        selections = resolve_setup_selections(args, runner_status)
+        selections = resolve_setup_selections(args, user_config, runner_status)
     except SetupCancelled:
         print("CodeAlmanac setup canceled.", file=sys.stderr)
         return 1
@@ -35,13 +36,15 @@ def dispatch_setup(args: argparse.Namespace, app: CodeAlmanac) -> int:
             auto_commit=selections.auto_commit,
             auto_update=selections.auto_update,
             skip_instructions=args.skip_instructions,
-            sync_every=parse_optional_duration(args.sync_every, "--sync-every"),
+            sync_every=parse_optional_duration(args.sync_every, "--sync-every")
+            or user_config.automation.sync.every,
             sync_off=selections.sync_off,
-            garden_every=parse_optional_duration(
-                args.garden_every,
-                "--garden-every",
+            garden_every=(
+                parse_optional_duration(args.garden_every, "--garden-every")
+                or user_config.automation.garden.every
             ),
             garden_off=selections.garden_off,
+            update_every=user_config.automation.update.every,
         )
     )
     render_setup_result(result, json_output=args.json)

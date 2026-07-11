@@ -1,23 +1,24 @@
 from pathlib import Path
 
-from codealmanac.services.automation.jobs import AutomationJobFactory
+from codealmanac.services.automation.jobs import (
+    AutomationJobFactory,
+    default_job_for_task,
+    job_from_reconcile_request,
+)
 from codealmanac.services.automation.models import (
-    AutomationInstallResult,
+    AutomationRemoveResult,
     AutomationStatusReport,
     AutomationTask,
-    AutomationUninstallResult,
-    ScheduledJob,
+    AutomationTaskApplyResult,
     ScheduledJobStatus,
 )
 from codealmanac.services.automation.ports import SchedulerAdapter
 from codealmanac.services.automation.requests import (
     AutomationStatusRequest,
-    InstallAutomationRequest,
-    UninstallAutomationRequest,
+    ReconcileAutomationTaskRequest,
+    RemoveAllAutomationRequest,
 )
 from codealmanac.services.automation.selection import (
-    base_install_request,
-    install_task_selection,
     status_task_selection,
 )
 
@@ -30,57 +31,50 @@ class AutomationService:
         self.scheduler = scheduler
         self.jobs = AutomationJobFactory()
 
-    def install(self, request: InstallAutomationRequest) -> AutomationInstallResult:
-        selection = install_task_selection(request)
-        jobs = tuple(
-            self.jobs.job_for_task(
-                task,
-                request,
-                selection.explicit_tasks,
-            )
-            for task in selection.tasks
-        )
-        for job in jobs:
-            self.scheduler.install(job)
-
-        disabled: tuple[ScheduledJob, ...] = ()
-        if selection.disable_garden:
-            garden = self.jobs.job_for_task(
-                AutomationTask.GARDEN,
-                request,
-                selection.explicit_tasks,
-            )
-            self.scheduler.uninstall(garden)
-            disabled = (garden,)
-
-        return AutomationInstallResult(jobs=jobs, disabled=disabled)
-
-    def uninstall(
+    def reconcile_task(
         self,
-        request: UninstallAutomationRequest,
-    ) -> AutomationUninstallResult:
-        tasks = status_task_selection(request)
-        install_request = base_install_request(request)
+        request: ReconcileAutomationTaskRequest,
+    ) -> AutomationTaskApplyResult:
+        job = job_from_reconcile_request(self.jobs, request)
+        if request.enabled:
+            self.scheduler.install(job)
+            changed = True
+        else:
+            changed = self.scheduler.uninstall(job)
+        return AutomationTaskApplyResult(
+            task=request.task,
+            enabled=request.enabled,
+            interval=request.every,
+            plist_path=job.plist_path,
+            changed=changed,
+        )
+
+    def remove_all(
+        self,
+        request: RemoveAllAutomationRequest,
+    ) -> AutomationRemoveResult:
+        tasks = tuple(AutomationTask)
         removed: list[Path] = []
         for task in tasks:
-            job = self.jobs.job_for_task(
+            job = default_job_for_task(
+                self.jobs,
                 task,
-                install_request,
-                explicit_tasks=True,
+                home=request.home,
+                env_path=request.env_path,
+                codealmanac_executable=request.codealmanac_executable,
             )
             if self.scheduler.uninstall(job):
                 removed.append(job.plist_path)
-        return AutomationUninstallResult(tasks=tasks, removed=tuple(removed))
+        return AutomationRemoveResult(tasks=tasks, removed=tuple(removed))
 
     def status(self, request: AutomationStatusRequest) -> AutomationStatusReport:
         tasks = status_task_selection(request)
-        install_request = base_install_request(request)
         statuses: list[ScheduledJobStatus] = []
         for task in tasks:
-            job = self.jobs.job_for_task(
+            job = default_job_for_task(
+                self.jobs,
                 task,
-                install_request,
-                explicit_tasks=True,
+                home=request.home,
             )
             statuses.append(self.scheduler.status(job))
         return AutomationStatusReport(statuses=tuple(statuses))

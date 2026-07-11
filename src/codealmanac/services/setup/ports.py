@@ -1,12 +1,10 @@
 from typing import Protocol
 
 from codealmanac.services.automation.models import (
-    AutomationInstallResult,
-    AutomationUninstallResult,
+    AutomationRemoveResult,
 )
 from codealmanac.services.automation.requests import (
-    InstallAutomationRequest,
-    UninstallAutomationRequest,
+    RemoveAllAutomationRequest,
 )
 from codealmanac.services.harnesses.models import HarnessKind, HarnessReadiness
 from codealmanac.services.setup.models import (
@@ -31,14 +29,11 @@ class InstructionInstaller(Protocol):
         pass
 
 
-class SetupAutomationManager(Protocol):
-    def install(self, request: InstallAutomationRequest) -> AutomationInstallResult:
-        pass
-
-    def uninstall(
+class AutomationRemover(Protocol):
+    def remove_all(
         self,
-        request: UninstallAutomationRequest,
-    ) -> AutomationUninstallResult:
+        request: RemoveAllAutomationRequest,
+    ) -> AutomationRemoveResult:
         pass
 
 

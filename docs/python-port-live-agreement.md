@@ -458,12 +458,12 @@ It is the constraint document for future agents.
   reads, or target-specific file writes back into `instructions.py`.
 - 2026-07-01: Setup service orchestration is split from setup planning and
   automation-policy helpers. `services/setup/service.py` remains the
-  `SetupService` facade that calls instruction and automation ports;
+  `SetupService` facade that calls instruction and config services;
   `planning.py` owns `SetupPlan`, automation recommendations, and next-step
-  command construction; and `automation.py` owns setup automation selection and
-  `InstallAutomationRequest` conversion. Do not move duration formatting,
-  automation recommendation construction, or setup automation request conversion
-  back into `service.py`.
+  command construction; and `automation.py` owns setup automation selection.
+  Do not move duration formatting or automation recommendation construction
+  back into `service.py`. Setup writes one complete user-config update; config
+  reconciliation applies its automation policy to the scheduler.
 - 2026-07-01: The archive's `review` command family is not required for now.
   The archive's `migrate` command family is not needed unless a concrete
   migration path is reopened.
@@ -484,13 +484,15 @@ It is the constraint document for future agents.
   and index connection helper; `sources.py` owns page/topic source loading and
   freshness signatures; `projection.py` owns replacement writes and stored
   source signatures. `store.py` stays the service-facing facade.
-- 2026-06-29: `config` owns local user/project TOML parsing and precedence
-  through `pydantic-settings`. The first config surface is intentionally
-  narrow: user config at `~/.codealmanac/config.toml` and project config at
-  `almanac/config.toml` can set the default lifecycle harness and sync
-  quiet window. CLI flags still win over config. Do not add a public `config`
-  command, environment override system, secrets system, or hosted/account
-  config surface until a later agreement requires it.
+- 2026-07-10: `config` owns the only configuration file at
+  `~/.codealmanac/config.toml`; repository-level `almanac/config.toml` is
+  removed. The user config stores auto-commit, harness/model, and enabled/
+  interval policy for Sync, Garden, and Update. `config set` persists a value
+  and immediately reconciles affected launchd automation; `config apply`
+  validates direct TOML edits and reconciles all automation. Public automation
+  mutation commands are removed; `automation status` remains actual-state
+  inspection. CLI flags still win for one command. No watcher, migration
+  reader, compatibility alias, secrets system, or hosted/account config.
 - 2026-07-01: Page `sources:` are part of the wiki page model, not just prompt
   guidance. The Python index/read model should parse structured `sources:`,
   project them into SQLite, derive file refs from `sources[type=file]`, expose
@@ -733,7 +735,7 @@ not make CLI contain product decisions.
 | `runs` | run ledger, events, outputs, lifecycle state transitions | source discovery, page parsing, provider transports |
 | `harnesses` | normalized Codex/Claude task/session/event contracts and ports | run lifecycle, page writes, source catalog |
 | `automation` | local trigger decisions and scheduler state | run internals, source parsing, provider transports |
-| `config` | user/project config parsing and precedence | product workflows |
+| `config` | user config persistence and automation reconciliation | product workflows |
 | `diagnostics` | doctor-style checks and readiness reports | mutation workflows |
 | `updates` | local package update policy, installer detection, update command planning | scheduler state, hosted release management, package-manager subprocess mechanics |
 | `viewer` | read-only local browser payloads, page/topic/search overview assembly, rendered markdown for the viewer | markdown source of truth, SQLite persistence, AI calls, jobs/review lifecycle |
@@ -835,7 +837,7 @@ codealmanac ingest <inputs...>
 codealmanac sync
 codealmanac sync status
 codealmanac garden
-codealmanac automation install|status|uninstall
+codealmanac automation status
 codealmanac jobs
 codealmanac jobs attach <run-id>
 codealmanac jobs cancel <run-id>

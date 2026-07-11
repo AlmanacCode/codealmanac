@@ -137,21 +137,19 @@ def product_update_step(result: SetupResult) -> SetupStep:
 
 
 def automation_step(result: SetupResult, task: AutomationTask, label: str) -> SetupStep:
-    if result.automation_install is None:
+    applied = {item.task: item for item in result.config_update.automation}
+    item = applied.get(task)
+    if item is None:
         return SetupStep(label, "skipped", "not requested")
-    installed = {job.task for job in result.automation_install.jobs}
-    disabled = {job.task for job in result.automation_install.disabled}
-    if task in installed:
+    if item.enabled:
         return SetupStep(label, "installed", installed_automation_detail(result, task))
-    if task in disabled:
-        return SetupStep(label, "disabled", disabled_automation_detail(task))
-    return SetupStep(label, "skipped", skipped_automation_detail(task))
+    return SetupStep(label, "disabled", disabled_automation_detail(task))
 
 
 def wiki_maintenance_step(result: SetupResult) -> SetupStep:
-    if result.automation_install is None:
+    if len(result.config_update.automation) == 0:
         return SetupStep("Wiki maintenance", "manual", "no schedules installed")
-    installed = {job.task for job in result.automation_install.jobs}
+    installed = {item.task for item in result.config_update.automation if item.enabled}
     if AutomationTask.SYNC in installed and AutomationTask.GARDEN in installed:
         return SetupStep(
             "Wiki maintenance",

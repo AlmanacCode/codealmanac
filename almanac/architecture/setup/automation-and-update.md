@@ -21,7 +21,7 @@ sources:
   - id: automation_service
     type: file
     path: src/codealmanac/services/automation/service.py
-    note: Automation install, uninstall, and status service.
+    note: Automation reconciliation, full removal, and status service.
   - id: automation_jobs
     type: file
     path: src/codealmanac/services/automation/jobs.py
@@ -50,27 +50,27 @@ sources:
 
 # Setup Automation And Update
 
-Setup, automation, and update form CodeAlmanac's machine-level maintenance layer. `setup` installs local agent instructions, writes user configuration, optionally installs scheduled local automation, and reports runner readiness. `automation` owns recurring launchd jobs. `update` owns package-manager upgrades for the installed CLI. These responsibilities are deliberately split so setup can compose the machine state without containing scheduler or updater details [@setup_service][@automation_service][@updates].
+Setup, automation, and update form CodeAlmanac's machine-level maintenance layer. `setup` installs local agent instructions and writes one user configuration update. The config service then makes launchd match that saved automation policy. `automation` owns recurring launchd jobs, while `update` owns package-manager upgrades for the installed CLI [@setup_service][@automation_service][@updates].
 
 The area matters because it is local-only product infrastructure. Scheduled work runs local `sync`, Garden, and `update` commands; it does not connect to a hosted service or perform cloud capture [@live_agreement]. Runtime state and scheduler logs belong under the user's machine state, while repository wiki source remains under `almanac/` [@live_agreement].
 
 ## Setup Boundary
 
-`SetupService.run` is the entrypoint for machine setup. It sets configuration, installs instruction targets unless skipped, installs automation when the selected setup tasks are non-empty, and returns a `SetupResult` containing the plan, config updates, instruction changes, automation result, and runner readiness [@setup_service].
+`SetupService.run` builds one complete `UserConfig`, asks the config service to write it, and receives scheduler reconciliation results from that same update. It also installs instruction targets unless skipped and reports runner readiness [@setup_service]. Setup does not construct a separate automation-install command.
 
-The request model makes the defaults explicit. `RunSetupRequest` defaults to both Codex and Claude instruction targets, Codex as the default harness, `auto_commit = True`, and `auto_update = True` [@setup_requests]. It also accepts automation controls such as `sync_every`, `sync_off`, `garden_every`, `garden_off`, and `automation_tasks`, while validating that targets are non-empty, tasks are unique, the model string is present, and durations are not negative [@setup_requests].
+The request model defaults to both instruction targets, Codex as the harness, auto-commit enabled, and all three automation tasks enabled. It accepts setup-time interval and disable controls and validates positive durations [@setup_requests].
 
-Setup's automation policy lives outside the service. The default setup automation tasks are sync, Garden, and update. `selected_setup_tasks` removes sync when `sync_off` is set, removes Garden when `garden_off` is set, and removes update when `auto_update` is false [@setup_automation]. This keeps setup orchestration small and leaves task-selection rules in the setup automation helper.
+Setup's automation policy lives outside the service. The default tasks are sync, Garden, and update. `selected_setup_tasks` reflects the three enable/disable choices, which are persisted in TOML before scheduler reconciliation [@setup_automation].
 
 ## Scheduled Jobs
 
-`AutomationService` installs, uninstalls, and reports status for scheduled tasks through a `SchedulerAdapter` port [@automation_service]. It asks `AutomationJobFactory` to turn selected tasks into `ScheduledJob` objects, then passes each job to the adapter [@automation_service][@automation_jobs].
+`AutomationService` reconciles one task, removes all tasks during full uninstall, and reports status through a `SchedulerAdapter` port [@automation_service]. Reconciliation installs a job when enabled and uninstalls it when disabled. `AutomationJobFactory` turns saved task policy into a `ScheduledJob` [@automation_service][@automation_jobs].
 
-The job factory gives each task concrete local execution details. Sync runs `python -m codealmanac.cli.main sync`, update runs `python -m codealmanac.cli.main update --scheduled`, and Garden runs `python -m codealmanac.cli.main __garden-scheduler` [@automation_jobs]. Job intervals come from task-specific defaults unless the request overrides them; update uses the daily update interval except when update is the only explicit task and `--every` was provided [@automation_jobs].
+The job factory gives each task concrete local execution details. The resolved `codealmanac` executable runs `sync`, `update --scheduled`, or `__garden-scheduler` [@automation_jobs]. Intervals come from saved user configuration; defaults are 5 hours, 4 hours, and 24 hours [@automation_jobs].
 
 The macOS implementation writes launchd plists under `~/Library/LaunchAgents`, creates stdout and stderr log directories, bootouts any existing job, bootstraps the new job, and reads status back from launchd [@launchd]. The generated plist contains the label, program arguments, start interval, environment variables, `RunAtLoad`, and log paths [@launchd]. This keeps the service boundary scheduler-neutral while the adapter owns launchd mechanics.
 
-The default application wiring is currently launchd-backed. `create_services` constructs `AutomationService` with `LaunchdSchedulerAdapter` when no scheduler adapter is injected, and the adapter shells out to `launchctl` for install, uninstall, and status checks [@app][@launchd]. That means the production setup and automation path is macOS-specific until another scheduler adapter is added and wired.
+The default application wiring is launchd-backed. `create_services` constructs `AutomationService` with `LaunchdSchedulerAdapter`, then injects it into the config service. The adapter shells out to `launchctl` for install, uninstall, and status checks [@app][@launchd]. Config reconciliation is macOS-specific until another scheduler adapter is wired.
 
 ## Update Safety
 

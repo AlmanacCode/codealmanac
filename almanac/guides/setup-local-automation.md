@@ -21,7 +21,7 @@ sources:
   - id: automation-parser
     type: file
     path: src/codealmanac/cli/parser/automation.py
-    note: Automation install, uninstall, and status command flags.
+    note: Automation status command surface.
   - id: setup-service
     type: file
     path: src/codealmanac/services/setup/service.py
@@ -42,7 +42,7 @@ sources:
 
 # Setup Local Automation
 
-Use this guide to install and verify CodeAlmanac's local scheduled work. Setup can install agent instructions, write the default runner config, and install scheduled `sync`, `garden`, and `update` tasks [@setup-service] [@setup-automation]. Automation is local machine state, not cloud sync, and its scheduler logs live under `~/.codealmanac/logs/` [@readme].
+Use this guide to configure and verify CodeAlmanac's local scheduled work. Setup installs agent instructions and writes the user config; that config update reconciles scheduled `sync`, `garden`, and `update` tasks [@setup-service] [@setup-automation]. Automation is local machine state, not cloud sync, and its scheduler logs live under `~/.codealmanac/logs/` [@readme].
 
 The usual successful state is simple: setup has selected a runner, scheduled the tasks you want, `automation status` reports them installed, and `sync status` or `jobs` can show local lifecycle activity. For background, see [Automation and update](../architecture/setup/automation-and-update), [Config keys](../reference/config-keys), and [Run queue and sync](../architecture/lifecycle/run-queue-and-sync).
 
@@ -68,7 +68,7 @@ For the default unattended setup, run:
 codealmanac setup --yes
 ```
 
-The README describes plain setup as installing local agent instructions plus the default local automation: sync, Garden, and daily package update [@readme]. In code, setup writes `auto_commit`, `harness.default`, and `harness.model` through the config service when config is available [@setup-service].
+The README describes plain setup as installing local agent instructions plus the default local automation: sync, Garden, and daily package update [@readme]. In code, setup writes runner, auto-commit, and all automation preferences through the config service in one update [@setup-service].
 
 Use flags to change the initial policy:
 
@@ -89,18 +89,25 @@ Setup's default automation task list is `sync`, `garden`, and `update` [@setup-a
 
 The default intervals are 5 hours for sync, 4 hours for Garden, and 1 day for update [@automation-defaults]. Setup removes tasks from the default list when `--sync-off`, `--garden-off`, or `--no-auto-update` is set [@setup-automation].
 
-## Manage Automation Directly
+## Change Automation Preferences
 
-Use the automation command when setup is already done or when you want to change scheduled tasks:
+Use config commands after setup. Each command saves the preference and immediately updates launchd:
 
 ```bash
-codealmanac automation install sync --every 5h
-codealmanac automation install garden --garden-every 4h
-codealmanac automation install update --every 24h
+codealmanac config set automation.sync.every 5h
+codealmanac config set automation.garden.every 4h
+codealmanac config set automation.update.every 24h
+codealmanac config set automation.sync.enabled false
 codealmanac automation status
 ```
 
-The automation parser supports `install`, `uninstall`, and `status`. Each command can take zero or more task names from `sync`, `garden`, and `update`; install also accepts `--every`, `--garden-every`, and `--garden-off` [@automation-parser].
+If a person or agent edits `~/.codealmanac/config.toml` directly, run one explicit apply command afterward:
+
+```bash
+codealmanac config apply
+```
+
+There is no background watcher. `automation status` remains the read-only view of actual scheduler state [@automation-parser].
 
 ## Verify It Worked
 
@@ -132,10 +139,8 @@ To remove CodeAlmanac-owned local artifacts, run:
 codealmanac uninstall --yes
 ```
 
-`SetupService.uninstall` removes installed instructions, scheduled automation, global state, and the package when the package uninstaller is available [@setup-service]. Use direct automation removal when you only want to remove scheduled jobs:
+`SetupService.uninstall` removes installed instructions, all scheduled automation, global state, and the package when the package uninstaller is available [@setup-service]. To disable only one scheduled job while keeping CodeAlmanac installed, change its config value:
 
 ```bash
-codealmanac automation uninstall sync garden update
+codealmanac config set automation.sync.enabled false
 ```
-
-The automation parser exposes task-scoped uninstall for that narrower cleanup [@automation-parser].

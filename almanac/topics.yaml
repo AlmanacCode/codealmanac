@@ -81,7 +81,7 @@ topics:
     parents: [product]
   - slug: config
     title: Config
-    description: User and project configuration keys
+    description: User configuration and automation preferences
     parents: [product, local-state]
   - slug: repositories
     title: Repositories

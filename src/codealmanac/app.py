@@ -199,8 +199,12 @@ def create_services(
     adapters: AppAdapters,
 ) -> Services:
     repositories = RepositoriesService(RepositoryStore(local_state.database_path))
-    config_service = ConfigService(repositories, ConfigStore(), local_state.config_path)
     automation = AutomationService(adapters.scheduler or LaunchdSchedulerAdapter())
+    config_service = ConfigService(
+        ConfigStore(),
+        local_state.config_path,
+        automation,
+    )
     manual = ManualLibrary()
     wiki = WikiService(repositories, manual)
     index = IndexService(repositories, IndexStore(), local_state)

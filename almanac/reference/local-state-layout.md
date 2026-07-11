@@ -42,9 +42,8 @@ This layout follows the local-only Python product decision: authored Markdown st
 
 | Path | Owner | Purpose |
 | --- | --- | --- |
-| `<repo>/almanac/` | Repository source | Committed wiki pages, `topics.yaml`, and optional project config. |
+| `<repo>/almanac/` | Repository source | Committed wiki pages and `topics.yaml`. |
 | `<repo>/almanac/topics.yaml` | Repository source | Authored topic definitions. |
-| `<repo>/almanac/config.toml` | Repository source | Optional project config. |
 | `~/.codealmanac/` | Local runtime | Default global state directory. |
 | `~/.codealmanac/codealmanac.db` | Local runtime | Local database for repositories, runs, run events, worker locks, and sync state. |
 | `~/.codealmanac/config.toml` | Local runtime | User config. |
@@ -56,7 +55,7 @@ This layout follows the local-only Python product decision: authored Markdown st
 
 ## App Config Paths
 
-`AppConfig` defaults `database_path` and `config_path` to the default local-state paths and normalizes both paths through `expanduser().resolve(strict=False)` [@settings] [@core-paths]. Environment variables use the `CODEALMANAC_` prefix because `AppConfig` is a Pydantic settings model [@settings].
+`AppConfig` defaults `database_path` and `config_path` to the default local-state paths and normalizes both paths through `expanduser().resolve(strict=False)` [@settings] [@core-paths]. Environment variables use the `CODEALMANAC_` prefix because `AppConfig` is a Pydantic settings model [@settings]. Repository-level config is not supported.
 
 `LocalStatePaths.from_config` derives `state_dir` from the database parent. If the database path is customized and `config_path` was not explicitly set, config moves beside that database as `<database-parent>/config.toml` [@settings]. Tests cover both the implicit config path and an explicit custom config path [@settings-tests].
 
