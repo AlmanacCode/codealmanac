@@ -1,9 +1,10 @@
-from codealmanac.integrations.harnesses.claude.adapter import ClaudeSdkHarnessAdapter
-from codealmanac.integrations.harnesses.codex.adapter import (
-    CodexAppServerHarnessAdapter,
-)
+from codealmanac.integrations.harnesses.yoke import YokeHarnessAdapter
+from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.services.harnesses.ports import HarnessAdapter
 
 
 def default_harness_adapters() -> tuple[HarnessAdapter, ...]:
-    return (ClaudeSdkHarnessAdapter(), CodexAppServerHarnessAdapter())
+    return (
+        YokeHarnessAdapter(HarnessKind.CLAUDE),
+        YokeHarnessAdapter(HarnessKind.CODEX),
+    )

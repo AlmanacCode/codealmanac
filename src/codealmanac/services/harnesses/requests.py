@@ -4,12 +4,13 @@ from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
-from codealmanac.services.harnesses.models import HarnessKind
+from codealmanac.services.harnesses.models import HarnessAgentKind, HarnessKind
 
 
 class RunHarnessRequest(CodeAlmanacModel):
     kind: HarnessKind
     model: str
+    agent: HarnessAgentKind | None = None
     cwd: Path
     prompt: str
     title: str | None = None

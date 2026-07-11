@@ -1,6 +1,7 @@
 from codealmanac.core.errors import AlreadyExists
 from codealmanac.manual import ManualLibrary
 from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
+from codealmanac.services.harnesses.models import HarnessAgentKind
 from codealmanac.services.repositories.models import Repository
 from codealmanac.services.repositories.requests import RegisterRepositoryRequest
 from codealmanac.services.repositories.roots import RepositoryTarget
@@ -68,6 +69,7 @@ class BuildWorkflow:
                     context=context,
                     harness=request.harness,
                     model=request.model,
+                    agent=HarnessAgentKind.BUILD,
                     prompt=render_build_prompt(
                         self.prompts,
                         self.manual,

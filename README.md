@@ -196,8 +196,16 @@ root.
 
 ## Updating The Wiki
 
-Lifecycle commands can ask a configured local agent harness to edit wiki pages.
-They only allow source edits under `almanac/`.
+Lifecycle commands run one of three explicit agents—build, ingest, or garden—
+through the public [Yoke SDK](https://github.com/AlmanacCode/Yoke). The existing
+packaged prompt files remain the complete task instructions and direct agents
+to edit the wiki under `almanac/`.
+
+Lifecycle agents are trusted local coding agents. They run with the same broad,
+non-interactive filesystem permissions CodeAlmanac historically provided, so
+the `almanac/` boundary is an instruction and commit policy, not an OS sandbox.
+Run lifecycle commands only in repositories where you accept that trust model,
+and review the resulting Git diff when automatic commits are disabled.
 
 ```bash
 codealmanac ingest README.md --using codex
@@ -289,8 +297,10 @@ a script.
 
 ## Providers
 
-CodeAlmanac currently supports local Codex app-server and Claude Agent SDK
-harnesses.
+CodeAlmanac uses `almanac-yoke` as its single provider boundary. Codex runs
+through app-server; Claude uses Yoke's default Claude surface (currently the
+Python Agent SDK). Existing Codex or Claude Code OAuth sessions are reused, and
+API credentials can be supplied through Yoke when embedding the SDK.
 
 ```bash
 codex login

@@ -1,5 +1,6 @@
 from codealmanac.manual import ManualLibrary
 from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
+from codealmanac.services.harnesses.models import HarnessAgentKind
 from codealmanac.services.health.requests import HealthCheckRequest
 from codealmanac.services.health.service import HealthService
 from codealmanac.services.index.models import HealthReport, IndexSummary
@@ -63,6 +64,7 @@ class GardenWorkflow:
                     context=context,
                     harness=request.harness,
                     model=request.model,
+                    agent=HarnessAgentKind.GARDEN,
                     prompt=render_garden_prompt(
                         self.prompts,
                         context.repository,

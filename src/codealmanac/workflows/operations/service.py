@@ -80,6 +80,7 @@ class OperationRunner:
             RunHarnessRequest(
                 kind=request.harness,
                 model=request.model,
+                agent=request.agent,
                 cwd=repository.root_path,
                 prompt=request.prompt,
                 title=request.title,

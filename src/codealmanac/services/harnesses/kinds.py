@@ -6,6 +6,12 @@ class HarnessKind(StrEnum):
     CLAUDE = "claude"
 
 
+class HarnessAgentKind(StrEnum):
+    BUILD = "build"
+    INGEST = "ingest"
+    GARDEN = "garden"
+
+
 class HarnessRunStatus(StrEnum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"

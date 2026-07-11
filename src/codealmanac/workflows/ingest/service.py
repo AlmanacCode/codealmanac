@@ -1,5 +1,6 @@
 from codealmanac.manual import ManualLibrary
 from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
+from codealmanac.services.harnesses.models import HarnessAgentKind
 from codealmanac.services.repositories.models import Repository
 from codealmanac.services.runs.models import RunEventKind
 from codealmanac.services.sources.models import SourceBrief, SourceRuntime
@@ -72,6 +73,7 @@ class IngestWorkflow:
                     context=context,
                     harness=request.harness,
                     model=request.model,
+                    agent=HarnessAgentKind.INGEST,
                     prompt=render_ingest_prompt(
                         self.prompts,
                         context.repository,
