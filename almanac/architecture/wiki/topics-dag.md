@@ -26,14 +26,6 @@ sources:
     type: file
     path: docs/python-port-live-agreement.md
     note: Active split between topic orchestration, graph mechanics, and YAML mutation.
-  - id: tagging-service
-    type: file
-    path: src/codealmanac/services/tagging/service.py
-    note: Tag/untag service backing the tag and untag commands.
-  - id: frontmatter-rewrite
-    type: file
-    path: src/codealmanac/services/wiki/frontmatter_rewrite.py
-    note: Round-trip YAML rewrite of one page's topics frontmatter list.
 ---
 
 # Topics DAG
@@ -66,14 +58,10 @@ The graph layer prevents self-parent links and missing-parent links before mutat
 
 Ancestor traversal has a depth cap of 32 [@topic-graph]. The cap is defensive: valid topic graphs should be much shallower, and the mutation path should not risk unbounded traversal if the file is already strange.
 
-## Tagging One Page
-
-`topics.yaml` mutations are not the only way a page joins the topic graph. `tag` and `untag` change a single page's own `topics:` frontmatter list instead of the shared graph file. `TaggingService.tag` and `.untag` read the current page through `PagesService.show`, compute the new topic tuple, and call `rewrite_page_topics` to rewrite that page's frontmatter in place with the same round-trip YAML writer topic mutations use [@tagging-service] [@frontmatter-rewrite].
-
-This keeps the two write paths intentionally separate: `topics create`/`link`/`unlink`/`rename`/`delete` shape the DAG itself in `topics.yaml`, while `tag`/`untag` only ever add or remove entries in one page's frontmatter list and never touch `topics.yaml` [@tagging-service]. Tagging a page with a slug that has no `topics.yaml` entry is still valid; the index already treats page-frontmatter-only topics as real, browsable topics, so `tag` can point a page at a topic before anyone promotes that topic into `topics.yaml`. Neither `tag` nor `untag` calls index refresh directly; the next read command refreshes the index from the rewritten Markdown the same way any other page edit does [@tagging-service].
-
 ## Architectural Boundary
 
 The live agreement makes this split explicit: topic read orchestration, graph mechanics, repository selection, and `topics.yaml` mutation each have their own modules [@live-agreement]. The point is not just smaller files. It lets future changes extend the topic model without mixing repository lookup, index reads, YAML preservation, page rewrites, and DAG validation in one place.
 
-When changing this area, keep that boundary intact. Reads should stay index-backed. Mutations should update authored Markdown/YAML, refresh the index, and reject graph shapes that would make topic browsing ambiguous. For the exact `topics.yaml` field shapes and slug rules, see [Topics YAML](../../reference/topics-yaml).
+When changing this area, keep that boundary intact. Reads should stay index-backed. Mutations should update authored Markdown/YAML, refresh the index, and reject graph shapes that would make topic browsing ambiguous.
+
+For task steps, use [Maintain topics](../../guides/maintain-topics). For the exact `topics.yaml` schema and mutation contract, use [Topics YAML](../../reference/topics-yaml).

@@ -14,10 +14,18 @@ sources:
     type: file
     path: src/codealmanac/workflows/operations/service.py
     note: Operation failure recording and validation path.
-  - id: run_control
+  - id: operation_harness
     type: file
-    path: src/codealmanac/workflows/run_queue/control.py
-    note: Running cancellation coordination across the ledger and process controller.
+    path: src/codealmanac/workflows/operations/harness.py
+    note: Harness failure validation and run-event classification.
+  - id: codex_result
+    type: file
+    path: src/codealmanac/integrations/harnesses/codex/run_result.py
+    note: Codex app-server state to HarnessRunResult conversion.
+  - id: codex_turn_events
+    type: file
+    path: src/codealmanac/integrations/harnesses/codex/result.py
+    note: Codex turn completion, failure recording, and done-event rendering.
 ---
 
 # Debug A Failed Lifecycle Run
@@ -30,10 +38,10 @@ Start with `codealmanac jobs`, then run `codealmanac jobs show <run-id>` and `co
 
 If the run is still active, `codealmanac jobs attach <run-id>` reads the same record and events plus a terminal flag [@run_store]. Attach is useful for watching a long harness run, but a failed run is usually debugged from `jobs logs`.
 
-If a run is stuck rather than failed, `codealmanac jobs cancel <run-id>` stops its executor and harness descendants before recording the terminal `cancelled` status [@run_control]. A successful command guarantees that execution stopped; it does not undo edits or commits already completed. See [Run States And Events](../reference/runs/run-states-and-events) for the exact cancellation contract.
-
 ## Interpret The Failure
 
 Harness errors appear as run error or tool events because the operation runner records harness output before it validates success [@operation_runner]. Validation errors mean the Markdown tree could not pass the same checks described in [Health And Validation](../architecture/wiki/health-and-validation). Indexing errors usually point to page route collisions or malformed wiki source that prevented the derived index from refreshing.
 
-After fixing wiki source, run [Verify A Wiki Change](verify-a-wiki-change). If the failure was provider readiness or authentication, run `codealmanac doctor` to see which harness is unavailable and why, repair the reported issue (missing binary, expired login, missing API key), then queue a new lifecycle run with `codealmanac ingest` or `codealmanac garden`.
+When a Codex app-server run fails after it has already emitted assistant text, the run's visible `error` can quote the last assistant output instead of the provider failure. The Codex result builder sets `output_text` from `state.result or state.error`, and harness validation builds the failed-run message from that output text [@codex_result] [@operation_harness]. The structured failure is still recorded on the Codex error event when the root turn completion carries an error, so inspect the preceding `error` event and its `harness_event.failure` details before treating the run summary as the root cause [@codex_turn_events] [@operation_runner].
+
+After fixing wiki source, run [Verify A Wiki Change](verify-a-wiki-change). If the failure was provider readiness or authentication, fix the local harness environment and queue a new lifecycle run.

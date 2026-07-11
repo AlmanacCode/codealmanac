@@ -26,6 +26,10 @@ sources:
     type: file
     path: docs/concepts.md
     note: User-facing concept description of page ids, README routes, and route collisions.
+  - id: live-agreement
+    type: file
+    path: docs/python-port-live-agreement.md
+    note: Current local-only runtime-state boundary.
 ---
 
 # Page Identity
@@ -54,6 +58,8 @@ The page iterator walks `almanac/**/*.md`, but it skips Markdown files beneath r
 
 Reserved filtering happens before document loading, so skipped files do not receive slugs, links, topics, or file references in the derived index [@wiki-paths] [@index-sources].
 
+The reserved `jobs` directory is protective compatibility, not permission for current runtime state to live under `almanac/`. The active runtime-state boundary keeps run records, logs, indexes, and scheduler state under `~/.codealmanac/`; wiki source under `almanac/` should remain authored Markdown and topic metadata [@live-agreement]. See [Local state layout](../../reference/local-state-layout) for the current runtime file layout.
+
 ## Route Collisions
 
 Because `README.md` maps to its folder route, two different files can try to claim the same slug. For example, `almanac/architecture.md` and `almanac/architecture/README.md` both map to `architecture` [@concepts-doc]. `load_documents(...)` tracks seen slugs and raises a validation failure when two files map to the same page route [@index-sources].
@@ -64,7 +70,7 @@ This check protects links and search results from ambiguity. A page slug should 
 
 CodeAlmanac uses normal Markdown links for page links. The link parser ignores external URLs, anchors, absolute paths, query strings, backslash paths, paths with spaces, and hrefs that look like files with suffixes [@wiki-links]. It resolves relative links against the source page's route, with special handling for folder landing pages [@wiki-links].
 
-The parser tests show the intended behavior: from `architecture/indexing`, `wiki-tree` resolves to `architecture/wiki-tree`, `../decisions/local-first-python` resolves to `decisions/local-first-python`, and file-looking links such as `src/auth.py` are ignored as page links [@wiki-parsing-tests]. For the exact page-link rules, see [Links and routes](../../reference/page-format/links-and-routes).
+The parser tests show the intended behavior: relative links resolve against the source page route, while file-looking links such as `src/auth.py` are ignored as page links [@wiki-parsing-tests]. For example, from `architecture/indexing`, `wiki-tree` resolves to `architecture/wiki-tree`, and `../decisions/local-only-python-product` resolves to `decisions/local-only-python-product` by the same relative-route rule [@wiki-links]. For the exact page-link rules, see [Links and routes](../../reference/page-format/links-and-routes).
 
 ## What Future Changes Must Preserve
 

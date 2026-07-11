@@ -18,10 +18,6 @@ sources:
     type: file
     path: src/codealmanac/workflows/operations/service.py
     note: Shared execution path for page-writing operations.
-  - id: run-queue-service
-    type: file
-    path: src/codealmanac/workflows/run_queue/service.py
-    note: RunQueue.queue_build/queue_ingest/queue_garden queue the run record a worker later executes.
   - id: live-agreement
     type: file
     path: docs/python-port-live-agreement.md
@@ -34,26 +30,22 @@ A lifecycle operation is a page-writing workflow that asks a configured local ag
 
 The concept matters because it keeps judgmentful wiki writing separate from read commands and deterministic organization commands. Search, show, health, and validate may read or refresh derived state, but they do not decide what prose belongs in a page. Lifecycle operations prepare context, call a harness, refresh the index after a successful harness run, validate the wiki, and finish the run [@operation-runner].
 
-## The Three Operation Kinds
+## What Makes It A Product Family
 
-Build is the initialization path for a new repository wiki. Before a `BUILD` run is queued, build preparation rejects an existing `almanac/`, registers the repository, and initializes a minimal wiki [@build-workflow] [@run-queue-service]. When that queued run executes, build renders a build prompt with repository, wiki, manual, and source-control context [@build-workflow].
+Build, ingest, and garden have different inputs, but each produces an agent-writing prompt for wiki source under `almanac/` [@build-workflow] [@ingest-workflow] [@garden-workflow]. That shared purpose is what makes them lifecycle operations instead of ordinary commands.
 
-Ingest queues an `INGEST` run for an existing repository [@run-queue-service]. When that run executes, it resolves selected inputs into source briefs, loads bounded source runtime snapshots, and renders an ingest prompt with those sources and manual documents [@ingest-workflow]. Ingest is for concrete material such as files, directories, diffs, GitHub items, URLs, or transcripts.
+The operation-specific workflow decides what context the agent receives. Build prepares a new wiki, ingest prepares selected source material, and garden prepares the existing wiki graph and health summary [@build-workflow] [@ingest-workflow] [@garden-workflow]. The detailed control flow belongs in [Lifecycle workflows](../architecture/lifecycle/workflows).
 
-Garden queues a `GARDEN` run for an existing wiki [@run-queue-service]. When that run executes, garden reads the current index summary and health report, then renders a prompt focused on graph quality, stale claims, links, topics, weak leads, and unsupported claims [@garden-workflow].
+## Shared Execution Boundary
 
-## Shared Execution
-
-The individual workflows do not each own harness plumbing. They delegate the common page-run path to `OperationRunner`, which marks the run running, calls the harness, records transcript events, validates harness success, refreshes the index, validates wiki health, and marks the run done [@operation-runner].
-
-That shared path makes lifecycle operations one product family. The operation-specific workflow decides what context and prompt to provide. The runner owns run-state mechanics, harness recording, index refresh, and final validation.
+Lifecycle operations meet the rest of the system at `OperationRunner`. The runner owns the common run state, harness recording, index refresh, validation, and completion path after a workflow has prepared its prompt [@operation-runner]. That boundary is why workflow pages can explain operation purpose without each re-describing harness plumbing.
 
 ## Sync Is Not An Operation
 
 Sync is related, but it is not a lifecycle operation. The live agreement defines sync as a scanner that reads local Claude and Codex transcript stores, groups active transcripts by registered repository, and queues ordinary ingest runs [@live-agreement]. In other words, sync can trigger ingest, but ingest is the page-writing operation.
 
-This distinction keeps background discovery separate from wiki authorship. Sync is a producer of queued ingest run specs, not a fourth agent-writing operation; [Run queue and sync](../architecture/lifecycle/run-queue-and-sync) covers the worker and queue mechanics that turn a sync scan into queued runs.
+This distinction keeps background discovery separate from wiki authorship. If a future page explains queued runs and workers, it should treat sync as a producer of run specs, not as a fourth agent-writing operation.
 
 ## Related Pages
 
-The architecture view is [Lifecycle workflows](../architecture/lifecycle/workflows). The shared runner is covered by [Operation runner](../architecture/lifecycle/operation-runner). Queueing and the sync scanner are covered by [Run queue and sync](../architecture/lifecycle/run-queue-and-sync). The persisted states and events are listed in [Run states and events](../reference/runs/run-states-and-events).
+The architecture view is [Lifecycle workflows](../architecture/lifecycle/workflows). The shared runner is covered by [Operation runner](../architecture/lifecycle/operation-runner). The persisted states and events are listed in [Run states and events](../reference/runs/run-states-and-events).

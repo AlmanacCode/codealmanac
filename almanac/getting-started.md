@@ -37,15 +37,13 @@ That route matches the main working loop in this repository: write durable Markd
 
 Start with the manual rule: evolve the codebase so the feature fits, then build the feature [@manual]. This repo treats architecture as living structure. When the current shape does not hold a feature cleanly, the expected move is to stop and flag the mismatch instead of bolting on a local workaround [@manual].
 
-For most implementation work, follow the architecture pages before opening individual modules. [Architecture overview](architecture/) gives the reading order for the cluster. [Service boundaries](architecture/service-boundaries) explains the dependency direction from CLI adapters into the app, workflows, services, stores, ports, and integrations. [Lifecycle workflows](architecture/lifecycle/workflows) is the entry point for page-writing operations. [Source resolution and runtime](architecture/sources/source-resolution-and-runtime) is the entry point for ingest inputs.
+For most implementation work, follow the architecture pages before opening individual modules. [Architecture](architecture/) gives the reading order for the architecture cluster. [Service boundaries](architecture/service-boundaries) explains the dependency direction from CLI adapters into the app, workflows, services, stores, ports, and integrations. [Lifecycle workflows](architecture/lifecycle/workflows) is the entry point for page-writing operations. [Source resolution and runtime](architecture/sources/source-resolution-and-runtime) is the entry point for ingest inputs.
 
 ## If You Are Changing The Wiki
 
 Use the wiki as source-controlled product knowledge. Pages should preserve durable context that future agents would otherwise rediscover, not routine activity logs or raw notes [@repo-readme] [@manual].
 
 Before editing pages, read the relevant manual files under `src/codealmanac/manual/`. The writing manuals define leads, evidence, links, topics, and page-type shapes. After editing, run the repo's normal validation path for wiki changes; the public read surface includes `codealmanac health` and `codealmanac validate` [@repo-readme].
-
-For topic changes, use [Maintain topics](guides/maintain-topics) as the task guide, [Topics YAML](reference/topics-yaml) as the exact file reference, and [Topics DAG](architecture/wiki/topics-dag) for the architecture behind topic parents and cycle prevention.
 
 ## Common Work Areas
 
@@ -57,4 +55,4 @@ Use these routes when you already know the kind of work:
 - For page evidence and frontmatter, read [Frontmatter and sources](reference/page-format/frontmatter-and-sources).
 - For lifecycle run state, logs, and attach behavior, read [Run states and events](reference/runs/run-states-and-events).
 - For the local browser UI, read [Local viewer](architecture/viewer/local-viewer).
-- For PyPI publishing, installed-artifact smoke, and curl-installer verification, read [Release package](guides/release-package).
+- For launch-video or product-demo framing, read [Demo CodeAlmanac in a launch video](guides/demo-codealmanac-in-launch-video).

@@ -14,6 +14,22 @@ sources:
     type: file
     path: src/codealmanac/services/sources/models.py
     note: Source reference, brief, runtime, and transcript models.
+  - id: transcript_adapters
+    type: file
+    path: src/codealmanac/integrations/sources/transcripts/__init__.py
+    note: Default transcript discovery and runtime adapter registration.
+  - id: codex_transcripts
+    type: file
+    path: src/codealmanac/integrations/sources/transcripts/codex.py
+    note: Codex transcript discovery path and metadata parsing.
+  - id: claude_transcripts
+    type: file
+    path: src/codealmanac/integrations/sources/transcripts/claude.py
+    note: Claude transcript discovery path and metadata parsing.
+  - id: sync_evaluation
+    type: file
+    path: src/codealmanac/workflows/sync/evaluation.py
+    note: Sync transcript selection, repository matching, and inactive filtering.
   - id: ingest_workflow
     type: file
     path: src/codealmanac/workflows/ingest/service.py
@@ -35,6 +51,14 @@ The resolved `SourceBrief` contains a `SourceRef`, title, provenance kind, and p
 Runtime inspection is adapter-based. `SourcesService.inspect_runtime(...)` asks each configured runtime adapter whether it supports the source reference and returns the first adapter result [@source_service]. If no adapter supports the source, the service returns a skipped runtime snapshot titled with the unsupported reference identity [@source_service].
 
 Ingest uses this boundary before it renders the writing prompt. It resolves the requested inputs, records preparation events, inspects runtime snapshots, and passes both briefs and snapshots into the operation prompt [@ingest_workflow].
+
+## Transcript Discovery
+
+Transcript discovery is a separate source path used by sync. The default discovery set has two adapters: Claude and Codex [@transcript_adapters]. The source model has the same two transcript app values, `claude` and `codex`, so there is no separate app identity for Codex app, Claude Desktop, Claude web, or editor-specific surfaces [@source_models].
+
+The Codex adapter scans `.codex/sessions` under the configured home directory, reads the first JSONL lines for session metadata, and skips transcripts whose metadata marks `thread_source` as `subagent` [@codex_transcripts]. The Claude adapter scans `.claude/projects` under the configured home directory and skips paths that contain `subagents` [@claude_transcripts].
+
+Sync does not ingest every discovered transcript. It matches each transcript `cwd` to a registered repository root, skips unregistered working directories, and skips transcripts older than the active sync window as `inactive` [@sync_evaluation]. That means a transcript can be discovered correctly but still not become ingest input for the current sync run.
 
 ## Related Reference
 

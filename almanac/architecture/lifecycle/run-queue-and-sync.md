@@ -26,6 +26,10 @@ sources:
     type: file
     path: src/codealmanac/workflows/sync/service.py
     note: Transcript sync workflow and queue integration.
+  - id: affiliation-decision
+    type: file
+    path: almanac/decisions/repository-affiliation-belongs-in-repository-service.md
+    note: Decision that future transcript checkout matching belongs in the repository service.
 ---
 
 # Run Queue And Sync
@@ -53,3 +57,5 @@ Running cancellation goes through `RunCancellation`: record intent, terminate th
 ## Sync Boundary
 
 Sync discovers local transcript candidates and queues ordinary ingest runs through this queue boundary [@sync_workflow]. That keeps transcript discovery separate from authorship: sync decides what should be ingested, while ingest remains the operation that writes pages.
+
+Future worktree support should keep that boundary. Sync may need to ask repositories which registered wiki owns a transcript working directory, but the affiliation decision belongs in the repository service rather than in sync-specific provider or workspace checks [@affiliation-decision]. See [Repository Affiliation Belongs In Repository Service](../../decisions/repository-affiliation-belongs-in-repository-service).

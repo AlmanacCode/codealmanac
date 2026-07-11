@@ -6,6 +6,10 @@ sources:
     type: file
     path: pyproject.toml
     note: Package script entrypoint for the CodeAlmanac CLI.
+  - id: repo_readme
+    type: file
+    path: README.md
+    note: Public quickstart and product language for CodeAlmanac commands.
   - id: parser_root
     type: file
     path: src/codealmanac/cli/parser/root.py
@@ -14,10 +18,6 @@ sources:
     type: file
     path: src/codealmanac/cli/parser/run_commands.py
     note: Run command syntax, sync syntax, and hidden run worker commands.
-  - id: parser_argument
-    type: file
-    path: src/codealmanac/cli/parser/argument_parser.py
-    note: Custom parser class that turns parser failures into shaped syntax problems.
   - id: syntax_catalog
     type: file
     path: src/codealmanac/cli/syntax/catalog.py
@@ -54,6 +54,14 @@ sources:
     type: file
     path: src/codealmanac/cli/parser/automation.py
     note: Scheduled automation command syntax.
+  - id: automation_selection
+    type: file
+    path: src/codealmanac/services/automation/selection.py
+    note: Automation task defaults, explicit task handling, and garden-off validation.
+  - id: automation_jobs
+    type: file
+    path: src/codealmanac/services/automation/jobs.py
+    note: Scheduled automation interval selection for sync, Garden, and update.
   - id: cli_tests
     type: file
     path: tests/test_cli.py
@@ -72,7 +80,7 @@ Parser failures go through the custom argument parser, which classifies syntax p
 
 | Command | Purpose | Main options |
 |---|---|---|
-| `init [path]` | Initialize a local Almanac wiki. | `--name`, `--description`, `--using`, `--guidance`, `--json` [@parser_run] |
+| `init [path]` | Initialize a local CodeAlmanac wiki [@repo_readme]. | `--name`, `--description`, `--using`, `--guidance`, `--json` [@parser_run] |
 | `ingest <inputs...>` | Queue ingest work over local material. | `--wiki`, `--using`, `--title`, `--guidance`, `--json` [@parser_run] |
 | `garden` | Queue wiki improvement work. | `--wiki`, `--using`, `--title`, `--guidance`, `--json` [@parser_run] |
 | `sync` | Sync recently active transcripts into wiki work. | `--wiki`, `--from`, `--using`, `--json`; subcommand `status` [@parser_run] |
@@ -95,6 +103,8 @@ Parser failures go through the custom argument parser, which classifies syntax p
 | `automation` | Report scheduled local automation status. | subcommand `status`; task filters and `--json` [@parser_automation] |
 
 The run commands are covered in the workflow architecture pages. The exact machine-readable output surface is covered by [JSON output contract](json-output-contract).
+
+For `automation install`, zero task names means install the default sync, Garden, and update tasks; explicit task names narrow the install set and are deduplicated in request order [@automation_selection]. `--every` applies to sync during a default install, to Garden when Garden is an explicit selected task, and to update only when update is the only explicit selected task; `--garden-every` is the Garden-specific override, and `--garden-off` is accepted only for the default install [@automation_selection] [@automation_jobs].
 
 ## Hidden Commands
 

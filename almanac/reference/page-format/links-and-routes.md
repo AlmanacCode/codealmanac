@@ -26,6 +26,10 @@ sources:
     type: file
     path: src/codealmanac/services/index/health_graph_views.py
     note: Broken Markdown page-link validation.
+  - id: live_agreement
+    type: file
+    path: docs/python-port-live-agreement.md
+    note: Current local-only runtime-state boundary.
 ---
 
 # Links And Routes
@@ -38,13 +42,13 @@ Routes come from paths under `almanac/`. An ordinary Markdown file drops its `.m
 
 `page_id_for_path()` requires a Markdown file under the repository's `almanac/` directory [@wiki_paths]. `almanac/reference/page-format/links-and-routes.md` becomes `reference/page-format/links-and-routes`; `almanac/architecture/README.md` becomes `architecture`; and `almanac/README.md` becomes `README` [@wiki_paths].
 
-The page iterator walks Markdown files below `almanac/`, but skips files inside reserved source directories [@wiki_paths]. The reserved directories are `manual` and `jobs` [@wiki_paths]. Those files can exist in the tree without becoming public page routes.
+The page iterator walks Markdown files below `almanac/`, but skips files inside reserved source directories [@wiki_paths]. The reserved directories are `manual` and `jobs` [@wiki_paths]. That skip is a route-indexing guard; current runtime state still belongs under `~/.codealmanac/`, not in `almanac/jobs` [@live_agreement].
 
 ## Resolved Markdown Links
 
 The parser reads CommonMark inline links from the page body and resolves eligible hrefs to page slugs [@wiki_links]. Relative links are resolved against the source page's route. For a normal page, the base is the page's parent folder; for a folder landing page, the base is the folder route itself [@wiki_links].
 
-Examples from the parser tests show the rule. From `architecture/indexing`, `wiki-tree` resolves to `architecture/wiki-tree`, and `../decisions/local-first-python` resolves to `decisions/local-first-python` [@wiki_parsing_tests]. From the folder landing page `architecture`, `wiki-tree` resolves to `architecture/wiki-tree` [@wiki_parsing_tests].
+Examples show the rule. From `architecture/indexing`, `wiki-tree` resolves to `architecture/wiki-tree`, and `../decisions/local-only-python-product` resolves to `decisions/local-only-python-product` [@wiki_links]. From the folder landing page `architecture`, `wiki-tree` resolves to `architecture/wiki-tree` [@wiki_parsing_tests].
 
 ## Ignored Hrefs
 

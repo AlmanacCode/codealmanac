@@ -20,6 +20,8 @@ sources:
 
 Use this guide after editing wiki source under `almanac/`. A verified change has valid page links, usable source citations, no runtime-state files in the wiki tree, and a refreshed index that can represent the current Markdown [@health_service].
 
+For the exact page metadata and citation contract, see [Frontmatter and sources](../reference/page-format/frontmatter-and-sources). For Markdown page-link rules, see [Links and routes](../reference/page-format/links-and-routes).
+
 ## Steps
 
 Run `codealmanac validate` from the repository root. Validation checks source frontmatter shape, rejects runtime-state leaks, refreshes the index, and fails when graph or source-health issues remain [@health_service].
