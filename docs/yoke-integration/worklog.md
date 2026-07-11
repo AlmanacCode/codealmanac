@@ -25,3 +25,5 @@
 - CodeAlmanac intentionally retains its historical trusted-agent permission
   model: full, non-interactive local access with prompt/commit policy rather
   than an OS-enforced `almanac/` sandbox.
+- Aligned local and remote `dev`/`main`, then published CodeAlmanac 0.4.2 to
+  GitHub and PyPI with Yoke 0.1.4 as the minimum supported runtime.

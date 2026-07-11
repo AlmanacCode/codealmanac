@@ -12,4 +12,4 @@
 | Failure/timeout visibility | Real invalid-model, logged-out OAuth, Claude timeout, and Codex timeout probes | Verified |
 | Full local quality | 452 tests, Ruff, wheel/sdist, Twine, and installed PyPI dependency checks | Verified |
 | Released Yoke | GitHub releases and trusted PyPI publish through `almanac-yoke` 0.1.4 | Verified |
-| Released CodeAlmanac | GitHub/PyPI release 0.4.2 after merge | Pending |
+| Released CodeAlmanac | GitHub/PyPI release 0.4.2 from aligned `dev`/`main` | Verified |
