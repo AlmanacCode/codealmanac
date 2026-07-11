@@ -18,6 +18,10 @@ sources:
     type: file
     path: docs/plans/2026-07-07-controlled-model-config.md
     note: Implementation plan that records the product decision and intended setup/config behavior.
+  - id: model-support-followup
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/10/rollout-2026-07-10T20-29-48-019f4f39-62af-76e2-98aa-941774e28f1a.jsonl
+    note: July 2026 support transcript that created follow-up work for refreshing current Codex and Claude model support.
 ---
 
 # Controlled Model Catalog
@@ -51,3 +55,5 @@ Adding a new model is a code change, not a provider-discovery side effect. A mai
 Setup and automation can depend on a known runner/model pair. `SetupService` writes both `harness.default` and `harness.model`, so unattended lifecycle work does not need to ask a provider what it should run [@config-service].
 
 The cost is that users cannot type an arbitrary provider model into CodeAlmanac config. That is intentional. A model becomes supported when the project accepts it into the controlled catalog.
+
+The maintenance burden is also intentional. A July 2026 support pass recorded that model staleness can block users who want to run current Codex or Claude models, and the follow-up was to refresh the controlled catalog, setup labels, validation, and tests rather than replacing the catalog with provider discovery [@model-support-followup]. Future model support work should keep the same ownership rule: update `CONTROLLED_HARNESS_MODELS`, `HARNESS_MODELS`, defaults, setup options, and provenance tests together [@config-models] [@config-tests].

@@ -29,6 +29,10 @@ sources:
   - id: garden-service
     type: file
     path: src/codealmanac/workflows/garden/service.py
+  - id: manuals-incident
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/10/rollout-2026-07-10T20-29-48-019f4f39-62af-76e2-98aa-941774e28f1a.jsonl
+    note: July 2026 support transcript describing a build where missing writing manuals produced hollow generated pages.
 ---
 
 # Prompts And Manuals
@@ -66,3 +70,7 @@ The workflows pass the rendered prompt to the operation runner, which passes it 
 Manual documents are included in lifecycle prompt payloads so the agent has the current writing contract in the same prompt as the job context [@build-service] [@ingest-service] [@garden-service]. That is why page format, evidence, and linking rules are runtime resources instead of separate developer memory. The exact frontmatter and citation rules are described in [frontmatter and sources](../../reference/page-format/frontmatter-and-sources).
 
 This resource model also keeps the product local and installable. A packaged CodeAlmanac command has the prompts and manuals it needs, while repository-local wiki pages remain ordinary Markdown under `almanac/`.
+
+## Failure Mode
+
+Missing manuals are a content-quality failure, not only a packaging failure. A July 2026 support pass recorded an init build where writing agents tried to read `almanac/links.md`, `almanac/how-to-write.md`, `almanac/evidence.md`, and `almanac/topics.md`; because those files were absent, the agents fell back to broad coverage-map structure and produced hollow page templates [@manuals-incident]. That incident is why lifecycle prompt payloads must carry the actual bundled manual bodies and why prompts should reference accessible package resources instead of assuming repository-local manual files exist [@build-service] [@manual-library].

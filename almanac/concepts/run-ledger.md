@@ -22,6 +22,10 @@ sources:
     type: file
     path: src/codealmanac/workflows/run_queue/control.py
     note: Product cancellation use case coordinating durable state and process control.
+  - id: jobs-ux-support
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/10/rollout-2026-07-10T20-29-48-019f4f39-62af-76e2-98aa-941774e28f1a.jsonl
+    note: July 2026 support transcript that turned job observability gaps into Linear work.
 ---
 
 # Run Ledger
@@ -45,6 +49,12 @@ Events are stored separately from the run record. Each `RunLogEvent` has a seque
 `RunStore` owns persistence. It writes run records to the local database, stores the serialized spec beside the run record, appends status events, and delegates event sequencing to the event store [@run_store]. The same store exposes `attach`, which returns the current run record, all events, and a `terminal` flag for attach-style streaming [@run_store].
 
 The public command name is `jobs`, not `runs`. The parser exposes `jobs`, `jobs show`, `jobs logs`, `jobs attach`, and `jobs cancel`, with JSON output available on the read/control commands [@jobs_parser]. That naming keeps the user surface practical while leaving the internal model precise.
+
+## Observability Pressure
+
+The ledger is the right home for job observability features because it already owns the durable record, event stream, page-change summary, and optional harness transcript reference [@run_models]. A July 2026 support pass captured three gaps that future work should solve at this layer instead of by scraping terminal output: `jobs show` needs stable execution provenance fields even when `harness_transcript` is absent, scripts need a `jobs wait <run-id>` command instead of polling `jobs show` or parsing `jobs attach`, and interrupting `jobs attach` should detach cleanly without changing the underlying run [@jobs-ux-support].
+
+The current parser does not expose `jobs wait`; the visible subcommands are still `show`, `logs`, `attach`, and `cancel` [@jobs_parser]. That absence matters because automation needs a blocking command whose exit code reflects the final run status, while attach is an event stream intended for watching work. Any implementation should read the ledger state directly and leave the worker alive when the waiting client exits [@jobs-ux-support].
 
 ## Why It Matters
 
