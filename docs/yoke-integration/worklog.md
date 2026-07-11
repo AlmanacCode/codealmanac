@@ -42,3 +42,6 @@
   A live Codex build through the packaged build agent used native helpers,
   created 13 grounded wiki pages, validated before and after commit, and ended
   with a clean worktree.
+- Merged the separate Almanac task's concurrent wiki commits, aligned local and
+  remote `dev`/`main`, and published CodeAlmanac 0.4.3 to GitHub and PyPI. A
+  fresh public install loaded build, ingest, and garden with Yoke 0.1.5.

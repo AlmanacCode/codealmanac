@@ -12,6 +12,6 @@
 | Failure/timeout visibility | Real invalid-model, logged-out OAuth, Claude timeout, and Codex timeout probes | Verified |
 | Full local quality | 452 tests, Ruff, wheel/sdist, Twine, and installed PyPI dependency checks | Verified |
 | Released Yoke | GitHub releases and trusted PyPI publish through `almanac-yoke` 0.1.4 | Verified |
-| Released CodeAlmanac | GitHub/PyPI release 0.4.3 from aligned `dev`/`main` | Pending |
+| Released CodeAlmanac | GitHub/PyPI release 0.4.3 from aligned `dev`/`main`; fresh PyPI install loaded all agents with Yoke 0.1.5 | Verified |
 | Yoke-native agents | Packaged collection loads build, ingest, and garden folders; previous prompt words compare exactly; a live Codex build used native helpers, wrote 13 pages, validated, and committed | Verified |
 | Scoped environment | Yoke 0.1.5 passes per-Harness environment to Claude SDK and Codex app-server without global mutation | Verified |
