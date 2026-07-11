@@ -36,6 +36,16 @@ sources:
 
 # Agents And Manuals
 
+Agents and manuals are the packaged runtime resources that lifecycle
+operations hand to the local Yoke harness. Build, ingest, and garden each have
+a stable Yoke agent identity, while the workflow for a single run passes
+repository facts, health, sources, guidance, and source-control policy as typed
+JSON runtime context [@catalog] [@collection] [@build-service]
+[@ingest-service] [@garden-service]. The shared writing manuals stay outside
+the agent folders so every operation can include the same page-writing
+standards without rebuilding those standards into operation-specific prompts
+[@manual-library].
+
 ## What It Owns
 
 Build, ingest, and garden are a packaged Yoke `Collection`. The collection
@@ -60,8 +70,8 @@ the instructions and native harness decide when to use them.
 Each workflow builds one typed Pydantic payload and passes its JSON as the task
 prompt under `Runtime context:` [@build-service] [@ingest-service]
 [@garden-service]. The Yoke adapter independently loads the selected packaged
-agent. This separates stable agent identity and instructions from facts that
-belong only to one run.
+agent from the collection [@catalog] [@collection]. This separates stable agent
+identity and instructions from facts that belong only to one run.
 
 The instruction words from the former base and operation prompt files are
 retained in the agent folders. They now occupy Yoke's intended agent-instruction
