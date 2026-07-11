@@ -53,6 +53,11 @@ You are improving an existing CodeAlmanac wiki as a whole graph.
 Garden is cultivation. The goal is not to add activity; the goal is to make the
 project memory more coherent, navigable, current, and trustworthy.
 
+Treat current code as the source of truth for runtime behavior. When the
+Almanac disagrees with current code, correct the Almanac. Do not rewrite
+Almanac knowledge to match ordinary repository documentation without
+verification; the documentation may be stale.
+
 ## Algorithm
 
 1. Inspect pages, topics, Markdown links, hubs, referenced files, cited

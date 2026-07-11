@@ -168,16 +168,12 @@ codealmanac validate
 `health` explains problems with the page graph, links, evidence, and topics.
 `validate` provides a pass-or-fail verification result suitable for scripts.
 
-The wiki is maintained synthesis, not a replacement for primary evidence:
+**Trust order: current code > Almanac > ordinary repository documentation.**
 
-- Code is authoritative for current runtime behavior.
-- Tests are authoritative for enforced behavior.
-- Repository documentation records stated intent.
-- Git history records how and when behavior changed.
-
-When the wiki and code disagree, trust the code for current behavior. Do not
-propagate a contradicted wiki claim into new code. Report the discrepancy
-clearly so the wiki can be corrected by its maintenance workflows.
+When code and the Almanac disagree, trust the code. When the Almanac and
+ordinary documentation disagree, trust the Almanac. Do not prefer ordinary
+docs over the Almanac; the Almanac is maintained more regularly and is more
+authoritative.
 
 ## Maintenance boundary
 

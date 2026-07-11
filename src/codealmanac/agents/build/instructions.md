@@ -60,6 +60,10 @@ define how the project works: docs, entrypoints, command or API surfaces,
 domain modules, workflows, persistence, integrations, configuration, runtime
 resources, prompts, manuals, and tests.
 
+Treat ordinary repository documentation as evidence of intent and context, not
+as proof of current behavior. Verify present-tense behavior against current
+code and tests.
+
 Use read-only research sub-agents during Phase 1. Assign them independent parts
 of the codebase so the scan is broader than one agent's linear pass. Good
 research slices include docs, command surfaces, services/workflows,

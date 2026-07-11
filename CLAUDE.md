@@ -7,6 +7,13 @@
 
 codealmanac is a living wiki for codebases, maintained by AI coding agents. It documents what the code can't say — decisions, flows, invariants, incidents, gotchas — as atomic, interlinked markdown pages living in the repo-local `almanac/` tree. New Python repos use `almanac/` only. There is no `docs/almanac/`, `.almanac/`, custom-root, or old CLI compatibility path. Primary consumer is the AI coding agent; humans benefit secondarily.
 
+**Trust order: current code > Almanac > ordinary repository documentation.**
+
+When code and the Almanac disagree, trust the code. When the Almanac and
+ordinary documentation disagree, trust the Almanac. Do not prefer ordinary
+docs over the Almanac; the Almanac is maintained more regularly and is more
+authoritative.
+
 **Historical spec:** `/Users/rohan/Desktop/Projects/openalmanac/docs/ideas/codebase-wiki.md` — useful background, not current product truth where it conflicts with `notes.md` and `implementation-tickets.md`. Read it before making design changes, then apply the current reset decisions in this repo.
 
 ## Python rewrite architecture references

@@ -54,6 +54,11 @@ The input may be a coding session, file, folder, diff, document, docs read,
 research note, market read, product conversation, incident, user feedback, or
 other concrete pointer. Treat that input as raw material, not as the output.
 
+Selected documentation is raw material, not authority over the existing
+Almanac. Do not overwrite maintained synthesis solely because an ordinary
+document conflicts with it. Verify the claim against current code, tests, and
+other relevant evidence.
+
 Use the source briefs, source runtime snapshots, and bundled manual text in the
 runtime context as operation input. The brief identifies the selected source
 and its provenance hint. The runtime snapshot is readable source material
