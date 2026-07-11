@@ -86,19 +86,19 @@ Parser failures go through the custom argument parser, which classifies syntax p
 | `serve` | Serve the local wiki viewer. | `--wiki`, `--host`, `--port`; defaults to `127.0.0.1:3927` [@parser_wiki] |
 | `tag <page> <topics...>` | Add topics to a page frontmatter block. | `--wiki` [@parser_wiki] |
 | `untag <page> <topics...>` | Remove topics from a page frontmatter block. | `--wiki` [@parser_wiki] |
-| `config` | Read or write user config values. | `list`, `get`, `set`; keys are `auto_commit`, `harness.default`, and `harness.model` [@parser_config] |
+| `config` | Read or write user config values, or apply saved config to machine automation. | `list`, `get`, `set`, `apply`; keys cover `auto_commit`, `harness.default`, `harness.model`, and the `automation.<task>.enabled`/`automation.<task>.every` family; see [Config keys](../config-keys) [@parser_config] |
 | `setup` | Install local agent instructions and scheduled automation. | `--target`, `--yes`, `--runner`, `--no-auto-commit`, `--skip-instructions`, `--no-auto-update`, `--sync-every`, `--sync-off`, `--garden-every`, `--garden-off`, `--json` [@parser_setup] |
 | `uninstall` | Remove setup-owned local artifacts. | `--yes`, `--json` [@parser_setup] |
 | `doctor` | Check the local install and selected wiki. | `--wiki`, `--json` [@parser_diagnostics] |
 | `update` | Update the local CLI. | `--check`, `--json`; `--scheduled` is hidden [@parser_updates] |
 | `jobs` | Inspect local run records. | `--wiki`, `--limit`, `--json`; subcommands `show`, `logs`, `attach`, `cancel` [@parser_jobs] |
-| `automation` | Manage scheduled local automation. | `install`, `uninstall`, `status`; task filters and `--json` [@parser_automation] |
+| `automation` | Report scheduled local automation status. | subcommand `status`; task filters and `--json` [@parser_automation] |
 
 The run commands are covered in the workflow architecture pages. The exact machine-readable output surface is covered by [JSON output contract](json-output-contract).
 
 ## Hidden Commands
 
-Two top-level commands are intentionally hidden from normal help: `__run-worker` and `__garden-scheduler` [@parser_run]. `__run-worker` requires `--cwd` and drains queued run work for a repository; `__garden-scheduler` is the scheduled garden entrypoint [@parser_run].
+Three top-level commands are intentionally hidden from normal help: `__run-worker`, `__run-executor`, and `__garden-scheduler` [@parser_run]. `__run-worker` requires `--cwd` and drains queued run work for a repository; for each queued run it spawns `__run-executor <run-id>`, which claims that one run and actually executes the operation so the worker process can keep draining the queue if the executor is cancelled [@parser_run]. `__garden-scheduler` is the scheduled garden entrypoint [@parser_run].
 
 The `update --scheduled` flag is also hidden from help while remaining accepted by the update parser [@parser_updates]. These hidden entries are implementation entrypoints, not public user workflows.
 

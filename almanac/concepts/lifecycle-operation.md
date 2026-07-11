@@ -18,6 +18,10 @@ sources:
     type: file
     path: src/codealmanac/workflows/operations/service.py
     note: Shared execution path for page-writing operations.
+  - id: run-queue-service
+    type: file
+    path: src/codealmanac/workflows/run_queue/service.py
+    note: RunQueue.queue_build/queue_ingest/queue_garden queue the run record a worker later executes.
   - id: live-agreement
     type: file
     path: docs/python-port-live-agreement.md
@@ -32,11 +36,11 @@ The concept matters because it keeps judgmentful wiki writing separate from read
 
 ## The Three Operation Kinds
 
-Build is the initialization path for a new repository wiki. It rejects an existing `almanac/`, registers the repository, initializes a minimal wiki, starts a `BUILD` run, and renders a build prompt with repository, wiki, manual, and source-control context [@build-workflow].
+Build is the initialization path for a new repository wiki. Before a `BUILD` run is queued, build preparation rejects an existing `almanac/`, registers the repository, and initializes a minimal wiki [@build-workflow] [@run-queue-service]. When that queued run executes, build renders a build prompt with repository, wiki, manual, and source-control context [@build-workflow].
 
-Ingest starts an `INGEST` run for an existing repository. It resolves selected inputs into source briefs, loads bounded source runtime snapshots, and renders an ingest prompt with those sources and manual documents [@ingest-workflow]. Ingest is for concrete material such as files, directories, diffs, GitHub items, URLs, or transcripts.
+Ingest queues an `INGEST` run for an existing repository [@run-queue-service]. When that run executes, it resolves selected inputs into source briefs, loads bounded source runtime snapshots, and renders an ingest prompt with those sources and manual documents [@ingest-workflow]. Ingest is for concrete material such as files, directories, diffs, GitHub items, URLs, or transcripts.
 
-Garden starts a `GARDEN` run for an existing wiki. It reads the current index summary and health report, then renders a prompt focused on graph quality, stale claims, links, topics, weak leads, and unsupported claims [@garden-workflow].
+Garden queues a `GARDEN` run for an existing wiki [@run-queue-service]. When that run executes, garden reads the current index summary and health report, then renders a prompt focused on graph quality, stale claims, links, topics, weak leads, and unsupported claims [@garden-workflow].
 
 ## Shared Execution
 

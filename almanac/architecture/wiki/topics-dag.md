@@ -26,6 +26,14 @@ sources:
     type: file
     path: docs/python-port-live-agreement.md
     note: Active split between topic orchestration, graph mechanics, and YAML mutation.
+  - id: tagging-service
+    type: file
+    path: src/codealmanac/services/tagging/service.py
+    note: Tag/untag service backing the tag and untag commands.
+  - id: frontmatter-rewrite
+    type: file
+    path: src/codealmanac/services/wiki/frontmatter_rewrite.py
+    note: Round-trip YAML rewrite of one page's topics frontmatter list.
 ---
 
 # Topics DAG
@@ -57,6 +65,12 @@ The tests lock down that behavior. Creating a topic preserves existing comments,
 The graph layer prevents self-parent links and missing-parent links before mutation writes [@topic-graph]. When an edge is added, `reject_cycle` checks whether the child is already an ancestor of the proposed parent. If it is, the operation raises a conflict instead of writing the edge [@topic-graph].
 
 Ancestor traversal has a depth cap of 32 [@topic-graph]. The cap is defensive: valid topic graphs should be much shallower, and the mutation path should not risk unbounded traversal if the file is already strange.
+
+## Tagging One Page
+
+`topics.yaml` mutations are not the only way a page joins the topic graph. `tag` and `untag` change a single page's own `topics:` frontmatter list instead of the shared graph file. `TaggingService.tag` and `.untag` read the current page through `PagesService.show`, compute the new topic tuple, and call `rewrite_page_topics` to rewrite that page's frontmatter in place with the same round-trip YAML writer topic mutations use [@tagging-service] [@frontmatter-rewrite].
+
+This keeps the two write paths intentionally separate: `topics create`/`link`/`unlink`/`rename`/`delete` shape the DAG itself in `topics.yaml`, while `tag`/`untag` only ever add or remove entries in one page's frontmatter list and never touch `topics.yaml` [@tagging-service]. Tagging a page with a slug that has no `topics.yaml` entry is still valid; the index already treats page-frontmatter-only topics as real, browsable topics, so `tag` can point a page at a topic before anyone promotes that topic into `topics.yaml`. Neither `tag` nor `untag` calls index refresh directly; the next read command refreshes the index from the rewritten Markdown the same way any other page edit does [@tagging-service].
 
 ## Architectural Boundary
 
