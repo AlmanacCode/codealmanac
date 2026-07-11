@@ -1,6 +1,6 @@
 ---
 title: Extend The Yoke Harness Boundary
-topics: [guides, harnesses, yoke]
+topics: [guides, harnesses, providers]
 sources:
   - id: adapter
     type: file
@@ -20,6 +20,14 @@ sources:
   - id: tests
     type: file
     path: tests/test_yoke_harness_integration.py
+  - id: model-catalog
+    type: wiki
+    path: decisions/controlled-model-catalog
+    note: Decision that keeps supported harness models in a controlled catalog.
+  - id: config-keys
+    type: wiki
+    path: reference/config-keys
+    note: Reference page for supported config keys and model validation.
 ---
 
 # Extend The Yoke Harness Boundary
@@ -40,9 +48,13 @@ SDK or JSON-RPC behavior under `integrations/harnesses/`.
 
 If this is a genuinely new CodeAlmanac runner, add its `HarnessKind`, controlled
 models, defaults, setup/config choices, and one `YokeHarnessAdapter` registration
-[@kinds] [@config] [@defaults]. If it is only a different Yoke surface for an
-existing runner, change the explicit surface selection in the Yoke adapter and
-document why the product requires it [@adapter].
+[@kinds] [@config] [@defaults]. [Controlled model catalog](../decisions/controlled-model-catalog)
+owns the rule that supported models are a CodeAlmanac product list, and
+[Config keys](../reference/config-keys) owns the user-facing config contract for
+`harness.default` and `harness.model` [@model-catalog] [@config-keys]. If it is
+only a different Yoke surface for an existing runner, change the explicit
+surface selection in the Yoke adapter and document why the product requires it
+[@adapter].
 
 ## Preserve The Product Contract
 

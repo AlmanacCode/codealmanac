@@ -1,6 +1,6 @@
 ---
 title: Agents And Manuals
-topics: [architecture, runtime-resources, agents, manuals, yoke]
+topics: [architecture, runtime-resources, prompts, manuals, harnesses]
 sources:
   - id: catalog
     type: file

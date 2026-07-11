@@ -42,10 +42,18 @@ sources:
     type: wiki
     path: guides/demo-codealmanac-in-launch-video
     note: Procedure for demonstrating CodeAlmanac in a launch video.
+  - id: release
+    type: wiki
+    path: guides/release-package
+    note: Procedure for publishing and verifying the Python package.
   - id: launch-positioning
     type: wiki
     path: concepts/launch-positioning
     note: Product-story concept page used by launch and demo framing.
+  - id: local-only
+    type: wiki
+    path: decisions/local-only-python-product
+    note: Decision that defines the local Python product boundary.
 ---
 
 # Guides
@@ -89,6 +97,12 @@ checks [@topics-guide].
 [Refactoring boundaries](refactoring-boundaries) explains how to reshape code
 around the repo's service, workflow, store, port, and integration boundaries
 before adding behavior [@refactoring].
+
+[Release package](release-package) is the public packaging checklist for the
+local Python CLI. It belongs with product-surface work because the release must
+preserve the [Local-only Python product](../decisions/local-only-python-product)
+boundary while proving the installed `codealmanac` command works outside the
+repo developer environment [@release] [@local-only].
 
 [Demo CodeAlmanac in a launch video](demo-codealmanac-in-launch-video) is the
 product-demonstration guide for showing the local viewer and terminal query

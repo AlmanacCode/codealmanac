@@ -14,6 +14,18 @@ sources:
     type: file
     path: docs/python-port-live-agreement.md
     note: Current Python rewrite agreement and active decisions.
+  - id: local-only-decision
+    type: wiki
+    path: decisions/local-only-python-product
+    note: Decision that defines the local Python product boundary.
+  - id: release-guide
+    type: wiki
+    path: guides/release-package
+    note: Guide for publishing and verifying the Python package.
+  - id: launch-positioning
+    type: wiki
+    path: concepts/launch-positioning
+    note: Product-story concept page for launch and demo framing.
 ---
 
 # Getting Started
@@ -51,6 +63,7 @@ Use these routes when you already know the kind of work:
 
 - For command behavior, read [CLI public command surface](reference/cli/public-command-surface).
 - For config defaults, model choices, and precedence, read [Config keys](reference/config-keys).
+- For product boundary, public package, or demo work, read [Local-only Python product](decisions/local-only-python-product), [Release package](guides/release-package), and [Launch positioning](concepts/launch-positioning) [@local-only-decision] [@release-guide] [@launch-positioning].
 - For page identity, routes, and `README.md` landing pages, read [Page identity](architecture/wiki/page-identity).
 - For page evidence and frontmatter, read [Frontmatter and sources](reference/page-format/frontmatter-and-sources).
 - For lifecycle run state, logs, and attach behavior, read [Run states and events](reference/runs/run-states-and-events).
