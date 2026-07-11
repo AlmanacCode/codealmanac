@@ -1,0 +1,10 @@
+description: Improve a CodeAlmanac wiki from bounded selected material.
+tools:
+  read: true
+  write: true
+  shell: true
+  agent: true
+permissions:
+  access: full
+  approval: never
+  network: false

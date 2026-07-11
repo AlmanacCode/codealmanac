@@ -17,6 +17,7 @@ from codealmanac.core.errors import (
     NoRepositorySelected,
 )
 from codealmanac.services.harnesses.models import (
+    HarnessAgentKind,
     HarnessKind,
     HarnessReadiness,
     HarnessRunResult,
@@ -192,7 +193,9 @@ def test_queued_build_uses_harness_prompt_and_records_build_operation(
     assert result.index.pages_indexed == 2
     assert runtime_index_path(isolated_home, result.repository).is_file()
     assert adapter.requests[0].model == "gpt-5.5"
-    assert "Build Operation" in adapter.requests[0].prompt
+    assert adapter.requests[0].agent is HarnessAgentKind.BUILD
+    assert adapter.requests[0].prompt.startswith("Runtime context:\n{")
+    assert "Build Operation" not in adapter.requests[0].prompt
     assert "Write the smallest useful first wiki." in adapter.requests[0].prompt
 
 

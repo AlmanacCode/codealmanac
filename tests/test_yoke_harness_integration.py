@@ -13,16 +13,18 @@ from yoke import (
     RunStatus,
 )
 
+from codealmanac.agents.catalog import agent_collection, load_agent
 from codealmanac.integrations.harnesses.yoke.adapter import (
     CLAUDE_ALLOWED_TOOLS,
     YokeHarnessAdapter,
-    lifecycle_agent,
+    create_yoke_harness,
     provider_options,
 )
 from codealmanac.integrations.harnesses.yoke.events import YokeEventProjector
 from codealmanac.integrations.harnesses.yoke.results import project_run
 from codealmanac.services.harnesses.models import (
     HarnessActorRole,
+    HarnessAgentKind,
     HarnessEventKind,
     HarnessKind,
     HarnessRunStatus,
@@ -47,6 +49,7 @@ def request(kind: HarnessKind, prompt: str = "  preserve me exactly  "):
     return RunHarnessRequest(
         kind=kind,
         model="chosen-model",
+        agent=HarnessAgentKind.BUILD,
         cwd=Path("/tmp/project"),
         prompt=prompt,
     )
@@ -66,12 +69,30 @@ def test_adapter_forwards_exact_prompt_and_model(kind):
     assert options.model == "chosen-model"
 
 
-def test_lifecycle_agent_has_description_but_no_prompt_instructions():
-    agent = lifecycle_agent()
+def test_packaged_collection_loads_the_three_yoke_agents():
+    collection = agent_collection()
 
-    assert agent.description == "CodeAlmanac lifecycle agent"
-    assert agent.instructions is None
-    assert agent.tools.read and agent.tools.write and agent.tools.shell
+    assert collection.names() == ("build", "garden", "ingest")
+    for kind in HarnessAgentKind:
+        agent = load_agent(kind)
+        assert agent.root is not None
+        assert agent.root.name == kind.value
+        assert agent.instructions
+        assert agent.instructions.startswith("# CodeAlmanac Kernel")
+        assert f"# {kind.value.title()} Operation" in agent.instructions
+        assert agent.tools.read and agent.tools.write and agent.tools.shell
+        assert agent.tools.agent
+        assert str(agent.permissions.access) == "full"
+        assert str(agent.permissions.approval) == "never"
+
+
+@pytest.mark.parametrize("kind", tuple(HarnessAgentKind))
+def test_yoke_harness_uses_the_requested_packaged_agent(kind):
+    harness = create_yoke_harness(HarnessKind.CODEX, Path("/tmp/project"), kind)
+
+    assert harness.agent.root is not None
+    assert harness.agent.root.name == kind.value
+    assert harness.agent.instructions == load_agent(kind).instructions
 
 
 def test_provider_options_are_explicit_and_provider_specific():

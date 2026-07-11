@@ -482,6 +482,30 @@ def test_harness_contract_models_stay_split_by_meaning():
     assert "def terminal_harness_event(" in results_text
 
 
+def test_lifecycle_agents_are_yoke_native_packages():
+    agents_root = SRC_ROOT / "agents"
+    prompt_root = SRC_ROOT / "prompts"
+
+    assert not tuple(prompt_root.rglob("*.py"))
+    assert not tuple(prompt_root.rglob("*.md"))
+    assert (agents_root / "yoke.yaml").is_file()
+    for name in ("build", "ingest", "garden"):
+        root = agents_root / name
+        assert (root / "agent.yaml").is_file()
+        instructions = (root / "instructions.md").read_text(encoding="utf-8")
+        assert instructions.startswith("# CodeAlmanac Kernel")
+        assert f"# {name.title()} Operation" in instructions
+
+    for service in (
+        SRC_ROOT / "workflows/build/service.py",
+        SRC_ROOT / "workflows/ingest/service.py",
+        SRC_ROOT / "workflows/garden/service.py",
+    ):
+        text = service.read_text(encoding="utf-8")
+        assert "PromptRenderer" not in text
+        assert "Runtime context:" in text
+
+
 def test_diagnostics_service_stays_facade():
     diagnostics_root = SRC_ROOT / "services/diagnostics"
     service_text = (diagnostics_root / "service.py").read_text(encoding="utf-8")

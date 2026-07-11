@@ -1,5 +1,4 @@
 from codealmanac.manual import ManualLibrary
-from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
 from codealmanac.services.harnesses.models import HarnessAgentKind
 from codealmanac.services.health.requests import HealthCheckRequest
 from codealmanac.services.health.service import HealthService
@@ -17,11 +16,6 @@ from codealmanac.workflows.operations import (
 )
 from codealmanac.workflows.operations.commit import operation_commit_policy
 
-GARDEN_PROMPT_SECTIONS = (
-    PromptName.BASE_KERNEL,
-    PromptName.OPERATION_GARDEN,
-)
-
 
 class GardenWorkflow:
     def __init__(
@@ -29,13 +23,11 @@ class GardenWorkflow:
         index: IndexService,
         health: HealthService,
         operations: OperationRunner,
-        prompts: PromptRenderer,
         manual: ManualLibrary,
     ):
         self.index = index
         self.health = health
         self.operations = operations
-        self.prompts = prompts
         self.manual = manual
 
     def execute_started(self, request: StartedGardenRequest) -> GardenResult:
@@ -66,7 +58,6 @@ class GardenWorkflow:
                     model=request.model,
                     agent=HarnessAgentKind.GARDEN,
                     prompt=render_garden_prompt(
-                        self.prompts,
                         context.repository,
                         index_before,
                         health_before,
@@ -90,7 +81,6 @@ class GardenWorkflow:
 
 
 def render_garden_prompt(
-    prompts: PromptRenderer,
     repository: Repository,
     index: IndexSummary,
     health: HealthReport,
@@ -110,12 +100,4 @@ def render_garden_prompt(
         source_control=operation_commit_policy(auto_commit),
         guidance=guidance,
     )
-    return prompts.render(
-        RenderPromptRequest(
-            sections=GARDEN_PROMPT_SECTIONS,
-            context=(
-                "Runtime context:\n"
-                f"{payload.model_dump_json(indent=2)}\n",
-            ),
-        )
-    )
+    return "Runtime context:\n" f"{payload.model_dump_json(indent=2)}"

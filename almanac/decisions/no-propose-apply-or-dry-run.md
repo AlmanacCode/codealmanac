@@ -12,15 +12,15 @@ sources:
     note: Active decision that intelligence lives in prompts, not pipelines.
   - id: ingest_prompt
     type: file
-    path: src/codealmanac/prompts/operations/ingest.md
+    path: src/codealmanac/agents/ingest/instructions.md
     note: Ingest operation prompt algorithm.
   - id: garden_prompt
     type: file
-    path: src/codealmanac/prompts/operations/garden.md
+    path: src/codealmanac/agents/garden/instructions.md
     note: Garden operation prompt algorithm and helper-agent guidance.
   - id: kernel
     type: file
-    path: src/codealmanac/prompts/base/kernel.md
+    path: src/codealmanac/agents/build/instructions.md
     note: Base writer prompt for direct durable wiki edits.
   - id: commit_policy
     type: file

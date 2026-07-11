@@ -302,6 +302,14 @@ through app-server; Claude uses Yoke's default Claude surface (currently the
 Python Agent SDK). Existing Codex or Claude Code OAuth sessions are reused, and
 API credentials can be supplied through Yoke when embedding the SDK.
 
+Build, ingest, and garden are packaged as a Yoke agent collection under
+`src/codealmanac/agents/`. Each agent uses Yoke's native folder contract:
+`agent.yaml` describes tools and permissions, while `instructions.md` contains
+the durable agent instructions. A lifecycle run passes only its typed runtime
+context as the task prompt. Optional Yoke `skills/`, `subagents/`, and
+`workflows/` folders can be added to an agent when the product needs them;
+native Claude or Codex execution still decides how and when to use them.
+
 ```bash
 codex login
 claude auth login

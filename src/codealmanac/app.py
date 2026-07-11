@@ -23,7 +23,6 @@ from codealmanac.integrations.updates import (
     SubprocessPackageCommandRunner,
 )
 from codealmanac.manual import ManualLibrary
-from codealmanac.prompts import PromptRenderer
 from codealmanac.services.automation.ports import SchedulerAdapter
 from codealmanac.services.automation.service import AutomationService
 from codealmanac.services.config.service import ConfigService
@@ -107,7 +106,6 @@ class CodeAlmanac:
     runs: RunsService
     sources: SourcesService
     harnesses: HarnessesService
-    prompts: PromptRenderer
     manual: ManualLibrary
     workflows: CodeAlmanacWorkflows
 
@@ -148,7 +146,6 @@ class Services:
     runs: RunsService
     sources: SourcesService
     harnesses: HarnessesService
-    prompts: PromptRenderer
     manual: ManualLibrary
 
 
@@ -253,7 +250,6 @@ def create_services(
         if adapters.source_runtime_adapters is None
         else adapters.source_runtime_adapters,
     )
-    prompts = PromptRenderer()
     return Services(
         local_state=local_state,
         automation=automation,
@@ -273,7 +269,6 @@ def create_services(
         runs=runs,
         sources=sources,
         harnesses=harnesses,
-        prompts=prompts,
         manual=manual,
     )
 
@@ -298,21 +293,18 @@ def create_workflows(
     ingest = IngestWorkflow(
         services.sources,
         ingest_operations,
-        services.prompts,
         services.manual,
     )
     garden = GardenWorkflow(
         services.index,
         services.health,
         garden_operations,
-        services.prompts,
         services.manual,
     )
     build = BuildWorkflow(
         services.repositories,
         services.wiki,
         build_operations,
-        services.prompts,
         services.manual,
     )
     processes = adapters.process_controller or PsutilRunProcessController()
@@ -370,7 +362,6 @@ def assemble_app(services: Services, workflows: CodeAlmanacWorkflows) -> CodeAlm
         runs=services.runs,
         sources=services.sources,
         harnesses=services.harnesses,
-        prompts=services.prompts,
         manual=services.manual,
         workflows=workflows,
     )

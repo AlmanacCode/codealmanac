@@ -36,7 +36,7 @@ sources:
 
 The lifecycle architecture is the part of CodeAlmanac that creates, improves, queues, and validates wiki-writing work. The lifecycle topic covers build, ingest, garden, sync, queued runs, operation execution, and mutation safety [@topics]. Read this hub when changing how CodeAlmanac turns local inputs and scheduled triggers into durable wiki changes.
 
-Build, ingest, and garden are lifecycle operations because they render agent-writing prompts for wiki source under `almanac/` [@workflows] [@lifecycle-concept]. Sync is nearby but separate: it scans local transcripts and queues ingest work instead of writing pages itself [@workflows] [@run-queue-sync].
+Build, ingest, and garden are lifecycle operations because they bind packaged Yoke agents to typed tasks for wiki source under `almanac/` [@workflows] [@lifecycle-concept]. Sync is nearby but separate: it scans local transcripts and queues ingest work instead of writing pages itself [@workflows] [@run-queue-sync].
 
 ## Reading Order
 

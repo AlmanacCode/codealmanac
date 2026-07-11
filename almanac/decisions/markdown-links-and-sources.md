@@ -4,7 +4,7 @@ topics: [decisions, page-format]
 sources:
   - id: kernel
     type: file
-    path: src/codealmanac/prompts/base/kernel.md
+    path: src/codealmanac/agents/build/instructions.md
     note: Runtime writer guidance for Markdown links, sources, citations, and retired syntaxes.
   - id: frontmatter
     type: file

@@ -8,7 +8,7 @@ sources:
     note: Product overview, init output, runtime state, and daily read commands.
   - id: kernel-prompt
     type: file
-    path: src/codealmanac/prompts/base/kernel.md
+    path: src/codealmanac/agents/build/instructions.md
     note: Base rules given to wiki-writing agents.
   - id: live-agreement
     type: file

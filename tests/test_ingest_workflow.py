@@ -12,6 +12,7 @@ from codealmanac.integrations.sources.web import WebSourceRuntimeAdapter
 from codealmanac.services.harnesses.models import (
     HarnessActorConfidence,
     HarnessActorRole,
+    HarnessAgentKind,
     HarnessAgentTrace,
     HarnessEvent,
     HarnessEventKind,
@@ -360,9 +361,8 @@ def test_ingest_workflow_resolves_sources_runs_harness_and_refreshes_index(
     assert "almanac: <summary>" in adapter.requests[0].prompt
     assert "auth decision" in adapter.requests[0].prompt
     assert "Prefer short pages." in adapter.requests[0].prompt
-    assert "public command and product name is `codealmanac`" in (
-        adapter.requests[0].prompt
-    )
+    assert adapter.requests[0].agent is HarnessAgentKind.INGEST
+    assert "CodeAlmanac Kernel" not in adapter.requests[0].prompt
     assert tuple(entry.kind for entry in log) == (
         RunEventKind.STATUS,
         RunEventKind.STATUS,

@@ -27,3 +27,18 @@
   than an OS-enforced `almanac/` sandbox.
 - Aligned local and remote `dev`/`main`, then published CodeAlmanac 0.4.2 to
   GitHub and PyPI with Yoke 0.1.4 as the minimum supported runtime.
+
+## 2026-07-11
+
+- Replaced the CodeAlmanac-specific prompt resource layer with Yoke's native
+  collection and agent-folder contract.
+- Moved the unchanged kernel and operation words into self-contained build,
+  ingest, and garden `instructions.md` files. Workflows now send typed runtime
+  context as the task prompt.
+- Published Yoke 0.1.5 with typed, non-global `Harness.environment` support
+  after the Almanac integration exposed that missing embedder boundary.
+- Rewrote active harness and agent-resource wiki pages around the Yoke boundary.
+- Fresh installed-wheel smoke loaded all three agent folders from package data.
+  A live Codex build through the packaged build agent used native helpers,
+  created 13 grounded wiki pages, validated before and after commit, and ended
+  with a clean worktree.

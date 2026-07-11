@@ -12,7 +12,7 @@ sources:
     note: Prompt-facing source-control policy and allowed files.
   - id: kernel-prompt
     type: file
-    path: src/codealmanac/prompts/base/kernel.md
+    path: src/codealmanac/agents/build/instructions.md
     note: Base instruction that operation agents follow source_control policy.
   - id: architecture-tests
     type: file

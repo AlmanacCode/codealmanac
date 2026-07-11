@@ -12,7 +12,7 @@ sources:
     note: Current Python rewrite constraints and local-only decisions.
   - id: kernel-prompt
     type: file
-    path: src/codealmanac/prompts/base/kernel.md
+    path: src/codealmanac/agents/build/instructions.md
     note: Runtime rules for wiki-writing agents.
 ---
 

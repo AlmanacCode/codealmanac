@@ -1,6 +1,5 @@
 from codealmanac.core.errors import AlreadyExists
 from codealmanac.manual import ManualLibrary
-from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
 from codealmanac.services.harnesses.models import HarnessAgentKind
 from codealmanac.services.repositories.models import Repository
 from codealmanac.services.repositories.requests import RegisterRepositoryRequest
@@ -21,11 +20,6 @@ from codealmanac.workflows.operations import (
 )
 from codealmanac.workflows.operations.commit import operation_commit_policy
 
-BUILD_PROMPT_SECTIONS = (
-    PromptName.BASE_KERNEL,
-    PromptName.OPERATION_BUILD,
-)
-
 
 class BuildWorkflow:
     def __init__(
@@ -33,13 +27,11 @@ class BuildWorkflow:
         repositories: RepositoriesService,
         wiki: WikiService,
         operations: OperationRunner,
-        prompts: PromptRenderer,
         manual: ManualLibrary,
     ):
         self.repositories = repositories
         self.wiki = wiki
         self.operations = operations
-        self.prompts = prompts
         self.manual = manual
 
     def prepare(self, request: BuildRequest) -> Repository:
@@ -71,7 +63,6 @@ class BuildWorkflow:
                     model=request.model,
                     agent=HarnessAgentKind.BUILD,
                     prompt=render_build_prompt(
-                        self.prompts,
                         self.manual,
                         context.repository,
                         request.guidance,
@@ -116,7 +107,6 @@ def reject_existing_almanac(target: RepositoryTarget) -> None:
 
 
 def render_build_prompt(
-    prompts: PromptRenderer,
     manual: ManualLibrary,
     repository: Repository,
     guidance: str | None,
@@ -132,12 +122,4 @@ def render_build_prompt(
         source_control=operation_commit_policy(auto_commit),
         guidance=guidance,
     )
-    return prompts.render(
-        RenderPromptRequest(
-            sections=BUILD_PROMPT_SECTIONS,
-            context=(
-                "Runtime context:\n"
-                f"{payload.model_dump_json(indent=2)}\n",
-            ),
-        )
-    )
+    return "Runtime context:\n" f"{payload.model_dump_json(indent=2)}"

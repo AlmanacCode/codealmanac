@@ -10,7 +10,7 @@ from codealmanac.services.harnesses.models import HarnessAgentKind, HarnessKind
 class RunHarnessRequest(CodeAlmanacModel):
     kind: HarnessKind
     model: str
-    agent: HarnessAgentKind | None = None
+    agent: HarnessAgentKind
     cwd: Path
     prompt: str
     title: str | None = None

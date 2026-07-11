@@ -10,16 +10,16 @@ resolution-markers = [
 
 [[package]]
 name = "almanac-yoke"
-version = "0.1.4"
+version = "0.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonschema" },
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1a/bd/143a772009519318e7384685443e10d8927cdd74bd7a9d26f0d7282f157a/almanac_yoke-0.1.4.tar.gz", hash = "sha256:44ece3971535d6ae67ae6a6de021677f6af1f704203b3a66444b8b7b258dfc34", size = 113564 }
+sdist = { url = "https://files.pythonhosted.org/packages/e6/01/ee1cdfb120e4e9564a2dcc0b8d66e3ba95fd30590e9b448af8713e436246/almanac_yoke-0.1.5.tar.gz", hash = "sha256:59c2850edc0e962fb10d009445c1373b270aac546deb88c6fddb984277f52d01", size = 113697 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/51/b543b5c1cd741880208888906bcf72d186d6fac3fc7217e6e53c3bca0e24/almanac_yoke-0.1.4-py3-none-any.whl", hash = "sha256:e9ad02fa70a6dcc39ba771358d732f16fa105e5a5251f6b775421b9d5f004a6f", size = 132425 },
+    { url = "https://files.pythonhosted.org/packages/c9/f0/2a2189bfd2105c2bc3cb1fa3f7a71c54d5a7f67de8017a4ec316977b7090/almanac_yoke-0.1.5-py3-none-any.whl", hash = "sha256:3ce54759139fda01e1d899f196414cf42aa297d9a45f56f714356904233f0b61", size = 132546 },
 ]
 
 [package.optional-dependencies]
@@ -251,7 +251,7 @@ wheels = [
 
 [[package]]
 name = "codealmanac"
-version = "0.4.2"
+version = "0.4.3"
 source = { editable = "." }
 dependencies = [
     { name = "almanac-yoke", extra = ["claude"] },
@@ -281,7 +281,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "almanac-yoke", extras = ["claude"], specifier = ">=0.1.4,<0.2" },
+    { name = "almanac-yoke", extras = ["claude"], specifier = ">=0.1.5,<0.2" },
     { name = "beautifulsoup4", specifier = ">=4.15.0" },
     { name = "charset-normalizer", specifier = ">=3.4.7" },
     { name = "fastapi", specifier = ">=0.138.1" },

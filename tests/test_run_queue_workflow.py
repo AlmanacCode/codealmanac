@@ -13,6 +13,7 @@ from codealmanac.app import create_app
 from codealmanac.core.errors import ExecutionFailed
 from codealmanac.integrations.runs.process import worker_command
 from codealmanac.services.harnesses.models import (
+    HarnessAgentKind,
     HarnessKind,
     HarnessReadiness,
     HarnessRunResult,
@@ -206,7 +207,8 @@ def test_run_queue_drains_persisted_build_spec(
     assert [record.run_id for record in result.processed] == [queued.run_id]
     assert runs[0].status == RunStatus.DONE
     assert len(harness.requests) == 1
-    assert "Build Operation" in harness.requests[0].prompt
+    assert harness.requests[0].agent is HarnessAgentKind.BUILD
+    assert "Build Operation" not in harness.requests[0].prompt
     assert "Write the smallest useful first wiki." in harness.requests[0].prompt
 
 

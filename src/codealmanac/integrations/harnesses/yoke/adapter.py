@@ -5,9 +5,6 @@ from pathlib import Path
 from typing import Protocol
 
 from yoke import (
-    Access,
-    Agent,
-    Approval,
     ClaudeOptions,
     CodexApproval,
     CodexAppServerOptions,
@@ -15,15 +12,14 @@ from yoke import (
     CodexSandbox,
     Event,
     Harness,
-    Permissions,
     ProviderOptions,
     Readiness,
     Run,
     RunOptions,
-    Tools,
     YokeError,
 )
 
+from codealmanac.agents.catalog import load_agent
 from codealmanac.integrations.harnesses.yoke.events import YokeEventProjector
 from codealmanac.integrations.harnesses.yoke.results import project_run
 from codealmanac.services.harnesses.models import (
@@ -128,27 +124,13 @@ def create_yoke_harness(
     cwd: Path,
     agent_name: HarnessAgentKind | None = None,
 ) -> Harness:
+    agent_kind = agent_name or HarnessAgentKind.BUILD
     return Harness(
         provider=kind.value,
         surface="codex_app_server" if kind is HarnessKind.CODEX else None,
-        agent=lifecycle_agent(agent_name),
+        agent=load_agent(agent_kind),
         cwd=cwd,
-        permissions=lifecycle_permissions(),
     )
-
-
-def lifecycle_agent(name: HarnessAgentKind | None = None) -> Agent:
-    """Return an execution-only agent that adds no prompt instructions."""
-
-    return Agent(
-        description=f"CodeAlmanac {name.value if name else 'lifecycle'} agent",
-        tools=Tools(read=True, write=True, shell=True, agent=True),
-        permissions=lifecycle_permissions(),
-    )
-
-
-def lifecycle_permissions() -> Permissions:
-    return Permissions(access=Access.FULL, approval=Approval.NEVER, network=False)
 
 
 def run_options(
@@ -163,7 +145,6 @@ def run_options(
             if request.kind is HarnessKind.CLAUDE
             else CODEX_RUN_TIMEOUT_SECONDS
         ),
-        permissions=lifecycle_permissions(),
         provider=provider_options(request.kind),
         on_event=on_event,
     )

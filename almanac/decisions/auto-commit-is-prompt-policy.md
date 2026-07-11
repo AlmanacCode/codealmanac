@@ -28,7 +28,7 @@ sources:
     note: Operation runner completion path after harness execution.
   - id: kernel
     type: file
-    path: src/codealmanac/prompts/base/kernel.md
+    path: src/codealmanac/agents/build/instructions.md
     note: Base prompt instruction to follow runtime source_control policy.
   - id: architecture_tests
     type: file
