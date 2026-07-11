@@ -13,12 +13,15 @@
   Yoke root agent preserves the exact current system/developer prompt behavior.
 - Replaced both provider trees with a three-module Yoke adapter/projection
   boundary and removed roughly 4,200 lines of duplicate provider code/tests.
-- Published Yoke 0.1.1-0.1.3 as live integration exposed callback, timeout,
+- Published Yoke 0.1.1-0.1.4 as live integration exposed callback, timeout,
   Claude cwd/session, auth diagnostics, system-event, and Codex delegation bugs.
 - Real Codex build created and validated an 11-page wiki. Its persisted helper
   prompts, models, first messages, writes, and completions matched assignments.
 - Real Claude ingest created and committed a grounded export decision. A garden
   run verified the corrected single-session event stream.
+- Audited the published CLI/viewer activity projection. Yoke 0.1.4 removes
+  Codex's internal message/reasoning lifecycle wrappers from tool activity while
+  retaining real assistant text, tools, subagents, statuses, and failures.
 - CodeAlmanac intentionally retains its historical trusted-agent permission
   model: full, non-interactive local access with prompt/commit policy rather
   than an OS-enforced `almanac/` sandbox.

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codealmanac"
-version = "0.4.1"
+version = "0.4.2"
 description = "A local codebase wiki maintained by AI coding agents."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -23,7 +23,7 @@ classifiers = [
   "Topic :: Software Development :: Documentation",
 ]
 dependencies = [
-    "almanac-yoke[claude]>=0.1.3,<0.2",
+    "almanac-yoke[claude]>=0.1.4,<0.2",
   "beautifulsoup4>=4.15.0",
   "charset-normalizer>=3.4.7",
   "fastapi>=0.138.1",
