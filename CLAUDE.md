@@ -127,7 +127,7 @@ Design rules every change must respect. The spec has the full rationale; these a
 - **Workspace roots are not configurable.** New repos use `almanac/`. `docs/almanac/`, `.almanac/`, custom roots, and root migration shims are retired.
 - **Registry entries are never auto-dropped.** Unreachable paths are silently skipped in `--all` queries. `codealmanac list --drop <name>` is the only explicit removal.
 - **Archived pages are excluded from search by default**, are not flagged for dead-refs by `health`, and keep their backlinks resolvable. `--include-archive` and `--archived` change scope.
-- **Prompts and manual docs are shipped as Python package resources.** They live under `src/codealmanac/prompts/` and `src/codealmanac/manual/`. They are not embedded as Python string literals.
+- **Prompts and manual docs are shipped as Python package resources.** They live under `src/codealmanac/prompts/` and `src/codealmanac/manual/`. They are not embedded as Python string literals. `init` copies missing manuals into `almanac/manual/` before the build agent starts; that reserved directory is not indexed as wiki pages.
 
 ## Philosophy anti-patterns
 

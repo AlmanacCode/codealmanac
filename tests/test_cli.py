@@ -960,7 +960,6 @@ def test_cli_doctor_ignores_repo_manual_drift(
     initialize_git(repo)
     assert main(["init", str(repo)]) == 0
     capsys.readouterr()
-    (repo / "almanac/manual").mkdir()
     (repo / "almanac/manual/README.md").write_text(
         "local manual edit\n",
         encoding="utf-8",

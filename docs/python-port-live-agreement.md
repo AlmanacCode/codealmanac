@@ -41,9 +41,10 @@ It is the constraint document for future agents.
   execution mode remains in the target design.
 - 2026-07-06: `init` is deterministic repository setup plus a `build` run. It
   creates the repository row, `almanac/`, `almanac/README.md`, and
-  `almanac/topics.yaml`, then queues/runs `build` for the first real
-  agent-authored wiki. `init` fails with a product error such as
-  `AlreadyExists` when `almanac/` already exists at the target path.
+  `almanac/topics.yaml`, materializes the packaged writing manuals under
+  `almanac/manual/`, then queues/runs `build` for the first real agent-authored
+  wiki. `init` fails with a product error such as `AlreadyExists` when
+  `almanac/` already exists at the target path.
 - 2026-07-06: Code quality is part of the contract. Use Pydantic request models
   for shaped service inputs, enums or `Literal` for stable choices, service-owned
   verbs, store-owned persistence, consistent product errors, and thin CLI edges.
@@ -435,10 +436,11 @@ It is the constraint document for future agents.
   Beautiful Soup HTML text extraction; `rendering.py` owns prompt-facing
   metadata/content rendering; and `errors.py` owns unavailable-runtime
   diagnostics.
-- 2026-06-29: `manual/` is a local support package, not a public CLI surface.
-  It contains bundled wiki-maintenance doctrine. Prompts tell lifecycle agents
-  to read the packaged manual resources; `init` and `build` do not copy manual
-  files into the committed `almanac/` tree.
+- 2026-07-11: `manual/` is a local support package, not a public CLI surface.
+  It contains bundled wiki-maintenance doctrine. `init` copies missing packaged
+  manuals into `almanac/manual/` before the build agent starts, preserves
+  existing local manual files, and gives build agents exact repository-local
+  paths. The reserved `manual/` directory is excluded from wiki page indexing.
 - 2026-07-01: Preserve the archived terminal setup experience in Python:
   branded banner, step indicators, raw-mode selection when available,
   non-interactive `--yes`, idempotent setup, agent/default-model selection,

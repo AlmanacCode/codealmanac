@@ -305,7 +305,6 @@ def create_workflows(
         services.repositories,
         services.wiki,
         build_operations,
-        services.manual,
     )
     processes = adapters.process_controller or PsutilRunProcessController()
     executor = RunExecutor(

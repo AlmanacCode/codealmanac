@@ -1,6 +1,22 @@
 from codealmanac.services.wiki.frontmatter import parse_frontmatter
 from codealmanac.services.wiki.links import extract_page_links, resolve_page_href
-from codealmanac.services.wiki.paths import escape_glob_meta, normalize_reference_path
+from codealmanac.services.wiki.paths import (
+    escape_glob_meta,
+    iter_page_paths,
+    normalize_reference_path,
+)
+
+
+def test_page_iteration_excludes_repository_manuals(tmp_path):
+    almanac_path = tmp_path / "almanac"
+    manual_path = almanac_path / "manual"
+    manual_path.mkdir(parents=True)
+    page = almanac_path / "architecture/wiki.md"
+    page.parent.mkdir()
+    page.write_text("# Wiki\n", encoding="utf-8")
+    (manual_path / "how-to-write.md").write_text("# Manual\n", encoding="utf-8")
+
+    assert tuple(iter_page_paths(almanac_path)) == (page,)
 
 
 def test_frontmatter_uses_pydantic_validated_shape():

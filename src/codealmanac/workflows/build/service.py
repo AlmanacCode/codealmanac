@@ -1,5 +1,4 @@
 from codealmanac.core.errors import AlreadyExists
-from codealmanac.manual import ManualLibrary
 from codealmanac.services.harnesses.models import HarnessAgentKind
 from codealmanac.services.repositories.models import Repository
 from codealmanac.services.repositories.requests import RegisterRepositoryRequest
@@ -27,12 +26,10 @@ class BuildWorkflow:
         repositories: RepositoriesService,
         wiki: WikiService,
         operations: OperationRunner,
-        manual: ManualLibrary,
     ):
         self.repositories = repositories
         self.wiki = wiki
         self.operations = operations
-        self.manual = manual
 
     def prepare(self, request: BuildRequest) -> Repository:
         """Validate, register, and scaffold the wiki before the run is queued."""
@@ -63,7 +60,6 @@ class BuildWorkflow:
                     model=request.model,
                     agent=HarnessAgentKind.BUILD,
                     prompt=render_build_prompt(
-                        self.manual,
                         context.repository,
                         request.guidance,
                         request.auto_commit,
@@ -107,7 +103,6 @@ def reject_existing_almanac(target: RepositoryTarget) -> None:
 
 
 def render_build_prompt(
-    manual: ManualLibrary,
     repository: Repository,
     guidance: str | None,
     auto_commit: bool,
@@ -118,7 +113,7 @@ def render_build_prompt(
         almanac_root=repository.almanac_path,
         wiki_source_root=repository.almanac_path,
         topics_file=repository.almanac_path / "topics.yaml",
-        manual_documents=manual.inventory().documents,
+        manual_root=repository.almanac_path / "manual",
         source_control=operation_commit_policy(auto_commit),
         guidance=guidance,
     )

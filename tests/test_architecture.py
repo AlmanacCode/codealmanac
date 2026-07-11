@@ -496,6 +496,14 @@ def test_lifecycle_agents_are_yoke_native_packages():
         assert instructions.startswith("# CodeAlmanac Kernel")
         assert f"# {name.title()} Operation" in instructions
 
+    build_instructions = (agents_root / "build/instructions.md").read_text(
+        encoding="utf-8"
+    )
+    assert "almanac/manual/how-to-write.md" in build_instructions
+    assert "almanac/manual/evidence.md" in build_instructions
+    assert "almanac/manual/links.md" in build_instructions
+    assert "exact repository-relative manual paths" in build_instructions
+
     for service in (
         SRC_ROOT / "workflows/build/service.py",
         SRC_ROOT / "workflows/ingest/service.py",

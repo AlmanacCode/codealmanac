@@ -133,21 +133,22 @@ a page is removed, update `coverage-map.md` with the exact repo-evidence reason.
 
 ## Phase 2: Write And Review
 
-Before writing pages, use the bundled manual text in the runtime context.
+Before writing pages, read the repository-local manuals under
+`almanac/manual/`.
 
-Use `how-to-write.md`, `evidence.md`, and `links.md` from the manual context
-for every page.
+Read `almanac/manual/how-to-write.md`, `almanac/manual/evidence.md`, and
+`almanac/manual/links.md` for every page.
 
-Use `topics.md` from the manual context when assigning page `topics:`
-frontmatter and when finalizing `almanac/topics.yaml`.
+Read `almanac/manual/topics.md` when assigning page `topics:` frontmatter and
+when finalizing `almanac/topics.yaml`.
 
 Before writing each page, use the manual that matches that page's folder:
 
-- `concepts/` pages use `concepts.md`
-- `architecture/` pages use `architecture.md`
-- `guides/` pages use `how-to-guides.md`
-- `decisions/` pages use `decisions.md`
-- `reference/` pages use `reference.md`
+- `concepts/` pages use `almanac/manual/concepts.md`
+- `architecture/` pages use `almanac/manual/architecture.md`
+- `guides/` pages use `almanac/manual/how-to-guides.md`
+- `decisions/` pages use `almanac/manual/decisions.md`
+- `reference/` pages use `almanac/manual/reference.md`
 
 Use writing sub-agents to draft the wiki pages. This is required for
 non-trivial first wikis.
@@ -178,8 +179,9 @@ this order:
 1. Paste the following contract verbatim.
 2. Paste the assigned page list, coverage-map entries, evidence files, and
    planned links for that batch.
-3. Paste the full text of `how-to-write.md`, `evidence.md`, `links.md`, and
-   every folder-specific manual needed for that batch.
+3. Give the exact repository-relative paths for `how-to-write.md`,
+   `evidence.md`, `links.md`, and every folder-specific manual needed for that
+   batch.
 
 Do not rewrite, shorten, summarize, or adapt the contract. The first line of
 every writing sub-agent prompt must be `<BEGIN CODEALMANAC WRITING CONTRACT>`.
@@ -193,8 +195,8 @@ only the assigned paths under `almanac/`.
 Hard requirements:
 - Write only the assigned page files. Do not edit `coverage-map.md`,
   `topics.yaml`, `README.md`, or pages assigned to another sub-agent.
-- Use the full manual text pasted below. Do not rely on memory or abbreviated
-  versions of the manuals.
+- Read every assigned manual under `almanac/manual/` before writing. Do not rely
+  on memory or abbreviated versions of the manuals.
 - Follow the folder manual for each page you write.
 - Write a strong lead paragraph that summarizes the whole article.
 - Use simple, direct prose. Do not write thin component summaries, file tours,
@@ -276,9 +278,10 @@ These are the topics that you have to write on:
 - <Topic 3> -> <path 3>
 
 Based on this codebase, write Wikipedia articles on these particular pages.
-Also read the provided <how-to-write.md>, <evidence.md>, <links.md>, and the
-relevant folder manuals before writing. Use the repository at <repo-root> as
-source material.
+Before writing, read `almanac/manual/how-to-write.md`,
+`almanac/manual/evidence.md`, `almanac/manual/links.md`, and these relevant
+folder manuals: <exact repository-relative manual paths>. Use the repository at
+<repo-root> as source material.
 Output complete Markdown pages at the assigned paths.
 
 Write only the assigned paths.
@@ -288,18 +291,18 @@ For each writing sub-agent, provide:
 
 - the exact page paths and slugs it must write
 - the relevant entries from `coverage-map.md`
-- the folder-specific manual for those pages
-- `how-to-write.md`
-- `evidence.md`
-- `links.md`
+- the exact `almanac/manual/<folder-manual>.md` path for those pages
+- `almanac/manual/how-to-write.md`
+- `almanac/manual/evidence.md`
+- `almanac/manual/links.md`
 - the evidence files listed for those pages
 - the planned links to nearby pages
 
 When a batch contains pages from different folders, include every relevant
-folder-specific manual in the sub-agent prompt.
+folder-specific manual path in the sub-agent prompt.
 
 A writing batch is not fully assigned until its sub-agent prompt includes the
-verbatim writing contract, full manual packet, and exact source schema examples.
+verbatim writing contract, exact manual paths, and exact source schema examples.
 
 The sub-agent's task is to write encyclopedia-quality articles about this
 codebase. Each page should feel like a focused Wikipedia article for one

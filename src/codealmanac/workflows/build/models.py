@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from codealmanac.core.models import CodeAlmanacModel
-from codealmanac.manual import ManualDocument
 from codealmanac.services.harnesses.models import HarnessRunResult
 from codealmanac.services.index.models import IndexRefreshResult
 from codealmanac.services.repositories.models import Repository
@@ -15,7 +14,7 @@ class BuildPromptPayload(CodeAlmanacModel):
     almanac_root: Path
     wiki_source_root: Path
     topics_file: Path
-    manual_documents: tuple[ManualDocument, ...]
+    manual_root: Path
     source_control: OperationCommitPolicy
     guidance: str | None = None
 

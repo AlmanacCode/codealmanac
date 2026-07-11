@@ -19,6 +19,7 @@ class WikiService:
         almanac_path.mkdir(parents=True, exist_ok=True)
         write_if_missing(almanac_path / "README.md", starter_readme())
         write_if_missing(almanac_path / "topics.yaml", starter_topics_yaml())
+        self.manual.install_missing(almanac_path / "manual")
 
 
 def write_if_missing(path: Path, body: str) -> None:

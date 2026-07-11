@@ -49,6 +49,11 @@ class BuildWritingHarnessAdapter:
 
     def run(self, request: RunHarnessRequest, on_event=None) -> HarnessRunResult:
         self.requests.append(request)
+        manual_path = request.cwd / "almanac/manual"
+        assert (manual_path / "how-to-write.md").is_file()
+        assert (manual_path / "evidence.md").is_file()
+        assert (manual_path / "links.md").is_file()
+        assert (manual_path / "topics.md").is_file()
         page = request.cwd / "almanac/architecture/build-flow.md"
         page.parent.mkdir(parents=True, exist_ok=True)
         page.write_text(
@@ -87,7 +92,11 @@ def test_initialize_creates_almanac_wiki_and_database(
     assert repository.name == "example-repo"
     assert (repo / "almanac/README.md").is_file()
     assert (repo / "almanac/topics.yaml").is_file()
-    assert not (repo / "almanac/manual").exists()
+    assert (repo / "almanac/manual/README.md").is_file()
+    assert (repo / "almanac/manual/how-to-write.md").is_file()
+    assert (repo / "almanac/manual/evidence.md").is_file()
+    assert (repo / "almanac/manual/links.md").is_file()
+    assert (repo / "almanac/manual/topics.md").is_file()
     assert not (repo / ".gitignore").exists()
     assert app.repositories.list()[0].description == "test wiki"
 
@@ -196,6 +205,8 @@ def test_queued_build_uses_harness_prompt_and_records_build_operation(
     assert adapter.requests[0].agent is HarnessAgentKind.BUILD
     assert adapter.requests[0].prompt.startswith("Runtime context:\n{")
     assert "Build Operation" not in adapter.requests[0].prompt
+    assert f'"manual_root": "{repo}/almanac/manual"' in adapter.requests[0].prompt
+    assert '"manual_documents"' not in adapter.requests[0].prompt
     assert "Write the smallest useful first wiki." in adapter.requests[0].prompt
 
 
