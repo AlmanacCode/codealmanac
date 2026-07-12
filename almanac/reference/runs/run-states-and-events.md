@@ -34,6 +34,14 @@ sources:
     type: file
     path: src/codealmanac/integrations/runs/process.py
     note: Detached process spawning, identity verification, and tree termination.
+  - id: jobs-dispatch
+    type: file
+    path: src/codealmanac/cli/dispatch/jobs.py
+    note: Jobs command dispatch and attach interruption behavior.
+  - id: jobs-cli-tests
+    type: file
+    path: tests/test_cli.py
+    note: Human, piped, and JSON CLI behavior for jobs commands.
 ---
 
 # Run States And Events
@@ -97,5 +105,12 @@ Tests cover queued and running cancellation, executor-tree termination, PID-reus
 `log` is a snapshot read of all events for one run. `attach` returns the current record, all events, and whether the status is terminal [@run-store]. `RunAttachStreamer` polls `RunStore.attach(...)`, yields only events after the last seen sequence, and stops after a terminal snapshot [@run-streaming].
 
 Attach has one settle rule: if the record is terminal but the matching terminal `status` event has not appeared yet, the streamer waits one extra poll before yielding the terminal update [@run-streaming]. This keeps `jobs attach` from ending before the final status event is visible.
+
+Pressing `Ctrl-C` while following a run detaches only the foreground
+`jobs attach` command. The run is not cancelled or otherwise mutated, and the
+CLI prints the explicit `codealmanac jobs cancel <run-id>` command before
+exiting with status `130`. JSON attach streams receive no human detachment
+text, so their NDJSON event stream remains valid [@jobs-dispatch]
+[@jobs-cli-tests].
 
 For operator-facing recovery steps, see [Debug a failed lifecycle run](../../guides/debug-a-failed-lifecycle-run).

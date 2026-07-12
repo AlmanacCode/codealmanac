@@ -1,6 +1,7 @@
 import json
 import shutil
 import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -31,12 +32,14 @@ from codealmanac.services.harnesses.models import (
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 from codealmanac.services.runs.models import (
+    RunAttachUpdate,
     RunEventKind,
     RunKind,
     RunStatus,
     RunWorkerSpawnResult,
 )
 from codealmanac.services.runs.requests import (
+    AttachRunRequest,
     FinishRunRequest,
     ListRunsRequest,
     MarkRunRunningRequest,
@@ -1611,6 +1614,94 @@ def test_cli_jobs_inspects_local_run_records(
     cancel_json_output = capsys.readouterr()
     assert '"changed": false' in cancel_json_output.out
     assert '"status": "cancelled"' in cancel_json_output.out
+
+
+@pytest.mark.parametrize("terminal", [False, True])
+def test_cli_jobs_attach_ctrl_c_detaches_without_mutating_run(
+    tmp_path: Path,
+    default_cli_app,
+    monkeypatch,
+    capsys,
+    terminal: bool,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    repository = initialize_repository(default_cli_app, path=repo)
+    record = default_cli_app.runs.start(
+        StartRunRequest(
+            repository_id=repository.repository_id,
+            kind=RunKind.BUILD,
+        )
+    )
+
+    def interrupt_attach(_request):
+        def interrupted_updates():
+            yield from ()
+            raise KeyboardInterrupt
+
+        return interrupted_updates()
+
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(default_cli_app.runs, "stream_attach", interrupt_attach)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: terminal)
+
+    assert main(["jobs", "attach", record.run_id]) == 130
+
+    output = capsys.readouterr()
+    assert output.out == (
+        "detached — job continues in background\n"
+        f"cancel: codealmanac jobs cancel {record.run_id}\n"
+    )
+    assert output.err == ""
+    assert default_cli_app.runs.show(
+        ShowRunRequest(run_id=record.run_id)
+    ).status == RunStatus.QUEUED
+
+
+def test_cli_jobs_attach_ctrl_c_keeps_json_stream_clean(
+    tmp_path: Path,
+    default_cli_app,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    repository = initialize_repository(default_cli_app, path=repo)
+    record = default_cli_app.runs.start(
+        StartRunRequest(
+            repository_id=repository.repository_id,
+            kind=RunKind.BUILD,
+        )
+    )
+
+    snapshot = default_cli_app.runs.attach(AttachRunRequest(run_id=record.run_id))
+
+    def interrupt_attach(_request):
+        def interrupted_updates():
+            yield RunAttachUpdate(
+                record=snapshot.record,
+                events=snapshot.events,
+                terminal=snapshot.terminal,
+            )
+            raise KeyboardInterrupt
+
+        return interrupted_updates()
+
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(default_cli_app.runs, "stream_attach", interrupt_attach)
+
+    assert main(["jobs", "attach", record.run_id, "--json"]) == 130
+
+    output = capsys.readouterr()
+    json_lines = output.out.splitlines()
+    assert len(json_lines) == 1
+    update = json.loads(json_lines[0])
+    assert update["record"]["run_id"] == record.run_id
+    assert update["terminal"] is False
+    assert output.err == ""
+    assert default_cli_app.runs.show(
+        ShowRunRequest(run_id=record.run_id)
+    ).status == RunStatus.QUEUED
 
 
 def test_cli_jobs_rejects_path_shaped_run_ids(capsys):

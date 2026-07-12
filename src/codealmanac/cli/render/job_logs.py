@@ -8,6 +8,7 @@ from codealmanac.cli.render.style import style
 from codealmanac.services.runs.models import (
     RunAttachSnapshot,
     RunAttachUpdate,
+    RunId,
     RunLogEvent,
     RunRecord,
     RunStatus,
@@ -54,6 +55,13 @@ def render_run_attach_stream(
                 print("no log events")
             print_terminal_status(update.record)
         sys.stdout.flush()
+
+
+def render_run_attach_detached(run_id: RunId, *, json_output: bool) -> None:
+    if json_output:
+        return
+    print("detached — job continues in background")
+    print(f"cancel: codealmanac jobs cancel {run_id}")
 
 
 def print_terminal_status(record: RunRecord) -> None:

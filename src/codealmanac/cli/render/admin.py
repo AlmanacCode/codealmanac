@@ -8,6 +8,7 @@ from codealmanac.cli.render.config import (
 from codealmanac.cli.render.diagnostics import render_doctor
 from codealmanac.cli.render.job_logs import (
     render_run_attach,
+    render_run_attach_detached,
     render_run_attach_stream,
     render_run_log,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "render_doctor",
     "render_run",
     "render_run_attach",
+    "render_run_attach_detached",
     "render_run_attach_stream",
     "render_run_cancel",
     "render_run_log",
