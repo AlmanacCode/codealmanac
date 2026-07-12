@@ -38,7 +38,7 @@ The supported harness kinds are currently `codex` and `claude`. The terminal run
 
 ## Run Requests
 
-`RunHarnessRequest` is small on purpose. It carries the harness kind, model, working directory, prompt, and optional title [@harness-requests]. The prompt is already rendered by the lifecycle workflow before it crosses this boundary. That keeps prompt composition in runtime resources and operation workflows, while adapters focus on provider execution.
+`RunHarnessRequest` is small on purpose. It carries the harness kind, model, agent kind, working directory, prompt, and optional title [@harness-requests]. The agent kind is one of `build`, `ingest`, or `garden`; it tells the adapter which packaged Yoke agent to load for the run, so one adapter can serve every lifecycle operation instead of branching per operation [@harness-requests]. The prompt is already rendered by the lifecycle workflow before it crosses this boundary. That keeps prompt composition in runtime resources and operation workflows, while adapters focus on provider execution.
 
 The request requires non-empty model and prompt text [@harness-requests]. A harness adapter may translate the request into provider options, CLI arguments, SDK calls, or app-server messages, but it must return to the same result model.
 
@@ -56,6 +56,6 @@ Events also carry structured details when available: tool display data, token us
 
 ## Boundary Rule
 
-The harness contract is a normalization boundary. Provider adapters may deal with CLI auth checks, JSON-RPC streams, SDK message classes, sandbox settings, and provider-specific failures. Service and workflow code should only depend on `HarnessReadiness`, `RunHarnessRequest`, `HarnessRunResult`, and `HarnessEvent` [@harness-service] [@harness-results].
+The harness contract is a normalization boundary. The [Yoke harness boundary](provider-adapters) may deal with agent selection, provider run options, sandbox and permission policy, and Yoke-specific failures. Service and workflow code should only depend on `HarnessReadiness`, `RunHarnessRequest`, `HarnessRunResult`, and `HarnessEvent` [@harness-service] [@harness-results].
 
-That rule keeps adding a provider additive: implement the adapter, map provider events into the normalized event shape, populate result metadata that the provider can support, and register the adapter with the service. The lifecycle workflows should not gain provider branches.
+That rule keeps the boundary additive: mapping provider events into the normalized event shape and populating result metadata stays inside the adapter, so the lifecycle workflows never gain provider branches.

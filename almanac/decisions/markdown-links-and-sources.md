@@ -34,9 +34,9 @@ The sources canonical plan made structured `sources:` the only authored evidence
 
 ## Decision
 
-Page-to-page navigation is authored as normal Markdown. The link extractor parses CommonMark inline links and resolves relative, extensionless page paths into page slugs while ignoring absolute URLs, query links, slash-rooted paths, file-suffixed paths, and paths with spaces [@links].
+Page-to-page navigation is authored as normal Markdown links. The link extractor parses CommonMark inline links and resolves relative, extensionless page paths into page slugs, ignoring hrefs that are not page links, such as absolute URLs or file-suffixed paths [@links]. The exact ignored-href list and route-resolution rules are a lookup contract, not part of this decision; see [Links and routes](../reference/page-format/links-and-routes).
 
-Evidence is authored in `sources:`. The frontmatter parser accepts `title`, `summary`, `topics`, and `sources`, and each source is parsed into a typed source with a source id, type, target, title, retrieval date, and note when present [@frontmatter]. Supported source types include file, web, commit, PR, issue, conversation, wiki, and manual [@frontmatter].
+Evidence is authored in `sources:` instead of a legacy frontmatter file list or inline links. Each entry is parsed into a typed source with a source id, type, target, and optional title, retrieval date, and note [@frontmatter]. The exact supported source types and target fields are documented in [Frontmatter and sources](../reference/page-format/frontmatter-and-sources), which this decision does not duplicate.
 
 ## Consequences
 

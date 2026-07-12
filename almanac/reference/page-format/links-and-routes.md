@@ -48,7 +48,7 @@ The page iterator walks Markdown files below `almanac/`, but skips files inside 
 
 The parser reads CommonMark inline links from the page body and resolves eligible hrefs to page slugs [@wiki_links]. Relative links are resolved against the source page's route. For a normal page, the base is the page's parent folder; for a folder landing page, the base is the folder route itself [@wiki_links].
 
-Examples show the rule. From `architecture/indexing`, `wiki-tree` resolves to `architecture/wiki-tree`, and `../decisions/local-only-python-product` resolves to `decisions/local-only-python-product` [@wiki_links]. From the folder landing page `architecture`, `wiki-tree` resolves to `architecture/wiki-tree` [@wiki_parsing_tests].
+Examples show the rule. From `architecture/indexing`, `wiki-tree` resolves to `architecture/wiki-tree`, and `../decisions/local-first-python` resolves to `decisions/local-first-python` [@wiki_links] [@wiki_parsing_tests]. From the folder landing page `architecture`, `wiki-tree` resolves to `architecture/wiki-tree` [@wiki_parsing_tests].
 
 ## Ignored Hrefs
 

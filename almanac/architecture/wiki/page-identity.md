@@ -70,7 +70,7 @@ This check protects links and search results from ambiguity. A page slug should 
 
 CodeAlmanac uses normal Markdown links for page links. The link parser ignores external URLs, anchors, absolute paths, query strings, backslash paths, paths with spaces, and hrefs that look like files with suffixes [@wiki-links]. It resolves relative links against the source page's route, with special handling for folder landing pages [@wiki-links].
 
-The parser tests show the intended behavior: relative links resolve against the source page route, while file-looking links such as `src/auth.py` are ignored as page links [@wiki-parsing-tests]. For example, from `architecture/indexing`, `wiki-tree` resolves to `architecture/wiki-tree`, and `../decisions/local-only-python-product` resolves to `decisions/local-only-python-product` by the same relative-route rule [@wiki-links]. For the exact page-link rules, see [Links and routes](../../reference/page-format/links-and-routes).
+The parser tests show the intended behavior: relative links resolve against the source page route, while file-looking links such as `src/auth.py` are ignored as page links [@wiki-parsing-tests]. For example, from `architecture/indexing`, `wiki-tree` resolves to `architecture/wiki-tree`, and `../decisions/local-first-python` resolves to `decisions/local-first-python` by the same relative-route rule [@wiki-links] [@wiki-parsing-tests]. For the exact page-link rules, see [Links and routes](../../reference/page-format/links-and-routes).
 
 ## What Future Changes Must Preserve
 
