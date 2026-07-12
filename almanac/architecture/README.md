@@ -62,14 +62,10 @@ sources:
     type: wiki
     path: architecture/cli/terminal-output
     note: Architecture page for human and JSON terminal rendering.
-  - id: harness-contract
+  - id: agent-runs
     type: wiki
-    path: architecture/agent-runs/harness-contract
-    note: Architecture page for normalized harness execution.
-  - id: provider-adapters
-    type: wiki
-    path: architecture/agent-runs/provider-adapters
-    note: Architecture page for the Yoke harness boundary.
+    path: architecture/agent-runs
+    note: Architecture hub for harness contracts, Yoke provider boundaries, and harness event references.
   - id: source-runtime
     type: wiki
     path: architecture/sources/source-resolution-and-runtime
@@ -138,7 +134,7 @@ For authored wiki contracts, read [Page identity](wiki/page-identity), [Path nor
 
 ## Edges And Interfaces
 
-Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Harness contract](agent-runs/harness-contract) and [Yoke harness boundary](agent-runs/provider-adapters) for agent execution contracts, Yoke run options, and Codex or Claude runner boundaries [@harness-contract] [@provider-adapters]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
+Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Agent runs](agent-runs/) for harness contracts, Yoke run options, normalized events, and Codex or Claude runner boundaries [@agent-runs]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
 
 [Agents and manuals](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents and writing references used by lifecycle runs, [Instruction installation](setup/instruction-installation) covers setup-owned Codex and Claude guidance files, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@instruction-installation] [@setup-automation].
 
