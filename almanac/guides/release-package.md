@@ -26,6 +26,18 @@ sources:
     type: file
     path: src/codealmanac/server/assets/
     note: Viewer assets included in the published package.
+  - id: command-surface
+    type: wiki
+    page: reference/cli/public-command-surface
+    note: Reference page for visible CLI commands and intentionally absent legacy surface.
+  - id: runtime-resources
+    type: wiki
+    page: architecture/runtime-resources/prompts-and-manuals
+    note: Architecture page for packaged agents, prompts, manuals, and package data.
+  - id: local-viewer
+    type: wiki
+    page: architecture/viewer/local-viewer
+    note: Architecture page for the local browser viewer and its asset-backed routes.
 ---
 
 # Release Package
@@ -36,7 +48,7 @@ Use this guide when publishing the `codealmanac` Python package to PyPI. A relea
 
 Start from a clean checkout of the release branch. `pyproject.toml` owns the package version, requires Python 3.12 or newer, and exposes exactly one console script: `codealmanac = "codealmanac.cli.main:main"` [@pyproject]. The release document states that stable releases publish from `main` to the normal PyPI release channel and that version numbers must not be reused [@release-doc].
 
-Keep the package surface narrow. Public-contract tests reject npm release language, old install surfaces, hosted commands, legacy aliases, and public SDK or MCP modules [@public-contract-tests]. If those tests fail, fix the public contract before publishing.
+Keep the package surface narrow. Public-contract tests reject npm release language, old install surfaces, hosted commands, legacy aliases, and public SDK or MCP modules [@public-contract-tests]. The exact visible command set and intentionally absent legacy surface live in [Public command surface](../reference/cli/public-command-surface) [@command-surface]. If those tests fail, fix the public contract before publishing.
 
 ## Build And Smoke
 
@@ -52,11 +64,11 @@ uv build --out-dir dist
 uvx twine check dist/*
 ```
 
-Then install both artifacts into clean Python 3.12 environments and smoke the installed command [@release-doc]. For product behavior, use the installed artifact command from those temporary environments or the user-facing installed `codealmanac` binary, not a command from the repo developer environment.
+Then install both artifacts into clean Python 3.12 environments and smoke the installed command [@release-doc]. For product behavior, use the installed artifact command from those temporary environments or the user-facing installed `codealmanac` binary, not a command from the repo developer environment. The package must also include the agent, prompt, manual, and viewer resources described by [Agents and manuals](../architecture/runtime-resources/prompts-and-manuals) [@runtime-resources].
 
 Use current public syntax during smoke checks. `sync status` accepts `--wiki`, `--from`, and `--json`; it does not accept `--quiet` [@run-parser]. The release document may lag the parser, so trust parser-backed command syntax when a smoke command disagrees with the installed CLI [@release-doc] [@run-parser].
 
-Viewer smoke should hit packaged assets that exist in `src/codealmanac/server/assets/` and `src/codealmanac/server/assets/viewer/` [@server-assets]. `RELEASE.md` asks the release smoke to confirm `/api/overview` and `/app.js` from the local server before publishing [@release-doc].
+Viewer smoke should hit packaged assets that exist in `src/codealmanac/server/assets/` and `src/codealmanac/server/assets/viewer/` [@server-assets]. [Local viewer](../architecture/viewer/local-viewer) is the architecture page for the asset-backed browser UI and local server routes [@local-viewer]. `RELEASE.md` asks the release smoke to confirm `/api/overview` and `/app.js` from the local server before publishing [@release-doc].
 
 ## Publish
 
