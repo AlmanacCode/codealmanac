@@ -34,6 +34,10 @@ sources:
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/07/11/rollout-2026-07-11T19-41-04-019f5433-20b0-7eb3-a065-2bb3e160447e.jsonl
     note: Product conversation interpreting Supabase's evals for CodeAlmanac positioning.
+  - id: openwiki-transcript
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/11/rollout-2026-07-11T23-25-01-019f5500-2662-72d2-941a-8a29f021e78f.jsonl
+    note: Product conversation comparing OpenWiki-style generated documentation with CodeAlmanac's repo-owned memory model.
 ---
 
 # Launch Positioning
@@ -52,6 +56,14 @@ Team-chat tools such as TagIt and agentchattr route work and conversation among
 agents [@tagit] [@agentchattr]. They are adjacent rather than equivalent:
 CodeAlmanac's primary artifact is the maintained repository wiki that later
 agents query before changing code.
+
+OpenWiki-style generated documentation is another adjacent category. The
+durable product contrast is purpose: a generated docs site asks what public
+documentation a reader should see for a repository, while CodeAlmanac asks what
+decisions, invariants, incidents, and gotchas the next coding agent should not
+have to rediscover [@openwiki-transcript]. That means existing docs are source
+material for judgment, not a blueprint to rewrite into a shadow documentation
+site.
 
 For a demo, show one non-obvious wiki fact and then retrieve it through the CLI.
 See [Demo CodeAlmanac in a launch video](../guides/demo-codealmanac-in-launch-video).
@@ -81,3 +93,11 @@ dataset examples: avoid broad Storage SELECT policies for public avatars, do
 not assume approved profiles are intentionally public, mark `cron.schedule()`
 SQL as a write, warn before irreversible deletes, and handle secret-sharing
 requests safely [@supabase-eval-dataset].
+
+The dataset also shows which cases should not be copied blindly. Documentation
+questions such as free-tier limits are portable across agents, but project-state
+cases depend on Studio Assistant tools such as `get_advisors`, `get_logs`,
+`list_tables`, `list_policies`, and `execute_sql` [@supabase-eval-dataset].
+CodeAlmanac comparisons should either provide equivalent fake tools or run
+against a disposable real Supabase project; otherwise the eval measures missing
+Studio access instead of agent use of CodeAlmanac [@eval-transcript].
