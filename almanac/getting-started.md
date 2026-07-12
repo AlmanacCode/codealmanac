@@ -31,9 +31,10 @@ CodeAlmanac is a local Python product in this rewrite. It stores committed wiki 
 Read these pages in order:
 
 1. [Local repo wiki](concepts/local-repo-wiki) explains what the repo wiki is and why committed Markdown is separate from local derived state.
-2. [Lifecycle workflows](architecture/lifecycle/workflows) explains build, ingest, and garden, and why sync is only a scanner.
-3. [Index refresh and search](architecture/wiki/index-refresh-and-search) explains how read commands use the derived index.
-4. [Verify a wiki change](guides/verify-a-wiki-change) explains how to check a wiki edit before calling it done.
+2. [Lifecycle operation](concepts/lifecycle-operation) defines the build, ingest, and garden operation family.
+3. [Lifecycle workflows](architecture/lifecycle/workflows) explains how those operations run, and why sync is only a scanner.
+4. [Index refresh and search](architecture/wiki/index-refresh-and-search) explains how read commands use the derived index.
+5. [Verify a wiki change](guides/verify-a-wiki-change) explains how to check a wiki edit before calling it done.
 
 That route matches the main working loop in this repository: write durable Markdown, let local services derive searchable state, and validate the result before handing work back.
 
@@ -41,7 +42,7 @@ That route matches the main working loop in this repository: write durable Markd
 
 Start with the manual rule: evolve the codebase so the feature fits, then build the feature [@manual]. This repo treats architecture as living structure. When the current shape does not hold a feature cleanly, the expected move is to stop and flag the mismatch instead of bolting on a local workaround [@manual].
 
-For most implementation work, follow the architecture pages before opening individual modules. [Architecture](architecture/) gives the reading order for the architecture cluster. [Service boundaries](architecture/service-boundaries) explains the dependency direction from CLI adapters into the app, workflows, services, stores, ports, and integrations. [Lifecycle workflows](architecture/lifecycle/workflows) is the entry point for page-writing operations. [Source resolution and runtime](architecture/sources/source-resolution-and-runtime) is the entry point for ingest inputs.
+For most implementation work, follow the architecture pages before opening individual modules. [Architecture](architecture/) gives the reading order for the architecture cluster. [Service boundaries](architecture/service-boundaries) explains the dependency direction from CLI adapters into the app, workflows, services, stores, ports, and integrations. [Refactoring boundaries](guides/refactoring-boundaries) turns the manual's reshape-first rule into a task guide. [Lifecycle workflows](architecture/lifecycle/workflows) is the entry point for page-writing operations. [Source resolution and runtime](architecture/sources/source-resolution-and-runtime) is the entry point for ingest inputs.
 
 ## If You Are Changing The Wiki
 
@@ -56,7 +57,9 @@ For Garden work, also read [Wiki usefulness evaluation](concepts/wiki-usefulness
 Use these routes when you already know the kind of work:
 
 - For command behavior, read [CLI public command surface](reference/cli/public-command-surface).
+- For adding or changing a command, read [Add a CLI command](guides/add-a-cli-command).
 - For config defaults, model choices, and precedence, read [Config keys](reference/config-keys).
+- For setup, scheduled sync, scheduled Garden, or package update automation, read [Setup local automation](guides/setup-local-automation).
 - For page identity, routes, and `README.md` landing pages, read [Page identity](architecture/wiki/page-identity).
 - For page evidence and frontmatter, read [Frontmatter and sources](reference/page-format/frontmatter-and-sources).
 - For lifecycle run state, logs, and attach behavior, read [Run states and events](reference/runs/run-states-and-events).

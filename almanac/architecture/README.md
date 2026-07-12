@@ -126,6 +126,8 @@ Start with [Service boundaries](service-boundaries). It explains the main depend
 
 [Request models](request-models) explains the typed request objects that protect service and workflow boundaries from loose dictionaries and raw CLI shapes [@request-models].
 
+Use [Cosmic Python translation](../reference/cosmic-python-translation) when an architecture change needs the local interpretation of service, store, port, and composition-root boundaries.
+
 ## Page-Writing Operations
 
 [Lifecycle](lifecycle/) is the entry point for build, ingest, garden, sync, queued runs, operation execution, and mutation safety. Build, ingest, and garden are page-writing operation families; sync is a scanner that queues ingest work instead of writing pages itself [@lifecycle].

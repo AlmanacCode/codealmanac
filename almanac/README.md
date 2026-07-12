@@ -28,6 +28,8 @@ Begin with [Getting started](getting-started). It gives the shortest reading pat
 
 The core idea is the [local repo wiki](concepts/local-repo-wiki): a browseable Markdown wiki committed with the code, plus derived local state for search and runs. That concept explains why page identity comes from paths, why `README.md` files are landing pages, and why file evidence belongs in `sources:`.
 
+For the product boundary, read [Local-only Python product](decisions/local-only-python-product). For exact runtime paths, read [Local state layout](reference/local-state-layout).
+
 For implementation work, read [Architecture](architecture/) first, then follow the page for the boundary you plan to change. [Service boundaries](architecture/service-boundaries) explains how the CLI, app composition root, workflows, services, stores, ports, and integrations divide responsibility. For command behavior, use [CLI public command surface](reference/cli/public-command-surface). For config defaults and precedence, use [Config keys](reference/config-keys).
 
 ## Main Clusters
