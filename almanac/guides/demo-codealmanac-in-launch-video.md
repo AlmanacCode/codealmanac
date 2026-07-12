@@ -22,6 +22,10 @@ sources:
     type: conversation
     path: /Users/divitsheth/.codex/sessions/2026/07/11/rollout-2026-07-11T19-18-29-019f541e-72eb-7e01-8644-b2a5e139fcd7.jsonl
     note: Product-origin and three-pillar positioning discussion.
+  - id: show-hn
+    type: web
+    url: https://news.ycombinator.com/item?id=48849361
+    note: Initial Show HN post for CodeAlmanac.
 ---
 
 # Demo CodeAlmanac In A Launch Video
@@ -77,3 +81,18 @@ Team-chat tools such as TagIt and agentchattr route work and conversation among
 agents [@tagit] [@agentchattr]. They are adjacent rather than equivalent:
 CodeAlmanac's primary artifact is the maintained repository wiki that later
 agents query before changing code, not a chat channel between agents.
+
+## Public Launch Notes
+
+When answering public launch questions, be transparent that CodeAlmanac already
+had an initial Show HN on July 9, 2026 [@show-hn]. The later Launch HN should
+be framed as a fuller introduction to the same local, open-source CLI rather
+than as a major product-change announcement [@product-positioning-session].
+
+The concise answer for a missing demo video is that HN users can install and
+try the CLI directly without creating an account [@product-positioning-session].
+Keep privacy claims tied to the local product boundary: the CLI has no Almanac
+account, telemetry, analytics, or usage tracking; user code, transcripts, and
+wiki content stay local except for the selected model provider used by the
+user's own Codex or Claude account during lifecycle runs [@public-readme]
+[@product-positioning-session].
