@@ -21,7 +21,7 @@ shaped the way it is, what broke before, which invariants matter, and how
 workflows cross files and services. The wiki is plain markdown in your repo,
 indexed locally, and reviewed in Git like any other code change.
 
-**Supported today:** macOS with Codex or Claude Code. Requires Python 3.12+.
+**Supported today:** macOS with Codex, Claude Code, or OpenCode. Requires Python 3.12+.
 
 ## Quickstart
 
@@ -138,14 +138,14 @@ Setup installs agent instructions for your chosen tools and three local macOS
 
 | Job | Default schedule | What it does |
 | --- | ---: | --- |
-| Sync | Every 5 hours | Scans recent Codex and Claude conversations and queues useful knowledge for the relevant registered wiki. |
+| Sync | Every 5 hours | Scans recent Codex, Claude, and OpenCode conversations and queues useful knowledge for the relevant registered wiki. |
 | Garden | Every 4 hours | Reviews every registered wiki for stale, duplicated, or poorly connected knowledge. |
 | Update | Every 24 hours | Checks for and installs CodeAlmanac CLI updates when it is safe to do so. |
 
 These schedules run locally in the background. Use
 `codealmanac automation status` to see what is installed.
 
-If you don't have Codex or prefer Claude, use `--runner claude`.
+If you don't have Codex, use `--runner claude` or `--runner opencode`.
 
 `--target` only chooses which global agent instruction files to install; it does
 not choose the AI runner:
@@ -231,7 +231,7 @@ should leave the wiki unchanged.
 CodeAlmanac can keep registered wikis current without requiring you to remember
 maintenance commands.
 
-**Sync** scans local Codex and Claude transcript stores for conversations active
+**Sync** scans local Codex, Claude, and OpenCode transcript stores for conversations active
 since the previous completed sync. Conversations associated with registered
 repositories are queued as ordinary ingest jobs. Sync may decide that a
 conversation contains no durable knowledge and leave the wiki unchanged.
@@ -299,8 +299,9 @@ a script.
 
 CodeAlmanac uses `almanac-yoke` as its single provider boundary. Codex runs
 through app-server; Claude uses Yoke's default Claude surface (currently the
-Python Agent SDK). Existing Codex or Claude Code OAuth sessions are reused, and
-API credentials can be supplied through Yoke when embedding the SDK.
+Python Agent SDK); OpenCode runs through its local HTTP server. Existing Codex
+or Claude Code OAuth sessions are reused, and API credentials can be supplied
+through Yoke when embedding the SDK.
 
 Build, ingest, and garden are packaged as a Yoke agent collection under
 `src/codealmanac/agents/`. Each agent uses Yoke's native folder contract:
@@ -308,7 +309,8 @@ Build, ingest, and garden are packaged as a Yoke agent collection under
 the durable agent instructions. A lifecycle run passes only its typed runtime
 context as the task prompt. Optional Yoke `skills/`, `subagents/`, and
 `workflows/` folders can be added to an agent when the product needs them;
-native Claude or Codex execution still decides how and when to use them.
+native Claude, Codex, or OpenCode execution still decides how and when to use
+them.
 
 ```bash
 codex login

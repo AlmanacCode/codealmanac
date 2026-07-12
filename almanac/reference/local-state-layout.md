@@ -54,7 +54,7 @@ This layout follows the local-only Python product decision: authored Markdown st
 | `~/.codealmanac/repos/<repo-id>/index.db` | Derived runtime | Per-repository search and graph index. |
 | `~/.codealmanac/update.lock` | Local runtime | Global update lock. |
 | `~/.codealmanac/logs/` | Local runtime | Scheduler stdout and stderr logs. |
-| `~/.codealmanac/harnesses/` | Local runtime | Product-owned cache root Yoke uses to compile Claude and Codex provider resources, so provider config is never written into a repository. |
+| `~/.codealmanac/harnesses/` | Local runtime | Product-owned cache root Yoke uses to compile Claude, Codex, and OpenCode provider resources, so provider config is never written into a repository. |
 
 `core.paths` defines the default state directory as `Path.home() / ".codealmanac"`, the default database as `~/.codealmanac/codealmanac.db`, the default config as `~/.codealmanac/config.toml`, and scheduler logs as `~/.codealmanac/logs` [@core-paths].
 
@@ -66,7 +66,7 @@ This layout follows the local-only Python product decision: authored Markdown st
 
 The database path must live directly inside the state directory. `LocalStatePaths` rejects a shape where the database is nested more deeply than `state_dir / "codealmanac.db"` would imply [@settings].
 
-`LocalStatePaths.harness_runtime_dir` is `state_dir / "harnesses"` [@settings]. The composition root passes it to both provider adapters so Yoke's native Claude and Codex compilation caches under CodeAlmanac's own local state instead of the target repository; see [Yoke harness boundary](../architecture/agent-runs/provider-adapters) for how the adapter uses this path for run caching and readiness checks [@yoke-adapter].
+`LocalStatePaths.harness_runtime_dir` is `state_dir / "harnesses"` [@settings]. The composition root passes it to all three provider adapters so Yoke's native Claude, Codex, and OpenCode compilation caches under CodeAlmanac's own local state instead of the target repository; see [Yoke harness boundary](../architecture/agent-runs/provider-adapters) for how the adapter uses this path for run caching and readiness checks [@yoke-adapter].
 
 ## Per-Repository Runtime
 

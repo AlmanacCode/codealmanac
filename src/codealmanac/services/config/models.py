@@ -21,17 +21,6 @@ from codealmanac.services.harnesses.models import HarnessKind
 DEFAULT_HARNESS = HarnessKind.CODEX
 DEFAULT_HARNESS_MODEL = "gpt-5.5"
 DEFAULT_AUTO_COMMIT = True
-CONTROLLED_HARNESS_MODELS = frozenset(
-    (
-        "gpt-5.5",
-        "gpt-5.4",
-        "gpt-5.4-mini",
-        "gpt-5.3-codex-spark",
-        "claude-sonnet-5",
-        "claude-opus-4-7",
-        "claude-haiku-4-5",
-    )
-)
 HARNESS_MODELS = {
     HarnessKind.CODEX: (
         "gpt-5.5",
@@ -44,10 +33,39 @@ HARNESS_MODELS = {
         "claude-opus-4-7",
         "claude-haiku-4-5",
     ),
+    # OpenCode is a router, not a single provider — it accepts any
+    # "provider/model" string the user's `opencode auth login` has enabled,
+    # so (unlike Codex/Claude, which really do only offer a fixed handful
+    # of models) it isn't validated against this tuple; see
+    # HarnessConfig.model_matches_harness below, which shape-checks
+    # OpenCode models instead of checking membership here. This tuple is
+    # only the setup wizard's curated starting menu.
+    #
+    # The 3 opencode/* entries are OpenCode Zen's free tier, confirmed
+    # present via a live GET /config/providers during the 2026-07-08 spike
+    # (docs/plans/2026-07-07-opencode-harness.md) — only
+    # deepseek-v4-flash-free confirmed to complete a full generation. The
+    # openai/* entries route through the same authenticated OpenAI account
+    # Codex uses directly; openai/gpt-5.5 itself was confirmed live on
+    # 2026-07-08, the sibling gpt-5.4 family are the same provider/account
+    # and Codex's own confirmed catalog, not independently re-verified
+    # through OpenCode.
+    HarnessKind.OPENCODE: (
+        "opencode/deepseek-v4-flash-free",
+        "opencode/mimo-v2.5-free",
+        "opencode/big-pickle",
+        "openai/gpt-5.5",
+        "openai/gpt-5.4",
+        "openai/gpt-5.4-mini",
+        "openai/gpt-5.3-codex-spark",
+    ),
 }
 DEFAULT_HARNESS_MODELS = {
     HarnessKind.CODEX: DEFAULT_HARNESS_MODEL,
     HarnessKind.CLAUDE: "claude-sonnet-5",
+    # The only opencode model actually run end-to-end in the spike — see
+    # comment on HARNESS_MODELS[HarnessKind.OPENCODE] above.
+    HarnessKind.OPENCODE: "opencode/deepseek-v4-flash-free",
 }
 
 
@@ -67,22 +85,30 @@ class HarnessConfig(CodeAlmanacModel):
     default: HarnessKind = DEFAULT_HARNESS
     model: str = DEFAULT_HARNESS_MODEL
 
-    @field_validator("model")
-    @classmethod
-    def controlled_model(cls, value: str) -> str:
-        if value not in CONTROLLED_HARNESS_MODELS:
-            allowed = ", ".join(sorted(CONTROLLED_HARNESS_MODELS))
-            raise ValueError(f"harness.model must be one of: {allowed}")
-        return value
-
     @model_validator(mode="after")
     def model_matches_harness(self) -> "HarnessConfig":
+        if self.default == HarnessKind.OPENCODE:
+            if not is_opencode_model_shape(self.model):
+                raise ValueError(OPENCODE_MODEL_SHAPE_MESSAGE)
+            return self
         if self.model not in HARNESS_MODELS[self.default]:
             allowed = ", ".join(HARNESS_MODELS[self.default])
             raise ValueError(
                 f"harness.model for {self.default.value} must be one of: {allowed}"
             )
         return self
+
+
+OPENCODE_MODEL_SHAPE_MESSAGE = (
+    'harness.model for opencode must look like "provider/model" (e.g. '
+    '"openai/gpt-5.5") — OpenCode routes to whatever provider/model your '
+    "`opencode auth login` has enabled, so it isn't restricted to a fixed list"
+)
+
+
+def is_opencode_model_shape(value: str) -> bool:
+    provider_id, separator, model_id = value.partition("/")
+    return separator != "" and provider_id != "" and model_id != ""
 
 
 class TaskAutomationConfig(CodeAlmanacModel):

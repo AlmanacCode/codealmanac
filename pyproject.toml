@@ -23,7 +23,7 @@ classifiers = [
   "Topic :: Software Development :: Documentation",
 ]
 dependencies = [
-    "almanac-yoke[claude]>=0.1.7,<0.2",
+    "almanac-yoke[claude]>=0.1.8,<0.2",
   "beautifulsoup4>=4.15.0",
   "charset-normalizer>=3.4.7",
   "fastapi>=0.138.1",
@@ -82,3 +82,11 @@ codealmanac = [
 
 [tool.uv]
 package = true
+
+# DEV-ONLY, remove before merging: almanac-yoke>=0.1.8 hasn't been
+# published yet (its OpenCode provider is still an open Yoke PR). This
+# points at the local sibling checkout so slice-143 can actually be built
+# and live-tested against it; swap back to a plain PyPI resolve once that
+# PR merges and ships a release.
+[tool.uv.sources]
+almanac-yoke = { path = "../Yoke", editable = true }

@@ -1,6 +1,13 @@
 import argparse
 
-SETUP_TARGETS = ("all", "codex", "claude")
+from codealmanac.services.harnesses.models import HarnessKind
+from codealmanac.services.setup.models import SetupTarget
+
+# "all" plus every SetupTarget/HarnessKind value — derived from the enums
+# rather than duplicated as string literals, so a new harness only needs
+# adding to SetupTarget/HarnessKind, not here too.
+SETUP_TARGETS = ("all", *(target.value for target in SetupTarget))
+RUNNER_CHOICES = tuple(kind.value for kind in HarnessKind)
 
 
 def add_setup_commands(subcommands: argparse._SubParsersAction) -> None:
@@ -14,7 +21,7 @@ def add_setup_commands(subcommands: argparse._SubParsersAction) -> None:
     setup.add_argument("--yes", action="store_true", help="run without prompts")
     setup.add_argument(
         "--runner",
-        choices=("codex", "claude"),
+        choices=RUNNER_CHOICES,
         help="agent that runs CodeAlmanac jobs (default: codex)",
     )
     setup.add_argument(

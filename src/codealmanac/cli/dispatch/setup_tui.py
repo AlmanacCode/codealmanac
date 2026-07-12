@@ -1,4 +1,5 @@
 import argparse
+import signal
 
 from codealmanac.cli.dispatch.setup_wizard.models import (
     SetupCancelled,
@@ -155,31 +156,43 @@ def wizard_selections(
 
 def choose_setup_option(screen: SetupChoiceScreen, initial_index: int) -> int:
     selected_index = enabled_index(screen, initial_index)
-    render_setup_choice_screen(screen, selected_index)
-    while True:
-        key = read_setup_key()
-        if key in {"\x03", "\x1b", "q"}:
-            raise SetupCancelled()
-        if key in {"\r", "\n"}:
-            if screen.options[selected_index].disabled:
+
+    def redraw_on_resize(signum: int, frame: object) -> None:
+        render_setup_choice_screen(screen, selected_index)
+
+    has_sigwinch = hasattr(signal, "SIGWINCH")
+    previous_handler = (
+        signal.signal(signal.SIGWINCH, redraw_on_resize) if has_sigwinch else None
+    )
+    try:
+        render_setup_choice_screen(screen, selected_index)
+        while True:
+            key = read_setup_key()
+            if key in {"\x03", "\x1b", "q"}:
+                raise SetupCancelled()
+            if key in {"\r", "\n"}:
+                if screen.options[selected_index].disabled:
+                    render_setup_choice_screen(screen, selected_index)
+                    continue
+                return selected_index
+            shortcut_index = shortcut_option_index(screen, key)
+            if shortcut_index is not None:
+                return shortcut_index
+            next_index = selected_index
+            if key in {"\x1b[D", "a"}:
+                next_index = (selected_index - 1) % len(screen.options)
+            elif key in {"\x1b[C", "d"}:
+                next_index = (selected_index + 1) % len(screen.options)
+            elif key in {"\x1b[A", "w"}:
+                next_index = (selected_index - 1) % len(screen.options)
+            elif key in {"\x1b[B", "s"}:
+                next_index = (selected_index + 1) % len(screen.options)
+            if next_index != selected_index:
+                selected_index = enabled_index(screen, next_index, selected_index)
                 render_setup_choice_screen(screen, selected_index)
-                continue
-            return selected_index
-        shortcut_index = shortcut_option_index(screen, key)
-        if shortcut_index is not None:
-            return shortcut_index
-        next_index = selected_index
-        if key in {"\x1b[D", "a"}:
-            next_index = (selected_index - 1) % len(screen.options)
-        elif key in {"\x1b[C", "d"}:
-            next_index = (selected_index + 1) % len(screen.options)
-        elif key in {"\x1b[A", "w"}:
-            next_index = (selected_index - 1) % len(screen.options)
-        elif key in {"\x1b[B", "s"}:
-            next_index = (selected_index + 1) % len(screen.options)
-        if next_index != selected_index:
-            selected_index = enabled_index(screen, next_index, selected_index)
-            render_setup_choice_screen(screen, selected_index)
+    finally:
+        if has_sigwinch:
+            signal.signal(signal.SIGWINCH, previous_handler)
 
 
 def enabled_index(

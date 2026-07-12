@@ -19,7 +19,7 @@ class UnusedAutomation:
 
 
 def test_harness_config_rejects_unknown_models() -> None:
-    with pytest.raises(ValueError, match="harness.model must be one of"):
+    with pytest.raises(ValueError, match="harness.model for codex must be one of"):
         HarnessConfig(default=HarnessKind.CODEX, model="provider-default")
 
 
@@ -29,8 +29,20 @@ def test_harness_config_rejects_other_provider_models() -> None:
 
 
 def test_harness_config_rejects_deprecated_claude_models() -> None:
-    with pytest.raises(ValueError, match="harness.model must be one of"):
+    with pytest.raises(ValueError, match="harness.model for claude must be one of"):
         HarnessConfig(default=HarnessKind.CLAUDE, model="claude-sonnet-4-6")
+
+
+def test_harness_config_accepts_any_provider_model_shaped_opencode_model() -> None:
+    config = HarnessConfig(
+        default=HarnessKind.OPENCODE, model="anthropic/claude-sonnet-5"
+    )
+    assert config.model == "anthropic/claude-sonnet-5"
+
+
+def test_harness_config_rejects_unshaped_opencode_model() -> None:
+    with pytest.raises(ValueError, match='must look like "provider/model"'):
+        HarnessConfig(default=HarnessKind.OPENCODE, model="gpt-5.5")
 
 
 def test_config_set_harness_default_resets_model_to_provider_default(

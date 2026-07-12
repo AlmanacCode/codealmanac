@@ -9,4 +9,5 @@ def default_harness_adapters(runtime_root: Path) -> tuple[HarnessAdapter, ...]:
     return (
         YokeHarnessAdapter(HarnessKind.CLAUDE, runtime_root),
         YokeHarnessAdapter(HarnessKind.CODEX, runtime_root),
+        YokeHarnessAdapter(HarnessKind.OPENCODE, runtime_root),
     )

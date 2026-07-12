@@ -13,7 +13,7 @@ from codealmanac.services.config.models import DEFAULT_HARNESS, DEFAULT_HARNESS_
 from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.services.setup.models import SetupTarget
 
-DEFAULT_SETUP_TARGETS = (SetupTarget.CODEX, SetupTarget.CLAUDE)
+DEFAULT_SETUP_TARGETS = tuple(SetupTarget)
 
 
 class RunSetupRequest(CodeAlmanacModel):

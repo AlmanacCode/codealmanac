@@ -11,9 +11,9 @@ from codealmanac.services.automation.models import (
 from codealmanac.services.automation.requests import ReconcileAutomationTaskRequest
 from codealmanac.services.automation.service import AutomationService
 from codealmanac.services.config.models import (
-    CONTROLLED_HARNESS_MODELS,
     DEFAULT_HARNESS_MODELS,
     HARNESS_MODELS,
+    OPENCODE_MODEL_SHAPE_MESSAGE,
     AutomationConfig,
     ConfigApplyResult,
     ConfigEntry,
@@ -24,6 +24,7 @@ from codealmanac.services.config.models import (
     UserConfig,
     automation_entries,
     format_bool,
+    is_opencode_model_shape,
     parse_duration,
 )
 from codealmanac.services.config.requests import (
@@ -250,9 +251,10 @@ def parse_harness_value(value: str) -> str:
 
 def parse_harness_model(value: str, harness: HarnessKind) -> str:
     token = value.strip()
-    if token not in CONTROLLED_HARNESS_MODELS:
-        allowed = ", ".join(sorted(CONTROLLED_HARNESS_MODELS))
-        raise ValidationFailed(f"harness.model must be one of: {allowed}")
+    if harness == HarnessKind.OPENCODE:
+        if not is_opencode_model_shape(token):
+            raise ValidationFailed(OPENCODE_MODEL_SHAPE_MESSAGE)
+        return token
     if token not in HARNESS_MODELS[harness]:
         allowed = ", ".join(HARNESS_MODELS[harness])
         raise ValidationFailed(

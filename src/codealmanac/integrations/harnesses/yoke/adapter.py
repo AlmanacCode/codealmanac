@@ -48,6 +48,10 @@ CLAUDE_ALLOWED_TOOLS = (
 CLAUDE_MAX_TURNS = 100
 CLAUDE_RUN_TIMEOUT_SECONDS = 90 * 60
 CODEX_RUN_TIMEOUT_SECONDS = 30 * 60
+# OpenCode's own stuck-tool-call watchdog fires at 240s per hung tool call
+# (Yoke's opencode provider); this is the overall run ceiling, not that
+# per-tool threshold, so it matches Codex's rather than the watchdog value.
+OPENCODE_RUN_TIMEOUT_SECONDS = 30 * 60
 
 
 class YokeHarness(Protocol):
@@ -144,6 +148,12 @@ def create_yoke_harness(
     runtime_root: Path | None = None,
 ) -> Harness:
     agent_kind = agent_name or HarnessAgentKind.BUILD
+    # Codex is pinned explicitly because it has three real Yoke surfaces
+    # (cli, python_sdk, app_server) and this product needs the app-server
+    # one specifically. Claude and OpenCode each currently have exactly one
+    # implemented Yoke surface, so — same as Claude — OpenCode is left on
+    # Yoke's own default surface resolution (`opencode_server`) rather than
+    # pinned here; there's nothing to disambiguate yet.
     return Harness(
         provider=kind.value,
         surface="codex_app_server" if kind is HarnessKind.CODEX else None,
@@ -160,36 +170,51 @@ def run_options(
     return RunOptions(
         model=request.model,
         max_turns=CLAUDE_MAX_TURNS,
-        timeout_seconds=(
-            CLAUDE_RUN_TIMEOUT_SECONDS
-            if request.kind is HarnessKind.CLAUDE
-            else CODEX_RUN_TIMEOUT_SECONDS
-        ),
+        timeout_seconds=run_timeout_seconds(request.kind),
         provider=provider_options(request.kind),
         on_event=on_event,
     )
 
 
+def run_timeout_seconds(kind: HarnessKind) -> int:
+    match kind:
+        case HarnessKind.CLAUDE:
+            return CLAUDE_RUN_TIMEOUT_SECONDS
+        case HarnessKind.CODEX:
+            return CODEX_RUN_TIMEOUT_SECONDS
+        case HarnessKind.OPENCODE:
+            return OPENCODE_RUN_TIMEOUT_SECONDS
+
+
 def provider_options(kind: HarnessKind) -> ProviderOptions:
-    if kind is HarnessKind.CLAUDE:
-        return ProviderOptions(
-            claude=ClaudeOptions(
-                tools=CLAUDE_ALLOWED_TOOLS,
-                allowed_tools=CLAUDE_ALLOWED_TOOLS,
-                permission_mode="dontAsk",
-                include_partial_messages=True,
-                setting_sources=(),
-                raw={"mcp_servers": {}, "strict_mcp_config": True},
+    match kind:
+        case HarnessKind.CLAUDE:
+            return ProviderOptions(
+                claude=ClaudeOptions(
+                    tools=CLAUDE_ALLOWED_TOOLS,
+                    allowed_tools=CLAUDE_ALLOWED_TOOLS,
+                    permission_mode="dontAsk",
+                    include_partial_messages=True,
+                    setting_sources=(),
+                    raw={"mcp_servers": {}, "strict_mcp_config": True},
+                )
             )
-        )
-    return ProviderOptions(
-        codex=CodexOptions(
-            sandbox=CodexSandbox.DANGER_FULL_ACCESS,
-            approval=CodexApproval.NEVER,
-            network=False,
-            app_server=CodexAppServerOptions(ephemeral=True),
-        )
-    )
+        case HarnessKind.CODEX:
+            return ProviderOptions(
+                codex=CodexOptions(
+                    sandbox=CodexSandbox.DANGER_FULL_ACCESS,
+                    approval=CodexApproval.NEVER,
+                    network=False,
+                    app_server=CodexAppServerOptions(ephemeral=True),
+                )
+            )
+        case HarnessKind.OPENCODE:
+            # Yoke's opencode adapter has no OpencodeOptions surface yet —
+            # it always passes OpenCode's allow-all permission block at
+            # session creation, so there is nothing provider-specific to
+            # set here today. See almanac/architecture/agent-runs/
+            # provider-adapters.md for the tracked follow-up.
+            return ProviderOptions()
 
 
 def project_readiness(
