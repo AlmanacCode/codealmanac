@@ -16,19 +16,19 @@ sources:
     note: Local multi-agent chat comparison point.
   - id: supabase-eval-readme
     type: web
-    url: https://github.com/supabase/supabase/blob/master/apps/studio/evals/README.md
+    url: https://github.com/supabase/supabase/blob/1ce1fd66643c90f9f51f72e59220bb59664ee535/apps/studio/evals/README.md
     note: Supabase Studio Assistant eval workflow and scorer overview.
   - id: supabase-eval-runner
     type: web
-    url: https://github.com/supabase/supabase/blob/master/apps/studio/evals/assistant.eval.ts
+    url: https://github.com/supabase/supabase/blob/1ce1fd66643c90f9f51f72e59220bb59664ee535/apps/studio/evals/assistant.eval.ts
     note: Braintrust eval runner, trial count, mocked tools, and scorer list.
   - id: supabase-eval-scorer
     type: web
-    url: https://github.com/supabase/supabase/blob/master/apps/studio/evals/scorer.ts
+    url: https://github.com/supabase/supabase/blob/1ce1fd66643c90f9f51f72e59220bb59664ee535/apps/studio/evals/scorer.ts
     note: Tool, knowledge, correctness, docs faithfulness, and safety scorer behavior.
   - id: supabase-eval-dataset
     type: web
-    url: https://github.com/supabase/supabase/blob/master/apps/studio/evals/dataset.ts
+    url: https://github.com/supabase/supabase/blob/1ce1fd66643c90f9f51f72e59220bb59664ee535/apps/studio/evals/dataset.ts
     note: Public test cases with required tools, required knowledge, and safety expectations.
   - id: eval-transcript
     type: conversation
