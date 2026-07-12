@@ -18,6 +18,10 @@ sources:
     type: wiki
     path: decisions/local-only-python-product
     note: Decision that defines the local Python product boundary.
+  - id: product-surface
+    type: wiki
+    path: product
+    note: Hub for product boundary, release, launch, and demo pages.
   - id: release-guide
     type: wiki
     path: guides/release-package
@@ -63,7 +67,7 @@ Use these routes when you already know the kind of work:
 
 - For command behavior, read [CLI public command surface](reference/cli/public-command-surface).
 - For config defaults, model choices, and precedence, read [Config keys](reference/config-keys).
-- For product boundary, public package, or demo work, read [Local-only Python product](decisions/local-only-python-product), [Release package](guides/release-package), and [Launch positioning](concepts/launch-positioning) [@local-only-decision] [@release-guide] [@launch-positioning].
+- For product boundary, public package, or demo work, start with [Product surface](product), then follow [Local-only Python product](decisions/local-only-python-product), [Release package](guides/release-package), or [Launch positioning](concepts/launch-positioning) for the specific job [@product-surface] [@local-only-decision] [@release-guide] [@launch-positioning].
 - For page identity, routes, and `README.md` landing pages, read [Page identity](architecture/wiki/page-identity).
 - For page evidence and frontmatter, read [Frontmatter and sources](reference/page-format/frontmatter-and-sources).
 - For lifecycle run state, logs, and attach behavior, read [Run states and events](reference/runs/run-states-and-events).
