@@ -28,7 +28,7 @@ This decision separates navigation from evidence. A page link points a reader to
 
 ## Context
 
-The Python reset replaced older wiki syntax with a simpler authored format. The base writer prompt tells agents to use Markdown links such as `[Viewer](../viewer)`, link only to existing or newly created pages, cite non-obvious claims with inline source markers, and store file/folder evidence in `sources:` [@kernel].
+The Python reset replaced older wiki syntax with a simpler authored format. The base writer prompt tells agents to use Markdown links such as `[Local viewer](../architecture/viewer/local-viewer)`, link only to existing or newly created pages, cite non-obvious claims with inline source markers, and store file/folder evidence in `sources:` [@kernel].
 
 The sources canonical plan made structured `sources:` the only authored evidence model for file-aware retrieval. It removed legacy file-list parsing and kept file references derived from `sources[type=file]` [@sources_plan]. That means evidence is no longer split between old frontmatter fields and current source records.
 
