@@ -116,7 +116,7 @@ The editable-install guard does not cover every PEP 610 direct-url install. The 
 
 Tests pin the editable-install refusal, scheduled editable skip, uv plan, and pip plan, but they do not exercise `read_direct_url` directly or prove that a pip install with `source_url` is refused [@update_tests]. Future work that broadens source-install protection should add those cases before changing `update_method`, then decide whether non-editable local directories, VCS URLs, and archives share one unsupported path or need different repair guidance.
 
-This shape matches the active agreement: scheduled auto-update is an explicit local automation task, not a sync or Garden side effect. The agreement also states that scheduled update should skip editable installs, skip active lifecycle jobs, use a global lock, support uv tool and pip installs, and run the same two smoke checks [@live_agreement].
+This shape only partly matches the active agreement. Scheduled auto-update is an explicit local automation task, not a sync or Garden side effect, and the implementation has the global lock, active-job skip, uv and pip commands, and post-update smoke checks required by the agreement [@updates][@live_agreement]. The same agreement says scheduled update should skip editable/source installs, while the current guard skips only editable installs and lets other PEP 610 direct-url installs reach the uv or pip command path [@update_metadata][@updates][@live_agreement].
 
 ## Uninstall
 
