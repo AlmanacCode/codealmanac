@@ -28,6 +28,9 @@ sources:
     type: wiki
     path: reference/config-keys
     note: Reference page for supported config keys and model validation.
+  - id: opencode-pr-review
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/12/rollout-2026-07-12T11-29-59-019f5797-e03a-7971-ab11-939e3cf4b1be.jsonl
 ---
 
 # Extend The Yoke Harness Boundary
@@ -70,6 +73,13 @@ agent selection, callbacks, failures, event serialization, and any new display
 facts [@tests]. Then run the real provider surface, the affected lifecycle
 operation, the full test suite, Ruff, wheel/sdist builds, Twine checks, and a
 fresh installed-wheel smoke.
+
+When the Yoke change adds a new surface such as OpenCode, review the upstream
+Yoke PR for the contracts CodeAlmanac cannot repair locally: requested
+permissions must either be enforced or rejected, runtime deployment files must
+stay alive for active forks, first-send instructions must survive provider
+retry paths, and CodeAlmanac must depend on a released Yoke version rather than
+a local sibling checkout [@opencode-pr-review].
 
 Related architecture: [Yoke harness boundary](../architecture/agent-runs/provider-adapters)
 and [Agents and manuals](../architecture/runtime-resources/prompts-and-manuals).
