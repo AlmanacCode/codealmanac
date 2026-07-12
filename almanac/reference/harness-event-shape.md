@@ -15,9 +15,9 @@ sources:
 
 # Harness Event Shape
 
-The harness event shape is CodeAlmanac's normalized transcript format for agent runs. Provider adapters convert Codex or Claude event streams into `HarnessEvent` objects, and lifecycle code records those events without parsing provider-specific JSON [@harness-events]. This page defines the event kinds, optional payload groups, tool display fields, usage counters, failures, actor data, and agent traces used by the [harness contract](../architecture/agent-runs/harness-contract).
+The harness event shape is CodeAlmanac's normalized transcript format for agent runs. The Yoke harness boundary converts Codex or Claude run events into `HarnessEvent` objects, and lifecycle code records those events without parsing provider-specific JSON [@harness-events]. This page defines the event kinds, optional payload groups, tool display fields, usage counters, failures, actor data, and agent traces used by the [harness contract](../architecture/agent-runs/harness-contract).
 
-A harness event always has a `kind` and non-empty `message`. All other fields are optional and depend on what the provider exposed for that event [@harness-events]. The shape is intentionally broad enough for text, tools, token usage, provider sessions, failures, terminal status, and helper-agent activity, so [provider adapters](../architecture/agent-runs/provider-adapters) can add detail without changing lifecycle workflow code.
+A harness event always has a `kind` and non-empty `message`. All other fields are optional and depend on what the provider exposed for that event [@harness-events]. The shape is intentionally broad enough for text, tools, token usage, provider sessions, failures, terminal status, and helper-agent activity, so the [Yoke harness boundary](../architecture/agent-runs/provider-adapters) can add detail without changing lifecycle workflow code.
 
 ## Event Kinds
 
@@ -120,4 +120,4 @@ Helper-agent metadata is represented by `HarnessAgentTrace`. It may include pare
 
 `HarnessRunResult` stores the full event stream as `events: tuple[HarnessEvent, ...]` beside the terminal status, output text, changed files, and transcript reference [@harness-results]. A terminal helper can create a fallback `done` event whose message is built from provider kind, terminal status, and the first output line [@harness-results].
 
-That relationship matters for lifecycle runs: the result gives terminal status one stable object, while the event stream gives logs and attach views a provider-neutral transcript. New adapters should satisfy this event shape before linking into the broader harness contract; see [add a harness provider adapter](../guides/add-a-harness-provider-adapter).
+That relationship matters for lifecycle runs: the result gives terminal status one stable object, while the event stream gives logs and attach views a provider-neutral transcript. Changes to the Yoke boundary should satisfy this event shape before linking into the broader harness contract; see [extend the Yoke harness boundary](../guides/add-a-harness-provider-adapter).

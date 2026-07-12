@@ -17,7 +17,7 @@ sources:
   - id: harness-adapter
     type: wiki
     path: guides/add-a-harness-provider-adapter
-    note: Procedure for adding a harness provider adapter.
+    note: Procedure for extending the Yoke harness boundary.
   - id: failed-run
     type: wiki
     path: guides/debug-a-failed-lifecycle-run
@@ -72,8 +72,9 @@ boundary, rendering, and tests for command work [@cli-command].
 
 [Add a source runtime adapter](add-a-source-runtime-adapter) covers a new
 source address and runtime loading path for ingest inputs [@source-adapter].
-[Add a harness provider adapter](add-a-harness-provider-adapter) covers a new
-local agent runner behind the harness contract [@harness-adapter].
+[Extend the Yoke harness boundary](add-a-harness-provider-adapter) covers
+adding provider or surface support through Yoke, then registering the product
+harness choice behind the harness contract [@harness-adapter].
 
 ## Debug And Operate
 

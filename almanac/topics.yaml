@@ -45,7 +45,7 @@ topics:
     parents: [architecture]
   - slug: agent-runs
     title: Agent Runs
-    description: Harness contracts, provider adapters, and normalized agent events
+    description: Harness contracts, the Yoke boundary, and normalized agent events
     parents: [architecture]
   - slug: harnesses
     title: Harnesses
@@ -53,7 +53,7 @@ topics:
     parents: [agent-runs]
   - slug: providers
     title: Providers
-    description: Provider-specific edges behind service-owned ports
+    description: Provider facts normalized by Yoke before reaching CodeAlmanac services
     parents: [agent-runs]
   - slug: lifecycle
     title: Lifecycle
@@ -101,7 +101,7 @@ topics:
     parents: [architecture]
   - slug: runtime-resources
     title: Runtime Resources
-    description: Packaged prompts, manuals, and operation prompt rendering
+    description: Packaged agents, manuals, and typed runtime context for operations
     parents: [architecture]
   - slug: prompts
     title: Prompts

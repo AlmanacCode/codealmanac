@@ -69,7 +69,7 @@ sources:
   - id: provider-adapters
     type: wiki
     path: architecture/agent-runs/provider-adapters
-    note: Architecture page for Codex and Claude provider adapters.
+    note: Architecture page for the Yoke harness boundary.
   - id: source-runtime
     type: wiki
     path: architecture/sources/source-resolution-and-runtime
@@ -102,6 +102,10 @@ sources:
     type: wiki
     path: architecture/setup/automation-and-update
     note: Architecture page for setup-owned automation and update behavior.
+  - id: instruction-installation
+    type: wiki
+    path: architecture/setup/instruction-installation
+    note: Architecture page for setup-owned Codex and Claude instruction installation.
 ---
 
 # Architecture
@@ -134,8 +138,8 @@ For authored wiki contracts, read [Page identity](wiki/page-identity), [Path nor
 
 ## Edges And Interfaces
 
-Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Harness contract](agent-runs/harness-contract) and [Provider adapters](agent-runs/provider-adapters) for Codex and Claude execution boundaries [@harness-contract] [@provider-adapters]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
+Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Harness contract](agent-runs/harness-contract) and [Yoke harness boundary](agent-runs/provider-adapters) for agent execution contracts, Yoke run options, and Codex or Claude runner boundaries [@harness-contract] [@provider-adapters]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
 
-[Agents and manuals](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents and writing references used by lifecycle runs, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@setup-automation].
+[Agents and manuals](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents and writing references used by lifecycle runs, [Instruction installation](setup/instruction-installation) covers setup-owned Codex and Claude guidance files, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@instruction-installation] [@setup-automation].
 
 [Local state](repositories/local-state), [Selection and root](repositories/selection-and-root), and [SQLite store boundaries](persistence/sqlite-store-boundaries) explain repository selection, runtime paths, and persistence ownership [@local-state] [@selection-root] [@sqlite-stores]. [Local viewer](viewer/local-viewer) explains the browser UI that projects the same wiki, topics, files, and jobs [@local-viewer].

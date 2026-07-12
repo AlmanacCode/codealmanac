@@ -42,13 +42,13 @@ When the worker executes the queued run, build calls the shared operation runner
 
 ## Ingest
 
-Ingest is the source-material workflow. It starts an `INGEST` run for a selected repository, resolves the requested inputs into source briefs, loads runtime snapshots for those sources, records those preparation steps, and renders the ingest prompt [@ingest-workflow].
+Ingest is the source-material workflow. It starts an `INGEST` run for a selected repository, resolves the requested inputs into source briefs, loads runtime snapshots for those sources, records those preparation steps, and builds the ingest task prompt [@ingest-workflow].
 
 The source runtime layer is important because ingest should give the agent concrete material, not just file names or user prose. The workflow also passes the almanac root as an ignored directory when inspecting source runtime, so the existing wiki is not accidentally treated as input material for the ingest source set [@ingest-workflow].
 
 ## Garden
 
-Garden is the maintenance workflow for an existing wiki. Before calling the operation runner, it reads the current index summary and health report, records that it prepared garden context, and renders a prompt with the current wiki state [@garden-workflow].
+Garden is the maintenance workflow for an existing wiki. Before calling the operation runner, it reads the current index summary and health report, records that it prepared garden context, and builds a task prompt with the current wiki state [@garden-workflow].
 
 Garden does not resolve external source material. Its job is to improve structure and quality from the wiki's own graph: weak pages, stale health findings, missing links, weak topics, and similar maintenance work.
 

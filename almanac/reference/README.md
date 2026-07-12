@@ -109,6 +109,6 @@ their resolver order, accepted GitHub, URL, Git, transcript, and path shapes,
 and the rejection rules for malformed inputs [@source-addresses].
 
 [Harness event shape](harness-event-shape) defines the normalized event payload
-shared by provider adapters and run logging. [Cosmic Python translation](cosmic-python-translation)
+shared by the Yoke harness boundary and run logging. [Cosmic Python translation](cosmic-python-translation)
 maps local architecture terms to the Architecture Patterns with Python ideas
 used in this rewrite [@harness-events] [@cosmic-python].
