@@ -17,7 +17,7 @@ sources:
   - id: benchmark-harness-transcript
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532.jsonl
-    note: Benchmark harness review and fix session for baseline search behavior and artifact isolation.
+    note: Benchmark harness review and memory-benchmark mapping for CodeAlmanac evaluation.
 ---
 
 # Compare CodeAlmanac With Generated Wikis
@@ -61,6 +61,12 @@ Ask follow-up questions about both the code change and the conversation-derived
 decision. This separates two claims: whether the product maintains code
 documentation, and whether it preserves durable context that existed outside the
 code [@comparison-transcript].
+
+Use [Launch positioning](../concepts/launch-positioning) to choose the benchmark
+level. LoCoMo-style and LongMemEval-style questions can test retrieval, but the
+closer product fit is LongMemEval-V2-style operational knowledge or
+MemoryArena-style multi-session action where the agent must use remembered
+experience during later work [@launch-positioning] [@benchmark-harness-transcript].
 
 ## Include A Practical Task
 

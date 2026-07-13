@@ -38,6 +38,38 @@ sources:
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/07/11/rollout-2026-07-11T23-25-01-019f5500-2662-72d2-941a-8a29f021e78f.jsonl
     note: Product conversation comparing OpenWiki-style generated documentation with CodeAlmanac's repo-owned memory model.
+  - id: memory-benchmark-transcript
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532.jsonl
+    note: Product conversation mapping memory benchmarks to CodeAlmanac evaluation strategy.
+  - id: locomo
+    type: web
+    url: https://snap-research.github.io/locomo/
+    note: LoCoMo benchmark project page.
+  - id: locomo-plus
+    type: web
+    url: https://arxiv.org/abs/2602.10715
+    note: LoCoMo-Plus paper abstract.
+  - id: longmemeval
+    type: web
+    url: https://arxiv.org/abs/2410.10813
+    note: LongMemEval paper abstract.
+  - id: longmemeval-v2
+    type: web
+    url: https://arxiv.org/abs/2605.12493
+    note: LongMemEval-V2 paper abstract.
+  - id: mem2actbench
+    type: web
+    url: https://arxiv.org/abs/2601.19935
+    note: Mem2ActBench paper abstract.
+  - id: memoryarena
+    type: web
+    url: https://arxiv.org/abs/2602.16313
+    note: MemoryArena paper abstract.
+  - id: worldmemarena
+    type: web
+    url: https://arxiv.org/abs/2605.29341
+    note: WorldMemArena paper abstract.
 ---
 
 # Launch Positioning
@@ -103,3 +135,38 @@ cases depend on Studio Assistant tools such as `get_advisors`, `get_logs`,
 CodeAlmanac comparisons should either provide equivalent fake tools or run
 against a disposable real Supabase project; otherwise the eval measures missing
 Studio access instead of agent use of CodeAlmanac [@eval-transcript].
+
+## Memory Benchmark Fit
+
+There is no established benchmark named "Agentic LoCoMo." The useful distinction
+is that LoCoMo and LongMemEval test long-context conversational memory through
+question answering, while CodeAlmanac's product claim depends on whether memory
+changes later agent work [@memory-benchmark-transcript]. LoCoMo provides long
+fictional conversations for recall and reasoning tasks, and LongMemEval adds
+information extraction, multi-session reasoning, temporal reasoning, knowledge
+updates, and abstention across 500 questions [@locomo] [@longmemeval].
+
+LoCoMo-Plus is a better conversational-memory comparison than plain factual
+recall because it tests whether a system applies latent constraints across
+semantically disconnected turns [@locomo-plus]. It still evaluates generated
+responses more than environment-changing agent work, so it is evidence for
+memory quality but not enough for CodeAlmanac's strongest claim
+[@memory-benchmark-transcript].
+
+LongMemEval-V2 is the closest benchmark fit for the wiki-as-experienced-colleague
+part of CodeAlmanac. It evaluates whether memory systems can acquire
+environment-specific experience from web-agent trajectories, including static
+state, dynamic state, workflow knowledge, environment gotchas, and premise
+awareness [@longmemeval-v2]. That matches CodeAlmanac's goal of preserving
+decisions, gotchas, workflows, and false-premise corrections for a future coding
+agent [@memory-benchmark-transcript].
+
+For action-oriented evaluation, Mem2ActBench and MemoryArena are stronger fits
+than static recall benchmarks. Mem2ActBench turns remembered long-term
+constraints into tool-selection and parameter-grounding tasks, while MemoryArena
+tests multi-session loops where an agent learns from earlier environment
+feedback and uses that memory in later subtasks [@mem2actbench] [@memoryarena].
+WorldMemArena extends the same concern to multimodal, evolving environments with
+stage-level diagnosis for memory writing, maintenance, retrieval, and use, but
+it is likely heavier than an initial CodeAlmanac comparison needs
+[@worldmemarena] [@memory-benchmark-transcript].
