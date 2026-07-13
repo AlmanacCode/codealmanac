@@ -1,5 +1,5 @@
 ---
-title: Agents And Manuals
+title: Runtime Resources
 topics: [architecture, runtime-resources, prompts, manuals, harnesses]
 sources:
   - id: catalog
@@ -34,17 +34,17 @@ sources:
     path: pyproject.toml
 ---
 
-# Agents And Manuals
+# Runtime Resources
 
-Agents and manuals are the packaged runtime resources that lifecycle
-operations hand to the local Yoke harness. Build, ingest, and garden each have
-a stable Yoke agent identity, while the workflow for a single run passes
-repository facts, health, sources, guidance, and source-control policy as typed
-JSON runtime context [@catalog] [@collection] [@build-service]
-[@ingest-service] [@garden-service]. The shared writing manuals stay outside
-the agent folders so every operation can include the same page-writing
-standards without rebuilding those standards into operation-specific prompts
-[@manual-library].
+Runtime resources are the packaged agents, operation instructions, writing
+manuals, and per-run payloads that lifecycle operations hand to the local Yoke
+harness. Build, ingest, and garden each have a stable Yoke agent identity,
+while the workflow for a single run passes repository facts, health, sources,
+guidance, and source-control policy as typed JSON runtime context [@catalog]
+[@collection] [@build-service] [@ingest-service] [@garden-service]. The shared
+writing manuals stay outside the agent folders so every operation can include
+the same page-writing standards without rebuilding those standards into
+operation-specific prompts [@manual-library].
 
 ## What It Owns
 

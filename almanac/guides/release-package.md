@@ -64,7 +64,7 @@ uv build --out-dir dist
 uvx twine check dist/*
 ```
 
-Then install both artifacts into clean Python 3.12 environments and smoke the installed command [@release-doc]. For product behavior, use the installed artifact command from those temporary environments or the user-facing installed `codealmanac` binary, not a command from the repo developer environment. The package must also include the agent, prompt, manual, and viewer resources described by [Agents and manuals](../architecture/runtime-resources/prompts-and-manuals) [@runtime-resources].
+Then install both artifacts into clean Python 3.12 environments and smoke the installed command [@release-doc]. For product behavior, use the installed artifact command from those temporary environments or the user-facing installed `codealmanac` binary, not a command from the repo developer environment. The package must also include the agent, prompt, manual, and viewer resources described by [Runtime resources](../architecture/runtime-resources/prompts-and-manuals) [@runtime-resources].
 
 Use current public syntax during smoke checks. `sync status` accepts `--wiki`, `--from`, and `--json`; it does not accept `--quiet` [@run-parser]. The release document may lag the parser, so trust parser-backed command syntax when a smoke command disagrees with the installed CLI [@release-doc] [@run-parser].
 

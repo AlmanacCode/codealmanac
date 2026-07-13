@@ -21,7 +21,7 @@ sources:
   - id: runtime-resources
     type: wiki
     path: architecture/runtime-resources/prompts-and-manuals
-    note: Architecture page for packaged Yoke agents and writing manuals.
+    note: Architecture page for packaged Yoke agents, writing manuals, and per-run payloads.
   - id: lifecycle-workflows
     type: wiki
     path: architecture/lifecycle/workflows
@@ -61,9 +61,9 @@ contract for the event objects returned by the harness boundary
 
 ## Neighboring Pages
 
-[Agents and manuals](../runtime-resources/prompts-and-manuals) explains the
-packaged Yoke collection and shared writing manuals that lifecycle workflows
-select before calling the harness [@runtime-resources]. The lifecycle entry
-point is [Lifecycle workflows](../lifecycle/workflows), which explains build,
-ingest, garden, and sync before they reach this provider boundary
-[@lifecycle-workflows].
+[Runtime resources](../runtime-resources/prompts-and-manuals) explains the
+packaged Yoke collection, shared writing manuals, and typed per-run payloads
+that lifecycle workflows select before calling the harness [@runtime-resources].
+The lifecycle entry point is [Lifecycle workflows](../lifecycle/workflows),
+which explains build, ingest, garden, and sync before they reach this provider
+boundary [@lifecycle-workflows].

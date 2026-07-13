@@ -77,7 +77,7 @@ to CodeAlmanac's own Init, Ingest, Garden, and Sync workflows, which carry
 their own manuals for deciding what deserves documentation [@guide-content].
 This keeps a general-purpose coding agent from improvising wiki edits outside
 the lifecycle operations described in [Lifecycle workflows](../lifecycle/workflows)
-and [Agents and manuals](../runtime-resources/prompts-and-manuals), which
+and [Runtime resources](../runtime-resources/prompts-and-manuals), which
 package stable Yoke agent instructions and expose the manuals those operations use.
 
 ## Per-Target Mechanics

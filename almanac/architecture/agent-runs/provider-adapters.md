@@ -80,5 +80,5 @@ orchestration in the adapter.
 ## Related Pages
 
 See [Harness contract](harness-contract),
-[Agents and manuals](../runtime-resources/prompts-and-manuals), and
+[Runtime resources](../runtime-resources/prompts-and-manuals), and
 [Harness event shape](../../reference/harness-event-shape).

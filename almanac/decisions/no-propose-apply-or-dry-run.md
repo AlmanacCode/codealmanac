@@ -30,7 +30,7 @@ sources:
 
 # No Propose/Apply Or Dry-Run
 
-CodeAlmanac does not wrap wiki-writing agents in proposal files, apply steps, dry-run rehearsals, or approve/revise/reject state machines. When an operation needs judgment, the product gives an agent concrete source material, [prompts and manuals](../architecture/runtime-resources/prompts-and-manuals), and constraints, then expects the agent to write or no-op directly [@manual][@live_agreement].
+CodeAlmanac does not wrap wiki-writing agents in proposal files, apply steps, dry-run rehearsals, or approve/revise/reject state machines. When an operation needs judgment, the product gives an agent concrete source material, [runtime resources](../architecture/runtime-resources/prompts-and-manuals), and constraints, then expects the agent to write or no-op directly [@manual][@live_agreement].
 
 The decision is structural. CodeAlmanac owns deterministic mechanics such as repository selection, source loading, harness execution, run logging, prompt rendering, indexing, and validation. The agent owns editorial judgment: what matters, what page should change, what links and topics make sense, and whether the best result is no change [@ingest_prompt][@garden_prompt].
 

@@ -82,4 +82,4 @@ retry paths, and CodeAlmanac must depend on a released Yoke version rather than
 a local sibling checkout [@opencode-pr-review].
 
 Related architecture: [Yoke harness boundary](../architecture/agent-runs/provider-adapters)
-and [Agents and manuals](../architecture/runtime-resources/prompts-and-manuals).
+and [Runtime resources](../architecture/runtime-resources/prompts-and-manuals).

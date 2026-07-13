@@ -97,7 +97,7 @@ sources:
   - id: agents-manuals
     type: wiki
     path: architecture/runtime-resources/prompts-and-manuals
-    note: Architecture page for packaged prompt and manual runtime resources.
+    note: Architecture page for packaged agents, prompts, manuals, and operation runtime payloads.
   - id: setup-automation
     type: wiki
     path: architecture/setup/automation-and-update
@@ -140,6 +140,6 @@ For authored wiki contracts, read [Page identity](wiki/page-identity), [Path nor
 
 Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Agent runs](agent-runs/) for harness contracts, Yoke run options, normalized events, and Codex or Claude runner boundaries [@agent-runs]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
 
-[Agents and manuals](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents and writing references used by lifecycle runs, [Instruction installation](setup/instruction-installation) covers setup-owned Codex and Claude guidance files, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@instruction-installation] [@setup-automation].
+[Runtime resources](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents, operation instructions, writing manuals, and per-run payloads used by lifecycle runs, [Instruction installation](setup/instruction-installation) covers setup-owned Codex and Claude guidance files, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@instruction-installation] [@setup-automation].
 
 [Local state](repositories/local-state), [Selection and root](repositories/selection-and-root), and [SQLite store boundaries](persistence/sqlite-store-boundaries) explain repository selection, runtime paths, and persistence ownership [@local-state] [@selection-root] [@sqlite-stores]. [Local viewer](viewer/local-viewer) explains the browser UI that projects the same wiki, topics, files, and jobs [@local-viewer].
