@@ -26,6 +26,10 @@ sources:
     type: wiki
     path: concepts/page-graph
     note: Concept page for the derived page, topic, link, source, and health graph.
+  - id: wiki-usefulness-evaluation
+    type: wiki
+    path: concepts/wiki-usefulness-evaluation
+    note: Concept page for evaluating whether the wiki improves agent work.
 ---
 
 # Concepts
@@ -51,6 +55,10 @@ topics, links, file references, sources, backlinks, and health checks
 [@page-graph]. Why concept, guide, decision, and reference vocabulary exists
 today without being a validated frontmatter field is a product decision; see
 [No page-kind field](../decisions/no-page-kind-field).
+
+[Wiki usefulness evaluation](wiki-usefulness-evaluation) defines the product
+standard for judging whether the wiki helps agents complete real codebase work,
+instead of only scoring page cleanliness or graph shape [@wiki-usefulness-evaluation].
 
 ## Lifecycle And Inputs
 

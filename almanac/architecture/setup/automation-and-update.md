@@ -34,6 +34,10 @@ sources:
     type: file
     path: src/codealmanac/services/updates/service.py
     note: Manual and scheduled package update behavior.
+  - id: update_lock
+    type: file
+    path: src/codealmanac/services/updates/lock.py
+    note: PID-file update lock implementation.
   - id: update_metadata
     type: file
     path: src/codealmanac/integrations/updates/package.py
@@ -77,6 +81,8 @@ The default application wiring is launchd-backed. `create_services` constructs `
 Manual update and scheduled update share the same planning logic. `plan_update` refuses editable installs, maps uv installs to `uv tool upgrade codealmanac`, maps pip installs to `python -m pip install --upgrade codealmanac`, and refuses unknown installers with a suggested manual command [@updates].
 
 Scheduled update adds safety checks before running the package command. It skips if the install is not ready, if an update lock is already held, or if the local database shows active CodeAlmanac jobs [@updates]. After a successful scheduled package update, it runs two smoke checks: `codealmanac --version` and `codealmanac doctor --json` [@updates]. Tests cover the uv and pip plans, editable-install refusal, active-job skip, held-lock skip, smoke success, and smoke failure paths [@update_tests].
+
+The current update lock is a PID-file lease. `UpdateLockStore.acquire` writes a JSON record with the current PID and timestamp using exclusive file creation, treats old records as stale, unlinks stale files, then tries once more [@update_lock]. Because the replacement of a stale file is not an OS-backed lock held for the full update, future changes to update concurrency should prefer a real process lock and prove that a second process cannot enter while the first still owns the update [@update_lock][@update_tests].
 
 The editable-install guard does not cover every PEP 610 direct-url install. The metadata reader records `source_url` from `direct_url.json`, but `update_method` only uses the `editable` flag before falling through to the installer-based uv or pip plan [@update_metadata][@updates]. A non-editable local path, VCS, or direct archive install with `INSTALLER` set to `uv` or `pip` can therefore still be upgraded through the normal package command.
 
