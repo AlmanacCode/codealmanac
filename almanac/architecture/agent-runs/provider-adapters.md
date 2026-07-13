@@ -30,6 +30,16 @@ sources:
 
 # Yoke Harness Boundary
 
+The Yoke harness boundary is CodeAlmanac's adapter layer for running lifecycle
+agents through the service-owned harness contract. `YokeHarnessAdapter` binds
+build, ingest, and garden prompts to Claude or Codex through Yoke, projects
+provider events into CodeAlmanac `HarnessEvent` records, and returns normalized
+`HarnessRunResult` values to lifecycle workflows [@adapter] [@events]
+[@results] [@contract]. The boundary matters because provider runtime details,
+caches, readiness checks, permissions, and failures stay under local state and
+integration code instead of leaking into workflows or wiki-writing prompts
+[@adapter] [@defaults] [@app].
+
 ## What It Owns
 
 CodeAlmanac has one provider integration: `YokeHarnessAdapter`. It implements

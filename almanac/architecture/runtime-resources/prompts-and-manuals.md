@@ -1,6 +1,6 @@
 ---
 title: Agents And Manuals
-topics: [architecture, runtime-resources, manuals, yoke]
+topics: [architecture, runtime-resources, manuals, prompts, yoke]
 sources:
   - id: catalog
     type: file
@@ -41,6 +41,17 @@ sources:
 ---
 
 # Agents And Manuals
+
+Agents and manuals are CodeAlmanac's packaged runtime resources for lifecycle
+wiki-writing operations. Build, ingest, and garden are stable agents in a Yoke
+collection, while shared writing references remain packaged manual documents
+that workflows either copy into `almanac/manual/` or embed in a typed runtime
+payload [@catalog] [@collection] [@manual-library] [@build-service]
+[@ingest-service] [@garden-service]. This boundary keeps durable instructions,
+per-run facts, and provider execution separate: agent folders own the operation
+instructions, workflow services own the JSON runtime context, and the Yoke
+adapter loads the selected agent at execution time [@build-agent]
+[@ingest-agent] [@garden-agent].
 
 ## What It Owns
 
