@@ -61,11 +61,7 @@ sources:
   - id: automation_selection
     type: file
     path: src/codealmanac/services/automation/selection.py
-    note: Automation task defaults, explicit task handling, and garden-off validation.
-  - id: automation_jobs
-    type: file
-    path: src/codealmanac/services/automation/jobs.py
-    note: Scheduled automation interval selection for sync, Garden, and update.
+    note: Automation status task defaults and explicit task handling.
   - id: cli_tests
     type: file
     path: tests/test_cli.py
@@ -104,11 +100,11 @@ Parser failures go through the custom argument parser, which classifies syntax p
 | `doctor` | Check the local install and selected wiki. | `--wiki`, `--json` [@parser_diagnostics] |
 | `update` | Update the local CLI. | `--check`, `--json`; `--scheduled` is hidden [@parser_updates] |
 | `jobs` | Inspect local run records. | `--wiki`, `--limit`, `--json`; subcommands `show`, `logs`, `attach`, `cancel` [@parser_jobs] |
-| `automation` | Report scheduled local automation status. | subcommand `status`; task filters and `--json` [@parser_automation] |
+| `automation` | Report scheduled local automation status. | subcommand `status`; optional task filters and `--json` [@parser_automation] |
 
 The run commands are covered in the workflow architecture pages. The exact machine-readable output surface is covered by [JSON output contract](json-output-contract).
 
-For `automation install`, zero task names means install the default sync, Garden, and update tasks; explicit task names narrow the install set and are deduplicated in request order [@automation_selection]. `--every` applies to sync during a default install, to Garden when Garden is an explicit selected task, and to update only when update is the only explicit selected task; `--garden-every` is the Garden-specific override, and `--garden-off` is accepted only for the default install [@automation_selection] [@automation_jobs].
+For `automation status`, zero task names means report sync, Garden, and update status. Explicit task names narrow the report and are deduplicated in request order [@automation_selection].
 
 ## Hidden Commands
 
