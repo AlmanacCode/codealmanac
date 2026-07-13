@@ -1,6 +1,7 @@
 import os
 import plistlib
 import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -24,6 +25,11 @@ class LaunchdInspection:
 
 
 class LaunchdSchedulerAdapter:
+    def unavailable_reason(self) -> str | None:
+        if sys.platform != "darwin":
+            return "scheduled automation is macOS-only for now (needs launchd)"
+        return None
+
     def install(self, job: ScheduledJob) -> ScheduledJobStatus:
         job.plist_path.parent.mkdir(parents=True, exist_ok=True)
         job.stdout_path.parent.mkdir(parents=True, exist_ok=True)
