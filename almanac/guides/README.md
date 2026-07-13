@@ -26,6 +26,10 @@ sources:
     type: wiki
     path: guides/setup-local-automation
     note: Procedure for setting up local scheduled automation.
+  - id: release-package
+    type: wiki
+    path: guides/release-package
+    note: Procedure for publishing and verifying the Python package release.
   - id: topics-guide
     type: wiki
     path: guides/maintain-topics
@@ -72,6 +76,10 @@ path for build, ingest, or garden jobs that fail through the run queue
 [Setup local automation](setup-local-automation) covers setup, scheduler
 entries, sync and garden cadence, update checks, and verification for local
 automation [@automation].
+
+[Release package](release-package) covers PyPI publishing, installed-artifact
+smoke checks, public install verification, and package-surface rules
+[@release-package].
 
 ## Maintain The Wiki
 

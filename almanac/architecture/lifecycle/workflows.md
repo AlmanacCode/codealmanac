@@ -34,7 +34,7 @@ The workflows prepare operation-specific context, but they do not each own harne
 
 Build is the initialization workflow. At queue time, it prepares a repository target, rejects an existing `almanac/`, registers the repository, initializes a minimal wiki, and records a queued build run [@build-workflow]. Harness readiness is checked later by the worker through the shared operation path, not before the initial wiki scaffold is written.
 
-When the worker executes the queued run, build calls the shared operation runner. Its task payload includes repository paths, the almanac root, `topics.yaml`, manual documents, optional guidance, and source-control policy [@build-workflow]. The stable instructions come from the packaged build agent described in [Agents and manuals](../runtime-resources/prompts-and-manuals). Build is therefore both setup and the first agent-authored wiki pass.
+When the worker executes the queued run, build calls the shared operation runner. Its task payload includes repository paths, the almanac root, `topics.yaml`, the repository-local manual root, optional guidance, and source-control policy [@build-workflow]. The stable instructions come from the packaged build agent described in [Agents and manuals](../runtime-resources/prompts-and-manuals). Build is therefore both setup and the first agent-authored wiki pass.
 
 ## Ingest
 

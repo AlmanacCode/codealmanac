@@ -34,6 +34,10 @@ sources:
     type: wiki
     path: decisions/controlled-model-catalog
     note: Decision that keeps supported harness models in a controlled catalog.
+  - id: repository-affiliation
+    type: wiki
+    path: decisions/repository-affiliation-belongs-in-repository-service
+    note: Decision that keeps future transcript checkout affiliation under the repository service boundary.
 ---
 
 # Decisions
@@ -55,6 +59,10 @@ and machine-local runtime state [@local-only].
 [Only Almanac root](only-almanac-root) narrows that shape to one wiki source
 root: `almanac/`. It rejects `.almanac/`, `docs/almanac/`, custom roots, and
 root migration shims as current product surfaces [@root].
+
+[Repository affiliation belongs in repository service](repository-affiliation-belongs-in-repository-service)
+records the future ownership boundary for mapping artifacts from checkout paths
+back to registered repositories [@repository-affiliation].
 
 ## Wiki Format
 

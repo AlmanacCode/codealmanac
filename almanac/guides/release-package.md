@@ -5,7 +5,7 @@ sources:
   - id: release-doc
     type: file
     path: RELEASE.md
-    note: Python package release checklist and package-surface rules.
+    note: Python package release checklist and public-surface constraints; package data is cross-checked against pyproject.toml.
   - id: pyproject
     type: file
     path: pyproject.toml

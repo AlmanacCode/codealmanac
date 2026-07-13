@@ -30,6 +30,10 @@ sources:
     type: wiki
     path: reference/runs/run-states-and-events
     note: Reference page for run kinds, statuses, specs, events, and logs.
+  - id: agents-manuals
+    type: wiki
+    path: architecture/runtime-resources/prompts-and-manuals
+    note: Architecture page for packaged Yoke agents and writing manuals used by lifecycle operations.
 ---
 
 # Lifecycle
@@ -50,4 +54,4 @@ Use [Mutation safety](mutation-safety) when changing allowed files, auto-commit 
 
 ## Neighboring Pages
 
-[Run states and events](../../reference/runs/run-states-and-events) is the exact reference for run kinds, statuses, queued specs, cancellation, attach, and logs [@run-states]. [Lifecycle operation](../../concepts/lifecycle-operation) is the concept page for the page-writing operation family [@lifecycle-concept].
+[Run states and events](../../reference/runs/run-states-and-events) is the exact reference for run kinds, statuses, queued specs, cancellation, attach, and logs [@run-states]. [Lifecycle operation](../../concepts/lifecycle-operation) is the concept page for the page-writing operation family [@lifecycle-concept]. [Agents and manuals](../runtime-resources/prompts-and-manuals) explains the packaged Yoke agents and writing manuals that lifecycle workflows bind into page-writing runs [@agents-manuals].
