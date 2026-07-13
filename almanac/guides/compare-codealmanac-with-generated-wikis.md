@@ -14,6 +14,10 @@ sources:
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/07/12/rollout-2026-07-12T16-26-10-019f58a7-0c22-7fe2-89af-1b1c91ccb5fd.jsonl
     note: Product conversation about comparing CodeAlmanac with OpenWiki-style generated repository documentation.
+  - id: benchmark-harness-transcript
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532.jsonl
+    note: Benchmark harness review and fix session for baseline search behavior and artifact isolation.
 ---
 
 # Compare CodeAlmanac With Generated Wikis
@@ -69,3 +73,18 @@ implementation [@comparison-transcript].
 For launch screenshots, compare equivalent detailed subsystem or workflow pages.
 Do not compare home screens; the product claim is about whether a page changes
 agent behavior during work [@comparison-transcript].
+
+## Verify The Benchmark Harness
+
+Treat the benchmark harness as part of the claim being tested. A green test
+suite is not enough when the tests encode the wrong baseline behavior, so review
+the baseline search grammar, the exact text indexed versus shown to the
+answering agent, and the behavior when the first relevant result exceeds the
+context budget [@benchmark-harness-transcript].
+
+Artifact storage also affects fairness. Benchmark artifacts should be partitioned
+by run, variant, and case; cleanup should refuse foreign directories; and large
+shared inputs such as session blobs should be stored once instead of copied into
+every case snapshot [@benchmark-harness-transcript]. Otherwise one variant can
+delete another variant's evidence or create quadratic storage growth that hides
+the real comparison result.
