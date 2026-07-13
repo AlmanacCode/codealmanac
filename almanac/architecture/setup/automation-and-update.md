@@ -46,6 +46,10 @@ sources:
     type: file
     path: tests/test_update_service.py
     note: Tests for update planning, skip rules, locks, and smoke checks.
+  - id: filelock_review
+    type: conversation
+    path: "/Users/divitsheth/.codex/sessions/2026/07/12/rollout-2026-07-12T18-18-36-019f590d-fa0d-75d3-811f-0044dc0a138f.jsonl"
+    note: Review discussion of a FileLock-based update-lock replacement.
   - id: live_agreement
     type: file
     path: docs/python-port-live-agreement.md
@@ -83,6 +87,8 @@ Manual update and scheduled update share the same planning logic. `plan_update` 
 Scheduled update adds safety checks before running the package command. It skips if the install is not ready, if an update lock is already held, or if the local database shows active CodeAlmanac jobs [@updates]. After a successful scheduled package update, it runs two smoke checks: `codealmanac --version` and `codealmanac doctor --json` [@updates]. Tests cover the uv and pip plans, editable-install refusal, active-job skip, held-lock skip, smoke success, and smoke failure paths [@update_tests].
 
 The current update lock is a PID-file lease. `UpdateLockStore.acquire` writes a JSON record with the current PID and timestamp using exclusive file creation, treats old records as stale, unlinks stale files, then tries once more [@update_lock]. Because the replacement of a stale file is not an OS-backed lock held for the full update, future changes to update concurrency should prefer a real process lock and prove that a second process cannot enter while the first still owns the update [@update_lock][@update_tests].
+
+If the lock is replaced with FileLock or another file-locking library, the release path should let the library own the lock file instead of deleting it after release. The reviewed FileLock replacement showed why: a process can acquire after the release call and before the manual deletion, then another process can create a new lock file while the acquired process still holds the old file descriptor [@filelock_review]. Tests for that shape should assert that another process can acquire after release, not that the lock file disappears; once timestamp staleness is gone, `now`, `stale_after`, and `lock_stale_after` should be removed from the update path instead of kept as unused request plumbing [@filelock_review][@setup_requests].
 
 The editable-install guard does not cover every PEP 610 direct-url install. The metadata reader records `source_url` from `direct_url.json`, but `update_method` only uses the `editable` flag before falling through to the installer-based uv or pip plan [@update_metadata][@updates]. A non-editable local path, VCS, or direct archive install with `INSTALLER` set to `uv` or `pip` can therefore still be upgraded through the normal package command.
 
