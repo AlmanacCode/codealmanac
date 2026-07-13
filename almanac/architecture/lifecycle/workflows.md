@@ -18,6 +18,14 @@ sources:
     type: file
     path: src/codealmanac/workflows/sync/service.py
     note: Sync scanner and queue entrypoint.
+  - id: run-parser
+    type: file
+    path: src/codealmanac/cli/parser/run_commands.py
+    note: Public run-command parser for init, ingest, garden, and sync.
+  - id: init-dispatch
+    type: file
+    path: src/codealmanac/cli/dispatch/build.py
+    note: CLI dispatch path that maps init arguments to BuildRequest.
   - id: operation-runner
     type: file
     path: src/codealmanac/workflows/operations/service.py
@@ -30,13 +38,13 @@ sources:
 
 # Lifecycle Workflows
 
-Lifecycle workflows are the high-level flows that create or improve a repo wiki. Build creates the first wiki, ingest folds selected source material into pages, and garden improves the existing wiki graph and content [@build-workflow] [@ingest-workflow] [@garden-workflow]. These three are the page-writing operation family described by [Lifecycle operation](../../concepts/lifecycle-operation).
+Lifecycle workflows are the high-level flows that create or improve a repo wiki. Build creates the first wiki, ingest folds selected source material into pages, and garden improves the existing wiki graph and content [@build-workflow] [@ingest-workflow] [@garden-workflow]. The public command surface names that first path `codealmanac init`: the parser exposes `init`, and dispatch maps it to a `BuildRequest` before queueing build work [@run-parser] [@init-dispatch]. These three workflows are the page-writing operation family described by [Lifecycle operation](../../concepts/lifecycle-operation).
 
 The workflows prepare operation-specific context, but they do not each own harness execution, run completion, index refresh, or final validation. They delegate that common path to [Operation runner](operation-runner) [@operation-runner]. This keeps build, ingest, and garden different in purpose while sharing one run-execution path.
 
 ## Build
 
-Build is the initialization workflow. At queue time, it prepares a repository target, rejects an existing `almanac/`, registers the repository, initializes a minimal wiki, and records a queued build run [@build-workflow]. Harness readiness is checked later by the worker through the shared operation path, not before the initial wiki scaffold is written.
+Build is the initialization workflow behind public `codealmanac init`. At queue time, it prepares a repository target, rejects an existing `almanac/`, registers the repository, initializes a minimal wiki, and records a queued build run [@build-workflow] [@run-parser]. Harness readiness is checked later by the worker through the shared operation path, not before the initial wiki scaffold is written.
 
 When the worker executes the queued run, build calls the shared operation runner. Its task payload includes repository paths, the almanac root, `topics.yaml`, manual documents, optional guidance, and source-control policy [@build-workflow]. The stable instructions come from the packaged build agent described in [Agents and manuals](../runtime-resources/prompts-and-manuals). Build is therefore both setup and the first agent-authored wiki pass.
 

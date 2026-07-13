@@ -1,6 +1,6 @@
 ---
 title: Future Page Kinds
-topics: [concepts, wiki, page-format, product]
+topics: [concepts, wiki, page-format]
 sources:
   - id: frontmatter-parser
     type: file
@@ -32,7 +32,7 @@ The modeled frontmatter fields are `title`, `summary`, `topics`, and `sources`; 
 
 That boundary matters for future work. Adding page kinds would require parser, validation, prompt, and viewer changes; it should not happen as a hidden docs convention or by casually adding `kind:` to pages [@frontmatter-parser] [@frontmatter-reference].
 
-## Product Fit
+## When Page Kinds Fit
 
 Page kinds become worthwhile only if they change behavior. Good reasons include kind-specific validation, filtered viewer modes, better prompt instructions, or export profiles that assemble atomic pages into human-readable packets. Without one of those behaviors, the current folder, manual, and topic system is simpler because it does not add another metadata field to keep current [@manual-overview] [@frontmatter-reference].
 

@@ -26,10 +26,6 @@ sources:
     type: wiki
     path: guides/compare-codealmanac-with-generated-wikis
     note: Guide for comparing CodeAlmanac with generated repository wikis.
-  - id: page-kinds
-    type: wiki
-    path: concepts/page-kinds
-    note: Concept page for page-role vocabulary and unsupported kind frontmatter.
 ---
 
 # Product Surface
@@ -37,8 +33,7 @@ sources:
 The product surface is the small public shape CodeAlmanac presents outside its
 implementation internals. The topic graph defines `product` as product scope and
 public-surface decisions, and this hub routes that neighborhood: the local-only
-boundary, the package release path, launch and demo framing, and page-role
-vocabulary [@topics].
+boundary, the package release path, and launch and demo framing [@topics].
 
 The most important page is [Local-only Python product](decisions/local-only-python-product).
 It states that the active product is the `codealmanac` Python CLI, a repo-local
@@ -62,9 +57,3 @@ knowledge, not a team-chat router or generic documentation pitch
 recording sequence, while the comparison guide turns it into benchmark tasks for
 repo-only docs, living-memory updates, and practical agent work [@launch-demo]
 [@comparison-guide].
-
-[Future page kinds](concepts/page-kinds) also belongs in this neighborhood
-because it keeps page-role vocabulary separate from the current parser contract.
-It explains why concept, architecture, guide, decision, and reference are useful
-reader-facing categories without making `kind` a supported frontmatter field
-[@page-kinds].

@@ -62,6 +62,10 @@ sources:
     type: wiki
     path: architecture/cli/terminal-output
     note: Architecture page for human and JSON terminal rendering.
+  - id: command-surface
+    type: wiki
+    path: reference/cli/public-command-surface
+    note: Reference page for visible CLI commands and options.
   - id: agent-runs
     type: wiki
     path: architecture/agent-runs
@@ -120,7 +124,7 @@ Start with [Service boundaries](service-boundaries). It explains the main depend
 
 ## Page-Writing Operations
 
-[Lifecycle](lifecycle/) is the entry point for build, ingest, garden, sync, queued runs, operation execution, and mutation safety. Build, ingest, and garden are page-writing operation families; sync is a scanner that queues ingest work instead of writing pages itself [@lifecycle].
+[Lifecycle](lifecycle/) is the entry point for build, ingest, garden, sync, queued runs, operation execution, and mutation safety. Build is the internal workflow and run kind behind public `codealmanac init`; ingest and garden share their names with public commands, and sync is a scanner that queues ingest work instead of writing pages itself [@lifecycle] [@command-surface].
 
 Use [Operation runner](lifecycle/operation-runner) when changing the shared run-execution path [@operation-runner]. Use [Mutation safety](lifecycle/mutation-safety) when changing the checks that keep lifecycle writes inside the allowed wiki source files [@mutation-safety].
 

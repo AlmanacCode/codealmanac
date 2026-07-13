@@ -14,22 +14,10 @@ sources:
     type: file
     path: docs/python-port-live-agreement.md
     note: Current Python rewrite agreement and active decisions.
-  - id: local-only-decision
+  - id: command-surface
     type: wiki
-    path: decisions/local-only-python-product
-    note: Decision that defines the local Python product boundary.
-  - id: product-surface
-    type: wiki
-    path: product
-    note: Hub for product boundary, release, launch, and demo pages.
-  - id: release-guide
-    type: wiki
-    path: guides/release-package
-    note: Guide for publishing and verifying the Python package.
-  - id: launch-positioning
-    type: wiki
-    path: concepts/launch-positioning
-    note: Product-story concept page for launch and demo framing.
+    path: reference/cli/public-command-surface
+    note: Reference page for visible CLI commands and options.
 ---
 
 # Getting Started
@@ -43,7 +31,7 @@ CodeAlmanac is a local Python product in this rewrite. It stores committed wiki 
 Read these pages in order:
 
 1. [Local repo wiki](concepts/local-repo-wiki) explains what the repo wiki is and why committed Markdown is separate from local derived state.
-2. [Lifecycle workflows](architecture/lifecycle/workflows) explains build, ingest, and garden, and why sync is only a scanner.
+2. [Lifecycle workflows](architecture/lifecycle/workflows) explains the build workflow behind public `codealmanac init`, the ingest and garden workflows, and why sync is only a scanner [@command-surface].
 3. [Index refresh and search](architecture/wiki/index-refresh-and-search) explains how read commands use the derived index.
 4. [Verify a wiki change](guides/verify-a-wiki-change) explains how to check a wiki edit before calling it done.
 
@@ -67,7 +55,7 @@ Use these routes when you already know the kind of work:
 
 - For command behavior, read [CLI public command surface](reference/cli/public-command-surface).
 - For config defaults, model choices, and precedence, read [Config keys](reference/config-keys).
-- For product boundary, public package, or demo work, start with [Product surface](product), then follow [Local-only Python product](decisions/local-only-python-product), [Release package](guides/release-package), or [Launch positioning](concepts/launch-positioning) for the specific job [@product-surface] [@local-only-decision] [@release-guide] [@launch-positioning].
+- For product boundary, public package, or demo work, start with [Product surface](product), then follow [Local-only Python product](decisions/local-only-python-product), [Release package](guides/release-package), or [Launch positioning](concepts/launch-positioning) for the specific job.
 - For page identity, routes, and `README.md` landing pages, read [Page identity](architecture/wiki/page-identity).
 - For page evidence and frontmatter, read [Frontmatter and sources](reference/page-format/frontmatter-and-sources).
 - For lifecycle run state, logs, and attach behavior, read [Run states and events](reference/runs/run-states-and-events).

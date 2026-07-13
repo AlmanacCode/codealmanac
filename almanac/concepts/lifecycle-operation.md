@@ -18,6 +18,14 @@ sources:
     type: file
     path: src/codealmanac/workflows/operations/service.py
     note: Shared execution path for page-writing operations.
+  - id: run-parser
+    type: file
+    path: src/codealmanac/cli/parser/run_commands.py
+    note: Public run-command parser for init, ingest, garden, and sync.
+  - id: init-dispatch
+    type: file
+    path: src/codealmanac/cli/dispatch/build.py
+    note: CLI dispatch path that maps init arguments to BuildRequest.
   - id: live-agreement
     type: file
     path: docs/python-port-live-agreement.md
@@ -26,7 +34,7 @@ sources:
 
 # Lifecycle Operation
 
-A lifecycle operation is a page-writing workflow that asks a configured local agent harness to create or improve wiki Markdown. In this codebase, the lifecycle operation kinds are build, ingest, and garden: build creates the first useful wiki, ingest folds selected source material into an existing wiki, and garden improves the existing wiki graph [@build-workflow] [@ingest-workflow] [@garden-workflow]. These operations are the only normal paths that invoke AI to write page prose.
+A lifecycle operation is a page-writing workflow that asks a configured local agent harness to create or improve wiki Markdown. In this codebase, the lifecycle operation kinds are build, ingest, and garden: build creates the first useful wiki, ingest folds selected source material into an existing wiki, and garden improves the existing wiki graph [@build-workflow] [@ingest-workflow] [@garden-workflow]. The public command for the build path is `codealmanac init`, which dispatches to `BuildRequest`; `build` is the internal workflow and run kind, not a public top-level command [@run-parser] [@init-dispatch]. These operations are the only normal paths that invoke AI to write page prose.
 
 The concept matters because it keeps judgmentful wiki writing separate from read commands and deterministic organization commands. Search, show, health, and validate may read or refresh derived state, but they do not decide what prose belongs in a page. Lifecycle operations prepare context, call a harness, refresh the index after a successful harness run, validate the wiki, and finish the run [@operation-runner].
 
