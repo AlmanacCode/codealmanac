@@ -24,6 +24,7 @@ from codealmanac.services.automation.requests import (
     ReconcileAutomationTaskRequest,
     RemoveAllAutomationRequest,
 )
+from codealmanac.services.automation.service import AutomationService
 from codealmanac.services.config.service import ConfigService
 from codealmanac.services.config.store import ConfigStore
 from codealmanac.services.harnesses.models import HarnessKind, HarnessReadiness
@@ -208,6 +209,29 @@ def test_setup_can_skip_sync_automation(home: Path):
         AutomationTask.GARDEN,
         AutomationTask.UPDATE,
     )
+
+
+def test_setup_skips_automation_cleanly_when_scheduler_unavailable(home: Path):
+    automation = AutomationService(UnavailableSchedulerAdapter())
+    config = ConfigService(
+        ConfigStore(),
+        home / ".codealmanac/config.toml",
+        automation,
+    )
+    service = SetupService(
+        FileInstructionInstaller(home),
+        automation,
+        FilesystemGlobalStateRemover(home / ".codealmanac"),
+        FakePackageUninstaller(skipped_package_result()),
+        config=config,
+    )
+
+    result = service.run(RunSetupRequest())
+
+    assert result.config_update.automation == ()
+    assert result.config_update.automation_error is not None
+    assert "macOS-only" in result.config_update.automation_error
+    assert result.changes[0].changed is True
 
 
 def test_uninstall_removes_automation_by_default(home: Path):
@@ -406,6 +430,24 @@ class FakeRunnerProbe:
             available=self.available,
             message=self.message,
         )
+
+
+class UnavailableSchedulerAdapter:
+    def unavailable_reason(self) -> str | None:
+        return "scheduled automation is macOS-only for now (needs launchd)"
+
+    def install(self, job):
+        raise AssertionError(
+            "scheduler.install should not be called when unavailable"
+        )
+
+    def uninstall(self, job):
+        raise AssertionError(
+            "scheduler.uninstall should not be called when unavailable"
+        )
+
+    def status(self, job):
+        raise AssertionError("scheduler.status is not exercised in this test")
 
 
 class FakeSetupAutomationManager:
