@@ -34,6 +34,10 @@ sources:
     type: file
     path: src/codealmanac/workflows/ingest/service.py
     note: Ingest workflow use of source resolution and runtime inspection.
+  - id: codex-session-workdir-mismatch
+    type: conversation
+    path: "/Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532.jsonl"
+    note: Codex session selected for codealmanac because metadata cwd was this repo while later tool calls worked in almanac-benchmarks.
 ---
 
 # Source Resolution And Runtime
@@ -59,6 +63,8 @@ Transcript discovery is a separate source path used by sync. The default discove
 The Codex adapter scans `.codex/sessions` under the configured home directory, reads the first JSONL lines for session metadata, and skips transcripts whose metadata marks `thread_source` as `subagent` [@codex_transcripts]. The Claude adapter scans `.claude/projects` under the configured home directory and skips paths that contain `subagents` [@claude_transcripts].
 
 Sync does not ingest every discovered transcript. It matches each transcript `cwd` to a registered repository root, skips unregistered working directories, and skips transcripts older than the active sync window as `inactive` [@sync_evaluation]. That means a transcript can be discovered correctly but still not become ingest input for the current sync run.
+
+The `cwd` used for Codex sync comes from the session metadata, not from each later tool call's `workdir` [@codex_transcripts] [@sync_evaluation]. A transcript can therefore be eligible for one registered repository even when the durable work inside the transcript happened in another checkout; one July 13, 2026 Codex session had metadata `cwd` under `codealmanac` but later edited and tested `/Users/rohan/Desktop/Projects/almanac-benchmarks` [@codex-session-workdir-mismatch]. Ingest should treat that as raw material and no-op when the selected transcript does not change durable knowledge for the target wiki.
 
 ## Related Reference
 
