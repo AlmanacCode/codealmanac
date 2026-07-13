@@ -14,14 +14,14 @@ sources:
     type: web
     url: https://github.com/bcurts/agentchattr
     note: Local multi-agent chat comparison point.
-  - id: launch-video-session
-    type: conversation
-    path: /Users/divitsheth/.codex/sessions/2026/07/09/rollout-2026-07-09T19-26-19-019f49d8-e706-7d73-9fa0-1cd8009b02cb.jsonl
-    note: Launch-video implementation session and follow-up scope check.
-  - id: product-positioning-session
-    type: conversation
-    path: /Users/divitsheth/.codex/sessions/2026/07/11/rollout-2026-07-11T19-18-29-019f541e-72eb-7e01-8644-b2a5e139fcd7.jsonl
-    note: Product-origin and three-pillar positioning discussion.
+  - id: live-agreement
+    type: file
+    path: docs/python-port-live-agreement.md
+    note: Local-only product boundary and excluded hosted/cloud surfaces.
+  - id: differentiation
+    type: file
+    path: docs/strategy/codealmanac-vs-deepwiki-supermemory.md
+    note: Product positioning around git-native repo memory maintained by agents.
   - id: show-hn
     type: web
     url: https://news.ycombinator.com/item?id=48849361
@@ -54,28 +54,27 @@ decisions, invariants, gotchas, flows, and operating knowledge that future agent
 sessions would otherwise rediscover. Git keeps that knowledge reviewable, while
 build, ingest, garden, and sync keep it current [@public-readme].
 
-Keep launch-video claims local to the current product. The companion feature
-video covers ingest, background jobs, session sync, Garden maintenance, and
-local-only automation; it does not mention a hosted product, PR automation,
-GitHub workflows, or cloud features [@launch-video-session].
+Keep launch-video claims local to the current product. The Python rewrite is a
+local-only CLI and explicitly excludes hosted shipping, login/connect/upload,
+SDK, MCP, and cloud capture surfaces in this version [@live-agreement].
 
 Use three plain pillars when explaining how CodeAlmanac solves the context
 problem:
 
 1. **Updates from conversations:** CodeAlmanac reads coding-agent conversations
    and saves decisions, rejected ideas, bug lessons, and other context the code
-   does not explain [@product-positioning-session].
+   does not explain [@public-readme] [@differentiation].
 2. **Made for agents:** The wiki is a set of connected Markdown pages, so
-   agents can search for relevant context instead of reading one large
-   instruction file [@product-positioning-session].
+   agents can search for relevant context before changing the repo [@public-readme]
+   [@differentiation].
 3. **Gardens itself:** CodeAlmanac regularly checks and reorganizes the wiki,
-   removing stale information as the codebase changes [@product-positioning-session].
+   reducing stale, duplicated, or poorly connected knowledge [@public-readme]
+   [@differentiation].
 
-Keep the wording direct and a little imperfect. The approved origin story is
-that this problem appeared while building OpenAlmanac and earlier products with
-coding agents: decisions, rejected approaches, and lessons kept disappearing
-between sessions, so agents repeated old mistakes or changed code without
-understanding why it had its shape [@product-positioning-session].
+Keep the wording direct and a little imperfect. The durable story is that
+CodeAlmanac is a git-native living wiki for one codebase, maintained by coding
+agents as a side effect of real development and optimized for the next coding
+agent before it edits the repo [@differentiation].
 
 Team-chat tools such as TagIt and agentchattr route work and conversation among
 agents [@tagit] [@agentchattr]. They are adjacent rather than equivalent:
@@ -87,12 +86,13 @@ agents query before changing code, not a chat channel between agents.
 When answering public launch questions, be transparent that CodeAlmanac already
 had an initial Show HN on July 9, 2026 [@show-hn]. The later Launch HN should
 be framed as a fuller introduction to the same local, open-source CLI rather
-than as a major product-change announcement [@product-positioning-session].
+than as a major product-change announcement [@public-readme] [@live-agreement].
 
 The concise answer for a missing demo video is that HN users can install and
-try the CLI directly without creating an account [@product-positioning-session].
+try the CLI directly without creating an account [@public-readme]
+[@live-agreement].
 Keep privacy claims tied to the local product boundary: the CLI has no Almanac
 account, telemetry, analytics, or usage tracking; user code, transcripts, and
 wiki content stay local except for the selected model provider used by the
 user's own Codex or Claude account during lifecycle runs [@public-readme]
-[@product-positioning-session].
+[@live-agreement].
