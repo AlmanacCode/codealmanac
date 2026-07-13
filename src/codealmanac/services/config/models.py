@@ -173,6 +173,7 @@ class ConfigUpdateResult(CodeAlmanacModel):
     path: str
     entries: tuple["ConfigEntry", ...]
     automation: tuple[AutomationTaskApplyResult, ...]
+    automation_error: str | None = None
 
 
 class ConfigEntry(CodeAlmanacModel):

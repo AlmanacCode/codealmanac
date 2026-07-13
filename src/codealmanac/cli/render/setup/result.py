@@ -137,6 +137,13 @@ def product_update_step(result: SetupResult) -> SetupStep:
 
 
 def automation_step(result: SetupResult, task: AutomationTask, label: str) -> SetupStep:
+    if result.config_update.automation_error is not None:
+        return SetupStep(
+            label,
+            "unsupported",
+            result.config_update.automation_error,
+            warning=True,
+        )
     applied = {item.task: item for item in result.config_update.automation}
     item = applied.get(task)
     if item is None:
@@ -147,6 +154,13 @@ def automation_step(result: SetupResult, task: AutomationTask, label: str) -> Se
 
 
 def wiki_maintenance_step(result: SetupResult) -> SetupStep:
+    if result.config_update.automation_error is not None:
+        return SetupStep(
+            "Wiki maintenance",
+            "manual",
+            result.config_update.automation_error,
+            warning=True,
+        )
     if len(result.config_update.automation) == 0:
         return SetupStep("Wiki maintenance", "manual", "no schedules installed")
     installed = {item.task for item in result.config_update.automation if item.enabled}

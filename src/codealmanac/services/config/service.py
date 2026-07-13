@@ -1,7 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 
-from codealmanac.core.errors import ValidationFailed
+from codealmanac.core.errors import ExecutionFailed, ValidationFailed
 from codealmanac.core.paths import normalize_path
 from codealmanac.services.automation.defaults import duration_text
 from codealmanac.services.automation.models import (
@@ -77,11 +77,21 @@ class ConfigService:
         path = normalize_path(self.user_config_path)
         self.store.set_values(path, user_config_updates(request))
         config = self.load_user()
-        applied = self.reconcile_all(config.automation, request)
+        # update() is setup's bulk onboarding call. A scheduler failure here
+        # (e.g. no launchd on this platform) should not abort instruction and
+        # harness config that already succeeded; set()/apply() are explicit,
+        # single-purpose commands and keep propagating scheduler failures.
+        automation_error = None
+        try:
+            applied = self.reconcile_all(config.automation, request)
+        except ExecutionFailed as error:
+            applied = ()
+            automation_error = str(error)
         return ConfigUpdateResult(
             path=path.as_posix(),
             entries=config_entries(config),
             automation=applied,
+            automation_error=automation_error,
         )
 
     def apply(self, request: ApplyConfigRequest) -> ConfigApplyResult:
