@@ -2,6 +2,10 @@
 title: Compare CodeAlmanac With Generated Wikis
 topics: [guides, product]
 sources:
+  - id: product-surface
+    type: wiki
+    path: product
+    note: Product hub that routes launch, demo, release, and local-only boundary pages.
   - id: launch-positioning
     type: wiki
     path: concepts/launch-positioning
@@ -15,11 +19,13 @@ sources:
 # Compare CodeAlmanac With Generated Wikis
 
 Use this guide when comparing CodeAlmanac with an OpenWiki-style generated
-repository wiki. The comparison should measure whether a fresh coding agent can
-use the wiki to make better decisions, not whether one product has more pages or
-a better home screen. That follows the launch positioning rule: search proves
-retrieval, but a task proves the agent actually applied the knowledge
-[@launch-positioning].
+repository wiki. It belongs to the [Product surface](../product) route for
+launch and demo work, and it turns the [Launch positioning](../concepts/launch-positioning)
+frame into a benchmark procedure [@product-surface] [@launch-positioning]. The
+comparison should measure whether a fresh coding agent can use the wiki to make
+better decisions, not whether one product has more pages or a better home
+screen. Search proves retrieval, but a task proves the agent actually applied
+the knowledge [@launch-positioning].
 
 ## Start With A Repo-Only Benchmark
 
