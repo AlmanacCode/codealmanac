@@ -22,6 +22,10 @@ sources:
     type: wiki
     path: guides/demo-codealmanac-in-launch-video
     note: Guide for demonstrating CodeAlmanac through the viewer and CLI.
+  - id: comparison-guide
+    type: wiki
+    path: guides/compare-codealmanac-with-generated-wikis
+    note: Guide for comparing CodeAlmanac with generated repository wikis.
   - id: page-kinds
     type: wiki
     path: concepts/page-kinds
@@ -49,12 +53,15 @@ clean Python environments and that packaged prompts, manuals, and CLI resources
 ship with the distribution [@release].
 
 For launch work, start with [Launch positioning](concepts/launch-positioning),
-then use [Demo CodeAlmanac in a launch video](guides/demo-codealmanac-in-launch-video).
+then use [Demo CodeAlmanac in a launch video](guides/demo-codealmanac-in-launch-video)
+or [Compare CodeAlmanac with generated wikis](guides/compare-codealmanac-with-generated-wikis).
 The concept page preserves the product contrast: CodeAlmanac is a maintained
 repository wiki for decisions, invariants, gotchas, flows, and operating
 knowledge, not a team-chat router or generic documentation pitch
 [@launch-positioning]. The guide turns that framing into a short viewer-plus-CLI
-recording sequence [@launch-demo].
+recording sequence, while the comparison guide turns it into benchmark tasks for
+repo-only docs, living-memory updates, and practical agent work [@launch-demo]
+[@comparison-guide].
 
 [Future page kinds](concepts/page-kinds) also belongs in this neighborhood
 because it keeps page-role vocabulary separate from the current parser contract.

@@ -42,6 +42,10 @@ sources:
     type: wiki
     path: guides/demo-codealmanac-in-launch-video
     note: Procedure for demonstrating CodeAlmanac in a launch video.
+  - id: comparison-guide
+    type: wiki
+    path: guides/compare-codealmanac-with-generated-wikis
+    note: Procedure for benchmarking CodeAlmanac against generated repository wikis.
   - id: release
     type: wiki
     path: guides/release-package
@@ -110,3 +114,7 @@ product-demonstration guide for showing the local viewer and terminal query
 flow in a launch video [@launch-demo]. Use [Launch positioning](../concepts/launch-positioning)
 when the work needs the broader product story, comparison frame, or launch
 audience notes behind that demo [@launch-positioning].
+
+[Compare CodeAlmanac with generated wikis](compare-codealmanac-with-generated-wikis)
+turns that comparison frame into a benchmark procedure for repo-only questions,
+living-memory updates, and practical implementation tasks [@comparison-guide].

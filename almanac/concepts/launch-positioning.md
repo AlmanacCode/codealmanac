@@ -67,6 +67,8 @@ site.
 
 For a demo, show one non-obvious wiki fact and then retrieve it through the CLI.
 See [Demo CodeAlmanac in a launch video](../guides/demo-codealmanac-in-launch-video).
+For a side-by-side comparison with generated repository wikis, use
+[Compare CodeAlmanac with generated wikis](../guides/compare-codealmanac-with-generated-wikis).
 
 ## Evaluation Evidence
 
