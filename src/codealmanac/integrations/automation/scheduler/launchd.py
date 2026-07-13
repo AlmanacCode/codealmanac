@@ -6,6 +6,9 @@ from datetime import timedelta
 from pathlib import Path
 
 from codealmanac.core.errors import ExecutionFailed
+from codealmanac.integrations.automation.scheduler.process import (
+    surface_process_error,
+)
 from codealmanac.services.automation.models import (
     EnvironmentVariable,
     ScheduledJob,
@@ -25,36 +28,36 @@ class LaunchdInspection:
 
 class LaunchdSchedulerAdapter:
     def install(self, job: ScheduledJob) -> ScheduledJobStatus:
-        job.plist_path.parent.mkdir(parents=True, exist_ok=True)
+        job.manifest_path.parent.mkdir(parents=True, exist_ok=True)
         job.stdout_path.parent.mkdir(parents=True, exist_ok=True)
         job.stderr_path.parent.mkdir(parents=True, exist_ok=True)
-        with job.plist_path.open("wb") as handle:
+        with job.manifest_path.open("wb") as handle:
             plistlib.dump(launchd_plist(job), handle, sort_keys=False)
         self.bootout(job)
         self.bootstrap(job)
         return self.status(job)
 
     def uninstall(self, job: ScheduledJob) -> bool:
-        plist_existed = job.plist_path.exists()
+        plist_existed = job.manifest_path.exists()
         service_removed = self.bootout(job)
-        job.plist_path.unlink(missing_ok=True)
+        job.manifest_path.unlink(missing_ok=True)
         return plist_existed or service_removed
 
     def status(self, job: ScheduledJob) -> ScheduledJobStatus:
         inspection = self.inspect(job)
-        if not job.plist_path.exists():
+        if not job.manifest_path.exists():
             return ScheduledJobStatus(
                 task=job.task,
                 label=job.label,
-                plist_path=job.plist_path,
+                manifest_path=job.manifest_path,
                 installed=False,
                 loaded=inspection.loaded,
             )
-        data = read_plist(job.plist_path)
+        data = read_plist(job.manifest_path)
         return ScheduledJobStatus(
             task=job.task,
             label=job.label,
-            plist_path=job.plist_path,
+            manifest_path=job.manifest_path,
             installed=True,
             loaded=inspection.loaded,
             interval=read_interval(data),
@@ -66,7 +69,7 @@ class LaunchdSchedulerAdapter:
 
     def bootstrap(self, job: ScheduledJob) -> None:
         result = self.run_launchctl(
-            ("bootstrap", launchd_target(), str(job.plist_path))
+            ("bootstrap", launchd_target(), str(job.manifest_path))
         )
         if result.returncode != 0:
             raise ExecutionFailed(
@@ -192,13 +195,6 @@ def parse_integer(value: str) -> int | None:
         return int(value)
     except ValueError:
         return None
-
-
-def surface_process_error(result: subprocess.CompletedProcess[str]) -> str:
-    text = result.stderr.strip() or result.stdout.strip()
-    if len(text) > 500:
-        return f"{text[:500]}..."
-    return text or f"exit {result.returncode}"
 
 
 def service_not_found(result: subprocess.CompletedProcess[str]) -> bool:

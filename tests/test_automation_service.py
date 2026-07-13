@@ -9,12 +9,21 @@ from pydantic import ValidationError
 from codealmanac.app import create_app
 from codealmanac.cli.render.automation import render_automation_job_status
 from codealmanac.core.errors import ExecutionFailed
+from codealmanac.integrations.automation.scheduler import default_scheduler_adapter
 from codealmanac.integrations.automation.scheduler.launchd import (
     LaunchdSchedulerAdapter,
     parse_launchd_inspection,
 )
+from codealmanac.integrations.automation.scheduler.systemd import (
+    SystemdSchedulerAdapter,
+    exec_start,
+    service_unit_path,
+    timer_unit,
+)
+from codealmanac.services.automation.jobs import launch_path, manifest_path_for
 from codealmanac.services.automation.models import (
     AutomationTask,
+    EnvironmentVariable,
     ScheduledJob,
     ScheduledJobState,
     ScheduledJobStatus,
@@ -35,17 +44,17 @@ class FakeSchedulerAdapter:
 
     def install(self, job: ScheduledJob) -> ScheduledJobStatus:
         self.installed.append(job)
-        self.loaded.add(job.plist_path)
+        self.loaded.add(job.manifest_path)
         return status_for(job, installed=True)
 
     def uninstall(self, job: ScheduledJob) -> bool:
         self.uninstalled.append(job)
-        existed = job.plist_path in self.loaded
-        self.loaded.discard(job.plist_path)
+        existed = job.manifest_path in self.loaded
+        self.loaded.discard(job.manifest_path)
         return existed
 
     def status(self, job: ScheduledJob) -> ScheduledJobStatus:
-        return status_for(job, installed=job.plist_path in self.loaded)
+        return status_for(job, installed=job.manifest_path in self.loaded)
 
 
 def test_automation_reconcile_enabled_installs_explicit_task(
@@ -80,9 +89,7 @@ def test_automation_reconcile_disabled_removes_explicit_task(
 ) -> None:
     scheduler = FakeSchedulerAdapter()
     app = automation_app(isolated_home, scheduler)
-    scheduler.loaded.add(
-        isolated_home / "Library/LaunchAgents/com.codealmanac.garden.plist"
-    )
+    scheduler.loaded.add(manifest_path_for(AutomationTask.GARDEN, isolated_home))
 
     result = app.automation.reconcile_task(
         ReconcileAutomationTaskRequest(
@@ -114,9 +121,7 @@ def test_automation_remove_all_is_explicit(
     scheduler = FakeSchedulerAdapter()
     app = automation_app(isolated_home, scheduler)
     for task in AutomationTask:
-        scheduler.loaded.add(
-            isolated_home / f"Library/LaunchAgents/com.codealmanac.{task.value}.plist"
-        )
+        scheduler.loaded.add(manifest_path_for(task, isolated_home))
 
     result = app.automation.remove_all(RemoveAllAutomationRequest(home=isolated_home))
 
@@ -160,7 +165,7 @@ def test_launchd_adapter_writes_structured_plist(
     job = ScheduledJob(
         task=AutomationTask.SYNC,
         label="com.codealmanac.sync",
-        plist_path=tmp_path / "com.codealmanac.sync.plist",
+        manifest_path=tmp_path / "com.codealmanac.sync.plist",
         program_arguments=("/usr/local/bin/codealmanac", "sync"),
         interval=timedelta(minutes=5),
         environment=(),
@@ -170,7 +175,7 @@ def test_launchd_adapter_writes_structured_plist(
 
     status = LaunchdSchedulerAdapter().install(job)
 
-    data = plistlib.loads(job.plist_path.read_bytes())
+    data = plistlib.loads(job.manifest_path.read_bytes())
     assert data["Label"] == "com.codealmanac.sync"
     assert data["Program"] == "/usr/local/bin/codealmanac"
     assert data["ProgramArguments"][-1] == "sync"
@@ -205,7 +210,7 @@ def test_launchd_uninstall_boots_out_loaded_service_without_plist(
     job = ScheduledJob(
         task=AutomationTask.SYNC,
         label="com.codealmanac.sync",
-        plist_path=tmp_path / "missing.plist",
+        manifest_path=tmp_path / "missing.plist",
         program_arguments=("/usr/local/bin/codealmanac", "sync"),
         interval=timedelta(minutes=5),
         environment=(),
@@ -246,7 +251,7 @@ def test_launchd_uninstall_preserves_plist_on_real_bootout_failure(
     job = ScheduledJob(
         task=AutomationTask.SYNC,
         label="com.codealmanac.sync",
-        plist_path=plist_path,
+        manifest_path=plist_path,
         program_arguments=("/usr/local/bin/codealmanac", "sync"),
         interval=timedelta(minutes=5),
         environment=(),
@@ -283,7 +288,7 @@ def test_launchd_uninstall_tolerates_service_not_found(
     job = ScheduledJob(
         task=AutomationTask.SYNC,
         label="com.codealmanac.sync",
-        plist_path=tmp_path / "missing.plist",
+        manifest_path=tmp_path / "missing.plist",
         program_arguments=("/usr/local/bin/codealmanac", "sync"),
         interval=timedelta(minutes=5),
         environment=(),
@@ -344,7 +349,7 @@ def test_automation_status_renders_run_health(
     status = ScheduledJobStatus(
         task=AutomationTask.SYNC,
         label="com.codealmanac.sync",
-        plist_path=tmp_path / "com.codealmanac.sync.plist",
+        manifest_path=tmp_path / "com.codealmanac.sync.plist",
         installed=True,
         loaded=True,
         interval=timedelta(hours=5),
@@ -371,7 +376,7 @@ def status_for(job: ScheduledJob, installed: bool) -> ScheduledJobStatus:
     return ScheduledJobStatus(
         task=job.task,
         label=job.label,
-        plist_path=job.plist_path,
+        manifest_path=job.manifest_path,
         installed=installed,
         loaded=installed,
         interval=job.interval if installed else None,
@@ -381,6 +386,7 @@ def status_for(job: ScheduledJob, installed: bool) -> ScheduledJobStatus:
 def completed_process(
     args: tuple[str, ...],
     returncode: int = 0,
+    stdout: str = "",
     stderr: str = "",
 ):
     from subprocess import CompletedProcess
@@ -388,6 +394,268 @@ def completed_process(
     return CompletedProcess(
         args=args,
         returncode=returncode,
-        stdout="",
+        stdout=stdout,
         stderr=stderr,
     )
+
+
+class FakeSystemctl:
+    def __init__(
+        self,
+        show_outputs: dict[str, str] | None = None,
+        failures: dict[str, tuple[int, str]] | None = None,
+    ):
+        self.calls: list[tuple[str, ...]] = []
+        self.show_outputs = show_outputs or {}
+        self.failures = failures or {}
+
+    def __call__(self, args: tuple[str, ...]):
+        self.calls.append(args)
+        if args[0] in self.failures:
+            returncode, stderr = self.failures[args[0]]
+            return completed_process(args, returncode=returncode, stderr=stderr)
+        if args[0] == "show":
+            return completed_process(args, stdout=self.show_outputs.get(args[1], ""))
+        return completed_process(args)
+
+
+def systemd_job(tmp_path: Path) -> ScheduledJob:
+    return ScheduledJob(
+        task=AutomationTask.SYNC,
+        label="com.codealmanac.sync",
+        manifest_path=tmp_path / "systemd/user/com.codealmanac.sync.timer",
+        program_arguments=("/usr/local/bin/codealmanac", "sync"),
+        interval=timedelta(minutes=5),
+        environment=(EnvironmentVariable(name="PATH", value="/custom/bin"),),
+        stdout_path=tmp_path / "logs/sync.out.log",
+        stderr_path=tmp_path / "logs/sync.err.log",
+    )
+
+
+def test_manifest_path_for_selects_platform_manifest(tmp_path: Path) -> None:
+    assert manifest_path_for(AutomationTask.SYNC, tmp_path, platform="darwin") == (
+        tmp_path / "Library/LaunchAgents/com.codealmanac.sync.plist"
+    )
+    assert manifest_path_for(AutomationTask.SYNC, tmp_path, platform="linux") == (
+        tmp_path / ".config/systemd/user/com.codealmanac.sync.timer"
+    )
+
+
+def test_manifest_path_for_honors_xdg_config_home(tmp_path: Path) -> None:
+    xdg = tmp_path / "xdg"
+    assert manifest_path_for(
+        AutomationTask.SYNC, tmp_path, platform="linux", config_home=str(xdg)
+    ) == (xdg / "systemd/user/com.codealmanac.sync.timer")
+    # A relative XDG_CONFIG_HOME is invalid per the spec and is ignored.
+    assert manifest_path_for(
+        AutomationTask.SYNC, tmp_path, platform="linux", config_home="relative/path"
+    ) == (tmp_path / ".config/systemd/user/com.codealmanac.sync.timer")
+
+
+def test_launch_path_selects_platform_fallbacks(tmp_path: Path) -> None:
+    darwin = launch_path(tmp_path, "/custom/bin", platform="darwin").split(":")
+    linux = launch_path(tmp_path, "/custom/bin", platform="linux").split(":")
+
+    assert darwin == [
+        "/custom/bin",
+        str(tmp_path / ".local/bin"),
+        str(tmp_path / ".bun/bin"),
+        "/usr/local/bin",
+        "/opt/homebrew/bin",
+        "/usr/bin",
+        "/bin",
+        "/usr/sbin",
+        "/sbin",
+    ]
+    assert linux == [
+        "/custom/bin",
+        str(tmp_path / ".local/bin"),
+        str(tmp_path / ".bun/bin"),
+        "/usr/local/bin",
+        "/usr/bin",
+        "/bin",
+        "/usr/sbin",
+        "/sbin",
+    ]
+
+
+def test_default_scheduler_adapter_selects_platform(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("sys.platform", "linux")
+    assert isinstance(default_scheduler_adapter(), SystemdSchedulerAdapter)
+    monkeypatch.setattr("sys.platform", "darwin")
+    assert isinstance(default_scheduler_adapter(), LaunchdSchedulerAdapter)
+
+
+def test_systemd_adapter_installs_timer_and_service_units(tmp_path: Path) -> None:
+    systemctl = FakeSystemctl(
+        show_outputs={
+            "com.codealmanac.sync.timer": "LoadState=loaded\nActiveState=active\n",
+            "com.codealmanac.sync.service": (
+                "ActiveState=inactive\n"
+                "ExecMainStatus=0\n"
+                "ExecMainExitTimestampMonotonic=0\n"
+                "MainPID=0\n"
+            ),
+        }
+    )
+    job = systemd_job(tmp_path)
+
+    status = SystemdSchedulerAdapter(run_command=systemctl).install(job)
+
+    service_text = service_unit_path(job).read_text(encoding="utf-8")
+    timer_text = job.manifest_path.read_text(encoding="utf-8")
+    assert "Type=oneshot" in service_text
+    assert 'ExecStart="/usr/local/bin/codealmanac" "sync"' in service_text
+    assert 'Environment="PATH=/custom/bin"' in service_text
+    assert f"StandardOutput=append:{job.stdout_path}" in service_text
+    assert f"StandardError=append:{job.stderr_path}" in service_text
+    assert "OnActiveSec=0" in timer_text
+    assert "OnUnitActiveSec=300" in timer_text
+    assert "Unit=com.codealmanac.sync.service" in timer_text
+    assert "WantedBy=timers.target" in timer_text
+    assert [call[0] for call in systemctl.calls[:3]] == [
+        "daemon-reload",
+        "enable",
+        "restart",
+    ]
+    assert systemctl.calls[1] == ("enable", "com.codealmanac.sync.timer")
+    assert status.installed is True
+    assert status.loaded is True
+    assert status.interval == timedelta(minutes=5)
+    assert status.state == ScheduledJobState.IDLE
+    assert status.last_exit_code is None
+    assert status.pid is None
+
+
+def test_systemd_exec_start_quotes_and_escapes() -> None:
+    assert exec_start(("/opt/my tools/codealmanac", "sync", "100%")) == (
+        '"/opt/my tools/codealmanac" "sync" "100%%"'
+    )
+
+
+def test_systemd_uninstall_removes_units_and_reloads(tmp_path: Path) -> None:
+    systemctl = FakeSystemctl()
+    job = systemd_job(tmp_path)
+    job.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    job.manifest_path.write_text("timer", encoding="utf-8")
+    service_unit_path(job).write_text("service", encoding="utf-8")
+
+    removed = SystemdSchedulerAdapter(run_command=systemctl).uninstall(job)
+
+    assert removed is True
+    assert not job.manifest_path.exists()
+    assert not service_unit_path(job).exists()
+    assert systemctl.calls == [
+        ("disable", "--now", "com.codealmanac.sync.timer"),
+        ("stop", "com.codealmanac.sync.service"),
+        ("daemon-reload",),
+        ("reset-failed", "com.codealmanac.sync.timer", "com.codealmanac.sync.service"),
+    ]
+
+
+def test_systemd_uninstall_tolerates_unit_not_found(tmp_path: Path) -> None:
+    systemctl = FakeSystemctl(
+        failures={
+            "disable": (1, "Unit file com.codealmanac.sync.timer does not exist."),
+            "stop": (1, "Unit com.codealmanac.sync.service not loaded."),
+        }
+    )
+    job = systemd_job(tmp_path)
+
+    assert SystemdSchedulerAdapter(run_command=systemctl).uninstall(job) is False
+
+
+def test_systemd_uninstall_preserves_units_on_real_failure(tmp_path: Path) -> None:
+    systemctl = FakeSystemctl(failures={"disable": (1, "Access denied")})
+    job = systemd_job(tmp_path)
+    job.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    job.manifest_path.write_text("timer", encoding="utf-8")
+
+    with pytest.raises(ExecutionFailed, match="Access denied"):
+        SystemdSchedulerAdapter(run_command=systemctl).uninstall(job)
+
+    assert job.manifest_path.exists()
+
+
+def test_systemd_status_reports_running_service(tmp_path: Path) -> None:
+    systemctl = FakeSystemctl(
+        show_outputs={
+            "com.codealmanac.sync.timer": "LoadState=loaded\n",
+            "com.codealmanac.sync.service": (
+                "ActiveState=activating\n"
+                "ExecMainStatus=0\n"
+                "ExecMainExitTimestampMonotonic=0\n"
+                "MainPID=4321\n"
+            ),
+        }
+    )
+    job = systemd_job(tmp_path)
+    job.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    job.manifest_path.write_text(timer_unit(job), encoding="utf-8")
+
+    status = SystemdSchedulerAdapter(run_command=systemctl).status(job)
+
+    assert status.state == ScheduledJobState.RUNNING
+    assert status.pid == 4321
+    assert status.last_exit_code is None
+    assert status.interval == timedelta(minutes=5)
+
+
+def test_systemd_status_reports_last_failed_run(tmp_path: Path) -> None:
+    systemctl = FakeSystemctl(
+        show_outputs={
+            "com.codealmanac.sync.timer": "LoadState=loaded\n",
+            "com.codealmanac.sync.service": (
+                "ActiveState=failed\n"
+                "ExecMainStatus=2\n"
+                "ExecMainExitTimestampMonotonic=12345\n"
+                "MainPID=0\n"
+            ),
+        }
+    )
+    job = systemd_job(tmp_path)
+    job.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    job.manifest_path.write_text(timer_unit(job), encoding="utf-8")
+
+    status = SystemdSchedulerAdapter(run_command=systemctl).status(job)
+
+    assert status.state == ScheduledJobState.IDLE
+    assert status.last_exit_code == 2
+    assert status.pid is None
+
+
+def test_systemd_status_handles_missing_manifest(tmp_path: Path) -> None:
+    systemctl = FakeSystemctl(
+        show_outputs={"com.codealmanac.sync.timer": "LoadState=not-found\n"}
+    )
+    job = systemd_job(tmp_path)
+
+    status = SystemdSchedulerAdapter(run_command=systemctl).status(job)
+
+    assert status.installed is False
+    assert status.loaded is False
+    assert status.interval is None
+
+
+def test_systemd_status_reports_inactive_timer_as_unloaded(tmp_path: Path) -> None:
+    systemctl = FakeSystemctl(
+        show_outputs={
+            "com.codealmanac.sync.timer": "LoadState=loaded\nActiveState=inactive\n",
+            "com.codealmanac.sync.service": (
+                "ActiveState=inactive\n"
+                "ExecMainStatus=0\n"
+                "ExecMainExitTimestampMonotonic=0\n"
+                "MainPID=0\n"
+            ),
+        }
+    )
+    job = systemd_job(tmp_path)
+    job.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    job.manifest_path.write_text(timer_unit(job), encoding="utf-8")
+
+    status = SystemdSchedulerAdapter(run_command=systemctl).status(job)
+
+    assert status.installed is True
+    assert status.loaded is False

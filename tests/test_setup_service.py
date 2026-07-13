@@ -423,7 +423,7 @@ class FakeSetupAutomationManager:
             task=request.task,
             enabled=request.enabled,
             interval=request.every,
-            plist_path=self.home / f"{request.task.value}.plist",
+            manifest_path=self.home / f"{request.task.value}.plist",
             changed=True,
         )
 

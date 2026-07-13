@@ -33,7 +33,7 @@ class EnvironmentVariable(CodeAlmanacModel):
 class ScheduledJob(CodeAlmanacModel):
     task: AutomationTask
     label: str
-    plist_path: Path
+    manifest_path: Path
     program_arguments: tuple[str, ...]
     interval: timedelta
     environment: tuple[EnvironmentVariable, ...]
@@ -63,7 +63,7 @@ class ScheduledJob(CodeAlmanacModel):
 class ScheduledJobStatus(CodeAlmanacModel):
     task: AutomationTask
     label: str
-    plist_path: Path
+    manifest_path: Path
     installed: bool
     loaded: bool
     interval: timedelta | None = None
@@ -77,7 +77,7 @@ class AutomationTaskApplyResult(CodeAlmanacModel):
     task: AutomationTask
     enabled: bool
     interval: timedelta
-    plist_path: Path
+    manifest_path: Path
     changed: bool
 
 
