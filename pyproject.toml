@@ -84,4 +84,4 @@ codealmanac = [
 package = true
 
 [tool.uv.sources]
-almanac-yoke = { git = "https://github.com/AlmanacCode/Yoke.git", rev = "7ed04b57cbd17543f2f0576e850368f0d5fdf2a1" }
+almanac-yoke = { git = "https://github.com/AlmanacCode/Yoke.git", rev = "cce337d1c3b80a7fbca8feef4b91db95ae850753" }

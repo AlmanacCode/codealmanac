@@ -16,7 +16,7 @@ sources:
     path: src/codealmanac/integrations/harnesses/yoke/events.py
   - id: yoke-usage-contract
     type: web
-    url: https://github.com/AlmanacCode/Yoke/blob/7ed04b57cbd17543f2f0576e850368f0d5fdf2a1/docs/notes/0272-usage-and-generation-control-audit.md
+    url: https://github.com/AlmanacCode/Yoke/blob/cce337d1c3b80a7fbca8feef4b91db95ae850753/docs/notes/0272-usage-and-generation-control-audit.md
 ---
 
 # Harness Event Shape

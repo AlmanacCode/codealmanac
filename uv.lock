@@ -11,7 +11,7 @@ resolution-markers = [
 [[package]]
 name = "almanac-yoke"
 version = "0.1.7"
-source = { git = "https://github.com/AlmanacCode/Yoke.git?rev=7ed04b57cbd17543f2f0576e850368f0d5fdf2a1#7ed04b57cbd17543f2f0576e850368f0d5fdf2a1" }
+source = { git = "https://github.com/AlmanacCode/Yoke.git?rev=cce337d1c3b80a7fbca8feef4b91db95ae850753#cce337d1c3b80a7fbca8feef4b91db95ae850753" }
 dependencies = [
     { name = "jsonschema" },
     { name = "pydantic" },
@@ -277,7 +277,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "almanac-yoke", extras = ["claude"], git = "https://github.com/AlmanacCode/Yoke.git?rev=7ed04b57cbd17543f2f0576e850368f0d5fdf2a1" },
+    { name = "almanac-yoke", extras = ["claude"], git = "https://github.com/AlmanacCode/Yoke.git?rev=cce337d1c3b80a7fbca8feef4b91db95ae850753" },
     { name = "beautifulsoup4", specifier = ">=4.15.0" },
     { name = "charset-normalizer", specifier = ">=3.4.7" },
     { name = "fastapi", specifier = ">=0.138.1" },
