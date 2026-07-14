@@ -134,8 +134,29 @@ For authored wiki contracts, read [Page identity](wiki/page-identity), [Path nor
 
 ## Edges And Interfaces
 
-Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Harness contract](agent-runs/harness-contract) and [Provider adapters](agent-runs/provider-adapters) for Codex and Claude execution boundaries [@harness-contract] [@provider-adapters]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
+Use these routes when the change sits at a system edge:
 
-[Agents and manuals](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents and writing references used by lifecycle runs, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@setup-automation].
-
-[Local state](repositories/local-state), [Selection and root](repositories/selection-and-root), and [SQLite store boundaries](persistence/sqlite-store-boundaries) explain repository selection, runtime paths, and persistence ownership [@local-state] [@selection-root] [@sqlite-stores]. [Local viewer](viewer/local-viewer) explains the browser UI that projects the same wiki, topics, files, and jobs [@local-viewer].
+- Commands and output: [CLI adapter boundary](cli/adapter-boundary) explains
+  command entrypoints, and [Terminal output](cli/terminal-output) explains
+  human and JSON rendering [@cli-adapter] [@terminal-output].
+- Agent execution: [Harness contract](agent-runs/harness-contract) defines
+  the service-owned run interface, and [Yoke harness boundary](agent-runs/provider-adapters)
+  explains the current provider adapter [@harness-contract]
+  [@provider-adapters].
+- Source input: [Source resolution and runtime](sources/source-resolution-and-runtime)
+  owns ingest input resolution and source adapters. Pair it with [Source
+  material](../concepts/source-material) for the concept, [Source addresses](../reference/sources/source-addresses)
+  for accepted input strings, and [Frontmatter and sources](../reference/page-format/frontmatter-and-sources)
+  for page evidence [@source-runtime].
+- Packaged runtime resources: [Agents and manuals](runtime-resources/prompts-and-manuals)
+  covers the packaged Yoke agents and writing references used by lifecycle
+  runs [@agents-manuals].
+- Machine setup: [Setup automation and update](setup/automation-and-update)
+  covers setup-owned scheduler and update behavior [@setup-automation].
+- Repository and storage state: [Local state](repositories/local-state),
+  [Selection and root](repositories/selection-and-root), and [SQLite store
+  boundaries](persistence/sqlite-store-boundaries) explain repository
+  selection, runtime paths, and persistence ownership [@local-state]
+  [@selection-root] [@sqlite-stores].
+- Browser projection: [Local viewer](viewer/local-viewer) explains the browser
+  UI that projects the same wiki, topics, files, and jobs [@local-viewer].

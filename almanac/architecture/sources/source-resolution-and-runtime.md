@@ -62,4 +62,9 @@ Sync does not ingest every discovered transcript. It matches each transcript `cw
 
 ## Related Reference
 
-Accepted input forms are summarized in [Source Addresses](../../reference/sources/source-addresses). Page evidence uses a different contract, [Frontmatter And Sources](../../reference/page-format/frontmatter-and-sources).
+For source work, read [Source Material](../../concepts/source-material) first
+to keep ingest input separate from page evidence. Then use this page for the
+service boundary, [Source Addresses](../../reference/sources/source-addresses)
+for accepted input strings, [Frontmatter And Sources](../../reference/page-format/frontmatter-and-sources)
+for page evidence, and [Path Normalization And File Refs](../wiki/path-normalization-and-file-refs)
+for file-reference matching.

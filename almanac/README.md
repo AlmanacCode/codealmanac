@@ -40,6 +40,12 @@ The wiki is organized by page role, not by source file:
 - [Decisions](decisions/) records constraints that shape future work.
 - [Reference](reference/) documents exact contracts, commands, formats, and state shapes.
 
+Product boundary pages explain what the Python rewrite is and what it
+intentionally leaves out. Start with [Local-only Python product](decisions/local-only-python-product)
+and [Only Almanac root](decisions/only-almanac-root) before adding public
+surface area, compatibility paths, hosted language, or release/demo framing
+[@live-agreement].
+
 ## Reading Rule
 
 Use the wiki as maintained synthesis, then verify behavior against current code when the two disagree. The runtime kernel gives the same rule to writing agents: code is authoritative for behavior, Markdown links are the page-link syntax, and file evidence belongs in structured `sources:` entries [@kernel-prompt].
