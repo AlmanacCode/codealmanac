@@ -484,6 +484,17 @@ It is the constraint document for future agents.
   and index connection helper; `sources.py` owns page/topic source loading and
   freshness signatures; `projection.py` owns replacement writes and stored
   source signatures. `store.py` stays the service-facing facade.
+- 2026-07-14: Search moves from whole-page strict-AND FTS to section-level
+  SQLite FTS5 with BM25 ranking. Markdown headings define coherent indexed
+  sections; a recall-oriented lexical query admits sections matching meaningful
+  terms; page title and section heading receive more weight than body prose;
+  and results collapse back to ranked pages while retaining the best matching
+  heading and excerpt. The public product remains `search -> show`, Markdown
+  remains truth, and SQLite remains rebuildable derived state. Do not add
+  semantic retrieval yet. If measured real-repo and benchmark misses repeatedly
+  show relevant sections with insufficient lexical overlap, add dense retrieval
+  as a second candidate generator and fuse it with lexical results rather than
+  replacing exact lexical search.
 - 2026-07-10: `config` owns the only configuration file at
   `~/.codealmanac/config.toml`; repository-level `almanac/config.toml` is
   removed. The user config stores auto-commit, harness/model, and enabled/
@@ -928,7 +939,7 @@ subprocess.run(["codealmanac", "show", "..."])
 | MCP | No MCP server |
 | Compatibility aliases | No public `almanac`, `alm`, or `absorb` |
 | Archive lineage | No `archived_at` / `superseded_by` page state |
-| Semantic search | FTS and refs first |
+| Semantic search | Section-level FTS5/BM25 first; hybrid only after measured lexical-overlap misses |
 
 ## Non-Negotiables
 
