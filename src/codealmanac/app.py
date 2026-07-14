@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from codealmanac import __version__
-from codealmanac.integrations.automation import LaunchdSchedulerAdapter
+from codealmanac.integrations.automation import default_scheduler_adapter
 from codealmanac.integrations.harnesses import default_harness_adapters
 from codealmanac.integrations.runs import (
     PsutilRunProcessController,
@@ -196,7 +196,7 @@ def create_services(
     adapters: AppAdapters,
 ) -> Services:
     repositories = RepositoriesService(RepositoryStore(local_state.database_path))
-    automation = AutomationService(adapters.scheduler or LaunchdSchedulerAdapter())
+    automation = AutomationService(adapters.scheduler or default_scheduler_adapter())
     config_service = ConfigService(
         ConfigStore(),
         local_state.config_path,

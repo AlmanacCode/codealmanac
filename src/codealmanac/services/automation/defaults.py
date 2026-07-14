@@ -8,9 +8,17 @@ SYNC_LABEL = "com.codealmanac.sync"
 GARDEN_LABEL = "com.codealmanac.garden"
 UPDATE_LABEL = "com.codealmanac.update"
 
-LAUNCHD_FALLBACK_PATHS = (
+MACOS_FALLBACK_PATHS = (
     "/usr/local/bin",
     "/opt/homebrew/bin",
+    "/usr/bin",
+    "/bin",
+    "/usr/sbin",
+    "/sbin",
+)
+
+LINUX_FALLBACK_PATHS = (
+    "/usr/local/bin",
     "/usr/bin",
     "/bin",
     "/usr/sbin",

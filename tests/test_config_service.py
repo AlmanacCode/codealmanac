@@ -322,7 +322,7 @@ def scheduler_status(job: ScheduledJob, installed: bool) -> ScheduledJobStatus:
     return ScheduledJobStatus(
         task=job.task,
         label=job.label,
-        plist_path=job.plist_path,
+        manifest_path=job.manifest_path,
         installed=installed,
         loaded=installed,
         interval=job.interval if installed else None,

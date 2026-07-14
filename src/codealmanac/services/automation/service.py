@@ -45,7 +45,7 @@ class AutomationService:
             task=request.task,
             enabled=request.enabled,
             interval=request.every,
-            plist_path=job.plist_path,
+            manifest_path=job.manifest_path,
             changed=changed,
         )
 
@@ -64,7 +64,7 @@ class AutomationService:
                 codealmanac_executable=request.codealmanac_executable,
             )
             if self.scheduler.uninstall(job):
-                removed.append(job.plist_path)
+                removed.append(job.manifest_path)
         return AutomationRemoveResult(tasks=tasks, removed=tuple(removed))
 
     def status(self, request: AutomationStatusRequest) -> AutomationStatusReport:

@@ -30,6 +30,10 @@ sources:
     type: file
     path: src/codealmanac/integrations/automation/scheduler/launchd.py
     note: macOS launchd scheduler adapter.
+  - id: systemd
+    type: file
+    path: src/codealmanac/integrations/automation/scheduler/systemd.py
+    note: Linux systemd user-timer scheduler adapter.
   - id: updates
     type: file
     path: src/codealmanac/services/updates/service.py
@@ -50,7 +54,7 @@ sources:
 
 # Setup Automation And Update
 
-Setup, automation, and update form CodeAlmanac's machine-level maintenance layer. `setup` installs local agent instructions and writes one user configuration update. The config service then makes launchd match that saved automation policy. `automation` owns recurring launchd jobs, while `update` owns package-manager upgrades for the installed CLI [@setup_service][@automation_service][@updates].
+Setup, automation, and update form CodeAlmanac's machine-level maintenance layer. `setup` installs local agent instructions and writes one user configuration update. The config service then makes the platform scheduler match that saved automation policy. `automation` owns recurring scheduler jobs, while `update` owns package-manager upgrades for the installed CLI [@setup_service][@automation_service][@updates].
 
 The area matters because it is local-only product infrastructure. Scheduled work runs local CodeAlmanac task entrypoints for sync, Garden, and update; it does not connect to a hosted service or perform cloud capture [@live_agreement]. Runtime state and scheduler logs belong under the user's machine state, while repository wiki source remains under `almanac/` [@live_agreement].
 
@@ -68,9 +72,9 @@ Setup's automation policy lives outside the service. The default tasks are sync,
 
 The job factory gives each task concrete local execution details. The resolved `codealmanac` executable runs `sync`, `update --scheduled`, or `__garden-scheduler` [@automation_jobs]. Intervals come from saved user configuration; defaults are 5 hours, 4 hours, and 24 hours [@automation_jobs].
 
-The macOS implementation writes launchd plists under `~/Library/LaunchAgents`, creates stdout and stderr log directories, bootouts any existing job, bootstraps the new job, and reads status back from launchd [@launchd]. The generated plist contains the label, program arguments, start interval, environment variables, `RunAtLoad`, and log paths [@launchd]. This keeps the service boundary scheduler-neutral while the adapter owns launchd mechanics.
+The macOS implementation writes launchd plists under `~/Library/LaunchAgents`, creates stdout and stderr log directories, bootouts any existing job, bootstraps the new job, and reads status back from launchd [@launchd]. The generated plist contains the label, program arguments, start interval, environment variables, `RunAtLoad`, and log paths [@launchd]. The Linux implementation writes a `.timer` and `.service` unit pair under `~/.config/systemd/user`, enables and restarts the timer through `systemctl --user`, and reads status back from `systemctl show` [@systemd]. The timer uses `OnActiveSec=0` for launchd `RunAtLoad` parity and `OnUnitActiveSec` for the interval [@systemd]. This keeps the service boundary scheduler-neutral while each adapter owns its scheduler's mechanics.
 
-The default application wiring is launchd-backed. `create_services` constructs `AutomationService` with `LaunchdSchedulerAdapter`, then injects it into the config service. The adapter shells out to `launchctl` for install, uninstall, and status checks [@app][@launchd]. Config reconciliation is macOS-specific until another scheduler adapter is wired.
+The default application wiring selects the scheduler by platform. `create_services` constructs `AutomationService` with `default_scheduler_adapter()`, which returns the systemd adapter on Linux and the launchd adapter elsewhere, then injects it into the config service [@app]. The launchd adapter shells out to `launchctl`; the systemd adapter runs `systemctl --user` through an injectable command runner [@launchd][@systemd].
 
 ## Update Safety
 

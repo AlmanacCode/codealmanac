@@ -21,7 +21,7 @@ shaped the way it is, what broke before, which invariants matter, and how
 workflows cross files and services. The wiki is plain markdown in your repo,
 indexed locally, and reviewed in Git like any other code change.
 
-**Supported today:** macOS with Codex or Claude Code. Requires Python 3.12+.
+**Supported today:** macOS and Linux (systemd) with Codex or Claude Code. Requires Python 3.12+.
 
 ## Quickstart
 
@@ -133,8 +133,9 @@ codealmanac setup --yes
 codealmanac setup --yes --runner claude
 ```
 
-Setup installs agent instructions for your chosen tools and three local macOS
-`launchd` jobs. Nothing runs in the cloud.
+Setup installs agent instructions for your chosen tools and three local
+scheduled jobs (`launchd` on macOS, systemd user timers on Linux). Nothing
+runs in the cloud.
 
 | Job | Default schedule | What it does |
 | --- | ---: | --- |
@@ -244,8 +245,9 @@ structure.
 updates are skipped when an update would be unsafe, such as while lifecycle
 work is active.
 
-Automation is implemented with local macOS `launchd` jobs, not a hosted service
-or cloud sync. Logs are stored under `~/.codealmanac/logs/`.
+Automation is implemented with local scheduler jobs — `launchd` on macOS,
+systemd user timers on Linux — not a hosted service or cloud sync. Logs are
+stored under `~/.codealmanac/logs/`.
 
 ```bash
 # See installed schedules
@@ -261,7 +263,8 @@ codealmanac config set automation.sync.enabled false
 codealmanac config set automation.sync.enabled true
 ```
 
-`config set` updates the user TOML and immediately makes launchd match. If you
+`config set` updates the user TOML and immediately makes the scheduler match.
+If you
 edit the TOML directly, run `codealmanac config apply` afterward.
 
 Automation creates individual background runs. Inspect those runs separately
@@ -392,7 +395,8 @@ every = "24h"
 CLI flags still win over config.
 
 Use `codealmanac config set <key> <value>` for normal changes. It applies
-automation changes to launchd immediately. Direct file edits are supported but
+automation changes to the scheduler immediately. Direct file edits are
+supported but
 must be followed by:
 
 ```bash

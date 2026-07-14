@@ -209,7 +209,7 @@ class CliSchedulerAdapter:
         return ScheduledJobStatus(
             task=job.task,
             label=job.label,
-            plist_path=job.plist_path,
+            manifest_path=job.manifest_path,
             installed=True,
             loaded=True,
             interval=job.interval,
@@ -223,7 +223,7 @@ class CliSchedulerAdapter:
         return ScheduledJobStatus(
             task=job.task,
             label=job.label,
-            plist_path=job.plist_path,
+            manifest_path=job.manifest_path,
             installed=False,
             loaded=False,
         )

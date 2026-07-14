@@ -25,8 +25,8 @@ def render_automation_job_status(status: ScheduledJobStatus) -> None:
         print(f"{label}: not installed")
         return
     print(f"{label}: installed")
-    print(f"  plist: {status.plist_path}")
-    print(f"  launchd loaded: {'yes' if status.loaded else 'no'}")
+    print(f"  manifest: {status.manifest_path}")
+    print(f"  scheduler loaded: {'yes' if status.loaded else 'no'}")
     if status.interval is not None:
         print(f"  interval: {duration_label(status.interval)}")
     if status.state is not None:

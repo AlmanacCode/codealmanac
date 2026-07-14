@@ -10,7 +10,8 @@ from codealmanac.services.automation.defaults import (
     DEFAULT_GARDEN_INTERVAL,
     DEFAULT_SYNC_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
-    LAUNCHD_FALLBACK_PATHS,
+    LINUX_FALLBACK_PATHS,
+    MACOS_FALLBACK_PATHS,
 )
 from codealmanac.services.automation.definitions import task_definition
 from codealmanac.services.automation.models import (
@@ -36,7 +37,7 @@ class AutomationJobFactory:
         return ScheduledJob(
             task=task,
             label=definition.label,
-            plist_path=plist_path_for(task, resolved_home),
+            manifest_path=manifest_path_for(task, resolved_home),
             program_arguments=program_arguments_for(task, codealmanac_executable),
             interval=interval,
             environment=(
@@ -111,20 +112,44 @@ def default_interval(task: AutomationTask) -> timedelta:
     return DEFAULT_UPDATE_INTERVAL
 
 
-def plist_path_for(task: AutomationTask, home: Path) -> Path:
+def manifest_path_for(
+    task: AutomationTask,
+    home: Path,
+    platform: str | None = None,
+    config_home: str | None = None,
+) -> Path:
     definition = task_definition(task)
+    if is_linux(platform):
+        return systemd_user_dir(home, config_home) / f"{definition.label}.timer"
     return home / "Library/LaunchAgents" / f"{definition.label}.plist"
 
 
-def launch_path(home: Path, env_path: str | None) -> str:
+def systemd_user_dir(home: Path, config_home: str | None = None) -> Path:
+    raw = config_home if config_home is not None else os.environ.get("XDG_CONFIG_HOME")
+    if raw and os.path.isabs(raw):
+        return Path(raw) / "systemd" / "user"
+    return home / ".config" / "systemd" / "user"
+
+
+def launch_path(home: Path, env_path: str | None, platform: str | None = None) -> str:
     values = [
         item.strip()
         for item in (env_path or os.environ.get("PATH", "")).split(":")
         if item.strip()
     ]
     values.extend([str(home / ".local/bin"), str(home / ".bun/bin")])
-    values.extend(LAUNCHD_FALLBACK_PATHS)
+    values.extend(fallback_paths(platform))
     return ":".join(unique(values))
+
+
+def fallback_paths(platform: str | None) -> tuple[str, ...]:
+    if is_linux(platform):
+        return LINUX_FALLBACK_PATHS
+    return MACOS_FALLBACK_PATHS
+
+
+def is_linux(platform: str | None) -> bool:
+    return (platform or sys.platform).startswith("linux")
 
 
 def unique(values: Sequence[str]) -> tuple[str, ...]:
