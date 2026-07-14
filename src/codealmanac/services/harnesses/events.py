@@ -56,6 +56,7 @@ class HarnessToolStatus(StrEnum):
 
 class HarnessUsage(CodeAlmanacModel):
     input_tokens: int | None = None
+    cache_creation_input_tokens: int | None = None
     cached_input_tokens: int | None = None
     output_tokens: int | None = None
     reasoning_output_tokens: int | None = None
@@ -65,6 +66,7 @@ class HarnessUsage(CodeAlmanacModel):
 
     @field_validator(
         "input_tokens",
+        "cache_creation_input_tokens",
         "cached_input_tokens",
         "output_tokens",
         "reasoning_output_tokens",

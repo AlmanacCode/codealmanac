@@ -11,6 +11,12 @@ sources:
   - id: harness-actors
     type: file
     path: src/codealmanac/services/harnesses/actors.py
+  - id: yoke-events
+    type: file
+    path: src/codealmanac/integrations/harnesses/yoke/events.py
+  - id: yoke-usage-contract
+    type: web
+    url: https://github.com/AlmanacCode/Yoke/blob/7ed04b57cbd17543f2f0576e850368f0d5fdf2a1/docs/notes/0272-usage-and-generation-control-audit.md
 ---
 
 # Harness Event Shape
@@ -95,6 +101,7 @@ Optional text fields are validated when present. Empty strings are rejected for 
 | Field |
 |---|
 | `input_tokens` |
+| `cache_creation_input_tokens` |
 | `cached_input_tokens` |
 | `output_tokens` |
 | `reasoning_output_tokens` |
@@ -103,6 +110,13 @@ Optional text fields are validated when present. Empty strings are rejected for 
 | `max_tokens` |
 
 Every usage count must be non-negative when present [@harness-events].
+
+CodeAlmanac preserves Yoke's normalized counters without recomputing them.
+Cache creation and cache reads are separate counters for providers such as
+Claude; cached input and reasoning output may instead be subsets of broader
+input and output counters for providers such as Codex. Consumers must use the
+provider-normalized totals rather than summing every field indiscriminately
+[@yoke-events] [@yoke-usage-contract].
 
 ## Failures
 

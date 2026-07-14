@@ -14,6 +14,7 @@ from codealmanac.services.harnesses.models import (
     HarnessEventKind,
     HarnessKind,
     HarnessTranscriptRef,
+    HarnessUsage,
 )
 from codealmanac.services.runs.models import (
     RunEventKind,
@@ -75,11 +76,12 @@ def test_runs_service_records_run_and_events(
         RecordRunEventRequest(
             run_id=record.run_id,
             kind=RunEventKind.TOOL,
-            message="codex provider session provider-thread-1",
+            message="usage: 7691 tokens",
             harness_event=HarnessEvent(
-                kind=HarnessEventKind.PROVIDER_SESSION,
-                message="codex provider session provider-thread-1",
+                kind=HarnessEventKind.CONTEXT_USAGE,
+                message="usage: 7691 tokens",
                 provider_session_id="provider-thread-1",
+                usage=HarnessUsage(cache_creation_input_tokens=7_611),
             ),
         )
     )
@@ -112,6 +114,8 @@ def test_runs_service_records_run_and_events(
     assert event.sequence == 3
     assert harness_log.harness_event is not None
     assert harness_log.harness_event.provider_session_id == "provider-thread-1"
+    assert harness_log.harness_event.usage is not None
+    assert harness_log.harness_event.usage.cache_creation_input_tokens == 7_611
     assert attached.harness_transcript == transcript
     assert finished.status == RunStatus.DONE
     assert finished.summary == "updated wiki"
@@ -124,6 +128,11 @@ def test_runs_service_records_run_and_events(
         RunEventKind.TOOL,
         RunEventKind.STATUS,
     )
+
+
+def test_harness_usage_rejects_negative_cache_creation_tokens() -> None:
+    with pytest.raises(ValidationError, match="must be non-negative"):
+        HarnessUsage(cache_creation_input_tokens=-1)
 
 
 def test_runs_service_filters_by_registered_repository_name(

@@ -127,6 +127,9 @@ class YokeEventProjector:
             usage=(
                 HarnessUsage(
                     input_tokens=usage.input_tokens,
+                    cache_creation_input_tokens=(
+                        usage.cache_creation_input_tokens
+                    ),
                     cached_input_tokens=usage.cached_input_tokens,
                     output_tokens=usage.output_tokens,
                     reasoning_output_tokens=usage.reasoning_output_tokens,

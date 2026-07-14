@@ -11,15 +11,11 @@ resolution-markers = [
 [[package]]
 name = "almanac-yoke"
 version = "0.1.7"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/AlmanacCode/Yoke.git?rev=7ed04b57cbd17543f2f0576e850368f0d5fdf2a1#7ed04b57cbd17543f2f0576e850368f0d5fdf2a1" }
 dependencies = [
     { name = "jsonschema" },
     { name = "pydantic" },
     { name = "pyyaml" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/85/d6/4fb29bc1dff1fc41029caee56b7072c9ec1f3af28fc72ad2fc7ea59f446b/almanac_yoke-0.1.7.tar.gz", hash = "sha256:6876e41dbef580d99f7c2e2f1e4d1d244a620c1d8dab76f2aa5097af09a04410", size = 118706 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/42/ea/ea68b5adc3b87b25c6eac80cf10c16dd4a3193bfec91674f0a75ee902b7e/almanac_yoke-0.1.7-py3-none-any.whl", hash = "sha256:58547b5954dd10f582df6cad6caff6631ee8afb2c9db100042068893ad64b8d8", size = 138415 },
 ]
 
 [package.optional-dependencies]
@@ -281,7 +277,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "almanac-yoke", extras = ["claude"], specifier = ">=0.1.7,<0.2" },
+    { name = "almanac-yoke", extras = ["claude"], git = "https://github.com/AlmanacCode/Yoke.git?rev=7ed04b57cbd17543f2f0576e850368f0d5fdf2a1" },
     { name = "beautifulsoup4", specifier = ">=4.15.0" },
     { name = "charset-normalizer", specifier = ">=3.4.7" },
     { name = "fastapi", specifier = ">=0.138.1" },

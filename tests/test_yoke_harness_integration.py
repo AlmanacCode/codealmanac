@@ -11,6 +11,7 @@ from yoke import (
     Readiness,
     Run,
     RunStatus,
+    Usage,
 )
 
 from codealmanac.agents.catalog import agent_collection, load_agent
@@ -212,6 +213,33 @@ def test_unknown_yoke_event_projects_to_unknown_and_is_json_safe():
     assert projected.kind is HarnessEventKind.UNKNOWN
     json.loads(projected.model_dump_json())
     assert projected.tool_result == [None, None]
+
+
+def test_claude_usage_projection_preserves_cache_creation_tokens():
+    [projected] = YokeEventProjector(HarnessKind.CLAUDE).project(
+        Event(
+            kind=EventKind.CONTEXT_USAGE,
+            message="usage: 7691 tokens",
+            usage=Usage(
+                input_tokens=2,
+                cache_creation_input_tokens=7_611,
+                cached_input_tokens=0,
+                output_tokens=78,
+                total_tokens=7_691,
+                total_processed_tokens=7_691,
+            ),
+        )
+    )
+
+    assert projected.usage is not None
+    assert projected.usage.model_dump(exclude_none=True) == {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 7_611,
+        "cached_input_tokens": 0,
+        "output_tokens": 78,
+        "total_tokens": 7_691,
+        "total_processed_tokens": 7_691,
+    }
 
 
 def test_codex_agent_lifecycle_is_correlated_and_emitted_once():
