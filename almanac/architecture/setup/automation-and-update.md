@@ -78,7 +78,7 @@ The job factory gives each task concrete local execution details. The resolved `
 
 The macOS implementation writes launchd plists under `~/Library/LaunchAgents`, creates stdout and stderr log directories, bootouts any existing job, bootstraps the new job, and reads status back from launchd [@launchd]. The generated plist contains the label, program arguments, start interval, environment variables, `RunAtLoad`, and log paths [@launchd]. This keeps the service boundary scheduler-neutral while the adapter owns launchd mechanics.
 
-The default application wiring is launchd-backed. `create_services` constructs `AutomationService` with `LaunchdSchedulerAdapter`, then injects it into the config service. The adapter shells out to `launchctl` for install, uninstall, and status checks [@app][@launchd]. Config reconciliation is macOS-specific until another scheduler adapter is wired.
+The default application wiring is launchd-backed. `create_services` constructs `AutomationService` with `LaunchdSchedulerAdapter`, then injects it into the config service. The adapter shells out to `launchctl` for install, uninstall, and status checks [@app][@launchd]. Config reconciliation is macOS-specific until another scheduler adapter is wired. There is no platform-selection branch in the composition root, so setup on a machine without `launchctl` reaches the launchd adapter and surfaces a scheduler execution failure instead of selecting a Linux or Windows scheduler [@app][@launchd].
 
 ## Update Safety
 

@@ -26,6 +26,14 @@ sources:
     type: file
     path: src/codealmanac/services/setup/service.py
     note: Setup service behavior for instructions, config, automation, readiness, and uninstall.
+  - id: app
+    type: file
+    path: src/codealmanac/app.py
+    note: Composition root wiring for the default scheduler adapter.
+  - id: launchd
+    type: file
+    path: src/codealmanac/integrations/automation/scheduler/launchd.py
+    note: macOS launchd scheduler adapter and launchctl subprocess calls.
   - id: setup-automation
     type: file
     path: src/codealmanac/services/setup/automation.py
@@ -41,6 +49,12 @@ sources:
 Use this guide to install and verify CodeAlmanac's local scheduled work. Setup can install agent instructions, write the default runner config, and install scheduled `sync`, `garden`, and `update` tasks [@setup-service] [@setup-automation]. Automation is local machine state, not cloud sync, and its scheduler logs live under `~/.codealmanac/logs/` [@readme].
 
 The usual successful state is simple: setup has selected a runner, scheduled the tasks you want, `automation status` reports them installed, and `sync status` or `jobs` can show local lifecycle activity. For background, see [Automation and update](../architecture/setup/automation-and-update), [Config keys](../reference/config-keys), and [Run queue and sync](../architecture/lifecycle/run-queue-and-sync).
+
+## Check Platform Support
+
+Run setup on macOS. The README states that CodeAlmanac currently supports macOS with Codex or Claude Code [@readme]. The default application graph wires automation to `LaunchdSchedulerAdapter`, and that adapter shells out to `launchctl` when setup or config reconciliation installs, removes, or inspects scheduled jobs [@app] [@launchd].
+
+If setup fails with a missing `launchctl` error, treat it as an unsupported-platform signal before debugging Claude, Codex, or runner readiness. Linux and Windows need a different scheduler adapter before local automation can be installed there [@app] [@launchd].
 
 ## Run Setup
 
