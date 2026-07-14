@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from pathlib import Path
 
 from codealmanac.services.updates.activity import active_run_count
@@ -61,12 +60,7 @@ class UpdatesService:
                 plan=plan,
                 message=f"scheduled update skipped: {plan.message}",
             )
-        now = request.now or datetime.now(UTC)
-        lease = self.lock_store.acquire(
-            self.lock_path,
-            now,
-            request.lock_stale_after,
-        )
+        lease = self.lock_store.acquire(self.lock_path)
         if lease is None:
             return UpdateResult(
                 status=UpdateStatus.SKIPPED,
@@ -88,9 +82,7 @@ class UpdatesService:
     def run_plan(self, plan: UpdatePlan, smoke: bool) -> UpdateResult:
         output = self.runner.run(plan.command)
         status = (
-            UpdateStatus.COMPLETED
-            if output.exit_code == 0
-            else UpdateStatus.FAILED
+            UpdateStatus.COMPLETED if output.exit_code == 0 else UpdateStatus.FAILED
         )
         smoke_results: tuple[UpdateSmokeResult, ...] = ()
         if status == UpdateStatus.COMPLETED and smoke:
@@ -119,6 +111,7 @@ class UpdatesService:
                 )
             )
         return tuple(results)
+
 
 def active_runs_message(active: int) -> str:
     suffix = "job is" if active == 1 else "jobs are"
