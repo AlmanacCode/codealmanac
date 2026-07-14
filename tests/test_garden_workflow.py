@@ -7,6 +7,7 @@ from conftest import initialize_repository
 from codealmanac.app import create_app
 from codealmanac.core.errors import ExecutionFailed
 from codealmanac.services.harnesses.models import (
+    HarnessAgentKind,
     HarnessKind,
     HarnessReadiness,
     HarnessRunResult,
@@ -139,7 +140,9 @@ def test_garden_workflow_runs_harness_and_refreshes_index(
     assert result.harness.changed_files == (repo / "almanac/gardened-note.md",)
     assert result.index.pages_indexed == 2
     assert matches[0].slug == "gardened-note"
-    assert "Garden Operation" in adapter.requests[0].prompt
+    assert adapter.requests[0].agent is HarnessAgentKind.GARDEN
+    assert adapter.requests[0].prompt.startswith("Runtime context:\n{")
+    assert "Garden Operation" not in adapter.requests[0].prompt
     assert "Runtime context:" in adapter.requests[0].prompt
     assert '"wiki_source_root"' in adapter.requests[0].prompt
     assert '"source_control": {' in adapter.requests[0].prompt

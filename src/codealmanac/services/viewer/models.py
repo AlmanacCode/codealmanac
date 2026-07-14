@@ -23,6 +23,8 @@ class ViewerPageSummary(CodeAlmanacModel):
     summary: str | None
     path: str
     topics: tuple[str, ...]
+    matched_heading: str | None = None
+    excerpt: str | None = None
 
 
 class ViewerTopicSummary(CodeAlmanacModel):

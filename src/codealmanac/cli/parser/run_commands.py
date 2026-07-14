@@ -39,6 +39,9 @@ def add_run_commands(subcommands: argparse._SubParsersAction) -> None:
     worker = hidden_run_command(subcommands, "__run-worker")
     worker.add_argument("--cwd", required=True)
 
+    executor = hidden_run_command(subcommands, "__run-executor")
+    executor.add_argument("run_id")
+
     hidden_run_command(subcommands, "__garden-scheduler")
 
     sync = subcommands.add_parser("sync", help="sync recently active transcripts")

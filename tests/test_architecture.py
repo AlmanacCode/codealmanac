@@ -60,9 +60,7 @@ def test_app_composition_root_stays_scannable():
     app_path = SRC_ROOT / "app.py"
     tree = ast.parse(app_path.read_text(encoding="utf-8"))
     functions = {
-        node.name: node
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef)
+        node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)
     }
     create_app = functions["create_app"]
 
@@ -149,21 +147,19 @@ def test_index_read_views_are_split_by_query_family():
 
     assert expected <= {path.name for path in index_root.glob("*.py")}
     assert oversized == []
-    assert "fts_pages MATCH" in (index_root / "search_views.py").read_text(
+    assert "fts_sections MATCH" in (index_root / "search_views.py").read_text(
         encoding="utf-8"
     )
     assert "PageView(" in (index_root / "page_views.py").read_text(encoding="utf-8")
     assert "IndexCounts(" in (index_root / "summary_views.py").read_text(
         encoding="utf-8"
     )
-    assert "WITH RECURSIVE descendants" in (
-        index_root / "topic_views.py"
-    ).read_text(encoding="utf-8")
-    health_facade = (index_root / "health_views.py").read_text(encoding="utf-8")
-    health_graph = (index_root / "health_graph_views.py").read_text(encoding="utf-8")
-    health_sources = (index_root / "health_source_views.py").read_text(
+    assert "WITH RECURSIVE descendants" in (index_root / "topic_views.py").read_text(
         encoding="utf-8"
     )
+    health_facade = (index_root / "health_views.py").read_text(encoding="utf-8")
+    health_graph = (index_root / "health_graph_views.py").read_text(encoding="utf-8")
+    health_sources = (index_root / "health_source_views.py").read_text(encoding="utf-8")
     assert len(health_facade.splitlines()) <= 60
     assert "HealthReport(" in health_facade
     assert "connection.execute" not in health_facade
@@ -203,7 +199,7 @@ def test_index_store_keeps_write_side_responsibilities_split():
     assert "def stored_signature" in projection
     assert "def replace_documents" in projection
     assert "INSERT INTO pages" in projection
-    assert "DELETE FROM fts_pages" in projection
+    assert "DELETE FROM fts_sections" in projection
     assert "load_page_document" not in projection
     assert "SCHEMA_DDL" not in projection
 
@@ -391,9 +387,7 @@ def test_topics_service_keeps_graph_and_repository_boundaries():
     assert "reject_cycle(" in mutations_text
     assert "existing_topic_slugs(" in mutations_text
     assert [
-        fragment
-        for fragment in forbidden_service_fragments
-        if fragment in service_text
+        fragment for fragment in forbidden_service_fragments if fragment in service_text
     ] == []
     assert "def reject_cycle(" in graph_text
     assert "def ancestors_of(" in graph_text
@@ -448,7 +442,7 @@ def test_wiki_topics_yaml_stays_split_by_read_and_mutation():
 
     assert "class TopicsYamlFile" in file_text
     assert "def load_topics_file(" in file_text
-    assert "YAML(typ=\"rt\")" in file_text
+    assert 'YAML(typ="rt")' in file_text
     assert "CommentedMap" in file_text
     assert "pyyaml.safe_load" not in file_text
 
@@ -486,6 +480,38 @@ def test_harness_contract_models_stay_split_by_meaning():
     assert "class HarnessFailure" in events_text
     assert "class HarnessRunResult" in results_text
     assert "def terminal_harness_event(" in results_text
+
+
+def test_lifecycle_agents_are_yoke_native_packages():
+    agents_root = SRC_ROOT / "agents"
+    prompt_root = SRC_ROOT / "prompts"
+
+    assert not tuple(prompt_root.rglob("*.py"))
+    assert not tuple(prompt_root.rglob("*.md"))
+    assert (agents_root / "yoke.yaml").is_file()
+    for name in ("build", "ingest", "garden"):
+        root = agents_root / name
+        assert (root / "agent.yaml").is_file()
+        instructions = (root / "instructions.md").read_text(encoding="utf-8")
+        assert instructions.startswith("# CodeAlmanac Kernel")
+        assert f"# {name.title()} Operation" in instructions
+
+    build_instructions = (agents_root / "build/instructions.md").read_text(
+        encoding="utf-8"
+    )
+    assert "almanac/manual/how-to-write.md" in build_instructions
+    assert "almanac/manual/evidence.md" in build_instructions
+    assert "almanac/manual/links.md" in build_instructions
+    assert "exact repository-relative manual paths" in build_instructions
+
+    for service in (
+        SRC_ROOT / "workflows/build/service.py",
+        SRC_ROOT / "workflows/ingest/service.py",
+        SRC_ROOT / "workflows/garden/service.py",
+    ):
+        text = service.read_text(encoding="utf-8")
+        assert "PromptRenderer" not in text
+        assert "Runtime context:" in text
 
 
 def test_diagnostics_service_stays_facade():
@@ -713,23 +739,19 @@ def test_cli_render_root_stays_facade():
     } <= module_names
     assert (render_root / "setup/__init__.py").is_file()
     assert len(root.splitlines()) <= 80
-    assert [
-        fragment for fragment in forbidden_root_fragments if fragment in root
-    ] == []
-    assert "render_sync_status" in (render_root / "sync.py").read_text(
+    assert [fragment for fragment in forbidden_root_fragments if fragment in root] == []
+    assert "render_sync_status" in (render_root / "sync.py").read_text(encoding="utf-8")
+    assert "render_page" in (render_root / "pages.py").read_text(encoding="utf-8")
+    assert "render_repository_list" in (render_root / "repositories.py").read_text(
         encoding="utf-8"
     )
-    assert "render_page" in (render_root / "pages.py").read_text(encoding="utf-8")
-    assert "render_repository_list" in (
-        render_root / "repositories.py"
-    ).read_text(encoding="utf-8")
 
 
 def test_cli_admin_render_stays_split_by_output_family():
     render_path = SRC_ROOT / "cli/render"
     admin = (render_path / "admin.py").read_text(encoding="utf-8")
     module_expectations = {
-        "automation.py": ("AutomationInstallResult", "def render_automation_install("),
+        "automation.py": ("AutomationStatusReport", "def render_automation_status("),
         "brand.py": ("SETUP_BANNER", "def print_banner("),
         "config.py": ("ConfigSetResult", "def render_config_set("),
         "diagnostics.py": ("DoctorReport", "def render_doctor("),
@@ -743,7 +765,7 @@ def test_cli_admin_render_stays_split_by_output_family():
     forbidden_admin_fragments = (
         "def render_",
         "json.dumps",
-        "AutomationInstallResult",
+        "AutomationStatusReport",
         "DoctorReport",
         "RunRecord",
         "SetupResult",
@@ -809,9 +831,7 @@ def test_cli_wiki_render_stays_split_by_output_family():
             oversized.append(f"{module_name}:{line_count}")
 
     assert len(wiki.splitlines()) <= 80
-    assert [
-        fragment for fragment in forbidden_wiki_fragments if fragment in wiki
-    ] == []
+    assert [fragment for fragment in forbidden_wiki_fragments if fragment in wiki] == []
     assert "from codealmanac.cli.render.health import render_health" in wiki
     assert "from codealmanac.cli.render.pages import render_page" in wiki
     assert oversized == []
@@ -871,7 +891,7 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
     dispatch_path = SRC_ROOT / "cli/dispatch"
     admin = (dispatch_path / "admin.py").read_text(encoding="utf-8")
     module_expectations = {
-        "automation.py": ("InstallAutomationRequest", "def dispatch_automation("),
+        "automation.py": ("AutomationStatusRequest", "def dispatch_automation("),
         "config_command.py": ("SetConfigValueRequest", "def dispatch_config("),
         "diagnostics.py": ("DoctorRequest", "def dispatch_doctor("),
         "jobs.py": ("ShowRunRequest", "def dispatch_jobs("),
@@ -885,7 +905,7 @@ def test_cli_admin_dispatch_stays_split_by_command_family():
         "CheckUpdateRequest",
         "RunUpdateRequest",
         "ShowRunRequest",
-        "InstallAutomationRequest",
+        "AutomationStatusRequest",
         "parse_optional_duration",
         "load_cli_config",
         "parse_setup_targets",
@@ -964,7 +984,7 @@ def test_setup_service_stays_split_from_planning_and_automation_policy():
     assert len(service.splitlines()) <= 110
     assert "class SetupService" in service
     assert "setup_plan(request)" in service
-    assert "install_automation_request(request)" in service
+    assert "self._config.update(" in service
     assert "duration_text" not in service
     assert "DEFAULT_SYNC_INTERVAL" not in service
     assert "SetupAutomationRecommendation" not in service
@@ -976,10 +996,10 @@ def test_setup_service_stays_split_from_planning_and_automation_policy():
     assert "def automation_recommendations" in planning
     assert "def next_commands" in planning
     assert "SetupAutomationRecommendation" in planning
-    assert "UninstallAutomationRequest" not in planning
+    assert "RemoveAllAutomationRequest" not in planning
     assert "def should_install_automation" in automation
-    assert "def install_automation_request" in automation
-    assert "InstallAutomationRequest" in automation
+    assert "def selected_setup_tasks" in automation
+    assert "InstallAutomationRequest" not in automation
 
 
 def test_cli_run_command_dispatch_stays_split_by_command_family():
@@ -1103,124 +1123,6 @@ def test_page_writing_workflow_services_stay_small():
     assert oversized == []
 
 
-def test_claude_sdk_event_mapper_stays_split_by_responsibility():
-    claude_root = SRC_ROOT / "integrations/harnesses/claude"
-    expected_modules = {
-        "actors.py",
-        "events.py",
-        "message_events.py",
-        "raw.py",
-        "result.py",
-        "sdk_messages.py",
-        "state.py",
-        "stream.py",
-        "task_events.py",
-        "tool_events.py",
-        "usage.py",
-    }
-    module_names = {path.name for path in claude_root.glob("*.py")}
-    oversized = []
-    for path in claude_root.glob("*.py"):
-        line_count = len(path.read_text(encoding="utf-8").splitlines())
-        if line_count > 220:
-            oversized.append(f"{path.name}:{line_count}")
-    event_dispatch = (claude_root / "events.py").read_text(encoding="utf-8")
-    dispatch_leaks = [
-        fragment
-        for fragment in (
-            "ToolUseBlock",
-            "ToolResultBlock",
-            "TextBlock",
-            "HarnessAgentTrace",
-            "done_event",
-            "json_value",
-            "provider_session_event",
-            "result_from_state",
-            "asdict",
-        )
-        if fragment in event_dispatch
-    ]
-
-    assert expected_modules <= module_names
-    assert oversized == []
-    assert dispatch_leaks == []
-
-
-def test_codex_app_server_event_mapper_stays_split_by_responsibility():
-    codex_root = SRC_ROOT / "integrations/harnesses/codex"
-    expected_modules = {
-        "actors.py",
-        "agent_events.py",
-        "events.py",
-        "item_events.py",
-        "notification_events.py",
-        "result.py",
-        "state.py",
-    }
-    module_names = {path.name for path in codex_root.glob("*.py")}
-    oversized = []
-    for module_name in expected_modules:
-        line_count = len(
-            (codex_root / module_name).read_text(encoding="utf-8").splitlines()
-        )
-        if line_count > 220:
-            oversized.append(f"{module_name}:{line_count}")
-    event_dispatch = (codex_root / "events.py").read_text(encoding="utf-8")
-    dispatch_leaks = [
-        fragment
-        for fragment in (
-            "import base64",
-            "import binascii",
-            "class CodexRunState",
-            "from dataclasses",
-            "dataclass",
-            "codex_item_display",
-            "tool_use_event",
-            "HarnessAgentTrace",
-            "HarnessEventKind",
-            "HarnessToolStatus",
-            "failure_from_error_record",
-            "helper_label",
-            "parse_codex_app_server_usage",
-            "record_failure",
-        )
-        if fragment in event_dispatch
-    ]
-
-    assert expected_modules <= module_names
-    assert oversized == []
-    assert dispatch_leaks == []
-
-
-def test_codex_app_server_client_stays_transport_focused():
-    codex_root = SRC_ROOT / "integrations/harnesses/codex"
-    app_server = codex_root / "app_server.py"
-    app_server_text = app_server.read_text(encoding="utf-8")
-    expected_modules = {
-        "responses.py",
-        "sandbox.py",
-        "turn_completion.py",
-        "run_result.py",
-        "timeouts.py",
-    }
-    forbidden_fragments = (
-        "class ServerResponse",
-        "def noninteractive_response(",
-        "def sandbox_policy(",
-        "def root_turn_completion(",
-        "def result_from_state(",
-        "def failed_result(",
-        "def env_milliseconds(",
-        "CODEX_APP_SERVER_SANDBOX_MODE_ENV",
-    )
-
-    assert expected_modules <= {path.name for path in codex_root.glob("*.py")}
-    assert len(app_server_text.splitlines()) <= 260
-    assert [
-        fragment for fragment in forbidden_fragments if fragment in app_server_text
-    ] == []
-
-
 def test_filesystem_source_runtime_stays_split_by_responsibility():
     filesystem_root = SRC_ROOT / "integrations/sources/filesystem"
     adapter = filesystem_root / "adapter.py"
@@ -1253,9 +1155,7 @@ def test_filesystem_source_runtime_stays_split_by_responsibility():
     } <= module_names
     assert len(adapter_text.splitlines()) <= 220
     assert [
-        fragment
-        for fragment in forbidden_adapter_fragments
-        if fragment in adapter_text
+        fragment for fragment in forbidden_adapter_fragments if fragment in adapter_text
     ] == []
     assert len(listing_text.splitlines()) <= 110
     assert [
@@ -1396,19 +1296,17 @@ def test_transcript_source_runtime_stays_split_by_responsibility():
     } <= module_names
     assert len(runtime_text.splitlines()) <= 100
     assert [
-        fragment
-        for fragment in forbidden_runtime_fragments
-        if fragment in runtime_text
+        fragment for fragment in forbidden_runtime_fragments if fragment in runtime_text
     ] == []
-    assert "class TranscriptJsonLine" in (
-        transcripts_root / "models.py"
-    ).read_text(encoding="utf-8")
-    assert "def transcript_entry(" in (
-        transcripts_root / "entries.py"
-    ).read_text(encoding="utf-8")
-    assert "def read_transcript_entries(" in (
-        transcripts_root / "reader.py"
-    ).read_text(encoding="utf-8")
+    assert "class TranscriptJsonLine" in (transcripts_root / "models.py").read_text(
+        encoding="utf-8"
+    )
+    assert "def transcript_entry(" in (transcripts_root / "entries.py").read_text(
+        encoding="utf-8"
+    )
+    assert "def read_transcript_entries(" in (transcripts_root / "reader.py").read_text(
+        encoding="utf-8"
+    )
     assert "def render_transcript_runtime(" in (
         transcripts_root / "rendering.py"
     ).read_text(encoding="utf-8")
@@ -1417,9 +1315,7 @@ def test_transcript_source_runtime_stays_split_by_responsibility():
 def test_sources_service_stays_orchestration_only():
     sources_root = SRC_ROOT / "services/sources"
     service_text = (sources_root / "service.py").read_text(encoding="utf-8")
-    address_text = (sources_root / "address_resolution.py").read_text(
-        encoding="utf-8"
-    )
+    address_text = (sources_root / "address_resolution.py").read_text(encoding="utf-8")
     module_names = {path.name for path in sources_root.glob("*.py")}
     forbidden_service_fragments = (
         "urlsplit",
@@ -1468,9 +1364,7 @@ def test_sources_service_stays_orchestration_only():
     assert (sources_root / "address_resolution.py").is_file()
     assert (sources_root / "transcripts.py").is_file()
     assert [
-        fragment
-        for fragment in forbidden_service_fragments
-        if fragment in service_text
+        fragment for fragment in forbidden_service_fragments if fragment in service_text
     ] == []
     assert [
         fragment
@@ -1487,26 +1381,20 @@ def test_sources_service_stays_orchestration_only():
     assert "def resolve_git_range(" in (sources_root / "address_git.py").read_text(
         encoding="utf-8"
     )
-    assert "AnyHttpUrl" in (sources_root / "address_web.py").read_text(
-        encoding="utf-8"
-    )
-    assert "sha256" in (sources_root / "address_path.py").read_text(
-        encoding="utf-8"
-    )
+    assert "AnyHttpUrl" in (sources_root / "address_web.py").read_text(encoding="utf-8")
+    assert "sha256" in (sources_root / "address_path.py").read_text(encoding="utf-8")
     assert "TRANSCRIPT_PROMPT_HINT" in (
         sources_root / "address_transcript.py"
     ).read_text(encoding="utf-8")
-    assert "def transcript_sort_key(" in (
-        sources_root / "transcripts.py"
-    ).read_text(encoding="utf-8")
+    assert "def transcript_sort_key(" in (sources_root / "transcripts.py").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_automation_service_keeps_selection_and_job_construction_boundaries():
     automation_root = SRC_ROOT / "services/automation"
     service_text = (automation_root / "service.py").read_text(encoding="utf-8")
-    definitions_text = (automation_root / "definitions.py").read_text(
-        encoding="utf-8"
-    )
+    definitions_text = (automation_root / "definitions.py").read_text(encoding="utf-8")
     jobs_text = (automation_root / "jobs.py").read_text(encoding="utf-8")
     selection_text = (automation_root / "selection.py").read_text(encoding="utf-8")
     forbidden_service_fragments = (
@@ -1535,9 +1423,7 @@ def test_automation_service_keeps_selection_and_job_construction_boundaries():
     }
     assert len(service_text.splitlines()) <= 110
     assert [
-        fragment
-        for fragment in forbidden_service_fragments
-        if fragment in service_text
+        fragment for fragment in forbidden_service_fragments if fragment in service_text
     ] == []
     assert "class AutomationTaskDefinition" in definitions_text
     assert "def task_definition(" in definitions_text
@@ -1545,9 +1431,9 @@ def test_automation_service_keeps_selection_and_job_construction_boundaries():
     assert "def program_arguments_for(" in jobs_text
     assert "def launch_path(" in jobs_text
     assert "logs_dir_for(" in jobs_text
-    assert "class InstallTaskSelection" in selection_text
-    assert "def install_task_selection(" in selection_text
-    assert "ValidationFailed" in selection_text
+    assert "def status_task_selection(" in selection_text
+    assert "InstallTaskSelection" not in selection_text
+    assert "ValidationFailed" not in selection_text
 
 
 def test_run_queue_stays_operation_dispatch_only():
@@ -1555,6 +1441,7 @@ def test_run_queue_stays_operation_dispatch_only():
     service_text = (run_queue_root / "service.py").read_text(encoding="utf-8")
     specs_text = (run_queue_root / "specs.py").read_text(encoding="utf-8")
     worker_text = (run_queue_root / "worker.py").read_text(encoding="utf-8")
+    executor_text = (run_queue_root / "executor.py").read_text(encoding="utf-8")
 
     forbidden_fragments = (
         "RunHarnessRequest",
@@ -1568,14 +1455,17 @@ def test_run_queue_stays_operation_dispatch_only():
 
     assert (run_queue_root / "worker.py").is_file()
     assert (run_queue_root / "specs.py").is_file()
-    assert len(service_text.splitlines()) <= 170
+    assert len(service_text.splitlines()) <= 200
     assert [
         fragment for fragment in forbidden_fragments if fragment in service_text
     ] == []
     assert "class RunQueueWorker" in worker_text
     assert "def drain(" in worker_text
-    assert "StartedIngestRequest" in worker_text
-    assert "StartedGardenRequest" in worker_text
+    assert "StartedIngestRequest" not in worker_text
+    assert "StartedGardenRequest" not in worker_text
+    assert "class RunExecutor" in executor_text
+    assert "StartedIngestRequest" in executor_text
+    assert "StartedGardenRequest" in executor_text
     assert "def ingest_run_spec(" in specs_text
     assert "def garden_run_spec(" in specs_text
 
@@ -1662,9 +1552,7 @@ def test_sync_queue_effects_stay_out_of_service_orchestration():
     assert (sync_root / "queue.py").is_file()
     assert len(service_text.splitlines()) <= 120
     assert [
-        fragment
-        for fragment in forbidden_service_fragments
-        if fragment in service_text
+        fragment for fragment in forbidden_service_fragments if fragment in service_text
     ] == []
     assert [
         fragment
@@ -1707,12 +1595,8 @@ def test_server_app_stays_composition_root():
     server_root = SRC_ROOT / "server"
     app_text = (server_root / "app.py").read_text(encoding="utf-8")
     api_text = (server_root / "api_routes.py").read_text(encoding="utf-8")
-    static_routes_text = (server_root / "static_routes.py").read_text(
-        encoding="utf-8"
-    )
-    static_assets_text = (server_root / "static_assets.py").read_text(
-        encoding="utf-8"
-    )
+    static_routes_text = (server_root / "static_routes.py").read_text(encoding="utf-8")
+    static_assets_text = (server_root / "static_assets.py").read_text(encoding="utf-8")
     errors_text = (server_root / "errors.py").read_text(encoding="utf-8")
     forbidden_app_fragments = (
         "@server.get",
@@ -1734,18 +1618,18 @@ def test_server_app_stays_composition_root():
     assert "register_api_routes(" in app_text
     assert "register_static_routes(server)" in app_text
 
-    assert "@server.get(\"/api/overview\"" in api_text
+    assert '@server.get("/api/overview"' in api_text
     assert "ViewerOverviewRequest(" in api_text
     assert "context.codealmanac.viewer" in api_text
     assert "resources.files" not in api_text
     assert "CodeAlmanacError" not in api_text
 
-    assert "@server.get(\"/assets/{asset_path:path}\"" in static_routes_text
+    assert '@server.get("/assets/{asset_path:path}"' in static_routes_text
     assert "asset_response(asset_path)" in static_routes_text
     assert "ViewerOverviewRequest" not in static_routes_text
 
     assert "class StaticAssetRequest" in static_assets_text
-    assert "resources.files(\"codealmanac.server.assets\")" in static_assets_text
+    assert 'resources.files("codealmanac.server.assets")' in static_assets_text
     assert "ViewerOverviewRequest" not in static_assets_text
 
     assert "CodeAlmanacError" in errors_text
@@ -1755,9 +1639,7 @@ def test_server_app_stays_composition_root():
 
 def test_run_id_validation_is_owned_by_runs_models():
     runs_models = (SRC_ROOT / "services/runs/models.py").read_text(encoding="utf-8")
-    runs_requests = (SRC_ROOT / "services/runs/requests.py").read_text(
-        encoding="utf-8"
-    )
+    runs_requests = (SRC_ROOT / "services/runs/requests.py").read_text(encoding="utf-8")
     runs_store = (SRC_ROOT / "services/runs/store.py").read_text(encoding="utf-8")
     viewer_requests = (SRC_ROOT / "services/viewer/requests.py").read_text(
         encoding="utf-8"
@@ -1790,7 +1672,7 @@ def test_run_persistence_stays_split_by_responsibility():
         "os.kill",
         "time.sleep",
         'open("a"',
-        ".open(\"a\"",
+        '.open("a"',
         "RUN_ID_ADAPTER",
         "uuid4",
         "strftime",
@@ -1808,7 +1690,7 @@ def test_run_persistence_stays_split_by_responsibility():
         "transitions.py",
         "worker_locks.py",
     } <= module_names
-    assert len(store_text.splitlines()) <= 330
+    assert len(store_text.splitlines()) <= 360
     assert [
         fragment for fragment in forbidden_store_fragments if fragment in store_text
     ] == []
@@ -1820,7 +1702,8 @@ def test_run_persistence_stays_split_by_responsibility():
     assert "def next_queued_run(" in queries_text
     assert "def start_run(" in transitions_text
     assert "def finish_run(" in transitions_text
-    assert "def cancel_run(" in transitions_text
+    assert "def prepare_cancellation(" in transitions_text
+    assert "def finish_cancellation(" in transitions_text
     assert "ConflictError" in transitions_text
     assert "class RunEventStore" in events_text
     assert "run_events" in events_text

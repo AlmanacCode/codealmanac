@@ -14,6 +14,12 @@ class AutomationTask(StrEnum):
     UPDATE = "update"
 
 
+class ScheduledJobState(StrEnum):
+    RUNNING = "running"
+    IDLE = "idle"
+    UNKNOWN = "unknown"
+
+
 class EnvironmentVariable(CodeAlmanacModel):
     name: str
     value: str
@@ -61,14 +67,21 @@ class ScheduledJobStatus(CodeAlmanacModel):
     installed: bool
     loaded: bool
     interval: timedelta | None = None
+    state: ScheduledJobState | None = None
+    run_count: int | None = None
+    last_exit_code: int | None = None
+    pid: int | None = None
 
 
-class AutomationInstallResult(CodeAlmanacModel):
-    jobs: tuple[ScheduledJob, ...]
-    disabled: tuple[ScheduledJob, ...] = ()
+class AutomationTaskApplyResult(CodeAlmanacModel):
+    task: AutomationTask
+    enabled: bool
+    interval: timedelta
+    plist_path: Path
+    changed: bool
 
 
-class AutomationUninstallResult(CodeAlmanacModel):
+class AutomationRemoveResult(CodeAlmanacModel):
     tasks: tuple[AutomationTask, ...]
     removed: tuple[Path, ...]
 

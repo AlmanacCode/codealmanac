@@ -84,6 +84,8 @@ def page_summary_from_search(
         summary=page.summary,
         path=viewer_relative_path(repository, page.file_path),
         topics=page.topics,
+        matched_heading=page.matched_heading,
+        excerpt=page.excerpt,
     )
 
 

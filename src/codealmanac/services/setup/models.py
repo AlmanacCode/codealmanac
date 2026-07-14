@@ -6,11 +6,10 @@ from pydantic import Field, field_validator
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
 from codealmanac.services.automation.models import (
-    AutomationInstallResult,
+    AutomationRemoveResult,
     AutomationTask,
-    AutomationUninstallResult,
 )
-from codealmanac.services.config.models import ConfigSetResult
+from codealmanac.services.config.models import ConfigUpdateResult
 from codealmanac.services.harnesses.models import HarnessKind, HarnessReadiness
 from codealmanac.services.updates.models import UpdateInstallMethod
 
@@ -99,11 +98,9 @@ class SetupPlan(CodeAlmanacModel):
 
 class SetupResult(CodeAlmanacModel):
     plan: SetupPlan
+    config_update: ConfigUpdateResult
     skipped_instructions: bool = False
     changes: tuple[InstructionChange, ...] = ()
-    config_update: ConfigSetResult | None = None
-    config_updates: tuple[ConfigSetResult, ...] = ()
-    automation_install: AutomationInstallResult | None = None
     runner_readiness: HarnessReadiness | None = None
 
 
@@ -132,6 +129,6 @@ class PackageUninstallResult(CodeAlmanacModel):
 
 class UninstallResult(CodeAlmanacModel):
     changes: tuple[InstructionChange, ...] = ()
-    automation_uninstall: AutomationUninstallResult | None = None
+    automation_uninstall: AutomationRemoveResult | None = None
     global_state: GlobalStateRemovalResult | None = None
     package_uninstall: PackageUninstallResult | None = None

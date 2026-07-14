@@ -5,6 +5,7 @@ from pydantic import field_validator
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
 from codealmanac.services.harnesses.models import HarnessKind
+from codealmanac.services.runs.models import RunId
 
 
 class ScheduledGardenRequest(CodeAlmanacModel):
@@ -50,3 +51,11 @@ class DrainRunQueueRequest(CodeAlmanacModel):
         if value is not None and value <= 0:
             raise ValueError("max_runs must be positive")
         return value
+
+
+class SpawnRunExecutorRequest(CodeAlmanacModel):
+    run_id: RunId
+
+
+class ExecuteRunRequest(CodeAlmanacModel):
+    run_id: RunId

@@ -1,55 +1,141 @@
 ---
-title: Architecture Overview
+title: Architecture
 topics: [architecture, overview]
 sources:
   - id: manual
     type: file
     path: MANUAL.md
-    note: Repo architecture rules for living structure, seams, and implementation shape.
-  - id: repo-readme
+    note: Repo rule that features should reshape architecture before implementation when the current shape does not hold.
+  - id: topics
     type: file
-    path: README.md
-    note: Public product overview and local wiki/runtime split.
+    path: almanac/topics.yaml
+    note: Topic graph showing the major architecture neighborhoods.
   - id: service-boundaries
     type: file
     path: almanac/architecture/service-boundaries.md
-    note: Existing hub for dependency direction and owner boundaries.
-  - id: lifecycle-workflows
+    note: Architecture page for layer ownership and dependency direction.
+  - id: composition-root
     type: file
-    path: almanac/architecture/lifecycle/workflows.md
-    note: Existing page for build, ingest, garden, and sync workflow shape.
+    path: almanac/architecture/composition-root.md
+    note: Architecture page for application graph assembly.
+  - id: lifecycle
+    type: file
+    path: almanac/architecture/lifecycle/README.md
+    note: Architecture hub for build, ingest, garden, sync, queueing, operation execution, and mutation safety.
   - id: index-search
     type: file
     path: almanac/architecture/wiki/index-refresh-and-search.md
-    note: Existing page for the derived wiki read model and search flow.
+    note: Architecture page for index refresh and read-side search.
+  - id: wiki-architecture
+    type: wiki
+    path: architecture/wiki
+    note: Architecture hub for page identity, file refs, indexing, topics, health, and validation.
+  - id: operation-runner
+    type: wiki
+    path: architecture/lifecycle/operation-runner
+    note: Architecture page for the shared lifecycle run-execution path.
+  - id: mutation-safety
+    type: wiki
+    path: architecture/lifecycle/mutation-safety
+    note: Architecture page for lifecycle write boundaries and validation.
+  - id: page-identity
+    type: wiki
+    path: architecture/wiki/page-identity
+    note: Architecture page for Markdown page routes.
+  - id: path-normalization
+    type: wiki
+    path: architecture/wiki/path-normalization-and-file-refs
+    note: Architecture page for normalized paths and file references.
+  - id: topics-dag
+    type: wiki
+    path: architecture/wiki/topics-dag
+    note: Architecture page for topic graph behavior.
+  - id: health-validation
+    type: wiki
+    path: architecture/wiki/health-and-validation
+    note: Architecture page for graph health and validation.
+  - id: cli-adapter
+    type: wiki
+    path: architecture/cli/adapter-boundary
+    note: Architecture page for CLI dispatch boundaries.
+  - id: terminal-output
+    type: wiki
+    path: architecture/cli/terminal-output
+    note: Architecture page for human and JSON terminal rendering.
   - id: harness-contract
-    type: file
-    path: almanac/architecture/agent-runs/harness-contract.md
-    note: Existing page for provider-neutral agent-run contracts.
+    type: wiki
+    path: architecture/agent-runs/harness-contract
+    note: Architecture page for normalized harness execution.
+  - id: provider-adapters
+    type: wiki
+    path: architecture/agent-runs/provider-adapters
+    note: Architecture page for Codex and Claude provider adapters.
+  - id: source-runtime
+    type: wiki
+    path: architecture/sources/source-resolution-and-runtime
+    note: Architecture page for ingest source resolution and runtime snapshots.
+  - id: local-state
+    type: wiki
+    path: architecture/repositories/local-state
+    note: Architecture page for repository-local runtime state.
+  - id: selection-root
+    type: wiki
+    path: architecture/repositories/selection-and-root
+    note: Architecture page for repository selection and the fixed wiki root.
+  - id: sqlite-stores
+    type: wiki
+    path: architecture/persistence/sqlite-store-boundaries
+    note: Architecture page for SQLite store ownership.
+  - id: local-viewer
+    type: wiki
+    path: architecture/viewer/local-viewer
+    note: Architecture page for the local browser viewer.
+  - id: request-models
+    type: wiki
+    path: architecture/request-models
+    note: Architecture page for typed request objects at service and workflow boundaries.
+  - id: agents-manuals
+    type: wiki
+    path: architecture/runtime-resources/prompts-and-manuals
+    note: Architecture page for packaged prompt and manual runtime resources.
+  - id: setup-automation
+    type: wiki
+    path: architecture/setup/automation-and-update
+    note: Architecture page for setup-owned automation and update behavior.
 ---
 
-# Architecture Overview
+# Architecture
 
-Architecture overview is the landing page for the architecture cluster. The pages in this folder explain how CodeAlmanac's local Python product divides responsibility between CLI adapters, the app composition root, workflows, services, stores, ports, integrations, and the committed wiki tree [@repo-readme] [@service-boundaries]. Use this page as a reading map before changing a subsystem.
+Architecture pages explain the system areas that future work must preserve or reshape before adding behavior. The repo manual makes this explicit: implementation work should evolve the codebase so the feature fits, and should stop when the current shape cannot hold the request cleanly [@manual]. This hub gives the shortest route through the architecture cluster instead of requiring readers to scan every page under `architecture/`.
 
-The architecture rule for this repository is active design, not passive documentation. New work should reshape the codebase when a feature does not fit cleanly, prefer clear boundaries over local workarounds, and keep provider or persistence mechanics below the service-owned contracts [@manual] [@service-boundaries].
+The architecture topic has focused child neighborhoods for wiki behavior, lifecycle operations, agent runs, CLI behavior, repositories, local state, automation, setup, runtime resources, persistence, sources, and the viewer [@topics]. Read the page that owns the boundary you plan to change, then follow its links into guides, decisions, or reference pages.
 
-## Start With The Core Shape
+## Core Shape
 
-Read [Service boundaries](service-boundaries) first. It explains the dependency direction from CLI and workflows into services, stores, ports, and integrations [@service-boundaries].
+Start with [Service boundaries](service-boundaries). It explains the main dependency direction: CLI adapters enter through the app, workflows coordinate product operations, services own product verbs, stores own persistence, ports describe outside capabilities, and integrations implement those ports [@service-boundaries].
 
-Then read [Composition root](composition-root) and [Request models](request-models). Those pages explain where dependencies are assembled and how shaped request objects keep raw CLI or provider state from leaking inward.
+[Composition root](composition-root) is the companion page for construction. It explains how `src/codealmanac/app.py` assembles stores, services, adapters, operation runners, and workflows into one application graph [@composition-root].
 
-## Follow The Main Flows
+[Request models](request-models) explains the typed request objects that protect service and workflow boundaries from loose dictionaries and raw CLI shapes [@request-models].
 
-For page-writing operations, read [Lifecycle workflows](lifecycle/workflows), then [Operation runner](lifecycle/operation-runner), [Run queue and sync](lifecycle/run-queue-and-sync), and [Mutation safety](lifecycle/mutation-safety). That path explains why build, ingest, and garden share execution, why sync only queues ingest work, and how final validation guards wiki writes [@lifecycle-workflows].
+## Page-Writing Operations
 
-For read-side wiki behavior, read [Index refresh and search](wiki/index-refresh-and-search), [Page identity](wiki/page-identity), [Path normalization and file refs](wiki/path-normalization-and-file-refs), [Topics DAG](wiki/topics-dag), and [Health and validation](wiki/health-and-validation). Those pages explain how committed Markdown becomes a derived SQLite read model without making runtime state part of the wiki source [@index-search].
+[Lifecycle](lifecycle/) is the entry point for build, ingest, garden, sync, queued runs, operation execution, and mutation safety. Build, ingest, and garden are page-writing operation families; sync is a scanner that queues ingest work instead of writing pages itself [@lifecycle].
 
-## Use Subsystem Pages For Edges
+Use [Operation runner](lifecycle/operation-runner) when changing the shared run-execution path [@operation-runner]. Use [Mutation safety](lifecycle/mutation-safety) when changing the checks that keep lifecycle writes inside the allowed wiki source files [@mutation-safety].
 
-When work touches agent execution, use [Harness contract](agent-runs/harness-contract) before [Provider adapters](agent-runs/provider-adapters). The contract is the stable boundary; provider pages describe how Codex and Claude fit behind it [@harness-contract].
+## Read Side And Wiki Graph
 
-When work touches source inputs, use [Source resolution and runtime](sources/source-resolution-and-runtime). When work touches repository selection or runtime files, use [Repository selection and root](repositories/selection-and-root), [Repository local state](repositories/local-state), and [SQLite store boundaries](persistence/sqlite-store-boundaries).
+[Wiki architecture](wiki/) is the entry point for page identity, path and file references, indexing, topics, health, and validation [@wiki-architecture].
 
-When work touches user surfaces, use [CLI adapter boundary](cli/adapter-boundary), [Terminal output](cli/terminal-output), [Setup automation and update](setup/automation-and-update), and [Local viewer](viewer/local-viewer). These pages explain adapter behavior at the edges without making the edge the product core.
+[Index refresh and search](wiki/index-refresh-and-search) explains the derived SQLite read model, implicit refresh before read commands, FTS search, topic filters, and mention search [@index-search].
+
+For authored wiki contracts, read [Page identity](wiki/page-identity), [Path normalization and file refs](wiki/path-normalization-and-file-refs), [Topics DAG](wiki/topics-dag), and [Health and validation](wiki/health-and-validation). These pages define how Markdown routes, sources, topics, and validation fit together [@page-identity] [@path-normalization] [@topics-dag] [@health-validation].
+
+## Edges And Interfaces
+
+Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Harness contract](agent-runs/harness-contract) and [Provider adapters](agent-runs/provider-adapters) for Codex and Claude execution boundaries [@harness-contract] [@provider-adapters]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
+
+[Agents and manuals](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents and writing references used by lifecycle runs, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@setup-automation].
+
+[Local state](repositories/local-state), [Selection and root](repositories/selection-and-root), and [SQLite store boundaries](persistence/sqlite-store-boundaries) explain repository selection, runtime paths, and persistence ownership [@local-state] [@selection-root] [@sqlite-stores]. [Local viewer](viewer/local-viewer) explains the browser UI that projects the same wiki, topics, files, and jobs [@local-viewer].

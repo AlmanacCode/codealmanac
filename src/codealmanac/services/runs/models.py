@@ -41,10 +41,34 @@ class RunEventKind(StrEnum):
     ERROR = "error"
 
 
+class RunWorkerIdleHandoffOutcome(StrEnum):
+    WORK_AVAILABLE = "work_available"
+    RELEASED = "released"
+    OWNERSHIP_LOST = "ownership_lost"
+
+
 class PageChangeSet(CodeAlmanacModel):
     created: tuple[str, ...] = ()
     updated: tuple[str, ...] = ()
     deleted: tuple[str, ...] = ()
+
+
+class RunExecutionRef(CodeAlmanacModel):
+    execution_id: str
+    pid: int
+    process_started_at: datetime
+
+    @field_validator("execution_id")
+    @classmethod
+    def require_execution_id(cls, value: str) -> str:
+        return required_text(value, "run execution id")
+
+    @field_validator("pid")
+    @classmethod
+    def positive_pid(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("run execution pid must be positive")
+        return value
 
 
 class RunRecord(CodeAlmanacModel):
@@ -61,6 +85,8 @@ class RunRecord(CodeAlmanacModel):
     finished_at: datetime | None = None
     page_changes: PageChangeSet | None = None
     harness_transcript: HarnessTranscriptRef | None = None
+    execution: RunExecutionRef | None = None
+    cancellation_requested_at: datetime | None = None
 
     @field_validator("repository_id")
     @classmethod
@@ -97,6 +123,12 @@ TERMINAL_RUN_STATUSES = frozenset(
 class RunCancelResult(CodeAlmanacModel):
     record: RunRecord
     changed: bool
+
+
+class RunCancellationPlan(CodeAlmanacModel):
+    record: RunRecord
+    changed: bool
+    execution: RunExecutionRef | None = None
 
 
 class RunAttachSnapshot(CodeAlmanacModel):

@@ -21,16 +21,36 @@ shaped the way it is, what broke before, which invariants matter, and how
 workflows cross files and services. The wiki is plain markdown in your repo,
 indexed locally, and reviewed in Git like any other code change.
 
+**Supported today:** macOS with Codex or Claude Code. Requires Python 3.12+.
+
 ## Quickstart
 
-```bash
+Give this prompt to your coding agent:
+
+```text
+Install and set up CodeAlmanac for this repository.
+
+Use the official installer:
 curl -fsSL https://codealmanac.com/install.sh | sh
 
-# Choose one setup path:
-codealmanac setup                       # Interactive setup
-codealmanac setup --yes                 # Quick install; uses Codex as the AI runner
-codealmanac setup --yes --runner claude # Quick install; uses Claude as the AI runner
+Then run `codealmanac setup` without `--yes`. Walk me through its interactive
+setup and wait for my choices instead of selecting defaults for me.
 
+Initialize this repository if it does not already have an almanac/ directory,
+then verify the installation with `codealmanac doctor`.
+```
+
+Prefer to do it yourself?
+
+```bash
+curl -fsSL https://codealmanac.com/install.sh | sh && codealmanac setup
+```
+
+See [Install](#install) and [Setup](#setup) for more options.
+
+Once CodeAlmanac is set up:
+
+```bash
 cd your-repo
 codealmanac init                     # Makes your wiki, if you don't have one
 codealmanac search "getting started" # Shows matching wiki pages.
@@ -113,8 +133,17 @@ codealmanac setup --yes
 codealmanac setup --yes --runner claude
 ```
 
-Setup installs local agent instructions plus the default local automation: sync,
-Garden, and daily package update. It does not connect to a hosted service.
+Setup installs agent instructions for your chosen tools and three local macOS
+`launchd` jobs. Nothing runs in the cloud.
+
+| Job | Default schedule | What it does |
+| --- | ---: | --- |
+| Sync | Every 5 hours | Scans recent Codex and Claude conversations and queues useful knowledge for the relevant registered wiki. |
+| Garden | Every 4 hours | Reviews every registered wiki for stale, duplicated, or poorly connected knowledge. |
+| Update | Every 24 hours | Checks for and installs CodeAlmanac CLI updates when it is safe to do so. |
+
+These schedules run locally in the background. Use
+`codealmanac automation status` to see what is installed.
 
 If you don't have Codex or prefer Claude, use `--runner claude`.
 
@@ -126,12 +155,19 @@ codealmanac setup --yes --target codex
 codealmanac setup --yes --target claude
 ```
 
-Other setup flags:
+Customize automatic work during setup:
 
 ```bash
+# Change how often recent agent conversations are scanned
 codealmanac setup --yes --sync-every 5h
+
+# Do not install automatic transcript sync
 codealmanac setup --yes --sync-off
+
+# Do not install automatic wiki cleanup
 codealmanac setup --yes --garden-off
+
+# Do not install automatic CodeAlmanac updates
 codealmanac setup --yes --no-auto-update
 ```
 
@@ -160,8 +196,16 @@ root.
 
 ## Updating The Wiki
 
-Lifecycle commands can ask a configured local agent harness to edit wiki pages.
-They only allow source edits under `almanac/`.
+Lifecycle commands run one of three explicit agents—build, ingest, or garden—
+through the public [Yoke SDK](https://github.com/AlmanacCode/Yoke). The existing
+packaged prompt files remain the complete task instructions and direct agents
+to edit the wiki under `almanac/`.
+
+Lifecycle agents are trusted local coding agents. They run with the same broad,
+non-interactive filesystem permissions CodeAlmanac historically provided, so
+the `almanac/` boundary is an instruction and commit policy, not an OS sandbox.
+Run lifecycle commands only in repositories where you accept that trust model,
+and review the resulting Git diff when automatic commits are disabled.
 
 ```bash
 codealmanac ingest README.md --using codex
@@ -184,40 +228,87 @@ should leave the wiki unchanged.
 
 ## Sync And Automation
 
-`sync` scans local Claude and Codex transcript stores, finds conversations active
-since the last completed sync, and queues ordinary local ingest runs.
+CodeAlmanac can keep registered wikis current without requiring you to remember
+maintenance commands.
+
+**Sync** scans local Codex and Claude transcript stores for conversations active
+since the previous completed sync. Conversations associated with registered
+repositories are queued as ordinary ingest jobs. Sync may decide that a
+conversation contains no durable knowledge and leave the wiki unchanged.
+
+**Garden** periodically queues a maintenance job for each registered wiki. It
+improves stale pages, weak links, topics, duplicated knowledge, and graph
+structure.
+
+**Update** keeps the locally installed CodeAlmanac CLI current. Scheduled
+updates are skipped when an update would be unsafe, such as while lifecycle
+work is active.
+
+Automation is implemented with local macOS `launchd` jobs, not a hosted service
+or cloud sync. Logs are stored under `~/.codealmanac/logs/`.
 
 ```bash
-codealmanac sync status --from codex
-codealmanac sync --from codex --using codex
-codealmanac automation install sync --every 5h
-codealmanac automation install update --every 24h
+# See installed schedules
 codealmanac automation status
+
+# Change a schedule
+codealmanac config set automation.sync.every 5h
+codealmanac config set automation.garden.every 4h
+codealmanac config set automation.update.every 24h
+
+# Disable or re-enable a schedule
+codealmanac config set automation.sync.enabled false
+codealmanac config set automation.sync.enabled true
 ```
 
-Scheduled automation launches local `sync`, `garden`, or `update` commands with
-explicit unattended policy. It is local scheduler state, not cloud sync.
-Scheduler logs live under `~/.codealmanac/logs/`.
+`config set` updates the user TOML and immediately makes launchd match. If you
+edit the TOML directly, run `codealmanac config apply` afterward.
+
+Automation creates individual background runs. Inspect those runs separately
+with `codealmanac jobs`.
 
 ## Jobs
 
-Lifecycle runs are recorded under `~/.codealmanac/`:
+Lifecycle runs are recorded under `~/.codealmanac/`. Use these commands to
+inspect and control them:
 
 ```bash
+# List recent jobs with their IDs, kinds, statuses, and elapsed times
 codealmanac jobs
+
+# Show one job's status, summary, page changes, timestamps, and error details
 codealmanac jobs show <run-id>
+
+# Print the events recorded so far, including progress, tool activity, and errors
 codealmanac jobs logs <run-id>
+
+# Follow new events live until the job finishes, fails, or is marked cancelled
 codealmanac jobs attach <run-id>
+
+# Prevent a queued job from starting, or stop a running job and its agent
 codealmanac jobs cancel <run-id>
 ```
 
-Run logs include source-resolution facts, harness events, safety errors, and
-terminal status.
+`show` is a summary of the job; `logs` is a snapshot of its event history;
+`attach` keeps watching and prints events as they arrive. All of these commands
+read the same durable local job record, so they still work after the terminal
+that started the job has closed. Add `--json` when consuming their output from
+a script.
 
 ## Providers
 
-CodeAlmanac currently supports local Codex app-server and Claude Agent SDK
-harnesses.
+CodeAlmanac uses `almanac-yoke` as its single provider boundary. Codex runs
+through app-server; Claude uses Yoke's default Claude surface (currently the
+Python Agent SDK). Existing Codex or Claude Code OAuth sessions are reused, and
+API credentials can be supplied through Yoke when embedding the SDK.
+
+Build, ingest, and garden are packaged as a Yoke agent collection under
+`src/codealmanac/agents/`. Each agent uses Yoke's native folder contract:
+`agent.yaml` describes tools and permissions, while `instructions.md` contains
+the durable agent instructions. A lifecycle run passes only its typed runtime
+context as the task prompt. Optional Yoke `skills/`, `subagents/`, and
+`workflows/` folders can be added to an agent when the product needs them;
+native Claude or Codex execution still decides how and when to use them.
 
 ```bash
 codex login
@@ -276,22 +367,37 @@ User config lives at:
 ~/.codealmanac/config.toml
 ```
 
-Project config lives at:
-
-```text
-almanac/config.toml
-```
-
-The first supported defaults are:
+The supported defaults are:
 
 ```toml
 auto_commit = true
 
 [harness]
 default = "codex"
+model = "gpt-5.5"
+
+[automation.sync]
+enabled = true
+every = "5h"
+
+[automation.garden]
+enabled = true
+every = "4h"
+
+[automation.update]
+enabled = true
+every = "24h"
 ```
 
 CLI flags still win over config.
+
+Use `codealmanac config set <key> <value>` for normal changes. It applies
+automation changes to launchd immediately. Direct file edits are supported but
+must be followed by:
+
+```bash
+codealmanac config apply
+```
 
 `auto_commit` means lifecycle prompts may tell the selected agent to use normal
 Git commands for wiki source changes. CodeAlmanac does not stage files, split

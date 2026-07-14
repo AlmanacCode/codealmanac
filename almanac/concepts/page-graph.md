@@ -10,6 +10,10 @@ sources:
     type: file
     path: src/codealmanac/services/wiki/links.py
     note: Markdown link extraction and relative page-link resolution.
+  - id: wiki_documents
+    type: file
+    path: src/codealmanac/services/wiki/documents.py
+    note: Page document loading and current cross-wiki link projection behavior.
   - id: health_views
     type: file
     path: src/codealmanac/services/index/health_views.py
@@ -26,13 +30,13 @@ sources:
 
 # Page Graph
 
-The page graph is the derived model CodeAlmanac builds from the committed `almanac/` tree. It treats pages, topics, page links, cross-wiki links, file references, sources, backlinks, and health checks as one connected wiki structure. The graph is stored in a local index, not authored by hand [@index_schema].
+The page graph is the derived model CodeAlmanac builds from the committed `almanac/` tree. It treats pages, topics, local page links, file references, sources, backlinks, and health checks as one connected wiki structure. The graph is stored in a local index, not authored by hand [@index_schema] [@wiki_links].
 
 This concept matters because CodeAlmanac is more than a folder of Markdown files. Search, mentions, topics, validation, and future maintenance all depend on the index knowing how pages connect to each other and to source evidence. A page with no topics, a dead file reference, or a broken Markdown link is a graph problem, not just a prose problem [@health_views].
 
 ## Parts Of The Graph
 
-The index has tables for `pages`, `topics`, `page_topics`, `topic_parents`, `file_refs`, `page_sources`, `page_links`, `cross_wiki_links`, and `fts_pages` [@index_schema]. These tables separate authored material from derived lookup state. The Markdown file remains the source; the index is the read model.
+The index has tables for `pages`, `topics`, `page_topics`, `topic_parents`, `file_refs`, `page_sources`, `page_links`, `cross_wiki_links`, and `fts_pages` [@index_schema]. The current document loader fills local `page_links` from Markdown links and leaves `cross_wiki_links` empty [@wiki_documents]. These tables separate authored material from derived lookup state. The Markdown file remains the source; the index is the read model.
 
 Topics group pages across folders. Topic parent rows form a directed topic structure, while page-topic rows attach individual pages to the subjects they explain [@index_schema]. This is the base for [Topics DAG](../architecture/wiki/topics-dag) and [topics.yaml](../reference/topics-yaml).
 
@@ -42,9 +46,7 @@ File references come from structured page sources. The index stores the normaliz
 
 ## Health As Graph Inspection
 
-Health checks read the graph for structural problems. The graph views report pages with no topics, file references that no longer exist, page links whose targets are missing, empty topics, and pages without meaningful body text [@health_graph]. The top-level health report combines those findings with source-citation checks [@health_views].
-
-Source health is part of the same idea. It finds citations that name no source, sources that are never cited, and duplicate source ids on a page [@health_sources]. This keeps `sources:` and inline citations aligned, so evidence remains followable.
+Health checks are graph inspection, not a separate mechanism: they query the same tables described above for structural problems, such as pages with no topic rows or links whose targets are missing, plus a source-citation view that keeps `sources:` and inline citations aligned [@health_graph] [@health_sources]. See [Health and validation](../architecture/wiki/health-and-validation) for the full enumerated check list and the validation boundary built on top of it.
 
 ## Why It Matters
 

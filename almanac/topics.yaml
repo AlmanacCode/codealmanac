@@ -55,6 +55,10 @@ topics:
     title: Providers
     description: Provider-specific edges behind service-owned ports
     parents: [agent-runs]
+  - slug: yoke
+    title: Yoke
+    description: Packaged Yoke agent collection, harness adapter, and event projection
+    parents: [agent-runs, runtime-resources]
   - slug: lifecycle
     title: Lifecycle
     description: Build, ingest, garden, sync, and shared operation execution
@@ -81,7 +85,7 @@ topics:
     parents: [product]
   - slug: config
     title: Config
-    description: User and project configuration keys
+    description: User configuration and automation preferences
     parents: [product, local-state]
   - slug: repositories
     title: Repositories

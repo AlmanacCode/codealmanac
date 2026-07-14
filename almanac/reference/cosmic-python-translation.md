@@ -33,7 +33,7 @@ The rule is practical: user-facing adapters stay thin, product verbs live in ser
 | Repository pattern | `store.py`, `*_store.py`, and store fakes own persistence access [@cosmic-notes]. |
 | Unit of Work | Explicit SQLite transaction ownership inside services and workflows [@cosmic-notes]. |
 | External event adapters | Transcript, GitHub, Git, harness, scheduler, and source-runtime adapters normalize outside shapes into service-owned models [@cosmic-notes]. |
-| Bootstrap or composition root | `src/codealmanac/app.py` builds services, stores, adapters, workflows, prompts, manuals, and local state [@cosmic-notes] [@app-root]. |
+| Bootstrap or composition root | `src/codealmanac/app.py` builds services, stores, adapters, workflows, manuals, and local state [@cosmic-notes] [@app-root]. |
 | Ports and adapters | `services/*/ports.py` defines the contract; `integrations/*` implements it [@cosmic-notes]. |
 | Command objects | Pydantic request models carry shaped input across CLI, workflow, and service boundaries [@cosmic-notes]. |
 

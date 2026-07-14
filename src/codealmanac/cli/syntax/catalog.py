@@ -116,17 +116,14 @@ def command_catalog() -> CommandCatalog:
                     row("codealmanac config list", "List config values"),
                     row("codealmanac config get <key>", "Read one value"),
                     row("codealmanac config set <key> <value>", "Set one value"),
+                    row("codealmanac config apply", "Apply config to automation"),
                 ),
             ),
             guide(
                 ("automation",),
                 "Automation commands",
-                "Install, inspect, or remove local scheduled work.",
-                (
-                    row("codealmanac automation status", "Show schedules"),
-                    row("codealmanac automation install", "Install schedules"),
-                    row("codealmanac automation uninstall", "Remove schedules"),
-                ),
+                "Inspect local scheduled work.",
+                (row("codealmanac automation status", "Show schedules"),),
             ),
             guide(
                 ("sync",),
@@ -143,7 +140,7 @@ def command_catalog() -> CommandCatalog:
                 "Search options",
                 "Search the selected wiki by text, topic, or file mention.",
                 (
-                    row("codealmanac search \"auth\"", "Search page text"),
+                    row('codealmanac search "auth"', "Search page text"),
                     row("codealmanac search --topic cli", "Filter by topic"),
                     row(
                         "codealmanac search --mentions src/app.py",

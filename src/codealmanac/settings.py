@@ -56,3 +56,7 @@ class LocalStatePaths(CodeAlmanacModel):
     @property
     def update_lock_path(self) -> Path:
         return self.state_dir / "update.lock"
+
+    @property
+    def harness_runtime_dir(self) -> Path:
+        return self.state_dir / "harnesses"

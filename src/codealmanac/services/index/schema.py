@@ -7,7 +7,7 @@ from codealmanac.database import (
     connect_sqlite,
 )
 
-SCHEMA_VERSION = 2026070601
+SCHEMA_VERSION = 2026071401
 
 SCHEMA_DDL = """
 CREATE TABLE IF NOT EXISTS pages (
@@ -75,7 +75,22 @@ CREATE TABLE IF NOT EXISTS cross_wiki_links (
   PRIMARY KEY (source_slug, target_wiki, target_slug)
 );
 
-CREATE VIRTUAL TABLE IF NOT EXISTS fts_pages USING fts5(slug, title, content);
+CREATE TABLE IF NOT EXISTS page_sections (
+  page_slug    TEXT NOT NULL REFERENCES pages(slug) ON DELETE CASCADE,
+  section_id   TEXT NOT NULL,
+  heading_path TEXT NOT NULL,
+  ordinal      INTEGER NOT NULL,
+  body         TEXT NOT NULL,
+  PRIMARY KEY (page_slug, section_id)
+);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS fts_sections USING fts5(
+  page_slug,
+  section_id UNINDEXED,
+  page_title,
+  heading,
+  body
+);
 
 CREATE TABLE IF NOT EXISTS index_metadata (
   key   TEXT PRIMARY KEY,
@@ -92,8 +107,10 @@ DROP TABLE IF EXISTS file_refs;
 DROP TABLE IF EXISTS page_topics;
 DROP TABLE IF EXISTS topic_parents;
 DROP TABLE IF EXISTS topics;
-DROP TABLE IF EXISTS pages;
 DROP TABLE IF EXISTS fts_pages;
+DROP TABLE IF EXISTS page_sections;
+DROP TABLE IF EXISTS fts_sections;
+DROP TABLE IF EXISTS pages;
 DROP TABLE IF EXISTS index_metadata;
 """
 

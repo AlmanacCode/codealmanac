@@ -1,19 +1,14 @@
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
-from codealmanac.services.config.models import ConfigKey
-from codealmanac.services.repositories.models import RepositoryName
-
-
-class LoadConfigRequest(CodeAlmanacModel):
-    cwd: Path
-    repository_name: RepositoryName | None = Field(
-        default=None,
-        description="None means use config for the current repository root.",
-    )
+from codealmanac.services.config.models import (
+    AutomationConfig,
+    ConfigKey,
+    HarnessConfig,
+)
 
 
 class SetConfigValueRequest(CodeAlmanacModel):
@@ -28,3 +23,15 @@ class SetConfigValueRequest(CodeAlmanacModel):
 
 class GetConfigValueRequest(CodeAlmanacModel):
     key: ConfigKey
+
+
+class ApplyConfigRequest(CodeAlmanacModel):
+    home: Path | None = None
+    env_path: str | None = None
+    codealmanac_executable: Path | None = None
+
+
+class UpdateUserConfigRequest(ApplyConfigRequest):
+    auto_commit: bool
+    harness: HarnessConfig
+    automation: AutomationConfig

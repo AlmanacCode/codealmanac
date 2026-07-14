@@ -1,39 +1,37 @@
+import time
+
 from codealmanac.core.errors import error_summary
 from codealmanac.services.runs.models import (
     TERMINAL_RUN_STATUSES,
     QueuedRun,
-    RunKind,
+    RunEventKind,
     RunQueueDrainResult,
     RunRecord,
     RunStatus,
+    RunWorkerIdleHandoffOutcome,
 )
 from codealmanac.services.runs.requests import (
     AcquireRunWorkerLockRequest,
     FinishRunRequest,
+    RecordRunEventRequest,
+    ReleaseRunWorkerIfIdleRequest,
     ShowRunRequest,
 )
 from codealmanac.services.runs.service import RunsService
-from codealmanac.workflows.build.requests import StartedBuildRequest
-from codealmanac.workflows.build.service import BuildWorkflow
-from codealmanac.workflows.garden.requests import StartedGardenRequest
-from codealmanac.workflows.garden.service import GardenWorkflow
-from codealmanac.workflows.ingest.requests import StartedIngestRequest
-from codealmanac.workflows.ingest.service import IngestWorkflow
-from codealmanac.workflows.run_queue.requests import DrainRunQueueRequest
+from codealmanac.workflows.run_queue.ports import RunExecutorSpawner
+from codealmanac.workflows.run_queue.requests import (
+    DrainRunQueueRequest,
+    SpawnRunExecutorRequest,
+)
+
+CANCELLATION_SETTLE_SECONDS = 5.0
+CANCELLATION_POLL_SECONDS = 0.05
 
 
 class RunQueueWorker:
-    def __init__(
-        self,
-        runs: RunsService,
-        build: BuildWorkflow,
-        ingest: IngestWorkflow,
-        garden: GardenWorkflow,
-    ):
+    def __init__(self, runs: RunsService, executors: RunExecutorSpawner):
         self.runs = runs
-        self.build = build
-        self.ingest = ingest
-        self.garden = garden
+        self.executors = executors
 
     def drain(self, request: DrainRunQueueRequest) -> RunQueueDrainResult:
         lease = self.runs.acquire_worker_lock(
@@ -51,8 +49,16 @@ class RunQueueWorker:
             while request.max_runs is None or len(processed) < request.max_runs:
                 queued = self.runs.next_queued()
                 if queued is None:
+                    outcome = self.runs.release_worker_if_idle(
+                        ReleaseRunWorkerIfIdleRequest(owner=lease.owner)
+                    )
+                    if outcome == RunWorkerIdleHandoffOutcome.WORK_AVAILABLE:
+                        continue
                     break
-                processed.append(self.run_queued(queued))
+                record = self.run_queued(queued)
+                processed.append(record)
+                if record.status not in TERMINAL_RUN_STATUSES:
+                    break
             return RunQueueDrainResult(
                 lock_acquired=True,
                 processed=tuple(processed),
@@ -62,71 +68,49 @@ class RunQueueWorker:
 
     def run_queued(self, queued: QueuedRun) -> RunRecord:
         try:
-            return self.execute_queued(queued)
+            process = self.executors.spawn(
+                SpawnRunExecutorRequest(run_id=queued.record.run_id)
+            )
+            exit_code = process.wait()
+            return self.reconcile_exit(queued.record.run_id, exit_code)
         except Exception as error:
             record = self.runs.show(ShowRunRequest(run_id=queued.record.run_id))
             if record.status in TERMINAL_RUN_STATUSES:
                 return record
-            return self.fail_queued_run(record, error_summary(error))
+            return self.fail_run(record, error_summary(error))
 
-    def execute_queued(self, queued: QueuedRun) -> RunRecord:
-        spec = queued.spec
-        if spec is None:
-            return self.fail_queued_run(
-                queued.record,
-                "queued run is missing its durable spec",
-            )
-        repository = self.runs.repository_for(queued.record)
-        if spec.kind == RunKind.BUILD:
-            result = self.build.execute_started(
-                StartedBuildRequest(
-                    run_id=queued.record.run_id,
-                    harness=spec.harness,
-                    model=spec.model,
-                    title=spec.title,
-                    guidance=spec.guidance,
-                    auto_commit=spec.auto_commit,
-                )
-            )
-            return result.run
-        if spec.kind == RunKind.INGEST:
-            result = self.ingest.execute_started(
-                StartedIngestRequest(
-                    cwd=repository.root_path,
-                    repository_name=repository.name,
-                    inputs=spec.inputs,
-                    harness=spec.harness,
-                    model=spec.model,
-                    title=spec.title,
-                    guidance=spec.guidance,
-                    auto_commit=spec.auto_commit,
-                    run_id=queued.record.run_id,
-                )
-            )
-            return result.run
-        if spec.kind == RunKind.GARDEN:
-            result = self.garden.execute_started(
-                StartedGardenRequest(
-                    cwd=repository.root_path,
-                    repository_name=repository.name,
-                    harness=spec.harness,
-                    model=spec.model,
-                    title=spec.title,
-                    guidance=spec.guidance,
-                    auto_commit=spec.auto_commit,
-                    run_id=queued.record.run_id,
-                )
-            )
-            return result.run
-        return self.unsupported_run(queued.record, spec.kind)
-
-    def unsupported_run(self, record: RunRecord, kind: RunKind) -> RunRecord:
-        return self.fail_queued_run(
+    def reconcile_exit(self, run_id: str, exit_code: int) -> RunRecord:
+        record = self.runs.show(ShowRunRequest(run_id=run_id))
+        if record.status in TERMINAL_RUN_STATUSES:
+            return record
+        if (
+            record.cancellation_requested_at is not None
+            and record.execution is not None
+        ):
+            return self.wait_for_cancellation(run_id)
+        return self.fail_run(
             record,
-            f"unsupported queued run kind: {kind.value}",
+            f"executor exited {exit_code} without a terminal result",
         )
 
-    def fail_queued_run(self, record: RunRecord, error: str) -> RunRecord:
+    def wait_for_cancellation(self, run_id: str) -> RunRecord:
+        deadline = time.monotonic() + CANCELLATION_SETTLE_SECONDS
+        while time.monotonic() < deadline:
+            record = self.runs.show(ShowRunRequest(run_id=run_id))
+            if record.status in TERMINAL_RUN_STATUSES:
+                return record
+            time.sleep(CANCELLATION_POLL_SECONDS)
+        record = self.runs.show(ShowRunRequest(run_id=run_id))
+        self.runs.record_event(
+            RecordRunEventRequest(
+                run_id=run_id,
+                kind=RunEventKind.ERROR,
+                message="executor exited but cancellation was not confirmed",
+            )
+        )
+        return self.runs.show(ShowRunRequest(run_id=run_id))
+
+    def fail_run(self, record: RunRecord, error: str) -> RunRecord:
         return self.runs.finish(
             FinishRunRequest(
                 run_id=record.run_id,

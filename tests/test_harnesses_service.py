@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from codealmanac.core.errors import ConflictError, ExecutionFailed, NotFoundError
 from codealmanac.services.harnesses.models import (
+    HarnessAgentKind,
     HarnessKind,
     HarnessReadiness,
     HarnessRunResult,
@@ -44,7 +45,8 @@ def test_harnesses_service_runs_registered_adapter(tmp_path: Path):
     result = service.run(
         RunHarnessRequest(
             kind=HarnessKind.CODEX,
-                model="gpt-5.5",
+            model="gpt-5.5",
+            agent=HarnessAgentKind.INGEST,
             cwd=tmp_path,
             prompt="Update the wiki from these source briefs.",
             title="Ingest source brief",
@@ -84,6 +86,7 @@ def test_harnesses_service_refuses_to_run_unavailable_harness(tmp_path: Path):
             RunHarnessRequest(
                 kind=HarnessKind.CODEX,
                 model="gpt-5.5",
+                agent=HarnessAgentKind.BUILD,
                 cwd=tmp_path,
                 prompt="Build the wiki.",
             )
@@ -154,6 +157,7 @@ def test_harnesses_service_rejects_missing_or_duplicate_adapters(tmp_path: Path)
             RunHarnessRequest(
                 kind=HarnessKind.CODEX,
                 model="gpt-5.5",
+                agent=HarnessAgentKind.BUILD,
                 cwd=tmp_path,
                 prompt="Try a run without an adapter.",
             )

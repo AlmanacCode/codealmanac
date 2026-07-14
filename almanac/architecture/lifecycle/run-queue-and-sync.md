@@ -9,15 +9,31 @@ sources:
   - id: run_worker
     type: file
     path: src/codealmanac/workflows/run_queue/worker.py
-    note: Worker drain loop and queued run execution.
+    note: Serialized worker drain loop and one-run executor reconciliation.
+  - id: run_executor
+    type: file
+    path: src/codealmanac/workflows/run_queue/executor.py
+    note: One-run Build, Ingest, or Garden dispatch after execution claim.
+  - id: run_processes
+    type: file
+    path: src/codealmanac/integrations/runs/process.py
+    note: Detached worker/executor spawning and verified process-tree termination.
   - id: run_models
     type: file
     path: src/codealmanac/services/runs/models.py
     note: Run specs, queue drain result, and run statuses.
+  - id: worker_locks
+    type: file
+    path: src/codealmanac/services/runs/worker_locks.py
+    note: Global worker ownership and atomic idle handoff transaction.
   - id: sync_workflow
     type: file
     path: src/codealmanac/workflows/sync/service.py
     note: Transcript sync workflow and queue integration.
+  - id: affiliation-decision
+    type: file
+    path: almanac/decisions/repository-affiliation-belongs-in-repository-service.md
+    note: Decision that future transcript checkout matching belongs in the repository service.
 ---
 
 # Run Queue And Sync
@@ -38,8 +54,18 @@ Scheduled Garden iterates registered repositories and skips repositories that al
 
 `RunQueueWorker.drain(...)` acquires a worker lock through the run service before it drains queued records [@run_worker]. If the lock is unavailable, the drain result reports `lock_acquired=False` [@run_worker] [@run_models].
 
-For each queued run, the worker reads the stored spec and calls `BuildWorkflow.execute_started(...)`, `IngestWorkflow.execute_started(...)`, or `GardenWorkflow.execute_started(...)` with the existing run id [@run_worker]. A queued run without a durable spec is marked failed rather than guessed from process state [@run_worker].
+For each queued run, the worker starts a hidden `__run-executor <run-id>` child and waits for it. `RunExecutor` atomically claims the row with its execution identity, reads the durable spec, and calls `BuildWorkflow.execute_started(...)`, `IngestWorkflow.execute_started(...)`, or `GardenWorkflow.execute_started(...)` [@run_worker] [@run_executor]. The worker reconciles the terminal record before selecting the next row, so cancelling one executor does not kill queue management or strand later work [@run_worker].
+
+Running cancellation goes through `RunCancellation`: record intent, terminate the verified executor and its descendant harness processes, confirm exit, then append the terminal `cancelled` status. The process adapter validates PID birth time before signaling and escalates from graceful termination to force kill when necessary [@run_processes].
+
+## Atomic Idle Handoff
+
+Every lifecycle start queues its run and spawns a worker. A spawned worker exits with `lock_acquired=False` when another worker already owns the global drain lock; the owner is responsible for picking up later queued work [@run_queue] [@run_worker].
+
+When the owner observes an empty queue, it calls `release_worker_if_idle(...)`. The worker-lock store starts an immediate SQLite transaction, verifies ownership, repeats the canonical oldest-queued-run query, and deletes the lock only if the queue remains empty [@run_worker] [@worker_locks]. Queue insertion uses the same write-transaction boundary. If insertion commits first, the current worker retains the lock and continues; if idle release commits first, the producer's newly spawned worker can acquire the free lock. This closes the empty-check-to-release lost-wakeup window without polling or a permanent daemon.
 
 ## Sync Boundary
 
 Sync discovers local transcript candidates and queues ordinary ingest runs through this queue boundary [@sync_workflow]. That keeps transcript discovery separate from authorship: sync decides what should be ingested, while ingest remains the operation that writes pages.
+
+Future worktree support should keep that boundary. Sync may need to ask repositories which registered wiki owns a transcript working directory, but the affiliation decision belongs in the repository service rather than in sync-specific provider or workspace checks [@affiliation-decision]. See [Repository Affiliation Belongs In Repository Service](../../decisions/repository-affiliation-belongs-in-repository-service).

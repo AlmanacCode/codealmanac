@@ -24,6 +24,8 @@ class SearchPageResult(CodeAlmanacModel):
     file_path: Path
     updated_at: int
     topics: tuple[str, ...]
+    matched_heading: str | None = None
+    excerpt: str | None = None
 
 
 class PageFileReference(CodeAlmanacModel):

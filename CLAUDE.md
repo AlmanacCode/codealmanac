@@ -7,6 +7,13 @@
 
 codealmanac is a living wiki for codebases, maintained by AI coding agents. It documents what the code can't say — decisions, flows, invariants, incidents, gotchas — as atomic, interlinked markdown pages living in the repo-local `almanac/` tree. New Python repos use `almanac/` only. There is no `docs/almanac/`, `.almanac/`, custom-root, or old CLI compatibility path. Primary consumer is the AI coding agent; humans benefit secondarily.
 
+**Trust order: current code > Almanac > ordinary repository documentation.**
+
+When code and the Almanac disagree, trust the code. When the Almanac and
+ordinary documentation disagree, trust the Almanac. Do not prefer ordinary
+docs over the Almanac; the Almanac is maintained more regularly and is more
+authoritative.
+
 **Historical spec:** `/Users/rohan/Desktop/Projects/openalmanac/docs/ideas/codebase-wiki.md` — useful background, not current product truth where it conflicts with `notes.md` and `implementation-tickets.md`. Read it before making design changes, then apply the current reset decisions in this repo.
 
 ## Python rewrite architecture references
@@ -127,7 +134,7 @@ Design rules every change must respect. The spec has the full rationale; these a
 - **Workspace roots are not configurable.** New repos use `almanac/`. `docs/almanac/`, `.almanac/`, custom roots, and root migration shims are retired.
 - **Registry entries are never auto-dropped.** Unreachable paths are silently skipped in `--all` queries. `codealmanac list --drop <name>` is the only explicit removal.
 - **Archived pages are excluded from search by default**, are not flagged for dead-refs by `health`, and keep their backlinks resolvable. `--include-archive` and `--archived` change scope.
-- **Prompts and manual docs are shipped as Python package resources.** They live under `src/codealmanac/prompts/` and `src/codealmanac/manual/`. They are not embedded as Python string literals.
+- **Prompts and manual docs are shipped as Python package resources.** They live under `src/codealmanac/prompts/` and `src/codealmanac/manual/`. They are not embedded as Python string literals. `init` copies missing manuals into `almanac/manual/` before the build agent starts; that reserved directory is not indexed as wiki pages.
 
 ## Philosophy anti-patterns
 

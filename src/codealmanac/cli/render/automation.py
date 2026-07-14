@@ -3,41 +3,9 @@ from datetime import timedelta
 from codealmanac.cli.render.common import print_json_model
 from codealmanac.cli.render.style import humanize_duration
 from codealmanac.services.automation.models import (
-    AutomationInstallResult,
     AutomationStatusReport,
-    AutomationUninstallResult,
-    ScheduledJob,
     ScheduledJobStatus,
 )
-
-
-def render_automation_install(
-    result: AutomationInstallResult,
-    json_output: bool,
-) -> None:
-    if json_output:
-        print_json_model(result)
-        return
-    print("automation installed")
-    for job in result.jobs:
-        print_automation_job(job)
-    for job in result.disabled:
-        print(f"  {job.task.value}: disabled")
-
-
-def render_automation_uninstall(
-    result: AutomationUninstallResult,
-    json_output: bool,
-) -> None:
-    if json_output:
-        print_json_model(result)
-        return
-    if len(result.removed) == 0:
-        print("automation not installed")
-        return
-    print("automation removed")
-    for path in result.removed:
-        print(f"  plist: {path}")
 
 
 def render_automation_status(
@@ -51,12 +19,6 @@ def render_automation_status(
         render_automation_job_status(status)
 
 
-def print_automation_job(job: ScheduledJob) -> None:
-    print(f"  {job.task.value} interval: {duration_label(job.interval)}")
-    print(f"  {job.task.value} command: {' '.join(job.program_arguments)}")
-    print(f"  {job.task.value} plist: {job.plist_path}")
-
-
 def render_automation_job_status(status: ScheduledJobStatus) -> None:
     label = f"{status.task.value} automation"
     if not status.installed:
@@ -67,6 +29,17 @@ def render_automation_job_status(status: ScheduledJobStatus) -> None:
     print(f"  launchd loaded: {'yes' if status.loaded else 'no'}")
     if status.interval is not None:
         print(f"  interval: {duration_label(status.interval)}")
+    if status.state is not None:
+        print(f"  state: {status.state.value}")
+    if status.run_count is not None:
+        print(f"  runs: {status.run_count}")
+    if status.last_exit_code is not None:
+        result = "succeeded" if status.last_exit_code == 0 else "failed"
+        print(f"  last result: {result} (exit {status.last_exit_code})")
+    elif status.run_count == 0:
+        print("  last result: not run yet")
+    if status.pid is not None:
+        print(f"  pid: {status.pid}")
 
 
 def duration_label(value: timedelta) -> str:

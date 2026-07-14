@@ -4,7 +4,11 @@ from pathlib import Path
 from pydantic import Field, field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
-from codealmanac.services.automation.models import AutomationTask
+from codealmanac.services.automation.defaults import (
+    DEFAULT_GARDEN_INTERVAL,
+    DEFAULT_SYNC_INTERVAL,
+    DEFAULT_UPDATE_INTERVAL,
+)
 from codealmanac.services.config.models import DEFAULT_HARNESS, DEFAULT_HARNESS_MODEL
 from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.services.setup.models import SetupTarget
@@ -22,13 +26,13 @@ class RunSetupRequest(CodeAlmanacModel):
     auto_update: bool = True
     skip_instructions: bool = False
     home: Path | None = None
-    automation_tasks: tuple[AutomationTask, ...] = ()
-    sync_every: timedelta | None = None
+    sync_every: timedelta = DEFAULT_SYNC_INTERVAL
     sync_off: bool = False
-    garden_every: timedelta | None = None
+    garden_every: timedelta = DEFAULT_GARDEN_INTERVAL
     garden_off: bool = False
+    update_every: timedelta = DEFAULT_UPDATE_INTERVAL
     env_path: str | None = None
-    python_executable: Path | None = None
+    codealmanac_executable: Path | None = None
 
     @field_validator("targets")
     @classmethod
@@ -38,14 +42,6 @@ class RunSetupRequest(CodeAlmanacModel):
     ) -> tuple[SetupTarget, ...]:
         return unique_non_empty_targets(value)
 
-    @field_validator("automation_tasks")
-    @classmethod
-    def validate_automation_tasks(
-        cls,
-        value: tuple[AutomationTask, ...],
-    ) -> tuple[AutomationTask, ...]:
-        return unique_tasks(value)
-
     @field_validator("model")
     @classmethod
     def require_model(cls, value: str) -> str:
@@ -53,14 +49,14 @@ class RunSetupRequest(CodeAlmanacModel):
             raise ValueError("setup model is required")
         return value
 
-    @field_validator("sync_every", "garden_every")
+    @field_validator("sync_every", "garden_every", "update_every")
     @classmethod
     def non_negative_duration(
         cls,
-        value: timedelta | None,
-    ) -> timedelta | None:
-        if value is not None and value.total_seconds() < 0:
-            raise ValueError("setup automation duration must be non-negative")
+        value: timedelta,
+    ) -> timedelta:
+        if value.total_seconds() <= 0:
+            raise ValueError("setup automation duration must be greater than zero")
         return value
 
 
@@ -78,12 +74,4 @@ def unique_non_empty_targets(
             unique.append(target)
     if len(unique) == 0:
         raise ValueError("at least one setup target is required")
-    return tuple(unique)
-
-
-def unique_tasks(tasks: tuple[AutomationTask, ...]) -> tuple[AutomationTask, ...]:
-    unique: list[AutomationTask] = []
-    for task in tasks:
-        if task not in unique:
-            unique.append(task)
     return tuple(unique)

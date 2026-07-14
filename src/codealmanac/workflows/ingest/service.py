@@ -1,5 +1,5 @@
 from codealmanac.manual import ManualLibrary
-from codealmanac.prompts import PromptName, PromptRenderer, RenderPromptRequest
+from codealmanac.services.harnesses.models import HarnessAgentKind
 from codealmanac.services.repositories.models import Repository
 from codealmanac.services.runs.models import RunEventKind
 from codealmanac.services.sources.models import SourceBrief, SourceRuntime
@@ -19,23 +19,16 @@ from codealmanac.workflows.operations import (
 )
 from codealmanac.workflows.operations.commit import operation_commit_policy
 
-INGEST_PROMPT_SECTIONS = (
-    PromptName.BASE_KERNEL,
-    PromptName.OPERATION_INGEST,
-)
-
 
 class IngestWorkflow:
     def __init__(
         self,
         sources: SourcesService,
         operations: OperationRunner,
-        prompts: PromptRenderer,
         manual: ManualLibrary,
     ):
         self.sources = sources
         self.operations = operations
-        self.prompts = prompts
         self.manual = manual
 
     def execute_started(self, request: StartedIngestRequest) -> IngestResult:
@@ -72,8 +65,8 @@ class IngestWorkflow:
                     context=context,
                     harness=request.harness,
                     model=request.model,
+                    agent=HarnessAgentKind.INGEST,
                     prompt=render_ingest_prompt(
-                        self.prompts,
                         context.repository,
                         sources,
                         source_runtime,
@@ -116,7 +109,6 @@ class IngestWorkflow:
 
 
 def render_ingest_prompt(
-    prompts: PromptRenderer,
     repository: Repository,
     sources: tuple[SourceBrief, ...],
     source_runtime: tuple[SourceRuntime, ...],
@@ -134,15 +126,7 @@ def render_ingest_prompt(
         source_control=operation_commit_policy(auto_commit),
         guidance=guidance,
     )
-    return prompts.render(
-        RenderPromptRequest(
-            sections=INGEST_PROMPT_SECTIONS,
-            context=(
-                "Runtime context:\n"
-                f"{payload.model_dump_json(indent=2)}\n",
-            ),
-        )
-    )
+    return "Runtime context:\n" f"{payload.model_dump_json(indent=2)}"
 
 
 def default_title(inputs: tuple[str, ...]) -> str:

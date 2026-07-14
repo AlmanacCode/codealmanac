@@ -22,10 +22,6 @@ sources:
     type: file
     path: src/codealmanac/workflows/operations/service.py
     note: Shared execution path for page-writing operations.
-  - id: live-agreement
-    type: file
-    path: docs/python-port-live-agreement.md
-    note: Active lifecycle and sync design decisions.
 ---
 
 # Lifecycle Workflows
@@ -38,7 +34,7 @@ The workflows prepare operation-specific context, but they do not each own harne
 
 Build is the initialization workflow. At queue time, it prepares a repository target, rejects an existing `almanac/`, registers the repository, initializes a minimal wiki, and records a queued build run [@build-workflow]. Harness readiness is checked later by the worker through the shared operation path, not before the initial wiki scaffold is written.
 
-When the worker executes the queued run, build calls the shared operation runner. Its prompt payload includes repository paths, the almanac root, `topics.yaml`, manual documents, optional guidance, and source-control policy [@build-workflow]. The prompt and manual resources come from the packaged runtime-resource layer described in [Prompts and manuals](../runtime-resources/prompts-and-manuals). Build is therefore both setup and the first agent-authored wiki pass.
+When the worker executes the queued run, build calls the shared operation runner. Its task payload includes repository paths, the almanac root, `topics.yaml`, manual documents, optional guidance, and source-control policy [@build-workflow]. The stable instructions come from the packaged build agent described in [Agents and manuals](../runtime-resources/prompts-and-manuals). Build is therefore both setup and the first agent-authored wiki pass.
 
 ## Ingest
 
@@ -54,9 +50,7 @@ Garden does not resolve external source material. Its job is to improve structur
 
 ## Sync Is Not An Operation
 
-Sync is related to lifecycle work, but it is not a page-writing operation. `SyncWorkflow` evaluates local transcript candidates and uses `SyncIngestQueue` to queue ingest runs; it does not render a writing prompt or call the harness itself [@sync-workflow].
-
-The live agreement says the same thing as product design: sync is a scanner and trigger, not agent work and not a run [@live-agreement]. That distinction keeps discovery separate from authorship. Sync can decide that a transcript should become an ingest run, but ingest remains the lifecycle operation that writes wiki pages.
+`SyncWorkflow` evaluates local transcript candidates and uses `SyncIngestQueue` to queue ingest runs; it does not render a writing prompt or call the harness itself [@sync-workflow]. See [Lifecycle operation](../../concepts/lifecycle-operation) for why sync is a scanner and trigger rather than a fourth page-writing operation, and [Run queue and sync](run-queue-and-sync) for the queue boundary and the worker that drains it.
 
 ## Shared Contract
 

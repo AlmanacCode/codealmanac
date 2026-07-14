@@ -62,6 +62,8 @@ The local viewer is the read-only browser surface exposed by `codealmanac serve`
 
 The command accepts `--wiki`, `--host`, and `--port`, with parser defaults of `127.0.0.1:3927` when host and port are omitted [@parser]. Pages, links, topics, source references, and file references come from the index read model. Job lists and job detail come from the run ledger. The browser routes between those projections with hash routes and renders the current repository's wiki graph [@viewer_service] [@viewer_js].
 
+For the public command contract, see [Public command surface](../../reference/cli/public-command-surface). For the run data shown in the jobs view, see [Run states and events](../../reference/runs/run-states-and-events).
+
 ## Entry Point
 
 The serve dispatch imports `uvicorn` and the FastAPI server lazily, builds the server with the current working directory and optional wiki name, prints the viewer URL, and runs the server with warning-level logs [@dispatch]. `create_server_app` is the server composition root: it registers error handlers, API routes, and static routes without defining endpoint logic itself [@server_app].
@@ -103,3 +105,5 @@ The viewer is intentionally read-only. The architecture tests forbid mutating ru
 Request validation keeps browser inputs inside the local wiki reference space. File routes normalize repo-relative file and folder references and reject paths that leave that space [@requests]. Server tests cover page, search, file, topic, jobs, registered-wiki switching, 404 mapping for missing pages, 422 mapping for invalid requests, static asset path rejection, and rejection of path-shaped run ids [@server_tests].
 
 The result is a thin local viewer. It improves navigation and inspection, while the durable contracts remain in the index, run ledger, repository registry, and Markdown page format.
+
+For the local files and databases behind those contracts, see [Local state layout](../../reference/local-state-layout).

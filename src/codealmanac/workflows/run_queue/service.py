@@ -3,6 +3,7 @@ from pathlib import Path
 from codealmanac.core.errors import error_summary
 from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.runs.models import (
+    RunCancelResult,
     RunKind,
     RunQueueDrainResult,
     RunRecord,
@@ -10,6 +11,7 @@ from codealmanac.services.runs.models import (
 )
 from codealmanac.services.runs.ports import RunWorkerSpawner
 from codealmanac.services.runs.requests import (
+    CancelRunRequest,
     QueueRunRequest,
     SpawnRunWorkerRequest,
 )
@@ -24,12 +26,18 @@ from codealmanac.workflows.ingest.requests import (
     IngestRequest,
 )
 from codealmanac.workflows.ingest.service import IngestWorkflow
+from codealmanac.workflows.run_queue.control import RunCancellation
+from codealmanac.workflows.run_queue.executor import RunExecutor
 from codealmanac.workflows.run_queue.models import (
     RunQueueStartResult,
     ScheduledGardenResult,
 )
+from codealmanac.workflows.run_queue.ports import (
+    RunExecutorSpawner,
+)
 from codealmanac.workflows.run_queue.requests import (
     DrainRunQueueRequest,
+    ExecuteRunRequest,
     ScheduledGardenRequest,
 )
 from codealmanac.workflows.run_queue.specs import (
@@ -52,6 +60,9 @@ class RunQueue:
         ingest: IngestWorkflow,
         garden: GardenWorkflow,
         spawner: RunWorkerSpawner,
+        executor: RunExecutor,
+        executor_spawner: RunExecutorSpawner,
+        cancellation: RunCancellation,
     ):
         self.repositories = repositories
         self.runs = runs
@@ -59,7 +70,9 @@ class RunQueue:
         self.ingest = ingest
         self.garden = garden
         self.spawner = spawner
-        self.worker = RunQueueWorker(runs, build, ingest, garden)
+        self.executor = executor
+        self.cancellation = cancellation
+        self.worker = RunQueueWorker(runs, executor_spawner)
 
     def queue_build(self, request: BuildRequest) -> RunRecord:
         repository = self.build.prepare(request)
@@ -167,3 +180,9 @@ class RunQueue:
 
     def drain(self, request: DrainRunQueueRequest) -> RunQueueDrainResult:
         return self.worker.drain(request)
+
+    def execute(self, request: ExecuteRunRequest) -> RunRecord:
+        return self.executor.execute(request)
+
+    def cancel(self, request: CancelRunRequest) -> RunCancelResult:
+        return self.cancellation.cancel(request)

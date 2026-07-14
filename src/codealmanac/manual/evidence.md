@@ -35,6 +35,10 @@ Choose the source that is authoritative for the claim:
 - PRs and commits are authoritative for review, merge, and change context
 - the wiki is maintained synthesis, not proof when code or docs disagree
 
+Ordinary repository documentation may be outdated. When using it to create or
+change Almanac knowledge, distinguish stated intent from current behavior and
+verify present-tense claims against code and tests.
+
 Citations should be close to the claims they support. Do not put all citations
 only in the lead or only at the end of the page.
 

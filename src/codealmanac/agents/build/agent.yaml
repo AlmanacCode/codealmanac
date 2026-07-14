@@ -1,0 +1,10 @@
+description: Build the first useful CodeAlmanac wiki for a repository.
+tools:
+  read: true
+  write: true
+  shell: true
+  agent: true
+permissions:
+  access: full
+  approval: never
+  network: false

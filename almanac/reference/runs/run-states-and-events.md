@@ -26,6 +26,22 @@ sources:
     type: file
     path: tests/test_runs_service.py
     note: Tests for transitions, queue specs, attach, cancellation, and run-id validation.
+  - id: run-process-tests
+    type: file
+    path: tests/test_run_process.py
+    note: Real subprocess tests for descendant termination and PID-reuse refusal.
+  - id: run-worker-spawner
+    type: file
+    path: src/codealmanac/integrations/runs/process.py
+    note: Detached process spawning, identity verification, and tree termination.
+  - id: jobs-dispatch
+    type: file
+    path: src/codealmanac/cli/dispatch/jobs.py
+    note: Jobs command dispatch and attach interruption behavior.
+  - id: jobs-cli-tests
+    type: file
+    path: tests/test_cli.py
+    note: Human, piped, and JSON CLI behavior for jobs commands.
 ---
 
 # Run States And Events
@@ -78,14 +94,23 @@ A queued run with no stored spec is not valid worker work. The run queue treats 
 
 ## Cancellation
 
-Cancellation is allowed for queued or running runs. It changes the record to `cancelled`, sets `finished_at`, preserves existing summary and error fields, and appends a `cancelled` status event [@run-transitions] [@run-store]. Cancelling an already terminal run is a no-op result with `changed: false` [@run-transitions].
+Queued cancellation atomically changes the record to `cancelled` and appends the terminal status event, which prevents executor claim [@run-transitions] [@run-store]. Cancelling an already terminal run is a no-op result with `changed: false` [@run-transitions].
 
-Tests cover queued cancellation, cancelled-run preservation during later finish calls, and rejection of unsafe run ids such as path-shaped identifiers [@run-tests]. Run ids must match the `^[A-Za-z0-9_-]+$` pattern [@run-models].
+A running record carries `RunExecutionRef`: an execution id, PID, and process birth time [@run-models]. Running cancellation first stores `cancellation_requested_at` and appends a non-terminal `cancellation requested` message. The process controller verifies the PID still has the recorded birth time, freezes and terminates the executor tree, waits, force-kills survivors, and confirms exit. Only then does `finish_cancellation` write the terminal `cancelled` status event [@run-worker-spawner] [@run-store]. If termination cannot be confirmed, the run stays non-terminal and the command fails rather than claiming cancellation.
+
+Tests cover queued and running cancellation, executor-tree termination, PID-reuse refusal, queue continuation, terminal preservation, and unsafe run-id rejection [@run-tests] [@run-process-tests]. Run ids must match the `^[A-Za-z0-9_-]+$` pattern [@run-models].
 
 ## Attach And Logs
 
 `log` is a snapshot read of all events for one run. `attach` returns the current record, all events, and whether the status is terminal [@run-store]. `RunAttachStreamer` polls `RunStore.attach(...)`, yields only events after the last seen sequence, and stops after a terminal snapshot [@run-streaming].
 
 Attach has one settle rule: if the record is terminal but the matching terminal `status` event has not appeared yet, the streamer waits one extra poll before yielding the terminal update [@run-streaming]. This keeps `jobs attach` from ending before the final status event is visible.
+
+Pressing `Ctrl-C` while following a run detaches only the foreground
+`jobs attach` command. The run is not cancelled or otherwise mutated, and the
+CLI prints the explicit `codealmanac jobs cancel <run-id>` command before
+exiting with status `130`. JSON attach streams receive no human detachment
+text, so their NDJSON event stream remains valid [@jobs-dispatch]
+[@jobs-cli-tests].
 
 For operator-facing recovery steps, see [Debug a failed lifecycle run](../../guides/debug-a-failed-lifecycle-run).

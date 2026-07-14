@@ -28,7 +28,7 @@ sources:
     note: Operation runner completion path after harness execution.
   - id: kernel
     type: file
-    path: src/codealmanac/prompts/base/kernel.md
+    path: src/codealmanac/agents/build/instructions.md
     note: Base prompt instruction to follow runtime source_control policy.
   - id: architecture_tests
     type: file
@@ -52,7 +52,7 @@ The base prompt follows the same contract. It tells the agent to follow the runt
 
 `operation_commit_policy` builds a typed policy object with `auto_commit`, allowed files, forbidden files, a commit-message shape, and human-readable instructions [@commit_policy]. When auto-commit is enabled, the instructions allow committing wiki source changes, require normal Git commands from the repository root, restrict commits to allowed wiki source files, and forbid committing runtime state, application source, logs, or unrelated files [@commit_policy].
 
-When auto-commit is disabled, the instructions tell the agent not to commit, to leave wiki source changes in the working tree, not to stage files, and not to run `git commit` [@commit_policy]. The allowed source files are `almanac/**/*.md`, `almanac/topics.yaml`, and `almanac/config.toml`; forbidden categories include runtime state under `~/.codealmanac/`, application source files, logs, and unrelated repository files [@commit_policy].
+When auto-commit is disabled, the instructions tell the agent not to commit, to leave wiki source changes in the working tree, not to stage files, and not to run `git commit` [@commit_policy]. The allowed source files are `almanac/**/*.md` and `almanac/topics.yaml`; user config under `~/.codealmanac/`, runtime state, application source files, logs, and unrelated repository files are forbidden [@commit_policy].
 
 Build, ingest, and Garden all pass this policy into their prompt payloads [@build_workflow][@ingest_workflow][@garden_workflow]. The policy is therefore part of the operation context the agent reads, not an after-the-fact Python step.
 

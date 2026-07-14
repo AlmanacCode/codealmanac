@@ -9,10 +9,12 @@ from codealmanac.services.harnesses.models import HarnessEvent, HarnessTranscrip
 from codealmanac.services.repositories.models import RepositoryName
 from codealmanac.services.runs.models import (
     RunEventKind,
+    RunExecutionRef,
     RunId,
     RunKind,
     RunSpec,
     RunStatus,
+    RunWorkerLockOwner,
 )
 
 
@@ -114,6 +116,10 @@ class AcquireRunWorkerLockRequest(CodeAlmanacModel):
         return value
 
 
+class ReleaseRunWorkerIfIdleRequest(CodeAlmanacModel):
+    owner: RunWorkerLockOwner
+
+
 class SpawnRunWorkerRequest(CodeAlmanacModel):
     cwd: Path
 
@@ -127,6 +133,17 @@ class RecordRunEventRequest(CodeAlmanacModel):
 
 class MarkRunRunningRequest(CodeAlmanacModel):
     run_id: RunId
+    execution: RunExecutionRef | None = None
+
+
+class FinishRunCancellationRequest(CodeAlmanacModel):
+    run_id: RunId
+    execution_id: str
+
+    @field_validator("execution_id")
+    @classmethod
+    def require_execution_id(cls, value: str) -> str:
+        return required_text(value, "run execution id")
 
 
 class RecordRunHarnessTranscriptRequest(CodeAlmanacModel):

@@ -1,6 +1,6 @@
 ---
 title: Local State Layout
-topics: [reference, local-state, repositories, persistence]
+topics: [reference, local-state, repositories, persistence, index]
 sources:
   - id: readme
     type: file
@@ -30,6 +30,10 @@ sources:
     type: file
     path: tests/test_settings.py
     note: Tests for implicit and explicit local-state config paths.
+  - id: yoke-adapter
+    type: file
+    path: src/codealmanac/integrations/harnesses/yoke/adapter.py
+    note: Consumer of the harness runtime directory for Yoke provider caching.
 ---
 
 # Local State Layout
@@ -42,25 +46,27 @@ This layout follows the local-only Python product decision: authored Markdown st
 
 | Path | Owner | Purpose |
 | --- | --- | --- |
-| `<repo>/almanac/` | Repository source | Committed wiki pages, `topics.yaml`, and optional project config. |
+| `<repo>/almanac/` | Repository source | Committed wiki pages and `topics.yaml`. |
 | `<repo>/almanac/topics.yaml` | Repository source | Authored topic definitions. |
-| `<repo>/almanac/config.toml` | Repository source | Optional project config. |
 | `~/.codealmanac/` | Local runtime | Default global state directory. |
 | `~/.codealmanac/codealmanac.db` | Local runtime | Local database for repositories, runs, run events, worker locks, and sync state. |
 | `~/.codealmanac/config.toml` | Local runtime | User config. |
 | `~/.codealmanac/repos/<repo-id>/index.db` | Derived runtime | Per-repository search and graph index. |
 | `~/.codealmanac/update.lock` | Local runtime | Global update lock. |
 | `~/.codealmanac/logs/` | Local runtime | Scheduler stdout and stderr logs. |
+| `~/.codealmanac/harnesses/` | Local runtime | Product-owned cache root Yoke uses to compile Claude and Codex provider resources, so provider config is never written into a repository. |
 
 `core.paths` defines the default state directory as `Path.home() / ".codealmanac"`, the default database as `~/.codealmanac/codealmanac.db`, the default config as `~/.codealmanac/config.toml`, and scheduler logs as `~/.codealmanac/logs` [@core-paths].
 
 ## App Config Paths
 
-`AppConfig` defaults `database_path` and `config_path` to the default local-state paths and normalizes both paths through `expanduser().resolve(strict=False)` [@settings] [@core-paths]. Environment variables use the `CODEALMANAC_` prefix because `AppConfig` is a Pydantic settings model [@settings].
+`AppConfig` defaults `database_path` and `config_path` to the default local-state paths and normalizes both paths through `expanduser().resolve(strict=False)` [@settings] [@core-paths]. Environment variables use the `CODEALMANAC_` prefix because `AppConfig` is a Pydantic settings model [@settings]. Repository-level config is not supported.
 
 `LocalStatePaths.from_config` derives `state_dir` from the database parent. If the database path is customized and `config_path` was not explicitly set, config moves beside that database as `<database-parent>/config.toml` [@settings]. Tests cover both the implicit config path and an explicit custom config path [@settings-tests].
 
 The database path must live directly inside the state directory. `LocalStatePaths` rejects a shape where the database is nested more deeply than `state_dir / "codealmanac.db"` would imply [@settings].
+
+`LocalStatePaths.harness_runtime_dir` is `state_dir / "harnesses"` [@settings]. The composition root passes it to both provider adapters so Yoke's native Claude and Codex compilation caches under CodeAlmanac's own local state instead of the target repository; see [Yoke harness boundary](../architecture/agent-runs/provider-adapters) for how the adapter uses this path for run caching and readiness checks [@yoke-adapter].
 
 ## Per-Repository Runtime
 

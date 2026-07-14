@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,65 @@ from codealmanac.core.paths import normalize_path
 from codealmanac.services.repositories.identity import repository_id_for
 from codealmanac.services.repositories.models import Repository
 from codealmanac.services.repositories.requests import RegisterRepositoryRequest
+from codealmanac.services.runs.models import RunExecutionRef
 from codealmanac.settings import AppConfig
+from codealmanac.workflows.run_queue.executor import RunExecutor
+from codealmanac.workflows.run_queue.requests import (
+    ExecuteRunRequest,
+    SpawnRunExecutorRequest,
+)
+
+
+class FakeRunProcessController:
+    def __init__(self, pid: int = 4242):
+        self.execution = RunExecutionRef(
+            execution_id="test-execution",
+            pid=pid,
+            process_started_at=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+        self.terminated: list[RunExecutionRef] = []
+
+    def current_execution(self) -> RunExecutionRef:
+        return self.execution
+
+    def terminate(self, execution: RunExecutionRef) -> None:
+        self.terminated.append(execution)
+
+
+class InlineRunExecutorProcess:
+    def __init__(self, executor: RunExecutor, run_id: str):
+        self.executor = executor
+        self.run_id = run_id
+        self.pid = 4242
+
+    def wait(self) -> int:
+        try:
+            self.executor.execute(ExecuteRunRequest(run_id=self.run_id))
+        except Exception:
+            return 1
+        return 0
+
+
+class InlineRunExecutorSpawner:
+    def __init__(self):
+        self.executor: RunExecutor | None = None
+        self.requests: list[SpawnRunExecutorRequest] = []
+
+    def bind(self, executor: RunExecutor) -> None:
+        self.executor = executor
+
+    def spawn(self, request: SpawnRunExecutorRequest) -> InlineRunExecutorProcess:
+        if self.executor is None:
+            raise RuntimeError("inline executor spawner is not bound")
+        self.requests.append(request)
+        return InlineRunExecutorProcess(self.executor, request.run_id)
+
+
+def bind_inline_executor(
+    app: CodeAlmanac,
+    spawner: InlineRunExecutorSpawner,
+) -> None:
+    spawner.bind(app.workflows.queue.executor)
 
 
 @pytest.fixture

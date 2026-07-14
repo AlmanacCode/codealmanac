@@ -1,7 +1,4 @@
 from codealmanac.services.automation.defaults import (
-    DEFAULT_GARDEN_INTERVAL,
-    DEFAULT_SYNC_INTERVAL,
-    DEFAULT_UPDATE_INTERVAL,
     duration_text,
 )
 from codealmanac.services.automation.models import AutomationTask
@@ -39,15 +36,9 @@ def setup_plan(request: RunSetupRequest) -> SetupPlan:
 def automation_recommendations(
     request: RunSetupRequest,
 ) -> tuple[SetupAutomationRecommendation, ...]:
-    sync_every = duration_text(
-        request.sync_every if request.sync_every is not None else DEFAULT_SYNC_INTERVAL
-    )
-    garden_every = duration_text(
-        request.garden_every
-        if request.garden_every is not None
-        else DEFAULT_GARDEN_INTERVAL
-    )
-    update_every = duration_text(DEFAULT_UPDATE_INTERVAL)
+    sync_every = duration_text(request.sync_every)
+    garden_every = duration_text(request.garden_every)
+    update_every = duration_text(request.update_every)
     recommendations: list[SetupAutomationRecommendation] = []
     for task in recommendation_tasks(request):
         if task == AutomationTask.SYNC:
@@ -65,14 +56,7 @@ def sync_recommendation(
     return SetupAutomationRecommendation(
         task=AutomationTask.SYNC,
         description="scan recently active local agent transcripts",
-        command=(
-            "codealmanac",
-            "automation",
-            "install",
-            "sync",
-            "--every",
-            sync_every,
-        ),
+        command=("codealmanac", "config", "set", "automation.sync.every", sync_every),
     )
 
 
@@ -82,10 +66,9 @@ def garden_recommendation(garden_every: str) -> SetupAutomationRecommendation:
         description="periodically improve wiki structure and graph hygiene",
         command=(
             "codealmanac",
-            "automation",
-            "install",
-            "garden",
-            "--every",
+            "config",
+            "set",
+            "automation.garden.every",
             garden_every,
         ),
     )
@@ -97,10 +80,9 @@ def update_recommendation(update_every: str) -> SetupAutomationRecommendation:
         description="keep the local CodeAlmanac CLI package updated",
         command=(
             "codealmanac",
-            "automation",
-            "install",
-            "update",
-            "--every",
+            "config",
+            "set",
+            "automation.update.every",
             update_every,
         ),
     )

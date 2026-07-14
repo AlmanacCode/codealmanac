@@ -26,11 +26,17 @@ sources:
     type: file
     path: src/codealmanac/services/index/health_source_views.py
     note: Citation, unused source, missing citation, and duplicate source checks.
+  - id: page-kinds
+    type: wiki
+    path: decisions/no-page-kind-field
+    note: Decision page for why kind is not a current frontmatter identity field.
 ---
 
 # Frontmatter And Sources
 
 CodeAlmanac pages use YAML frontmatter for page metadata and structured evidence. The supported parsed fields are `title`, `summary`, `topics`, and `sources`; other frontmatter keys are ignored by the parser rather than becoming page model fields [@wiki_frontmatter]. Page identity still comes from the Markdown path, not from frontmatter.
+
+[No page-kind field](../../decisions/no-page-kind-field) explains the related product vocabulary for concept, architecture, guide, decision, and reference pages, and why it is not a current frontmatter identity field; the parser only models the supported fields listed here [@wiki_frontmatter] [@page-kinds].
 
 Sources are the evidence contract. A page lists named source entries in `sources:`, then cites non-obvious factual claims in the body with inline source markers [@evidence_manual]. This format is paired with [Markdown links and sources](../../decisions/markdown-links-and-sources): links navigate between wiki pages, while sources point to files, web pages, commits, PRs, issues, conversations, wiki pages, or manuals.
 

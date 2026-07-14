@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 from collections.abc import Sequence
 from datetime import timedelta
@@ -17,29 +18,31 @@ from codealmanac.services.automation.models import (
     EnvironmentVariable,
     ScheduledJob,
 )
-from codealmanac.services.automation.requests import InstallAutomationRequest
+from codealmanac.services.automation.requests import ReconcileAutomationTaskRequest
 
 
 class AutomationJobFactory:
     def job_for_task(
         self,
         task: AutomationTask,
-        request: InstallAutomationRequest,
-        explicit_tasks: bool,
+        interval: timedelta,
+        home: Path | None = None,
+        env_path: str | None = None,
+        codealmanac_executable: Path | None = None,
     ) -> ScheduledJob:
         definition = task_definition(task)
-        home = normalize_path(request.home or home_dir())
-        logs_dir = logs_dir_for(home)
+        resolved_home = normalize_path(home or home_dir())
+        logs_dir = logs_dir_for(resolved_home)
         return ScheduledJob(
             task=task,
             label=definition.label,
-            plist_path=plist_path_for(task, home),
-            program_arguments=program_arguments_for(task, request),
-            interval=interval_for(task, request, explicit_tasks),
+            plist_path=plist_path_for(task, resolved_home),
+            program_arguments=program_arguments_for(task, codealmanac_executable),
+            interval=interval,
             environment=(
                 EnvironmentVariable(
                     name="PATH",
-                    value=launch_path(home, request.env_path),
+                    value=launch_path(resolved_home, env_path),
                 ),
             ),
             stdout_path=logs_dir / definition.stdout_log_name,
@@ -47,46 +50,65 @@ class AutomationJobFactory:
         )
 
 
-def interval_for(
-    task: AutomationTask,
-    request: InstallAutomationRequest,
-    explicit_tasks: bool,
-) -> timedelta:
-    if task == AutomationTask.SYNC:
-        return request.every if request.every is not None else DEFAULT_SYNC_INTERVAL
-    if task == AutomationTask.UPDATE:
-        if update_is_only_explicit_task(request, explicit_tasks):
-            return request.every
-        return DEFAULT_UPDATE_INTERVAL
-    if request.garden_every is not None:
-        return request.garden_every
-    if explicit_tasks and request.every is not None:
-        return request.every
-    return DEFAULT_GARDEN_INTERVAL
-
-
-def update_is_only_explicit_task(
-    request: InstallAutomationRequest,
-    explicit_tasks: bool,
-) -> bool:
-    return (
-        explicit_tasks
-        and request.tasks == (AutomationTask.UPDATE,)
-        and request.every is not None
-    )
-
-
 def program_arguments_for(
     task: AutomationTask,
-    request: InstallAutomationRequest,
+    executable: Path | None,
 ) -> tuple[str, ...]:
-    executable = request.python_executable or Path(sys.executable)
-    base = (str(executable), "-m", "codealmanac.cli.main")
+    base = (str(codealmanac_executable(executable)),)
     if task == AutomationTask.SYNC:
         return (*base, "sync")
     if task == AutomationTask.UPDATE:
         return (*base, "update", "--scheduled")
     return (*base, "__garden-scheduler")
+
+
+def codealmanac_executable(explicit: Path | None) -> Path:
+    if explicit is not None:
+        return explicit
+    invoked = Path(sys.argv[0])
+    if invoked.name == "codealmanac":
+        return invoked.resolve()
+    discovered = shutil.which("codealmanac")
+    if discovered is not None:
+        return Path(discovered).resolve()
+    return Path(sys.executable).with_name("codealmanac")
+
+
+def job_from_reconcile_request(
+    factory: AutomationJobFactory,
+    request: ReconcileAutomationTaskRequest,
+) -> ScheduledJob:
+    return factory.job_for_task(
+        request.task,
+        request.every,
+        home=request.home,
+        env_path=request.env_path,
+        codealmanac_executable=request.codealmanac_executable,
+    )
+
+
+def default_job_for_task(
+    factory: AutomationJobFactory,
+    task: AutomationTask,
+    home: Path | None = None,
+    env_path: str | None = None,
+    codealmanac_executable: Path | None = None,
+) -> ScheduledJob:
+    return factory.job_for_task(
+        task,
+        default_interval(task),
+        home=home,
+        env_path=env_path,
+        codealmanac_executable=codealmanac_executable,
+    )
+
+
+def default_interval(task: AutomationTask) -> timedelta:
+    if task == AutomationTask.SYNC:
+        return DEFAULT_SYNC_INTERVAL
+    if task == AutomationTask.GARDEN:
+        return DEFAULT_GARDEN_INTERVAL
+    return DEFAULT_UPDATE_INTERVAL
 
 
 def plist_path_for(task: AutomationTask, home: Path) -> Path:

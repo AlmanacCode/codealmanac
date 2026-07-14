@@ -1,11 +1,18 @@
 import json
 import shutil
 import subprocess
-from datetime import UTC, datetime
+import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
-from conftest import initialize_repository, runtime_repo_path_for_root
+from conftest import (
+    FakeRunProcessController,
+    InlineRunExecutorSpawner,
+    bind_inline_executor,
+    initialize_repository,
+    runtime_repo_path_for_root,
+)
 
 from codealmanac import __version__
 from codealmanac.app import create_app
@@ -25,14 +32,17 @@ from codealmanac.services.harnesses.models import (
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 from codealmanac.services.runs.models import (
+    RunAttachUpdate,
     RunEventKind,
     RunKind,
     RunStatus,
     RunWorkerSpawnResult,
 )
 from codealmanac.services.runs.requests import (
+    AttachRunRequest,
     FinishRunRequest,
     ListRunsRequest,
+    MarkRunRunningRequest,
     ReadRunSpecRequest,
     RecordRunEventRequest,
     RecordRunHarnessTranscriptRequest,
@@ -484,6 +494,10 @@ def test_cli_setup_interactive_choices_can_disable_update_and_commits(
     assert "[4/6]" in output.out
     assert "[5/6]" in output.out
     assert "[6/6]" in output.out
+    assert (
+        "Add CodeAlmanac instructions to your AGENTS.md / CLAUDE.md:" in output.out
+    )
+    assert "Install CodeAlmanac instructions for:" not in output.out
     assert "almanac: update wiki context" in output.out
     assert "almanac/architecture/indexing.md" in output.out
     assert "How should your wikis be updated?" in output.out
@@ -568,7 +582,8 @@ def test_cli_setup_json_does_not_prompt_for_auto_update(
     assert main(["setup", "--json", "--target", "codex"]) == 0
 
     payload = json.loads(capsys.readouterr().out)
-    assert [job["task"] for job in payload["automation_install"]["jobs"]] == [
+    assert "automation" not in payload
+    assert [item["task"] for item in payload["config_update"]["automation"]] == [
         "sync",
         "garden",
         "update",
@@ -645,15 +660,18 @@ def test_cli_setup_skip_instructions_json(isolated_home: Path, monkeypatch, caps
     assert payload["changes"] == []
     assert payload["plan"]["default_harness"] == "codex"
     assert payload["plan"]["auto_commit"] is True
-    assert payload["config_update"]["key"] == "auto_commit"
-    assert payload["config_update"]["value"] == "true"
+    entries = {
+        item["key"]: item["value"] for item in payload["config_update"]["entries"]
+    }
+    assert entries["auto_commit"] == "true"
     assert payload["plan"]["instruction_targets"] == ["codex", "claude"]
     assert [item["task"] for item in payload["plan"]["automation"]] == [
         "sync",
         "garden",
         "update",
     ]
-    assert [job["task"] for job in payload["automation_install"]["jobs"]] == [
+    assert "automation" not in payload
+    assert [item["task"] for item in payload["config_update"]["automation"]] == [
         "sync",
         "garden",
         "update",
@@ -945,7 +963,6 @@ def test_cli_doctor_ignores_repo_manual_drift(
     initialize_git(repo)
     assert main(["init", str(repo)]) == 0
     capsys.readouterr()
-    (repo / "almanac/manual").mkdir()
     (repo / "almanac/manual/README.md").write_text(
         "local manual edit\n",
         encoding="utf-8",
@@ -1320,11 +1337,15 @@ def test_cli_hidden_run_worker_drains_queued_run(
     repo.mkdir()
     (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
     harness = CliWritingHarnessAdapter()
+    executors = InlineRunExecutorSpawner()
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
         harness_adapters=(harness,),
         worker_spawner=CliWorkerSpawner(),
+        executor_spawner=executors,
+        process_controller=FakeRunProcessController(),
     )
+    bind_inline_executor(app, executors)
     initialize_repository(app, path=repo)
     initialize_git(repo)
     commit_all(repo, "initial wiki")
@@ -1431,7 +1452,7 @@ def test_cli_sync_queues_ingest_for_ready_transcripts(
     assert not (repo / "almanac/jobs").exists()
 
 
-def test_cli_automation_install_status_and_uninstall(
+def test_cli_config_controls_automation_and_status_is_read_only(
     tmp_path: Path,
     isolated_home: Path,
     monkeypatch,
@@ -1449,39 +1470,38 @@ def test_cli_automation_install_status_and_uninstall(
     monkeypatch.chdir(repo)
     monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
 
-    assert (
-        main(
-            [
-                "automation",
-                "install",
-                "--every",
-                "1m",
-                "--garden-every",
-                "2m",
-            ]
-        )
-        == 0
-    )
-    install_output = capsys.readouterr()
-    assert "automation installed\n" in install_output.out
-    assert "sync interval: 1m\n" in install_output.out
-    assert "garden interval: 2m\n" in install_output.out
-    assert "update interval: 1d\n" in install_output.out
-    assert tuple(job.task.value for job in scheduler.installed) == (
-        "sync",
-        "garden",
-        "update",
-    )
+    assert main(["config", "set", "automation.sync.every", "1m"]) == 0
+    sync_output = capsys.readouterr()
+    assert sync_output.out == "config: automation.sync.every = 1m\n"
+    assert scheduler.installed[-1].task == AutomationTask.SYNC
+    assert scheduler.installed[-1].interval == timedelta(minutes=1)
+
+    assert main(["config", "set", "automation.garden.every", "2m"]) == 0
+    capsys.readouterr()
+    assert scheduler.installed[-1].task == AutomationTask.GARDEN
+    assert scheduler.installed[-1].interval == timedelta(minutes=2)
+
+    assert main(["config", "apply"]) == 0
+    apply_output = capsys.readouterr()
+    assert "config applied\n" in apply_output.out
+    assert {job.task for job in scheduler.installed[-3:]} == set(AutomationTask)
 
     assert main(["automation", "status", "--json"]) == 0
     status_output = capsys.readouterr()
     assert '"statuses": [' in status_output.out
     assert '"task": "sync"' in status_output.out
 
-    assert main(["automation", "uninstall", "sync"]) == 0
-    uninstall_output = capsys.readouterr()
-    assert "automation not installed\n" in uninstall_output.out
+    assert main(["config", "set", "automation.sync.enabled", "false"]) == 0
+    capsys.readouterr()
     assert scheduler.uninstalled[-1].task.value == "sync"
+
+    assert main(["automation", "install"]) == 2
+    removed_output = capsys.readouterr()
+    assert "Unknown command" in removed_output.err
+
+    assert main(["automation", "uninstall"]) == 2
+    removed_output = capsys.readouterr()
+    assert "Unknown command" in removed_output.err
 
 
 def test_cli_jobs_inspects_local_run_records(
@@ -1596,12 +1616,136 @@ def test_cli_jobs_inspects_local_run_records(
     assert '"status": "cancelled"' in cancel_json_output.out
 
 
+@pytest.mark.parametrize("terminal", [False, True])
+def test_cli_jobs_attach_ctrl_c_detaches_without_mutating_run(
+    tmp_path: Path,
+    default_cli_app,
+    monkeypatch,
+    capsys,
+    terminal: bool,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    repository = initialize_repository(default_cli_app, path=repo)
+    record = default_cli_app.runs.start(
+        StartRunRequest(
+            repository_id=repository.repository_id,
+            kind=RunKind.BUILD,
+        )
+    )
+
+    def interrupt_attach(_request):
+        def interrupted_updates():
+            yield from ()
+            raise KeyboardInterrupt
+
+        return interrupted_updates()
+
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(default_cli_app.runs, "stream_attach", interrupt_attach)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: terminal)
+
+    assert main(["jobs", "attach", record.run_id]) == 130
+
+    output = capsys.readouterr()
+    assert output.out == (
+        "detached — job continues in background\n"
+        f"cancel: codealmanac jobs cancel {record.run_id}\n"
+    )
+    assert output.err == ""
+    assert default_cli_app.runs.show(
+        ShowRunRequest(run_id=record.run_id)
+    ).status == RunStatus.QUEUED
+
+
+def test_cli_jobs_attach_ctrl_c_keeps_json_stream_clean(
+    tmp_path: Path,
+    default_cli_app,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    repository = initialize_repository(default_cli_app, path=repo)
+    record = default_cli_app.runs.start(
+        StartRunRequest(
+            repository_id=repository.repository_id,
+            kind=RunKind.BUILD,
+        )
+    )
+
+    snapshot = default_cli_app.runs.attach(AttachRunRequest(run_id=record.run_id))
+
+    def interrupt_attach(_request):
+        def interrupted_updates():
+            yield RunAttachUpdate(
+                record=snapshot.record,
+                events=snapshot.events,
+                terminal=snapshot.terminal,
+            )
+            raise KeyboardInterrupt
+
+        return interrupted_updates()
+
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(default_cli_app.runs, "stream_attach", interrupt_attach)
+
+    assert main(["jobs", "attach", record.run_id, "--json"]) == 130
+
+    output = capsys.readouterr()
+    json_lines = output.out.splitlines()
+    assert len(json_lines) == 1
+    update = json.loads(json_lines[0])
+    assert update["record"]["run_id"] == record.run_id
+    assert update["terminal"] is False
+    assert output.err == ""
+    assert default_cli_app.runs.show(
+        ShowRunRequest(run_id=record.run_id)
+    ).status == RunStatus.QUEUED
+
+
 def test_cli_jobs_rejects_path_shaped_run_ids(capsys):
     assert main(["jobs", "show", "../secret"]) == 1
 
     output = capsys.readouterr()
     assert output.out == ""
     assert "String should match pattern" in output.err
+
+
+def test_cli_jobs_cancel_stops_running_execution(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    processes = FakeRunProcessController()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        process_controller=processes,
+    )
+    repository = initialize_repository(app, repo)
+    run = app.runs.start(
+        StartRunRequest(
+            repository_id=repository.repository_id,
+            kind=RunKind.GARDEN,
+        )
+    )
+    app.runs.mark_running(
+        MarkRunRunningRequest(run_id=run.run_id, execution=processes.execution)
+    )
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert main(["jobs", "cancel", run.run_id]) == 0
+
+    output = capsys.readouterr()
+    assert output.out == f"cancelled {run.run_id}\n"
+    assert processes.terminated == [processes.execution]
+    assert app.runs.show(ShowRunRequest(run_id=run.run_id)).status == (
+        RunStatus.CANCELLED
+    )
 
 
 def test_cli_search_and_show_read_current_repo_wiki(
@@ -1726,9 +1870,7 @@ def test_cli_topics_and_health_read_current_repo_wiki(
     assert topics_header.startswith("TOPIC")
     assert "PAGES" in topics_header
     auth_row = next(
-        line
-        for line in topics_output.out.splitlines()
-        if line.startswith("auth ")
+        line for line in topics_output.out.splitlines() if line.startswith("auth ")
     )
     assert "(1 page)" in auth_row
 
@@ -1739,10 +1881,7 @@ def test_cli_topics_and_health_read_current_repo_wiki(
     assert main(["health"]) == 0
     health_text_output = capsys.readouterr()
     assert "broken-links (1):" in health_text_output.out
-    assert (
-        "auth-flow -> missing-page (target does not exist)"
-        in health_text_output.out
-    )
+    assert "auth-flow -> missing-page (target does not exist)" in health_text_output.out
     assert "dead-refs (0): ok" in health_text_output.out
 
     assert main(["health", "--json"]) == 0

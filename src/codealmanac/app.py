@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from codealmanac import __version__
 from codealmanac.integrations.automation import LaunchdSchedulerAdapter
 from codealmanac.integrations.harnesses import default_harness_adapters
-from codealmanac.integrations.runs import SubprocessRunWorkerSpawner
+from codealmanac.integrations.runs import (
+    PsutilRunProcessController,
+    SubprocessRunExecutorSpawner,
+    SubprocessRunWorkerSpawner,
+)
 from codealmanac.integrations.setup import (
     FileInstructionInstaller,
     FilesystemGlobalStateRemover,
@@ -19,7 +23,6 @@ from codealmanac.integrations.updates import (
     SubprocessPackageCommandRunner,
 )
 from codealmanac.manual import ManualLibrary
-from codealmanac.prompts import PromptRenderer
 from codealmanac.services.automation.ports import SchedulerAdapter
 from codealmanac.services.automation.service import AutomationService
 from codealmanac.services.config.service import ConfigService
@@ -64,6 +67,12 @@ from codealmanac.workflows.garden.service import GardenWorkflow
 from codealmanac.workflows.ingest.service import IngestWorkflow
 from codealmanac.workflows.operations import OperationRunner
 from codealmanac.workflows.run_queue import RunQueue
+from codealmanac.workflows.run_queue.control import RunCancellation
+from codealmanac.workflows.run_queue.executor import RunExecutor
+from codealmanac.workflows.run_queue.ports import (
+    RunExecutorSpawner,
+    RunProcessController,
+)
 from codealmanac.workflows.sync.service import SyncWorkflow
 from codealmanac.workflows.sync.store import SyncStateStore
 
@@ -97,7 +106,6 @@ class CodeAlmanac:
     runs: RunsService
     sources: SourcesService
     harnesses: HarnessesService
-    prompts: PromptRenderer
     manual: ManualLibrary
     workflows: CodeAlmanacWorkflows
 
@@ -109,6 +117,8 @@ class AppAdapters:
     source_runtime_adapters: Sequence[SourceRuntimeAdapter] | None = None
     scheduler: SchedulerAdapter | None = None
     worker_spawner: RunWorkerSpawner | None = None
+    executor_spawner: RunExecutorSpawner | None = None
+    process_controller: RunProcessController | None = None
     update_metadata: PackageInstallMetadataProvider | None = None
     update_runner: PackageCommandRunner | None = None
     instruction_installer: InstructionInstaller | None = None
@@ -136,7 +146,6 @@ class Services:
     runs: RunsService
     sources: SourcesService
     harnesses: HarnessesService
-    prompts: PromptRenderer
     manual: ManualLibrary
 
 
@@ -147,6 +156,8 @@ def create_app(
     source_runtime_adapters: Sequence[SourceRuntimeAdapter] | None = None,
     scheduler: SchedulerAdapter | None = None,
     worker_spawner: RunWorkerSpawner | None = None,
+    executor_spawner: RunExecutorSpawner | None = None,
+    process_controller: RunProcessController | None = None,
     update_metadata: PackageInstallMetadataProvider | None = None,
     update_runner: PackageCommandRunner | None = None,
     instruction_installer: InstructionInstaller | None = None,
@@ -161,6 +172,8 @@ def create_app(
         source_runtime_adapters=source_runtime_adapters,
         scheduler=scheduler,
         worker_spawner=worker_spawner,
+        executor_spawner=executor_spawner,
+        process_controller=process_controller,
         update_metadata=update_metadata,
         update_runner=update_runner,
         instruction_installer=instruction_installer,
@@ -183,8 +196,12 @@ def create_services(
     adapters: AppAdapters,
 ) -> Services:
     repositories = RepositoriesService(RepositoryStore(local_state.database_path))
-    config_service = ConfigService(repositories, ConfigStore(), local_state.config_path)
     automation = AutomationService(adapters.scheduler or LaunchdSchedulerAdapter())
+    config_service = ConfigService(
+        ConfigStore(),
+        local_state.config_path,
+        automation,
+    )
     manual = ManualLibrary()
     wiki = WikiService(repositories, manual)
     index = IndexService(repositories, IndexStore(), local_state)
@@ -209,7 +226,7 @@ def create_services(
         local_state.database_path,
     )
     harnesses = HarnessesService(
-        default_harness_adapters()
+        default_harness_adapters(local_state.harness_runtime_dir)
         if adapters.harness_adapters is None
         else adapters.harness_adapters
     )
@@ -233,7 +250,6 @@ def create_services(
         if adapters.source_runtime_adapters is None
         else adapters.source_runtime_adapters,
     )
-    prompts = PromptRenderer()
     return Services(
         local_state=local_state,
         automation=automation,
@@ -253,7 +269,6 @@ def create_services(
         runs=runs,
         sources=sources,
         harnesses=harnesses,
-        prompts=prompts,
         manual=manual,
     )
 
@@ -278,23 +293,28 @@ def create_workflows(
     ingest = IngestWorkflow(
         services.sources,
         ingest_operations,
-        services.prompts,
         services.manual,
     )
     garden = GardenWorkflow(
         services.index,
         services.health,
         garden_operations,
-        services.prompts,
         services.manual,
     )
     build = BuildWorkflow(
         services.repositories,
         services.wiki,
         build_operations,
-        services.prompts,
-        services.manual,
     )
+    processes = adapters.process_controller or PsutilRunProcessController()
+    executor = RunExecutor(
+        services.runs,
+        build,
+        ingest,
+        garden,
+        processes,
+    )
+    cancellation = RunCancellation(services.runs, processes)
     queue = RunQueue(
         services.repositories,
         services.runs,
@@ -302,6 +322,9 @@ def create_workflows(
         ingest,
         garden,
         adapters.worker_spawner or SubprocessRunWorkerSpawner(),
+        executor,
+        adapters.executor_spawner or SubprocessRunExecutorSpawner(),
+        cancellation,
     )
     sync = SyncWorkflow(
         services.repositories,
@@ -338,7 +361,6 @@ def assemble_app(services: Services, workflows: CodeAlmanacWorkflows) -> CodeAlm
         runs=services.runs,
         sources=services.sources,
         harnesses=services.harnesses,
-        prompts=services.prompts,
         manual=services.manual,
         workflows=workflows,
     )

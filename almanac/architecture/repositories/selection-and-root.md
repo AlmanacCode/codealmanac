@@ -26,6 +26,10 @@ sources:
     type: file
     path: docs/python-port-live-agreement.md
     note: Active decision that current-repo detection is exact and the wiki root is almanac only.
+  - id: affiliation-decision
+    type: file
+    path: almanac/decisions/repository-affiliation-belongs-in-repository-service.md
+    note: Decision page for future worktree and temporary checkout affiliation support.
 ---
 
 # Repository Selection And Root
@@ -55,5 +59,7 @@ The service also validates paths against the selected repository. `validate_path
 ## Consequences
 
 The main consequence is clarity. A CodeAlmanac repository has one root path, one fixed `almanac/` source tree, and one registry row. There is no custom-root migration logic for future agents to preserve and no parent-directory search that can silently choose the wrong repo [@live-agreement].
+
+Future worktree support should extend this area through repository affiliation rather than by weakening exact root selection. [Repository Affiliation Belongs In Repository Service](../../decisions/repository-affiliation-belongs-in-repository-service) records that proposed seam: temporary checkouts should map back to one registered repository through the repository service, while exact registered roots remain the canonical product identity [@affiliation-decision].
 
 For the product decision behind the fixed root, see [Only almanac root](../../decisions/only-almanac-root). For how lifecycle workflows use repository selection before writing pages, see [Lifecycle workflows](../lifecycle/workflows). For the runtime files associated with selected repositories, see [Local state layout](../../reference/local-state-layout).

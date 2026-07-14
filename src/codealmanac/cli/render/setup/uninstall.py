@@ -1,7 +1,7 @@
 from codealmanac.cli.render.brand import BAR, RST, WHITE_BOLD
 from codealmanac.cli.render.setup.steps import SetupStep, render_setup_step
 from codealmanac.cli.render.terminal import shell_command, write_line
-from codealmanac.services.automation.models import AutomationUninstallResult
+from codealmanac.services.automation.models import AutomationRemoveResult
 from codealmanac.services.setup.models import (
     GlobalStateRemovalResult,
     InstructionChange,
@@ -43,7 +43,7 @@ def artifacts_step(changes: tuple[InstructionChange, ...]) -> SetupStep:
     return SetupStep("Removed artifacts", status, detail)
 
 
-def automation_step(result: AutomationUninstallResult) -> SetupStep:
+def automation_step(result: AutomationRemoveResult) -> SetupStep:
     if len(result.removed) == 0:
         return SetupStep("Scheduled automation", "not installed", "no schedules found")
     detail = "; ".join(str(path) for path in result.removed)

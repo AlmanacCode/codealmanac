@@ -283,30 +283,16 @@ release. This is product direction, not a current 0.1.6 bug.
 
 ---
 
-## Deferred 2026-07-07 — `jobs cancel` does not stop a running job
+## Resolved 2026-07-10 — `jobs cancel` stops a running job
 
-`codealmanac jobs cancel <run-id>` is a database-only status flip. For a
-**queued** run this works: the worker selects only `status = 'queued'`, so a
-cancelled queued run is never picked up. For a **running** run it is
-cosmetic: the worker never re-reads run status after starting, the harness
-subprocess PID is not recorded anywhere, and no signal is sent — the agent
-keeps running, keeps editing `almanac/`, and may still auto-commit.
-`finish_run` refuses to overwrite `CANCELLED`, so the record stays cancelled
-while the work actually completed: the status lies in the opposite direction.
+Slice 139 split queue management from execution. `__run-worker` now starts one
+`__run-executor <run-id>` process at a time, and the running record stores a
+verified execution identity. `jobs cancel` records cancellation intent,
+terminates the executor and its complete harness process tree, confirms those
+processes stopped, and only then writes the terminal `cancelled` status.
 
-Deliberately deferred (2026-07-07 ship). Agreed direction when picked up:
+Queued jobs still cancel directly because they have no executor. Completed
+edits or commits are intentionally not rolled back.
 
-1. First commit: `jobs cancel` on a `RUNNING` job states plainly that it
-   cannot stop an executing run (no false promise).
-2. Real fix: stamp the worker pid on the run record at start; cancel flips
-   status, then signals the worker process group (SIGTERM, grace, SIGKILL)
-   after a liveness check to guard against pid reuse. Killed runs leave
-   uncommitted worktree changes for the user to review — consistent with the
-   "read the diff in git status" philosophy. Decide whether cancel respawns
-   the worker when other runs remain queued.
-3. Skip cooperative-checkpoint half-measures: they add machinery but still
-   let the agent burn tokens and finish the work.
-
-Relevant code: `services/runs/transitions.py` (`cancel_run`, `finish_run`),
-`workflows/run_queue/worker.py` (no status re-read), `services/runs/store.py`
-(`next_queued`).
+Relevant code: `workflows/run_queue/{control,executor,worker}.py`,
+`integrations/runs/process.py`, and `services/runs/{store,transitions}.py`.

@@ -69,6 +69,186 @@ Session persistence details.
     assert page.page_links_in == ("auth-flow",)
 
 
+def test_natural_question_matches_relevant_section_without_requiring_every_word(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    initialize_repository(app, path=repo)
+    write_page(
+        repo,
+        "run-lifecycle.md",
+        """# Run Lifecycle
+
+## Running Cancellation
+
+Cancellation terminates the executor process and records the run as cancelled.
+""",
+    )
+
+    rows = app.search.search(
+        SearchPagesRequest(
+            cwd=repo,
+            query="How does cancellation terminate a running agent?",
+        )
+    )
+
+    assert rows[0].slug == "run-lifecycle"
+    assert rows[0].matched_heading == "Run Lifecycle › Running Cancellation"
+    assert "terminates the executor" in (rows[0].excerpt or "")
+
+
+def test_section_matches_collapse_to_one_page_with_best_evidence(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    initialize_repository(app, path=repo)
+    write_page(
+        repo,
+        "workers.md",
+        """# Workers
+
+## Claims
+
+Workers claim queued jobs.
+
+## Recovery
+
+Workers recover expired claims and queued jobs.
+""",
+    )
+
+    rows = app.search.search(SearchPagesRequest(cwd=repo, query="expired claims"))
+
+    assert [row.slug for row in rows].count("workers") == 1
+    assert rows[0].matched_heading == "Workers › Recovery"
+
+
+def test_text_search_limit_counts_ranked_pages_not_matching_sections(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    initialize_repository(app, path=repo)
+    write_page(
+        repo,
+        "workers.md",
+        """# Workers
+
+## Claims
+
+Workers claim queued jobs.
+
+## Recovery
+
+Workers recover expired claims and queued jobs.
+""",
+    )
+    write_page(repo, "claims.md", "# Claims\n\nExpired claims are reassigned.\n")
+    write_page(repo, "queue.md", "# Queue\n\nQueued jobs wait for workers.\n")
+
+    rows = app.search.search(
+        SearchPagesRequest(cwd=repo, query="expired claims queued", limit=2)
+    )
+
+    assert len(rows) == 2
+    assert len({row.slug for row in rows}) == 2
+    workers = next(row for row in rows if row.slug == "workers")
+    assert workers.matched_heading == "Workers › Recovery"
+
+
+def test_title_and_heading_matches_rank_above_body_only_matches(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    initialize_repository(app, path=repo)
+    write_page(repo, "title.md", "# Nebula\n\nGeneral notes.\n")
+    write_page(repo, "heading.md", "# Notes\n\n## Nebula\n\nGeneral notes.\n")
+    write_page(repo, "body.md", "# Notes\n\nThe nebula behavior is documented.\n")
+
+    rows = app.search.search(SearchPagesRequest(cwd=repo, query="nebula"))
+
+    assert [row.slug for row in rows] == ["title", "heading", "body"]
+
+
+def test_text_search_composes_with_topic_and_mention_filters(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    initialize_repository(app, path=repo)
+    write_page(
+        repo,
+        "normalization.md",
+        """---
+topics: [paths]
+sources:
+  - id: paths
+    type: file
+    path: src/codealmanac/services/wiki/paths.py
+---
+# Normalization
+
+## Reference Paths
+
+Normalize path separators before indexing references.
+""",
+    )
+    write_page(repo, "other.md", "# Other\n\nNormalize unrelated values.\n")
+
+    rows = app.search.search(
+        SearchPagesRequest(
+            cwd=repo,
+            query="where is path normalization handled",
+            topics=("paths",),
+            mentions="src/codealmanac/services/wiki/paths.py",
+        )
+    )
+
+    assert [row.slug for row in rows] == ["normalization"]
+
+
+def test_punctuation_only_query_keeps_structured_filters_useful(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    initialize_repository(app, path=repo)
+    write_page(repo, "paths.md", "---\ntopics: [paths]\n---\n# Paths\n")
+
+    rows = app.search.search(
+        SearchPagesRequest(cwd=repo, query="?!", topics=("paths",))
+    )
+
+    assert [row.slug for row in rows] == ["paths"]
+
+
 def test_legacy_files_frontmatter_does_not_create_file_refs(
     tmp_path: Path,
     isolated_home: Path,

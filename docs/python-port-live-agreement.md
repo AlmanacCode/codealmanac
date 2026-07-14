@@ -41,9 +41,10 @@ It is the constraint document for future agents.
   execution mode remains in the target design.
 - 2026-07-06: `init` is deterministic repository setup plus a `build` run. It
   creates the repository row, `almanac/`, `almanac/README.md`, and
-  `almanac/topics.yaml`, then queues/runs `build` for the first real
-  agent-authored wiki. `init` fails with a product error such as
-  `AlreadyExists` when `almanac/` already exists at the target path.
+  `almanac/topics.yaml`, materializes the packaged writing manuals under
+  `almanac/manual/`, then queues/runs `build` for the first real agent-authored
+  wiki. `init` fails with a product error such as `AlreadyExists` when
+  `almanac/` already exists at the target path.
 - 2026-07-06: Code quality is part of the contract. Use Pydantic request models
   for shaped service inputs, enums or `Literal` for stable choices, service-owned
   verbs, store-owned persistence, consistent product errors, and thin CLI edges.
@@ -165,6 +166,15 @@ It is the constraint document for future agents.
   Terminal runs are cancel no-ops; queued or running runs append a `cancelled`
   status event. Terminal finish calls must preserve an already-cancelled run
   rather than rewriting it as done or failed.
+- 2026-07-10: Running cancellation is execution control, not a status-only
+  write. `__run-worker` manages the serialized queue and starts one hidden
+  `__run-executor <run-id>` process per run. A running record stores a verified
+  execution id, PID, and process birth time. `jobs cancel` records non-terminal
+  cancellation intent, terminates and confirms the matching executor and its
+  harness descendants, then appends the terminal `cancelled` event. If process
+  termination cannot be confirmed, the run must not claim to be cancelled.
+  Queued cancellation remains an atomic terminal transition. Cancellation does
+  not roll back edits or commits completed before the process stopped.
 - 2026-07-01: Python `jobs attach` streams through a service-owned use case.
   `services/runs/streaming.py` polls `RunStore.attach(...)`, emits only new log
   events, and stops at `done`, `failed`, or `cancelled`; CLI rendering owns
@@ -181,6 +191,10 @@ It is the constraint document for future agents.
   it is not a public command and it does not contain lifecycle business logic.
   Do not add parallel foreground/background modes; `jobs attach <run-id>` is the
   public way to follow a run.
+- 2026-07-11: Worker shutdown uses an atomic idle handoff. The lock owner
+  rechecks durable queue membership and deletes the global worker lock in one
+  immediate SQLite transaction. If work exists it keeps ownership and resumes
+  draining; do not replace this with polling, sleeps, or a permanent daemon.
 - 2026-07-01: `sync` queues eligible transcript ingests and starts the same
   worker path as manual lifecycle commands. Scheduled automation also launches
   ordinary scanner/queue commands rather than a separate sync worker model.
@@ -426,10 +440,11 @@ It is the constraint document for future agents.
   Beautiful Soup HTML text extraction; `rendering.py` owns prompt-facing
   metadata/content rendering; and `errors.py` owns unavailable-runtime
   diagnostics.
-- 2026-06-29: `manual/` is a local support package, not a public CLI surface.
-  It contains bundled wiki-maintenance doctrine. Prompts tell lifecycle agents
-  to read the packaged manual resources; `init` and `build` do not copy manual
-  files into the committed `almanac/` tree.
+- 2026-07-11: `manual/` is a local support package, not a public CLI surface.
+  It contains bundled wiki-maintenance doctrine. `init` copies missing packaged
+  manuals into `almanac/manual/` before the build agent starts, preserves
+  existing local manual files, and gives build agents exact repository-local
+  paths. The reserved `manual/` directory is excluded from wiki page indexing.
 - 2026-07-01: Preserve the archived terminal setup experience in Python:
   branded banner, step indicators, raw-mode selection when available,
   non-interactive `--yes`, idempotent setup, agent/default-model selection,
@@ -449,12 +464,12 @@ It is the constraint document for future agents.
   reads, or target-specific file writes back into `instructions.py`.
 - 2026-07-01: Setup service orchestration is split from setup planning and
   automation-policy helpers. `services/setup/service.py` remains the
-  `SetupService` facade that calls instruction and automation ports;
+  `SetupService` facade that calls instruction and config services;
   `planning.py` owns `SetupPlan`, automation recommendations, and next-step
-  command construction; and `automation.py` owns setup automation selection and
-  `InstallAutomationRequest` conversion. Do not move duration formatting,
-  automation recommendation construction, or setup automation request conversion
-  back into `service.py`.
+  command construction; and `automation.py` owns setup automation selection.
+  Do not move duration formatting or automation recommendation construction
+  back into `service.py`. Setup writes one complete user-config update; config
+  reconciliation applies its automation policy to the scheduler.
 - 2026-07-01: The archive's `review` command family is not required for now.
   The archive's `migrate` command family is not needed unless a concrete
   migration path is reopened.
@@ -475,13 +490,26 @@ It is the constraint document for future agents.
   and index connection helper; `sources.py` owns page/topic source loading and
   freshness signatures; `projection.py` owns replacement writes and stored
   source signatures. `store.py` stays the service-facing facade.
-- 2026-06-29: `config` owns local user/project TOML parsing and precedence
-  through `pydantic-settings`. The first config surface is intentionally
-  narrow: user config at `~/.codealmanac/config.toml` and project config at
-  `almanac/config.toml` can set the default lifecycle harness and sync
-  quiet window. CLI flags still win over config. Do not add a public `config`
-  command, environment override system, secrets system, or hosted/account
-  config surface until a later agreement requires it.
+- 2026-07-14: Search moves from whole-page strict-AND FTS to section-level
+  SQLite FTS5 with BM25 ranking. Markdown headings define coherent indexed
+  sections; a recall-oriented lexical query admits sections matching meaningful
+  terms; page title and section heading receive more weight than body prose;
+  and results collapse back to ranked pages while retaining the best matching
+  heading and excerpt. The public product remains `search -> show`, Markdown
+  remains truth, and SQLite remains rebuildable derived state. Do not add
+  semantic retrieval yet. If measured real-repo and benchmark misses repeatedly
+  show relevant sections with insufficient lexical overlap, add dense retrieval
+  as a second candidate generator and fuse it with lexical results rather than
+  replacing exact lexical search.
+- 2026-07-10: `config` owns the only configuration file at
+  `~/.codealmanac/config.toml`; repository-level `almanac/config.toml` is
+  removed. The user config stores auto-commit, harness/model, and enabled/
+  interval policy for Sync, Garden, and Update. `config set` persists a value
+  and immediately reconciles affected launchd automation; `config apply`
+  validates direct TOML edits and reconciles all automation. Public automation
+  mutation commands are removed; `automation status` remains actual-state
+  inspection. CLI flags still win for one command. No watcher, migration
+  reader, compatibility alias, secrets system, or hosted/account config.
 - 2026-07-01: Page `sources:` are part of the wiki page model, not just prompt
   guidance. The Python index/read model should parse structured `sources:`,
   project them into SQLite, derive file refs from `sources[type=file]`, expose
@@ -724,7 +752,7 @@ not make CLI contain product decisions.
 | `runs` | run ledger, events, outputs, lifecycle state transitions | source discovery, page parsing, provider transports |
 | `harnesses` | normalized Codex/Claude task/session/event contracts and ports | run lifecycle, page writes, source catalog |
 | `automation` | local trigger decisions and scheduler state | run internals, source parsing, provider transports |
-| `config` | user/project config parsing and precedence | product workflows |
+| `config` | user config persistence and automation reconciliation | product workflows |
 | `diagnostics` | doctor-style checks and readiness reports | mutation workflows |
 | `updates` | local package update policy, installer detection, update command planning | scheduler state, hosted release management, package-manager subprocess mechanics |
 | `viewer` | read-only local browser payloads, page/topic/search overview assembly, rendered markdown for the viewer | markdown source of truth, SQLite persistence, AI calls, jobs/review lifecycle |
@@ -826,7 +854,7 @@ codealmanac ingest <inputs...>
 codealmanac sync
 codealmanac sync status
 codealmanac garden
-codealmanac automation install|status|uninstall
+codealmanac automation status
 codealmanac jobs
 codealmanac jobs attach <run-id>
 codealmanac jobs cancel <run-id>
@@ -917,7 +945,7 @@ subprocess.run(["codealmanac", "show", "..."])
 | MCP | No MCP server |
 | Compatibility aliases | No public `almanac`, `alm`, or `absorb` |
 | Archive lineage | No `archived_at` / `superseded_by` page state |
-| Semantic search | FTS and refs first |
+| Semantic search | Section-level FTS5/BM25 first; hybrid only after measured lexical-overlap misses |
 
 ## Non-Negotiables
 

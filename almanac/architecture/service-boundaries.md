@@ -30,7 +30,7 @@ This is not a generic layering diagram. In CodeAlmanac, `SearchService` is the p
 
 ## Workflows Above Services
 
-Workflows coordinate product operations that cross service boundaries. Build, ingest, garden, queued runs, and sync are assembled together as `CodeAlmanacWorkflows` [@app-root]. For example, ingest needs sources, runs, operation execution, prompts, and manuals; it is therefore a workflow rather than a single service call.
+Workflows coordinate product operations that cross service boundaries. Build, ingest, garden, queued runs, and sync are assembled together as `CodeAlmanacWorkflows` [@app-root]. For example, ingest needs sources, runs, operation execution, typed runtime context, and manuals; it is therefore a workflow rather than a single service call.
 
 The boundary is that workflows may orchestrate services, but they still should not reach into integrations. The architecture tests enforce this by including `workflows` in the same "must not import integrations" rule as the CLI and services [@architecture-tests]. That keeps lifecycle orchestration provider-neutral.
 

@@ -3,6 +3,7 @@ import argparse
 from codealmanac.app import CodeAlmanac
 from codealmanac.cli.render.admin import (
     render_run,
+    render_run_attach_detached,
     render_run_attach_stream,
     render_run_cancel,
     render_run_log,
@@ -31,13 +32,20 @@ def dispatch_jobs(args: argparse.Namespace, app: CodeAlmanac) -> int:
         render_run_log(events, json_output=args.json)
         return 0
     if args.jobs_command == "attach":
-        updates = app.runs.stream_attach(
-            StreamRunAttachRequest(repository_name=args.wiki, run_id=args.run_id)
-        )
-        render_run_attach_stream(updates, json_output=args.json)
-        return 0
+        try:
+            updates = app.runs.stream_attach(
+                StreamRunAttachRequest(
+                    repository_name=args.wiki,
+                    run_id=args.run_id,
+                )
+            )
+            render_run_attach_stream(updates, json_output=args.json)
+            return 0
+        except KeyboardInterrupt:
+            render_run_attach_detached(args.run_id, json_output=args.json)
+            return 130
     if args.jobs_command == "cancel":
-        result = app.runs.cancel(
+        result = app.workflows.queue.cancel(
             CancelRunRequest(repository_name=args.wiki, run_id=args.run_id)
         )
         render_run_cancel(result, json_output=args.json)

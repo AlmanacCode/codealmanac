@@ -6,18 +6,22 @@ sources:
     type: file
     path: pyproject.toml
     note: Package script entrypoint for the CodeAlmanac CLI.
+  - id: repo_readme
+    type: file
+    path: README.md
+    note: Public quickstart and product language for CodeAlmanac commands.
   - id: parser_root
     type: file
     path: src/codealmanac/cli/parser/root.py
     note: Root parser, version flag, public command metavar, and command-family registration.
+  - id: parser_argument
+    type: file
+    path: src/codealmanac/cli/parser/argument_parser.py
+    note: Custom parser that classifies syntax failures before rendering.
   - id: parser_run
     type: file
     path: src/codealmanac/cli/parser/run_commands.py
     note: Run command syntax, sync syntax, and hidden run worker commands.
-  - id: parser_argument
-    type: file
-    path: src/codealmanac/cli/parser/argument_parser.py
-    note: Custom parser class that turns parser failures into shaped syntax problems.
   - id: syntax_catalog
     type: file
     path: src/codealmanac/cli/syntax/catalog.py
@@ -54,6 +58,14 @@ sources:
     type: file
     path: src/codealmanac/cli/parser/automation.py
     note: Scheduled automation command syntax.
+  - id: automation_selection
+    type: file
+    path: src/codealmanac/services/automation/selection.py
+    note: Automation task defaults, explicit task handling, and garden-off validation.
+  - id: automation_jobs
+    type: file
+    path: src/codealmanac/services/automation/jobs.py
+    note: Scheduled automation interval selection for sync, Garden, and update.
   - id: cli_tests
     type: file
     path: tests/test_cli.py
@@ -72,7 +84,7 @@ Parser failures go through the custom argument parser, which classifies syntax p
 
 | Command | Purpose | Main options |
 |---|---|---|
-| `init [path]` | Initialize a local Almanac wiki. | `--name`, `--description`, `--using`, `--guidance`, `--json` [@parser_run] |
+| `init [path]` | Initialize a local CodeAlmanac wiki [@repo_readme]. | `--name`, `--description`, `--using`, `--guidance`, `--json` [@parser_run] |
 | `ingest <inputs...>` | Queue ingest work over local material. | `--wiki`, `--using`, `--title`, `--guidance`, `--json` [@parser_run] |
 | `garden` | Queue wiki improvement work. | `--wiki`, `--using`, `--title`, `--guidance`, `--json` [@parser_run] |
 | `sync` | Sync recently active transcripts into wiki work. | `--wiki`, `--from`, `--using`, `--json`; subcommand `status` [@parser_run] |
@@ -86,19 +98,21 @@ Parser failures go through the custom argument parser, which classifies syntax p
 | `serve` | Serve the local wiki viewer. | `--wiki`, `--host`, `--port`; defaults to `127.0.0.1:3927` [@parser_wiki] |
 | `tag <page> <topics...>` | Add topics to a page frontmatter block. | `--wiki` [@parser_wiki] |
 | `untag <page> <topics...>` | Remove topics from a page frontmatter block. | `--wiki` [@parser_wiki] |
-| `config` | Read or write user config values. | `list`, `get`, `set`; keys are `auto_commit`, `harness.default`, and `harness.model` [@parser_config] |
+| `config` | Read or write user config values, or apply saved config to machine automation. | `list`, `get`, `set`, `apply`; keys cover `auto_commit`, `harness.default`, `harness.model`, and the `automation.<task>.enabled`/`automation.<task>.every` family; see [Config keys](../config-keys) [@parser_config] |
 | `setup` | Install local agent instructions and scheduled automation. | `--target`, `--yes`, `--runner`, `--no-auto-commit`, `--skip-instructions`, `--no-auto-update`, `--sync-every`, `--sync-off`, `--garden-every`, `--garden-off`, `--json` [@parser_setup] |
 | `uninstall` | Remove setup-owned local artifacts. | `--yes`, `--json` [@parser_setup] |
 | `doctor` | Check the local install and selected wiki. | `--wiki`, `--json` [@parser_diagnostics] |
 | `update` | Update the local CLI. | `--check`, `--json`; `--scheduled` is hidden [@parser_updates] |
 | `jobs` | Inspect local run records. | `--wiki`, `--limit`, `--json`; subcommands `show`, `logs`, `attach`, `cancel` [@parser_jobs] |
-| `automation` | Manage scheduled local automation. | `install`, `uninstall`, `status`; task filters and `--json` [@parser_automation] |
+| `automation` | Report scheduled local automation status. | subcommand `status`; task filters and `--json` [@parser_automation] |
 
 The run commands are covered in the workflow architecture pages. The exact machine-readable output surface is covered by [JSON output contract](json-output-contract).
 
+`automation` has no `install` or `uninstall` subcommand; its `status` subcommand only filters and reports scheduled tasks, defaulting to all three when no task names are given [@automation_selection]. Scheduled tasks are changed through `config set automation.<task>.enabled` and `config set automation.<task>.every`, which reconcile that task's scheduler entry immediately, or through `config apply` after a direct edit to `~/.codealmanac/config.toml` [@automation_jobs]. See [Config keys](../config-keys) for the full key set and [Setup local automation](../../guides/setup-local-automation) for the operational path.
+
 ## Hidden Commands
 
-Two top-level commands are intentionally hidden from normal help: `__run-worker` and `__garden-scheduler` [@parser_run]. `__run-worker` requires `--cwd` and drains queued run work for a repository; `__garden-scheduler` is the scheduled garden entrypoint [@parser_run].
+Three top-level commands are intentionally hidden from normal help: `__run-worker`, `__run-executor`, and `__garden-scheduler` [@parser_run]. `__run-worker` requires `--cwd` and drains queued run work for a repository; for each queued run it spawns `__run-executor <run-id>`, which claims that one run and actually executes the operation so the worker process can keep draining the queue if the executor is cancelled [@parser_run]. `__garden-scheduler` is the scheduled garden entrypoint [@parser_run].
 
 The `update --scheduled` flag is also hidden from help while remaining accepted by the update parser [@parser_updates]. These hidden entries are implementation entrypoints, not public user workflows.
 

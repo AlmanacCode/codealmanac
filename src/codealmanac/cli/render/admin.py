@@ -1,9 +1,6 @@
-from codealmanac.cli.render.automation import (
-    render_automation_install,
-    render_automation_status,
-    render_automation_uninstall,
-)
+from codealmanac.cli.render.automation import render_automation_status
 from codealmanac.cli.render.config import (
+    render_config_apply,
     render_config_entry,
     render_config_set,
     render_config_values,
@@ -11,6 +8,7 @@ from codealmanac.cli.render.config import (
 from codealmanac.cli.render.diagnostics import render_doctor
 from codealmanac.cli.render.job_logs import (
     render_run_attach,
+    render_run_attach_detached,
     render_run_attach_stream,
     render_run_log,
 )
@@ -23,15 +21,15 @@ from codealmanac.cli.render.setup import render_setup_result, render_uninstall_r
 from codealmanac.cli.render.updates import render_update_plan, render_update_result
 
 __all__ = [
-    "render_automation_install",
     "render_automation_status",
-    "render_automation_uninstall",
+    "render_config_apply",
     "render_config_set",
     "render_config_entry",
     "render_config_values",
     "render_doctor",
     "render_run",
     "render_run_attach",
+    "render_run_attach_detached",
     "render_run_attach_stream",
     "render_run_cancel",
     "render_run_log",

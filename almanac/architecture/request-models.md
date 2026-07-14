@@ -38,7 +38,7 @@ All of these models inherit from `CodeAlmanacModel`, which is a frozen Pydantic 
 
 ## Workflow Requests
 
-`IngestRequest` is a workflow request because ingest spans sources, runs, prompts, manuals, and harness execution. It carries the current working directory, bounded input strings, harness kind, model name, optional repository name, title, guidance, and auto-commit policy [@ingest-requests]. Validators require at least one input and reject empty text for the model, title, and guidance fields [@ingest-requests].
+`IngestRequest` is a workflow request because ingest spans sources, runs, agent task context, manuals, and harness execution. It carries the current working directory, bounded input strings, harness kind, model name, optional repository name, title, guidance, and auto-commit policy [@ingest-requests]. Validators require at least one input and reject empty text for the model, title, and guidance fields [@ingest-requests].
 
 `StartedIngestRequest` extends `IngestRequest` with `run_id` [@ingest-requests]. That split lets the workflow represent two phases: starting or queueing an ingest, and continuing an ingest that already has a run record. It is the same data shape plus the durable run identity.
 

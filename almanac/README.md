@@ -12,7 +12,7 @@ sources:
     note: Current Python rewrite constraints and local-only decisions.
   - id: kernel-prompt
     type: file
-    path: src/codealmanac/prompts/base/kernel.md
+    path: src/codealmanac/agents/build/instructions.md
     note: Runtime rules for wiki-writing agents.
 ---
 
@@ -28,19 +28,17 @@ Begin with [Getting started](getting-started). It gives the shortest reading pat
 
 The core idea is the [local repo wiki](concepts/local-repo-wiki): a browseable Markdown wiki committed with the code, plus derived local state for search and runs. That concept explains why page identity comes from paths, why `README.md` files are landing pages, and why file evidence belongs in `sources:`.
 
-For implementation work, read [Architecture overview](architecture/) and then [Service boundaries](architecture/service-boundaries). They explain how the CLI, app composition root, workflows, services, stores, ports, and integrations divide responsibility. For command behavior, use [CLI public command surface](reference/cli/public-command-surface). For config defaults and precedence, use [Config keys](reference/config-keys).
+For implementation work, read [Architecture](architecture/) first, then follow the page for the boundary you plan to change. [Service boundaries](architecture/service-boundaries) explains how the CLI, app composition root, workflows, services, stores, ports, and integrations divide responsibility. For command behavior, use [CLI public command surface](reference/cli/public-command-surface). For config defaults and precedence, use [Config keys](reference/config-keys).
 
 ## Main Clusters
 
 The wiki is organized by page role, not by source file:
 
-- `concepts/` defines repo-specific vocabulary such as local repo wiki, lifecycle operation, and source material.
-- `architecture/` explains ownership, flows, persistence, provider edges, and runtime resources.
-- `guides/` gives task-oriented procedures for changing or verifying the wiki.
-- `decisions/` records constraints that shape future work.
-- `reference/` documents exact contracts, commands, formats, and state shapes.
-
-Topic navigation is the cross-folder route through those pages. Read [Topics DAG](architecture/wiki/topics-dag) for the topic graph, [Topics YAML](reference/topics-yaml) for the file format, and [Maintain topics](guides/maintain-topics) when changing topic assignments or parent links.
+- [Concepts](concepts/) defines repo-specific vocabulary such as local repo wiki, lifecycle operation, and source material.
+- [Architecture](architecture/) explains ownership, flows, persistence, provider edges, and runtime resources.
+- [Guides](guides/) gives task-oriented procedures for changing or verifying the wiki.
+- [Decisions](decisions/) records constraints that shape future work.
+- [Reference](reference/) documents exact contracts, commands, formats, and state shapes.
 
 ## Reading Rule
 

@@ -1,6 +1,6 @@
 ---
 title: Controlled Model Catalog
-topics: [decisions, config]
+topics: [decisions, config, harnesses]
 sources:
   - id: config-models
     type: file
@@ -51,3 +51,5 @@ Adding a new model is a code change, not a provider-discovery side effect. A mai
 Setup and automation can depend on a known runner/model pair. `SetupService` writes both `harness.default` and `harness.model`, so unattended lifecycle work does not need to ask a provider what it should run [@config-service].
 
 The cost is that users cannot type an arbitrary provider model into CodeAlmanac config. That is intentional. A model becomes supported when the project accepts it into the controlled catalog.
+
+The maintenance burden is also intentional. Because the catalog is not provider discovery, it goes stale unless a maintainer explicitly refreshes it as providers release new models. Future model support work should keep the same ownership rule: update `CONTROLLED_HARNESS_MODELS`, `HARNESS_MODELS`, defaults, setup options, and provenance tests together, rather than replacing the catalog with provider discovery [@config-models] [@config-tests].

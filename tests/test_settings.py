@@ -13,6 +13,7 @@ def test_local_state_paths_keep_implicit_config_with_database_path(
     assert paths.database_path == database_path.resolve(strict=False)
     assert paths.state_dir == database_path.parent.resolve(strict=False)
     assert paths.config_path == database_path.parent / "config.toml"
+    assert paths.harness_runtime_dir == database_path.parent / "harnesses"
 
 
 def test_local_state_paths_keep_explicit_config_path(tmp_path: Path) -> None:

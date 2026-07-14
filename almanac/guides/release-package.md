@@ -30,7 +30,7 @@ sources:
 
 # Release Package
 
-Use this guide when publishing the `codealmanac` Python package to PyPI. A release publishes the local CLI package and its packaged resources; it does not publish a hosted service, npm package, SDK, MCP package, or legacy command alias [@release-doc] [@public-contract-tests]. The release is not done when PyPI accepts files. It is done when clean installed artifacts and the public install path can run the `codealmanac` command outside the repo developer environment [@release-doc] [@readme].
+Use this guide when publishing the `codealmanac` Python package to PyPI. A release publishes the local CLI package and its packaged resources; it does not publish a hosted service, npm package, SDK, MCP package, or legacy command alias, matching the [Local-only Python product](../decisions/local-only-python-product) decision [@release-doc] [@public-contract-tests]. The release is not done when PyPI accepts files. It is done when clean installed artifacts and the public install path can run the `codealmanac` command outside the repo developer environment [@release-doc] [@readme].
 
 ## Preconditions
 

@@ -45,6 +45,8 @@ def test_viewer_overview_search_and_topic_use_index_read_model(
     assert overview.featured_page.slug == "README"
     assert "auth-flow" in [page.slug for page in overview.pages]
     assert [page.slug for page in search.pages] == ["auth-flow"]
+    assert search.pages[0].matched_heading == "Auth Flow"
+    assert "Login checks" in (search.pages[0].excerpt or "")
     assert [page.slug for page in topic.pages] == ["auth-flow", "session-store"]
 
 

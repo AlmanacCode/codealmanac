@@ -1,25 +1,22 @@
 ---
-title: Prompts And Manuals
-topics: [architecture, runtime-resources, prompts, manuals]
+title: Agents And Manuals
+topics: [architecture, runtime-resources, manuals, yoke]
 sources:
-  - id: prompt-renderer
+  - id: catalog
     type: file
-    path: src/codealmanac/prompts/renderer.py
-  - id: prompt-models
+    path: src/codealmanac/agents/catalog.py
+  - id: collection
     type: file
-    path: src/codealmanac/prompts/models.py
-  - id: prompt-requests
+    path: src/codealmanac/agents/yoke.yaml
+  - id: build-agent
     type: file
-    path: src/codealmanac/prompts/requests.py
-  - id: manual-library
+    path: src/codealmanac/agents/build/instructions.md
+  - id: ingest-agent
     type: file
-    path: src/codealmanac/manual/library.py
-  - id: manual-models
+    path: src/codealmanac/agents/ingest/instructions.md
+  - id: garden-agent
     type: file
-    path: src/codealmanac/manual/models.py
-  - id: pyproject
-    type: file
-    path: pyproject.toml
+    path: src/codealmanac/agents/garden/instructions.md
   - id: build-service
     type: file
     path: src/codealmanac/workflows/build/service.py
@@ -29,40 +26,94 @@ sources:
   - id: garden-service
     type: file
     path: src/codealmanac/workflows/garden/service.py
+  - id: manual-library
+    type: file
+    path: src/codealmanac/manual/library.py
+  - id: wiki-service
+    type: file
+    path: src/codealmanac/services/wiki/service.py
+  - id: wiki-paths
+    type: file
+    path: src/codealmanac/services/wiki/paths.py
+  - id: package
+    type: file
+    path: pyproject.toml
 ---
 
-# Prompts And Manuals
+# Agents And Manuals
 
-Prompts and manuals are packaged runtime resources. Prompts tell lifecycle agents what job they are doing; manuals tell them how to write pages, cite evidence, link pages, assign topics, and follow page-type rules. Workflows render these resources with concrete JSON context before handing a prompt to a harness [@prompt-renderer] [@build-service] [@ingest-service] [@garden-service].
+## What It Owns
 
-This shape matches CodeAlmanac's broader design rule that judgment belongs in prompts, not in a Python proposal pipeline. The workflow supplies real repository facts, source material, health reports, manual text, and source-control policy; the agent writes or edits the wiki directly under that instruction set. The related decision is [no propose/apply or dry-run](../../decisions/no-propose-apply-or-dry-run).
+Build, ingest, and garden are a packaged Yoke `Collection`. The collection
+manifest maps their stable product names to Yoke agent folders. Each folder's
+`agent.yaml` owns description, tools, and permissions; `instructions.md` owns
+the complete durable CodeAlmanac kernel and operation instructions [@catalog]
+[@collection] [@build-agent] [@ingest-agent] [@garden-agent].
 
-## Prompt Resources
+Manuals remain separate packaged reference documents. During initialization,
+the wiki service copies missing package resources into `almanac/manual/` before
+the build agent starts [@wiki-service] [@manual-library]. The build runtime
+payload names that repository-local manual root, and the build instructions give
+writing sub-agents exact paths beneath it [@build-service] [@build-agent].
 
-Prompt names are a closed enum: `base/kernel.md`, `operations/build.md`, `operations/ingest.md`, and `operations/garden.md` [@prompt-models]. `PromptRenderer` loads those Markdown files from the `codealmanac.prompts` package with `importlib.resources`, strips each section, appends runtime context strings, and joins non-empty sections with visible `---` separators [@prompt-renderer].
+Ingest and garden do not use this repository-local manual root. Their runtime
+payloads still embed the full manual document bodies from `ManualLibrary`
+directly as `manual_documents` [@ingest-service] [@garden-service]. Only build
+was moved to filesystem-reference manuals; a future change that extends this
+pattern to ingest and garden needs to touch both workflow services and their
+agent instructions the same way the build workflow was changed.
 
-The render request requires at least one prompt section. Runtime context strings must be non-empty when provided [@prompt-requests]. This gives workflows a small, typed prompt composition API without embedding long prompt literals in Python code.
+## What It Does Not Own
 
-The package data configuration includes prompt files under `base/*.md` and `operations/*.md`, so installed packages can render prompts without relying on a source checkout layout [@pyproject].
+Agent folders do not contain Python orchestration or provider configuration.
+They do not decide when Claude or Codex should delegate. Optional Yoke-native
+`skills/`, `subagents/`, and `workflows/` folders are declarative capabilities;
+the instructions and native harness decide when to use them.
 
-## Manual Resources
+## Runtime Flow
 
-`ManualLibrary` reads manual Markdown from the `codealmanac.manual` package, returns an inventory of all bundled manuals, installs missing manuals into a target directory, and reports repository manual status by comparing repository files with bundled bytes [@manual-library].
+Each workflow builds one typed Pydantic payload and passes its JSON as the task
+prompt under `Runtime context:` [@build-service] [@ingest-service]
+[@garden-service]. The Yoke adapter independently loads the selected packaged
+agent. This separates stable agent identity and instructions from facts that
+belong only to one run.
 
-The manual inventory is explicit. It includes general manuals such as `how-to-write.md`, `evidence.md`, `links.md`, and `topics.md`; page-type manuals such as `architecture.md`, `concepts.md`, `decisions.md`, `reference.md`, and `how-to-guides.md`; and operation-specific manuals such as `sources.md`, `ingest.md`, and `garden.md` [@manual-models].
+Repository-local manual Markdown is support material, not wiki article prose.
+The page iterator reserves the `manual/` directory, so copied manuals do not
+become indexed page routes [@wiki-paths].
 
-Manual documents carry a name, relative path, and non-empty body. Relative paths are validated so bundled manuals cannot claim absolute paths or parent-directory traversal [@manual-models]. The package data configuration includes `codealmanac.manual = ["*.md"]`, which makes the manuals available at runtime after installation [@pyproject].
+The instruction words from the former base and operation prompt files are
+retained in the agent folders. They now occupy Yoke's intended agent-instruction
+channel rather than being rebuilt by a CodeAlmanac prompt-rendering service.
 
-## Lifecycle Prompt Payloads
+## Key Files
 
-Build, ingest, and garden each choose the base kernel plus their operation-specific prompt section. They then add a `Runtime context:` block containing a JSON serialization of the workflow payload [@build-service] [@ingest-service] [@garden-service]. This is the bridge between static prompt text and the current repository state.
+- `src/codealmanac/agents/yoke.yaml` is the collection manifest.
+- `src/codealmanac/agents/<name>/agent.yaml` is Yoke agent metadata.
+- `src/codealmanac/agents/<name>/instructions.md` is the full agent instruction.
+- `src/codealmanac/manual/` contains shared writing references.
+- `almanac/manual/` contains the repository-local copies used by build agents.
+- `pyproject.toml` includes the YAML and Markdown agent resources in wheels
+  [@collection] [@package].
 
-Build context includes repository name, repository root, almanac root, wiki source root, topics file, bundled manual documents, source-control policy, and optional guidance [@build-service]. Ingest context includes repository facts, resolved source briefs, source runtime snapshots, manual documents, source-control policy, and optional guidance [@ingest-service]. Garden context includes repository facts, index summary, health report, manual documents, source-control policy, and optional guidance [@garden-service].
+## Failure Modes
 
-The workflows pass the rendered prompt to the operation runner, which passes it to the selected harness. The prompt is already complete when it reaches the harness boundary; provider adapters should not know how build, ingest, or garden prompts are assembled.
+A missing collection entry, agent folder, metadata file, or instruction body is
+a packaging or startup defect and should fail before provider execution. A
+runtime prompt with invalid or missing typed facts is a workflow defect. Neither
+case should be repaired by provider-specific fallback text.
 
-## Why Manuals Travel With Prompts
+## How To Change It
 
-Manual documents are included in lifecycle prompt payloads so the agent has the current writing contract in the same prompt as the job context [@build-service] [@ingest-service] [@garden-service]. That is why page format, evidence, and linking rules are runtime resources instead of separate developer memory. The exact frontmatter and citation rules are described in [frontmatter and sources](../../reference/page-format/frontmatter-and-sources).
+Change stable behavior in the relevant agent folder. Add a Yoke skill when a
+reusable capability should be available on demand. Add a declared subagent only
+when it has a durable specialist identity, prompt, or model policy; leave
+ad-hoc delegation to the root instructions and native harness. Keep per-run
+repository, source, health, guidance, and source-control facts in the typed task
+payload.
 
-This resource model also keeps the product local and installable. A packaged CodeAlmanac command has the prompts and manuals it needs, while repository-local wiki pages remain ordinary Markdown under `almanac/`.
+## Related Pages
+
+See [Yoke harness boundary](../agent-runs/provider-adapters),
+[Lifecycle workflows](../lifecycle/workflows), and
+[Auto-commit is prompt policy](../../decisions/auto-commit-is-prompt-policy).

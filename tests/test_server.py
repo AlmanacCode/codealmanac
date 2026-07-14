@@ -67,6 +67,8 @@ def test_server_serves_static_assets_and_viewer_api(
     assert page.json()["sources"][0]["target"] == "src/auth/session.py"
     assert '<a href="#/page/session-store">Session Store</a>' in page.json()["html"]
     assert [row["slug"] for row in search.json()["pages"]] == ["auth-flow"]
+    assert search.json()["pages"][0]["matched_heading"] == "Auth Flow"
+    assert "Login checks" in search.json()["pages"][0]["excerpt"]
     assert file.json()["kind"] == "file"
     assert [row["slug"] for row in file.json()["pages"]] == ["auth-flow"]
     assert [row["slug"] for row in topic.json()["pages"]] == [

@@ -63,3 +63,5 @@ Ancestor traversal has a depth cap of 32 [@topic-graph]. The cap is defensive: v
 The live agreement makes this split explicit: topic read orchestration, graph mechanics, repository selection, and `topics.yaml` mutation each have their own modules [@live-agreement]. The point is not just smaller files. It lets future changes extend the topic model without mixing repository lookup, index reads, YAML preservation, page rewrites, and DAG validation in one place.
 
 When changing this area, keep that boundary intact. Reads should stay index-backed. Mutations should update authored Markdown/YAML, refresh the index, and reject graph shapes that would make topic browsing ambiguous.
+
+For task steps, use [Maintain topics](../../guides/maintain-topics). For the exact `topics.yaml` schema and mutation contract, use [Topics YAML](../../reference/topics-yaml).

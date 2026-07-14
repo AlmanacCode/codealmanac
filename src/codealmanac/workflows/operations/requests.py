@@ -2,7 +2,11 @@ from pydantic import field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
-from codealmanac.services.harnesses.models import HarnessEvent, HarnessKind
+from codealmanac.services.harnesses.models import (
+    HarnessAgentKind,
+    HarnessEvent,
+    HarnessKind,
+)
 from codealmanac.services.runs.models import RunEventKind, RunId
 from codealmanac.workflows.operations.models import OperationContext
 
@@ -27,6 +31,7 @@ class ExecuteOperationRequest(CodeAlmanacModel):
     context: OperationContext
     harness: HarnessKind
     model: str
+    agent: HarnessAgentKind
     prompt: str
     title: str | None = None
     success_summary: str

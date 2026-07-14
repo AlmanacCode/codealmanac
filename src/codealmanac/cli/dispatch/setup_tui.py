@@ -29,30 +29,44 @@ from codealmanac.cli.render.setup import (
     SetupChoiceScreen,
     render_setup_choice_screen,
 )
-from codealmanac.services.config.models import DEFAULT_HARNESS, DEFAULT_HARNESS_MODELS
+from codealmanac.services.config.models import (
+    DEFAULT_HARNESS_MODELS,
+    UserConfig,
+)
 from codealmanac.services.harnesses.models import HarnessKind, HarnessReadiness
 
 
 def resolve_setup_selections(
     args: argparse.Namespace,
+    user_config: UserConfig,
     runner_status: tuple[HarnessReadiness, ...] = (),
 ) -> SetupSelections:
-    defaults = default_setup_selections(args)
+    defaults = default_setup_selections(args, user_config)
     if args.yes or args.json or not supports_interactive_setup():
         return defaults
     return interactive_setup_selections(defaults, runner_status)
 
 
-def default_setup_selections(args: argparse.Namespace) -> SetupSelections:
-    harness = DEFAULT_HARNESS if args.runner is None else HarnessKind(args.runner)
+def default_setup_selections(
+    args: argparse.Namespace,
+    user_config: UserConfig,
+) -> SetupSelections:
+    harness = (
+        user_config.harness.default if args.runner is None else HarnessKind(args.runner)
+    )
+    model = (
+        user_config.harness.model
+        if harness == user_config.harness.default
+        else DEFAULT_HARNESS_MODELS[harness]
+    )
     return SetupSelections(
         targets=parse_setup_targets(args.target),
         harness=harness,
-        model=DEFAULT_HARNESS_MODELS[harness],
-        auto_update=not args.no_auto_update,
-        auto_commit=not args.no_auto_commit,
-        sync_off=args.sync_off,
-        garden_off=args.garden_off,
+        model=model,
+        auto_update=user_config.automation.update.enabled and not args.no_auto_update,
+        auto_commit=user_config.auto_commit and not args.no_auto_commit,
+        sync_off=args.sync_off or not user_config.automation.sync.enabled,
+        garden_off=args.garden_off or not user_config.automation.garden.enabled,
     )
 
 
@@ -75,7 +89,7 @@ def wizard_selections(
         SetupChoiceScreen(
             step=1,
             title="Agent instructions",
-            question="Install CodeAlmanac instructions for:",
+            question="Add CodeAlmanac instructions to your AGENTS.md / CLAUDE.md:",
             options=target_options(),
         ),
         initial_index=target_default_index(defaults.targets),

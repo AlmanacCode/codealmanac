@@ -1,3 +1,11 @@
-from codealmanac.integrations.runs.process import SubprocessRunWorkerSpawner
+from codealmanac.integrations.runs.process import (
+    PsutilRunProcessController,
+    SubprocessRunExecutorSpawner,
+    SubprocessRunWorkerSpawner,
+)
 
-__all__ = ["SubprocessRunWorkerSpawner"]
+__all__ = [
+    "PsutilRunProcessController",
+    "SubprocessRunExecutorSpawner",
+    "SubprocessRunWorkerSpawner",
+]

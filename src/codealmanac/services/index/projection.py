@@ -4,6 +4,7 @@ from codealmanac.database import SQLiteConnection
 from codealmanac.services.index.models import IndexSourceSignature
 from codealmanac.services.index.sources import LoadedIndexSources
 from codealmanac.services.wiki.models import PageDocument
+from codealmanac.services.wiki.sections import WikiSection, project_sections
 from codealmanac.services.wiki.topics import TopicDefinition, title_for_slug
 
 SOURCE_SIGNATURE_KEY = "source_signature"
@@ -27,7 +28,7 @@ def replace_documents(
     sources: LoadedIndexSources,
 ) -> None:
     with connection:
-        connection.execute("DELETE FROM fts_pages")
+        connection.execute("DELETE FROM fts_sections")
         connection.execute("DELETE FROM pages")
         connection.execute("DELETE FROM topic_parents")
         connection.execute("DELETE FROM topics")
@@ -66,10 +67,8 @@ def insert_document(connection: SQLiteConnection, document: PageDocument) -> Non
             document.body,
         ),
     )
-    connection.execute(
-        "INSERT INTO fts_pages (slug, title, content) VALUES (?, ?, ?)",
-        (document.slug, document.title, document.body),
-    )
+    for wiki_section in project_sections(document.body, document.title):
+        insert_section(connection, document, wiki_section)
     for topic in document.topics:
         if not topic:
             continue
@@ -153,3 +152,38 @@ def insert_topic_definition(
             """,
             (topic.slug, parent),
         )
+
+
+def insert_section(
+    connection: SQLiteConnection,
+    document: PageDocument,
+    wiki_section: WikiSection,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO page_sections
+          (page_slug, section_id, heading_path, ordinal, body)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (
+            document.slug,
+            wiki_section.section_id,
+            wiki_section.heading,
+            wiki_section.ordinal,
+            wiki_section.body,
+        ),
+    )
+    connection.execute(
+        """
+        INSERT INTO fts_sections
+          (page_slug, section_id, page_title, heading, body)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (
+            document.slug,
+            wiki_section.section_id,
+            document.title,
+            wiki_section.heading,
+            wiki_section.body,
+        ),
+    )
