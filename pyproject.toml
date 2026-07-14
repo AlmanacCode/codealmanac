@@ -50,7 +50,6 @@ Issues = "https://github.com/AlmanacCode/codealmanac/issues"
 
 [dependency-groups]
 dev = [
-  "httpx2>=2.5.0",
   "pytest>=8.2",
   "ruff>=0.6",
 ]
