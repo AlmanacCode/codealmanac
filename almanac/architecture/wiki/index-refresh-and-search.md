@@ -34,6 +34,10 @@ sources:
     type: file
     path: README.md
     note: Public read commands and runtime state description.
+  - id: retrieval-transcript
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532.jsonl
+    note: Product conversation interpreting current FTS behavior for LoCoMo-style retrieval.
 ---
 
 # Index Refresh And Search
@@ -58,7 +62,9 @@ If the stored signature matches, refresh reports no changed pages and leaves the
 
 Search goes through `SearchService.search(...)`, which first selects the target repository for a read command and then calls `IndexService.search(...)` with query text, topics, mentions, and limit [@search-service]. The index service refreshes the repository before calling the store's search view [@index-service].
 
-When query text is present, `search_sql(...)` joins `pages` to `fts_pages`, builds a prefix `AND` FTS query from casefolded alphanumeric tokens, and orders results by FTS rank, newest `updated_at`, and slug [@search-views]. Topic filters use `EXISTS` checks against `page_topics`, with requested topic names normalized to kebab-case [@search-views]. Without query text, results are ordered by newest `updated_at` and slug [@search-views].
+When query text is present, `search_sql(...)` joins `pages` to `fts_pages`, builds a prefix `AND` FTS query from casefolded alphanumeric tokens, and orders results by FTS rank, newest `updated_at`, and slug [@search-views]. A natural-language question therefore becomes a strict same-page token requirement: filler words are kept, punctuation and question structure are discarded, and each token must match by prefix somewhere in the page [@search-views] [@retrieval-transcript]. Topic filters use `EXISTS` checks against `page_topics`, with requested topic names normalized to kebab-case [@search-views]. Without query text, results are ordered by newest `updated_at` and slug [@search-views].
+
+This makes current search honest but narrow. It is page-level lexical retrieval, not semantic search, paragraph retrieval, query expansion, synonym matching, or iterative search [@retrieval-transcript]. For coding-agent use, returning a whole page can be helpful because a page explains an invariant or workflow in context. For LoCoMo-style questions, especially paraphrased or multi-hop questions, the same strict prefix-`AND` shape can return zero pages even when the wiki contains the needed fact in different wording [@retrieval-transcript].
 
 File mention search uses the indexed `file_refs` table. It supports exact file references, directory references that cover child files, and folder queries that match references under that folder [@search-views]. The details of path normalization and `GLOB` escaping live in [Path normalization and file refs](path-normalization-and-file-refs).
 

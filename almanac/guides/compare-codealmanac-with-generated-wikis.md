@@ -67,6 +67,10 @@ level. LoCoMo-style and LongMemEval-style questions can test retrieval, but the
 closer product fit is LongMemEval-V2-style operational knowledge or
 MemoryArena-style multi-session action where the agent must use remembered
 experience during later work [@launch-positioning] [@benchmark-harness-transcript].
+When LoCoMo-style questions are used, treat stock CodeAlmanac search as a
+separate baseline: it is strict page-level lexical FTS, so a zero-result answer
+can mean the current retriever missed differently worded knowledge, not that the
+wiki failed to preserve the knowledge [@benchmark-harness-transcript].
 
 ## Include A Practical Task
 
@@ -87,6 +91,12 @@ suite is not enough when the tests encode the wrong baseline behavior, so review
 the baseline search grammar, the exact text indexed versus shown to the
 answering agent, and the behavior when the first relevant result exceeds the
 context budget [@benchmark-harness-transcript].
+
+Use distinct rows for stock CodeAlmanac search and any experimental paragraph
+retriever. A paragraph-level lexical retriever can test whether the wiki
+representation is useful when retrieval returns the most relevant sections
+instead of whole pages; embeddings or agentic search should be later rows
+because they change a different part of the system [@benchmark-harness-transcript].
 
 Artifact storage also affects fairness. Benchmark artifacts should be partitioned
 by run, variant, and case; cleanup should refuse foreign directories; and large

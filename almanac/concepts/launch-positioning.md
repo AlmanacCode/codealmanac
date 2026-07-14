@@ -70,6 +70,10 @@ sources:
     type: web
     url: https://arxiv.org/abs/2605.29341
     note: WorldMemArena paper abstract.
+  - id: launch-metrics-transcript
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T18-52-05-019f5e53-00bd-7e53-8435-82a138f05ccd.jsonl
+    note: Product conversation clarifying PyPI mirror traffic and launch user-count interpretation.
 ---
 
 # Launch Positioning
@@ -101,6 +105,22 @@ For a demo, show one non-obvious wiki fact and then retrieve it through the CLI.
 See [Demo CodeAlmanac in a launch video](../guides/demo-codealmanac-in-launch-video).
 For a side-by-side comparison with generated repository wikis, use
 [Compare CodeAlmanac with generated wikis](../guides/compare-codealmanac-with-generated-wikis).
+
+## Launch Metrics
+
+PyPI download counts are distribution events, not unique users. Mirror fetches
+show repository synchronization, while non-mirror fetches still include CI,
+reinstalls, upgrades, bots, security scanners, development testing, and multiple
+files downloaded by one installation [@launch-metrics-transcript]. A private
+mirror can also serve downstream installations that PyPI never sees, so unique
+users can be lower than non-mirror downloads or higher than visible direct
+fetches [@launch-metrics-transcript].
+
+Launch reporting should therefore state PyPI fetches directly and avoid turning
+them into a guessed user count. For actual user measurement, CodeAlmanac would
+need a first-party signal such as privacy-preserving setup events, active
+installation telemetry, or opt-in installation identifiers
+[@launch-metrics-transcript].
 
 ## Evaluation Evidence
 
