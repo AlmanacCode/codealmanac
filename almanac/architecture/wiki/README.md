@@ -26,6 +26,10 @@ sources:
     type: file
     path: almanac/topics.yaml
     note: Topic graph entries for wiki, pages, sources, search, index, health, and topics.
+  - id: page-graph
+    type: wiki
+    path: concepts/page-graph
+    note: Concept page for pages, topics, links, backlinks, sources, and health as one wiki graph.
 ---
 
 # Wiki Architecture
@@ -49,3 +53,5 @@ Finish with [Health and validation](health-and-validation) when changing graph c
 ## Neighboring Contracts
 
 The exact authored page format lives in [Frontmatter and sources](../../reference/page-format/frontmatter-and-sources) and [Links and routes](../../reference/page-format/links-and-routes). The broader concept is [Local repo wiki](../../concepts/local-repo-wiki), which explains why committed Markdown is the durable source while runtime databases are rebuildable local state.
+
+[Page graph](../../concepts/page-graph) is the concept page for the same neighborhood. It explains how pages, Markdown links, topics, backlinks, `sources:`, file references, and health checks form one graph rather than separate bookkeeping systems [@page-graph].

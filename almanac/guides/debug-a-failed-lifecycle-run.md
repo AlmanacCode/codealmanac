@@ -20,6 +20,15 @@ sources:
   - id: yoke-results
     type: file
     path: src/codealmanac/integrations/harnesses/yoke/results.py
+  - id: run-ledger
+    type: wiki
+    path: concepts/run-ledger
+  - id: run-states
+    type: wiki
+    path: reference/runs/run-states-and-events
+  - id: run-queue
+    type: wiki
+    path: architecture/lifecycle/run-queue-and-sync
 ---
 
 # Debug A Failed Lifecycle Run
@@ -32,6 +41,12 @@ event stream after the original process exits [@repo-readme] [@run-store].
 If the run is active, `codealmanac jobs attach <run-id>` follows the same event
 record until it becomes terminal. The readable log is the primary debugging
 surface; JSON output exposes the corresponding structured harness fields.
+
+For background, [Run ledger](../concepts/run-ledger) explains why the record
+survives the process, [Run states and events](../reference/runs/run-states-and-events)
+defines the exact statuses and event kinds, and [Run queue and sync](../architecture/lifecycle/run-queue-and-sync)
+explains how queued lifecycle work reaches the executor [@run-ledger]
+[@run-states] [@run-queue].
 
 ## Identify The Boundary
 

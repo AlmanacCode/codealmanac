@@ -14,6 +14,10 @@ sources:
     type: wiki
     page: architecture/wiki/health-and-validation
     note: Local architecture page explaining health and validation checks.
+  - id: usefulness
+    type: wiki
+    path: concepts/wiki-usefulness-evaluation
+    note: Concept page for evaluating wiki value by future-agent task outcomes.
 ---
 
 # Verify A Wiki Change
@@ -21,6 +25,8 @@ sources:
 Use this guide after editing wiki source under `almanac/`. A verified change has valid page links, usable source citations, no runtime-state files in the wiki tree, and a refreshed index that can represent the current Markdown [@health_service].
 
 For the exact page metadata and citation contract, see [Frontmatter and sources](../reference/page-format/frontmatter-and-sources). For Markdown page-link rules, see [Links and routes](../reference/page-format/links-and-routes).
+
+For Garden work, check [Wiki usefulness evaluation](../concepts/wiki-usefulness-evaluation) before polishing. A wiki change is useful when it helps future agents complete real repository work, while validation and link health are diagnostics for that goal [@usefulness].
 
 ## Steps
 

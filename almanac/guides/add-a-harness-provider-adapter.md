@@ -1,6 +1,6 @@
 ---
 title: Add A Harness Provider Adapter
-topics: [guides, harnesses, yoke]
+topics: [guides, harnesses, providers, yoke]
 sources:
   - id: pyproject
     type: file

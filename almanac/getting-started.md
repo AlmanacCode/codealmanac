@@ -14,6 +14,10 @@ sources:
     type: file
     path: docs/python-port-live-agreement.md
     note: Current Python rewrite agreement and active decisions.
+  - id: usefulness
+    type: wiki
+    path: concepts/wiki-usefulness-evaluation
+    note: Concept page for evaluating whether wiki changes help future agents complete work.
 ---
 
 # Getting Started
@@ -44,6 +48,8 @@ For most implementation work, follow the architecture pages before opening indiv
 Use the wiki as source-controlled product knowledge. Pages should preserve durable context that future agents would otherwise rediscover, not routine activity logs or raw notes [@repo-readme] [@manual].
 
 Before editing pages, read the relevant manual files under `src/codealmanac/manual/`. The writing manuals define leads, evidence, links, topics, and page-type shapes. After editing, run the repo's normal validation path for wiki changes; the public read surface includes `codealmanac health` and `codealmanac validate` [@repo-readme].
+
+For Garden work, also read [Wiki usefulness evaluation](concepts/wiki-usefulness-evaluation). It keeps validation, link health, and coverage in their proper role: diagnostics for whether the wiki helps future agents do real work, not the goal by themselves [@usefulness].
 
 ## Common Work Areas
 
