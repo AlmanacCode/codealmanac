@@ -6,6 +6,10 @@ sources:
     type: conversation
     path: /Users/divitsheth/.codex/sessions/2026/07/12/rollout-2026-07-12T17-29-11-019f58e0-bc84-7da3-a822-8e610a1935d8.jsonl
     note: Product discussion that framed useful wiki evaluation around agent task outcomes.
+  - id: product-doc-feedback
+    type: conversation
+    path: /Users/divitsheth/.codex/sessions/2026/07/13/rollout-2026-07-13T22-05-48-019f5f04-5aad-7060-827f-1dd293ed9794.jsonl
+    note: Customer-discovery notes that connected agent-oriented documentation to evaluation and benchmarking demand.
   - id: local-repo-wiki
     type: wiki
     path: concepts/local-repo-wiki
@@ -60,3 +64,22 @@ Page-quality metrics remain valuable, but they are secondary. Accuracy against
 code, staleness, actionability, specificity, evidence quality, duplication,
 contradictions, link health, and coverage of important flows explain why the
 wiki helped or failed to help during task evaluation [@eval-discussion].
+
+## Product Documentation Extension
+
+The same evaluation model is useful outside repo-owned codebase wikis, but it
+changes the product question. Customer-discovery notes from Supabase and Autumn
+Payments framed agent-oriented documentation as a real problem: agents can fail
+to use a product as intended even when documentation exists [@product-doc-feedback].
+
+That feedback pointed toward an evaluation framework before a new documentation
+format. The desired system would score how well agents use a product from its
+current docs, run tasks across agent sandboxes, identify documentation failures,
+and then guide improvements [@product-doc-feedback]. In that setting, a wiki or
+rewritten docs are an intervention. The durable signal is the measured agent
+outcome, not the presence of another knowledge surface.
+
+This keeps benchmarking adjacent to wiki usefulness rather than separate from
+it. A credible benchmark should prove that agents perform better with the
+material they are given, whether that material is a CodeAlmanac repo wiki or
+agent-facing product documentation [@eval-discussion] [@product-doc-feedback].
