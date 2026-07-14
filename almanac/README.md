@@ -14,6 +14,10 @@ sources:
     type: file
     path: src/codealmanac/agents/build/instructions.md
     note: Runtime rules for wiki-writing agents.
+  - id: product-surface
+    type: wiki
+    path: product
+    note: Product hub for local-only boundary, release work, and launch framing.
 ---
 
 # CodeAlmanac Wiki
@@ -39,6 +43,7 @@ The wiki is organized by page role, not by source file:
 - [Guides](guides/) gives task-oriented procedures for changing or verifying the wiki.
 - [Decisions](decisions/) records constraints that shape future work.
 - [Reference](reference/) documents exact contracts, commands, formats, and state shapes.
+- [Product](product) routes local-only product scope, release work, launch framing, demos, and generated-wiki comparisons [@product-surface].
 
 ## Reading Rule
 
