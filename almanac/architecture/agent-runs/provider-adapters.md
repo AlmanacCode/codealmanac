@@ -33,14 +33,20 @@ sources:
 ## What It Owns
 
 CodeAlmanac has one provider integration: `YokeHarnessAdapter`. It implements
-the service-owned harness port for Claude and Codex, selects CodeAlmanac's Yoke
-surface and run options, and converts Yoke runs and events into durable product
-models [@adapter] [@contract].
+the service-owned harness port for Claude, Codex, and OpenCode, selects
+CodeAlmanac's Yoke surface and run options, and converts Yoke runs and events
+into durable product models [@adapter] [@contract].
 
-The adapter explicitly selects Codex app-server and leaves Claude on Yoke's
-default Claude surface. It loads the requested build, ingest, or garden agent
-from the packaged Yoke collection, forwards the task prompt unchanged, and
-applies the trusted non-interactive permission and timeout policy [@adapter].
+The adapter explicitly selects Codex app-server and leaves Claude and OpenCode
+on Yoke's own default surface for each — Claude and OpenCode each currently
+have exactly one implemented Yoke surface, so there is nothing to disambiguate
+by pinning, unlike Codex's three. It loads the requested build, ingest, or
+garden agent from the packaged Yoke collection, forwards the task prompt
+unchanged, and applies the trusted non-interactive permission and timeout
+policy [@adapter]. OpenCode has no dedicated `ProviderOptions` surface in Yoke
+yet, so `provider_options()` passes an empty `ProviderOptions()` for it —
+OpenCode's adapter always applies its own allow-all permission block at
+session creation regardless [@adapter].
 
 ## Runtime Root
 

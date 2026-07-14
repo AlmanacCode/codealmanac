@@ -1,4 +1,5 @@
 from codealmanac.integrations.sources.transcripts.errors import unavailable_runtime
+from codealmanac.integrations.sources.transcripts.opencode import opencode_session_id
 from codealmanac.integrations.sources.transcripts.paths import transcript_path
 from codealmanac.integrations.sources.transcripts.reader import read_transcript_entries
 from codealmanac.integrations.sources.transcripts.rendering import (
@@ -20,7 +21,17 @@ class TranscriptSourceRuntimeAdapter:
         self.max_chars = max_chars
 
     def supports(self, ref: SourceRef) -> bool:
-        return ref.kind == SourceKind.TRANSCRIPT
+        if ref.kind != SourceKind.TRANSCRIPT:
+            return False
+        # OpenCode refs use a non-file identity scheme (opencode-session:...)
+        # handled by OpencodeTranscriptRuntimeAdapter instead — every OpenCode
+        # session shares one database file, so there's no per-session path
+        # this adapter could open. Ruled out explicitly so this adapter's
+        # supports() is correct standing alone, not merely correct because
+        # of registration order in default_transcript_runtime_adapters().
+        if ref.transcript is None:
+            return True
+        return opencode_session_id(ref.transcript) is None
 
     def inspect(self, request: InspectSourceRuntimeRequest) -> SourceRuntime:
         if request.ref.kind != SourceKind.TRANSCRIPT:

@@ -1,4 +1,4 @@
-from codealmanac.cli.render.terminal import write_line
+from codealmanac.cli.render.terminal import terminal_width, write_line
 
 RST = "\x1b[0m"
 BOLD = "\x1b[1m"
@@ -9,12 +9,14 @@ BLUE_DIM = "\x1b[38;5;69m"
 ACCENT_BG = "\x1b[48;5;252m\x1b[38;5;16m"
 CLAUDE_CORAL = "\x1b[38;5;173m"
 CODEX_PERIWINKLE = "\x1b[38;5;105m"
+OPENCODE_GREEN = "\x1b[38;5;35m"
 DIFF_RED = "\x1b[38;5;203m"
 DIFF_GREEN = "\x1b[38;5;76m"
 
 BRAND_COLORS = {
     "Codex": CODEX_PERIWINKLE,
     "Claude": CLAUDE_CORAL,
+    "OpenCode": OPENCODE_GREEN,
 }
 
 GRADIENT = (
@@ -41,9 +43,13 @@ BAR = f"  {DIM}│{RST}"
 
 def print_banner(subtitle: str | None = None) -> None:
     write_line("")
-    for index, line in enumerate(SETUP_BANNER):
-        color = GRADIENT[index]
-        write_line(f"{color}{line}{RST}")
+    banner_width = max(len(line) for line in SETUP_BANNER)
+    if terminal_width() >= banner_width:
+        for index, line in enumerate(SETUP_BANNER):
+            color = GRADIENT[index]
+            write_line(f"{color}{line}{RST}")
+    else:
+        write_line(f"{WHITE_BOLD}  CodeAlmanac{RST}")
     write_line("")
     if subtitle is not None:
         write_line(f"{WHITE_BOLD}  {subtitle}{RST}")

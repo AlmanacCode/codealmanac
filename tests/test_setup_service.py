@@ -148,6 +148,7 @@ def test_setup_skip_instructions_still_returns_plan(home: Path):
     assert tuple(target.value for target in result.plan.instruction_targets) == (
         "codex",
         "claude",
+        "opencode",
     )
 
 

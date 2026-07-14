@@ -69,7 +69,7 @@ sources:
   - id: provider-adapters
     type: wiki
     path: architecture/agent-runs/provider-adapters
-    note: Architecture page for Codex and Claude provider adapters.
+    note: Architecture page for Codex, Claude, and OpenCode provider adapters.
   - id: source-runtime
     type: wiki
     path: architecture/sources/source-resolution-and-runtime
@@ -134,7 +134,7 @@ For authored wiki contracts, read [Page identity](wiki/page-identity), [Path nor
 
 ## Edges And Interfaces
 
-Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Harness contract](agent-runs/harness-contract) and [Provider adapters](agent-runs/provider-adapters) for Codex and Claude execution boundaries [@harness-contract] [@provider-adapters]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
+Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Harness contract](agent-runs/harness-contract) and [Provider adapters](agent-runs/provider-adapters) for Codex, Claude, and OpenCode execution boundaries [@harness-contract] [@provider-adapters]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
 
 [Agents and manuals](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents and writing references used by lifecycle runs, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@setup-automation].
 

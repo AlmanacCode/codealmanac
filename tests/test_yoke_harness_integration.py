@@ -64,6 +64,13 @@ def request(kind: HarnessKind, prompt: str = "  preserve me exactly  "):
 
 @pytest.mark.parametrize("kind", tuple(HarnessKind))
 def test_adapter_forwards_exact_prompt_and_model(kind, tmp_path):
+    if kind.value not in Provider.__members__.values():
+        # almanac-yoke's published release has no Provider.OPENCODE yet —
+        # OpenCode support is still an open Yoke PR (AlmanacCode/Yoke#1).
+        # Self-clearing: once pyproject.toml is repinned to a release that
+        # ships it, Provider(kind.value) below resolves and this skip stops
+        # firing on its own, no manual cleanup needed.
+        pytest.skip(f"yoke has no Provider member for {kind.value!r} yet")
     harness = RecordingHarness(
         Run(provider=Provider(kind.value), output="ok")
     )

@@ -34,7 +34,7 @@ A harness adapter has one `kind`, a `check()` method, and a `run()` method [@har
 
 `HarnessesService` indexes adapters by kind, rejects duplicate adapters, and provides the single service entrypoint used by workflows [@harness-service]. Before running an adapter, it calls `ensure_ready`; unavailable harnesses fail early with a message that can include a repair hint and a command to switch to another registered harness [@harness-service].
 
-The supported harness kinds are currently `codex` and `claude`. The terminal run statuses are `succeeded`, `failed`, and `cancelled` [@harness-kinds].
+The supported harness kinds are currently `codex`, `claude`, and `opencode`. The terminal run statuses are `succeeded`, `failed`, and `cancelled` [@harness-kinds].
 
 ## Run Requests
 

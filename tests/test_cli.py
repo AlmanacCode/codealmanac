@@ -664,7 +664,7 @@ def test_cli_setup_skip_instructions_json(isolated_home: Path, monkeypatch, caps
         item["key"]: item["value"] for item in payload["config_update"]["entries"]
     }
     assert entries["auto_commit"] == "true"
-    assert payload["plan"]["instruction_targets"] == ["codex", "claude"]
+    assert payload["plan"]["instruction_targets"] == ["codex", "claude", "opencode"]
     assert [item["task"] for item in payload["plan"]["automation"]] == [
         "sync",
         "garden",
