@@ -6,6 +6,10 @@ sources:
     type: file
     path: README.md
     note: Public product positioning, local-first surface, and command examples.
+  - id: live-agreement
+    type: file
+    path: docs/python-port-live-agreement.md
+    note: Active Python v1 agreement that fixes the public product name and local-only scope.
   - id: tagit
     type: web
     url: https://github.com/liliang-cn/tagit
@@ -123,12 +127,15 @@ site.
 
 ## AI Wiki Category
 
-The stronger category claim is that Almanac should define an AI wiki: a living,
-cited knowledge base maintained and consumed by agents and humans
-[@ai-wiki-standard-transcript]. In that frame, CodeAlmanac is not raw
-conversation memory, static documentation, generic vector search, or an
-automatically generated code summary; it is the durable, inspectable project
-brain that agents can share across sessions [@ai-wiki-standard-transcript].
+The stronger category claim is that CodeAlmanac can define an AI wiki: a
+living, cited knowledge base maintained and consumed by agents and humans
+[@ai-wiki-standard-transcript]. That is a category frame, not a change to the
+current public product name or scope. Python v1 remains the local `codealmanac`
+CLI, with no hosted login, cloud upload, SDK, MCP, or compatibility alias
+surface [@live-agreement]. In that frame, CodeAlmanac is not raw conversation
+memory, static documentation, generic vector search, or an automatically
+generated code summary; it is the durable, inspectable project brain that
+agents can share across sessions [@ai-wiki-standard-transcript].
 
 This category is close to, but separate from, generated repository wiki tools
 and conventional documentation products with agent features. DeepWiki presents
@@ -139,14 +146,16 @@ therefore stay focused on portable agent memory: citations, stable pages,
 source material, links, topics, search and retrieval, agent-authored updates,
 import and export, and change history [@ai-wiki-standard-transcript].
 
-If Almanac tries to make "AI wiki" a standard, it should separate the open
-contract from the hosted product. The durable proposal is to publish a stable
-format, schemas, conformance tests, SDKs, and a local or self-hosted reference
-implementation before treating governance as the main problem
-[@ai-wiki-standard-transcript]. OpenAPI is the useful analogy because it became
-a vendor-neutral API description format after originating from Swagger, while
-MCP is the useful caution because its formal governance follows an already
-useful protocol and community [@openapi-about] [@mcp-governance].
+If a future AI-wiki standardization effort grows out of CodeAlmanac, it should
+separate the open contract from any hosted product. The durable proposal is to
+publish a stable format, schemas, conformance tests, and a local or self-hosted
+reference implementation before treating governance as the main problem
+[@ai-wiki-standard-transcript]. That proposal must not be confused with the
+active Python v1 boundary, which explicitly excludes public SDK and hosted
+surfaces [@live-agreement]. OpenAPI is the useful analogy because it became a
+vendor-neutral API description format after originating from Swagger, while MCP
+is the useful caution because its formal governance follows an already useful
+protocol and community [@openapi-about] [@mcp-governance].
 
 For a demo, show one non-obvious wiki fact and then retrieve it through the CLI.
 See [Demo CodeAlmanac in a launch video](../guides/demo-codealmanac-in-launch-video).
