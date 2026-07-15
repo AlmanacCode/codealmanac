@@ -33,6 +33,9 @@ class FakeSchedulerAdapter:
         self.uninstalled: list[ScheduledJob] = []
         self.loaded: set[Path] = set()
 
+    def unavailable_reason(self) -> str | None:
+        return None
+
     def install(self, job: ScheduledJob) -> ScheduledJobStatus:
         self.installed.append(job)
         self.loaded.add(job.plist_path)

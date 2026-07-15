@@ -6,10 +6,15 @@ import pytest
 from codealmanac.app import create_app
 from codealmanac.core.errors import ExecutionFailed, ValidationFailed
 from codealmanac.services.automation.models import ScheduledJob, ScheduledJobStatus
-from codealmanac.services.config.models import ConfigKey
+from codealmanac.services.config.models import (
+    AutomationConfig,
+    ConfigKey,
+    HarnessConfig,
+)
 from codealmanac.services.config.requests import (
     ApplyConfigRequest,
     SetConfigValueRequest,
+    UpdateUserConfigRequest,
 )
 from codealmanac.services.harnesses.models import HarnessKind
 from codealmanac.settings import AppConfig
@@ -19,6 +24,9 @@ class FakeScheduler:
     def __init__(self):
         self.installed: list[ScheduledJob] = []
         self.uninstalled: list[ScheduledJob] = []
+
+    def unavailable_reason(self) -> str | None:
+        return None
 
     def install(self, job: ScheduledJob) -> ScheduledJobStatus:
         self.installed.append(job)
@@ -30,6 +38,11 @@ class FakeScheduler:
 
     def status(self, job: ScheduledJob) -> ScheduledJobStatus:
         return scheduler_status(job, installed=False)
+
+
+class UnavailableScheduler(FakeScheduler):
+    def unavailable_reason(self) -> str | None:
+        return "scheduled automation is macOS-only for now (needs launchd)"
 
 
 class FailOnceScheduler(FakeScheduler):
@@ -233,6 +246,56 @@ def test_scheduler_failure_keeps_desired_toml_for_retry(
         "garden",
         "update",
     ]
+
+
+def test_config_set_fails_cleanly_when_scheduler_unavailable(
+    isolated_home: Path,
+) -> None:
+    scheduler = UnavailableScheduler()
+    app = config_app(isolated_home, scheduler)
+
+    with pytest.raises(ExecutionFailed, match="macOS-only"):
+        app.config.set(set_request(ConfigKey.AUTOMATION_SYNC_EVERY, "8h"))
+
+    assert app.config.load_user().automation.sync.every == timedelta(hours=8)
+    assert scheduler.installed == []
+    assert scheduler.uninstalled == []
+
+
+def test_config_apply_fails_cleanly_when_scheduler_unavailable(
+    isolated_home: Path,
+) -> None:
+    scheduler = UnavailableScheduler()
+    app = config_app(isolated_home, scheduler)
+
+    with pytest.raises(ExecutionFailed, match="macOS-only"):
+        app.config.apply(ApplyConfigRequest(home=isolated_home))
+
+    assert scheduler.installed == []
+    assert scheduler.uninstalled == []
+
+
+def test_config_update_skips_automation_cleanly_when_scheduler_unavailable(
+    isolated_home: Path,
+) -> None:
+    scheduler = UnavailableScheduler()
+    app = config_app(isolated_home, scheduler)
+
+    result = app.config.update(
+        UpdateUserConfigRequest(
+            auto_commit=False,
+            harness=HarnessConfig(),
+            automation=AutomationConfig(),
+            home=isolated_home,
+        )
+    )
+
+    assert result.automation == ()
+    assert result.automation_error is not None
+    assert "macOS-only" in result.automation_error
+    assert scheduler.installed == []
+    assert scheduler.uninstalled == []
+    assert app.config.load_user().auto_commit is False
 
 
 def test_config_apply_rejects_invalid_toml_without_scheduler_calls(

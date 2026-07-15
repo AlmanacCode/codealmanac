@@ -12,3 +12,6 @@ class SchedulerAdapter(Protocol):
 
     def status(self, job: ScheduledJob) -> ScheduledJobStatus:
         """Read persisted scheduler state for one job."""
+
+    def unavailable_reason(self) -> str | None:
+        """Return why this scheduler cannot run here, or None when available."""

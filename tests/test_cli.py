@@ -204,6 +204,9 @@ class CliSchedulerAdapter:
         self.installed: list[ScheduledJob] = []
         self.uninstalled: list[ScheduledJob] = []
 
+    def unavailable_reason(self) -> str | None:
+        return None
+
     def install(self, job: ScheduledJob) -> ScheduledJobStatus:
         self.installed.append(job)
         return ScheduledJobStatus(
@@ -227,6 +230,22 @@ class CliSchedulerAdapter:
             installed=False,
             loaded=False,
         )
+
+
+class CliUnavailableSchedulerAdapter:
+    def unavailable_reason(self) -> str | None:
+        return "scheduled automation is macOS-only for now (needs launchd)"
+
+    def install(self, job: ScheduledJob) -> ScheduledJobStatus:
+        raise AssertionError("scheduler.install should not be called when unavailable")
+
+    def uninstall(self, job: ScheduledJob) -> bool:
+        raise AssertionError(
+            "scheduler.uninstall should not be called when unavailable"
+        )
+
+    def status(self, job: ScheduledJob) -> ScheduledJobStatus:
+        raise AssertionError("scheduler.status is not exercised in this test")
 
 
 class CliUpdateMetadataProvider:
@@ -397,6 +416,73 @@ def test_cli_setup_and_uninstall_codex_instructions(
         AutomationTask.GARDEN,
         AutomationTask.UPDATE,
     )
+
+
+def test_cli_setup_yes_skips_automation_cleanly_off_macos(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    scheduler = CliUnavailableSchedulerAdapter()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        scheduler=scheduler,
+        harness_adapters=(CliNoopHarnessAdapter(),),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    exit_code = main(["setup", "--yes", "--target", "codex"])
+
+    captured = capsys.readouterr()
+    agents_path = isolated_home / ".codex/AGENTS.md"
+    assert exit_code == 0
+    assert captured.err == ""
+    assert "unsupported" in captured.out
+    assert "macOS-only" in captured.out
+    assert CODEALMANAC_START in agents_path.read_text(encoding="utf-8")
+    assert not (isolated_home / "Library/LaunchAgents").exists()
+
+
+def test_cli_config_set_automation_fails_cleanly_off_macos(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        scheduler=CliUnavailableSchedulerAdapter(),
+        harness_adapters=(CliNoopHarnessAdapter(),),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    exit_code = main(["config", "set", "automation.sync.every", "8h"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert captured.out == ""
+    assert "codealmanac: cannot apply scheduled automation" in captured.err
+    assert "macOS-only" in captured.err
+    assert not (isolated_home / "Library/LaunchAgents").exists()
+
+
+def test_cli_uninstall_succeeds_even_when_scheduler_unavailable(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+):
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        scheduler=CliUnavailableSchedulerAdapter(),
+        harness_adapters=(CliNoopHarnessAdapter(),),
+        package_uninstaller=CliPackageUninstaller(),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    exit_code = main(["uninstall", "--yes"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "CodeAlmanac uninstall" in captured.out
 
 
 def test_cli_uninstall_without_yes_is_non_destructive_in_noninteractive_shell(

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from codealmanac.core.errors import ExecutionFailed
 from codealmanac.services.automation.jobs import (
     AutomationJobFactory,
     default_job_for_task,
@@ -36,6 +37,9 @@ class AutomationService:
         request: ReconcileAutomationTaskRequest,
     ) -> AutomationTaskApplyResult:
         job = job_from_reconcile_request(self.jobs, request)
+        reason = self.scheduler.unavailable_reason()
+        if reason is not None:
+            raise ExecutionFailed(f"cannot apply scheduled automation: {reason}")
         if request.enabled:
             self.scheduler.install(job)
             changed = True
@@ -54,6 +58,8 @@ class AutomationService:
         request: RemoveAllAutomationRequest,
     ) -> AutomationRemoveResult:
         tasks = tuple(AutomationTask)
+        if self.scheduler.unavailable_reason() is not None:
+            return AutomationRemoveResult(tasks=tasks, removed=())
         removed: list[Path] = []
         for task in tasks:
             job = default_job_for_task(

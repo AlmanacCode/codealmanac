@@ -145,6 +145,11 @@ Setup installs agent instructions for your chosen tools and three local macOS
 These schedules run locally in the background. Use
 `codealmanac automation status` to see what is installed.
 
+On platforms other than macOS, `setup` still installs agent instructions and
+config but reports scheduled automation as unsupported instead of installing
+schedules; `codealmanac config set automation.*`/`config apply` fail with a
+clear error and change nothing.
+
 If you don't have Codex or prefer Claude, use `--runner claude`.
 
 `--target` only chooses which global agent instruction files to install; it does
