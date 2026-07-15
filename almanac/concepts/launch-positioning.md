@@ -74,6 +74,26 @@ sources:
     type: conversation
     path: /Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T18-52-05-019f5e53-00bd-7e53-8435-82a138f05ccd.jsonl
     note: Product conversation clarifying PyPI mirror traffic and launch user-count interpretation.
+  - id: ai-wiki-standard-transcript
+    type: conversation
+    path: /Users/rohan/.codex/sessions/2026/07/14/rollout-2026-07-14T22-51-58-019f6454-fa56-7ff0-b1b2-fe8a42abaf55.jsonl
+    note: Product conversation framing Almanac as an AI wiki category and potential open standard.
+  - id: deepwiki
+    type: web
+    url: https://deepwiki.org/
+    note: Generated repository wiki comparison point.
+  - id: gitbook-agent
+    type: web
+    url: https://gitbook.com/docs/gitbook-agent/what-is-gitbook-agent
+    note: Conventional documentation platform adding agent-assisted documentation workflows.
+  - id: openapi-about
+    type: web
+    url: https://www.openapis.org/about
+    note: Standardization comparison point for a vendor-neutral specification and commercial ecosystem.
+  - id: mcp-governance
+    type: web
+    url: https://modelcontextprotocol.io/community/governance
+    note: Governance comparison point for a protocol after ecosystem adoption.
 ---
 
 # Launch Positioning
@@ -100,6 +120,33 @@ decisions, invariants, incidents, and gotchas the next coding agent should not
 have to rediscover [@openwiki-transcript]. That means existing docs are source
 material for judgment, not a blueprint to rewrite into a shadow documentation
 site.
+
+## AI Wiki Category
+
+The stronger category claim is that Almanac should define an AI wiki: a living,
+cited knowledge base maintained and consumed by agents and humans
+[@ai-wiki-standard-transcript]. In that frame, CodeAlmanac is not raw
+conversation memory, static documentation, generic vector search, or an
+automatically generated code summary; it is the durable, inspectable project
+brain that agents can share across sessions [@ai-wiki-standard-transcript].
+
+This category is close to, but separate from, generated repository wiki tools
+and conventional documentation products with agent features. DeepWiki presents
+an indexed, conversational documentation experience for repositories, while
+GitBook Agent works inside GitBook to write, review, translate, and update
+documentation [@deepwiki] [@gitbook-agent]. CodeAlmanac's launch claim should
+therefore stay focused on portable agent memory: citations, stable pages,
+source material, links, topics, search and retrieval, agent-authored updates,
+import and export, and change history [@ai-wiki-standard-transcript].
+
+If Almanac tries to make "AI wiki" a standard, it should separate the open
+contract from the hosted product. The durable proposal is to publish a stable
+format, schemas, conformance tests, SDKs, and a local or self-hosted reference
+implementation before treating governance as the main problem
+[@ai-wiki-standard-transcript]. OpenAPI is the useful analogy because it became
+a vendor-neutral API description format after originating from Swagger, while
+MCP is the useful caution because its formal governance follows an already
+useful protocol and community [@openapi-about] [@mcp-governance].
 
 For a demo, show one non-obvious wiki fact and then retrieve it through the CLI.
 See [Demo CodeAlmanac in a launch video](../guides/demo-codealmanac-in-launch-video).
