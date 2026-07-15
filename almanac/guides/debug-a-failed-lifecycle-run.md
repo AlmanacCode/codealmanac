@@ -20,6 +20,14 @@ sources:
   - id: yoke-results
     type: file
     path: src/codealmanac/integrations/harnesses/yoke/results.py
+  - id: run-states-reference
+    type: wiki
+    path: reference/runs/run-states-and-events
+    note: Reference page for run statuses, event kinds, attach behavior, and cancellation.
+  - id: run-queue
+    type: wiki
+    path: architecture/lifecycle/run-queue-and-sync
+    note: Architecture page for queued lifecycle work, worker drain behavior, and sync enqueueing.
 ---
 
 # Debug A Failed Lifecycle Run
@@ -28,6 +36,10 @@ Use this guide when build, ingest, or garden leaves a failed run. Start with
 `codealmanac jobs`, then inspect `jobs show <run-id>` and
 `jobs logs <run-id>`. The durable run store keeps the record and normalized
 event stream after the original process exits [@repo-readme] [@run-store].
+For the exact status and event contract, use [Run states and events](../reference/runs/run-states-and-events);
+for the queue and worker path that creates lifecycle runs, use
+[Run queue and sync](../architecture/lifecycle/run-queue-and-sync)
+[@run-states-reference] [@run-queue].
 
 If the run is active, `codealmanac jobs attach <run-id>` follows the same event
 record until it becomes terminal. The readable log is the primary debugging
@@ -49,6 +61,8 @@ event stream normally contains the provider evidence needed to distinguish a
 Yoke/provider failure from a wiki validation failure [@operation-runner]
 [@operation-harness]. Do not inspect deleted provider-specific adapter files or
 infer failure state from assistant prose when a structured error event exists.
+
+## Recovery Path
 
 After correcting wiki source, follow [Verify A Wiki Change](verify-a-wiki-change).
 After correcting credentials, installation, or provider configuration, run
