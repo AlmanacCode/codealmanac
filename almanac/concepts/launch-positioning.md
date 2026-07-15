@@ -147,11 +147,14 @@ source material, links, topics, search and retrieval, agent-authored updates,
 import and export, and change history [@ai-wiki-standard-transcript].
 
 If a future AI-wiki standardization effort grows out of CodeAlmanac, it should
-separate the open contract from any hosted product. The durable proposal is to
-publish a stable format, schemas, conformance tests, and a local or self-hosted
-reference implementation before treating governance as the main problem
-[@ai-wiki-standard-transcript]. That proposal must not be confused with the
-active Python v1 boundary, which explicitly excludes public SDK and hosted
+separate the open contract from any hosted product. The durable conclusion is
+not to invent an "Almanac format" first; the research direction is to target an
+existing open-knowledge-file-style contract while staying useful as plain
+Markdown [@ai-wiki-standard-transcript]. If CodeAlmanac later proves that
+shape, it can publish stable schemas, conformance tests, and a local or
+self-hosted reference implementation before treating governance as the main
+problem [@ai-wiki-standard-transcript]. That proposal must not be confused with
+the active Python v1 boundary, which explicitly excludes public SDK and hosted
 surfaces [@live-agreement]. OpenAPI is the useful analogy because it became a
 vendor-neutral API description format after originating from Swagger, while MCP
 is the useful caution because its formal governance follows an already useful

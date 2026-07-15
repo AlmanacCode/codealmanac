@@ -29,9 +29,16 @@ sources:
   - id: manual-library
     type: file
     path: src/codealmanac/manual/library.py
+  - id: architecture-manual
+    type: file
+    path: src/codealmanac/manual/architecture.md
   - id: package
     type: file
     path: pyproject.toml
+  - id: design-doc-transcript
+    type: conversation
+    session_id: rollout-2026-07-15T00-29-05-019f64ad-e36f-7261-bfc9-11dfc0bb1fdc
+    note: Design conversation choosing build-agent and manual wording for repository docs as evidence.
 ---
 
 # Runtime Resources
@@ -57,6 +64,15 @@ the complete durable CodeAlmanac kernel and operation instructions [@catalog]
 Manuals remain separate packaged reference documents. Runtime payloads name the
 manual inventory so the agent can read the relevant document from the installed
 package when it needs detailed page-writing rules [@manual-library].
+
+The build agent should treat repository documentation as design evidence, not
+background text to summarize. Plans, ADRs, RFCs, live agreements, design notes,
+and ad-hoc Markdown can explain decisions and rejected alternatives, but the
+agent must reconcile those claims with current code and tests before preserving
+them as current wiki truth [@build-agent] [@design-doc-transcript]. The
+architecture manual carries the same rule for article writers: use design
+evidence for intent and tradeoffs, then trust code for runtime behavior when
+the two disagree [@architecture-manual].
 
 ## What It Does Not Own
 
