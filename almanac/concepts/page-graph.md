@@ -36,7 +36,7 @@ This concept matters because CodeAlmanac is more than a folder of Markdown files
 
 ## Parts Of The Graph
 
-The index has tables for `pages`, `topics`, `page_topics`, `topic_parents`, `file_refs`, `page_sources`, `page_links`, `cross_wiki_links`, and `fts_pages` [@index_schema]. The current document loader fills local `page_links` from Markdown links and leaves `cross_wiki_links` empty [@wiki_documents]. These tables separate authored material from derived lookup state. The Markdown file remains the source; the index is the read model.
+The index has tables for `pages`, `topics`, `page_topics`, `topic_parents`, `file_refs`, `page_sources`, `page_links`, `cross_wiki_links`, and a heading-based `page_sections`/`fts_sections` pair that backs search [@index_schema]. The current document loader fills local `page_links` from Markdown links and leaves `cross_wiki_links` empty [@wiki_documents]. These tables separate authored material from derived lookup state. The Markdown file remains the source; the index is the read model. See [Index refresh and search](../architecture/wiki/index-refresh-and-search) for how the section tables are built and queried.
 
 Topics group pages across folders. Topic parent rows form a directed topic structure, while page-topic rows attach individual pages to the subjects they explain [@index_schema]. This is the base for [Topics DAG](../architecture/wiki/topics-dag) and [topics.yaml](../reference/topics-yaml).
 
