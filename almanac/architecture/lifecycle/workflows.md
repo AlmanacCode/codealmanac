@@ -46,7 +46,7 @@ The source runtime layer is important because ingest should give the agent concr
 
 Garden is the maintenance workflow for an existing wiki. Before calling the operation runner, it reads the current index summary and health report, records that it prepared garden context, and renders a prompt with the current wiki state [@garden-workflow].
 
-Garden does not resolve external source material. Its job is to improve structure and quality from the wiki's own graph: weak pages, stale health findings, missing links, weak topics, and similar maintenance work.
+Garden does not resolve external source material. Its job is to improve structure and quality from the wiki's own graph: weak pages, stale health findings, missing links, weak topics, and similar maintenance work [@garden-workflow].
 
 ## Sync Is Not An Operation
 

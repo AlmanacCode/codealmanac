@@ -50,7 +50,14 @@ models [@adapter] [@contract].
 The adapter explicitly selects Codex app-server and leaves Claude on Yoke's
 default Claude surface. It loads the requested build, ingest, or garden agent
 from the packaged Yoke collection, forwards the task prompt unchanged, and
-applies the trusted non-interactive permission and timeout policy [@adapter].
+applies the provider-specific non-interactive run policy [@adapter].
+
+Codex runs use the ephemeral app-server surface, danger-full-access sandbox,
+approval mode `never`, and provider network access disabled [@adapter]
+[@tests]. Claude runs use the fixed allowed tool set, permission mode
+`dontAsk`, no Claude settings sources, strict MCP config, and an empty MCP
+server map [@adapter] [@tests]. Both providers receive explicit run timeouts:
+30 minutes for Codex and 90 minutes for Claude [@adapter].
 
 ## Runtime Root
 

@@ -46,6 +46,12 @@ and [Only Almanac root](decisions/only-almanac-root) before adding public
 surface area, compatibility paths, hosted language, or release/demo framing
 [@live-agreement].
 
+For product work, [Wiki usefulness evaluation](concepts/wiki-usefulness-evaluation)
+defines what makes a wiki change worth preserving, [Demo CodeAlmanac in a
+launch video](guides/demo-codealmanac-in-launch-video) keeps demo framing tied
+to the local product, and [Release package](guides/release-package) covers the
+public Python package surface [@repo-readme] [@live-agreement].
+
 ## Reading Rule
 
 Use the wiki as maintained synthesis, then verify behavior against current code when the two disagree. The runtime kernel gives the same rule to writing agents: code is authoritative for behavior, Markdown links are the page-link syntax, and file evidence belongs in structured `sources:` entries [@kernel-prompt].

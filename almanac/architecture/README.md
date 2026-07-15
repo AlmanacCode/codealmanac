@@ -141,8 +141,9 @@ Use these routes when the change sits at a system edge:
   human and JSON rendering [@cli-adapter] [@terminal-output].
 - Agent execution: [Harness contract](agent-runs/harness-contract) defines
   the service-owned run interface, and [Yoke harness boundary](agent-runs/provider-adapters)
-  explains the current provider adapter [@harness-contract]
-  [@provider-adapters].
+  explains the current Yoke provider adapter, including Codex and Claude run
+  options, readiness checks, runtime cache placement, and event projection
+  [@harness-contract] [@provider-adapters].
 - Source input: [Source resolution and runtime](sources/source-resolution-and-runtime)
   owns ingest input resolution and source adapters. Pair it with [Source
   material](../concepts/source-material) for the concept, [Source addresses](../reference/sources/source-addresses)
@@ -150,7 +151,9 @@ Use these routes when the change sits at a system edge:
   for page evidence [@source-runtime].
 - Packaged runtime resources: [Agents and manuals](runtime-resources/prompts-and-manuals)
   covers the packaged Yoke agents and writing references used by lifecycle
-  runs [@agents-manuals].
+  runs. Use this page for agent instruction packaging; use [Yoke harness
+  boundary](agent-runs/provider-adapters) for provider execution behavior
+  [@agents-manuals] [@provider-adapters].
 - Machine setup: [Setup automation and update](setup/automation-and-update)
   covers setup-owned scheduler and update behavior [@setup-automation].
 - Repository and storage state: [Local state](repositories/local-state),

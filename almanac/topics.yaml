@@ -105,7 +105,7 @@ topics:
     parents: [architecture]
   - slug: runtime-resources
     title: Runtime Resources
-    description: Packaged prompts, manuals, and operation prompt rendering
+    description: Packaged Yoke agents, agent instructions, and writing manuals
     parents: [architecture]
   - slug: prompts
     title: Prompts

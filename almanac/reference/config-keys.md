@@ -54,6 +54,9 @@ written [@config-tests].
 
 ## Supported Keys
 
+The supported keys and built-in defaults come from the typed config model and
+the public config parser [@config-models] [@config-parser].
+
 | Key | Type | Default | Valid values |
 | --- | --- | --- | --- |
 | `auto_commit` | Boolean | `true` | `true` or `false` |

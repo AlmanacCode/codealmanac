@@ -34,6 +34,14 @@ sources:
     type: wiki
     path: architecture/runtime-resources/prompts-and-manuals
     note: Architecture page for packaged Yoke agents and writing manuals used by lifecycle operations.
+  - id: harness-contract
+    type: wiki
+    path: architecture/agent-runs/harness-contract
+    note: Architecture page for the normalized harness execution contract.
+  - id: provider-adapters
+    type: wiki
+    path: architecture/agent-runs/provider-adapters
+    note: Architecture page for Yoke provider execution behavior.
 ---
 
 # Lifecycle
@@ -54,4 +62,13 @@ Use [Mutation safety](mutation-safety) when changing allowed files, auto-commit 
 
 ## Neighboring Pages
 
-[Run states and events](../../reference/runs/run-states-and-events) is the exact reference for run kinds, statuses, queued specs, cancellation, attach, and logs [@run-states]. [Lifecycle operation](../../concepts/lifecycle-operation) is the concept page for the page-writing operation family [@lifecycle-concept]. [Agents and manuals](../runtime-resources/prompts-and-manuals) explains the packaged Yoke agents and writing manuals that lifecycle workflows bind into page-writing runs [@agents-manuals].
+[Run states and events](../../reference/runs/run-states-and-events) is the
+exact reference for run kinds, statuses, queued specs, cancellation, attach,
+and logs [@run-states]. [Lifecycle operation](../../concepts/lifecycle-operation)
+is the concept page for the page-writing operation family [@lifecycle-concept].
+[Agents and manuals](../runtime-resources/prompts-and-manuals) explains the
+packaged Yoke agents and writing manuals that lifecycle workflows bind into
+page-writing runs [@agents-manuals]. [Harness contract](../agent-runs/harness-contract)
+and [Yoke harness boundary](../agent-runs/provider-adapters) explain the
+execution boundary after a workflow has prepared its prompt [@harness-contract]
+[@provider-adapters].

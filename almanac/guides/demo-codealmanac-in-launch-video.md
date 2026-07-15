@@ -96,3 +96,10 @@ account, telemetry, analytics, or usage tracking; user code, transcripts, and
 wiki content stay local except for the selected model provider used by the
 user's own Codex or Claude account during lifecycle runs [@public-readme]
 [@live-agreement].
+
+## Related Pages
+
+See [Local viewer](../architecture/viewer/local-viewer),
+[CLI public command surface](../reference/cli/public-command-surface),
+[Local-only Python product](../decisions/local-only-python-product), and
+[Wiki usefulness evaluation](../concepts/wiki-usefulness-evaluation).

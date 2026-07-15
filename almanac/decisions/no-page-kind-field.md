@@ -34,7 +34,8 @@ it.
 ## Status
 
 Accepted (deferred). No `kind` field exists today. Revisit only when a concrete
-reader workflow needs kind-specific behavior.
+reader workflow needs kind-specific behavior [@frontmatter-parser]
+[@frontmatter-reference].
 
 ## Context
 
@@ -48,7 +49,8 @@ field [@frontmatter-reference].
 Page type is currently expressed only through folder placement
 (`concepts/`, `architecture/`, `guides/`, `decisions/`, `reference/`) and the
 matching manual page. That is enough for a human or agent writer to follow the
-right shape, but it is not machine-checked.
+right shape, but it is not machine-checked [@manual-overview]
+[@frontmatter-reference].
 
 ## Decision
 
