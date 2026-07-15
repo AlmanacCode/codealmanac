@@ -56,9 +56,11 @@ state instead [@local-repo-wiki].
 
 [Page graph](page-graph) explains the derived model that connects pages,
 topics, links, file references, sources, backlinks, and health checks
-[@page-graph]. [Future page kinds](page-kinds) explains why concept, guide,
-decision, and reference vocabulary exists today without being a validated
-frontmatter field [@page-kinds].
+[@page-graph].
+
+[Future page kinds](page-kinds) is optional future-product vocabulary, not
+current runtime behavior. Read it only when a change might turn concept, guide,
+decision, or reference labels into validated metadata [@page-kinds].
 
 ## Lifecycle And Inputs
 

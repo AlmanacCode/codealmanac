@@ -34,6 +34,18 @@ sources:
     type: wiki
     path: reference/runs/run-states-and-events
     note: Reference page for run kinds, statuses, specs, events, and logs.
+  - id: no-propose
+    type: wiki
+    path: decisions/no-propose-apply-or-dry-run
+    note: Decision that keeps lifecycle operations direct instead of proposal or dry-run flows.
+  - id: auto-commit
+    type: wiki
+    path: decisions/auto-commit-is-prompt-policy
+    note: Decision that treats auto-commit as prompt policy rather than Python-side Git orchestration.
+  - id: repository-affiliation
+    type: wiki
+    path: decisions/repository-affiliation-belongs-in-repository-service
+    note: Decision that keeps checkout-to-repository affiliation in the repository service.
 ---
 
 # Lifecycle
@@ -51,6 +63,12 @@ Then read [Operation runner](operation-runner) when the change touches harness i
 Use [Run queue and sync](run-queue-and-sync) when changing queued ingest, scheduled Garden, worker drain, or transcript sync. That page connects lifecycle work to durable run specs and the worker that drains queued records [@run-queue-sync].
 
 Use [Mutation safety](mutation-safety) when changing allowed files, auto-commit instructions, final validation, or any future runtime enforcement for out-of-tree edits [@mutation-safety].
+
+## Policy Decisions
+
+[No propose/apply or dry-run](../../decisions/no-propose-apply-or-dry-run) is the lifecycle policy page for direct agent writing. Read it before adding proposal files, apply steps, dry-run rehearsals, or state machines between writer and reviewer [@no-propose].
+
+[Auto-commit is prompt policy](../../decisions/auto-commit-is-prompt-policy) explains why build, ingest, and Garden pass commit permission to the lifecycle agent instead of making Python stage or commit wiki diffs [@auto-commit]. [Repository affiliation belongs in repository service](../../decisions/repository-affiliation-belongs-in-repository-service) explains where sync and transcript-related lifecycle work should map a checkout back to a registered repository [@repository-affiliation].
 
 ## Neighboring Pages
 
