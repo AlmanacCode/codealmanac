@@ -26,6 +26,10 @@ sources:
     type: file
     path: tests/test_architecture.py
     note: Tests that keep parser, dispatch, and render modules split by command and output family.
+  - id: command-surface
+    type: wiki
+    path: reference/cli/public-command-surface
+    note: Reference page for visible commands, hidden worker entries, and intentionally absent legacy surface.
 ---
 
 # CLI Adapter Boundary
@@ -42,7 +46,7 @@ That small entrypoint enforces the adapter role. The CLI owns process-level conc
 
 ## Parser Boundary
 
-`cli/parser/root.py` creates the `codealmanac` parser, installs `--version`, and registers command families through `add_run_commands`, `add_wiki_commands`, and `add_admin_commands` [@parser-root]. The public command metavar lists the visible command surface, including `init`, `ingest`, `garden`, `sync`, `search`, `show`, `topics`, `health`, `validate`, `serve`, `config`, `setup`, `jobs`, and `automation` [@parser-root].
+`cli/parser/root.py` creates the `codealmanac` parser, installs `--version`, and registers command families through `add_run_commands`, `add_wiki_commands`, and `add_admin_commands` [@parser-root]. The root parser owns the visible command metavar, while the exact public command list lives in [Public command surface](../../reference/cli/public-command-surface) so this architecture page does not duplicate command inventory [@parser-root] [@command-surface].
 
 Parser modules should describe syntax only. For example, the root parser knows that command families exist, but it does not know how search calls the index or how setup writes instructions. That keeps public command shape separate from product action.
 

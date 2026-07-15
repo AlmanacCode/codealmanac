@@ -1,6 +1,6 @@
 ---
 title: Health And Validation
-topics: [architecture, wiki, health]
+topics: [architecture, wiki, health, safety]
 sources:
   - id: health-service
     type: file

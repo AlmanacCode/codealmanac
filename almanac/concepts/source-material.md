@@ -1,6 +1,6 @@
 ---
 title: Source Material
-topics: [concepts, sources]
+topics: [concepts, sources, ingest]
 sources:
   - id: sources-service
     type: file

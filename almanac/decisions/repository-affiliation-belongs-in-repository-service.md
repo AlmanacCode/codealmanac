@@ -24,6 +24,8 @@ sources:
 
 Repository affiliation is the proposed boundary for mapping an artifact created in a checkout back to the canonical registered CodeAlmanac repository. The problem first appeared as support for Conductor workspaces, but the durable design issue is broader: a transcript can be created in a temporary checkout, worktree, or nested directory that is not the exact registered repository root [@affiliation-transcript]. The repository service should own that decision because it already owns registered repository identity and selection [@repository-service].
 
+Status: accepted design, not implemented in the current exact-root selection path.
+
 ## Context
 
 Current repository selection is exact. `select_for_operation(...)` uses the current directory as the repository only when it is the exact registered root, and named selection goes through the repository registry [@repository-service]. The selection helpers compare exact normalized paths and validate containment, but they do not identify two checkouts as the same underlying Git repository [@repository-selection].
