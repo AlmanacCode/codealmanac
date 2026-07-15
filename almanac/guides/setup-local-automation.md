@@ -56,6 +56,8 @@ Run setup on macOS. The README states that CodeAlmanac currently supports macOS 
 
 If setup fails with a missing `launchctl` error, treat it as an unsupported-platform signal before debugging Claude, Codex, or runner readiness. Linux and Windows need a different scheduler adapter before local automation can be installed there [@app] [@launchd].
 
+Check for partial local state after that failure. Setup writes config before installing instructions, and the launchd adapter writes plist and log paths before it shells out to `launchctl` [@setup-service] [@launchd]. On a non-macOS machine, remove or ignore those local artifacts before rerunning setup after a platform-support fix.
+
 ## Run Setup
 
 For the default unattended setup, run:

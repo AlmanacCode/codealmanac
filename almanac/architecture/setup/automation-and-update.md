@@ -18,6 +18,10 @@ sources:
     type: file
     path: src/codealmanac/services/setup/automation.py
     note: Setup-side automation task selection.
+  - id: config_service
+    type: file
+    path: src/codealmanac/services/config/service.py
+    note: User config writes and automation reconciliation.
   - id: automation_service
     type: file
     path: src/codealmanac/services/automation/service.py
@@ -79,6 +83,8 @@ The job factory gives each task concrete local execution details. The resolved `
 The macOS implementation writes launchd plists under `~/Library/LaunchAgents`, creates stdout and stderr log directories, bootouts any existing job, bootstraps the new job, and reads status back from launchd [@launchd]. The generated plist contains the label, program arguments, start interval, environment variables, `RunAtLoad`, and log paths [@launchd]. This keeps the service boundary scheduler-neutral while the adapter owns launchd mechanics.
 
 The default application wiring is launchd-backed. `create_services` constructs `AutomationService` with `LaunchdSchedulerAdapter`, then injects it into the config service. The adapter shells out to `launchctl` for install, uninstall, and status checks [@app][@launchd]. Config reconciliation is macOS-specific until another scheduler adapter is wired. There is no platform-selection branch in the composition root, so setup on a machine without `launchctl` reaches the launchd adapter and surfaces a scheduler execution failure instead of selecting a Linux or Windows scheduler [@app][@launchd].
+
+That unsupported-platform failure is not atomic. `SetupService.run` writes user config before instruction installation, `ConfigService.update` persists the TOML values before reconciling automation, and `LaunchdSchedulerAdapter.install` writes the plist and log directories before it calls `launchctl` [@setup_service][@config_service][@launchd]. A Linux or Windows setup attempt can therefore leave `~/.codealmanac/config.toml`, installed instruction files, or `~/Library/LaunchAgents/com.codealmanac.<task>.plist` artifacts behind even though scheduled automation did not install successfully.
 
 ## Update Safety
 

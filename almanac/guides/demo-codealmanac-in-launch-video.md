@@ -26,6 +26,10 @@ sources:
     type: web
     url: https://news.ycombinator.com/item?id=48849361
     note: Initial Show HN post for CodeAlmanac.
+  - id: hn-advice
+    type: web
+    url: https://news.ycombinator.com/item?id=22336638
+    note: Hacker News moderator advice on Show HN copy, backstory, proof, and avoiding marketing language.
 ---
 
 # Demo CodeAlmanac In A Launch Video
@@ -87,6 +91,20 @@ When answering public launch questions, be transparent that CodeAlmanac already
 had an initial Show HN on July 9, 2026 [@show-hn]. The later Launch HN should
 be framed as a fuller introduction to the same local, open-source CLI rather
 than as a major product-change announcement [@public-readme] [@live-agreement].
+
+For HN specifically, lead with evidence before philosophy. The copy should open
+with a concrete coding-agent failure, show the generated wiki page or query that
+would have prevented it, and then name the product. HN's own advice asks Show HN
+authors to explain the backstory, state clearly what the project does, make it
+easy to try, and remove marketing language [@hn-advice]. For CodeAlmanac, the
+minimum proof is one real page, one `codealmanac search` or `show` retrieval,
+and one comparison against the existing alternative of putting more context in
+`CLAUDE.md` or ordinary docs [@public-readme] [@differentiation].
+
+The final HN submission text should be written by the maintainer, not generated
+or polished by an agent. Agents can prepare factual notes, examples, and a proof
+checklist, but HN's moderator guidance warns that LLM-shaped launch copy creates
+backlash on HN [@hn-advice].
 
 The concise answer for a missing demo video is that HN users can install and
 try the CLI directly without creating an account [@public-readme]
