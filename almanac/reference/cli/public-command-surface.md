@@ -5,7 +5,7 @@ sources:
   - id: pyproject
     type: file
     path: pyproject.toml
-    note: Package script entrypoint for the CodeAlmanac CLI.
+    note: Package script entrypoints for the CodeAlmanac CLI.
   - id: repo_readme
     type: file
     path: README.md
@@ -74,7 +74,7 @@ sources:
 
 # Public Command Surface
 
-The public command surface is the set of terminal commands exposed by the `codealmanac` script. The package installs that script as `codealmanac = "codealmanac.cli.main:main"`, so the CLI parser is the user-facing contract for command names and flags [@pyproject]. Parser modules define syntax only; the [CLI adapter boundary](../../architecture/cli/adapter-boundary) explains how parsed commands cross into services and workflows.
+The public command surface is the set of terminal commands exposed by the canonical `codealmanac` script and its short `ca` alias. The package maps both console-script names to `codealmanac.cli.main:main`, so they share one parser, command behavior, output contract, and exit-code contract [@pyproject]. Parser modules define syntax only; the [CLI adapter boundary](../../architecture/cli/adapter-boundary) explains how parsed commands cross into services and workflows.
 
 The root parser registers three command families: run commands, wiki commands, and admin commands [@parser_root]. The admin family delegates to config, setup, diagnostics, update, jobs, and automation parser modules [@parser_admin]. It also exposes `--version` and lists the visible top-level command names in `PUBLIC_COMMAND_METAVAR` [@parser_root]. Hidden worker commands exist for internal scheduling and queue execution, but they are removed from visible choices and from rendered syntax guidance [@parser_run] [@syntax_catalog].
 

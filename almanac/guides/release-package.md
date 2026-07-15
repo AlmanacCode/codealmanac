@@ -9,7 +9,7 @@ sources:
   - id: pyproject
     type: file
     path: pyproject.toml
-    note: Package name, version, Python requirement, dependencies, script entrypoint, and package data.
+    note: Package name, version, Python requirement, dependencies, script entrypoints, and package data.
   - id: readme
     type: file
     path: README.md
@@ -34,9 +34,9 @@ Use this guide when publishing the `codealmanac` Python package to PyPI. A relea
 
 ## Preconditions
 
-Start from a clean checkout of the release branch. `pyproject.toml` owns the package version, requires Python 3.12 or newer, and exposes exactly one console script: `codealmanac = "codealmanac.cli.main:main"` [@pyproject]. The [public command surface](../reference/cli/public-command-surface) is the contract that release smoke should prove from installed artifacts. The release document states that stable releases publish from `main` to the normal PyPI release channel and that version numbers must not be reused [@release-doc].
+Start from a clean checkout of the release branch. `pyproject.toml` owns the package version, requires Python 3.12 or newer, and maps both the canonical `codealmanac` command and its short `ca` alias to `codealmanac.cli.main:main` [@pyproject]. The [public command surface](../reference/cli/public-command-surface) is the contract that release smoke should prove from installed artifacts. The release document states that stable releases publish from `main` to the normal PyPI release channel and that version numbers must not be reused [@release-doc].
 
-Keep the package surface narrow. Public-contract tests reject npm release language, old install surfaces, hosted commands, legacy aliases, and public SDK or MCP modules [@public-contract-tests]. If those tests fail, fix the public contract before publishing.
+Keep the package surface narrow. Public-contract tests reject npm release language, old install surfaces, hosted commands, undeclared legacy aliases, and public SDK or MCP modules [@public-contract-tests]. If those tests fail, fix the public contract before publishing.
 
 ## Build And Smoke
 
@@ -52,7 +52,7 @@ uv build --out-dir dist
 uvx twine check dist/*
 ```
 
-Then install both artifacts into clean Python 3.12 environments and smoke the installed command [@release-doc]. For product behavior, use the installed artifact command from those temporary environments or the user-facing installed `codealmanac` binary, not a command from the repo developer environment.
+Then install both artifacts into clean Python 3.12 environments and smoke both installed command names [@release-doc]. Confirm that `codealmanac --version` and `ca --version` return the same version. For product behavior, use an installed artifact command from those temporary environments, not a command from the repo developer environment.
 
 Use current public syntax during smoke checks. `sync status` accepts `--wiki`, `--from`, and `--json`; it does not accept `--quiet` [@run-parser]. The release document may lag the parser, so trust parser-backed command syntax when a smoke command disagrees with the installed CLI [@release-doc] [@run-parser].
 

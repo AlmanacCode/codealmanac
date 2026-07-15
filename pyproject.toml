@@ -42,6 +42,7 @@ dependencies = [
 ]
 
 [project.scripts]
+ca = "codealmanac.cli.main:main"
 codealmanac = "codealmanac.cli.main:main"
 
 [project.urls]

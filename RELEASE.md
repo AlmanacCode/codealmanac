@@ -101,10 +101,11 @@ Do not reuse a published version number.
 
 ## Package Surface
 
-The package must expose exactly one public command:
+The package must expose the canonical command and its short alias:
 
 ```text
 codealmanac
+ca
 ```
 
 The published artifact must include:
@@ -119,7 +120,7 @@ The published artifact must include:
 
 The published artifact must not introduce:
 
-- public `almanac` or `alm` commands
+- public `almanac`, `alm`, or other undeclared command aliases
 - public `capture`, `login`, `connect`, or `upload` commands
 - public SDK or MCP modules
 - npm, Node, or hosted-dashboard install instructions

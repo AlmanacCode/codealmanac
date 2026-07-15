@@ -34,6 +34,7 @@ FORBIDDEN_TOP_LEVEL_COMMANDS = (
 
 README_REQUIRED_FRAGMENTS = (
     "Public command: `codealmanac`",
+    "Short alias: `ca`",
     "Repo wiki root: `almanac/` only",
     "Alternate repo wiki roots: none",
     "User state root: `~/.codealmanac/`",
@@ -130,12 +131,15 @@ GITHUB_FORBIDDEN_FRAGMENTS = (
 )
 
 
-def test_public_entry_point_is_codealmanac_only():
+def test_public_entry_points_include_ca_alias():
     pyproject = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
 
     scripts = pyproject["project"]["scripts"]
 
-    assert scripts == {"codealmanac": "codealmanac.cli.main:main"}
+    assert scripts == {
+        "ca": "codealmanac.cli.main:main",
+        "codealmanac": "codealmanac.cli.main:main",
+    }
 
 
 def test_python_package_metadata_declares_readme_and_license():

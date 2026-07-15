@@ -85,6 +85,9 @@ uv sync
 uv run codealmanac --help
 ```
 
+`codealmanac` is the canonical command. Every install also provides `ca` as its
+short alias, so `ca search "getting started"` is equivalent to the longer form.
+
 Requires Python 3.12+.
 
 ## Migrating From The npm CLI
@@ -459,6 +462,7 @@ default harness. `codealmanac doctor` reports harness availability.
 This rewrite is local-only for now.
 
 - Public command: `codealmanac`
+- Short alias: `ca`
 - Repo wiki root: `almanac/` only
 - Alternate repo wiki roots: none
 - User state root: `~/.codealmanac/`
@@ -466,10 +470,10 @@ This rewrite is local-only for now.
 - Storage: local markdown plus derived state under `~/.codealmanac/`
 - No hosted login/connect/upload commands.
 - No public SDK or MCP package.
-- No compatibility aliases.
+- No legacy compatibility aliases beyond the supported `ca` shorthand.
 - No alternate wiki roots.
 - No hidden cloud write path.
-- No second wiki command name.
+- No second canonical product name.
 
 This is the Python/PyPI product surface. Hosted integration can be added later
 around the same repo-owned wiki artifact, but it is not part of this release
