@@ -66,6 +66,10 @@ sources:
     type: wiki
     path: architecture/agent-runs/harness-contract
     note: Architecture page for normalized harness execution.
+  - id: agent-runs-hub
+    type: wiki
+    path: architecture/agent-runs
+    note: Architecture hub for harness contracts, Yoke provider execution, events, and model choices.
   - id: provider-adapters
     type: wiki
     path: architecture/agent-runs/provider-adapters
@@ -102,6 +106,10 @@ sources:
     type: wiki
     path: architecture/setup/automation-and-update
     note: Architecture page for setup-owned automation and update behavior.
+  - id: setup-hub
+    type: wiki
+    path: architecture/setup
+    note: Architecture hub for setup, instruction installation, automation, config, and local state.
 ---
 
 # Architecture
@@ -139,11 +147,13 @@ Use these routes when the change sits at a system edge:
 - Commands and output: [CLI adapter boundary](cli/adapter-boundary) explains
   command entrypoints, and [Terminal output](cli/terminal-output) explains
   human and JSON rendering [@cli-adapter] [@terminal-output].
-- Agent execution: [Harness contract](agent-runs/harness-contract) defines
-  the service-owned run interface, and [Yoke harness boundary](agent-runs/provider-adapters)
-  explains the current Yoke provider adapter, including Codex and Claude run
-  options, readiness checks, runtime cache placement, and event projection
-  [@harness-contract] [@provider-adapters].
+- Agent execution: [Agent runs](agent-runs/) is the hub for the service-owned
+  harness contract, the current Yoke provider adapter, event shape, and model
+  catalog choices. Use [Harness contract](agent-runs/harness-contract) for the
+  normalized run interface and [Yoke harness boundary](agent-runs/provider-adapters)
+  for Codex and Claude run options, readiness checks, runtime cache placement,
+  and event projection [@agent-runs-hub] [@harness-contract]
+  [@provider-adapters].
 - Source input: [Source resolution and runtime](sources/source-resolution-and-runtime)
   owns ingest input resolution and source adapters. Pair it with [Source
   material](../concepts/source-material) for the concept, [Source addresses](../reference/sources/source-addresses)
@@ -154,8 +164,10 @@ Use these routes when the change sits at a system edge:
   runs. Use this page for agent instruction packaging; use [Yoke harness
   boundary](agent-runs/provider-adapters) for provider execution behavior
   [@agents-manuals] [@provider-adapters].
-- Machine setup: [Setup automation and update](setup/automation-and-update)
-  covers setup-owned scheduler and update behavior [@setup-automation].
+- Machine setup: [Setup](setup/) is the hub for instruction installation,
+  automation, config, update, and local setup state. Use [Setup automation and update](setup/automation-and-update)
+  for setup-owned scheduler and update behavior [@setup-hub]
+  [@setup-automation].
 - Repository and storage state: [Local state](repositories/local-state),
   [Selection and root](repositories/selection-and-root), and [SQLite store
   boundaries](persistence/sqlite-store-boundaries) explain repository
