@@ -36,7 +36,7 @@ sources:
     note: Public read commands and runtime state description.
   - id: retrieval-transcript
     type: conversation
-    path: /Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532.jsonl
+    session_id: rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532
     note: Product conversation interpreting current FTS behavior for LoCoMo-style retrieval.
 ---
 

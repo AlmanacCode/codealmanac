@@ -36,15 +36,15 @@ sources:
     note: Public test cases with required tools, required knowledge, and safety expectations.
   - id: eval-transcript
     type: conversation
-    path: /Users/rohan/.codex/sessions/2026/07/11/rollout-2026-07-11T19-41-04-019f5433-20b0-7eb3-a065-2bb3e160447e.jsonl
+    session_id: rollout-2026-07-11T19-41-04-019f5433-20b0-7eb3-a065-2bb3e160447e
     note: Product conversation interpreting Supabase's evals for CodeAlmanac positioning.
   - id: openwiki-transcript
     type: conversation
-    path: /Users/rohan/.codex/sessions/2026/07/11/rollout-2026-07-11T23-25-01-019f5500-2662-72d2-941a-8a29f021e78f.jsonl
+    session_id: rollout-2026-07-11T23-25-01-019f5500-2662-72d2-941a-8a29f021e78f
     note: Product conversation comparing OpenWiki-style generated documentation with CodeAlmanac's repo-owned memory model.
   - id: memory-benchmark-transcript
     type: conversation
-    path: /Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532.jsonl
+    session_id: rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532
     note: Product conversation mapping memory benchmarks to CodeAlmanac evaluation strategy.
   - id: locomo
     type: web
@@ -76,11 +76,11 @@ sources:
     note: WorldMemArena paper abstract.
   - id: launch-metrics-transcript
     type: conversation
-    path: /Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T18-52-05-019f5e53-00bd-7e53-8435-82a138f05ccd.jsonl
+    session_id: rollout-2026-07-13T18-52-05-019f5e53-00bd-7e53-8435-82a138f05ccd
     note: Product conversation clarifying PyPI mirror traffic and launch user-count interpretation.
   - id: ai-wiki-standard-transcript
     type: conversation
-    path: /Users/rohan/.codex/sessions/2026/07/14/rollout-2026-07-14T22-51-58-019f6454-fa56-7ff0-b1b2-fe8a42abaf55.jsonl
+    session_id: rollout-2026-07-14T22-51-58-019f6454-fa56-7ff0-b1b2-fe8a42abaf55
     note: Product conversation framing Almanac as an AI wiki category and potential open standard.
   - id: deepwiki
     type: web

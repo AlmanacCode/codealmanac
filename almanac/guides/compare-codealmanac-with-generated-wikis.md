@@ -12,11 +12,11 @@ sources:
     note: Product positioning and evaluation framing for CodeAlmanac.
   - id: comparison-transcript
     type: conversation
-    path: /Users/rohan/.codex/sessions/2026/07/12/rollout-2026-07-12T16-26-10-019f58a7-0c22-7fe2-89af-1b1c91ccb5fd.jsonl
+    session_id: rollout-2026-07-12T16-26-10-019f58a7-0c22-7fe2-89af-1b1c91ccb5fd
     note: Product conversation about comparing CodeAlmanac with OpenWiki-style generated repository documentation.
   - id: benchmark-harness-transcript
     type: conversation
-    path: /Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532.jsonl
+    session_id: rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532
     note: Benchmark harness review and memory-benchmark mapping for CodeAlmanac evaluation.
 ---
 

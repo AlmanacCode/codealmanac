@@ -36,7 +36,7 @@ sources:
     note: Ingest workflow use of source resolution and runtime inspection.
   - id: codex-session-workdir-mismatch
     type: conversation
-    path: "/Users/rohan/.codex/sessions/2026/07/13/rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532.jsonl"
+    session_id: rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532
     note: Codex session selected for codealmanac because metadata cwd was this repo while later tool calls worked in almanac-benchmarks.
 ---
 

@@ -4,7 +4,7 @@ topics: [decisions, repositories, lifecycle]
 sources:
   - id: affiliation-transcript
     type: conversation
-    path: /Users/rohan/.codex/sessions/2026/07/10/rollout-2026-07-10T16-35-11-019f4e62-96e5-7212-82fa-013a204a6c50.jsonl
+    session_id: rollout-2026-07-10T16-35-11-019f4e62-96e5-7212-82fa-013a204a6c50
     note: Architecture discussion that reframed Conductor/worktree support as repository affiliation.
   - id: repository-service
     type: file

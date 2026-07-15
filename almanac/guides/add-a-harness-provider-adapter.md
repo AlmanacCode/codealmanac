@@ -30,7 +30,7 @@ sources:
     note: Reference page for supported config keys and model validation.
   - id: opencode-pr-review
     type: conversation
-    path: /Users/rohan/.codex/sessions/2026/07/12/rollout-2026-07-12T11-29-59-019f5797-e03a-7971-ab11-939e3cf4b1be.jsonl
+    session_id: rollout-2026-07-12T11-29-59-019f5797-e03a-7971-ab11-939e3cf4b1be
 ---
 
 # Extend The Yoke Harness Boundary
