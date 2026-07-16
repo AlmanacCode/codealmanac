@@ -53,6 +53,7 @@ DEFAULT_HARNESS_MODELS = {
 
 class ConfigKey(StrEnum):
     AUTO_COMMIT = "auto_commit"
+    TELEMETRY_ENABLED = "telemetry.enabled"
     HARNESS_DEFAULT = "harness.default"
     HARNESS_MODEL = "harness.model"
     AUTOMATION_SYNC_ENABLED = "automation.sync.enabled"
@@ -83,6 +84,10 @@ class HarnessConfig(CodeAlmanacModel):
                 f"harness.model for {self.default.value} must be one of: {allowed}"
             )
         return self
+
+
+class TelemetryConfig(CodeAlmanacModel):
+    enabled: bool = True
 
 
 class TaskAutomationConfig(CodeAlmanacModel):
@@ -132,6 +137,7 @@ class UserConfig(BaseSettings):
 
     auto_commit: bool = DEFAULT_AUTO_COMMIT
     harness: HarnessConfig = Field(default_factory=HarnessConfig)
+    telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
     automation: AutomationConfig = Field(default_factory=AutomationConfig)
 
     @classmethod

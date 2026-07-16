@@ -8,6 +8,7 @@ from codealmanac.services.config.models import (
     AutomationConfig,
     ConfigKey,
     HarnessConfig,
+    TelemetryConfig,
 )
 
 
@@ -34,4 +35,5 @@ class ApplyConfigRequest(CodeAlmanacModel):
 class UpdateUserConfigRequest(ApplyConfigRequest):
     auto_commit: bool
     harness: HarnessConfig
+    telemetry: TelemetryConfig
     automation: AutomationConfig

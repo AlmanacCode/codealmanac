@@ -23,6 +23,11 @@ def add_setup_commands(subcommands: argparse._SubParsersAction) -> None:
         help="tell run agents not to commit wiki changes",
     )
     setup.add_argument(
+        "--no-telemetry",
+        action="store_true",
+        help="disable anonymous usage and crash telemetry",
+    )
+    setup.add_argument(
         "--skip-instructions",
         action="store_true",
         help="skip global agent instruction installation",

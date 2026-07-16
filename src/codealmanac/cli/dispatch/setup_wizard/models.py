@@ -11,6 +11,7 @@ class SetupSelections:
     model: str
     auto_update: bool
     auto_commit: bool
+    telemetry_enabled: bool
     sync_off: bool
     garden_off: bool
 

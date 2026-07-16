@@ -35,6 +35,7 @@ def dispatch_setup(args: argparse.Namespace, app: CodeAlmanac) -> int:
             yes=args.yes,
             auto_commit=selections.auto_commit,
             auto_update=selections.auto_update,
+            telemetry_enabled=selections.telemetry_enabled,
             skip_instructions=args.skip_instructions,
             sync_every=parse_optional_duration(args.sync_every, "--sync-every")
             or user_config.automation.sync.every,

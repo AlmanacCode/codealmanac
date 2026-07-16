@@ -135,6 +135,10 @@ def config_entries(config: UserConfig) -> tuple[ConfigEntry, ...]:
             key=ConfigKey.HARNESS_MODEL,
             value=config.harness.model,
         ),
+        ConfigEntry(
+            key=ConfigKey.TELEMETRY_ENABLED,
+            value=format_bool(config.telemetry.enabled),
+        ),
         *automation_entries(config.automation),
     )
 
@@ -147,6 +151,9 @@ def config_value_updates(
     if key == ConfigKey.AUTO_COMMIT:
         normalized = parse_bool_value(request.value, key.value)
         return normalized, (TomlValueUpdate(None, "auto_commit", normalized),)
+    if key == ConfigKey.TELEMETRY_ENABLED:
+        normalized = parse_bool_value(request.value, key.value)
+        return normalized, (TomlValueUpdate("telemetry", "enabled", normalized),)
     if key == ConfigKey.HARNESS_DEFAULT:
         normalized = parse_harness_value(request.value)
         model = DEFAULT_HARNESS_MODELS[HarnessKind(normalized)]
@@ -180,6 +187,11 @@ def user_config_updates(
             quoted(request.harness.default.value),
         ),
         TomlValueUpdate("harness", "model", quoted(request.harness.model)),
+        TomlValueUpdate(
+            "telemetry",
+            "enabled",
+            format_bool(request.telemetry.enabled),
+        ),
         *automation_toml_updates("automation.sync", request.automation.sync),
         *automation_toml_updates("automation.garden", request.automation.garden),
         *automation_toml_updates("automation.update", request.automation.update),

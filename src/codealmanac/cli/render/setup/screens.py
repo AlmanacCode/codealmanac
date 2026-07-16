@@ -41,6 +41,7 @@ class SetupChoiceScreen:
     question: str
     options: tuple[SetupChoiceOption, ...]
     visual: str = "cards"
+    total_steps: int = 7
     selection_notices: tuple[BackgroundItemNotice | None, ...] = ()
 
 
@@ -52,9 +53,8 @@ def render_setup_choice_screen(
     print_banner("The self-updating wiki for your coding agents.")
     print_badge()
     write_line("")
-    write_line(
-        f"  {BLUE}◆{RST}  {DIM}[{screen.step}/6]{RST} {WHITE_BOLD}{screen.title}{RST}"
-    )
+    progress = f"{DIM}[{screen.step}/{screen.total_steps}]{RST}"
+    write_line(f"  {BLUE}◆{RST}  {progress} {WHITE_BOLD}{screen.title}{RST}")
     write_line(BAR)
     for line in wrap_with_prefixes(screen.question, f"{BAR}   ", f"{BAR}   ", 78):
         write_line(line)
