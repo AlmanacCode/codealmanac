@@ -10,6 +10,10 @@ from codealmanac.services.harnesses.ports import HarnessAdapter, HarnessEventSin
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 
 
+class HarnessUnavailable(ExecutionFailed):
+    """The selected harness exists but cannot currently start a run."""
+
+
 class HarnessesService:
     def __init__(self, adapters: Sequence[HarnessAdapter] = ()):
         self.adapters = adapters_by_kind(adapters)
@@ -32,7 +36,7 @@ class HarnessesService:
         readiness = self.adapter_for(kind).check()
         if readiness.available:
             return readiness
-        raise ExecutionFailed(
+        raise HarnessUnavailable(
             unavailable_harness_message(readiness, self.alternatives_to(kind))
         )
 

@@ -36,6 +36,7 @@ class RunStatus(StrEnum):
 class RunFailureCategory(StrEnum):
     HARNESS_READINESS = "harness_readiness"
     PROVIDER_EXECUTION = "provider_execution"
+    SOURCE_PREPARATION = "source_preparation"
     MUTATION_SAFETY = "mutation_safety"
     WIKI_VALIDATION = "wiki_validation"
     INDEXING = "indexing"

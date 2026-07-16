@@ -4,7 +4,7 @@ from codealmanac.services.repositories.models import Repository
 from codealmanac.services.repositories.requests import RegisterRepositoryRequest
 from codealmanac.services.repositories.roots import RepositoryTarget
 from codealmanac.services.repositories.service import RepositoriesService
-from codealmanac.services.runs.models import RunEventKind
+from codealmanac.services.runs.models import RunEventKind, RunFailureCategory
 from codealmanac.services.wiki.service import WikiService
 from codealmanac.workflows.build.models import (
     BuildPromptPayload,
@@ -45,7 +45,10 @@ class BuildWorkflow:
                 run_id=request.run_id,
             )
         )
-        try:
+        with self.operations.failure_phase(
+            context,
+            RunFailureCategory.INTERNAL_ERROR,
+        ):
             self.operations.record(
                 RecordOperationEventRequest(
                     context=context,
@@ -53,30 +56,26 @@ class BuildWorkflow:
                     message="prepared minimal wiki",
                 )
             )
-            operation = self.operations.execute(
-                ExecuteOperationRequest(
-                    context=context,
-                    harness=request.harness,
-                    model=request.model,
-                    agent=HarnessAgentKind.BUILD,
-                    prompt=render_build_prompt(
-                        context.repository,
-                        request.guidance,
-                        request.auto_commit,
-                    ),
-                    title=request.title,
-                    success_summary="build completed",
-                )
+            operation_request = ExecuteOperationRequest(
+                context=context,
+                harness=request.harness,
+                model=request.model,
+                agent=HarnessAgentKind.BUILD,
+                prompt=render_build_prompt(
+                    context.repository,
+                    request.guidance,
+                    request.auto_commit,
+                ),
+                title=request.title,
+                success_summary="build completed",
             )
-            return BuildResult(
-                repository=context.repository,
-                run=operation.run,
-                harness=operation.harness,
-                index=operation.index,
-            )
-        except Exception as error:
-            self.operations.fail(context, error)
-            raise
+        operation = self.operations.execute(operation_request)
+        return BuildResult(
+            repository=context.repository,
+            run=operation.run,
+            harness=operation.harness,
+            index=operation.index,
+        )
 
     def register_target(
         self,

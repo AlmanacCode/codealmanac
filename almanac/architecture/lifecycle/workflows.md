@@ -38,7 +38,7 @@ When the worker executes the queued run, build calls the shared operation runner
 
 ## Ingest
 
-Ingest is the source-material workflow. It starts an `INGEST` run for a selected repository, resolves the requested inputs into source briefs, loads runtime snapshots for those sources, records those preparation steps, and renders the ingest prompt [@ingest-workflow].
+Ingest is the source-material workflow. It starts an `INGEST` run for a selected repository, resolves the requested inputs into source briefs, loads runtime snapshots for those sources, records those preparation steps, and renders the ingest prompt [@ingest-workflow]. Resolution and runtime-inspection failures are durably categorized as `source_preparation`, distinct from failures after the harness starts.
 
 The source runtime layer is important because ingest should give the agent concrete material, not just file names or user prose. The workflow also passes the almanac root as an ignored directory when inspecting source runtime, so the existing wiki is not accidentally treated as input material for the ingest source set [@ingest-workflow].
 
@@ -54,6 +54,6 @@ Garden does not resolve external source material. Its job is to improve structur
 
 ## Shared Contract
 
-All page-writing workflows end at the operation runner. The runner marks the run running, invokes the harness, records transcript events, validates harness success, refreshes the index, validates the wiki, and only then marks the run done [@operation-runner].
+All page-writing workflows end at the operation runner. The runner marks the run running, invokes the harness, records transcript events, validates harness success, refreshes the index, validates the wiki, and only then marks the run done [@operation-runner]. Workflows name their own preparation phases; the runner names the shared execution phases and remains the single failure writer.
 
 When changing a workflow, preserve that division. Workflow services should decide what context and prompt the agent receives. Shared run state, harness recording, indexing, and final validation belong in the operation path.

@@ -94,6 +94,7 @@ class LifecycleRunCompletedProperties(CodeAlmanacModel):
     failure_category: Literal[
         "harness_readiness",
         "provider_execution",
+        "source_preparation",
         "mutation_safety",
         "wiki_validation",
         "indexing",

@@ -26,6 +26,7 @@ tests.
 - Review-fix plan commit: `22e81980`
 - Main merge commit: `ddee1934`
 - Diligent review-fix commit: `463de759`
+- Follow-up review-fix plan commit: `09964628`
 - Unrelated untracked user files must not be staged or modified.
 
 ## Settled product decisions
@@ -213,9 +214,33 @@ smokes with telemetry disabled.
 PR #36 became mergeable after the main merge. GitHub's package check and both
 test jobs passed for review-fix commit `463de759`.
 
+## Follow-up review hardening
+
+On 2026-07-16, two follow-up findings were reproduced and accepted with narrower
+architectural choices than the suggested implementations:
+
+- A telemetry-only `read_spec` failure could escape after a terminal transition
+  had committed. `RunsService` now wraps the complete supporting read and capture
+  path, and `TelemetryService` also contains lifecycle shaping failures. The run
+  spec was deliberately not added to transition results because cancellation
+  results reach public JSON and specs contain source inputs and guidance.
+- Broad exception and traceback matching confused harness readiness, provider
+  execution, source preparation, indexing, and wiki validation. Failure writes
+  now receive the explicit workflow phase. `HarnessUnavailable` distinguishes a
+  failed readiness check, and `source_preparation` records ingest resolution and
+  runtime-inspection failures.
+
+Focused regression, workflow, architecture, and telemetry verification passed
+133 tests. The full suite passed 554 tests on Python 3.12.10 and Python 3.13.3,
+along with Ruff, `git diff --check`, and `codealmanac validate` over 71 pages.
+The wheel built, installed into an isolated Python 3.12 environment, and passed
+version, config, and `source_preparation` enum smokes with telemetry disabled.
+Final GitHub verification is pending.
+
 ## Completion state
 
-The implementation, disposable smoke testing, privacy audit, PostHog dashboard,
-diligent-review fixes, local verification, and GitHub CI are complete on
-`codex/cli-telemetry`. PR #36 is draft and mergeable. Unrelated user files remain
+The original implementation, disposable smoke testing, privacy audit, PostHog
+dashboard, and first diligent-review fixes are complete on
+`codex/cli-telemetry`. Follow-up review fixes have passed full local and package
+verification; final GitHub verification is pending. Unrelated user files remain
 untouched and untracked.

@@ -164,10 +164,7 @@ class RunsService:
             request.failure_category,
         )
         if result.changed:
-            self.telemetry.capture_lifecycle(
-                result.record,
-                self.store.read_spec(request.run_id),
-            )
+            self.capture_terminal_telemetry(result.record)
         return result.record
 
     def prepare_cancellation(
@@ -178,10 +175,7 @@ class RunsService:
         self.require_run_matches_repository(record, request.repository_name)
         plan = self.store.prepare_cancellation(request.run_id)
         if plan.changed and plan.record.status in TERMINAL_RUN_STATUSES:
-            self.telemetry.capture_lifecycle(
-                plan.record,
-                self.store.read_spec(request.run_id),
-            )
+            self.capture_terminal_telemetry(plan.record)
         return plan
 
     def finish_cancellation(
@@ -193,11 +187,16 @@ class RunsService:
             request.execution_id,
         )
         if result.changed and result.record.status in TERMINAL_RUN_STATUSES:
-            self.telemetry.capture_lifecycle(
-                result.record,
-                self.store.read_spec(request.run_id),
-            )
+            self.capture_terminal_telemetry(result.record)
         return result
+
+    def capture_terminal_telemetry(self, record: RunRecord) -> None:
+        try:
+            spec = self.store.read_spec(record.run_id)
+            self.telemetry.capture_lifecycle(record, spec)
+        except Exception:
+            # Telemetry-only work must not change a durable transition's result.
+            return
 
     def repository_filter(
         self,

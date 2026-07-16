@@ -1,11 +1,14 @@
-from contextlib import suppress
+from collections.abc import Iterator
+from contextlib import contextmanager, suppress
 from pathlib import Path
-from types import TracebackType
 
-from codealmanac.core.errors import ExecutionFailed, NotFoundError, ValidationFailed
+from codealmanac.core.errors import NotFoundError
 from codealmanac.services.harnesses.models import HarnessEvent, HarnessRunResult
 from codealmanac.services.harnesses.requests import RunHarnessRequest
-from codealmanac.services.harnesses.service import HarnessesService
+from codealmanac.services.harnesses.service import (
+    HarnessesService,
+    HarnessUnavailable,
+)
 from codealmanac.services.health.service import HealthService
 from codealmanac.services.index.service import IndexService
 from codealmanac.services.repositories.models import Repository, RepositoryName
@@ -82,37 +85,79 @@ class OperationRunner:
             emitted_events.append(event)
             self.record_harness_event(request.context, event)
 
-        harness = self.harnesses.run(
-            RunHarnessRequest(
-                kind=request.harness,
-                model=request.model,
-                agent=request.agent,
-                cwd=repository.root_path,
-                prompt=request.prompt,
-                title=request.title,
-            ),
-            on_event=record_live_event,
-        )
-        self.record_harness_transcript(request.context, harness)
-        if len(emitted_events) == 0:
-            self.record_harness_events(request.context, harness)
-        validate_harness_result(harness)
-        index = self.index.ensure_fresh(repository.repository_id)
-        self.health.ensure_valid(repository)
-        finished = self.runs.finish(
-            FinishRunRequest(
-                run_id=request.context.run_id,
-                status=RunStatus.DONE,
-                summary=harness.summary or request.success_summary,
+        try:
+            harness = self.harnesses.run(
+                RunHarnessRequest(
+                    kind=request.harness,
+                    model=request.model,
+                    agent=request.agent,
+                    cwd=repository.root_path,
+                    prompt=request.prompt,
+                    title=request.title,
+                ),
+                on_event=record_live_event,
             )
-        )
+        except (HarnessUnavailable, NotFoundError) as error:
+            self.fail(
+                request.context,
+                error,
+                RunFailureCategory.HARNESS_READINESS,
+            )
+            raise
+        except Exception as error:
+            self.fail(
+                request.context,
+                error,
+                RunFailureCategory.INTERNAL_ERROR,
+            )
+            raise
+
+        with self.failure_phase(
+            request.context,
+            RunFailureCategory.INTERNAL_ERROR,
+        ):
+            self.record_harness_transcript(request.context, harness)
+            if len(emitted_events) == 0:
+                self.record_harness_events(request.context, harness)
+
+        with self.failure_phase(
+            request.context,
+            RunFailureCategory.PROVIDER_EXECUTION,
+        ):
+            validate_harness_result(harness)
+
+        with self.failure_phase(request.context, RunFailureCategory.INDEXING):
+            index = self.index.ensure_fresh(repository.repository_id)
+
+        with self.failure_phase(
+            request.context,
+            RunFailureCategory.WIKI_VALIDATION,
+        ):
+            self.health.ensure_valid(repository)
+
+        with self.failure_phase(
+            request.context,
+            RunFailureCategory.INTERNAL_ERROR,
+        ):
+            finished = self.runs.finish(
+                FinishRunRequest(
+                    run_id=request.context.run_id,
+                    status=RunStatus.DONE,
+                    summary=harness.summary or request.success_summary,
+                )
+            )
         return OperationResult(
             run=finished,
             harness=harness,
             index=index,
         )
 
-    def fail(self, context: OperationContext, error: Exception) -> None:
+    def fail(
+        self,
+        context: OperationContext,
+        error: Exception,
+        category: RunFailureCategory,
+    ) -> None:
         message = first_line(str(error)) or error.__class__.__name__
         with suppress(Exception):
             self.record(
@@ -127,9 +172,21 @@ class OperationRunner:
                     run_id=context.run_id,
                     status=RunStatus.FAILED,
                     error=message,
-                    failure_category=operation_failure_category(error),
+                    failure_category=category,
                 )
             )
+
+    @contextmanager
+    def failure_phase(
+        self,
+        context: OperationContext,
+        category: RunFailureCategory,
+    ) -> Iterator[None]:
+        try:
+            yield
+        except Exception as error:
+            self.fail(context, error, category)
+            raise
 
     def resolve_repository(
         self,
@@ -175,35 +232,3 @@ class OperationRunner:
                 harness_event=event,
             )
         )
-
-
-def operation_failure_category(error: Exception) -> RunFailureCategory:
-    if isinstance(error, NotFoundError) and error.resource == "harness":
-        return RunFailureCategory.HARNESS_READINESS
-    if isinstance(error, ExecutionFailed):
-        return RunFailureCategory.PROVIDER_EXECUTION
-    if isinstance(error, ValidationFailed):
-        return RunFailureCategory.WIKI_VALIDATION
-    modules = traceback_modules(error.__traceback__)
-    if any(module.startswith("codealmanac.services.index") for module in modules):
-        return RunFailureCategory.INDEXING
-    if any(
-        module.startswith("codealmanac.services.harnesses")
-        or module.startswith("codealmanac.integrations.harnesses")
-        for module in modules
-    ):
-        return RunFailureCategory.PROVIDER_EXECUTION
-    if any(
-        module.startswith("codealmanac.workflows.operations.commit")
-        for module in modules
-    ):
-        return RunFailureCategory.MUTATION_SAFETY
-    return RunFailureCategory.INTERNAL_ERROR
-
-
-def traceback_modules(traceback: TracebackType | None) -> tuple[str, ...]:
-    modules: list[str] = []
-    while traceback is not None:
-        modules.append(str(traceback.tb_frame.f_globals.get("__name__", "")))
-        traceback = traceback.tb_next
-    return tuple(modules)

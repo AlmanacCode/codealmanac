@@ -36,7 +36,7 @@ A run is not just a log. It is the state object that says which repository the w
 
 ## What It Records
 
-The core record is `RunRecord`. It stores a run id, repository id, run kind, status, title, timestamps, optional summary, optional error, page changes, and an optional harness transcript reference [@run_models]. Failed records also persist a controlled failure category; legacy failed records without one remain readable. A running record stores its verified execution reference and optional cancellation-request time. Run kinds are limited to `build`, `ingest`, and `garden`; statuses move through `queued`, `running`, and terminal states such as `done`, `failed`, or `cancelled` [@run_models].
+The core record is `RunRecord`. It stores a run id, repository id, run kind, status, title, timestamps, optional summary, optional error, page changes, and an optional harness transcript reference [@run_models]. Failed records also persist a controlled workflow-phase category such as harness readiness, provider execution, source preparation, indexing, wiki validation, or internal error; legacy failed records without one remain readable. A running record stores its verified execution reference and optional cancellation-request time. Run kinds are limited to `build`, `ingest`, and `garden`; statuses move through `queued`, `running`, and terminal states such as `done`, `failed`, or `cancelled` [@run_models].
 
 Queued work has an optional `RunSpec`. The spec stores the operation kind, harness, model, inputs, guidance, title, and auto-commit policy for work that a local worker can later pick up [@run_models]. That makes queue membership explicit: a queued run with a stored spec is work the worker can drain.
 

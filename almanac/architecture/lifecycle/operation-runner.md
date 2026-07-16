@@ -44,11 +44,13 @@ If a harness returns no event stream, the harness helper creates a terminal fall
 
 After recording harness output, the runner validates harness success [@operation-service] [@operation-harness]. A failed harness therefore leaves its transcript and output in the run log before the run is marked failed.
 
-The runner then refreshes the index, validates the wiki through `HealthService.ensure_valid`, and finishes the run as `DONE` with the harness summary or operation success summary [@operation-service]. If any step raises, `fail` records a first-line error and tries to finish the run as failed [@operation-service].
+The runner then refreshes the index, validates the wiki through `HealthService.ensure_valid`, and finishes the run as `DONE` with the harness summary or operation success summary [@operation-service]. Each step runs inside an explicit failure phase. A failed readiness check becomes `harness_readiness`, a normalized failed harness result becomes `provider_execution`, index refresh becomes `indexing`, final health validation becomes `wiki_validation`, and run/event machinery becomes `internal_error` [@operation-service]. `fail` records the supplied phase and a first-line error; it does not infer durable analytics from broad exception classes or traceback module names.
+
+`HarnessUnavailable` is the typed distinction between a registered harness that cannot currently start and a provider run that started but failed. Missing harness adapters are readiness failures as well [@operation-service]. Ingest source resolution and runtime inspection occur before shared execution, so the ingest workflow marks those scopes as `source_preparation` while still delegating the actual failure write to `OperationRunner`.
 
 ## Architectural Boundary
 
-The architecture tests enforce this ownership. They require operation service, harness, and commit modules to exist; require `workflows/operations/mutation.py` to be absent; and reject fragments such as `RunHarnessRequest`, `FinishRunRequest`, and harness event helpers inside ingest and garden workflow services [@architecture-tests].
+The architecture tests enforce this ownership. They require operation service, harness, and commit modules to exist; require `workflows/operations/mutation.py` to be absent; and reject fragments such as `RunHarnessRequest`, `FinishRunRequest`, and harness event helpers inside ingest and garden workflow services [@architecture-tests]. Workflow services may name their preparation phase through `OperationRunner.failure_phase`; they still do not write run failures themselves.
 
 That guardrail matters for future changes. New page-writing operation kinds should call the runner with their own prompt and context. They should not copy the lifecycle machinery that already lives here.
 

@@ -1,7 +1,7 @@
 from codealmanac.manual import ManualLibrary
 from codealmanac.services.harnesses.models import HarnessAgentKind
 from codealmanac.services.repositories.models import Repository
-from codealmanac.services.runs.models import RunEventKind
+from codealmanac.services.runs.models import RunEventKind, RunFailureCategory
 from codealmanac.services.sources.models import SourceBrief, SourceRuntime
 from codealmanac.services.sources.requests import (
     InspectSourceRuntimeRequest,
@@ -38,10 +38,18 @@ class IngestWorkflow:
                 run_id=run_id,
             )
         )
-        try:
+        with self.operations.failure_phase(
+            context,
+            RunFailureCategory.SOURCE_PREPARATION,
+        ):
             sources = self.sources.resolve(
                 ResolveSourcesRequest(cwd=request.cwd, inputs=request.inputs)
             )
+
+        with self.operations.failure_phase(
+            context,
+            RunFailureCategory.INTERNAL_ERROR,
+        ):
             self.operations.record(
                 RecordOperationEventRequest(
                     context=context,
@@ -49,7 +57,17 @@ class IngestWorkflow:
                     message=f"resolved {len(sources)} {source_word(len(sources))}",
                 )
             )
+
+        with self.operations.failure_phase(
+            context,
+            RunFailureCategory.SOURCE_PREPARATION,
+        ):
             source_runtime = self.inspect_source_runtime(context.repository, sources)
+
+        with self.operations.failure_phase(
+            context,
+            RunFailureCategory.INTERNAL_ERROR,
+        ):
             self.operations.record(
                 RecordOperationEventRequest(
                     context=context,
@@ -60,34 +78,30 @@ class IngestWorkflow:
                     ),
                 )
             )
-            operation = self.operations.execute(
-                ExecuteOperationRequest(
-                    context=context,
-                    harness=request.harness,
-                    model=request.model,
-                    agent=HarnessAgentKind.INGEST,
-                    prompt=render_ingest_prompt(
-                        context.repository,
-                        sources,
-                        source_runtime,
-                        request.guidance,
-                        request.auto_commit,
-                        self.manual,
-                    ),
-                    title=request.title,
-                    success_summary="ingest completed",
-                )
+            operation_request = ExecuteOperationRequest(
+                context=context,
+                harness=request.harness,
+                model=request.model,
+                agent=HarnessAgentKind.INGEST,
+                prompt=render_ingest_prompt(
+                    context.repository,
+                    sources,
+                    source_runtime,
+                    request.guidance,
+                    request.auto_commit,
+                    self.manual,
+                ),
+                title=request.title,
+                success_summary="ingest completed",
             )
-            return IngestResult(
-                run=operation.run,
-                sources=sources,
-                source_runtime=source_runtime,
-                harness=operation.harness,
-                index=operation.index,
-            )
-        except Exception as error:
-            self.operations.fail(context, error)
-            raise
+        operation = self.operations.execute(operation_request)
+        return IngestResult(
+            run=operation.run,
+            sources=sources,
+            source_runtime=source_runtime,
+            harness=operation.harness,
+            index=operation.index,
+        )
 
     def inspect_source_runtime(
         self,

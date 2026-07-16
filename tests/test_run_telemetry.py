@@ -21,6 +21,7 @@ from codealmanac.services.runs.requests import (
     FinishRunRequest,
     MarkRunRunningRequest,
     QueueRunRequest,
+    ReadRunSpecRequest,
 )
 from codealmanac.services.telemetry.models import TelemetryEvent
 from codealmanac.settings import AppConfig
@@ -132,6 +133,67 @@ def test_opted_out_finish_is_not_replayed_after_reenable(tmp_path: Path) -> None
     assert sender.events == []
 
 
+def test_finish_succeeds_when_telemetry_spec_read_fails(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    app, _sender, run = queued_run(tmp_path)
+    app.runs.mark_running(MarkRunRunningRequest(run_id=run.run_id))
+    monkeypatch.setattr(
+        app.runs.store,
+        "read_spec",
+        lambda _run_id: (_ for _ in ()).throw(OSError("read spec failed")),
+    )
+
+    finished = app.runs.finish(
+        FinishRunRequest(run_id=run.run_id, status=RunStatus.DONE)
+    )
+
+    assert finished.status == RunStatus.DONE
+
+
+def test_finish_succeeds_when_lifecycle_capture_raises(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    app, _sender, run = queued_run(tmp_path)
+    app.runs.mark_running(MarkRunRunningRequest(run_id=run.run_id))
+    monkeypatch.setattr(
+        app.telemetry,
+        "capture_lifecycle",
+        lambda *_args: (_ for _ in ()).throw(RuntimeError("capture failed")),
+    )
+
+    finished = app.runs.finish(
+        FinishRunRequest(run_id=run.run_id, status=RunStatus.DONE)
+    )
+
+    assert finished.status == RunStatus.DONE
+
+
+def test_lifecycle_shaping_failures_never_escape(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    app, sender, run = queued_run(tmp_path)
+    record = run.model_copy(
+        update={
+            "status": RunStatus.DONE,
+            "finished_at": run.created_at,
+        }
+    )
+    spec = app.runs.read_spec(ReadRunSpecRequest(run_id=run.run_id))
+    assert spec is not None
+    monkeypatch.setattr(
+        "codealmanac.services.telemetry.service.duration_bucket",
+        lambda _seconds: (_ for _ in ()).throw(RuntimeError("shaping failed")),
+    )
+
+    app.telemetry.capture_lifecycle(record, spec)
+
+    assert sender.events == []
+
+
 def test_opted_out_queued_cancellation_is_not_replayed_after_reenable(
     tmp_path: Path,
 ) -> None:
@@ -144,6 +206,22 @@ def test_opted_out_queued_cancellation_is_not_replayed_after_reenable(
     app.runs.prepare_cancellation(request)
 
     assert sender.events == []
+
+
+def test_queued_cancellation_succeeds_when_telemetry_spec_read_fails(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    app, _sender, run = queued_run(tmp_path)
+    monkeypatch.setattr(
+        app.runs.store,
+        "read_spec",
+        lambda _run_id: (_ for _ in ()).throw(OSError("read spec failed")),
+    )
+
+    result = app.runs.prepare_cancellation(CancelRunRequest(run_id=run.run_id))
+
+    assert result.record.status == RunStatus.CANCELLED
 
 
 def test_opted_out_running_cancellation_is_not_replayed_after_reenable(
@@ -170,6 +248,36 @@ def test_opted_out_running_cancellation_is_not_replayed_after_reenable(
     app.runs.finish_cancellation(request)
 
     assert sender.events == []
+
+
+def test_running_cancellation_succeeds_when_telemetry_spec_read_fails(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    app, _sender, run = queued_run(tmp_path)
+    execution = RunExecutionRef(
+        execution_id="executor-1",
+        pid=4242,
+        process_started_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    app.runs.mark_running(
+        MarkRunRunningRequest(run_id=run.run_id, execution=execution)
+    )
+    app.runs.prepare_cancellation(CancelRunRequest(run_id=run.run_id))
+    monkeypatch.setattr(
+        app.runs.store,
+        "read_spec",
+        lambda _run_id: (_ for _ in ()).throw(OSError("read spec failed")),
+    )
+
+    result = app.runs.finish_cancellation(
+        FinishRunCancellationRequest(
+            run_id=run.run_id,
+            execution_id=execution.execution_id,
+        )
+    )
+
+    assert result.record.status == RunStatus.CANCELLED
 
 
 def test_worker_spawn_crash_emits_exception_and_failed_lifecycle(

@@ -133,29 +133,32 @@ class TelemetryService:
         record: RunRecord,
         spec: RunSpec | None,
     ) -> None:
-        if spec is None or record.finished_at is None:
+        try:
+            if spec is None or record.finished_at is None:
+                return
+            started_at = record.started_at or record.created_at
+            category = None
+            if record.status == RunStatus.FAILED:
+                category = (
+                    record.failure_category or RunFailureCategory.INTERNAL_ERROR
+                ).value
+            properties = LifecycleRunCompletedProperties(
+                run_kind=record.kind.value,
+                status=record.status.value,
+                harness=spec.harness.value,
+                model=spec.model,
+                duration_bucket=duration_bucket(
+                    max(0.0, (record.finished_at - started_at).total_seconds())
+                ),
+                failure_category=category,
+            )
+            self.capture_once(
+                f"run:{record.run_id}:terminal",
+                "lifecycle run completed",
+                properties.model_dump(exclude_none=True),
+            )
+        except Exception:
             return
-        started_at = record.started_at or record.created_at
-        category = None
-        if record.status == RunStatus.FAILED:
-            category = (
-                record.failure_category or RunFailureCategory.INTERNAL_ERROR
-            ).value
-        properties = LifecycleRunCompletedProperties(
-            run_kind=record.kind.value,
-            status=record.status.value,
-            harness=spec.harness.value,
-            model=spec.model,
-            duration_bucket=duration_bucket(
-                max(0.0, (record.finished_at - started_at).total_seconds())
-            ),
-            failure_category=category,
-        )
-        self.capture_once(
-            f"run:{record.run_id}:terminal",
-            "lifecycle run completed",
-            properties.model_dump(exclude_none=True),
-        )
 
     def enabled(self) -> bool:
         if any(

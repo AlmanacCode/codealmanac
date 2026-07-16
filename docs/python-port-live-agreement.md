@@ -219,6 +219,12 @@ It is the constraint document for future agents.
   recording, mutation validation, index refresh, terminal success, and failure
   recording to the page-run workflow. Do not move this harness/run plumbing
   back into individual operation workflows.
+- 2026-07-16: Durable operation failure categories come from explicit workflow
+  phases, never broad exception classes or traceback-module inference.
+  `OperationRunner` owns shared readiness, provider, indexing, wiki-validation,
+  and internal phases; operation workflows name only their preparation phases,
+  such as ingest `source_preparation`, while delegating the actual failure write
+  to the runner.
 - 2026-07-01: Shared lifecycle helper responsibilities are split behind the
   import-compatible `workflows/lifecycle.py` facade. `lifecycle_mutation.py`
   owns Git/workspace mutation preflight, reported-change validation, path-diff

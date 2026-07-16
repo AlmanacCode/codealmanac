@@ -28,7 +28,7 @@ from codealmanac.services.health.requests import HealthCheckRequest
 from codealmanac.services.repositories.models import RepositoryState
 from codealmanac.services.repositories.requests import RegisterRepositoryRequest
 from codealmanac.services.repositories.roots import is_initialized_almanac_root
-from codealmanac.services.runs.models import RunKind, RunStatus
+from codealmanac.services.runs.models import RunFailureCategory, RunKind, RunStatus
 from codealmanac.settings import AppConfig
 from codealmanac.workflows.build.requests import BuildRequest, StartedBuildRequest
 from codealmanac.workflows.run_queue.requests import DrainRunQueueRequest
@@ -287,6 +287,10 @@ def test_worker_fails_build_when_selected_runner_is_not_ready(
     assert len(drained.processed) == 1
     assert drained.processed[0].run_id == run.run_id
     assert drained.processed[0].status == RunStatus.FAILED
+    assert (
+        drained.processed[0].failure_category
+        == RunFailureCategory.HARNESS_READINESS
+    )
     assert drained.processed[0].error is not None
     assert "harness codex is not available" in drained.processed[0].error
     assert adapter.requests == []

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from codealmanac.core.errors import ConflictError, ExecutionFailed, NotFoundError
+from codealmanac.core.errors import ConflictError, NotFoundError
 from codealmanac.services.harnesses.models import (
     HarnessAgentKind,
     HarnessKind,
@@ -12,7 +12,10 @@ from codealmanac.services.harnesses.models import (
     HarnessRunStatus,
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
-from codealmanac.services.harnesses.service import HarnessesService
+from codealmanac.services.harnesses.service import (
+    HarnessesService,
+    HarnessUnavailable,
+)
 
 
 class FakeHarnessAdapter:
@@ -81,7 +84,7 @@ def test_harnesses_service_refuses_to_run_unavailable_harness(tmp_path: Path):
     adapter = UnavailableHarnessAdapter(HarnessKind.CODEX)
     service = HarnessesService((adapter, FakeHarnessAdapter(HarnessKind.CLAUDE)))
 
-    with pytest.raises(ExecutionFailed) as excinfo:
+    with pytest.raises(HarnessUnavailable) as excinfo:
         service.run(
             RunHarnessRequest(
                 kind=HarnessKind.CODEX,
@@ -118,7 +121,7 @@ def test_harnesses_service_ensure_ready_raises_for_unregistered_kind():
 def test_unavailable_message_omits_switch_hint_without_alternatives(tmp_path: Path):
     service = HarnessesService((UnavailableHarnessAdapter(HarnessKind.CODEX),))
 
-    with pytest.raises(ExecutionFailed) as excinfo:
+    with pytest.raises(HarnessUnavailable) as excinfo:
         service.ensure_ready(HarnessKind.CODEX)
 
     assert "switch harness" not in str(excinfo.value)
