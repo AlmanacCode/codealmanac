@@ -37,7 +37,7 @@ sources:
   - id: retrieval-transcript
     type: conversation
     session_id: rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532
-    note: Product conversation interpreting current FTS behavior for LoCoMo-style retrieval.
+    note: Product conversation interpreting current FTS behavior, LoCoMo-style retrieval, and section-level search direction.
 ---
 
 # Index Refresh And Search
@@ -67,6 +67,14 @@ When query text is present, `search_sql(...)` joins `pages` to `fts_pages`, buil
 This makes current search honest but narrow. It is page-level lexical retrieval, not semantic search, paragraph retrieval, query expansion, synonym matching, or iterative search [@retrieval-transcript]. For coding-agent use, returning a whole page can be helpful because a page explains an invariant or workflow in context. For LoCoMo-style questions, especially paraphrased or multi-hop questions, the same strict prefix-`AND` shape can return zero pages even when the wiki contains the needed fact in different wording [@retrieval-transcript].
 
 File mention search uses the indexed `file_refs` table. It supports exact file references, directory references that cover child files, and folder queries that match references under that folder [@search-views]. The details of path normalization and `GLOB` escaping live in [Path normalization and file refs](path-normalization-and-file-refs).
+
+## Section-Level Search Direction
+
+Section-level search is the planned refinement for cases where a query matches a specific part of a page. The current `dev` branch indexes each page as one FTS document, so search can identify a matching page but not the heading under which the match occurred [@search-views] [@retrieval-transcript]. The experimental `codex/release-section-search` branch explored a different projection: parse every Markdown heading, store each heading's direct body as a separate searchable unit, rank those units, then group matches back to one result per page [@retrieval-transcript].
+
+In that direction, section and subsection are not separate domain types. They are both Markdown headings at different depths. A page with `# Terminal Output`, `## Styling`, and `### Colors` would yield heading paths such as `Terminal Output`, `Terminal Output > Styling`, and `Terminal Output > Styling > Colors` [@retrieval-transcript]. The result remains page-shaped for the user, but it carries the best matched heading path and an excerpt from that section [@retrieval-transcript].
+
+The important contract is that section indexing narrows the matched location without replacing pages as the top-level search result. `show --section`, stable section identifiers, and human rendering for matched headings were not part of the current `dev` behavior in the transcripted discussion [@retrieval-transcript].
 
 ## Derived Store Boundary
 
