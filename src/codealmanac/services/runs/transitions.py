@@ -7,6 +7,8 @@ from codealmanac.services.runs.models import (
     RunCancellationPlan,
     RunCancelResult,
     RunExecutionRef,
+    RunFailureCategory,
+    RunFinishResult,
     RunKind,
     RunRecord,
     RunStatus,
@@ -58,18 +60,23 @@ def finish_run(
     status: RunStatus,
     summary: str | None,
     error: str | None,
+    failure_category: RunFailureCategory | None,
     now: datetime,
-) -> RunRecord:
-    if record.status == RunStatus.CANCELLED:
-        return record
-    return record.model_copy(
-        update={
-            "status": status,
-            "summary": summary,
-            "error": error,
-            "updated_at": now,
-            "finished_at": now,
-        }
+) -> RunFinishResult:
+    if record.status in TERMINAL_RUN_STATUSES:
+        return RunFinishResult(record=record, changed=False)
+    return RunFinishResult(
+        record=record.model_copy(
+            update={
+                "status": status,
+                "summary": summary,
+                "error": error,
+                "failure_category": failure_category,
+                "updated_at": now,
+                "finished_at": now,
+            }
+        ),
+        changed=True,
     )
 
 

@@ -15,7 +15,11 @@ from codealmanac.services.harnesses.models import (
     HarnessTranscriptRef,
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
-from codealmanac.services.runs.models import RunEventKind, RunStatus
+from codealmanac.services.runs.models import (
+    RunEventKind,
+    RunFailureCategory,
+    RunStatus,
+)
 from codealmanac.services.runs.requests import ListRunsRequest, ReadRunLogRequest
 from codealmanac.services.search.requests import SearchPagesRequest
 from codealmanac.settings import AppConfig
@@ -289,6 +293,7 @@ def test_garden_workflow_records_failed_harness_output_before_error(
 
     assert run.status == RunStatus.FAILED
     assert run.error == "harness codex failed with status failed: garden agent failed"
+    assert run.failure_category == RunFailureCategory.PROVIDER_EXECUTION
     assert run.harness_transcript is not None
     assert run.harness_transcript.session_id == "failed-garden-session"
     assert tuple(entry.kind for entry in log)[-3:] == (

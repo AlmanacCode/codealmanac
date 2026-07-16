@@ -16,6 +16,7 @@ from codealmanac.services.runs.requests import (
     SpawnRunWorkerRequest,
 )
 from codealmanac.services.runs.service import RunsService
+from codealmanac.services.telemetry.service import TelemetryService
 from codealmanac.workflows.build.requests import BuildRequest
 from codealmanac.workflows.build.service import BuildWorkflow
 from codealmanac.workflows.garden.requests import (
@@ -63,6 +64,7 @@ class RunQueue:
         executor: RunExecutor,
         executor_spawner: RunExecutorSpawner,
         cancellation: RunCancellation,
+        telemetry: TelemetryService,
     ):
         self.repositories = repositories
         self.runs = runs
@@ -72,7 +74,7 @@ class RunQueue:
         self.spawner = spawner
         self.executor = executor
         self.cancellation = cancellation
-        self.worker = RunQueueWorker(runs, executor_spawner)
+        self.worker = RunQueueWorker(runs, executor_spawner, telemetry)
 
     def queue_build(self, request: BuildRequest) -> RunRecord:
         repository = self.build.prepare(request)

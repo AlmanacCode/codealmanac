@@ -32,7 +32,7 @@ The contract matters because lifecycle operations need stable facts after an age
 
 A harness adapter has one `kind`, a `check()` method, and a `run()` method [@harness-ports]. `check()` reports local readiness without starting an agent. `run()` executes one agent task and returns a normalized result [@harness-ports].
 
-`HarnessesService` indexes adapters by kind, rejects duplicate adapters, and provides the single service entrypoint used by workflows [@harness-service]. Before running an adapter, it calls `ensure_ready`; unavailable harnesses fail early with a message that can include a repair hint and a command to switch to another registered harness [@harness-service].
+`HarnessesService` indexes adapters by kind and rejects duplicate adapters [@harness-service]. Workflows call `ensure_ready` and `run_ready` as separate stages: readiness failures can include a repair hint and a command to switch harnesses, while every exception from the approved adapter invocation is a provider-execution failure. `run_ready` also wraps caller event-sink failures in `HarnessEventSinkFailed`, keeping local run-log persistence failures distinct from provider failures that occur during the same call [@harness-service].
 
 The supported harness kinds are currently `codex` and `claude`. The terminal run statuses are `succeeded`, `failed`, and `cancelled` [@harness-kinds].
 

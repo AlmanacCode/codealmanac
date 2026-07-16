@@ -5,6 +5,7 @@ from codealmanac.services.config.models import (
     GardenAutomationConfig,
     HarnessConfig,
     SyncAutomationConfig,
+    TelemetryConfig,
     UpdateAutomationConfig,
 )
 from codealmanac.services.config.requests import UpdateUserConfigRequest
@@ -79,6 +80,7 @@ class SetupService:
                     default=request.harness,
                     model=request.model,
                 ),
+                telemetry=TelemetryConfig(enabled=request.telemetry_enabled),
                 automation=AutomationConfig(
                     sync=SyncAutomationConfig(
                         enabled=not request.sync_off,

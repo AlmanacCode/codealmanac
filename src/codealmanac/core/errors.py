@@ -67,7 +67,10 @@ class ExecutionFailed(CodeAlmanacError):
 
 
 def error_summary(error: Exception) -> str:
-    text = str(error).strip()
+    try:
+        text = str(error).strip()
+    except Exception:
+        return error.__class__.__name__
     if text == "":
         return error.__class__.__name__
     return text.splitlines()[0]

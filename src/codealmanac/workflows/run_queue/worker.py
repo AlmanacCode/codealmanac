@@ -5,6 +5,7 @@ from codealmanac.services.runs.models import (
     TERMINAL_RUN_STATUSES,
     QueuedRun,
     RunEventKind,
+    RunFailureCategory,
     RunQueueDrainResult,
     RunRecord,
     RunStatus,
@@ -18,6 +19,7 @@ from codealmanac.services.runs.requests import (
     ShowRunRequest,
 )
 from codealmanac.services.runs.service import RunsService
+from codealmanac.services.telemetry.service import TelemetryService
 from codealmanac.workflows.run_queue.ports import RunExecutorSpawner
 from codealmanac.workflows.run_queue.requests import (
     DrainRunQueueRequest,
@@ -29,9 +31,15 @@ CANCELLATION_POLL_SECONDS = 0.05
 
 
 class RunQueueWorker:
-    def __init__(self, runs: RunsService, executors: RunExecutorSpawner):
+    def __init__(
+        self,
+        runs: RunsService,
+        executors: RunExecutorSpawner,
+        telemetry: TelemetryService,
+    ):
         self.runs = runs
         self.executors = executors
+        self.telemetry = telemetry
 
     def drain(self, request: DrainRunQueueRequest) -> RunQueueDrainResult:
         lease = self.runs.acquire_worker_lock(
@@ -75,6 +83,11 @@ class RunQueueWorker:
             return self.reconcile_exit(queued.record.run_id, exit_code)
         except Exception as error:
             record = self.runs.show(ShowRunRequest(run_id=queued.record.run_id))
+            self.telemetry.capture_exception(
+                error,
+                command=record.kind.value,
+                process_kind="worker",
+            )
             if record.status in TERMINAL_RUN_STATUSES:
                 return record
             return self.fail_run(record, error_summary(error))
@@ -116,5 +129,6 @@ class RunQueueWorker:
                 run_id=record.run_id,
                 status=RunStatus.FAILED,
                 error=error,
+                failure_category=RunFailureCategory.INTERNAL_ERROR,
             )
         )

@@ -486,7 +486,20 @@ def test_cli_setup_interactive_choices_can_disable_update_and_commits(
         "codealmanac.cli.dispatch.setup_tui.supports_interactive_setup",
         lambda: True,
     )
-    keys = iter(("\r", "\r", "\r", "\r", "\x1b[C", "\r", "\x1b[C", "\r"))
+    keys = iter(
+        (
+            "\r",
+            "\r",
+            "\r",
+            "\r",
+            "\x1b[C",
+            "\r",
+            "\x1b[C",
+            "\r",
+            "\x1b[C",
+            "\r",
+        )
+    )
     monkeypatch.setattr(
         "codealmanac.cli.dispatch.setup_tui.read_setup_key",
         lambda: next(keys),
@@ -495,12 +508,15 @@ def test_cli_setup_interactive_choices_can_disable_update_and_commits(
     assert main(["setup", "--target", "codex"]) == 0
 
     output = capsys.readouterr()
-    assert "[1/6]" in output.out
-    assert "[2/6]" in output.out
-    assert "[3/6]" in output.out
-    assert "[4/6]" in output.out
-    assert "[5/6]" in output.out
-    assert "[6/6]" in output.out
+    assert "[1/7]" in output.out
+    assert "[2/7]" in output.out
+    assert "[3/7]" in output.out
+    assert "[4/7]" in output.out
+    assert "[5/7]" in output.out
+    assert "[6/7]" in output.out
+    assert "[7/7]" in output.out
+    assert output.out.index("AI runner") < output.out.index("Runner model")
+    assert output.out.index("Runner model") < output.out.index("Agent instructions")
     assert (
         "Add CodeAlmanac instructions to your AGENTS.md / CLAUDE.md:" in output.out
     )
@@ -522,6 +538,12 @@ def test_cli_setup_interactive_choices_can_disable_update_and_commits(
     assert "CodeAlmanac's Sync and Garden schedules" in output.out
     assert "Agent change handling" in output.out
     assert "agents leave wiki edits in the worktree for review" in output.out
+    assert "Help improve CodeAlmanac" in output.out
+    assert "Yes," in output.out
+    assert "improve" in output.out
+    assert "Recommended" in output.out
+    assert "No" in output.out
+    assert "thanks" in output.out
     assert tuple(job.task for job in scheduler.installed) == (
         AutomationTask.SYNC,
         AutomationTask.GARDEN,
@@ -532,6 +554,57 @@ def test_cli_setup_interactive_choices_can_disable_update_and_commits(
     assert "auto_commit = false\n" in config_text
     assert 'default = "codex"\n' in config_text
     assert 'model = "gpt-5.5"\n' in config_text
+    assert "[telemetry]\nenabled = false\n" in config_text
+
+
+def test_cli_setup_yes_enables_telemetry_and_flag_disables_it(
+    isolated_home: Path,
+    monkeypatch,
+) -> None:
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        scheduler=CliSchedulerAdapter(),
+        harness_adapters=(CliNoopHarnessAdapter(),),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+
+    assert main(["setup", "--yes", "--target", "codex"]) == 0
+    assert app.config.load_user().telemetry.enabled is True
+
+    assert main(
+        ["setup", "--yes", "--target", "codex", "--no-telemetry"]
+    ) == 0
+    assert app.config.load_user().telemetry.enabled is False
+
+
+def test_cli_setup_no_telemetry_flag_forces_opt_out_without_permission_screen(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        scheduler=CliSchedulerAdapter(),
+        harness_adapters=(CliNoopHarnessAdapter(),),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    monkeypatch.setattr(
+        "codealmanac.cli.dispatch.setup_tui.supports_interactive_setup",
+        lambda: True,
+    )
+    keys = iter(("\r", "\r", "\r", "\r", "\r", "\r"))
+    monkeypatch.setattr(
+        "codealmanac.cli.dispatch.setup_tui.read_setup_key",
+        lambda: next(keys),
+    )
+
+    assert main(["setup", "--target", "codex", "--no-telemetry"]) == 0
+
+    output = capsys.readouterr()
+    assert "[1/6]" in output.out
+    assert "[6/6]" in output.out
+    assert "Help improve CodeAlmanac" not in output.out
+    assert app.config.load_user().telemetry.enabled is False
 
 
 def test_cli_setup_fails_when_default_runner_is_unavailable(

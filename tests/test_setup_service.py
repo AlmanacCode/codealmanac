@@ -216,6 +216,14 @@ def test_setup_can_skip_sync_automation(home: Path):
     )
 
 
+def test_setup_persists_telemetry_choice(home: Path):
+    service = setup_service(home)
+    result = service.run(RunSetupRequest(telemetry_enabled=False))
+
+    assert result.config_update is not None
+    assert service._config.load_user().telemetry.enabled is False
+
+
 def test_uninstall_removes_automation_by_default(home: Path):
     automation = FakeSetupAutomationManager(home)
 

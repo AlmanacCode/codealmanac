@@ -36,12 +36,12 @@ entry documents this repair.
 
 `init` announced the job id, printed the tagline ("every codebase deserves a
 biography"), created the job record, and only then died — in 0s — because the
-harness executable can't spawn.
+harness executable couldn't spawn.
 
 **Fix:** `BuildWorkflow.start` calls `HarnessesService.ensure_ready` before
 registering the repository or creating the run record, and
-`HarnessesService.run` re-checks readiness before every harness run (covers
-queued ingest/garden and sync runs picked up later by the worker). Verified
+`OperationRunner` checks readiness separately before every provider invocation
+(covers queued ingest/garden and sync runs picked up later by the worker). Verified
 end-to-end against the broken codex install: init exits 1 with a repair
 message, no job record, no `almanac/` scaffold.
 

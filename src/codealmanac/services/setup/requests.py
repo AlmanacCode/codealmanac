@@ -24,6 +24,7 @@ class RunSetupRequest(CodeAlmanacModel):
     yes: bool = False
     auto_commit: bool = True
     auto_update: bool = True
+    telemetry_enabled: bool = True
     skip_instructions: bool = False
     home: Path | None = None
     sync_every: timedelta = DEFAULT_SYNC_INTERVAL

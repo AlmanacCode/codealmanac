@@ -5,6 +5,23 @@ It is the constraint document for future agents.
 
 ## Current Decisions
 
+- 2026-07-15: Anonymous product telemetry is the only remote product exception
+  in Python v1. Setup asks last, defaults to the recommended Yes, keeps a visible
+  No, and `--no-telemetry`, `telemetry.enabled = false`, `DO_NOT_TRACK`, or
+  `CODEALMANAC_NO_TELEMETRY` disable all capture. A random installation UUID in
+  local SQLite identifies events and may have a UUID-only PostHog person
+  profile; no name or email exists until a future login explicitly links an
+  opaque account identity. GeoIP is disabled. Allowlisted command and lifecycle
+  outcomes may leave the machine, and real unhandled foreground/background
+  Python exceptions may send only their type, stable structural fingerprint,
+  and CodeAlmanac-only stack shape. Code, exception messages, paths, args,
+  queries, repository/run identifiers, prompts,
+  transcripts, Git data, provider session IDs, locals, environment variables,
+  and code variables never leave the machine.
+- 2026-07-16: Lifecycle telemetry exports a model only when its harness/model
+  pair matches the central controlled catalog; unknown or incompatible values
+  drop the event. Durable `RunSpec` remains readable independently of that
+  changing outbound catalog so historical queued records do not become invalid.
 - 2026-06-29: Python v1 is a local product. Do not build hosted shipping,
   hosted CLI, login/connect/upload, SDK, or MCP in this rewrite.
 - 2026-07-05: `e773dc0b` is the fork point for the right local Python product.
@@ -149,11 +166,13 @@ It is the constraint document for future agents.
   partial-uninstall flags. The command removes CodeAlmanac-owned instructions,
   automation, global state, and the installed binary when the install method
   supports removal. It never deletes repo `almanac/`.
-- 2026-06-29: There is no cloud capture surface in Python v1.
+- 2026-06-29 (superseded 2026-07-15): There was no cloud capture surface in
+  Python v1 before the narrowly agreed anonymous product-telemetry exception.
   `codealmanac update` updates the installed CLI package only. `sync` scans
   local transcripts and runs local ingest. `automation` schedules local
   `sync`/`garden`/`update`. Do not add public `capture`, cloud upload, hosted
-  connection, login, or remote collection commands without a new agreement.
+  connection or login commands without a new agreement. The telemetry exception
+  adds no upload/capture command and never transmits wiki or transcript content.
 - 2026-06-29: `sync` is a scanner, not a replay ledger. It reads
   `sync_state.last_completed_at`, finds active transcript files, queues ingest
   runs, records the scan as complete, and relies on visible jobs for individual
@@ -205,6 +224,18 @@ It is the constraint document for future agents.
   recording, mutation validation, index refresh, terminal success, and failure
   recording to the page-run workflow. Do not move this harness/run plumbing
   back into individual operation workflows.
+- 2026-07-16: Durable operation failure categories come from explicit workflow
+  phases, never broad exception classes or traceback-module inference.
+  `OperationRunner` owns shared readiness, provider, indexing, wiki-validation,
+  and internal phases; operation workflows name only their preparation phases,
+  such as ingest `source_preparation`, while delegating the actual failure write
+  to the runner.
+- 2026-07-16: Harness readiness and provider invocation are separate operation
+  stages. After readiness succeeds, adapter exceptions are
+  `provider_execution` regardless of exception class; caller event-sink errors
+  remain `internal_error`. Failure-event persistence and the authoritative
+  terminal transition are independent best-effort effects, so one cannot skip
+  the other.
 - 2026-07-01: Shared lifecycle helper responsibilities are split behind the
   import-compatible `workflows/lifecycle.py` facade. `lifecycle_mutation.py`
   owns Git/workspace mutation preflight, reported-change validation, path-diff

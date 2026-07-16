@@ -1,32 +1,22 @@
-import argparse
-import sys
+import time
 from collections.abc import Sequence
 
-from pydantic import ValidationError
-
 from codealmanac.app import create_app
-from codealmanac.cli.dispatch.root import dispatch as dispatch_app
+from codealmanac.cli.execution import execute
 from codealmanac.cli.parser.root import build_parser
 from codealmanac.cli.render.syntax import render_syntax_problem
 from codealmanac.cli.syntax.models import CliSyntaxError
-from codealmanac.core.errors import CodeAlmanacError
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    started_at = time.monotonic()
     parser = build_parser()
     try:
         args = parser.parse_args(argv)
-        return dispatch(args)
     except CliSyntaxError as error:
         render_syntax_problem(error.problem)
         return 2
-    except (CodeAlmanacError, ValidationError) as error:
-        print(f"codealmanac: {error}", file=sys.stderr)
-        return 1
-
-
-def dispatch(args: argparse.Namespace) -> int:
-    return dispatch_app(args, create_app())
+    return execute(args, create_app(), started_at)
 
 
 if __name__ == "__main__":

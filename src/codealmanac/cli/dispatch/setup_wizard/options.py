@@ -99,6 +99,26 @@ def change_options() -> tuple[SetupChoiceOption, ...]:
     )
 
 
+def telemetry_options() -> tuple[SetupChoiceOption, ...]:
+    return (
+        SetupChoiceOption(
+            "Yes, help improve CodeAlmanac",
+            (
+                "Recommended",
+                "Anonymous usage and crash reports",
+                "Never code, prompts, or transcripts",
+            ),
+        ),
+        SetupChoiceOption(
+            "No thanks",
+            (
+                "Do not share usage or crashes",
+                "You can change this later",
+            ),
+        ),
+    )
+
+
 def shortcut_option_index(screen: SetupChoiceScreen, key: str) -> int | None:
     normalized = key.casefold()
     for index, option in enumerate(screen.options):

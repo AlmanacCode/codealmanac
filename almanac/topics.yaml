@@ -83,6 +83,10 @@ topics:
     title: Config
     description: User configuration and automation preferences
     parents: [product, local-state]
+  - slug: telemetry
+    title: Telemetry
+    description: Anonymous product signals, opt-out policy, event allowlists, and delivery boundaries
+    parents: [product, config]
   - slug: repositories
     title: Repositories
     description: Repository selection, registration, and local roots

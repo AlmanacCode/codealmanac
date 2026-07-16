@@ -1,6 +1,6 @@
 ---
 title: Telemetry Permission Is Final Setup Step
-topics: [decisions, setup, config, product]
+topics: [decisions, setup, config, product, telemetry]
 sources:
   - id: telemetry-plan-transcript
     type: conversation
@@ -18,42 +18,52 @@ sources:
     type: file
     path: src/codealmanac/services/config/models.py
     note: Current supported config keys and user config model.
+  - id: telemetry-service
+    type: file
+    path: src/codealmanac/services/telemetry/service.py
+    note: Runtime telemetry opt-out policy, event construction, and exception redaction.
+  - id: telemetry-store
+    type: file
+    path: src/codealmanac/services/telemetry/store.py
+    note: Local SQLite installation UUID and once-only event claim storage.
+  - id: telemetry-sender
+    type: file
+    path: src/codealmanac/integrations/telemetry/sender.py
+    note: Detached PostHog sender and delivery privacy settings.
 ---
 
 # Telemetry Permission Is Final Setup Step
 
-Telemetry permission is a planned setup decision, not current runtime behavior. Future telemetry work should add telemetry as the last onboarding choice, after the user has already chosen the runner, instruction installation, model, wiki maintenance, product updates, and change-handling policy [@telemetry-plan-transcript]. The current wizard has six steps and the current config model has no telemetry key, so this decision records the intended product contract before implementation [@setup-tui] [@setup-selections] [@config-models].
+Telemetry permission is the final setup decision. The user first chooses the runner, model, instruction installation, wiki maintenance, product updates, and change-handling policy; the seventh screen then asks about anonymous usage and error telemetry [@telemetry-plan-transcript] [@setup-tui] [@setup-selections] [@config-models].
 
 ## Status
 
-Accepted for upcoming telemetry implementation. Not implemented in the current code. Implementers should update this page when `telemetry.enabled` becomes part of the config model and setup flow [@config-models] [@telemetry-plan-transcript].
+Implemented. `telemetry.enabled` is part of user config and the seven-step setup flow; `--no-telemetry` is the explicit non-interactive opt-out [@config-models] [@setup-tui].
 
 ## Context
 
-Setup already asks several consent-like questions: where to install agent instructions, which local harness and model should run lifecycle jobs, whether wiki maintenance and product updates should be automated, and whether agents may commit wiki changes [@setup-tui]. The planned telemetry prompt is different because it asks permission to send anonymous usage information outside the machine. It therefore belongs after the user understands the local automation choices, not before them [@telemetry-plan-transcript].
+Setup already asks several consent-like questions: where to install agent instructions, which local harness and model should run lifecycle jobs, whether wiki maintenance and product updates should be automated, and whether agents may commit wiki changes [@setup-tui]. The telemetry prompt is different because it asks permission to send anonymous usage information outside the machine. It therefore belongs after the user understands the local automation choices, not before them [@telemetry-plan-transcript].
 
-The transcript also separates telemetry from product content. The planned copy says telemetry helps prioritize improvements and identify broken flows, while explicitly excluding code, paths, prompts, transcripts, and error text from collection [@telemetry-plan-transcript].
+Telemetry is separate from product content. It helps prioritize improvements and identify broken flows while excluding code, paths, prompts, transcripts, command arguments, queries, repository/run identifiers, locals, and code variables. Real unhandled exceptions may include only a bounded redacted message and sanitized CodeAlmanac stack shape [@telemetry-plan-transcript].
 
 ## Decision
 
 The intended interactive setup order is:
 
 1. AI provider.
-2. Add instructions to `AGENTS.md` or `CLAUDE.md`.
-3. Provider model.
+2. Provider model.
+3. Add instructions to `AGENTS.md` or `CLAUDE.md`.
 4. Wiki maintenance.
 5. Product updates.
 6. Change handling.
 7. Telemetry permission.
 
-The telemetry screen should default to "Yes" and mark that option Recommended, while keeping a visible and functional "No thanks" option [@telemetry-plan-transcript]. The screen copy should explain that sharing anonymous usage helps focus improvements and fix broken experiences faster, and it must state that code, paths, prompts, transcripts, and error text are never collected [@telemetry-plan-transcript].
+The telemetry screen should default to "Yes" and mark that option Recommended, while keeping a visible and functional "No thanks" option [@telemetry-plan-transcript]. The screen copy should explain that sharing anonymous usage helps focus improvements and fix broken experiences faster. Code, paths, prompts, transcripts, and raw error text are never collected; crash reports contain only the bounded, locally sanitized exception shape above [@telemetry-plan-transcript].
 
-Non-interactive setup follows the same policy. `setup --yes` should accept telemetry, and users who bypass onboarding without an explicit choice should receive a one-time telemetry notice instead of silent enablement [@telemetry-plan-transcript].
+Non-interactive setup follows the same policy. `setup --yes` accepts the saved/default Yes, while `setup --no-telemetry` persists No. There is no separate first-run notice mechanism [@telemetry-plan-transcript].
 
 ## Consequences
 
-Telemetry state belongs in user config as `telemetry.enabled`, and the public config surface should let users later run `codealmanac config set telemetry.enabled false` [@telemetry-plan-transcript]. That requires extending the config model and config command key list, because the current `ConfigKey` enum only covers `auto_commit`, `harness.*`, and `automation.*` keys [@config-models].
+Telemetry state belongs in user config as `telemetry.enabled`, and the public config surface lets users later run `codealmanac config set telemetry.enabled false` [@config-models]. The setup selection model carries `telemetry_enabled` beside targets, harness, model, update, commit, sync, and Garden settings, so telemetry follows the same shaped setup path as other persisted choices [@setup-selections].
 
-Setup implementation should keep telemetry selection in the same shaped setup data path as the other choices. The current `SetupSelections` model carries targets, harness, model, update, commit, sync, and garden settings; telemetry should be added there rather than handled as a side effect hidden in rendering code [@setup-selections].
-
-This decision does not define the telemetry transport, event schema, storage backend, or redaction implementation. Those are separate architecture decisions. This page only fixes the setup and config contract that future telemetry work must preserve [@telemetry-plan-transcript].
+The runtime uses a stable random installation UUID in local SQLite, a typed telemetry service, and a detached PostHog sender [@telemetry-store] [@telemetry-service] [@telemetry-sender]. GeoIP and code-variable capture are disabled [@telemetry-sender]. For the event and delivery boundary, see [Telemetry](../architecture/telemetry).

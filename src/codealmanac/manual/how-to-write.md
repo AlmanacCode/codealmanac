@@ -64,9 +64,9 @@ enough.
 
 Bad: `OperationRunner` runs the harness.
 
-Better: `OperationRunner` calls `harnesses.run(...)`, so build, ingest, and
-garden can use Codex or Claude without knowing provider-specific execution
-details.
+Better: `OperationRunner` calls `harnesses.ensure_ready(...)` and then
+`harnesses.run_ready(...)`, so build, ingest, and garden can use Codex or Claude
+without knowing provider-specific execution details.
 
 A complete article should feel like an explanation unfolding, not a reference
 entry. The reader should not feel jumped between disconnected facts. Use

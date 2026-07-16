@@ -2,12 +2,25 @@ from collections.abc import Sequence
 
 from codealmanac.core.errors import ConflictError, ExecutionFailed, NotFoundError
 from codealmanac.services.harnesses.models import (
+    HarnessEvent,
     HarnessKind,
     HarnessReadiness,
     HarnessRunResult,
 )
 from codealmanac.services.harnesses.ports import HarnessAdapter, HarnessEventSink
 from codealmanac.services.harnesses.requests import RunHarnessRequest
+
+
+class HarnessUnavailable(ExecutionFailed):
+    """The selected harness exists but cannot currently start a run."""
+
+
+class HarnessEventSinkFailed(Exception):
+    """The caller's event sink failed during an otherwise provider-owned run."""
+
+    def __init__(self, error: Exception):
+        super().__init__(error.__class__.__name__)
+        self.error = error
 
 
 class HarnessesService:
@@ -32,17 +45,25 @@ class HarnessesService:
         readiness = self.adapter_for(kind).check()
         if readiness.available:
             return readiness
-        raise ExecutionFailed(
+        raise HarnessUnavailable(
             unavailable_harness_message(readiness, self.alternatives_to(kind))
         )
 
-    def run(
+    def run_ready(
         self,
         request: RunHarnessRequest,
         on_event: HarnessEventSink | None = None,
     ) -> HarnessRunResult:
-        self.ensure_ready(request.kind)
-        return self.adapter_for(request.kind).run(request, on_event)
+        if on_event is None:
+            return self.adapter_for(request.kind).run(request)
+
+        def guarded_event_sink(event: HarnessEvent) -> None:
+            try:
+                on_event(event)
+            except Exception as error:
+                raise HarnessEventSinkFailed(error) from error
+
+        return self.adapter_for(request.kind).run(request, guarded_event_sink)
 
     def alternatives_to(self, kind: HarnessKind) -> tuple[HarnessKind, ...]:
         return tuple(other for other in self.adapters if other != kind)

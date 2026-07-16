@@ -41,7 +41,7 @@ sources:
   - id: telemetry-setup
     type: wiki
     path: decisions/telemetry-permission-is-final-setup-step
-    note: Planned decision for setup ordering and telemetry consent behavior.
+    note: Decision for setup ordering and telemetry consent behavior.
 ---
 
 # Decisions
@@ -93,9 +93,10 @@ discovery or provider defaults [@model-catalog].
 ## Setup Consent
 
 [Telemetry permission is final setup step](telemetry-permission-is-final-setup-step)
-records a planned setup contract: telemetry permission comes after runner,
-instruction, model, maintenance, update, and change-handling choices, with an
-explicit `telemetry.enabled` config setting once implemented [@telemetry-setup].
+records the setup contract for the narrow telemetry exception: telemetry
+permission comes after runner, model, instruction, maintenance, update, and
+change-handling choices, with an explicit `telemetry.enabled` config setting
+[@telemetry-setup].
 
 ## Repository Scope
 

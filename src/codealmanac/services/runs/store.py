@@ -19,6 +19,8 @@ from codealmanac.services.runs.models import (
     RunCancelResult,
     RunEventKind,
     RunExecutionRef,
+    RunFailureCategory,
+    RunFinishResult,
     RunKind,
     RunLogEvent,
     RunRecord,
@@ -231,16 +233,24 @@ class RunStore:
         status: RunStatus,
         summary: str | None,
         error: str | None,
-    ) -> RunRecord:
+        failure_category: RunFailureCategory | None,
+    ) -> RunFinishResult:
         now = datetime.now(UTC)
         with self.connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             record, spec = self.read_with_spec_on_connection(connection, run_id)
-            finished = finish_run(record, status, summary, error, now)
-            if finished is record:
+            result = finish_run(
+                record,
+                status,
+                summary,
+                error,
+                failure_category,
+                now,
+            )
+            if not result.changed:
                 connection.commit()
-                return record
-            self.write_record_on_connection(connection, finished, spec)
+                return result
+            self.write_record_on_connection(connection, result.record, spec)
             self.event_store.append_on_connection(
                 connection,
                 run_id,
@@ -249,7 +259,7 @@ class RunStore:
                 status.value,
             )
             connection.commit()
-            return finished
+            return result
 
     def prepare_cancellation(self, run_id: str) -> RunCancellationPlan:
         now = datetime.now(UTC)

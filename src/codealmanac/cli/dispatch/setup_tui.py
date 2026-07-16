@@ -18,6 +18,7 @@ from codealmanac.cli.dispatch.setup_wizard.options import (
     target_default_index,
     target_options,
     targets_for_index,
+    telemetry_options,
     update_options,
 )
 from codealmanac.cli.dispatch.setup_wizard.terminal import (
@@ -26,12 +27,10 @@ from codealmanac.cli.dispatch.setup_wizard.terminal import (
     wizard_terminal,
 )
 from codealmanac.cli.render.setup import (
-    BackgroundItemNotice,
     SetupChoiceScreen,
-    background_item_choice_notice,
+    background_item_selection_notices,
     render_setup_choice_screen,
 )
-from codealmanac.services.automation.models import AutomationTask
 from codealmanac.services.config.models import (
     DEFAULT_HARNESS_MODELS,
     UserConfig,
@@ -47,7 +46,11 @@ def resolve_setup_selections(
     defaults = default_setup_selections(args, user_config)
     if args.yes or args.json or not supports_interactive_setup():
         return defaults
-    return interactive_setup_selections(defaults, runner_status)
+    return interactive_setup_selections(
+        defaults,
+        runner_status,
+        include_telemetry=not args.no_telemetry,
+    )
 
 
 def default_setup_selections(
@@ -68,6 +71,7 @@ def default_setup_selections(
         model=model,
         auto_update=user_config.automation.update.enabled and not args.no_auto_update,
         auto_commit=user_config.auto_commit and not args.no_auto_commit,
+        telemetry_enabled=user_config.telemetry.enabled and not args.no_telemetry,
         sync_off=args.sync_off or not user_config.automation.sync.enabled,
         garden_off=args.garden_off or not user_config.automation.garden.enabled,
     )
@@ -76,10 +80,16 @@ def default_setup_selections(
 def interactive_setup_selections(
     defaults: SetupSelections,
     runner_status: tuple[HarnessReadiness, ...],
+    *,
+    include_telemetry: bool,
 ) -> SetupSelections:
     try:
         with wizard_terminal():
-            return wizard_selections(defaults, runner_status)
+            return wizard_selections(
+                defaults,
+                runner_status,
+                include_telemetry=include_telemetry,
+            )
     except KeyboardInterrupt as error:
         raise SetupCancelled() from error
 
@@ -87,35 +97,41 @@ def interactive_setup_selections(
 def wizard_selections(
     defaults: SetupSelections,
     runner_status: tuple[HarnessReadiness, ...],
+    *,
+    include_telemetry: bool,
 ) -> SetupSelections:
-    target_index = choose_setup_option(
-        SetupChoiceScreen(
-            step=1,
-            title="Agent instructions",
-            question="Add CodeAlmanac instructions to your AGENTS.md / CLAUDE.md:",
-            options=target_options(),
-        ),
-        initial_index=target_default_index(defaults.targets),
-    )
+    total_steps = 7 if include_telemetry else 6
     runner_index_value = choose_setup_option(
         SetupChoiceScreen(
-            step=2,
+            step=1,
             title="AI runner",
             question="Which agent should run CodeAlmanac jobs?",
             options=runner_options(runner_status),
+            total_steps=total_steps,
         ),
         initial_index=runner_index(defaults.harness),
     )
     harness = runner_for_index(runner_index_value)
     model_index_value = choose_setup_option(
         SetupChoiceScreen(
-            step=3,
+            step=2,
             title="Runner model",
             question=f"Which {harness.value} model should maintain your wiki?",
             options=model_options(harness),
             visual="list",
+            total_steps=total_steps,
         ),
         initial_index=model_index(harness, defaults.model),
+    )
+    target_index = choose_setup_option(
+        SetupChoiceScreen(
+            step=3,
+            title="Agent instructions",
+            question="Add CodeAlmanac instructions to your AGENTS.md / CLAUDE.md:",
+            options=target_options(),
+            total_steps=total_steps,
+        ),
+        initial_index=target_default_index(defaults.targets),
     )
     maintenance_index = choose_setup_option(
         SetupChoiceScreen(
@@ -123,6 +139,7 @@ def wizard_selections(
             title="Wiki maintenance",
             question="How should your wikis be updated?",
             options=maintenance_options(),
+            total_steps=total_steps,
         ),
         initial_index=1 if defaults.sync_off and defaults.garden_off else 0,
     )
@@ -132,6 +149,7 @@ def wizard_selections(
             title="Product updates",
             question="Keep CodeAlmanac up to date automatically?",
             options=update_options(),
+            total_steps=total_steps,
             selection_notices=background_item_selection_notices(
                 automatic_maintenance=maintenance_index == 0
             ),
@@ -145,29 +163,35 @@ def wizard_selections(
             question="Should agents commit wiki changes or leave them in the worktree?",
             options=change_options(),
             visual="change-handling",
+            total_steps=total_steps,
         ),
         initial_index=0 if defaults.auto_commit else 1,
     )
+    telemetry_enabled = defaults.telemetry_enabled
+    if include_telemetry:
+        telemetry_index = choose_setup_option(
+            SetupChoiceScreen(
+                step=7,
+                title="Help improve CodeAlmanac",
+                question=(
+                    "Share anonymous usage so we can focus on what matters and fix "
+                    "broken experiences faster."
+                ),
+                options=telemetry_options(),
+                total_steps=total_steps,
+            ),
+            initial_index=0 if defaults.telemetry_enabled else 1,
+        )
+        telemetry_enabled = telemetry_index == 0
     return SetupSelections(
         targets=targets_for_index(target_index),
         harness=harness,
         model=model_for_index(harness, model_index_value),
         auto_update=update_index == 0,
         auto_commit=change_index == 0,
+        telemetry_enabled=telemetry_enabled,
         sync_off=maintenance_index == 1,
         garden_off=maintenance_index == 1,
-    )
-
-
-def background_item_selection_notices(
-    automatic_maintenance: bool,
-) -> tuple[BackgroundItemNotice | None, ...]:
-    maintenance_tasks = (
-        (AutomationTask.SYNC, AutomationTask.GARDEN) if automatic_maintenance else ()
-    )
-    return (
-        background_item_choice_notice((*maintenance_tasks, AutomationTask.UPDATE)),
-        background_item_choice_notice(maintenance_tasks),
     )
 
 

@@ -34,7 +34,7 @@ This shape exists so lifecycle workflows do not reimplement harness and run plum
 
 ## Harness Execution
 
-`execute` calls `HarnessesService.run` with a `RunHarnessRequest` containing the harness kind, model, repository root, rendered prompt, and optional title [@operation-service]. The runner then records the harness transcript if one exists and converts normalized harness events into run log events [@operation-service].
+`execute` builds a `RunHarnessRequest` containing the harness kind, model, repository root, rendered prompt, and optional title. It then calls `HarnessesService.ensure_ready` before the separate `run_ready` provider invocation [@operation-service]. The runner records the harness transcript if one exists and converts normalized harness events into run log events [@operation-service].
 
 Event classification lives beside the runner, not in individual workflows. `text_delta` events are dropped before classification and never become a run event, so incremental streaming text does not bloat the durable run log. Of the remaining events, harness error events become run error events; tool use, tool result, tool summary, usage, provider session, warning, and helper-agent events become tool events; and every other harness event becomes an output event [@operation-harness].
 
@@ -44,11 +44,13 @@ If a harness returns no event stream, the harness helper creates a terminal fall
 
 After recording harness output, the runner validates harness success [@operation-service] [@operation-harness]. A failed harness therefore leaves its transcript and output in the run log before the run is marked failed.
 
-The runner then refreshes the index, validates the wiki through `HealthService.ensure_valid`, and finishes the run as `DONE` with the harness summary or operation success summary [@operation-service]. If any step raises, `fail` records a first-line error and tries to finish the run as failed [@operation-service].
+The runner then refreshes the index, validates the wiki through `HealthService.ensure_valid`, and finishes the run as `DONE` with the harness summary or operation success summary [@operation-service]. Each step runs inside an explicit failure phase. A failed readiness check becomes `harness_readiness`; an adapter exception or normalized failed result becomes `provider_execution`; index refresh becomes `indexing`; final health validation becomes `wiki_validation`; and event-sink or run machinery failures become `internal_error` [@operation-service]. `fail` computes a non-throwing one-line summary, then best-efforts the readable error event and authoritative terminal transition independently. It records the supplied phase rather than inferring durable analytics from exception classes or traceback modules.
+
+The readiness and invocation calls are the stage distinction: missing, unavailable, or failed readiness checks are `harness_readiness`; once readiness passes, adapter exceptions are `provider_execution` regardless of their exception class. `HarnessEventSinkFailed` preserves the one exception to that stage rule by identifying caller-owned event persistence as `internal_error` [@operation-service]. Ingest source resolution and runtime inspection occur before shared execution, so the ingest workflow marks those scopes as `source_preparation` while still delegating the actual failure write to `OperationRunner`.
 
 ## Architectural Boundary
 
-The architecture tests enforce this ownership. They require operation service, harness, and commit modules to exist; require `workflows/operations/mutation.py` to be absent; and reject fragments such as `RunHarnessRequest`, `FinishRunRequest`, and harness event helpers inside ingest and garden workflow services [@architecture-tests].
+The architecture tests enforce this ownership. They require operation service, harness, and commit modules to exist; require `workflows/operations/mutation.py` to be absent; and reject fragments such as `RunHarnessRequest`, `FinishRunRequest`, and harness event helpers inside ingest and garden workflow services [@architecture-tests]. Workflow services may name their preparation phase through `OperationRunner.failure_phase`; they still do not write run failures themselves.
 
 That guardrail matters for future changes. New page-writing operation kinds should call the runner with their own prompt and context. They should not copy the lifecycle machinery that already lives here.
 

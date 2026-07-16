@@ -55,6 +55,7 @@ def test_config_service_returns_defaults_without_file(
     assert config.auto_commit is True
     assert config.harness.default == HarnessKind.CODEX
     assert config.harness.model == "gpt-5.5"
+    assert config.telemetry.enabled is True
     assert config.automation.sync.enabled is True
     assert config.automation.sync.every == timedelta(hours=5)
     assert config.automation.garden.every == timedelta(hours=24)
@@ -74,6 +75,9 @@ auto_commit = false
 default = "claude"
 model = "claude-opus-4-7"
 
+[telemetry]
+enabled = false
+
 [automation.sync]
 enabled = true
 every = "30m"
@@ -92,6 +96,7 @@ every = "1d"
 
     assert config.auto_commit is False
     assert config.harness.default == HarnessKind.CLAUDE
+    assert config.telemetry.enabled is False
     assert config.automation.sync.every == timedelta(minutes=30)
     assert config.automation.garden.enabled is False
     assert config.automation.update.every == timedelta(days=1)
@@ -146,11 +151,21 @@ def test_config_set_writes_normal_values(isolated_home: Path) -> None:
     app.config.set(set_request(ConfigKey.AUTO_COMMIT, "false"))
     app.config.set(set_request(ConfigKey.HARNESS_DEFAULT, "claude"))
     app.config.set(set_request(ConfigKey.HARNESS_MODEL, "claude-opus-4-7"))
+    app.config.set(set_request(ConfigKey.TELEMETRY_ENABLED, "false"))
 
     config = app.config.load_user()
     assert config.auto_commit is False
     assert config.harness.default == HarnessKind.CLAUDE
     assert config.harness.model == "claude-opus-4-7"
+    assert config.telemetry.enabled is False
+
+
+def test_config_list_includes_telemetry_enabled(isolated_home: Path) -> None:
+    entries = {
+        entry.key: entry.value for entry in config_app(isolated_home).config.list()
+    }
+
+    assert entries[ConfigKey.TELEMETRY_ENABLED] == "true"
 
 
 def test_config_set_automation_interval_writes_and_reconciles(
@@ -294,6 +309,11 @@ def test_config_set_rejects_invalid_values_without_writing(
         app.config.set(set_request(ConfigKey.AUTOMATION_SYNC_EVERY, "0s"))
     with pytest.raises(ValidationFailed, match="harness.default must be one of"):
         app.config.set(set_request(ConfigKey.HARNESS_DEFAULT, "gpt"))
+    with pytest.raises(
+        ValidationFailed,
+        match="telemetry.enabled must be true or false",
+    ):
+        app.config.set(set_request(ConfigKey.TELEMETRY_ENABLED, "maybe"))
 
     assert not path.exists()
 

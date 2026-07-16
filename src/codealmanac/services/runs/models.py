@@ -33,6 +33,16 @@ class RunStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class RunFailureCategory(StrEnum):
+    HARNESS_READINESS = "harness_readiness"
+    PROVIDER_EXECUTION = "provider_execution"
+    SOURCE_PREPARATION = "source_preparation"
+    MUTATION_SAFETY = "mutation_safety"
+    WIKI_VALIDATION = "wiki_validation"
+    INDEXING = "indexing"
+    INTERNAL_ERROR = "internal_error"
+
+
 class RunEventKind(StrEnum):
     STATUS = "status"
     MESSAGE = "message"
@@ -79,6 +89,7 @@ class RunRecord(CodeAlmanacModel):
     title: str | None
     summary: str | None = None
     error: str | None = None
+    failure_category: RunFailureCategory | None = None
     created_at: datetime
     updated_at: datetime
     started_at: datetime | None = None
@@ -92,6 +103,14 @@ class RunRecord(CodeAlmanacModel):
     @classmethod
     def require_repository_id(cls, value: str) -> str:
         return required_text(value, "repository_id")
+
+    @model_validator(mode="after")
+    def failure_category_matches_status(self) -> "RunRecord":
+        # Failed records written before this field existed must remain readable.
+        # FinishRunRequest requires the category for every new failed transition.
+        if self.status != RunStatus.FAILED and self.failure_category is not None:
+            raise ValueError("failure_category is only valid for failed runs")
+        return self
 
 
 class RunLogEvent(CodeAlmanacModel):
@@ -121,6 +140,11 @@ TERMINAL_RUN_STATUSES = frozenset(
 
 
 class RunCancelResult(CodeAlmanacModel):
+    record: RunRecord
+    changed: bool
+
+
+class RunFinishResult(CodeAlmanacModel):
     record: RunRecord
     changed: bool
 

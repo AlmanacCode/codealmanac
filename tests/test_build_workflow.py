@@ -15,9 +15,12 @@ from codealmanac.app import create_app
 from codealmanac.core.errors import (
     AlreadyExists,
     NoRepositorySelected,
+    NotFoundError,
 )
 from codealmanac.services.harnesses.models import (
     HarnessAgentKind,
+    HarnessEvent,
+    HarnessEventKind,
     HarnessKind,
     HarnessReadiness,
     HarnessRunResult,
@@ -28,7 +31,8 @@ from codealmanac.services.health.requests import HealthCheckRequest
 from codealmanac.services.repositories.models import RepositoryState
 from codealmanac.services.repositories.requests import RegisterRepositoryRequest
 from codealmanac.services.repositories.roots import is_initialized_almanac_root
-from codealmanac.services.runs.models import RunKind, RunStatus
+from codealmanac.services.runs.models import RunFailureCategory, RunKind, RunStatus
+from codealmanac.services.runs.requests import ShowRunRequest
 from codealmanac.settings import AppConfig
 from codealmanac.workflows.build.requests import BuildRequest, StartedBuildRequest
 from codealmanac.workflows.run_queue.requests import DrainRunQueueRequest
@@ -229,6 +233,33 @@ class BrokenHarnessAdapter:
         raise AssertionError("a broken harness never runs")
 
 
+class ExplodingHarnessAdapter:
+    kind = HarnessKind.CODEX
+
+    def __init__(self, error: Exception):
+        self.error = error
+
+    def check(self) -> HarnessReadiness:
+        return HarnessReadiness(
+            kind=self.kind,
+            available=True,
+            message="codex ready",
+        )
+
+    def run(self, request: RunHarnessRequest, on_event=None) -> HarnessRunResult:
+        raise self.error
+
+
+class EventEmittingHarnessAdapter(ExplodingHarnessAdapter):
+    def __init__(self):
+        super().__init__(AssertionError("event sink should stop the run"))
+
+    def run(self, request: RunHarnessRequest, on_event=None) -> HarnessRunResult:
+        assert on_event is not None
+        on_event(HarnessEvent(kind=HarnessEventKind.TEXT, message="working"))
+        raise self.error
+
+
 def test_queue_build_records_run_before_worker_checks_runner(
     tmp_path: Path,
     isolated_home: Path,
@@ -287,9 +318,94 @@ def test_worker_fails_build_when_selected_runner_is_not_ready(
     assert len(drained.processed) == 1
     assert drained.processed[0].run_id == run.run_id
     assert drained.processed[0].status == RunStatus.FAILED
+    assert (
+        drained.processed[0].failure_category
+        == RunFailureCategory.HARNESS_READINESS
+    )
     assert drained.processed[0].error is not None
     assert "harness codex is not available" in drained.processed[0].error
     assert adapter.requests == []
+
+
+@pytest.mark.parametrize(
+    "provider_error",
+    (
+        RuntimeError("provider transport exploded"),
+        NotFoundError("provider resource", "missing"),
+    ),
+)
+def test_build_classifies_adapter_invocation_errors_as_provider_execution(
+    tmp_path: Path,
+    isolated_home: Path,
+    provider_error: Exception,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        harness_adapters=(ExplodingHarnessAdapter(provider_error),),
+    )
+    queued = app.workflows.queue.queue_build(
+        BuildRequest(
+            path=repo,
+            harness=HarnessKind.CODEX,
+            model="gpt-5.5",
+            name="repo",
+        )
+    )
+
+    with pytest.raises(type(provider_error)):
+        app.workflows.build.execute_started(
+            StartedBuildRequest(
+                run_id=queued.run_id,
+                harness=HarnessKind.CODEX,
+                model="gpt-5.5",
+            )
+        )
+
+    stored = app.runs.show(ShowRunRequest(run_id=queued.run_id))
+    assert stored.status == RunStatus.FAILED
+    assert stored.failure_category == RunFailureCategory.PROVIDER_EXECUTION
+
+
+def test_build_classifies_live_event_store_failure_as_internal(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        harness_adapters=(EventEmittingHarnessAdapter(),),
+    )
+    queued = app.workflows.queue.queue_build(
+        BuildRequest(
+            path=repo,
+            harness=HarnessKind.CODEX,
+            model="gpt-5.5",
+            name="repo",
+        )
+    )
+    sink_error = OSError("run-event store unavailable")
+    monkeypatch.setattr(
+        app.workflows.build.operations,
+        "record_harness_event",
+        lambda context, event: (_ for _ in ()).throw(sink_error),
+    )
+
+    with pytest.raises(OSError, match="run-event store unavailable"):
+        app.workflows.build.execute_started(
+            StartedBuildRequest(
+                run_id=queued.run_id,
+                harness=HarnessKind.CODEX,
+                model="gpt-5.5",
+            )
+        )
+
+    stored = app.runs.show(ShowRunRequest(run_id=queued.run_id))
+    assert stored.status == RunStatus.FAILED
+    assert stored.failure_category == RunFailureCategory.INTERNAL_ERROR
 
 
 def test_repository_states_report_missing_paths(

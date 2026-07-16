@@ -7,7 +7,7 @@ from conftest import initialize_repository
 from pydantic import ValidationError
 
 from codealmanac.app import create_app
-from codealmanac.core.errors import ExecutionFailed, NotFoundError
+from codealmanac.core.errors import ExecutionFailed, NotFoundError, ValidationFailed
 from codealmanac.integrations.sources.web import WebSourceRuntimeAdapter
 from codealmanac.services.harnesses.models import (
     HarnessActorConfidence,
@@ -28,8 +28,16 @@ from codealmanac.services.harnesses.models import (
     HarnessUsage,
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
-from codealmanac.services.runs.models import RunEventKind, RunStatus
-from codealmanac.services.runs.requests import ListRunsRequest, ReadRunLogRequest
+from codealmanac.services.runs.models import (
+    RunEventKind,
+    RunFailureCategory,
+    RunStatus,
+)
+from codealmanac.services.runs.requests import (
+    ListRunsRequest,
+    ReadRunLogRequest,
+    ShowRunRequest,
+)
 from codealmanac.services.search.requests import SearchPagesRequest
 from codealmanac.services.sources.models import (
     SourceKind,
@@ -43,6 +51,7 @@ from codealmanac.services.sources.requests import (
 )
 from codealmanac.settings import AppConfig
 from codealmanac.workflows.ingest.requests import IngestRequest, StartedIngestRequest
+from codealmanac.workflows.operations.requests import BeginOperationRequest
 
 
 class WritingHarnessAdapter:
@@ -290,6 +299,13 @@ def run_ingest(app, request: IngestRequest):
             run_id=queued.run_id,
         )
     )
+
+
+def begin_ingest_operation(app, request: IngestRequest):
+    queued = app.workflows.queue.queue_ingest(request)
+    operations = app.workflows.ingest.operations
+    context = operations.begin(BeginOperationRequest(run_id=queued.run_id))
+    return operations, context, queued
 
 
 class RecordingPathSourceRuntimeAdapter:
@@ -623,7 +639,146 @@ def test_ingest_workflow_fails_run_when_harness_is_missing(
 
     assert run.status == RunStatus.FAILED
     assert run.error == "harness not found: codex"
+    assert run.failure_category == RunFailureCategory.HARNESS_READINESS
     assert RunEventKind.ERROR in {entry.kind for entry in log}
+
+
+def test_ingest_workflow_classifies_invalid_source_as_source_preparation(
+    tmp_path: Path,
+    isolated_home: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    initialize_repository(app, path=repo)
+
+    with pytest.raises(ValidationFailed, match="invalid GitHub source address"):
+        run_ingest(
+            app,
+            IngestRequest(
+                cwd=repo,
+                inputs=("github:invalid",),
+                harness=HarnessKind.CODEX,
+                model="gpt-5.5",
+            ),
+        )
+
+    run = app.runs.list(ListRunsRequest(repository_name="repo"))[0]
+    assert run.status == RunStatus.FAILED
+    assert run.failure_category == RunFailureCategory.SOURCE_PREPARATION
+
+
+def test_operation_failure_finishes_when_error_event_write_fails(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    initialize_repository(app, path=repo)
+    operations, context, queued = begin_ingest_operation(
+        app,
+        IngestRequest(
+            cwd=repo,
+            inputs=("note.md",),
+            harness=HarnessKind.CODEX,
+            model="gpt-5.5",
+        ),
+    )
+    monkeypatch.setattr(
+        operations,
+        "record",
+        lambda _request: (_ for _ in ()).throw(OSError("event write failed")),
+    )
+
+    operations.fail(
+        context,
+        ValidationFailed("invalid source"),
+        RunFailureCategory.SOURCE_PREPARATION,
+    )
+
+    stored = app.runs.show(ShowRunRequest(run_id=queued.run_id))
+    assert stored.status == RunStatus.FAILED
+    assert stored.failure_category == RunFailureCategory.SOURCE_PREPARATION
+    assert stored.error == "invalid source"
+
+
+def test_operation_failure_handles_broken_exception_stringification(
+    tmp_path: Path,
+    isolated_home: Path,
+) -> None:
+    class BrokenStringError(RuntimeError):
+        def __str__(self) -> str:
+            raise RuntimeError("stringification failed")
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    initialize_repository(app, path=repo)
+    operations, context, queued = begin_ingest_operation(
+        app,
+        IngestRequest(
+            cwd=repo,
+            inputs=("note.md",),
+            harness=HarnessKind.CODEX,
+            model="gpt-5.5",
+        ),
+    )
+
+    operations.fail(
+        context,
+        BrokenStringError(),
+        RunFailureCategory.SOURCE_PREPARATION,
+    )
+
+    stored = app.runs.show(ShowRunRequest(run_id=queued.run_id))
+    assert stored.status == RunStatus.FAILED
+    assert stored.failure_category == RunFailureCategory.SOURCE_PREPARATION
+    assert stored.error == "BrokenStringError"
+
+
+def test_ingest_workflow_classifies_index_refresh_failure_as_indexing(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        harness_adapters=(WritingHarnessAdapter(),),
+    )
+    initialize_repository(app, path=repo)
+    monkeypatch.setattr(
+        app.index,
+        "ensure_fresh",
+        lambda _repository_id: (_ for _ in ()).throw(OSError("index failed")),
+    )
+
+    with pytest.raises(OSError, match="index failed"):
+        run_ingest(
+            app,
+            IngestRequest(
+                cwd=repo,
+                inputs=("note.md",),
+                harness=HarnessKind.CODEX,
+                model="gpt-5.5",
+            ),
+        )
+
+    run = app.runs.list(ListRunsRequest(repository_name="repo"))[0]
+    assert run.status == RunStatus.FAILED
+    assert run.failure_category == RunFailureCategory.INDEXING
 
 
 def test_ingest_workflow_ignores_reported_changed_files(
@@ -689,6 +844,7 @@ def test_ingest_workflow_fails_when_harness_returns_failed_status(
 
     assert run.status == RunStatus.FAILED
     assert run.error == "harness codex failed with status failed: agent failed"
+    assert run.failure_category == RunFailureCategory.PROVIDER_EXECUTION
     assert run.harness_transcript is not None
     assert run.harness_transcript.session_id == "failed-ingest-session"
     assert tuple(entry.kind for entry in log)[-3:] == (

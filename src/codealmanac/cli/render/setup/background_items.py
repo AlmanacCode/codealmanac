@@ -51,6 +51,18 @@ def background_item_choice_notice(
     )
 
 
+def background_item_selection_notices(
+    automatic_maintenance: bool,
+) -> tuple[BackgroundItemNotice | None, ...]:
+    maintenance_tasks = (
+        (AutomationTask.SYNC, AutomationTask.GARDEN) if automatic_maintenance else ()
+    )
+    return (
+        background_item_choice_notice((*maintenance_tasks, AutomationTask.UPDATE)),
+        background_item_choice_notice(maintenance_tasks),
+    )
+
+
 def background_item_confirmation_notice(
     tasks: tuple[AutomationTask, ...],
 ) -> BackgroundItemNotice | None:

@@ -17,6 +17,7 @@ from codealmanac.services.harnesses.models import (
 )
 from codealmanac.services.runs.models import (
     RunEventKind,
+    RunFailureCategory,
     RunKind,
     RunLogEvent,
     RunRecord,
@@ -181,11 +182,71 @@ def test_runs_service_refuses_running_transition_after_terminal_status(
             run_id=record.run_id,
             status=RunStatus.FAILED,
             error="failed before running",
+            failure_category=RunFailureCategory.INTERNAL_ERROR,
         )
     )
 
     with pytest.raises(ConflictError):
         app.runs.mark_running(MarkRunRunningRequest(run_id=record.run_id))
+
+
+def test_failed_run_persists_failure_category(
+    tmp_path: Path,
+    isolated_home: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    repository = initialize_repository(app, path=repo)
+    record = app.runs.start(
+        StartRunRequest(repository_id=repository.repository_id, kind=RunKind.INGEST)
+    )
+
+    app.runs.finish(
+        FinishRunRequest(
+            run_id=record.run_id,
+            status=RunStatus.FAILED,
+            error="provider failed",
+            failure_category=RunFailureCategory.PROVIDER_EXECUTION,
+        )
+    )
+
+    stored = app.runs.show(ShowRunRequest(run_id=record.run_id))
+    assert stored.failure_category == RunFailureCategory.PROVIDER_EXECUTION
+
+
+def test_finish_is_noop_after_first_terminal_transition(
+    tmp_path: Path,
+    isolated_home: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    repository = initialize_repository(app, path=repo)
+    record = app.runs.start(
+        StartRunRequest(repository_id=repository.repository_id, kind=RunKind.GARDEN)
+    )
+
+    first = app.runs.finish(
+        FinishRunRequest(run_id=record.run_id, status=RunStatus.DONE)
+    )
+    second = app.runs.finish(
+        FinishRunRequest(
+            run_id=record.run_id,
+            status=RunStatus.FAILED,
+            error="late failure must not win",
+            failure_category=RunFailureCategory.INTERNAL_ERROR,
+        )
+    )
+
+    log = app.runs.log(ReadRunLogRequest(run_id=record.run_id))
+    assert second == first
+    assert tuple(event.message for event in log).count("done") == 1
+    assert all(event.message != "failed" for event in log)
 
 
 def test_runs_service_cancels_queued_run_and_attaches_log(
@@ -573,6 +634,21 @@ def test_finish_run_request_requires_terminal_status() -> None:
         FinishRunRequest(
             run_id="run-1",
             status=RunStatus.RUNNING,
+        )
+
+
+def test_finish_run_request_requires_category_only_for_failures() -> None:
+    with pytest.raises(ValidationError, match="failed runs require failure_category"):
+        FinishRunRequest(run_id="run-1", status=RunStatus.FAILED)
+
+    with pytest.raises(
+        ValidationError,
+        match="failure_category is only valid for failed runs",
+    ):
+        FinishRunRequest(
+            run_id="run-1",
+            status=RunStatus.DONE,
+            failure_category=RunFailureCategory.INTERNAL_ERROR,
         )
 
 

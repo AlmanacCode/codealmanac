@@ -72,7 +72,7 @@ The queue and worker path depends on this contract. Queued specs describe work t
 
 New records start as `queued` and immediately receive a status event such as `queued ingest` or `queued garden` [@run-store] [@run-transitions]. `mark_running` can move a queued run to `running`; attempting to start from another non-running status raises a conflict [@run-transitions]. Terminal statuses are `done`, `failed`, and `cancelled` [@run-models].
 
-`finish` writes a terminal status, summary, error, timestamps, and a matching status event. If the run is already `cancelled`, finish returns the cancelled record unchanged, so a late success or failure cannot overwrite cancellation [@run-transitions] [@run-store].
+`finish` writes a terminal status, summary, error, timestamps, a controlled failure category for failures, and a matching status event. Every later finish attempt is a no-op once the run is terminal, so retries cannot overwrite the first outcome or repeat terminal side effects [@run-transitions] [@run-store].
 
 ## Event Kinds
 

@@ -18,6 +18,7 @@ from codealmanac.integrations.sources import (
     default_source_runtime_adapters,
     default_transcript_discovery_adapters,
 )
+from codealmanac.integrations.telemetry import SubprocessTelemetrySender
 from codealmanac.integrations.updates import (
     InstalledPackageMetadataProvider,
     SubprocessPackageCommandRunner,
@@ -52,6 +53,9 @@ from codealmanac.services.sources.ports import (
 )
 from codealmanac.services.sources.service import SourcesService
 from codealmanac.services.tagging.service import TaggingService
+from codealmanac.services.telemetry.ports import TelemetrySender
+from codealmanac.services.telemetry.service import TelemetryService
+from codealmanac.services.telemetry.store import TelemetryIdentityStore
 from codealmanac.services.topics.service import TopicsService
 from codealmanac.services.updates.ports import (
     PackageCommandRunner,
@@ -107,6 +111,7 @@ class CodeAlmanac:
     sources: SourcesService
     harnesses: HarnessesService
     manual: ManualLibrary
+    telemetry: TelemetryService
     workflows: CodeAlmanacWorkflows
 
 
@@ -124,6 +129,7 @@ class AppAdapters:
     instruction_installer: InstructionInstaller | None = None
     global_state_remover: GlobalStateRemover | None = None
     package_uninstaller: PackageUninstaller | None = None
+    telemetry_sender: TelemetrySender | None = None
 
 
 @dataclass(frozen=True)
@@ -147,6 +153,7 @@ class Services:
     sources: SourcesService
     harnesses: HarnessesService
     manual: ManualLibrary
+    telemetry: TelemetryService
 
 
 def create_app(
@@ -163,6 +170,7 @@ def create_app(
     instruction_installer: InstructionInstaller | None = None,
     global_state_remover: GlobalStateRemover | None = None,
     package_uninstaller: PackageUninstaller | None = None,
+    telemetry_sender: TelemetrySender | None = None,
 ) -> CodeAlmanac:
     app_config = config or AppConfig()
     local_state = LocalStatePaths.from_config(app_config)
@@ -179,15 +187,10 @@ def create_app(
         instruction_installer=instruction_installer,
         global_state_remover=global_state_remover,
         package_uninstaller=package_uninstaller,
+        telemetry_sender=telemetry_sender,
     )
-    services = create_services(
-        local_state,
-        adapters,
-    )
-    workflows = create_workflows(
-        services,
-        adapters,
-    )
+    services = create_services(local_state, adapters)
+    workflows = create_workflows(services, adapters)
     return assemble_app(services, workflows)
 
 
@@ -201,6 +204,12 @@ def create_services(
         ConfigStore(),
         local_state.config_path,
         automation,
+    )
+    telemetry = TelemetryService(
+        config_service,
+        TelemetryIdentityStore(local_state.database_path),
+        adapters.telemetry_sender or SubprocessTelemetrySender(),
+        __version__,
     )
     manual = ManualLibrary()
     wiki = WikiService(repositories, manual)
@@ -240,7 +249,11 @@ def create_services(
         config_service,
         runner_probe=harnesses,
     )
-    runs = RunsService(repositories, RunStore(local_state.database_path))
+    runs = RunsService(
+        repositories,
+        RunStore(local_state.database_path),
+        telemetry,
+    )
     viewer = ViewerService(repositories, index, runs, MarkdownRenderer())
     sources = SourcesService(
         default_transcript_discovery_adapters()
@@ -270,6 +283,7 @@ def create_services(
         sources=sources,
         harnesses=harnesses,
         manual=manual,
+        telemetry=telemetry,
     )
 
 
@@ -325,6 +339,7 @@ def create_workflows(
         executor,
         adapters.executor_spawner or SubprocessRunExecutorSpawner(),
         cancellation,
+        services.telemetry,
     )
     sync = SyncWorkflow(
         services.repositories,
@@ -362,5 +377,6 @@ def assemble_app(services: Services, workflows: CodeAlmanacWorkflows) -> CodeAlm
         sources=services.sources,
         harnesses=services.harnesses,
         manual=services.manual,
+        telemetry=services.telemetry,
         workflows=workflows,
     )
