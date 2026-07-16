@@ -58,7 +58,7 @@ codealmanac setup --yes --runner claude
 ```
 
 Setup installs agent instructions for your chosen tools and three local macOS
-`launchd` jobs. Nothing runs in the cloud.
+`launchd` jobs. The jobs and all wiki work run locally.
 
 | Job | Default schedule | What it does |
 | --- | ---: | --- |
@@ -68,6 +68,15 @@ Setup installs agent instructions for your chosen tools and three local macOS
 
 These schedules run locally in the background. Use
 `codealmanac automation status` to see what is installed.
+
+The final setup step asks about anonymous telemetry and recommends Yes so we can
+see which commands work and where the CLI breaks. It sends controlled command
+and lifecycle outcomes plus sanitized unhandled crashes under a random install
+UUID. It never sends code, paths, arguments, queries, prompts, transcripts,
+repository/run IDs, locals, or credentials; GeoIP is disabled. Choose No in
+setup, pass `setup --no-telemetry`, set `telemetry.enabled` to `false`, or use
+`DO_NOT_TRACK=1` at any time. Without a future login, the UUID profile has no
+name or email.
 
 If you don't have Codex or prefer Claude, use `--runner claude`.
 
@@ -416,7 +425,9 @@ This rewrite is local-only for now.
 - No public SDK or MCP package.
 - No legacy compatibility aliases beyond the supported `ca` shorthand.
 - No alternate wiki roots.
-- No hidden cloud write path.
+- Optional anonymous usage and sanitized crash telemetry; disable it with
+  `codealmanac config set telemetry.enabled false` or `--no-telemetry` in setup.
+- No wiki, source, prompt, transcript, path, or command-argument upload path.
 - No second canonical product name.
 
 This is the Python/PyPI product surface. Hosted integration can be added later
