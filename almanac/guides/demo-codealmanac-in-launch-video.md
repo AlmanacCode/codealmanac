@@ -14,6 +14,14 @@ sources:
     type: web
     url: https://github.com/bcurts/agentchattr
     note: Local multi-agent chat comparison point.
+  - id: setup-options
+    type: file
+    path: src/codealmanac/cli/dispatch/setup_wizard/options.py
+    note: Interactive setup telemetry option labels and explanatory copy.
+  - id: setup-parser
+    type: file
+    path: src/codealmanac/cli/parser/setup.py
+    note: Non-interactive setup telemetry opt-out flag.
 ---
 
 # Demo CodeAlmanac In A Launch Video
@@ -25,6 +33,12 @@ Use a real repository wiki and keep the sequence short [@public-readme]:
 2. Show one page containing a decision, invariant, gotcha, or multi-file flow.
 3. Run `codealmanac search` and `codealmanac show` to retrieve the same durable
    knowledge as an agent would before coding.
+
+If the video includes onboarding, show the final telemetry choice truthfully:
+Yes is recommended to improve the CLI, No remains visible, and the copy excludes
+code, paths, arguments, prompts, and transcripts. For a recording that should
+not generate product signals, run `codealmanac setup --yes --no-telemetry`
+[@setup-options] [@setup-parser].
 
 The viewer establishes the noun; the terminal demonstrates the verb. Avoid a
 folder tour or implementation explanation before the query. The payoff is that

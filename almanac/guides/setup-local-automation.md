@@ -1,6 +1,6 @@
 ---
 title: Setup Local Automation
-topics: [guides, setup, automation]
+topics: [guides, setup, automation, telemetry]
 sources:
   - id: readme
     type: file
@@ -46,11 +46,15 @@ sources:
     type: file
     path: src/codealmanac/cli/render/automation.py
     note: Renders launchd run-health fields for automation status.
+  - id: telemetry-architecture
+    type: wiki
+    path: architecture/telemetry
+    note: Architecture page for telemetry event, opt-out, identity, and delivery boundaries.
 ---
 
 # Setup Local Automation
 
-Use this guide to install and verify CodeAlmanac's local scheduled work. Setup can install agent instructions, write the default runner config, and install scheduled `sync`, `garden`, and `update` tasks [@setup-service] [@setup-automation]. Automation is local machine state, not cloud sync, and its scheduler logs live under `~/.codealmanac/logs/` [@readme].
+Use this guide to install and verify CodeAlmanac's local scheduled work. Setup can install agent instructions, write the default runner and telemetry preferences, and install scheduled `sync`, `garden`, and `update` tasks [@setup-service] [@setup-automation]. Automation is local machine state, not cloud sync, and its scheduler logs live under `~/.codealmanac/logs/` [@readme]. When anonymous telemetry is enabled, scheduled entrypoints may send allowlisted command/lifecycle outcomes or sanitized unhandled exceptions, never wiki or transcript content [@telemetry-architecture].
 
 The usual successful state is simple: setup has selected a runner, scheduled the tasks you want, `automation status` reports them installed, and `sync status` or `jobs` can show local lifecycle activity. For background, see [Automation and update](../architecture/setup/automation-and-update), [Config keys](../reference/config-keys), and [Run queue and sync](../architecture/lifecycle/run-queue-and-sync).
 
@@ -73,9 +77,10 @@ codealmanac setup --yes --sync-off
 codealmanac setup --yes --garden-off
 codealmanac setup --yes --no-auto-update
 codealmanac setup --yes --no-auto-commit
+codealmanac setup --yes --no-telemetry
 ```
 
-The setup parser exposes runner choice, auto-commit policy, instruction skipping, sync interval, sync disable, Garden interval, Garden disable, and auto-update disable flags [@setup-parser]. See [Instruction installation](../architecture/setup/instruction-installation) for what gets written to a coding agent's global instructions when instructions are not skipped.
+The setup parser exposes runner choice, auto-commit policy, instruction skipping, sync interval, sync disable, Garden interval, Garden disable, auto-update disable, and telemetry opt-out flags [@setup-parser]. Interactive setup asks about telemetry last with Yes recommended and No visible. Later, `codealmanac config set telemetry.enabled false`, `DO_NOT_TRACK=1`, or `CODEALMANAC_NO_TELEMETRY=1` disables all usage and exception capture [@telemetry-architecture]. See [Instruction installation](../architecture/setup/instruction-installation) for what gets written to a coding agent's global instructions when instructions are not skipped.
 
 ## Understand The Default Tasks
 

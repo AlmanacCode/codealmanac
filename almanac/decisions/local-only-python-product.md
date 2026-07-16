@@ -1,6 +1,6 @@
 ---
 title: Local-Only Python Product
-topics: [decisions, product]
+topics: [decisions, product, telemetry]
 sources:
   - id: live_agreement
     type: file
@@ -18,7 +18,7 @@ sources:
 
 # Local-Only Python Product
 
-CodeAlmanac's Python v1 is a local-only product. It is a Python CLI named `codealmanac` that writes a repo-local Markdown wiki, stores derived and operational state under `~/.codealmanac/`, and uses local agent harnesses for lifecycle work [@live_agreement][@readme]. Hosted login, cloud capture, upload, SDK, and MCP surfaces are outside this rewrite [@live_agreement].
+CodeAlmanac's Python v1 is a local-first product. It is a Python CLI named `codealmanac` that writes a repo-local Markdown wiki, stores derived and operational state under `~/.codealmanac/`, and uses local agent harnesses for lifecycle work [@live_agreement][@readme]. Hosted login, content upload, SDK, and MCP surfaces remain outside this rewrite. Anonymous opt-out product telemetry is the one narrow remote exception [@live_agreement].
 
 This decision is the reset that makes the current codebase coherent. Earlier branches moved toward a hosted or cloud product, but the active agreement treats that direction as reference material rather than product truth [@live_agreement]. Future work should extend the local product described here, not reintroduce hosted workflow language casually.
 
@@ -32,12 +32,12 @@ The public README reflects that reset. Setup installs local instructions and aut
 
 CodeAlmanac Python v1 is built as a local Python CLI. The product name and public command are `codealmanac`, the package targets Python 3.12+, and the main read/write workflows operate on a local repository wiki [@readme].
 
-The product does not build hosted shipping, hosted CLI, login/connect/upload flows, an SDK, MCP integration, or cloud capture in this rewrite [@live_agreement]. If those surfaces become real again, they require a new explicit decision because they change the product boundary.
+The product does not build hosted shipping, hosted CLI, login/connect/content-upload flows, an SDK, or MCP integration in this rewrite [@live_agreement]. The [Telemetry](../architecture/telemetry) exception sends only allowlisted command/lifecycle outcomes and sanitized unhandled exception shapes under a random installation UUID. Wiki content, source, prompts, transcripts, paths, and identifiers remain local. Any broader remote surface requires a new explicit decision [@live_agreement].
 
 ## Consequences
 
 The local product makes [Local repo wiki](../concepts/local-repo-wiki) the central model. Repository registration, runs, run events, sync state, and worker locks belong in the local database under `~/.codealmanac/`, while the committed wiki source stays in the repo [@live_agreement][@readme].
 
-The decision also narrows public language. Docs and commands should not mention hosted dashboards, cloud upload, `capture`, legacy `almanac` or `alm` aliases, or Node-era installation paths as active product surfaces [@live_agreement]. This keeps [Local state](../architecture/repositories/local-state) and [Only almanac root](only-almanac-root) from carrying compatibility branches for retired product shapes.
+The decision also narrows public language. Docs and commands should not present hosted dashboards, content upload, a public `capture` command, legacy `almanac` or `alm` aliases, or Node-era installation paths as active product surfaces [@live_agreement]. Product documentation must still disclose the telemetry exception and its opt-out. This keeps [Local state](../architecture/repositories/local-state) and [Only almanac root](only-almanac-root) from carrying compatibility branches for retired product shapes.
 
-The cost is that remote collaboration, hosted capture, and cloud account flows are intentionally deferred. The benefit is a smaller, testable product whose state boundaries are visible on disk and in the local database.
+The cost is that remote collaboration, hosted content, and cloud account flows are intentionally deferred. The benefit is a smaller, testable product whose content boundaries are visible on disk and whose remote product signals are explicit, allowlisted, and optional.

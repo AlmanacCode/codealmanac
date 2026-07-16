@@ -1,6 +1,6 @@
 ---
 title: Setup Automation And Update
-topics: [architecture, setup, automation]
+topics: [architecture, setup, automation, telemetry]
 sources:
   - id: app
     type: file
@@ -60,7 +60,7 @@ sources:
 
 Setup, automation, and update form CodeAlmanac's machine-level maintenance layer. `setup` installs local agent instructions and writes one user configuration update. The config service then makes launchd match that saved automation policy. `automation` owns recurring launchd jobs, while `update` owns package-manager upgrades for the installed CLI [@setup_service][@automation_service][@updates].
 
-The area matters because it is local-only product infrastructure. Scheduled work runs local CodeAlmanac task entrypoints for sync, Garden, and update; it does not connect to a hosted service or perform cloud capture [@live_agreement]. Runtime state and scheduler logs belong under the user's machine state, while repository wiki source remains under `almanac/` [@live_agreement]. For the operator-facing install and troubleshooting path, see [Setup local automation](../../guides/setup-local-automation).
+The area matters because scheduled work itself remains local product infrastructure. Sync, Garden, and update run local CodeAlmanac entrypoints. When telemetry is enabled, those entrypoints may emit allowlisted command/lifecycle outcomes or sanitized unhandled exceptions, but they never upload wiki, source, prompt, or transcript content [@live_agreement]. Runtime state and scheduler logs belong under the user's machine state, while repository wiki source remains under `almanac/` [@live_agreement]. For the telemetry boundary, see [Telemetry](../telemetry). For the operator-facing install and troubleshooting path, see [Setup local automation](../../guides/setup-local-automation).
 
 ## Setup Boundary
 

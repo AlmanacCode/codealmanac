@@ -1,6 +1,6 @@
 ---
 title: Config Keys
-topics: [reference, config, setup, harnesses]
+topics: [reference, config, setup, harnesses, telemetry]
 sources:
   - id: readme
     type: file
@@ -30,6 +30,10 @@ sources:
     type: file
     path: tests/test_config_service.py
     note: Tests for defaults, user-only behavior, reconciliation, and invalid values.
+  - id: telemetry-architecture
+    type: wiki
+    path: architecture/telemetry
+    note: Architecture page for telemetry policy, identity, event, and delivery boundaries.
 ---
 
 # Config Keys
@@ -59,6 +63,7 @@ written [@config-tests].
 | `auto_commit` | Boolean | `true` | `true` or `false` |
 | `harness.default` | Harness name | `codex` | `codex` or `claude` |
 | `harness.model` | Model name | `gpt-5.5` | One model from the selected harness catalog |
+| `telemetry.enabled` | Boolean | `true` | `true` or `false` |
 | `automation.sync.enabled` | Boolean | `true` | `true` or `false` |
 | `automation.sync.every` | Duration | `5h` | Positive human duration |
 | `automation.garden.enabled` | Boolean | `true` | `true` or `false` |
@@ -71,6 +76,11 @@ written [@config-tests].
 `harness.default` chooses the default lifecycle harness. Setting it also resets `harness.model` to that harness's default model, so switching from Codex to Claude leaves the config valid [@config-service].
 
 `harness.model` must be in the global controlled model set and must also belong to the currently selected default harness [@config-models] [@config-service].
+
+`telemetry.enabled` controls anonymous command, lifecycle, and sanitized crash
+telemetry. Setting it to `false` takes effect on the next event. The installation
+UUID remains local SQLite state rather than TOML configuration
+[@telemetry-architecture].
 
 ## Harness Models
 
@@ -91,6 +101,9 @@ auto_commit = true
 [harness]
 default = "codex"
 model = "gpt-5.5"
+
+[telemetry]
+enabled = true
 
 [automation.sync]
 enabled = true
