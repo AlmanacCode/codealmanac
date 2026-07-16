@@ -30,7 +30,7 @@ uv tool install codealmanac@latest
 codealmanac setup
 ```
 
-See [Install](#install) and [Setup](#setup) for more options.
+See [Setup](#setup) for configuration options.
 
 Once CodeAlmanac is set up:
 
@@ -41,45 +41,6 @@ codealmanac search "getting started" # Shows matching wiki pages.
 codealmanac show getting-started     # Opens one page in the terminal
 codealmanac serve                    # Shows the wiki in local web viewer.
 ```
-
-## Install
-
-```bash
-uv tool install codealmanac@latest
-```
-
-From this checkout:
-
-```bash
-uv sync
-uv run codealmanac --help
-```
-
-`codealmanac` is the canonical command. Every install also provides `ca` as its
-short alias, so `ca search "getting started"` is equivalent to the longer form.
-
-Requires Python 3.12+.
-
-## Migrating From The npm CLI
-
-The legacy `codealmanac` npm package is retired. PyPI is the only supported
-distribution. If you used the npm CLI, your machine may still carry the old
-global install plus the hooks and agent instructions it set up. Remove those
-before installing from PyPI.
-
-Remove the old global package and any CodeAlmanac hooks or agent-instruction
-sections it installed, then install and set up the Python CLI:
-
-```bash
-npm uninstall -g codealmanac
-uv tool install codealmanac@latest
-codealmanac setup --yes
-codealmanac doctor
-```
-
-Also remove old bun, pnpm, or yarn installs and any stray legacy binaries from
-`PATH`. Leave repo-local `almanac/` trees alone; they are committed wiki
-content, not part of the CLI install.
 
 ## Setup
 
@@ -382,6 +343,27 @@ The viewer is read-only. It renders pages, search, topics, backlinks, and
 file-reference navigation from local wiki data. By default it can switch across
 available registered local wikis. Use `codealmanac serve --wiki <name>` to
 narrow the viewer to one wiki.
+
+## Migrating From The npm CLI
+
+The legacy `codealmanac` npm package is retired. PyPI is the only supported
+distribution. If you used the npm CLI, your machine may still carry the old
+global install plus the hooks and agent instructions it set up. Remove those
+before installing from PyPI.
+
+Remove the old global package and any CodeAlmanac hooks or agent-instruction
+sections it installed, then install and set up the Python CLI:
+
+```bash
+npm uninstall -g codealmanac
+uv tool install codealmanac@latest
+codealmanac setup --yes
+codealmanac doctor
+```
+
+Also remove old bun, pnpm, or yarn installs and any stray legacy binaries from
+`PATH`. Leave repo-local `almanac/` trees alone; they are committed wiki
+content, not part of the CLI install.
 
 ## Troubleshooting
 
