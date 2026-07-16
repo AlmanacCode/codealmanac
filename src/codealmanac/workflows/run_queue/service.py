@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from codealmanac.core.errors import error_summary
+from codealmanac.core.errors import ExecutionFailed, error_summary
 from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.runs.models import (
     RunCancelResult,
@@ -86,7 +86,7 @@ class RunQueue:
 
     def start_build(self, request: BuildRequest) -> RunQueueStartResult:
         run = self.queue_build(request)
-        worker = self.spawn_worker(request.path)
+        worker = self._spawn_worker_safely(run, request.path)
         return self.start_result(run, worker)
 
     def queue_ingest(self, request: IngestRequest) -> RunRecord:
@@ -104,7 +104,7 @@ class RunQueue:
 
     def start_ingest(self, request: IngestRequest) -> RunQueueStartResult:
         run = self.queue_ingest(request)
-        worker = self.spawn_worker(request.cwd)
+        worker = self._spawn_worker_safely(run, request.cwd)
         return self.start_result(run, worker)
 
     def queue_garden(self, request: GardenRequest) -> RunRecord:
@@ -122,7 +122,7 @@ class RunQueue:
 
     def start_garden(self, request: GardenRequest) -> RunQueueStartResult:
         run = self.queue_garden(request)
-        worker = self.spawn_worker(request.cwd)
+        worker = self._spawn_worker_safely(run, request.cwd)
         return self.start_result(run, worker)
 
     def start_scheduled_garden(
@@ -165,6 +165,17 @@ class RunQueue:
 
     def spawn_worker(self, cwd: Path) -> RunWorkerSpawnResult:
         return self.spawner.spawn(SpawnRunWorkerRequest(cwd=cwd))
+
+    def _spawn_worker_safely(self, run: RunRecord, cwd: Path) -> RunWorkerSpawnResult:
+        try:
+            return self.spawn_worker(cwd)
+        except Exception as error:
+            raise ExecutionFailed(
+                f"Run queued as {run.run_id} but worker failed to start: {error}. "
+                f"Use 'codealmanac jobs attach {run.run_id}' "
+                "once a worker is available."
+            ) from error
+
 
     def start_result(
         self,
