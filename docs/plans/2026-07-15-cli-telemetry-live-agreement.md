@@ -27,6 +27,7 @@ tests.
 - Main merge commit: `ddee1934`
 - Diligent review-fix commit: `463de759`
 - Follow-up review-fix plan commit: `09964628`
+- Follow-up review-fix commit: `438d789b`
 - Unrelated untracked user files must not be staged or modified.
 
 ## Settled product decisions
@@ -235,12 +236,14 @@ Focused regression, workflow, architecture, and telemetry verification passed
 along with Ruff, `git diff --check`, and `codealmanac validate` over 71 pages.
 The wheel built, installed into an isolated Python 3.12 environment, and passed
 version, config, and `source_preparation` enum smokes with telemetry disabled.
-Final GitHub verification is pending.
+
+GitHub's package check and both test jobs passed for follow-up review-fix commit
+`438d789b`; PR #36 remained mergeable.
 
 ## Completion state
 
 The original implementation, disposable smoke testing, privacy audit, PostHog
 dashboard, and first diligent-review fixes are complete on
-`codex/cli-telemetry`. Follow-up review fixes have passed full local and package
-verification; final GitHub verification is pending. Unrelated user files remain
-untouched and untracked.
+`codex/cli-telemetry`. Follow-up review fixes have passed full local, package,
+and GitHub verification. PR #36 is draft and mergeable. Unrelated user files
+remain untouched and untracked.
