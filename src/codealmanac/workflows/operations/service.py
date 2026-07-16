@@ -1,6 +1,8 @@
 from contextlib import suppress
 from pathlib import Path
+from types import TracebackType
 
+from codealmanac.core.errors import ExecutionFailed, NotFoundError, ValidationFailed
 from codealmanac.services.harnesses.models import HarnessEvent, HarnessRunResult
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 from codealmanac.services.harnesses.service import HarnessesService
@@ -8,7 +10,11 @@ from codealmanac.services.health.service import HealthService
 from codealmanac.services.index.service import IndexService
 from codealmanac.services.repositories.models import Repository, RepositoryName
 from codealmanac.services.repositories.service import RepositoriesService
-from codealmanac.services.runs.models import RunEventKind, RunStatus
+from codealmanac.services.runs.models import (
+    RunEventKind,
+    RunFailureCategory,
+    RunStatus,
+)
 from codealmanac.services.runs.requests import (
     FinishRunRequest,
     MarkRunRunningRequest,
@@ -121,6 +127,7 @@ class OperationRunner:
                     run_id=context.run_id,
                     status=RunStatus.FAILED,
                     error=message,
+                    failure_category=operation_failure_category(error),
                 )
             )
 
@@ -168,3 +175,35 @@ class OperationRunner:
                 harness_event=event,
             )
         )
+
+
+def operation_failure_category(error: Exception) -> RunFailureCategory:
+    if isinstance(error, NotFoundError) and error.resource == "harness":
+        return RunFailureCategory.HARNESS_READINESS
+    if isinstance(error, ExecutionFailed):
+        return RunFailureCategory.PROVIDER_EXECUTION
+    if isinstance(error, ValidationFailed):
+        return RunFailureCategory.WIKI_VALIDATION
+    modules = traceback_modules(error.__traceback__)
+    if any(module.startswith("codealmanac.services.index") for module in modules):
+        return RunFailureCategory.INDEXING
+    if any(
+        module.startswith("codealmanac.services.harnesses")
+        or module.startswith("codealmanac.integrations.harnesses")
+        for module in modules
+    ):
+        return RunFailureCategory.PROVIDER_EXECUTION
+    if any(
+        module.startswith("codealmanac.workflows.operations.commit")
+        for module in modules
+    ):
+        return RunFailureCategory.MUTATION_SAFETY
+    return RunFailureCategory.INTERNAL_ERROR
+
+
+def traceback_modules(traceback: TracebackType | None) -> tuple[str, ...]:
+    modules: list[str] = []
+    while traceback is not None:
+        modules.append(str(traceback.tb_frame.f_globals.get("__name__", "")))
+        traceback = traceback.tb_next
+    return tuple(modules)

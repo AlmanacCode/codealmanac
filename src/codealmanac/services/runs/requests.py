@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 
 from codealmanac.core.models import CodeAlmanacModel
 from codealmanac.core.text import required_text
@@ -10,6 +10,7 @@ from codealmanac.services.repositories.models import RepositoryName
 from codealmanac.services.runs.models import (
     RunEventKind,
     RunExecutionRef,
+    RunFailureCategory,
     RunId,
     RunKind,
     RunSpec,
@@ -156,6 +157,7 @@ class FinishRunRequest(CodeAlmanacModel):
     status: RunStatus
     summary: str | None = None
     error: str | None = None
+    failure_category: RunFailureCategory | None = None
 
     @field_validator("status")
     @classmethod
@@ -163,3 +165,9 @@ class FinishRunRequest(CodeAlmanacModel):
         if value not in {RunStatus.DONE, RunStatus.FAILED, RunStatus.CANCELLED}:
             raise ValueError("finish status must be done, failed, or cancelled")
         return value
+
+    @model_validator(mode="after")
+    def failure_category_matches_status(self) -> "FinishRunRequest":
+        if self.status != RunStatus.FAILED and self.failure_category is not None:
+            raise ValueError("failure_category is only valid for failed runs")
+        return self

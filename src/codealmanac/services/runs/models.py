@@ -33,6 +33,15 @@ class RunStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class RunFailureCategory(StrEnum):
+    HARNESS_READINESS = "harness_readiness"
+    PROVIDER_EXECUTION = "provider_execution"
+    MUTATION_SAFETY = "mutation_safety"
+    WIKI_VALIDATION = "wiki_validation"
+    INDEXING = "indexing"
+    INTERNAL_ERROR = "internal_error"
+
+
 class RunEventKind(StrEnum):
     STATUS = "status"
     MESSAGE = "message"

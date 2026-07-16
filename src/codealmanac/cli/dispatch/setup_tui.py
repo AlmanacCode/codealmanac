@@ -46,7 +46,11 @@ def resolve_setup_selections(
     defaults = default_setup_selections(args, user_config)
     if args.yes or args.json or not supports_interactive_setup():
         return defaults
-    return interactive_setup_selections(defaults, runner_status)
+    return interactive_setup_selections(
+        defaults,
+        runner_status,
+        include_telemetry=not args.no_telemetry,
+    )
 
 
 def default_setup_selections(
@@ -76,10 +80,16 @@ def default_setup_selections(
 def interactive_setup_selections(
     defaults: SetupSelections,
     runner_status: tuple[HarnessReadiness, ...],
+    *,
+    include_telemetry: bool,
 ) -> SetupSelections:
     try:
         with wizard_terminal():
-            return wizard_selections(defaults, runner_status)
+            return wizard_selections(
+                defaults,
+                runner_status,
+                include_telemetry=include_telemetry,
+            )
     except KeyboardInterrupt as error:
         raise SetupCancelled() from error
 
@@ -87,13 +97,17 @@ def interactive_setup_selections(
 def wizard_selections(
     defaults: SetupSelections,
     runner_status: tuple[HarnessReadiness, ...],
+    *,
+    include_telemetry: bool,
 ) -> SetupSelections:
+    total_steps = 7 if include_telemetry else 6
     runner_index_value = choose_setup_option(
         SetupChoiceScreen(
             step=1,
             title="AI runner",
             question="Which agent should run CodeAlmanac jobs?",
             options=runner_options(runner_status),
+            total_steps=total_steps,
         ),
         initial_index=runner_index(defaults.harness),
     )
@@ -105,6 +119,7 @@ def wizard_selections(
             question=f"Which {harness.value} model should maintain your wiki?",
             options=model_options(harness),
             visual="list",
+            total_steps=total_steps,
         ),
         initial_index=model_index(harness, defaults.model),
     )
@@ -114,6 +129,7 @@ def wizard_selections(
             title="Agent instructions",
             question="Add CodeAlmanac instructions to your AGENTS.md / CLAUDE.md:",
             options=target_options(),
+            total_steps=total_steps,
         ),
         initial_index=target_default_index(defaults.targets),
     )
@@ -123,6 +139,7 @@ def wizard_selections(
             title="Wiki maintenance",
             question="How should your wikis be updated?",
             options=maintenance_options(),
+            total_steps=total_steps,
         ),
         initial_index=1 if defaults.sync_off and defaults.garden_off else 0,
     )
@@ -132,6 +149,7 @@ def wizard_selections(
             title="Product updates",
             question="Keep CodeAlmanac up to date automatically?",
             options=update_options(),
+            total_steps=total_steps,
             selection_notices=background_item_selection_notices(
                 automatic_maintenance=maintenance_index == 0
             ),
@@ -145,28 +163,33 @@ def wizard_selections(
             question="Should agents commit wiki changes or leave them in the worktree?",
             options=change_options(),
             visual="change-handling",
+            total_steps=total_steps,
         ),
         initial_index=0 if defaults.auto_commit else 1,
     )
-    telemetry_index = choose_setup_option(
-        SetupChoiceScreen(
-            step=7,
-            title="Help improve CodeAlmanac",
-            question=(
-                "Share anonymous usage so we can focus on what matters and fix "
-                "broken experiences faster."
+    telemetry_enabled = defaults.telemetry_enabled
+    if include_telemetry:
+        telemetry_index = choose_setup_option(
+            SetupChoiceScreen(
+                step=7,
+                title="Help improve CodeAlmanac",
+                question=(
+                    "Share anonymous usage so we can focus on what matters and fix "
+                    "broken experiences faster."
+                ),
+                options=telemetry_options(),
+                total_steps=total_steps,
             ),
-            options=telemetry_options(),
-        ),
-        initial_index=0 if defaults.telemetry_enabled else 1,
-    )
+            initial_index=0 if defaults.telemetry_enabled else 1,
+        )
+        telemetry_enabled = telemetry_index == 0
     return SetupSelections(
         targets=targets_for_index(target_index),
         harness=harness,
         model=model_for_index(harness, model_index_value),
         auto_update=update_index == 0,
         auto_commit=change_index == 0,
-        telemetry_enabled=telemetry_index == 0,
+        telemetry_enabled=telemetry_enabled,
         sync_off=maintenance_index == 1,
         garden_off=maintenance_index == 1,
     )

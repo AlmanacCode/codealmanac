@@ -577,6 +577,36 @@ def test_cli_setup_yes_enables_telemetry_and_flag_disables_it(
     assert app.config.load_user().telemetry.enabled is False
 
 
+def test_cli_setup_no_telemetry_flag_forces_opt_out_without_permission_screen(
+    isolated_home: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        scheduler=CliSchedulerAdapter(),
+        harness_adapters=(CliNoopHarnessAdapter(),),
+    )
+    monkeypatch.setattr("codealmanac.cli.main.create_app", lambda: app)
+    monkeypatch.setattr(
+        "codealmanac.cli.dispatch.setup_tui.supports_interactive_setup",
+        lambda: True,
+    )
+    keys = iter(("\r", "\r", "\r", "\r", "\r", "\r"))
+    monkeypatch.setattr(
+        "codealmanac.cli.dispatch.setup_tui.read_setup_key",
+        lambda: next(keys),
+    )
+
+    assert main(["setup", "--target", "codex", "--no-telemetry"]) == 0
+
+    output = capsys.readouterr()
+    assert "[1/6]" in output.out
+    assert "[6/6]" in output.out
+    assert "Help improve CodeAlmanac" not in output.out
+    assert app.config.load_user().telemetry.enabled is False
+
+
 def test_cli_setup_fails_when_default_runner_is_unavailable(
     isolated_home: Path,
     monkeypatch,

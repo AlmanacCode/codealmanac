@@ -63,6 +63,13 @@ class InlineRunExecutorSpawner:
         return InlineRunExecutorProcess(self.executor, request.run_id)
 
 
+@pytest.fixture(autouse=True)
+def disable_external_telemetry_during_tests(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CODEALMANAC_NO_TELEMETRY", "1")
+
+
 def bind_inline_executor(
     app: CodeAlmanac,
     spawner: InlineRunExecutorSpawner,

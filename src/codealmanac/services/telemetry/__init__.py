@@ -1,0 +1,1 @@
+"""Privacy-conscious product telemetry."""

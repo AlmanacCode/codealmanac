@@ -8,6 +8,7 @@ from codealmanac.services.repositories.requests import SelectRepositoryRequest
 from codealmanac.services.repositories.service import RepositoriesService
 from codealmanac.services.runs.locks import RunWorkerLease
 from codealmanac.services.runs.models import (
+    TERMINAL_RUN_STATUSES,
     QueuedRun,
     RunAttachSnapshot,
     RunAttachUpdate,
@@ -39,6 +40,7 @@ from codealmanac.services.runs.requests import (
 )
 from codealmanac.services.runs.store import RunStore
 from codealmanac.services.runs.streaming import RunAttachStreamer
+from codealmanac.services.telemetry.service import TelemetryService
 
 
 class RunsService:
@@ -46,10 +48,12 @@ class RunsService:
         self,
         repositories: RepositoriesService,
         store: RunStore,
+        telemetry: TelemetryService,
         streamer: RunAttachStreamer | None = None,
     ):
         self.repositories = repositories
         self.store = store
+        self.telemetry = telemetry
         self.streamer = streamer or RunAttachStreamer(store)
 
     def start(self, request: StartRunRequest) -> RunRecord:
@@ -152,12 +156,18 @@ class RunsService:
         )
 
     def finish(self, request: FinishRunRequest) -> RunRecord:
-        return self.store.finish(
+        record = self.store.finish(
             request.run_id,
             request.status,
             request.summary,
             request.error,
         )
+        self.telemetry.capture_lifecycle(
+            record,
+            self.store.read_spec(request.run_id),
+            request.failure_category,
+        )
+        return record
 
     def prepare_cancellation(
         self,
@@ -165,16 +175,28 @@ class RunsService:
     ) -> RunCancellationPlan:
         record = self.store.read(request.run_id)
         self.require_run_matches_repository(record, request.repository_name)
-        return self.store.prepare_cancellation(request.run_id)
+        plan = self.store.prepare_cancellation(request.run_id)
+        if plan.record.status in TERMINAL_RUN_STATUSES:
+            self.telemetry.capture_lifecycle(
+                plan.record,
+                self.store.read_spec(request.run_id),
+            )
+        return plan
 
     def finish_cancellation(
         self,
         request: FinishRunCancellationRequest,
     ) -> RunCancelResult:
-        return self.store.finish_cancellation(
+        result = self.store.finish_cancellation(
             request.run_id,
             request.execution_id,
         )
+        if result.record.status in TERMINAL_RUN_STATUSES:
+            self.telemetry.capture_lifecycle(
+                result.record,
+                self.store.read_spec(request.run_id),
+            )
+        return result
 
     def repository_filter(
         self,

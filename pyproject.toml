@@ -23,7 +23,7 @@ classifiers = [
   "Topic :: Software Development :: Documentation",
 ]
 dependencies = [
-    "almanac-yoke[claude]>=0.1.7,<0.2",
+  "almanac-yoke[claude]>=0.1.7,<0.2",
   "beautifulsoup4>=4.15.0",
   "charset-normalizer>=3.4.7",
   "fastapi>=0.138.1",
@@ -33,6 +33,7 @@ dependencies = [
   "jsonlines>=4.0",
   "markdown-it-py>=4.2.0",
   "pathspec>=1.1.1",
+  "posthog>=7,<8",
   "psutil>=7.2.2",
   "pydantic>=2.8",
   "pydantic-settings>=2.12.0",
