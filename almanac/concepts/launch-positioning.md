@@ -45,7 +45,23 @@ sources:
   - id: memory-benchmark-transcript
     type: conversation
     session_id: rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532
-    note: Product conversation mapping memory benchmarks to CodeAlmanac evaluation strategy.
+    note: Product conversation mapping memory and repository-QA benchmarks to CodeAlmanac evaluation strategy.
+  - id: swe-qa
+    type: web
+    url: https://aclanthology.org/2026.findings-acl.402.pdf
+    note: Repository-level code question answering benchmark used as the closest fit for CodeAlmanac evaluation.
+  - id: fastcontext
+    type: web
+    url: https://arxiv.org/abs/2606.14066
+    note: Repository exploration subagent paper that reports token-consumption reductions on SWE-QA.
+  - id: code-rag-bench
+    type: web
+    url: https://github.com/code-rag-bench/code-rag-bench
+    note: Code retrieval and generation benchmark suite considered as a secondary evaluation reference.
+  - id: locobench-agent
+    type: web
+    url: https://github.com/SalesforceAIResearch/LoCoBench-Agent
+    note: Long-context coding-agent benchmark considered as a secondary evaluation reference.
   - id: locomo
     type: web
     url: https://snap-research.github.io/locomo/
@@ -81,7 +97,7 @@ sources:
   - id: ai-wiki-standard-transcript
     type: conversation
     session_id: rollout-2026-07-14T22-51-58-019f6454-fa56-7ff0-b1b2-fe8a42abaf55
-    note: Product conversation framing Almanac as an AI wiki category and potential open standard.
+    note: Product conversation framing Almanac as an AI wiki category, potential open standard, and simpler alternative to GBrain-style agent-memory machinery.
   - id: deepwiki
     type: web
     url: https://deepwiki.org/
@@ -145,6 +161,16 @@ documentation [@deepwiki] [@gitbook-agent]. CodeAlmanac's launch claim should
 therefore stay focused on portable agent memory: citations, stable pages,
 source material, links, topics, search and retrieval, agent-authored updates,
 import and export, and change history [@ai-wiki-standard-transcript].
+
+GBrain is the useful cautionary comparison for this category. The transcript's
+durable conclusion is that Almanac has the clearer product shape, while GBrain
+currently has more complete agent-memory machinery: continuous capture,
+synthesis and gap analysis, graph retrieval, an agent-memory loop, background
+maintenance, and production history [@ai-wiki-standard-transcript]. Almanac
+should not copy that breadth. The strategic gap is narrower: add the few
+capabilities that matter for a maintained wiki, especially continuous capture,
+strong retrieval, and reliable maintenance, without turning the product into an
+operator dashboard or agent operating system [@ai-wiki-standard-transcript].
 
 If a future AI-wiki standardization effort grows out of CodeAlmanac, it should
 separate the open contract from any hosted product. The durable conclusion is
@@ -249,3 +275,27 @@ WorldMemArena extends the same concern to multimodal, evolving environments with
 stage-level diagnosis for memory writing, maintenance, retrieval, and use, but
 it is likely heavier than an initial CodeAlmanac comparison needs
 [@worldmemarena] [@memory-benchmark-transcript].
+
+For repository-level question answering, SWE-QA is the closest benchmark fit.
+It contains 720 repository-level questions across Python repositories and covers
+architecture, intent, cross-file reasoning, and multi-hop dependency analysis
+[@swe-qa] [@memory-benchmark-transcript]. FastContext is the useful companion
+methodology because it runs SWE-QA while accounting for coding-agent token
+consumption and reports improved resolution with lower token use from a focused
+repository-exploration subagent [@fastcontext] [@memory-benchmark-transcript].
+
+The missing standard metric is a direct "minimum tokens required to answer this
+codebase question correctly" score. CodeAlmanac can add that layer by running
+SWE-QA-style questions at fixed context budgets, reporting accuracy at each
+budget, the lowest successful budget per question, median tokens-to-correct,
+total processed tokens, and cost per correct answer [@memory-benchmark-transcript].
+That would test CodeAlmanac's core product claim more directly than a
+conversation-memory benchmark: whether a maintained repo wiki lets an agent
+answer repository questions and understand project constraints with less
+exploration.
+
+RepoQA, CodeRAG-Bench, and LoCoBench-Agent remain secondary references. They
+are useful for retrieval, code generation, and long-context coding-agent
+evaluation, but they are not as directly aligned with natural repository-level
+architectural question answering plus token efficiency [@code-rag-bench]
+[@locobench-agent] [@memory-benchmark-transcript].
