@@ -131,6 +131,10 @@ topics:
     title: Safety
     description: Mutation boundaries, validation gates, and guarded lifecycle writes
     parents: [architecture, lifecycle]
+  - slug: style
+    title: Style
+    description: Engineering principles for architecture fit, code shape, and behavior-preserving changes
+    parents: [architecture]
   - slug: topics
     title: Topics
     description: Topic metadata, browsing neighborhoods, and topic maintenance
