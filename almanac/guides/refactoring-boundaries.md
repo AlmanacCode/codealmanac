@@ -1,6 +1,6 @@
 ---
 title: Refactoring Boundaries
-topics: [guides, architecture]
+topics: [guides, architecture, style]
 sources:
   - id: manual
     type: file
