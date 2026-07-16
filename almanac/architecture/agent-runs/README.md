@@ -48,7 +48,7 @@ service-owned request, readiness, result, transcript reference, changed-file
 metadata, and normalized event vocabulary that lifecycle workflows can depend
 on [@harness-contract].
 
-Then read [Yoke harness boundary](provider-adapters). It explains the current
+Then read [Yoke provider adapter boundary](provider-adapters). It explains the current
 adapter that binds CodeAlmanac's packaged Yoke agents to Codex or Claude,
 projects provider events, and returns one terminal harness result
 [@yoke-boundary].

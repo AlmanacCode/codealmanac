@@ -81,5 +81,5 @@ stay alive for active forks, first-send instructions must survive provider
 retry paths, and CodeAlmanac must depend on a released Yoke version rather than
 a local sibling checkout [@opencode-pr-review].
 
-Related architecture: [Yoke harness boundary](../architecture/agent-runs/provider-adapters)
+Related architecture: [Yoke provider adapter boundary](../architecture/agent-runs/provider-adapters)
 and [Runtime resources](../architecture/runtime-resources/prompts-and-manuals).

@@ -1,5 +1,5 @@
 ---
-title: Yoke Harness Boundary
+title: Yoke Provider Adapter Boundary
 topics: [architecture, harnesses, providers, agent-runs]
 sources:
   - id: adapter
@@ -22,7 +22,16 @@ sources:
     path: tests/test_yoke_harness_integration.py
 ---
 
-# Yoke Harness Boundary
+# Yoke Provider Adapter Boundary
+
+The Yoke provider adapter boundary is CodeAlmanac's only provider execution
+adapter. It implements the service-owned harness contract for Claude and Codex,
+loads the packaged build, ingest, or garden agent through Yoke, and projects
+provider readiness, events, failures, and terminal results into CodeAlmanac's
+stable harness models [@adapter] [@contract] [@events] [@results]. This page is
+the architecture home for provider-adapter work; provider protocols and native
+surface behavior stay in Yoke, while CodeAlmanac owns product-level run
+configuration and the durable event vocabulary [@adapter] [@defaults].
 
 ## What It Owns
 
