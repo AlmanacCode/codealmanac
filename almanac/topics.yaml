@@ -75,10 +75,6 @@ topics:
     title: Product
     description: Product scope and public surface decisions
     parents: []
-  - slug: release
-    title: Release
-    description: Package publishing, release smoke checks, and public install verification
-    parents: [product]
   - slug: config
     title: Config
     description: User configuration and automation preferences
@@ -98,7 +94,7 @@ topics:
   - slug: automation
     title: Automation
     description: Local scheduled sync, Garden, and update tasks
-    parents: [architecture, lifecycle]
+    parents: [setup, lifecycle]
   - slug: setup
     title: Setup
     description: Local setup, uninstall, and machine configuration workflows
@@ -110,10 +106,6 @@ topics:
   - slug: prompts
     title: Prompts
     description: Operation prompts and agent-facing instructions
-    parents: [runtime-resources]
-  - slug: manuals
-    title: Manuals
-    description: Packaged writing manuals used by lifecycle operations
     parents: [runtime-resources]
   - slug: health
     title: Health
@@ -134,7 +126,7 @@ topics:
   - slug: safety
     title: Safety
     description: Mutation boundaries, validation gates, and guarded lifecycle writes
-    parents: [architecture, lifecycle]
+    parents: [lifecycle]
   - slug: topics
     title: Topics
     description: Topic metadata, browsing neighborhoods, and topic maintenance
