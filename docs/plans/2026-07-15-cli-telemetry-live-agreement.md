@@ -21,6 +21,8 @@ tests.
 - Onboarding/config commit: `f64c893d`
 - Almanac architecture commit: `4e8e9661`
 - Telemetry implementation/test commit: `8c193253`
+- Exact production QA documentation commit: `d80b1aee`
+- Linux CI test-isolation fix: `4edfe89a`
 - Unrelated untracked user files must not be staged or modified.
 
 ## Settled product decisions
@@ -80,8 +82,8 @@ tests.
 - A sanitized CodeAlmanac-frame exception created active Error Tracking issue
   `019f69c3-7487-7853-81af-121da0f06d2f` without paths, secrets, locals, or code
   variables.
-- `CLI Product Health` dashboard `1857079` is the project default. All eight
-  tiles force-ran successfully: active installations, weekly retention,
+- `CLI Product Health` dashboard `1857079` is the project default. Its original
+  eight tiles force-ran successfully: active installations, weekly retention,
   command/action adoption, activation, command success, lifecycle outcomes and
   failure categories, exception volume, and version/platform distribution.
 - A structural review found and fixed six edge cases: interactive
@@ -147,6 +149,33 @@ reviewed package:
 - A force-blocking dashboard refresh succeeded for all eight tiles and reflected
   the new installation, lifecycle outcomes, and exception volume. Project IP
   anonymization remained on and session replay remained off.
+
+## Dashboard usage expansion
+
+On 2026-07-16, six additional saved insights were added to `CLI Product Health`
+without changing the CLI or injecting synthetic product usage:
+
+- `Product installs — unique setups` (`k8VzDYDm`) counts unique PostHog persons,
+  which map one-to-one to installation UUIDs, after a successful telemetry-enabled
+  `setup` command since launch.
+- `New setup installations by day` (`6wi4W6Bd`) assigns each installation UUID to
+  its first successful setup day so rerunning setup does not inflate the trend.
+- `Search and show usage per installation (30d)` (`XaEAPnLX`) reports runs,
+  unique adopting installations, and runs per adopting installation.
+- `Search and show usage trend (30d)` (`rcTZtKw8`) reports daily search/show runs
+  alongside the unique installation count for each command.
+- `Top CLI commands by usage (30d)` (`gGKrxEmH`) compares total runs with unique
+  installation adoption across all controlled public commands.
+- `Anonymous installation usage (30d)` (`Ip1E0ddy`) lists the stable anonymous
+  UUID with command, search, and show counts plus first/last seen timestamps. It
+  includes no name, email, path, prompt, repository, or transcript data.
+
+The dashboard now has 14 tiles ordered from installs and activity through command
+usage, lifecycle reliability, exceptions, and platform distribution. Every new
+query was executed independently, and a final force-blocking refresh succeeded
+for all 14 tiles. At verification time setup/search/show views were empty because
+the project contained only deliberate config/validate smoke events; no fake usage
+was added, and these views will populate from real telemetry-enabled installations.
 
 ## Completion state
 
