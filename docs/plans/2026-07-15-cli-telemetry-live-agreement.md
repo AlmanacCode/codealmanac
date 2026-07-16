@@ -16,7 +16,7 @@ tests.
 ## Git state
 
 - Development branch: `codex/cli-telemetry`
-- Current merged base: `origin/main` at `6c0bbabb`
+- Current rebased base: `origin/main` at `d2b8b8f8`
 - Plan commit: `a40ef638`
 - Onboarding/config commit: `f64c893d`
 - Almanac architecture commit: `4e8e9661`
@@ -28,6 +28,7 @@ tests.
 - Diligent review-fix commit: `463de759`
 - Follow-up review-fix plan commit: `09964628`
 - Follow-up review-fix commit: `438d789b`
+- Latest-main rebase record: `6523627f`
 - Unrelated untracked user files must not be staged or modified.
 
 ## Settled product decisions
@@ -161,8 +162,8 @@ reviewed package:
 On 2026-07-16, six additional saved insights were added to `CLI Product Health`
 without changing the CLI or injecting synthetic product usage:
 
-- `Product installs — unique setups` (`k8VzDYDm`) counts unique PostHog persons,
-  which map one-to-one to installation UUIDs, after a successful telemetry-enabled
+- `Product installs — unique setups` (`k8VzDYDm`) counts literal anonymous
+  installation UUIDs (`distinct_id`) after a successful telemetry-enabled
   `setup` command since launch.
 - `New setup installations by day` (`6wi4W6Bd`) assigns each installation UUID to
   its first successful setup day so rerunning setup does not inflate the trend.
@@ -179,9 +180,8 @@ without changing the CLI or injecting synthetic product usage:
 The dashboard now has 14 tiles ordered from installs and activity through command
 usage, lifecycle reliability, exceptions, and platform distribution. Every new
 query was executed independently, and a final force-blocking refresh succeeded
-for all 14 tiles. At verification time setup/search/show views were empty because
-the project contained only deliberate config/validate smoke events; no fake usage
-was added, and these views will populate from real telemetry-enabled installations.
+for all 14 tiles. Later exact-wheel QA populated these views with one real setup,
+four searches, one show, and real lifecycle/error events from disposable installs.
 
 ## Diligent review hardening
 
@@ -296,3 +296,74 @@ background-item notice in one journey. Rebase verification passed all 564 tests
 on Python 3.12.10 and Python 3.13.3, Ruff, `git diff --check`, and
 `codealmanac validate` over 71 pages. A tree comparison against the previous PR
 head plus latest main found no runtime drift.
+
+## Final rebased end-to-end certification
+
+On 2026-07-16, initial rebased head `056d2853` was built as a clean `0.4.6` wheel and
+installed into a new Python 3.12 virtualenv. All product state and repositories
+used disposable directories; the real user registry, schedules, configuration,
+and unrelated worktree files were untouched.
+
+- A clean `setup --yes` saved telemetry on, installed isolated Codex
+  instructions, and created one stable UUID,
+  `ca8a7992-044a-4a50-aa5d-8898322aabe5`. Help, version, and setup help created
+  no pre-consent state.
+- A real pseudo-terminal setup traversed provider, model, agent instructions,
+  maintenance, product updates, change handling, and telemetry as steps one
+  through seven. The final screen displayed both the recommended Yes/privacy
+  copy and functional No. Selecting No saved `telemetry.enabled = false` and
+  created no identity table.
+- The installed wheel ran real logged-in Codex build, ingest, and garden jobs to
+  durable `done`; their PostHog lifecycle events arrived as `build/done`,
+  `ingest/done`, and `garden/done`. A queued garden cancellation emitted exactly
+  one `garden/cancelled` event across two cancel attempts.
+- The disposable wiki passed validation and supported real health, list, topics,
+  search, and show reads. Parser-to-event validation covered all 38 public
+  command/action combinations; hidden worker/executor/scheduler commands remain
+  excluded from product-command events.
+- A background worker spawn failure reached durable `failed` with
+  `internal_error`, produced one lifecycle event, and created/updated PostHog
+  issue `019f69e3-9563-7a81-81cf-e630049ea96a`. A real foreground search crash
+  produced `outcome=crashed` plus issue
+  `019f6ca2-0ca4-7321-aab9-a787023a16ae`. Both sampled issues contain only the
+  exception type/fingerprint and CodeAlmanac module/function/line frames.
+- Across the 155 exact-UUID events inspected, forbidden query, path, repository,
+  run, prompt, transcript, provider-session, name, email, username, URL, session,
+  IP, and SDK context properties all counted zero. Private query and worker-error
+  test markers also counted zero. Every inspected person was anonymous and had
+  no name, email, or username.
+- Twenty simultaneous first-use commands produced 20 events under one UUID and
+  one anonymous person. A dead-proxy command returned success in 0.454 seconds
+  and produced no event. `CODEALMANAC_NO_TELEMETRY`, `DO_NOT_TRACK`, and `CI`
+  each suppressed state creation. An opted-out terminal transition was not
+  replayed after re-enabling.
+- Corrupt identity data did not affect a valid command. A deliberately broken
+  telemetry-delivery table did not prevent a separate run from committing
+  `done`. These failures remained telemetry-only.
+- The dashboard install queries were corrected to count/group literal
+  installation UUID `distinct_id` values rather than relying on current
+  one-to-one PostHog person IDs. A fresh force-blocking run succeeded for all 14
+  tiles: installs reported one setup; search/show reported 4/1 runs across 2/1
+  installations; lifecycle outcomes included the real done, cancelled, and
+  failed journeys; exception volume included both foreground and background
+  failures; the per-installation table showed the primary UUID with 125 commands,
+  three searches, and one show.
+- The exact wheel declares compatible dependencies, passes `uv pip check`,
+  contains the public ingestion token but no personal API-key pattern, and omits
+  stale build modules. GitHub's package check and both Python test jobs passed on
+  the exact rebased head; PR #36 was draft, mergeable, and based on current main.
+
+While final QA was running, main advanced once more to `d2b8b8f8` with shipped
+agent-guide citation text and its test. The branch rebased cleanly with no
+conflicts; comparison with the first certified tree showed only those three main
+files changed and no telemetry/runtime drift. Runtime head `94147e47` then passed
+all 564 tests on Python 3.12.10 and Python 3.13.3, Ruff, 71-page Almanac
+validation, `git diff --check`, clean sdist/wheel construction, fresh Python 3.12
+installation, and dependency checking. A command from that exact wheel arrived
+in PostHog under disposable UUID `162293b9-5f93-43dc-80a0-80021ab87b43` as
+`config/list/success` on version `0.4.6`, with GeoIP disabled and no SDK library,
+IP, or query property. Its person remained anonymous with no name, email, or
+username. A final force-blocking dashboard run returned all 14 insights without
+error: one product install, ten active installations, four searches across two
+installations, one show, the expected lifecycle outcome rows, and six sanitized
+exceptions affecting four disposable installations.
