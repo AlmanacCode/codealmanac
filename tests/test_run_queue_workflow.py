@@ -119,6 +119,41 @@ def test_run_queue_start_persists_spec_and_spawns_worker(
     assert not (repo / "almanac/jobs").exists()
 
 
+class FailingWorkerSpawner:
+    def spawn(self, request: SpawnRunWorkerRequest) -> RunWorkerSpawnResult:
+        raise OSError("fake spawn failure")
+
+
+def test_run_queue_start_handles_worker_spawn_failure(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("queue design note\n", encoding="utf-8")
+    spawner = FailingWorkerSpawner()
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db"),
+        harness_adapters=(QueueWritingHarnessAdapter(),),
+        worker_spawner=spawner,
+    )
+    initialize_repository(app, repo)
+
+    with pytest.raises(ExecutionFailed, match="fake spawn failure"):
+        app.workflows.queue.start_ingest(
+            IngestRequest(
+                cwd=repo,
+                inputs=("note.md",),
+                harness=HarnessKind.CODEX,
+                model="gpt-5.5",
+            )
+        )
+
+    runs = app.runs.list(ListRunsRequest(repository_name=repo.name))
+    assert len(runs) == 1
+    assert runs[0].status == RunStatus.QUEUED
+
+
 def test_run_queue_drains_persisted_ingest_spec(
     tmp_path: Path,
     isolated_home: Path,
