@@ -98,6 +98,10 @@ sources:
     type: conversation
     session_id: rollout-2026-07-14T22-51-58-019f6454-fa56-7ff0-b1b2-fe8a42abaf55
     note: Product conversation framing Almanac as an AI wiki category, potential open standard, and simpler alternative to GBrain-style agent-memory machinery.
+  - id: personal-launch-copy-transcript
+    type: conversation
+    session_id: rollout-2026-07-16T21-49-54-019f6e68-df3d-7621-8fe7-37ddb66d49f0
+    note: Product conversation refining personal social-launch copy around Claude forgetting sessions, MEMORY.md, and Almanac.
   - id: deepwiki
     type: web
     url: https://deepwiki.org/
@@ -140,6 +144,21 @@ decisions, invariants, incidents, and gotchas the next coding agent should not
 have to rediscover [@openwiki-transcript]. That means existing docs are source
 material for judgment, not a blueprint to rewrite into a shadow documentation
 site.
+
+## Personal Launch Copy
+
+Short launch posts should lead with the personal pain before naming the product:
+Claude forgets the shared understanding from earlier work, a single `MEMORY.md`
+or `CLAUDE.md` turns into a long manual dumping ground, and Almanac replaces
+that with small connected Markdown pages the agent can search when needed
+[@personal-launch-copy-transcript]. That story is stronger than a broad feature
+list because it makes the product promise concrete: a new agent session should
+feel like continuing the same work, not starting the codebase explanation again
+[@personal-launch-copy-transcript].
+
+For social copy, keep the call to action simple. The transcript converged on a
+compact post with a link and a feedback request, while preserving the
+frustration to file-based memory to Almanac arc [@personal-launch-copy-transcript].
 
 ## AI Wiki Category
 
