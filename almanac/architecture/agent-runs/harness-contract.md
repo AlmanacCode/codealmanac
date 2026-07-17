@@ -26,7 +26,7 @@ sources:
 
 The harness contract is the boundary between lifecycle workflows and external agent providers. Build, ingest, and garden send one normalized `RunHarnessRequest` to a selected harness and receive one normalized `HarnessRunResult` back. The workflows do not know whether the provider is Codex or Claude; that provider-specific behavior lives behind the [Yoke harness boundary](provider-adapters) [@harness-ports] [@harness-requests].
 
-The contract matters because lifecycle operations need stable facts after an agent run: readiness, terminal status, output text, optional changed files, transcript references, and normalized events. Those facts feed the [operation runner](../lifecycle/operation-runner), the run ledger, and user-facing job logs without leaking provider JSON streams into the rest of the system [@harness-results] [@harness-events].
+The contract matters because lifecycle operations need stable facts after an agent run: readiness, terminal status, output text, optional changed files, transcript references, and normalized events. Those facts feed the [operation runner](../lifecycle/operation-runner), the [run ledger](../../concepts/run-ledger), and user-facing job logs without leaking provider JSON streams into the rest of the system [@harness-results] [@harness-events].
 
 ## Adapter Shape
 

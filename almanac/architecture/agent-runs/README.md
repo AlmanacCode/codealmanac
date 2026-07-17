@@ -30,4 +30,4 @@ Then read [Yoke harness boundary](provider-adapters). It explains `YokeHarnessAd
 
 ## Neighboring Pages
 
-[Operation runner](../lifecycle/operation-runner) is the caller: it prepares a `RunHarnessRequest`, invokes the harness through `HarnessesService`, and records the normalized result and events into the run ledger. [Harness event shape](../../reference/harness-event-shape) is the exact reference for event kinds and fields. [Add a harness provider adapter](../../guides/add-a-harness-provider-adapter) covers the ordered steps for changing or extending this boundary.
+[Operation runner](../lifecycle/operation-runner) is the caller: it prepares a `RunHarnessRequest`, invokes the harness through `HarnessesService`, and records the normalized result and events into the [run ledger](../../concepts/run-ledger). [Harness event shape](../../reference/harness-event-shape) is the exact reference for event kinds and fields. [Add a harness provider adapter](../../guides/add-a-harness-provider-adapter) covers the ordered steps for changing or extending this boundary.

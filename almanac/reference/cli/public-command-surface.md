@@ -99,7 +99,7 @@ Parser failures go through the custom argument parser, which classifies syntax p
 | `tag <page> <topics...>` | Add topics to a page frontmatter block. | `--wiki` [@parser_wiki] |
 | `untag <page> <topics...>` | Remove topics from a page frontmatter block. | `--wiki` [@parser_wiki] |
 | `config` | Read or write user config values, or apply saved config to machine automation. | `list`, `get`, `set`, `apply`; keys cover `auto_commit`, `harness.default`, `harness.model`, and the `automation.<task>.enabled`/`automation.<task>.every` family; see [Config keys](../config-keys) [@parser_config] |
-| `setup` | Install local agent instructions and scheduled automation. | `--target`, `--yes`, `--runner`, `--no-auto-commit`, `--skip-instructions`, `--no-auto-update`, `--sync-every`, `--sync-off`, `--garden-every`, `--garden-off`, `--json` [@parser_setup] |
+| `setup` | Install local agent instructions and scheduled automation. | `--target`, `--yes`, `--runner`, `--no-auto-commit`, `--no-telemetry`, `--skip-instructions`, `--no-auto-update`, `--sync-every`, `--sync-off`, `--garden-every`, `--garden-off`, `--json` [@parser_setup] |
 | `uninstall` | Remove setup-owned local artifacts. | `--yes`, `--json` [@parser_setup] |
 | `doctor` | Check the local install and selected wiki. | `--wiki`, `--json` [@parser_diagnostics] |
 | `update` | Update the local CLI. | `--check`, `--json`; `--scheduled` is hidden [@parser_updates] |

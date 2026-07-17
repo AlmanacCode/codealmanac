@@ -34,6 +34,10 @@ CodeAlmanac does not wrap wiki-writing agents in proposal files, apply steps, dr
 
 The decision is structural. CodeAlmanac owns deterministic mechanics such as repository selection, source loading, harness execution, run logging, prompt rendering, indexing, and validation. The agent owns editorial judgment: what matters, what page should change, what links and topics make sense, and whether the best result is no change [@ingest_prompt][@garden_prompt].
 
+## Status
+
+Accepted. The ingest and garden prompts are open algorithms with no proposal, apply, or dry-run schema between writer and reviewer [@ingest_prompt][@garden_prompt].
+
 ## Context
 
 The manual names this as a repo-specific rule: intelligence lives in prompts, not pipelines. It forbids propose/review/apply state machines, orchestration JSON schemas between writer and reviewer, and `--dry-run` rehearsals; the writer owns outcomes [@manual].

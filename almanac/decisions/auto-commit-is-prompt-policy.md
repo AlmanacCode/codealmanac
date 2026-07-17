@@ -42,6 +42,10 @@ CodeAlmanac treats auto-commit as permission given to the lifecycle agent, not a
 
 This decision keeps authorship and judgment together. Lifecycle agents decide what wiki source changed and whether it is worth committing within the allowed policy. Python records the harness run, refreshes the index, and validates the wiki after harness success; it does not become a separate commit orchestration pipeline [@operation_service].
 
+## Status
+
+Accepted. `operation_commit_policy` and the architecture tests forbidding a Python-side committer are both in place [@commit_policy][@architecture_tests].
+
 ## Context
 
 The active Python agreement states the rule directly: intelligence lives in prompts, and auto-commit is prompt policy rather than CodeAlmanac staging or smart Git orchestration [@live_agreement]. It also records the default as `auto_commit = true`, with `setup --no-auto-commit` and `config set auto_commit false` changing only the prompt permission [@live_agreement].

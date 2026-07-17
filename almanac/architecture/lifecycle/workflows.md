@@ -38,7 +38,7 @@ When the worker executes the queued run, build calls the shared operation runner
 
 ## Ingest
 
-Ingest is the source-material workflow. It starts an `INGEST` run for a selected repository, resolves the requested inputs into source briefs, loads runtime snapshots for those sources, records those preparation steps, and renders the ingest prompt [@ingest-workflow]. Resolution and runtime-inspection failures are durably categorized as `source_preparation`, distinct from failures after the harness starts.
+Ingest is the source-material workflow. It starts an `INGEST` run for a selected repository, resolves the requested inputs into source briefs, loads runtime snapshots for those sources, records those preparation steps, and renders the ingest prompt [@ingest-workflow]. Resolution and runtime-inspection failures are durably categorized as `source_preparation`, distinct from failures after the harness starts. See [Source resolution and runtime](../sources/source-resolution-and-runtime) for how selected [source material](../../concepts/source-material) becomes those briefs and snapshots.
 
 The source runtime layer is important because ingest should give the agent concrete material, not just file names or user prose. The workflow also passes the almanac root as an ignored directory when inspecting source runtime, so the existing wiki is not accidentally treated as input material for the ingest source set [@ingest-workflow].
 

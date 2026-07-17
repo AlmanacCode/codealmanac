@@ -22,6 +22,10 @@ CodeAlmanac uses `almanac/` as the only repo wiki root. The committed wiki sourc
 
 This decision makes page identity and repository detection simple. A repository counts as initialized when the default `almanac/` directory contains `topics.yaml` and `README.md`, and the root-setting helper rejects any non-default root [@roots].
 
+## Status
+
+Accepted. `require_default_almanac_root` and `initialized_repository_at` enforce `almanac/` as the only root, and public-contract tests reject alternate roots [@roots][@public_contract].
+
 ## Context
 
 Earlier product shapes had old roots and compatibility paths. The current Python agreement says the happy path is the product path and explicitly drops old wiki roots, old page layouts, and root hopping [@live_agreement]. The public contract tests enforce this by rejecting `docs/almanac` and `.almanac` as valid roots and by checking that `init --root` is not accepted [@public_contract].

@@ -70,13 +70,13 @@ Do not commit tokens or print secret values. `RELEASE.md` allows credentials to 
 
 ## Verify The Public Install Path
 
-After upload, verify PyPI and the install script. `RELEASE.md` uses `python -m pip index versions codealmanac` as the basic uploaded-version check, while `pyproject.toml` defines the package's Python version floor [@release-doc] [@pyproject].
+After upload, verify PyPI. `RELEASE.md` uses `python -m pip index versions codealmanac` as the basic uploaded-version check, while `pyproject.toml` defines the package's Python version floor [@release-doc] [@pyproject].
 
-The final public-path check is the curl installer:
+The final public-path check installs the package the way a user would, from a clean environment, and confirms the entrypoint:
 
 ```bash
-curl -fsSL https://codealmanac.com/install.sh | sh
+uv tool install codealmanac@latest
 codealmanac --version
 ```
 
-The README documents the same install path for users [@readme]. Treat the release as complete only after the installer uses the uploaded package and `codealmanac --version` reports the expected version from the user-facing binary [@readme].
+The README's quickstart uses this same `uv tool install codealmanac@latest` path [@readme]; `python -m pip install codealmanac` is the documented fallback. There is no curl-based installer — `tests/test_public_contract.py` forbids the fragment `curl -fsSL` from ever appearing in the README, so that surface must never come back as the public install path [@public-contract-tests]. Treat the release as complete only after the installed package resolves to the uploaded version and `codealmanac --version` reports the expected version from the user-facing binary [@readme].

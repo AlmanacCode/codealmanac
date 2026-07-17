@@ -5,7 +5,11 @@ sources:
   - id: cli-main
     type: file
     path: src/codealmanac/cli/main.py
-    note: CLI entrypoint, parser invocation, app construction, and error handling.
+    note: CLI entrypoint, parser invocation, and app construction.
+  - id: cli-execution
+    type: file
+    path: src/codealmanac/cli/execution.py
+    note: Post-parse execution, product-error and interrupt handling, exit codes, and telemetry capture.
   - id: parser-root
     type: file
     path: src/codealmanac/cli/parser/root.py
@@ -36,7 +40,9 @@ This boundary is split into three responsibilities: parser modules define public
 
 ## Entrypoint
 
-`main()` builds the parser, parses `argv`, and delegates to `dispatch(args)`. It catches three shapes of failure: a `CliSyntaxError` renders a guided syntax screen and returns exit code `2`; a `CodeAlmanacError` or Pydantic `ValidationError` prints `codealmanac: ...` to stderr and returns exit code `1` [@cli-main]. The `dispatch(args)` helper constructs the app with `create_app()` and passes the parsed arguments plus app object to the root dispatcher [@cli-main]. See [Terminal Output](terminal-output) and the [error and exit code contract](../../reference/cli/error-and-exit-code-contract) for how the syntax-error path renders and why it gets its own exit code.
+`main()` builds the parser, parses `argv`, and constructs the app with `create_app()`. A `CliSyntaxError` at parse time renders a guided syntax screen and returns exit code `2` before the app is ever touched [@cli-main]. Once parsing succeeds, `main()` hands the parsed args, the app, and a start timestamp to `execute()` in `cli/execution.py`, which is the actual product-error boundary [@cli-main] [@cli-execution].
+
+`execute()` calls the root `dispatch(args, app)` and translates what comes back into stderr text and an exit code: a `CodeAlmanacError` or Pydantic `ValidationError` prints `codealmanac: ...` to stderr and returns `1`; a `KeyboardInterrupt` is re-raised after capture (exit code `130`); any other exception is captured as a telemetry exception before it propagates [@cli-execution]. `execute()` also calls `capture_command()` after every path, successful or not, which is why command telemetry lives at this layer rather than in `main()` — see [Telemetry](../telemetry) for the event shape. See [Terminal Output](terminal-output) and the [error and exit code contract](../../reference/cli/error-and-exit-code-contract) for how the syntax-error path renders and why it gets its own exit code.
 
 That small entrypoint enforces the adapter role. The CLI owns process-level concerns: argument parsing, stderr for user-facing failures, and integer exit codes. It does not construct stores, choose integrations, or run lifecycle logic directly.
 

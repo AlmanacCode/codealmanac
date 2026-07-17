@@ -64,7 +64,7 @@ sources:
 
 The local viewer is the read-only browser surface exposed by `codealmanac serve`. It projects repo wiki pages, topics, file evidence, registered wiki navigation, and lifecycle jobs from local state; it does not own a separate store or write path [@readme] [@viewer_service].
 
-The command accepts `--wiki`, `--host`, `--port`, and `--no-open`, with parser defaults of `127.0.0.1:3927` when host and port are omitted [@parser]. It opens the viewer in the default browser unless `--no-open` is set. Pages, links, topics, source references, and file references come from the index read model. Job lists and job detail come from the run ledger. The browser routes between those projections with hash routes and renders the current repository's wiki graph [@viewer_service] [@viewer_js].
+The command accepts `--wiki`, `--host`, `--port`, and `--no-open`, with parser defaults of `127.0.0.1:3927` when host and port are omitted [@parser]. It opens the viewer in the default browser unless `--no-open` is set. Pages, links, topics, source references, and file references come from the index read model. Job lists and job detail come from the [run ledger](../../concepts/run-ledger). The browser routes between those projections with hash routes and renders the current repository's wiki graph [@viewer_service] [@viewer_js].
 
 For the public command contract, see [Public command surface](../../reference/cli/public-command-surface). For the run data shown in the jobs view, see [Run states and events](../../reference/runs/run-states-and-events).
 

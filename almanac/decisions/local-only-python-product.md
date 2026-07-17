@@ -22,6 +22,10 @@ CodeAlmanac's Python v1 is a local-first product. It is a Python CLI named `code
 
 This decision is the reset that makes the current codebase coherent. Earlier branches moved toward a hosted or cloud product, but the active agreement treats that direction as reference material rather than product truth [@live_agreement]. Future work should extend the local product described here, not reintroduce hosted workflow language casually.
 
+## Status
+
+Accepted. The public README and setup flow describe only the local product surface, with anonymous telemetry as the one narrow remote exception [@readme][@live_agreement].
+
 ## Context
 
 The product needed a clear center. The live agreement records that later `dev` and `main` branches moved ahead on a hosted/cloud direction that the rewrite explicitly does not follow, and that this local-only shape is the architectural reset the current codebase should match [@live_agreement]. The same agreement says the Python rewrite targets new users and should not preserve legacy aliases, old roots, old page layouts, or hosted assumptions [@live_agreement].

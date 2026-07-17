@@ -26,6 +26,10 @@ CodeAlmanac uses normal Markdown links for page links and structured `sources:` 
 
 This decision separates navigation from evidence. A page link points a reader to another wiki page. A `sources:` entry tells the index and future maintainers which file, web page, commit, PR, issue, conversation, wiki page, or manual supports a claim [@frontmatter]. File evidence belongs in `sources:` with `type: file`, not in inline page links [@kernel].
 
+## Status
+
+Accepted. The link extractor and frontmatter parser both implement this contract, and no double-bracket link or legacy file-list parsing path remains in the wiki writer [@links][@frontmatter].
+
 ## Context
 
 The Python reset replaced older wiki syntax with a simpler authored format. The base writer prompt tells agents to use Markdown links such as `[Viewer](../viewer)`, link only to existing or newly created pages, cite non-obvious claims with inline source markers, and store file/folder evidence in `sources:` [@kernel].
