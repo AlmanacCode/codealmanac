@@ -97,7 +97,8 @@ Markdown is the source of truth. SQLite is a derived local cache under
 
 Query commands refresh the index silently when pages change.
 `codealmanac validate` checks the wiki tree, links, sources, runtime state,
-and derived index. `codealmanac reindex` forces a full rebuild.
+and derived index. `codealmanac reindex` forces a full rebuild. Under the hood,
+`codealmanac init` queues an internal build run to construct the initial wiki.
 
 Command groups:
 
@@ -105,7 +106,7 @@ Command groups:
 |---|---|---|
 | Read | `list`, `search`, `show`, `topics`, `health`, `validate`, `serve` | No |
 | Organize | `tag`, `untag`, `topics create/rename/delete/link` | No |
-| Lifecycle | `init`, `build`, `ingest`, `garden`, `sync`, `jobs` | `ingest`, `garden`, and write-capable `sync` |
+| Lifecycle | `init`, `ingest`, `garden`, `sync`, `jobs` | `ingest`, `garden`, and write-capable `sync` |
 | Admin | `setup`, `uninstall`, `doctor`, `update`, `automation`, `reindex` | No |
 
 Scheduled automation is local scheduler state. It runs ordinary `codealmanac
