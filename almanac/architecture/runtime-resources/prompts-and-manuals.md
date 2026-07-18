@@ -8,6 +8,15 @@ sources:
   - id: collection
     type: file
     path: src/codealmanac/agents/yoke.yaml
+  - id: build-metadata
+    type: file
+    path: src/codealmanac/agents/build/agent.yaml
+  - id: ingest-metadata
+    type: file
+    path: src/codealmanac/agents/ingest/agent.yaml
+  - id: garden-metadata
+    type: file
+    path: src/codealmanac/agents/garden/agent.yaml
   - id: build-agent
     type: file
     path: src/codealmanac/agents/build/instructions.md
@@ -59,7 +68,8 @@ Build, ingest, and garden are a packaged Yoke `Collection`. The collection
 manifest maps their stable product names to Yoke agent folders. Each folder's
 `agent.yaml` owns description, tools, and permissions; `instructions.md` owns
 the complete durable CodeAlmanac kernel and operation instructions [@catalog]
-[@collection] [@build-agent] [@ingest-agent] [@garden-agent].
+[@collection] [@build-metadata] [@ingest-metadata] [@garden-metadata]
+[@build-agent] [@ingest-agent] [@garden-agent].
 
 Manuals remain separate packaged reference documents. Runtime payloads name the
 manual inventory so the agent can read the relevant document from the installed
