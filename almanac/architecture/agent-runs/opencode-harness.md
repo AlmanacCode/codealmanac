@@ -42,10 +42,14 @@ models` when the CLI is present [@models].
 
 ## Project Agents
 
-Before each lifecycle run, the adapter stages a project-local primary agent
-under `.opencode/agents/codealmanac-<agent>.md` from the packaged agent catalog
-(build, ingest, garden). The CLI is invoked with `--agent` pointing at that
-name, and the runtime prompt is supplied on stdin [@adapter].
+Before each lifecycle run, the adapter stages a packaged primary agent under
+the product-owned path `runtime_root/opencode/agents/codealmanac-<agent>.md`
+(typically under `~/.codealmanac/harnesses/opencode/agents/`), never the target
+repository's tree. The CLI is invoked with `OPENCODE_CONFIG_DIR` pointing at
+that directory — OpenCode loads it as an additive agents/commands source after
+global and project config, so user auth and providers stay on the real OpenCode
+config while generated agents stay out of `git status` [@adapter]. The runtime
+prompt is supplied on stdin [@adapter].
 
 ## Events And Transcripts
 

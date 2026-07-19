@@ -42,6 +42,10 @@ sources:
     type: file
     path: src/codealmanac/integrations/sources/transcripts/codex.py
     note: Discovers transcripts under ~/.codex/sessions.
+  - id: opencode-transcripts
+    type: file
+    path: src/codealmanac/integrations/sources/transcripts/opencode.py
+    note: Discovers OpenCode sessions from ~/.local/share/opencode/opencode.db.
   - id: automation-render
     type: file
     path: src/codealmanac/cli/render/automation.py
@@ -119,14 +123,15 @@ Then check sync and run activity:
 
 ```bash
 codealmanac sync status --from codex
+codealmanac sync status --from opencode
 codealmanac jobs
 ```
 
-The README presents `sync status`, `sync`, `automation status`, and `jobs` as the daily local surfaces for automation and lifecycle work [@readme]. If a scheduled run fails, inspect it with `codealmanac jobs show <run-id>` and `codealmanac jobs logs <run-id>`.
+The README presents `sync status`, `sync`, `automation status`, and `jobs` as the daily local surfaces for automation and lifecycle work [@readme]. If a scheduled run fails, inspect it with `codealmanac jobs show <run-id>` and `codealmanac jobs logs <run-id>`. Default `sync` / `sync status` without `--from` scans every registered transcript app (`claude`, `codex`, and `opencode`).
 
 ## Troubleshoot macOS Full Disk Access Prompts
 
-Sync reads transcripts from `~/.claude/projects` and `~/.codex/sessions` [@claude-transcripts] [@codex-transcripts], which macOS treats as data owned by other apps. On macOS Sonoma and later, this can trigger a repeating "would like to access data from other apps" prompt for the launchd-scheduled `sync` job, because the prompt targets the exact executable that opened the files rather than CodeAlmanac as a concept.
+Sync reads transcripts from `~/.claude/projects`, `~/.codex/sessions`, and OpenCode's SQLite store under `~/.local/share/opencode/opencode.db` [@claude-transcripts] [@codex-transcripts] [@opencode-transcripts], which macOS may treat as data owned by other apps. On macOS Sonoma and later, this can trigger a repeating "would like to access data from other apps" prompt for the launchd-scheduled `sync` job, because the prompt targets the exact executable that opened the files rather than CodeAlmanac as a concept.
 
 Granting Full Disk Access to Codex, Terminal, or another parent app does not stop the prompt, because the scheduled job runs as its own process under the Python interpreter tied to the current install. Grant Full Disk Access (System Settings > Privacy & Security > Full Disk Access) to that specific interpreter or `codealmanac` executable, then re-apply automation:
 

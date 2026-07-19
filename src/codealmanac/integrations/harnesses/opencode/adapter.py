@@ -132,10 +132,13 @@ class OpenCodeHarnessAdapter:
         request: RunHarnessRequest,
         on_event: HarnessEventSink | None = None,
     ) -> HarnessRunResult:
-        # Stage under the project `.opencode/agents/` path. OPENCODE_CONFIG_DIR is
-        # intentionally avoided: it replaces the user's config root and dropped
-        # model/provider settings in practice, leaving run sessions hung after idle.
-        agent_name = stage_lifecycle_agent(request.cwd, request.agent)
+        # Stage lifecycle agents under product-owned local state, never the
+        # target repo. OpenCode loads OPENCODE_CONFIG_DIR as an *additive*
+        # agents/commands directory (after global + project config), so
+        # providers/auth stay on the user's real OpenCode config while our
+        # agents remain outside git status.
+        stage_root = self.runtime_root / "opencode"
+        agent_name = stage_lifecycle_agent(stage_root, request.agent)
         args = (
             "run",
             "--format",
@@ -168,7 +171,7 @@ class OpenCodeHarnessAdapter:
                 request.cwd,
                 self.timeout_seconds,
                 request.prompt.strip(),
-                None,
+                {"OPENCODE_CONFIG_DIR": str(stage_root)},
                 on_line,
             )
         except FileNotFoundError:
@@ -234,10 +237,10 @@ class OpenCodeHarnessAdapter:
         )
 
 
-def stage_lifecycle_agent(project_root: Path, agent: HarnessAgentKind) -> str:
-    """Write packaged agent markdown under project `.opencode/agents/`."""
+def stage_lifecycle_agent(stage_root: Path, agent: HarnessAgentKind) -> str:
+    """Write packaged agent markdown under stage_root/agents/ (not the repo)."""
     name = f"{OPENCODE_AGENT_PREFIX}-{agent.value}"
-    agents_dir = project_root / ".opencode" / "agents"
+    agents_dir = stage_root / "agents"
     agents_dir.mkdir(parents=True, exist_ok=True)
     instructions = load_agent(agent).instructions or ""
     path = agents_dir / f"{name}.md"
@@ -267,11 +270,12 @@ def run_opencode_json(
     on_line: LineSink | None = None,
 ) -> OpenCodeProcessResult:
     process_env = os.environ.copy()
+    # Drop a parent OPENCODE_CONFIG_DIR first, then apply caller env. Lifecycle
+    # runs pass our product-owned stage dir; an interactive session's value
+    # must not leak into the worker and displace staged agents.
+    process_env.pop("OPENCODE_CONFIG_DIR", None)
     if env:
         process_env.update(env)
-    # Do not inherit a parent OPENCODE_CONFIG_DIR (for example from an interactive
-    # opencode session) — it remaps the whole config root and breaks providers.
-    process_env.pop("OPENCODE_CONFIG_DIR", None)
     process = subprocess.Popen(
         command,
         cwd=cwd,

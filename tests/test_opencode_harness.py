@@ -44,9 +44,12 @@ def test_check_reports_version(tmp_path, monkeypatch):
     assert readiness.message == "1.2.3"
 
 
-def test_run_streams_json_events_uses_stdin_and_project_agent(tmp_path):
+def test_run_streams_json_events_uses_stdin_and_runtime_agent(tmp_path):
     calls = []
     live = []
+    runtime_root = tmp_path / "runtime"
+    project = tmp_path / "project"
+    project.mkdir()
 
     def runner(command, cwd, timeout_seconds, stdin, env, on_line):
         calls.append((command, cwd, timeout_seconds, stdin, env))
@@ -74,12 +77,12 @@ def test_run_streams_json_events_uses_stdin_and_project_agent(tmp_path):
                 on_line(line)
         return OpenCodeProcessResult(returncode=0, lines=tuple(lines))
 
-    result = OpenCodeHarnessAdapter(tmp_path, runner=runner).run(
+    result = OpenCodeHarnessAdapter(runtime_root, runner=runner).run(
         RunHarnessRequest(
             kind=HarnessKind.OPENCODE,
             model="opencode/big-pickle",
             agent=HarnessAgentKind.BUILD,
-            cwd=tmp_path,
+            cwd=project,
             prompt="Runtime context:\n{}",
         ),
         on_event=live.append,
@@ -102,20 +105,25 @@ def test_run_streams_json_events_uses_stdin_and_project_agent(tmp_path):
     assert command[command.index("--agent") + 1] == "codealmanac-build"
     assert "CodeAlmanac Kernel" not in " ".join(command)
     assert stdin == "Runtime context:\n{}"
-    assert cwd == tmp_path
-    assert env is None
-    agent_path = tmp_path / ".opencode" / "agents" / "codealmanac-build.md"
+    assert cwd == project
+    assert env is not None
+    stage_root = runtime_root / "opencode"
+    assert env["OPENCODE_CONFIG_DIR"] == str(stage_root)
+    agent_path = stage_root / "agents" / "codealmanac-build.md"
     assert agent_path.is_file()
     body = agent_path.read_text(encoding="utf-8")
     assert "mode: primary" in body
     assert "CodeAlmanac Kernel" in body
+    assert not (project / ".opencode").exists()
 
 
-def test_stage_lifecycle_agent_writes_project_agent(tmp_path):
-    name = stage_lifecycle_agent(tmp_path, HarnessAgentKind.GARDEN)
+def test_stage_lifecycle_agent_writes_runtime_agent(tmp_path):
+    stage_root = tmp_path / "opencode"
+    name = stage_lifecycle_agent(stage_root, HarnessAgentKind.GARDEN)
     assert name == "codealmanac-garden"
-    path = tmp_path / ".opencode" / "agents" / f"{name}.md"
+    path = stage_root / "agents" / f"{name}.md"
     assert path.is_file()
     text = path.read_text(encoding="utf-8")
     assert "mode: primary" in text
     assert "# Garden Operation" in text
+    assert not (tmp_path / ".opencode").exists()
