@@ -5,6 +5,7 @@ from codealmanac.database.sqlite import (
     SQLiteRow,
     apply_migrations,
     connect_sqlite,
+    query_readonly_or_empty,
 )
 
 __all__ = (
@@ -14,4 +15,5 @@ __all__ = (
     "apply_migrations",
     "connect_sqlite",
     "open_local_database",
+    "query_readonly_or_empty",
 )

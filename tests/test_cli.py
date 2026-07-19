@@ -517,9 +517,8 @@ def test_cli_setup_interactive_choices_can_disable_update_and_commits(
     assert "[7/7]" in output.out
     assert output.out.index("AI runner") < output.out.index("Runner model")
     assert output.out.index("Runner model") < output.out.index("Agent instructions")
-    assert (
-        "Add CodeAlmanac instructions to your AGENTS.md / CLAUDE.md:" in output.out
-    )
+    assert "Add CodeAlmanac instructions to AGENTS.md" in output.out
+    assert "or OpenCode" in output.out
     assert "Install CodeAlmanac instructions for:" not in output.out
     assert "almanac: update wiki context" in output.out
     assert "almanac/architecture/indexing.md" in output.out

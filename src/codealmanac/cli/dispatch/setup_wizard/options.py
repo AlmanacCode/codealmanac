@@ -226,6 +226,11 @@ RUNNER_LABELS = {
     HarnessKind.CLAUDE: "Claude",
     HarnessKind.OPENCODE: "OpenCode",
 }
+TARGET_LABELS = {
+    SetupTarget.CODEX: "Codex",
+    SetupTarget.CLAUDE: "Claude",
+    SetupTarget.OPENCODE: "OpenCode",
+}
 MODEL_DETAILS = {
     "gpt-5.5": "recommended wiki-writing runner",
     "gpt-5.4": "strong general runner",

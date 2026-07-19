@@ -61,8 +61,8 @@ written [@config-tests].
 | Key | Type | Default | Valid values |
 | --- | --- | --- | --- |
 | `auto_commit` | Boolean | `true` | `true` or `false` |
-| `harness.default` | Harness name | `codex` | `codex` or `claude` |
-| `harness.model` | Model name | `gpt-5.5` | One model from the selected harness catalog |
+| `harness.default` | Harness name | `codex` | `codex`, `claude`, or `opencode` |
+| `harness.model` | Model name | `gpt-5.5` | Controlled model for Codex/Claude, or OpenCode `provider/model` id |
 | `telemetry.enabled` | Boolean | `true` | `true` or `false` |
 | `automation.sync.enabled` | Boolean | `true` | `true` or `false` |
 | `automation.sync.every` | Duration | `5h` | Positive human duration |
@@ -73,9 +73,9 @@ written [@config-tests].
 
 `auto_commit` is prompt policy. It means lifecycle prompts may tell the selected agent to use normal Git commands for wiki source changes; CodeAlmanac itself does not stage, split, or commit diffs [@readme].
 
-`harness.default` chooses the default lifecycle harness. Setting it also resets `harness.model` to that harness's default model, so switching from Codex to Claude leaves the config valid [@config-service].
+`harness.default` chooses the default lifecycle harness. Setting it also resets `harness.model` to that harness's default model, so switching between Codex, Claude, and OpenCode leaves the config valid [@config-service].
 
-`harness.model` must be in the global controlled model set and must also belong to the currently selected default harness [@config-models] [@config-service].
+`harness.model` for Codex/Claude must be in that harness's controlled catalog. For OpenCode, model ids are dynamic `provider/model` strings (nested providers allowed) rather than a closed product list [@config-models] [@config-service].
 
 `telemetry.enabled` controls anonymous command, lifecycle, and sanitized crash
 telemetry. Setting it to `false` takes effect on the next event. The installation
@@ -88,6 +88,7 @@ UUID remains local SQLite state rather than TOML configuration
 | --- | --- | --- |
 | `codex` | `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex-spark` | `gpt-5.5` |
 | `claude` | `claude-sonnet-5`, `claude-opus-4-7`, `claude-haiku-4-5` | `claude-sonnet-5` |
+| `opencode` | Any OpenCode `provider/model` id (for example `opencode/big-pickle`) | `opencode/big-pickle` |
 
 The model validator rejects unknown model names and rejects known model names that do not match the selected harness [@config-models]. The service-level parser raises the same product errors when a user runs `config set harness.model ...` [@config-service].
 
