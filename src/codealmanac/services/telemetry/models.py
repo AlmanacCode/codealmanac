@@ -90,7 +90,7 @@ class CliCommandCompletedProperties(CodeAlmanacModel):
 class LifecycleRunCompletedProperties(CodeAlmanacModel):
     run_kind: Literal["build", "ingest", "garden"]
     status: Literal["done", "failed", "cancelled"]
-    harness: Literal["codex", "claude"]
+    harness: Literal["codex", "claude", "opencode"]
     model: str
     duration_bucket: DurationBucket
     failure_category: Literal[
@@ -105,7 +105,13 @@ class LifecycleRunCompletedProperties(CodeAlmanacModel):
 
     @model_validator(mode="after")
     def validate_lifecycle_contract(self) -> "LifecycleRunCompletedProperties":
-        if self.model not in HARNESS_MODELS[HarnessKind(self.harness)]:
+        kind = HarnessKind(self.harness)
+        if kind is HarnessKind.OPENCODE:
+            from codealmanac.services.config.opencode_models import is_opencode_model_id
+
+            if not is_opencode_model_id(self.model):
+                raise ValueError("model is not a valid OpenCode provider/model id")
+        elif self.model not in HARNESS_MODELS[kind]:
             raise ValueError("model is not controlled for harness")
         if self.status == "failed" and self.failure_category is None:
             raise ValueError("failed lifecycle events require failure_category")

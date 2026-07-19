@@ -5,7 +5,11 @@ sources:
   - id: config-models
     type: file
     path: src/codealmanac/services/config/models.py
-    note: Controlled harness model list, defaults, config keys, and validation.
+    note: Controlled harness model list, OpenCode format validation, defaults, config keys.
+  - id: opencode-models
+    type: file
+    path: src/codealmanac/services/config/opencode_models.py
+    note: OpenCode provider/model id shape checks and fallback list constants.
   - id: config-service
     type: file
     path: src/codealmanac/services/config/service.py
@@ -17,39 +21,73 @@ sources:
   - id: config-plan
     type: file
     path: docs/plans/2026-07-07-controlled-model-config.md
-    note: Implementation plan that records the product decision and intended setup/config behavior.
+    note: Original implementation plan for the closed Codex/Claude catalog.
 ---
 
 # Controlled Model Catalog
 
-CodeAlmanac owns a controlled catalog of AI runner models. It does not discover arbitrary provider models during setup, accept provider defaults as product truth, or let harness adapters decide which models are supported [@config-plan]. The selected runner and model are stored in config as `harness.default` and `harness.model`, then passed toward lifecycle work as explicit settings [@config-models].
-
-The decision keeps model choice small, reviewable, and stable. The harness adapter can execute a chosen model, but the product list belongs to config and setup. This constrains future work in the [Yoke harness boundary](../architecture/agent-runs/provider-adapters), [Automation and update](../architecture/setup/automation-and-update), and [Config keys](../reference/config-keys).
+CodeAlmanac owns model choice for lifecycle harnesses. The selected runner and
+model live in config as `harness.default` and `harness.model` [@config-models].
+Codex and Claude use a **closed product catalog**. OpenCode uses a **format
+rule** over OpenCode's own `provider/model` ids so auth and live menus stay with
+OpenCode while CodeAlmanac still validates shape [@opencode-models].
 
 ## Status
 
-Accepted. The controlled catalog is implemented in `src/codealmanac/services/config/models.py` and enforced by config tests [@config-models] [@config-tests].
+Accepted, with an OpenCode carve-out documented below. Codex/Claude catalog:
+`src/codealmanac/services/config/models.py`. OpenCode ids:
+`src/codealmanac/services/config/opencode_models.py` [@config-models]
+[@opencode-models] [@config-tests].
 
 ## Context
 
-CodeAlmanac can run lifecycle jobs through more than one local harness. That creates two different choices: where agent instructions are installed, and which runner/model pair performs CodeAlmanac jobs [@config-plan]. Combining those choices would make setup confusing, because a user might install instructions for both Codex and Claude while choosing only one default runner.
+CodeAlmanac runs lifecycle jobs through more than one local harness. That creates
+two different choices: where agent instructions are installed, and which
+runner/model pair performs CodeAlmanac jobs [@config-plan].
 
-Provider discovery also creates an unstable product surface. A local provider command could expose experimental, unavailable, renamed, or account-specific models. The plan explicitly rejects `codex debug models`, Claude discovery, provider defaults, and custom model entry during onboarding [@config-plan].
+For Codex and Claude, provider CLI discovery is an unstable product surface —
+experimental, renamed, or account-specific models leak into setup. The plan
+rejects treating `codex debug models` or Claude discovery as product truth
+[@config-plan].
+
+OpenCode is different: it is a **router** over many providers (OpenRouter,
+provider-native APIs, Zen free models, and so on). A closed CodeAlmanac list
+cannot keep pace or know what the user authenticated. OpenCode's CLI already
+owns that catalog via `opencode models` and provider login.
 
 ## Decision
 
-The config model defines the allowed model names in `CONTROLLED_HARNESS_MODELS`. It also groups them by harness in `HARNESS_MODELS` and defines recommended defaults in `DEFAULT_HARNESS_MODELS` [@config-models].
+### Codex and Claude
 
-`HarnessConfig` validates two things. First, `harness.model` must be in the controlled catalog. Second, the model must belong to the selected harness, so a Claude default cannot use a Codex model and a Codex default cannot use a Claude model [@config-models]. The tests cover both rejection paths [@config-tests].
+- Allowed names live in `CONTROLLED_HARNESS_MODELS` and per-harness
+  `HARNESS_MODELS` with defaults in `DEFAULT_HARNESS_MODELS` [@config-models].
+- `HarnessConfig` requires the model to be in the catalog **and** belong to
+  the selected harness [@config-models] [@config-tests].
+- Adding a model is an explicit code change plus tests, not a discovery side
+  effect [@config-models] [@config-tests].
 
-The config service exposes `auto_commit`, `harness.default`, and `harness.model` through `config list`, `config get`, and `config set` [@config-service]. Changing `harness.default` resets `harness.model` to that harness's recommended default, which keeps the stored pair valid after a runner switch [@config-service] [@config-tests].
+### OpenCode
+
+- Any non-empty `provider/model` id (model segment may contain further `/`, for
+  example `openrouter/z-ai/glm-5`) is accepted when `harness.default` is
+  `opencode` [@opencode-models] [@config-models].
+- Setup's model menu prefers the live list from `opencode models` and falls back
+  to a short curated list only when the CLI is missing [@config-models].
+- `config set harness.model` may still set any well-formed OpenCode id, even if
+  it is not currently in that menu — availability at run time is OpenCode's
+  responsibility (auth and provider config).
+- Switching `harness.default` still resets `harness.model` to that harness's
+  default so the stored pair stays coherent [@config-service] [@config-tests].
+
+Config keys and tables: [Config keys](../reference/config-keys).
 
 ## Consequences
 
-Adding a new model is a code change, not a provider-discovery side effect. A maintainer updates the catalog, the harness grouping, and the tests in one place [@config-models] [@config-tests].
+Codex/Claude stay small, reviewable, and intentionally laggy as a product
+catalog [@config-plan]. OpenCode users can point CodeAlmanac at OpenRouter or
+any model their OpenCode install is connected to without waiting for a
+CodeAlmanac release. Workflows still receive an explicit model string on
+`RunHarnessRequest`; they do not discover models themselves.
 
-Setup and automation can depend on a known runner/model pair. `SetupService` writes both `harness.default` and `harness.model`, so unattended lifecycle work does not need to ask a provider what it should run [@config-service].
-
-The cost is that users cannot type an arbitrary provider model into CodeAlmanac config. That is intentional. A model becomes supported when the project accepts it into the controlled catalog.
-
-The maintenance burden is also intentional. Because the catalog is not provider discovery, it goes stale unless a maintainer explicitly refreshes it as providers release new models. Future model support work should keep the same ownership rule: update `CONTROLLED_HARNESS_MODELS`, `HARNESS_MODELS`, defaults, setup options, and provenance tests together, rather than replacing the catalog with provider discovery [@config-models] [@config-tests].
+Related: [Yoke harness boundary](../architecture/agent-runs/provider-adapters),
+[OpenCode harness](../architecture/agent-runs/opencode-harness).

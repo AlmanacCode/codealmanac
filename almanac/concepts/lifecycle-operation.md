@@ -42,7 +42,7 @@ Lifecycle operations meet the rest of the system at `OperationRunner`. The runne
 
 ## Sync Is Not An Operation
 
-Sync is related, but it is not a lifecycle operation. The live agreement defines sync as a scanner that reads local Claude and Codex transcript stores, groups active transcripts by registered repository, and queues ordinary ingest runs [@live-agreement]. In other words, sync can trigger ingest, but ingest is the page-writing operation.
+Sync is related, but it is not a lifecycle operation. The live agreement defines sync as a scanner that reads local Claude, Codex, and OpenCode transcript stores, groups active transcripts by registered repository, and queues ordinary ingest runs [@live-agreement]. In other words, sync can trigger ingest, but ingest is the page-writing operation.
 
 This distinction keeps background discovery separate from wiki authorship. If a future page explains queued runs and workers, it should treat sync as a producer of run specs, not as a fourth agent-writing operation.
 

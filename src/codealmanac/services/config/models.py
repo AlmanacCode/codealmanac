@@ -16,11 +16,18 @@ from codealmanac.services.automation.models import (
     AutomationTask,
     AutomationTaskApplyResult,
 )
+from codealmanac.services.config.opencode_models import (
+    OPENCODE_DEFAULT_MODEL,
+    OPENCODE_FALLBACK_MODELS,
+    is_opencode_model_id,
+)
 from codealmanac.services.harnesses.models import HarnessKind
 
 DEFAULT_HARNESS = HarnessKind.CODEX
 DEFAULT_HARNESS_MODEL = "gpt-5.5"
 DEFAULT_AUTO_COMMIT = True
+# Fixed allowlists for Codex/Claude. OpenCode models are dynamic (provider/model)
+# from `opencode models` and are validated by format, not this set.
 CONTROLLED_HARNESS_MODELS = frozenset(
     (
         "gpt-5.5",
@@ -44,10 +51,13 @@ HARNESS_MODELS = {
         "claude-opus-4-7",
         "claude-haiku-4-5",
     ),
+    # Fallback picks when OpenCode CLI catalog is unavailable.
+    HarnessKind.OPENCODE: OPENCODE_FALLBACK_MODELS,
 }
 DEFAULT_HARNESS_MODELS = {
     HarnessKind.CODEX: DEFAULT_HARNESS_MODEL,
     HarnessKind.CLAUDE: "claude-sonnet-5",
+    HarnessKind.OPENCODE: OPENCODE_DEFAULT_MODEL,
 }
 
 
@@ -70,14 +80,25 @@ class HarnessConfig(CodeAlmanacModel):
 
     @field_validator("model")
     @classmethod
-    def controlled_model(cls, value: str) -> str:
-        if value not in CONTROLLED_HARNESS_MODELS:
-            allowed = ", ".join(sorted(CONTROLLED_HARNESS_MODELS))
-            raise ValueError(f"harness.model must be one of: {allowed}")
-        return value
+    def known_or_opencode_model(cls, value: str) -> str:
+        token = value.strip()
+        if token in CONTROLLED_HARNESS_MODELS or is_opencode_model_id(token):
+            return token
+        allowed = ", ".join(sorted(CONTROLLED_HARNESS_MODELS))
+        raise ValueError(
+            f"harness.model must be one of: {allowed}, "
+            "or an OpenCode provider/model id"
+        )
 
     @model_validator(mode="after")
     def model_matches_harness(self) -> "HarnessConfig":
+        if self.default is HarnessKind.OPENCODE:
+            if not is_opencode_model_id(self.model):
+                raise ValueError(
+                    "harness.model for opencode must be provider/model "
+                    "(see `opencode models`)"
+                )
+            return self
         if self.model not in HARNESS_MODELS[self.default]:
             allowed = ", ".join(HARNESS_MODELS[self.default])
             raise ValueError(

@@ -33,6 +33,12 @@ def test_harness_config_rejects_deprecated_claude_models() -> None:
         HarnessConfig(default=HarnessKind.CLAUDE, model="claude-sonnet-4-6")
 
 
+def test_harness_config_rejects_opencode_id_for_codex() -> None:
+    with pytest.raises(ValueError, match="harness.model for codex must be one of"):
+        HarnessConfig(default=HarnessKind.CODEX, model="opencode/big-pickle")
+
+
+
 def test_config_set_harness_default_resets_model_to_provider_default(
     tmp_path: Path,
 ) -> None:

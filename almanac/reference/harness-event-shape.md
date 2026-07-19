@@ -15,6 +15,10 @@ sources:
     type: file
     path: src/codealmanac/integrations/harnesses/yoke/events.py
     note: Converts Yoke EventKind values into HarnessEventKind and builds HarnessEvent from a Yoke Event.
+  - id: opencode-event-projector
+    type: file
+    path: src/codealmanac/integrations/harnesses/opencode/events.py
+    note: Projects OpenCode run JSON lines into HarnessEvent values.
   - id: operation-harness
     type: file
     path: src/codealmanac/workflows/operations/harness.py
@@ -23,13 +27,13 @@ sources:
 
 # Harness Event Shape
 
-The harness event shape is CodeAlmanac's normalized transcript format for agent runs. The [Yoke harness boundary](../architecture/agent-runs/provider-adapters) converts Codex or Claude event streams into `HarnessEvent` objects, and lifecycle code records those events without parsing provider-specific JSON [@harness-events]. This page defines the event kinds, optional payload groups, tool display fields, usage counters, failures, actor data, and agent traces used by the [harness contract](../architecture/agent-runs/harness-contract).
+The harness event shape is CodeAlmanac's normalized transcript format for agent runs. Adapters convert runner-specific streams into `HarnessEvent` objects, and lifecycle code records those events without parsing provider JSON [@harness-events]. Today that means the [Yoke harness boundary](../architecture/agent-runs/provider-adapters) for Codex and Claude, and the [OpenCode harness](../architecture/agent-runs/opencode-harness) JSON-line projector for OpenCode [@yoke-event-projector] [@opencode-event-projector]. This page defines the event kinds, optional payload groups, tool display fields, usage counters, failures, actor data, and agent traces used by the [harness contract](../architecture/agent-runs/harness-contract).
 
-A harness event always has a `kind` and non-empty `message`. All other fields are optional and depend on what the provider exposed for that event [@harness-events]. The shape is intentionally broad enough for text, tools, token usage, provider sessions, failures, terminal status, and helper-agent activity, so the [Yoke harness boundary](../architecture/agent-runs/provider-adapters) can add detail without changing lifecycle workflow code.
+A harness event always has a `kind` and non-empty `message`. All other fields are optional and depend on what the provider exposed for that event [@harness-events]. The shape is intentionally broad enough for text, tools, token usage, provider sessions, failures, terminal status, and helper-agent activity, so adapters can add detail without changing lifecycle workflow code.
 
 ## Event Kinds
 
-`HarnessEventKind` is the event vocabulary. These values are stable product categories, not raw provider names [@harness-events]. The first 20 kinds mirror the Yoke package's own provider-neutral `EventKind` vocabulary value for value, since the [Yoke harness adapter](../architecture/agent-runs/provider-adapters) converts a Yoke `Event.kind` straight into a `HarnessEventKind` with the same string value, falling back to `unknown` when a provider reports a kind Yoke does not recognize [@yoke-event-projector]. The last three kinds (`agent_spawned`, `agent_wait_started`, `agent_completed`) are CodeAlmanac-only additions the adapter synthesizes for helper-agent lifecycle tracking; Yoke has no equivalent kind for them [@yoke-event-projector].
+`HarnessEventKind` is the event vocabulary. These values are stable product categories, not raw provider names [@harness-events]. The first 20 kinds mirror Yoke's provider-neutral `EventKind` vocabulary value for value for Codex/Claude runs: the Yoke adapter converts a Yoke `Event.kind` straight into a `HarnessEventKind` with the same string value, falling back to `unknown` when a provider reports a kind Yoke does not recognize [@yoke-event-projector]. The OpenCode adapter maps a smaller CLI JSON surface onto the same vocabulary (notably `text`, `tool_use`, errors, and terminal status) [@opencode-event-projector]. The last three kinds (`agent_spawned`, `agent_wait_started`, `agent_completed`) are CodeAlmanac-only additions the Yoke path synthesizes for helper-agent lifecycle tracking [@yoke-event-projector].
 
 | Kind | Meaning |
 |---|---|

@@ -22,6 +22,10 @@ sources:
     type: file
     path: src/codealmanac/integrations/setup/codex.py
     note: Codex installation mechanics (managed block inside AGENTS.md).
+  - id: opencode-installer
+    type: file
+    path: src/codealmanac/integrations/setup/opencode.py
+    note: OpenCode installation mechanics (managed block inside global AGENTS.md).
   - id: managed-blocks
     type: file
     path: src/codealmanac/integrations/setup/managed_blocks.py
@@ -96,8 +100,8 @@ package stable Yoke agent instructions and expose the manuals those operations u
 
 ## Per-Target Mechanics
 
-Claude and Codex are installed differently because their global instruction
-files have different conventions.
+Claude, Codex, and OpenCode are installed differently because their global
+instruction files have different conventions.
 
 For Claude, the installer writes the guide verbatim to a dedicated file,
 `~/.claude/codealmanac.md`, and ensures `~/.claude/CLAUDE.md` contains a
@@ -115,9 +119,16 @@ non-empty content, otherwise `~/.codex/AGENTS.md` [@codex-installer].
 Uninstall removes the managed block from both possible paths and deletes a
 file that becomes empty [@codex-installer].
 
-Both installers report an `InstructionChange` naming the `SetupTarget`,
+For OpenCode, the installer upserts the guide into OpenCode's own global
+rules file, `~/.config/opencode/AGENTS.md`, using the same managed-block
+markers as Codex [@opencode-installer] [@managed-blocks]. There is no
+override-file convention — only that one path is targeted. Uninstall removes
+the managed block and deletes the file if it becomes empty
+[@opencode-installer].
+
+All installers report an `InstructionChange` naming the `SetupTarget`,
 whether anything changed, which paths were touched, and a human-readable
 message, so `setup`'s JSON and interactive output can say "already installed"
 without rewriting untouched files [@setup-models] [@claude-installer]
-[@codex-installer]. This mirrors the idempotence expectations described in
+[@codex-installer] [@opencode-installer]. This mirrors the idempotence expectations described in
 [Setup automation and update](automation-and-update).

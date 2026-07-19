@@ -4,6 +4,7 @@ from enum import StrEnum
 class HarnessKind(StrEnum):
     CODEX = "codex"
     CLAUDE = "claude"
+    OPENCODE = "opencode"
 
 
 class HarnessAgentKind(StrEnum):

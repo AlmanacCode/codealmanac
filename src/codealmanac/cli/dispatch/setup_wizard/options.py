@@ -1,4 +1,5 @@
 from codealmanac.cli.render.setup import SetupChoiceOption, SetupChoiceScreen
+from codealmanac.integrations.harnesses.opencode.models import models_for_selection
 from codealmanac.services.config.models import HARNESS_MODELS
 from codealmanac.services.harnesses.models import HarnessKind, HarnessReadiness
 from codealmanac.services.setup.models import SetupTarget
@@ -7,7 +8,7 @@ from codealmanac.services.setup.models import SetupTarget
 def target_options() -> tuple[SetupChoiceOption, ...]:
     return (
         SetupChoiceOption(
-            "Codex + Claude",
+            "All runners",
             (),
             ("b",),
         ),
@@ -20,6 +21,11 @@ def target_options() -> tuple[SetupChoiceOption, ...]:
             "Claude only",
             (),
             ("l",),
+        ),
+        SetupChoiceOption(
+            "OpenCode only",
+            (),
+            ("o",),
         ),
     )
 
@@ -45,6 +51,11 @@ def runner_options(
     return (
         runner_option(HarnessKind.CODEX, by_kind.get(HarnessKind.CODEX), ("c",)),
         runner_option(HarnessKind.CLAUDE, by_kind.get(HarnessKind.CLAUDE), ("l",)),
+        runner_option(
+            HarnessKind.OPENCODE,
+            by_kind.get(HarnessKind.OPENCODE),
+            ("o",),
+        ),
     )
 
 
@@ -69,11 +80,30 @@ def runner_option(
 def model_options(harness: HarnessKind) -> tuple[SetupChoiceOption, ...]:
     return tuple(
         SetupChoiceOption(
-            MODEL_LABELS[model],
-            (MODEL_DETAILS[model],),
+            model_label(model),
+            (model_detail(model),),
         )
-        for model in HARNESS_MODELS[harness]
+        for model in models_for_harness(harness)
     )
+
+
+def models_for_harness(harness: HarnessKind) -> tuple[str, ...]:
+    if harness is HarnessKind.OPENCODE:
+        return models_for_selection()
+    return HARNESS_MODELS[harness]
+
+
+def model_label(model: str) -> str:
+    return MODEL_LABELS.get(model, model)
+
+
+def model_detail(model: str) -> str:
+    if model in MODEL_DETAILS:
+        return MODEL_DETAILS[model]
+    provider, separator, name = model.partition("/")
+    if separator and name:
+        return f"OpenCode · {provider}"
+    return "OpenCode model"
 
 
 def update_options() -> tuple[SetupChoiceOption, ...]:
@@ -134,6 +164,8 @@ def target_default_index(targets: tuple[SetupTarget, ...]) -> int:
         return 1
     if targets == (SetupTarget.CLAUDE,):
         return 2
+    if targets == (SetupTarget.OPENCODE,):
+        return 3
     return 0
 
 
@@ -142,34 +174,40 @@ def targets_for_index(index: int) -> tuple[SetupTarget, ...]:
         return (SetupTarget.CODEX,)
     if index == 2:
         return (SetupTarget.CLAUDE,)
-    return (SetupTarget.CODEX, SetupTarget.CLAUDE)
+    if index == 3:
+        return (SetupTarget.OPENCODE,)
+    return (SetupTarget.CODEX, SetupTarget.CLAUDE, SetupTarget.OPENCODE)
 
 
 def runner_for_index(index: int) -> HarnessKind:
     if index == 1:
         return HarnessKind.CLAUDE
+    if index == 2:
+        return HarnessKind.OPENCODE
     return HarnessKind.CODEX
 
 
 def runner_index(harness: HarnessKind) -> int:
     if harness == HarnessKind.CLAUDE:
         return 1
+    if harness == HarnessKind.OPENCODE:
+        return 2
     return 0
 
 
 def model_for_index(harness: HarnessKind, index: int) -> str:
-    models = HARNESS_MODELS[harness]
+    models = models_for_harness(harness)
     return models[index] if index < len(models) else models[0]
 
 
 def model_index(harness: HarnessKind, model: str) -> int:
-    models = HARNESS_MODELS[harness]
+    models = models_for_harness(harness)
     return models.index(model) if model in models else 0
 
 
 def parse_setup_targets(value: str) -> tuple[SetupTarget, ...]:
     if value == "all":
-        return (SetupTarget.CODEX, SetupTarget.CLAUDE)
+        return (SetupTarget.CODEX, SetupTarget.CLAUDE, SetupTarget.OPENCODE)
     return (SetupTarget(value),)
 
 
@@ -181,10 +219,17 @@ MODEL_LABELS = {
     "claude-sonnet-5": "Claude Sonnet 5",
     "claude-opus-4-7": "Claude Opus 4.7",
     "claude-haiku-4-5": "Claude Haiku 4.5",
+    "opencode/big-pickle": "OpenCode Big Pickle",
 }
 RUNNER_LABELS = {
     HarnessKind.CODEX: "Codex",
     HarnessKind.CLAUDE: "Claude",
+    HarnessKind.OPENCODE: "OpenCode",
+}
+TARGET_LABELS = {
+    SetupTarget.CODEX: "Codex",
+    SetupTarget.CLAUDE: "Claude",
+    SetupTarget.OPENCODE: "OpenCode",
 }
 MODEL_DETAILS = {
     "gpt-5.5": "recommended wiki-writing runner",
@@ -194,4 +239,5 @@ MODEL_DETAILS = {
     "claude-sonnet-5": "recommended maintenance runner",
     "claude-opus-4-7": "deep rebuilds and hard gardens",
     "claude-haiku-4-5": "small routine updates",
+    "opencode/big-pickle": "free default OpenCode model",
 }

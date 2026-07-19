@@ -231,10 +231,11 @@ a script.
 
 ## Providers
 
-CodeAlmanac uses `almanac-yoke` as its single provider boundary. Codex runs
-through app-server; Claude uses Yoke's default Claude surface (currently the
-Python Agent SDK). Existing Codex or Claude Code OAuth sessions are reused, and
-API credentials can be supplied through Yoke when embedding the SDK.
+CodeAlmanac uses `almanac-yoke` as its provider boundary for Codex and Claude.
+OpenCode runs through a first-class CLI harness adapter (`opencode run`). Codex
+runs through app-server; Claude uses Yoke's default Claude surface (currently the
+Python Agent SDK). Existing Codex, Claude Code, or OpenCode OAuth sessions are
+reused where available.
 
 Build, ingest, and garden are packaged as a Yoke agent collection under
 `src/codealmanac/agents/`. Each agent uses Yoke's native folder contract:
@@ -247,6 +248,8 @@ native Claude or Codex execution still decides how and when to use them.
 ```bash
 codex login
 claude auth login
+# OpenCode: install the CLI and authenticate your preferred model provider
+opencode auth login
 codealmanac doctor
 ```
 

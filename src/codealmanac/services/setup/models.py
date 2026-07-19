@@ -17,6 +17,7 @@ from codealmanac.services.updates.models import UpdateInstallMethod
 class SetupTarget(StrEnum):
     CODEX = "codex"
     CLAUDE = "claude"
+    OPENCODE = "opencode"
 
 
 class SetupAutomationMode(StrEnum):

@@ -53,6 +53,29 @@ def wrap_with_prefixes(
     return tuple(lines)
 
 
+def wrap_text(text: str, width: int) -> tuple[str, ...]:
+    words = tuple(_fit_word(word, width) for word in text.split(" ") if len(word) > 0)
+    if len(words) == 0:
+        return ("",)
+    lines: list[str] = []
+    line = words[0]
+    for word in words[1:]:
+        candidate = f"{line} {word}"
+        if visible_length(candidate) > width:
+            lines.append(line)
+            line = word
+            continue
+        line = candidate
+    lines.append(line)
+    return tuple(lines)
+
+
+def _fit_word(word: str, width: int) -> str:
+    if visible_length(word) <= width or width <= 1:
+        return word
+    return f"{word[: width - 1]}…"
+
+
 def card_row(content: str, width: int, border: str, reset: str) -> str:
     padding = max(0, width - visible_length(content))
     return f"{border}│{reset}{content}{' ' * padding}{border}│{reset}"
@@ -68,6 +91,45 @@ def card_center_row(content: str, width: int, border: str, reset: str) -> str:
     left = max(0, (width - visible) // 2)
     right = max(0, width - visible - left)
     return f"{border}│{reset}{' ' * left}{content}{' ' * right}{border}│{reset}"
+
+
+def selected_indicator(width: int, style: str, reset: str) -> str:
+    text = "◆ selected"
+    left_padding = max(0, (width + 2 - len(text)) // 2)
+    right_padding = max(0, width + 2 - left_padding - len(text))
+    return f"{' ' * left_padding}{style}{text}{reset}{' ' * right_padding}"
+
+
+def content_width() -> int:
+    # Mirrors the floor/cap convention already used by steps.py and
+    # result.py: shrink with the real terminal, cap at the ~80-col design
+    # width, never go below a legible minimum.
+    return min(78, max(40, terminal_width() - 2))
+
+
+def card_width_for(count: int, available_width: int = 78) -> int:
+    # A row of `count` cards is: 3 leading spaces, each card is width+2
+    # (borders), plus a 3-space gap between cards. Solving
+    # available_width = n*(width+5) for width keeps a row of cards within
+    # the given budget.
+    min_width = 12
+    if count <= 0:
+        return min_width
+    return max(min_width, available_width // count - 5)
+
+
+def columns_for(count: int, available_width: int) -> int:
+    # Pick the widest row (fewest wrapped rows) that still fits inside
+    # available_width without overflowing — falls back to a multi-row grid
+    # only when even a single card can't reach card_width_for's floor at
+    # that column count.
+    if count <= 1:
+        return max(1, count)
+    for columns in range(count, 0, -1):
+        width = card_width_for(columns, available_width)
+        if columns * (width + 5) <= available_width:
+            return columns
+    return 1
 
 
 def shell_command(command: tuple[str, ...]) -> str:

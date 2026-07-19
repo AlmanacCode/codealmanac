@@ -26,6 +26,14 @@ sources:
     type: file
     path: src/codealmanac/integrations/sources/transcripts/claude.py
     note: Claude transcript discovery path and metadata parsing.
+  - id: opencode_transcripts
+    type: file
+    path: src/codealmanac/integrations/sources/transcripts/opencode.py
+    note: OpenCode transcript discovery via shared SQLite session table.
+  - id: opencode_transcript_runtime
+    type: file
+    path: src/codealmanac/integrations/sources/transcripts/opencode_runtime.py
+    note: OpenCode transcript runtime reading message/part tables.
   - id: sync_evaluation
     type: file
     path: src/codealmanac/workflows/sync/evaluation.py
@@ -54,9 +62,11 @@ Ingest uses this boundary before it renders the writing prompt. It resolves the 
 
 ## Transcript Discovery
 
-Transcript discovery is a separate source path used by sync. The default discovery set has two adapters: Claude and Codex [@transcript_adapters]. The source model has the same two transcript app values, `claude` and `codex`, so there is no separate app identity for Codex app, Claude Desktop, Claude web, or editor-specific surfaces [@source_models].
+Transcript discovery is a separate source path used by sync. The default discovery set has three adapters: Claude, Codex, and OpenCode [@transcript_adapters]. The source model has matching transcript app values `claude`, `codex`, and `opencode` [@source_models].
 
 The Codex adapter scans `.codex/sessions` under the configured home directory, reads the first JSONL lines for session metadata, and skips transcripts whose metadata marks `thread_source` as `subagent` [@codex_transcripts]. The Claude adapter scans `.claude/projects` under the configured home directory and skips paths that contain `subagents` [@claude_transcripts].
+
+OpenCode has no per-session file to scan — session history lives as rows in one shared SQLite database (`~/.local/share/opencode/opencode.db`). Its discovery adapter queries that database's `session` table with `parent_id IS NULL` to exclude sub-agent sessions [@opencode_transcripts]. Because there is no file per session, `TranscriptCandidate.transcript_path` holds a synthetic identity (`opencode-session:<id>`) rather than a filesystem path. `OpencodeTranscriptRuntimeAdapter` recognizes that scheme and resolves content from the database's `message`/`part` tables [@opencode_transcript_runtime]. It is registered ahead of the generic file-based transcript runtime adapter so dispatch order remains correct [@transcript_adapters].
 
 Sync does not ingest every discovered transcript. It matches each transcript `cwd` to a registered repository root, skips unregistered working directories, and skips transcripts older than the active sync window as `inactive` [@sync_evaluation]. That means a transcript can be discovered correctly but still not become ingest input for the current sync run.
 

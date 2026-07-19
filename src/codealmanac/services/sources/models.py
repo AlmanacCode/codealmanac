@@ -40,6 +40,7 @@ class SourceRuntimeStatus(StrEnum):
 class TranscriptApp(StrEnum):
     CLAUDE = "claude"
     CODEX = "codex"
+    OPENCODE = "opencode"
 
 
 class SourceAddress(CodeAlmanacModel):

@@ -24,7 +24,7 @@ sources:
 
 # Harness Contract
 
-The harness contract is the boundary between lifecycle workflows and external agent providers. Build, ingest, and garden send one normalized `RunHarnessRequest` to a selected harness and receive one normalized `HarnessRunResult` back. The workflows do not know whether the provider is Codex or Claude; that provider-specific behavior lives behind the [Yoke harness boundary](provider-adapters) [@harness-ports] [@harness-requests].
+The harness contract is the boundary between lifecycle workflows and external agent providers. Build, ingest, and garden send one normalized `RunHarnessRequest` to a selected harness and receive one normalized `HarnessRunResult` back. The workflows do not know whether the provider is Codex, Claude, or OpenCode; provider-specific behavior lives behind adapters ([Yoke harness boundary](provider-adapters) for Codex/Claude, [OpenCode harness](opencode-harness) for OpenCode) [@harness-ports] [@harness-requests].
 
 The contract matters because lifecycle operations need stable facts after an agent run: readiness, terminal status, output text, optional changed files, transcript references, and normalized events. Those facts feed the [operation runner](../lifecycle/operation-runner), the [run ledger](../../concepts/run-ledger), and user-facing job logs without leaking provider JSON streams into the rest of the system [@harness-results] [@harness-events].
 
@@ -34,7 +34,7 @@ A harness adapter has one `kind`, a `check()` method, and a `run()` method [@har
 
 `HarnessesService` indexes adapters by kind and rejects duplicate adapters [@harness-service]. Workflows call `ensure_ready` and `run_ready` as separate stages: readiness failures can include a repair hint and a command to switch harnesses, while every exception from the approved adapter invocation is a provider-execution failure. `run_ready` also wraps caller event-sink failures in `HarnessEventSinkFailed`, keeping local run-log persistence failures distinct from provider failures that occur during the same call [@harness-service].
 
-The supported harness kinds are currently `codex` and `claude`. The terminal run statuses are `succeeded`, `failed`, and `cancelled` [@harness-kinds].
+The supported harness kinds are currently `codex`, `claude`, and `opencode`. The terminal run statuses are `succeeded`, `failed`, and `cancelled` [@harness-kinds].
 
 ## Run Requests
 

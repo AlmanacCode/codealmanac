@@ -56,3 +56,28 @@ def apply_migrations(
 
 def user_version(connection: SQLiteConnection) -> int:
     return int(connection.execute("PRAGMA user_version").fetchone()[0])
+
+
+
+def query_readonly_or_empty(
+    path: Path,
+    sql: str,
+    params: tuple = (),
+) -> tuple[SQLiteRow, ...]:
+    """Run one read-only query against a SQLite file this app doesn't own
+    the schema for (e.g. another program's local database), returning ()
+    on any error — missing file, missing table/column, corrupt file —
+    instead of raising. Unlike connect_sqlite, this never writes, never
+    applies migrations, and tolerates the target schema not matching what
+    the caller expects."""
+    try:
+        connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        connection.row_factory = sqlite3.Row
+    except sqlite3.Error:
+        return ()
+    try:
+        return tuple(connection.execute(sql, params).fetchall())
+    except sqlite3.Error:
+        return ()
+    finally:
+        connection.close()

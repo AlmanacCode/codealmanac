@@ -138,7 +138,7 @@ For authored wiki contracts, read [Page identity](wiki/page-identity), [Path nor
 
 ## Edges And Interfaces
 
-Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Agent runs](agent-runs/) for normalized harness execution and the Yoke harness boundary that serves Claude and Codex behind one adapter [@agent-runs]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
+Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Agent runs](agent-runs/) for normalized harness execution: Yoke for Claude and Codex, and the native OpenCode CLI harness [@agent-runs]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
 
 [Agents and manuals](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents and writing references used by lifecycle runs, [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior, and [Telemetry](telemetry) covers the narrow remote product-signal exception [@agents-manuals] [@setup-automation] [@telemetry]. [Instruction installation](setup/instruction-installation) covers the sibling setup concern: writing `CLAUDE.md`/`AGENTS.md` kernel instructions into a repository [@instruction-install].
 

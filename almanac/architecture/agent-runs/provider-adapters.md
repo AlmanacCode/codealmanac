@@ -32,14 +32,16 @@ sources:
 
 ## What It Owns
 
-CodeAlmanac has one provider integration: `YokeHarnessAdapter`. It implements
-the service-owned harness port for Claude and Codex, selects CodeAlmanac's Yoke
+CodeAlmanac has two harness integrations. `YokeHarnessAdapter` implements the
+service-owned harness port for Claude and Codex, selects CodeAlmanac's Yoke
 surface and run options, and converts Yoke runs and events into durable product
-models [@adapter] [@contract].
+models [@adapter] [@contract]. OpenCode does **not** go through Yoke; it has a
+separate native CLI adapter documented in [OpenCode harness](opencode-harness).
+`YokeHarnessAdapter` raises if asked to run `HarnessKind.OPENCODE`.
 
-The adapter explicitly selects Codex app-server and leaves Claude on Yoke's
-default Claude surface. It loads the requested build, ingest, or garden agent
-from the packaged Yoke collection, forwards the task prompt unchanged, and
+The Yoke adapter explicitly selects Codex app-server and leaves Claude on
+Yoke's default Claude surface. It loads the requested build, ingest, or garden
+agent from the packaged Yoke collection, forwards the task prompt unchanged, and
 applies the trusted non-interactive permission and timeout policy [@adapter].
 
 ## Runtime Root
@@ -47,11 +49,12 @@ applies the trusted non-interactive permission and timeout policy [@adapter].
 `YokeHarnessAdapter` also requires a `runtime_root: Path` at construction.
 `default_harness_adapters(runtime_root)` receives `LocalStatePaths.harness_runtime_dir`
 (`state_dir / "harnesses"`, so `~/.codealmanac/harnesses` by default) from the
-composition root and passes it to both the Claude and Codex adapters [@defaults]
-[@settings] [@app]. The adapter forwards `runtime_root` into `yoke.Harness(...)`
-on every `check()` and `run()` call, so Yoke's native provider compilation caches
-under CodeAlmanac's own local state instead of writing `.codex` or `.claude`
-configuration into the target repository [@adapter].
+composition root and passes it to the Claude and Codex Yoke adapters and the
+OpenCode native adapter [@defaults] [@settings] [@app]. The Yoke adapter
+forwards `runtime_root` into `yoke.Harness(...)` on every `check()` and `run()`
+call, so Yoke's native provider compilation caches under CodeAlmanac's own local
+state instead of writing `.codex` or `.claude` configuration into the target
+repository [@adapter].
 
 `check()` cannot run a real repository task, so it uses a sibling working
 directory instead of the caller's `cwd`: `runtime_root.parent / "readiness"`

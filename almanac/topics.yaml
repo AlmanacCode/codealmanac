@@ -49,7 +49,7 @@ topics:
     parents: [architecture]
   - slug: harnesses
     title: Harnesses
-    description: Local Codex and Claude runner integration boundaries
+    description: Local Codex, Claude, and OpenCode runner integration boundaries
     parents: [agent-runs]
   - slug: yoke
     title: Yoke
