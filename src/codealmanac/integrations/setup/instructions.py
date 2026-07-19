@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from codealmanac.core.paths import home_dir
-from codealmanac.integrations.setup import claude, codex, managed_blocks
+from codealmanac.integrations.setup import claude, codex, managed_blocks, opencode
 from codealmanac.integrations.setup.guide import read_agent_guide
 from codealmanac.services.setup.models import InstructionChange, SetupTarget
 
@@ -50,6 +50,8 @@ def install_target(target: SetupTarget, home: Path, guide: str) -> InstructionCh
         return codex.install_codex_instructions(home, guide)
     if target == SetupTarget.CLAUDE:
         return claude.install_claude_instructions(home, guide)
+    if target == SetupTarget.OPENCODE:
+        return opencode.install_opencode_instructions(home, guide)
     raise ValueError(f"unsupported setup target: {target.value}")
 
 
@@ -58,4 +60,6 @@ def uninstall_target(target: SetupTarget, home: Path) -> InstructionChange:
         return codex.uninstall_codex_instructions(home)
     if target == SetupTarget.CLAUDE:
         return claude.uninstall_claude_instructions(home)
+    if target == SetupTarget.OPENCODE:
+        return opencode.uninstall_opencode_instructions(home)
     raise ValueError(f"unsupported setup target: {target.value}")

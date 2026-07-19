@@ -262,6 +262,15 @@ def parse_harness_value(value: str) -> str:
 
 def parse_harness_model(value: str, harness: HarnessKind) -> str:
     token = value.strip()
+    if harness is HarnessKind.OPENCODE:
+        from codealmanac.services.config.opencode_models import is_opencode_model_id
+
+        if not is_opencode_model_id(token):
+            raise ValidationFailed(
+                "harness.model for opencode must be provider/model "
+                "(run `opencode models` for available ids)"
+            )
+        return token
     if token not in CONTROLLED_HARNESS_MODELS:
         allowed = ", ".join(sorted(CONTROLLED_HARNESS_MODELS))
         raise ValidationFailed(f"harness.model must be one of: {allowed}")

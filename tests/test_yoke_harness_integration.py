@@ -15,6 +15,7 @@ from yoke import (
 
 from codealmanac.agents.catalog import agent_collection, load_agent
 from codealmanac.app import create_app
+from codealmanac.integrations.harnesses.opencode.adapter import OpenCodeHarnessAdapter
 from codealmanac.integrations.harnesses.yoke.adapter import (
     CLAUDE_ALLOWED_TOOLS,
     YokeHarnessAdapter,
@@ -32,6 +33,8 @@ from codealmanac.services.harnesses.models import (
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
 from codealmanac.settings import AppConfig
+
+YOKE_KINDS = (HarnessKind.CLAUDE, HarnessKind.CODEX)
 
 
 class RecordingHarness:
@@ -62,7 +65,7 @@ def request(kind: HarnessKind, prompt: str = "  preserve me exactly  "):
     )
 
 
-@pytest.mark.parametrize("kind", tuple(HarnessKind))
+@pytest.mark.parametrize("kind", YOKE_KINDS)
 def test_adapter_forwards_exact_prompt_and_model(kind, tmp_path):
     harness = RecordingHarness(
         Run(provider=Provider(kind.value), output="ok")
@@ -174,13 +177,16 @@ def test_composition_root_gives_both_harnesses_local_state_runtime(tmp_path):
     app = create_app(config=AppConfig(database_path=database_path))
     expected = database_path.parent / "harnesses"
 
-    for kind in HarnessKind:
+    for kind in YOKE_KINDS:
         adapter = app.harnesses.adapter_for(kind)
         assert isinstance(adapter, YokeHarnessAdapter)
         assert adapter.runtime_root == expected
+    opencode = app.harnesses.adapter_for(HarnessKind.OPENCODE)
+    assert isinstance(opencode, OpenCodeHarnessAdapter)
+    assert opencode.runtime_root == expected
 
 
-@pytest.mark.parametrize("kind", tuple(HarnessKind))
+@pytest.mark.parametrize("kind", YOKE_KINDS)
 @pytest.mark.parametrize("event_kind", tuple(EventKind))
 def test_every_yoke_event_kind_projects_and_serializes(kind, event_kind):
     [projected, *extra] = YokeEventProjector(kind).project(

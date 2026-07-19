@@ -376,7 +376,7 @@ def test_cli_setup_and_uninstall_codex_instructions(
     assert "Navigate to your repo of choice" in captured.out
     assert "codealmanac init" in captured.out
     assert "codealmanac automation status" not in captured.out
-    assert "[b] Codex + Claude" not in captured.out
+    assert "[b] All runners" not in captured.out
     assert CODEALMANAC_START in agents_path.read_text(encoding="utf-8")
     assert tuple(job.task for job in scheduler.installed) == (
         AutomationTask.SYNC,
@@ -529,7 +529,7 @@ def test_cli_setup_interactive_choices_can_disable_update_and_commits(
     assert "macOS heads-up" in output.out
     assert "adds 3 CodeAlmanac background tasks: Sync, Garden, and Update" in output.out
     assert "They are expected and all from CodeAlmanac" in output.out
-    assert "[b] Codex + Claude" not in output.out
+    assert "[b] All runners" not in output.out
     assert "sync quiet agent sessions" not in output.out
     assert "install local scheduled updater" not in output.out
     assert "Product updates" in output.out
@@ -751,7 +751,11 @@ def test_cli_setup_skip_instructions_json(isolated_home: Path, monkeypatch, caps
         item["key"]: item["value"] for item in payload["config_update"]["entries"]
     }
     assert entries["auto_commit"] == "true"
-    assert payload["plan"]["instruction_targets"] == ["codex", "claude"]
+    assert payload["plan"]["instruction_targets"] == [
+        "codex",
+        "claude",
+        "opencode",
+    ]
     assert [item["task"] for item in payload["plan"]["automation"]] == [
         "sync",
         "garden",

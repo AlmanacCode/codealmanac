@@ -157,6 +157,8 @@ def run_options(
     request: RunHarnessRequest,
     on_event: Callable[[Event], None],
 ) -> RunOptions:
+    if request.kind is HarnessKind.OPENCODE:
+        raise ValueError("OpenCode runs through OpenCodeHarnessAdapter, not Yoke")
     return RunOptions(
         model=request.model,
         max_turns=CLAUDE_MAX_TURNS,
@@ -182,14 +184,16 @@ def provider_options(kind: HarnessKind) -> ProviderOptions:
                 raw={"mcp_servers": {}, "strict_mcp_config": True},
             )
         )
-    return ProviderOptions(
-        codex=CodexOptions(
-            sandbox=CodexSandbox.DANGER_FULL_ACCESS,
-            approval=CodexApproval.NEVER,
-            network=False,
-            app_server=CodexAppServerOptions(ephemeral=True),
+    if kind is HarnessKind.CODEX:
+        return ProviderOptions(
+            codex=CodexOptions(
+                sandbox=CodexSandbox.DANGER_FULL_ACCESS,
+                approval=CodexApproval.NEVER,
+                network=False,
+                app_server=CodexAppServerOptions(ephemeral=True),
+            )
         )
-    )
+    raise ValueError(f"unsupported yoke harness kind: {kind.value}")
 
 
 def project_readiness(
