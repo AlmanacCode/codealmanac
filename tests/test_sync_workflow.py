@@ -2,12 +2,18 @@ import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
 from conftest import initialize_repository
 
 from codealmanac.app import create_app
-from codealmanac.services.harnesses.models import HarnessKind
+from codealmanac.services.harnesses.models import HarnessKind, HarnessTranscriptRef
 from codealmanac.services.runs.models import RunKind, RunWorkerSpawnResult
-from codealmanac.services.runs.requests import ReadRunSpecRequest, SpawnRunWorkerRequest
+from codealmanac.services.runs.requests import (
+    ReadRunSpecRequest,
+    RecordRunHarnessTranscriptRequest,
+    SpawnRunWorkerRequest,
+    StartRunRequest,
+)
 from codealmanac.services.sources.models import TranscriptApp, TranscriptCandidate
 from codealmanac.services.sources.requests import DiscoverTranscriptsRequest
 from codealmanac.settings import AppConfig
@@ -16,9 +22,12 @@ from codealmanac.workflows.sync.requests import SyncRequest, SyncStatusRequest
 
 
 class FakeTranscriptDiscoveryAdapter:
-    app = TranscriptApp.CODEX
-
-    def __init__(self, candidates: tuple[TranscriptCandidate, ...]):
+    def __init__(
+        self,
+        candidates: tuple[TranscriptCandidate, ...],
+        app: TranscriptApp = TranscriptApp.CODEX,
+    ):
+        self.app = app
         self.candidates = candidates
         self.requests: list[DiscoverTranscriptsRequest] = []
 
@@ -102,6 +111,73 @@ def test_sync_uses_exact_registered_cwd_without_root_hopping(
     assert summary.eligible == 0
     assert summary.ready == ()
     assert summary.skipped[0].reason == "unregistered-cwd"
+
+
+@pytest.mark.parametrize(
+    ("transcript_app", "harness_kind"),
+    (
+        (TranscriptApp.CLAUDE, HarnessKind.CLAUDE),
+        (TranscriptApp.CODEX, HarnessKind.CODEX),
+    ),
+)
+def test_sync_skips_transcripts_from_codealmanac_runs(
+    tmp_path: Path,
+    isolated_home: Path,
+    transcript_app: TranscriptApp,
+    harness_kind: HarnessKind,
+):
+    repo = initialized_repo(tmp_path, "repo")
+    own_work = transcript_candidate(
+        repo,
+        tmp_path / "own-work.jsonl",
+        current_time(),
+        app=transcript_app,
+        session_id=f"{transcript_app.value}-codealmanac-session",
+    )
+    user_work = transcript_candidate(
+        repo,
+        tmp_path / "user-work.jsonl",
+        current_time(),
+        app=transcript_app,
+        session_id=f"{transcript_app.value}-user-session",
+    )
+    app, _, spawner = app_with_sync(
+        isolated_home,
+        candidates=(own_work, user_work),
+        app=transcript_app,
+    )
+    repository = initialize_repository(app, path=repo)
+    run = app.runs.start(
+        StartRunRequest(
+            repository_id=repository.repository_id,
+            kind=RunKind.INGEST,
+            title="Sync own work",
+        )
+    )
+    app.runs.record_harness_transcript(
+        RecordRunHarnessTranscriptRequest(
+            run_id=run.run_id,
+            transcript=HarnessTranscriptRef(
+                kind=harness_kind,
+                session_id=f"{transcript_app.value}-codealmanac-session",
+            ),
+        )
+    )
+
+    summary = app.workflows.sync.status(
+        SyncStatusRequest(
+            apps=(transcript_app,),
+            now=current_time(),
+        )
+    )
+
+    assert summary.eligible == 1
+    assert summary.ready[0].transcript_paths == (user_work.transcript_path,)
+    assert summary.skipped[0].reason == "codealmanac-run"
+    assert summary.skipped[0].session_id == (
+        f"{transcript_app.value}-codealmanac-session"
+    )
+    assert spawner.requests == []
 
 
 def test_sync_run_queues_one_ingest_run_per_repository_and_records_scan_time(
@@ -240,10 +316,11 @@ def app_with_sync(
     isolated_home: Path,
     *,
     candidates: tuple[TranscriptCandidate, ...],
+    app: TranscriptApp = TranscriptApp.CODEX,
     database_path: Path | None = None,
     spawner: SyncWorkerSpawner | None = None,
 ):
-    adapter = FakeTranscriptDiscoveryAdapter(candidates)
+    adapter = FakeTranscriptDiscoveryAdapter(candidates, app=app)
     selected_spawner = spawner or SyncWorkerSpawner()
     app = create_app(
         AppConfig(
@@ -261,11 +338,12 @@ def transcript_candidate(
     path: Path,
     modified_at: datetime,
     *,
+    app: TranscriptApp = TranscriptApp.CODEX,
     session_id: str = "session-1",
 ) -> TranscriptCandidate:
     path.write_text("transcript\n", encoding="utf-8")
     return TranscriptCandidate(
-        app=TranscriptApp.CODEX,
+        app=app,
         session_id=session_id,
         transcript_path=path,
         cwd=repo,

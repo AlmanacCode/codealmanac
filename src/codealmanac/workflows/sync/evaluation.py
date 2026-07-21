@@ -6,6 +6,7 @@ from codealmanac.core.paths import normalize_path
 from codealmanac.services.repositories.models import Repository
 from codealmanac.services.repositories.requests import SelectRepositoryRequest
 from codealmanac.services.repositories.service import RepositoriesService
+from codealmanac.services.runs.service import RunsService
 from codealmanac.services.sources.models import TranscriptCandidate
 from codealmanac.services.sources.requests import DiscoverTranscriptsRequest
 from codealmanac.services.sources.service import SourcesService
@@ -29,10 +30,12 @@ class SyncEvaluator:
         self,
         repositories: RepositoriesService,
         sources: SourcesService,
+        runs: RunsService,
         state_store: SyncStateStore,
     ):
         self.repositories = repositories
         self.sources = sources
+        self.runs = runs
         self.state_store = state_store
 
     def evaluate(
@@ -62,6 +65,10 @@ class SyncEvaluator:
             normalize_path(repository.root_path): repository
             for repository in selected_repositories
         }
+        owned_sessions_by_repository_id = {
+            repository.repository_id: self.owned_sessions(repository)
+            for repository in selected_repositories
+        }
         for transcript in transcripts:
             repository = repositories_by_path.get(normalize_path(transcript.cwd))
             if repository is None:
@@ -69,6 +76,12 @@ class SyncEvaluator:
                 continue
             if transcript.modified_at < active_since:
                 skipped.append(skipped_transcript(transcript, "inactive"))
+                continue
+            if (
+                transcript.app.value,
+                transcript.session_id,
+            ) in owned_sessions_by_repository_id[repository.repository_id]:
+                skipped.append(skipped_transcript(transcript, "codealmanac-run"))
                 continue
             transcripts_by_repository_id[repository.repository_id].append(transcript)
 
@@ -108,6 +121,14 @@ class SyncEvaluator:
             SelectRepositoryRequest(name=request.repository_name)
         )
         return (repository,)
+
+    def owned_sessions(self, repository: Repository) -> frozenset[tuple[str, str]]:
+        return frozenset(
+            (transcript.kind.value, transcript.session_id)
+            for transcript in self.runs.list_harness_transcripts(
+                repository.repository_id
+            )
+        )
 
 
 def transcript_sort_key(candidate: TranscriptCandidate) -> tuple[str, str, str]:
