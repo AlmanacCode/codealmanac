@@ -25,7 +25,7 @@ sources:
   - id: memory-benchmark-transcript
     type: conversation
     session_id: rollout-2026-07-13T02-31-09-019f5ad0-eb82-7fa0-9feb-221d5c064532
-    note: Product conversation mapping memory and repository-QA benchmarks to CodeAlmanac evaluation strategy.
+    note: Product conversation mapping memory and repository-QA benchmarks to CodeAlmanac evaluation strategy and recording the July 2026 consolidated LoCoMo comparison.
   - id: swe-qa
     type: web
     url: https://aclanthology.org/2026.findings-acl.402.pdf
@@ -171,3 +171,28 @@ are useful for retrieval, code generation, and long-context coding-agent
 evaluation, but they are not as directly aligned with natural repository-level
 architectural question answering plus token efficiency [@code-rag-bench]
 [@locobench-agent] [@memory-benchmark-transcript].
+
+## July 2026 LoCoMo Snapshot
+
+The latest consolidated LoCoMo comparison is useful as a retrieval-quality
+snapshot, not as proof that CodeAlmanac improves coding-agent work. It compared
+CodeAlmanac, BM25, Supermemory, and Mem0 at 1,000, 2,000, and 8,000 token
+context budgets across official token-F1 and semantic-judge accuracy
+[@memory-benchmark-transcript].
+
+At the 8,000-token budget, CodeAlmanac reached 59.72% semantic-judge accuracy,
+nearly tied with BM25 at 60.07% and ahead of Supermemory at 52.06%
+[@memory-benchmark-transcript]. Its official token-F1 stayed lower than BM25:
+27.95% for CodeAlmanac versus 35.06% for BM25 at the same 8,000-token budget
+[@memory-benchmark-transcript].
+
+The small-budget result exposed the main product issue for evaluation work.
+CodeAlmanac scored 25.08% semantic accuracy at 1,000 tokens and 36.20% at 2,000
+tokens, while BM25 scored 44.31% and 51.86% at those same budgets
+[@memory-benchmark-transcript]. The durable interpretation is that the wiki had
+useful information, but the full-page retrieval path wasted tight context
+budgets [@memory-benchmark-transcript].
+
+Mem0 had the strongest semantic scores in the snapshot, but its run completed
+only 1,157 of 1,986 questions. Treat that result as partial coverage rather
+than a fully comparable leaderboard entry [@memory-benchmark-transcript].
