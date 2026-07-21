@@ -344,6 +344,7 @@ def create_workflows(
     sync = SyncWorkflow(
         services.repositories,
         services.sources,
+        services.runs,
         queue,
         SyncStateStore(services.local_state.database_path),
     )

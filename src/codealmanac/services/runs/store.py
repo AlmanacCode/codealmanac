@@ -111,6 +111,17 @@ class RunStore:
         with self.connect() as connection:
             return list_run_records(connection, limit, repository_id)
 
+    def list_harness_transcripts(
+        self,
+        repository_id: str,
+    ) -> tuple[HarnessTranscriptRef, ...]:
+        records = self.list(limit=None, repository_id=repository_id)
+        return tuple(
+            record.harness_transcript
+            for record in records
+            if record.harness_transcript is not None
+        )
+
     def read(self, run_id: str) -> RunRecord:
         with self.connect() as connection:
             record = read_run_record(connection, run_id)

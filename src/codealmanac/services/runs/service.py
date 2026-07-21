@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 
 from codealmanac.core.errors import NotFoundError
+from codealmanac.services.harnesses.models import HarnessTranscriptRef
 from codealmanac.services.repositories.models import Repository, RepositoryName
 from codealmanac.services.repositories.requests import SelectRepositoryRequest
 from codealmanac.services.repositories.service import RepositoriesService
@@ -74,6 +75,13 @@ class RunsService:
         repository = self.repository_filter(request.repository_name)
         repository_id = None if repository is None else repository.repository_id
         return self.store.list(request.limit, repository_id=repository_id)
+
+    def list_harness_transcripts(
+        self,
+        repository_id: str,
+    ) -> tuple[HarnessTranscriptRef, ...]:
+        self.repositories.get(repository_id)
+        return self.store.list_harness_transcripts(repository_id)
 
     def show(self, request: ShowRunRequest) -> RunRecord:
         record = self.store.read(request.run_id)

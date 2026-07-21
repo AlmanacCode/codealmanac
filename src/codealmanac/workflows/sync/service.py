@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 from codealmanac.services.repositories.service import RepositoriesService
+from codealmanac.services.runs.service import RunsService
 from codealmanac.services.sources.service import SourcesService
 from codealmanac.workflows.run_queue.service import RunQueue
 from codealmanac.workflows.sync.evaluation import SyncEvaluator
@@ -23,12 +24,14 @@ class SyncWorkflow:
         self,
         repositories: RepositoriesService,
         sources: SourcesService,
+        runs: RunsService,
         queue: RunQueue,
         state_store: SyncStateStore,
     ):
         self.evaluator = SyncEvaluator(
             repositories=repositories,
             sources=sources,
+            runs=runs,
             state_store=state_store,
         )
         self.executor = SyncIngestQueue(
