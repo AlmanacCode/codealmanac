@@ -134,6 +134,9 @@ def plan_update(metadata: PackageInstallMetadata) -> UpdatePlan:
     if method == UpdateInstallMethod.UV_TOOL:
         command = ("uv", "tool", "upgrade", PACKAGE_NAME)
         return runnable_plan(metadata, method, command)
+    if method == UpdateInstallMethod.PIPX:
+        command = ("pipx", "upgrade", PACKAGE_NAME)
+        return runnable_plan(metadata, method, command)
     if method == UpdateInstallMethod.PIP:
         command = (
             str(metadata.python_executable),
@@ -179,9 +182,19 @@ def runnable_plan(
 def update_method(metadata: PackageInstallMetadata) -> UpdateInstallMethod:
     if metadata.editable:
         return UpdateInstallMethod.EDITABLE
+    if is_pipx_install(metadata):
+        return UpdateInstallMethod.PIPX
     installer = (metadata.installer or "").strip().casefold()
     if installer == "uv":
         return UpdateInstallMethod.UV_TOOL
     if installer == "pip":
         return UpdateInstallMethod.PIP
     return UpdateInstallMethod.UNKNOWN
+
+
+def is_pipx_install(metadata: PackageInstallMetadata) -> bool:
+    installer = (metadata.installer or "").strip().casefold()
+    if installer == "pipx":
+        return True
+    parts = tuple(part.casefold() for part in metadata.python_executable.parts)
+    return "pipx" in parts and "venvs" in parts

@@ -12,6 +12,7 @@ PACKAGE_NAME = "codealmanac"
 
 class UpdateInstallMethod(StrEnum):
     UV_TOOL = "uv-tool"
+    PIPX = "pipx"
     PIP = "pip"
     EDITABLE = "editable"
     UNKNOWN = "unknown"

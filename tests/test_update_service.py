@@ -84,6 +84,40 @@ def test_update_service_plans_pip_upgrade_with_current_python():
     )
 
 
+def test_update_service_plans_pipx_upgrade_for_pipx_metadata():
+    service = update_service(
+        PackageInstallMetadata(
+            version="0.1.0",
+            installer="pipx",
+            python_executable=Path("/Users/me/.local/pipx/venvs/codealmanac/bin/python"),
+        ),
+    )
+
+    plan = service.check(CheckUpdateRequest())
+
+    assert plan.status == UpdateStatus.READY
+    assert plan.method == UpdateInstallMethod.PIPX
+    assert plan.command == ("pipx", "upgrade", "codealmanac")
+
+
+def test_update_service_detects_pipx_venv_when_installer_reports_pip():
+    service = update_service(
+        PackageInstallMetadata(
+            version="0.1.0",
+            installer="pip",
+            python_executable=Path(
+                "/Users/me/.local/pipx/venvs/codealmanac/bin/python"
+            ),
+        ),
+    )
+
+    plan = service.check(CheckUpdateRequest())
+
+    assert plan.status == UpdateStatus.READY
+    assert plan.method == UpdateInstallMethod.PIPX
+    assert plan.command == ("pipx", "upgrade", "codealmanac")
+
+
 def test_update_service_refuses_editable_install_without_running_command():
     runner = FakeCommandRunner(PackageCommandResult(exit_code=0))
     service = update_service_with_runner(
