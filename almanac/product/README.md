@@ -64,6 +64,8 @@ generic documentation pitch [@positioning].
 [Launch metrics](launch-metrics) keeps PyPI fetches separate from user counts,
 while [Evaluation benchmarks](evaluation-benchmarks) turns the positioning claim
 into benchmark tasks for repo-only docs, living-memory updates, and practical
-agent work [@launch-metrics] [@evaluation]. The demo and comparison guides turn
-the same framing into a short viewer-plus-CLI recording sequence and a
-side-by-side benchmark procedure [@launch-demo] [@comparison-guide].
+agent work [@launch-metrics] [@evaluation]. [Demo CodeAlmanac in a launch
+video](../guides/demo-codealmanac-in-launch-video) and [Compare CodeAlmanac with
+generated wikis](../guides/compare-codealmanac-with-generated-wikis) turn the
+same framing into a short viewer-plus-CLI recording sequence and a side-by-side
+benchmark procedure [@launch-demo] [@comparison-guide].
