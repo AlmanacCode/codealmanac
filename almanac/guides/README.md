@@ -52,8 +52,8 @@ sources:
     note: Procedure for publishing and verifying the Python package.
   - id: launch-positioning
     type: wiki
-    path: concepts/launch-positioning
-    note: Product-story concept page used by launch and demo framing.
+    path: product/positioning
+    note: Product positioning page used by launch and demo framing.
   - id: local-only
     type: wiki
     path: decisions/local-only-python-product
@@ -111,7 +111,7 @@ repo developer environment [@release] [@local-only].
 
 [Demo CodeAlmanac in a launch video](demo-codealmanac-in-launch-video) is the
 product-demonstration guide for showing the local viewer and terminal query
-flow in a launch video [@launch-demo]. Use [Launch positioning](../concepts/launch-positioning)
+flow in a launch video [@launch-demo]. Use [Product positioning](../product/positioning)
 when the work needs the broader product story, comparison frame, or launch
 audience notes behind that demo [@launch-positioning].
 

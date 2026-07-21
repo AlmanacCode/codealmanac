@@ -26,14 +26,6 @@ sources:
     type: wiki
     path: concepts/page-graph
     note: Concept page for the derived page, topic, link, source, and health graph.
-  - id: page-kinds
-    type: wiki
-    path: concepts/page-kinds
-    note: Concept page for possible future page-kind contracts.
-  - id: launch-positioning
-    type: wiki
-    path: concepts/launch-positioning
-    note: Concept page for reusable product launch framing.
 ---
 
 # Concepts
@@ -58,10 +50,6 @@ state instead [@local-repo-wiki].
 topics, links, file references, sources, backlinks, and health checks
 [@page-graph].
 
-[Future page kinds](page-kinds) is optional future-product vocabulary, not
-current runtime behavior. Read it only when a change might turn concept, guide,
-decision, or reference labels into validated metadata [@page-kinds].
-
 ## Lifecycle And Inputs
 
 [Lifecycle operation](lifecycle-operation) defines build, ingest, and garden as
@@ -72,9 +60,3 @@ page `sources:` evidence [@source-material].
 [Run ledger](run-ledger) explains the durable records, queued specs, events,
 worker locks, and `codealmanac jobs` inspection surface used by lifecycle work
 [@run-ledger].
-
-## Product Framing
-
-[Launch positioning](launch-positioning) preserves reusable product-story
-language for launch and demo work [@launch-positioning]. Read it when changing
-copy or demos, not when looking for runtime behavior.

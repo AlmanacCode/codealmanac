@@ -18,6 +18,10 @@ sources:
     type: wiki
     path: decisions/markdown-links-and-sources
     note: Decision that separates Markdown page links from structured source evidence.
+  - id: no-page-kind
+    type: wiki
+    path: decisions/no-page-kind-frontmatter
+    note: Decision that page type vocabulary is not current frontmatter metadata.
   - id: no-propose
     type: wiki
     path: decisions/no-propose-apply-or-dry-run
@@ -61,6 +65,11 @@ root migration shims as current product surfaces [@root].
 [Markdown links and sources](markdown-links-and-sources) decides that page
 navigation uses normal Markdown links and evidence uses structured `sources:`
 entries with inline citations [@links-sources].
+
+[No page kind frontmatter](no-page-kind-frontmatter) decides that concept,
+guide, decision, and reference vocabulary remains writing guidance unless a
+future change adds real parser, validation, prompt, and viewer behavior for
+`kind:` metadata [@no-page-kind].
 
 ## Lifecycle Execution
 

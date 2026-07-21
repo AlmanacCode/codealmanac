@@ -8,8 +8,12 @@ sources:
     note: Product hub that routes launch, demo, release, and local-only boundary pages.
   - id: launch-positioning
     type: wiki
-    path: concepts/launch-positioning
+    path: product/positioning
     note: Product positioning and evaluation framing for CodeAlmanac.
+  - id: evaluation-benchmarks
+    type: wiki
+    path: product/evaluation-benchmarks
+    note: Product page for benchmark and evaluation strategy.
   - id: comparison-transcript
     type: conversation
     session_id: rollout-2026-07-12T16-26-10-019f58a7-0c22-7fe2-89af-1b1c91ccb5fd
@@ -24,7 +28,7 @@ sources:
 
 Use this guide when comparing CodeAlmanac with an OpenWiki-style generated
 repository wiki. It belongs to the [Product surface](../product) route for
-launch and demo work, and it turns the [Launch positioning](../concepts/launch-positioning)
+launch and demo work, and it turns the [Product positioning](../product/positioning)
 frame into a benchmark procedure [@product-surface] [@launch-positioning]. The
 comparison should measure whether a fresh coding agent can use the wiki to make
 better decisions, not whether one product has more pages or a better home
@@ -62,11 +66,11 @@ decision. This separates two claims: whether the product maintains code
 documentation, and whether it preserves durable context that existed outside the
 code [@comparison-transcript].
 
-Use [Launch positioning](../concepts/launch-positioning) to choose the benchmark
+Use [Evaluation benchmarks](../product/evaluation-benchmarks) to choose the benchmark
 level. LoCoMo-style and LongMemEval-style questions can test retrieval, but the
 closer product fit is LongMemEval-V2-style operational knowledge or
 MemoryArena-style multi-session action where the agent must use remembered
-experience during later work [@launch-positioning] [@benchmark-harness-transcript].
+experience during later work [@evaluation-benchmarks] [@benchmark-harness-transcript].
 When LoCoMo-style questions are used, treat stock CodeAlmanac search as a
 separate baseline: it is strict page-level lexical FTS, so a zero-result answer
 can mean the current retriever missed differently worded knowledge, not that the

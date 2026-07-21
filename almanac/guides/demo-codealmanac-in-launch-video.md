@@ -8,7 +8,7 @@ sources:
     note: Public product positioning, viewer command, and agent read commands.
   - id: launch-positioning
     type: wiki
-    path: concepts/launch-positioning
+    path: product/positioning
     note: Product contrast and demo framing for CodeAlmanac.
   - id: local-viewer
     type: wiki
@@ -29,7 +29,7 @@ sources:
 Use this guide when recording a short launch or product demo for CodeAlmanac. A
 good demo shows the repo-owned wiki as the artifact, then shows the CLI
 retrieving the same maintained knowledge an agent would use before coding. That
-matches the product distinction in [Launch positioning](../concepts/launch-positioning):
+matches the product distinction in [Product positioning](../product/positioning):
 CodeAlmanac is not a chat router or generic documentation pitch; it is a local
 wiki for decisions, invariants, gotchas, flows, and operating knowledge that
 future agent sessions should not have to rediscover [@launch-positioning]
@@ -75,5 +75,5 @@ repository. `codealmanac validate` checks the graph and source citations, while
 page can be found and read through the same public surface the demo will show
 [@verify-guide].
 
-See [Launch positioning](../concepts/launch-positioning) for the broader product
+See [Product positioning](../product/positioning) for the broader product
 distinction.

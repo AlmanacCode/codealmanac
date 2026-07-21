@@ -61,7 +61,7 @@ Use these routes when you already know the kind of work:
 
 - For command behavior, read [CLI public command surface](reference/cli/public-command-surface).
 - For config defaults, model choices, and precedence, read [Config keys](reference/config-keys).
-- For product boundary, public package, or demo work, start with [Product surface](product), then follow [Local-only Python product](decisions/local-only-python-product), [Release package](guides/release-package), or [Launch positioning](concepts/launch-positioning) for the specific job.
+- For product boundary, public package, or demo work, start with [Product surface](product), then follow [Local-only Python product](decisions/local-only-python-product), [Release package](guides/release-package), or [Product positioning](product/positioning) for the specific job.
 - For page identity, routes, and `README.md` landing pages, read [Page identity](architecture/wiki/page-identity).
 - For page evidence and frontmatter, read [Frontmatter and sources](reference/page-format/frontmatter-and-sources).
 - For lifecycle run state, logs, and attach behavior, read [Run states and events](reference/runs/run-states-and-events).
