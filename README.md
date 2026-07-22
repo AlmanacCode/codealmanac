@@ -104,6 +104,9 @@ codealmanac setup --yes --garden-off
 codealmanac setup --yes --no-auto-update
 ```
 
+Setup exits before writing configuration or agent instructions on non-macOS
+systems because the production scheduler currently depends on `launchd`.
+
 To uninstall CodeAlmanac-owned local artifacts:
 
 ```bash

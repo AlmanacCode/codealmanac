@@ -1,3 +1,4 @@
+from codealmanac.core.errors import ValidationFailed
 from codealmanac.services.automation.requests import RemoveAllAutomationRequest
 from codealmanac.services.config.models import (
     AutomationConfig,
@@ -36,6 +37,7 @@ class SetupService:
         package_uninstaller: PackageUninstaller,
         config: ConfigService,
         runner_probe: RunnerReadinessProbe | None = None,
+        automation_unavailable_reason: str | None = None,
     ):
         self._instructions = instructions
         self._automation_remover = automation_remover
@@ -43,8 +45,11 @@ class SetupService:
         self._package_uninstaller = package_uninstaller
         self._config = config
         self._runner_probe = runner_probe
+        self._automation_unavailable_reason = automation_unavailable_reason
 
     def run(self, request: RunSetupRequest) -> SetupResult:
+        if self._automation_unavailable_reason is not None:
+            raise ValidationFailed(self._automation_unavailable_reason)
         readiness = require_runner(self._runner_probe, request)
         config_update = self.set_config(request)
         changes = ()

@@ -1,3 +1,4 @@
+import platform
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -199,6 +200,9 @@ def create_services(
     adapters: AppAdapters,
 ) -> Services:
     repositories = RepositoriesService(RepositoryStore(local_state.database_path))
+    automation_unavailable_reason = default_scheduler_unavailable_reason(
+        adapters.scheduler
+    )
     automation = AutomationService(adapters.scheduler or LaunchdSchedulerAdapter())
     config_service = ConfigService(
         ConfigStore(),
@@ -248,6 +252,7 @@ def create_services(
         or PackageToolUninstaller(package_metadata, package_runner),
         config_service,
         runner_probe=harnesses,
+        automation_unavailable_reason=automation_unavailable_reason,
     )
     runs = RunsService(
         repositories,
@@ -284,6 +289,23 @@ def create_services(
         harnesses=harnesses,
         manual=manual,
         telemetry=telemetry,
+    )
+
+
+def default_scheduler_unavailable_reason(
+    scheduler: SchedulerAdapter | None,
+    system_name: str | None = None,
+) -> str | None:
+    """Describe why the production scheduler cannot run on this platform."""
+    if scheduler is not None:
+        return None
+    detected_system = system_name or platform.system()
+    if detected_system == "Darwin":
+        return None
+    return (
+        "setup currently supports macOS only because scheduled automation uses "
+        f"launchd; detected {detected_system or 'an unknown platform'}. "
+        "No setup changes were made."
     )
 
 

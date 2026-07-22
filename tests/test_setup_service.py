@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from codealmanac.core.errors import ExecutionFailed
+from codealmanac.app import default_scheduler_unavailable_reason
+from codealmanac.core.errors import ExecutionFailed, ValidationFailed
 from codealmanac.integrations.setup.instructions import (
     CLAUDE_IMPORT_LINE,
     CODEALMANAC_END,
@@ -380,6 +381,30 @@ def test_setup_without_probe_reports_no_readiness(home: Path):
     assert result.runner_readiness is None
 
 
+def test_setup_rejects_unsupported_platform_before_writing(home: Path):
+    automation = FakeSetupAutomationManager(home)
+    service = setup_service(
+        home,
+        automation=automation,
+        automation_unavailable_reason=default_scheduler_unavailable_reason(
+            None, "Linux"
+        ),
+    )
+
+    with pytest.raises(ValidationFailed, match="detected Linux"):
+        service.run(RunSetupRequest(targets=(SetupTarget.CODEX,)))
+
+    assert automation.applied == []
+    assert not (home / ".codealmanac/config.toml").exists()
+    assert not (home / ".codex/AGENTS.md").exists()
+
+
+def test_custom_scheduler_remains_available_on_non_macos():
+    scheduler = object()
+
+    assert default_scheduler_unavailable_reason(scheduler, "Linux") is None
+
+
 @pytest.fixture
 def home(tmp_path: Path) -> Path:
     return tmp_path / "home"
@@ -390,6 +415,7 @@ def setup_service(
     automation: "FakeSetupAutomationManager | None" = None,
     package_uninstaller: "FakePackageUninstaller | None" = None,
     runner_probe: "FakeRunnerProbe | None" = None,
+    automation_unavailable_reason: str | None = None,
 ) -> SetupService:
     automation_manager = automation or FakeSetupAutomationManager(home)
     config = ConfigService(
@@ -404,6 +430,7 @@ def setup_service(
         package_uninstaller or FakePackageUninstaller(skipped_package_result()),
         config=config,
         runner_probe=runner_probe,
+        automation_unavailable_reason=automation_unavailable_reason,
     )
 
 
