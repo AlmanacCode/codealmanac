@@ -164,7 +164,8 @@ def test_python_package_metadata_declares_readme_and_license():
         "License :: OSI Approved :: Apache Software License"
         not in project["classifiers"]
     )
-    assert "Operating System :: OS Independent" in project["classifiers"]
+    assert "Operating System :: MacOS" in project["classifiers"]
+    assert "Operating System :: OS Independent" not in project["classifiers"]
     assert "Topic :: Software Development :: Documentation" in project["classifiers"]
 
 
