@@ -22,6 +22,10 @@ sources:
     type: wiki
     path: guides/verify-a-wiki-change
     note: Guide for checking that wiki pages can be found and read through the public surface.
+  - id: reveal-scene-transcript
+    type: conversation
+    session_id: rollout-2026-07-22T10-03-56-019f8ac8-b302-7230-a550-1f2d844315f7
+    note: Product conversation framing the launch video as a reveal scene rather than an explanation scene.
 ---
 
 # Demo CodeAlmanac In A Launch Video
@@ -39,6 +43,16 @@ Keep the sequence short. The viewer establishes the noun, and the terminal
 demonstrates the verb: `codealmanac serve` shows the browsable wiki, while
 `codealmanac search` and `codealmanac show` retrieve individual pages through
 the public read surface [@local-viewer] [@public-command-surface].
+
+When the demo appears inside a scripted launch scene, treat CodeAlmanac as the
+reveal, not as a character's product pitch. First make the audience understand
+that a new agent or newcomer should be at a disadvantage, then show the wiki on
+screen, name it briefly, and let the retrieval action explain the advantage:
+the agent can search the codebase's maintained decisions, gotchas, flows, and
+operating knowledge [@reveal-scene-transcript]. The dramatic turn works after
+that advantage is clear. For example, a handicap or competition beat should
+land because the audience has already seen that the agent knows what the team
+knows, not because a character has explained every feature [@reveal-scene-transcript].
 
 ## Choose The Repository
 
