@@ -20,3 +20,13 @@ def repository_name_for(
 def repository_id_for(root_path: Path) -> str:
     digest = sha256(str(normalize_path(root_path)).encode("utf-8")).hexdigest()[:16]
     return f"repo_{digest}"
+
+
+def project_id_for(name: str) -> str:
+    digest = sha256(name.casefold().encode("utf-8")).hexdigest()[:16]
+    return f"proj_{digest}"
+
+
+def workspace_id_for(root_path: Path) -> str:
+    digest = sha256(str(normalize_path(root_path)).encode("utf-8")).hexdigest()[:16]
+    return f"ws_{digest}"

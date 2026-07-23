@@ -18,6 +18,25 @@ RepositoryName = Annotated[
 ]
 
 
+class Project(CodeAlmanacModel):
+    project_id: str
+    name: RepositoryName
+    description: str = ""
+    created_at: datetime
+
+
+class Workspace(CodeAlmanacModel):
+    workspace_id: str
+    project_id: str
+    root_path: Path
+    almanac_root: Path = Field(default=DEFAULT_ALMANAC_ROOT)
+    registered_at: datetime
+
+    @property
+    def almanac_path(self) -> Path:
+        return self.root_path / self.almanac_root
+
+
 class Repository(CodeAlmanacModel):
     repository_id: str
     name: RepositoryName
@@ -85,3 +104,4 @@ class RegisteredRepository(CodeAlmanacModel):
 
 class RegisteredRepositories(CodeAlmanacModel):
     repositories: tuple[RegisteredRepository, ...]
+
