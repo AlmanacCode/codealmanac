@@ -30,6 +30,10 @@ sources:
     type: conversation
     session_id: rollout-2026-07-16T21-49-54-019f6e68-df3d-7621-8fe7-37ddb66d49f0
     note: Product conversation refining personal social-launch copy around Claude forgetting sessions, MEMORY.md, and Almanac.
+  - id: team-launch-copy-transcript
+    type: conversation
+    session_id: rollout-2026-07-22T10-03-56-019f8ac8-b302-7230-a550-1f2d844315f7
+    note: Product conversation refining YC launch copy around team-level agent context, shared memory, and dated traction claims.
   - id: deepwiki
     type: web
     url: https://deepwiki.org/
@@ -97,6 +101,16 @@ feel like continuing the same work, not starting the codebase explanation again
 For social copy, keep the call to action simple. The transcript converged on a
 compact post with a link and a feedback request, while preserving the
 frustration to file-based memory to Almanac arc [@personal-launch-copy-transcript].
+
+Team launch copy should spend more time on the costly consequence before
+introducing the product. The strong arc is that coding agents can produce more
+code, but each new session starts from zero, reopens old investigations, and
+works from a different fragment of team context; Almanac then becomes the
+shared knowledge layer that lets agents search the same requirements,
+decisions, implementation history, and incidents before making changes
+[@team-launch-copy-transcript]. The founder-origin version of that story is
+that the missing product was not another coding agent, but shared durable memory
+between agents [@team-launch-copy-transcript].
 
 ## AI Wiki Category
 
