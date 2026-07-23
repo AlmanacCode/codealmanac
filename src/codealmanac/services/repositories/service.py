@@ -2,7 +2,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from codealmanac.core.errors import (
-    AlreadyExists,
     NoRepositorySelected,
     NotFoundError,
     ValidationFailed,
@@ -31,10 +30,10 @@ from codealmanac.services.repositories.selection import (
     contains_path,
     entry_by_exact_path,
     entry_by_name,
-    select_repository_record,
 )
 from codealmanac.services.repositories.state import repository_state
 from codealmanac.services.repositories.store import RepositoryStore
+
 
 
 class RepositoriesService:

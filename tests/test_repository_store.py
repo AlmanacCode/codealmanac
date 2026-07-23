@@ -83,9 +83,14 @@ def test_repository_store_updates_existing_repository(tmp_path: Path):
     assert [item.repository_id for item in store.list()] == ["repo-1"]
 
 
-def test_read_repository_at_registers_multiple_workspaces_under_same_project(tmp_path: Path):
-    from codealmanac.services.repositories.requests import RegisterRepositoryRequest, SelectRepositoryRequest
-    from codealmanac.services.repositories.roots import ALMANAC_ROOT_MARKER_FILE, ALMANAC_ROOT_MARKER_README
+def test_read_repository_at_registers_multiple_workspaces(tmp_path: Path):
+    from codealmanac.services.repositories.requests import (
+        RegisterRepositoryRequest,
+    )
+    from codealmanac.services.repositories.roots import (
+        ALMANAC_ROOT_MARKER_FILE,
+        ALMANAC_ROOT_MARKER_README,
+    )
     from codealmanac.services.repositories.service import RepositoriesService
 
     dir_a = tmp_path / "work" / "a" / "lmfellow"
@@ -93,8 +98,12 @@ def test_read_repository_at_registers_multiple_workspaces_under_same_project(tmp
     for d in (dir_a, dir_b):
         almanac = d / "almanac"
         almanac.mkdir(parents=True, exist_ok=True)
-        (almanac / ALMANAC_ROOT_MARKER_FILE).write_text("topics: []\n", encoding="utf-8")
-        (almanac / ALMANAC_ROOT_MARKER_README).write_text("# Test\n", encoding="utf-8")
+        (almanac / ALMANAC_ROOT_MARKER_FILE).write_text(
+            "topics: []\n", encoding="utf-8"
+        )
+        (almanac / ALMANAC_ROOT_MARKER_README).write_text(
+            "# Test\n", encoding="utf-8"
+        )
 
     service = RepositoriesService(RepositoryStore(tmp_path / "codealmanac.db"))
     # Register dir_a
@@ -113,5 +122,6 @@ def test_read_repository_at_registers_multiple_workspaces_under_same_project(tmp
 
     selected_b = service.select_for_read(cwd=dir_b, repository_name="lmfellow")
     assert selected_b.root_path == dir_b
+
 
 

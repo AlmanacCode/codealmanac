@@ -4,7 +4,6 @@ from codealmanac.core.paths import normalize_path
 from codealmanac.database.local import open_local_database
 from codealmanac.services.repositories.identity import project_id_for
 from codealmanac.services.repositories.models import Repository, RepositoryRecord
-
 from codealmanac.services.repositories.records import (
     repository_record_for,
     repository_record_from_row,
@@ -37,7 +36,9 @@ class RepositoryStore:
             )
             connection.execute(
                 """
-                INSERT INTO workspaces (workspace_id, project_id, root_path, almanac_root, registered_at)
+                INSERT INTO workspaces (
+                    workspace_id, project_id, root_path, almanac_root, registered_at
+                )
                 VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT(workspace_id) DO UPDATE SET
                     root_path = excluded.root_path,
@@ -51,6 +52,7 @@ class RepositoryStore:
                     record.registered_at.isoformat(),
                 ),
             )
+
             connection.execute(
                 """
                 INSERT INTO repositories (
