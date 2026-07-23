@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from codealmanac.core.errors import (
+    AlreadyExists,
     NoRepositorySelected,
     NotFoundError,
     ValidationFailed,
@@ -29,6 +30,7 @@ from codealmanac.services.repositories.roots import (
 from codealmanac.services.repositories.selection import (
     contains_path,
     entry_by_exact_path,
+    entry_by_name,
     select_repository_record,
 )
 from codealmanac.services.repositories.state import repository_state
@@ -60,10 +62,13 @@ class RepositoriesService:
             root_path,
             request.name or (existing.name if existing is not None else None),
         )
+        existing_by_name = entry_by_name(name, self.store.list())
         description = (
             request.description.strip()
             or (existing.description if existing is not None else "")
+            or (existing_by_name.description if existing_by_name is not None else "")
         )
+
         repository = Repository(
             repository_id=repository_id_for(root_path),
             name=name,
@@ -89,12 +94,21 @@ class RepositoriesService:
             return None
         return entry.to_repository()
 
-    def select_by_name(self, request: SelectRepositoryRequest) -> Repository:
+    def select_by_name(
+        self,
+        request: SelectRepositoryRequest,
+        preferred_cwd: Path | None = None,
+    ) -> Repository:
         entries = self.store.list()
-        selected = select_repository_record(request, entries)
-        if selected is not None:
-            return selected.to_repository()
-        raise NotFoundError("repository", request.name)
+        matches = [e for e in entries if e.name.casefold() == request.name.casefold()]
+        if not matches:
+            raise NotFoundError("repository", request.name)
+        if preferred_cwd is not None:
+            normalized_cwd = normalize_path(preferred_cwd)
+            for entry in matches:
+                if contains_path(entry.path, normalized_cwd):
+                    return entry.to_repository()
+        return matches[0].to_repository()
 
     def registered_repository_at(self, path: Path) -> Repository:
         normalized = normalize_path(path)
@@ -110,7 +124,10 @@ class RepositoriesService:
     ) -> Repository:
         if repository_name is None:
             return self.registered_repository_at(cwd)
-        return self.select_by_name(SelectRepositoryRequest(name=repository_name))
+        return self.select_by_name(
+            SelectRepositoryRequest(name=repository_name),
+            preferred_cwd=cwd,
+        )
 
     def read_repository_at(self, path: Path) -> Repository:
         registered = self.find_by_root_path(path)
@@ -126,6 +143,7 @@ class RepositoriesService:
             )
         raise NoRepositorySelected()
 
+
     def select_for_read(
         self,
         cwd: Path,
@@ -133,7 +151,11 @@ class RepositoriesService:
     ) -> Repository:
         if repository_name is None:
             return self.read_repository_at(cwd)
-        return self.select_by_name(SelectRepositoryRequest(name=repository_name))
+        return self.select_by_name(
+            SelectRepositoryRequest(name=repository_name),
+            preferred_cwd=cwd,
+        )
+
 
     def validate_path(self, repository_id: str, path: Path) -> Path:
         repository = self.get(repository_id)
