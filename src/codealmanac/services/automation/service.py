@@ -37,16 +37,18 @@ class AutomationService:
     ) -> AutomationTaskApplyResult:
         job = job_from_reconcile_request(self.jobs, request)
         if request.enabled:
-            self.scheduler.install(job)
+            scheduled = self.scheduler.install(job).installed
             changed = True
         else:
             changed = self.scheduler.uninstall(job)
+            scheduled = False
         return AutomationTaskApplyResult(
             task=request.task,
             enabled=request.enabled,
             interval=request.every,
             plist_path=job.plist_path,
             changed=changed,
+            scheduled=scheduled,
         )
 
     def remove_all(

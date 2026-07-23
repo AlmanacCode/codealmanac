@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from codealmanac.cli.render.brand import BAR, BLUE, RST, WHITE_BOLD
 from codealmanac.cli.render.terminal import wrap_with_prefixes, write_line
+from codealmanac.core.platform import platform_label
 from codealmanac.services.automation.models import AutomationTask
 
 
@@ -76,6 +77,17 @@ def background_item_confirmation_notice(
             f"macOS may have shown {count} “Background Items Added” "
             f"{notification_word}.",
             f"Those are CodeAlmanac's {automation_task_names(tasks)} schedules.",
+        ),
+    )
+
+
+def scheduler_unavailable_notice() -> BackgroundItemNotice:
+    return BackgroundItemNotice(
+        title="Scheduled automation unavailable",
+        lines=(
+            f"CodeAlmanac can't schedule background jobs on {platform_label()} yet.",
+            "Run codealmanac sync and codealmanac garden manually, or wire them "
+            "into your own cron/systemd timer.",
         ),
     )
 
