@@ -79,6 +79,10 @@ class AutomationTaskApplyResult(CodeAlmanacModel):
     interval: timedelta
     plist_path: Path
     changed: bool
+    # Whether the scheduler backend actually activated the job. Diverges from
+    # `enabled` on platforms without a scheduler (the config records intent but
+    # nothing is scheduled), letting render describe what really happened.
+    scheduled: bool = False
 
 
 class AutomationRemoveResult(CodeAlmanacModel):

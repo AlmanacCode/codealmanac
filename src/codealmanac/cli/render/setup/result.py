@@ -11,6 +11,7 @@ from codealmanac.cli.render.common import print_json_model
 from codealmanac.cli.render.setup.background_items import (
     background_item_confirmation_notice,
     render_background_item_notice,
+    scheduler_unavailable_notice,
 )
 from codealmanac.cli.render.setup.steps import SetupStep, render_setup_step
 from codealmanac.cli.render.setup.uninstall import render_uninstall_text
@@ -55,17 +56,29 @@ def render_setup_text(result: SetupResult) -> None:
         if index < len(steps) - 1:
             write_line(BAR)
     background_notice = background_item_confirmation_notice(
-        enabled_automation_tasks(result)
+        scheduled_automation_tasks(result)
     )
     if background_notice is not None:
         write_line(BAR)
         render_background_item_notice(background_notice)
+    if automation_scheduling_unavailable(result):
+        write_line(BAR)
+        render_background_item_notice(scheduler_unavailable_notice())
     write_line("")
     render_next_steps_box(next_step_lines(result))
 
 
-def enabled_automation_tasks(result: SetupResult) -> tuple[AutomationTask, ...]:
-    return tuple(item.task for item in result.config_update.automation if item.enabled)
+def scheduled_automation_tasks(result: SetupResult) -> tuple[AutomationTask, ...]:
+    return tuple(
+        item.task for item in result.config_update.automation if item.scheduled
+    )
+
+
+def automation_scheduling_unavailable(result: SetupResult) -> bool:
+    return any(
+        item.enabled and not item.scheduled
+        for item in result.config_update.automation
+    )
 
 
 def next_step_lines(result: SetupResult) -> tuple[str, ...]:
@@ -155,6 +168,8 @@ def automation_step(result: SetupResult, task: AutomationTask, label: str) -> Se
     item = applied.get(task)
     if item is None:
         return SetupStep(label, "skipped", "not requested")
+    if item.enabled and not item.scheduled:
+        return SetupStep(label, "manual", "scheduling unavailable on this platform")
     if item.enabled:
         return SetupStep(label, "installed", installed_automation_detail(result, task))
     return SetupStep(label, "disabled", disabled_automation_detail(task))
@@ -163,7 +178,9 @@ def automation_step(result: SetupResult, task: AutomationTask, label: str) -> Se
 def wiki_maintenance_step(result: SetupResult) -> SetupStep:
     if len(result.config_update.automation) == 0:
         return SetupStep("Wiki maintenance", "manual", "no schedules installed")
-    installed = {item.task for item in result.config_update.automation if item.enabled}
+    installed = {
+        item.task for item in result.config_update.automation if item.scheduled
+    }
     if AutomationTask.SYNC in installed and AutomationTask.GARDEN in installed:
         return SetupStep(
             "Wiki maintenance",

@@ -21,7 +21,9 @@ shaped the way it is, what broke before, which invariants matter, and how
 workflows cross files and services. The wiki is plain markdown in your repo,
 indexed locally, and reviewed in Git like any other code change.
 
-**Supported today:** macOS with Codex or Claude Code. Requires Python 3.12+.
+**Supported today:** macOS and Linux with Codex or Claude Code. Requires Python
+3.12+. Scheduled background automation (`launchd`) is macOS-only for now; on
+Linux everything else works and you run `codealmanac sync` / `garden` yourself.
 
 ## Quickstart
 
@@ -57,8 +59,9 @@ codealmanac setup --yes
 codealmanac setup --yes --runner claude
 ```
 
-Setup installs agent instructions for your chosen tools and three local macOS
-`launchd` jobs. The jobs and all wiki work run locally.
+Setup installs agent instructions for your chosen tools and, on macOS, three
+local `launchd` jobs. On Linux the schedules are skipped (setup still completes)
+and you trigger `sync` / `garden` manually. All wiki work runs locally.
 
 | Job | Default schedule | What it does |
 | --- | ---: | --- |

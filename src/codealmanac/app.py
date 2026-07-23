@@ -2,7 +2,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from codealmanac import __version__
-from codealmanac.integrations.automation import LaunchdSchedulerAdapter
+from codealmanac.core.platform import scheduler_supported
+from codealmanac.integrations.automation import (
+    LaunchdSchedulerAdapter,
+    UnsupportedSchedulerAdapter,
+)
 from codealmanac.integrations.harnesses import default_harness_adapters
 from codealmanac.integrations.runs import (
     PsutilRunProcessController,
@@ -194,12 +198,18 @@ def create_app(
     return assemble_app(services, workflows)
 
 
+def default_scheduler_adapter() -> SchedulerAdapter:
+    if scheduler_supported():
+        return LaunchdSchedulerAdapter()
+    return UnsupportedSchedulerAdapter()
+
+
 def create_services(
     local_state: LocalStatePaths,
     adapters: AppAdapters,
 ) -> Services:
     repositories = RepositoriesService(RepositoryStore(local_state.database_path))
-    automation = AutomationService(adapters.scheduler or LaunchdSchedulerAdapter())
+    automation = AutomationService(adapters.scheduler or default_scheduler_adapter())
     config_service = ConfigService(
         ConfigStore(),
         local_state.config_path,
