@@ -35,8 +35,8 @@ from codealmanac.services.repositories.state import repository_state
 from codealmanac.services.repositories.store import RepositoryStore
 
 
-
 class RepositoriesService:
+
     def __init__(self, store: RepositoryStore):
         self.store = store
 
