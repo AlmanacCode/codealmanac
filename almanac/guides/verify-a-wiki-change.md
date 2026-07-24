@@ -1,6 +1,6 @@
 ---
 title: Verify A Wiki Change
-topics: [guides, wiki, health, safety]
+topics: [guides, wiki, health, safety, evidence]
 sources:
   - id: repo_readme
     type: file

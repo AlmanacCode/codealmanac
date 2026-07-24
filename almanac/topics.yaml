@@ -41,8 +41,12 @@ topics:
     parents: [wiki]
   - slug: sources
     title: Sources
-    description: Source material, source addresses, and page evidence
+    description: Source material, source addresses, and runtime source loading
     parents: [architecture]
+  - slug: evidence
+    title: Evidence
+    description: Page source entries, inline citations, and source-health validation
+    parents: [page-format, health]
   - slug: agent-runs
     title: Agent Runs
     description: Harness contracts, the Yoke boundary, and normalized agent events
