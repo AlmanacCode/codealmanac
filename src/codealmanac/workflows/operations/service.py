@@ -25,6 +25,7 @@ from codealmanac.services.runs.requests import (
     RecordRunHarnessTranscriptRequest,
 )
 from codealmanac.services.runs.service import RunsService
+from codealmanac.workflows.operations.failure import finish_failed_run
 from codealmanac.workflows.operations.harness import (
     harness_events,
     harness_run_event_kind,
@@ -174,6 +175,8 @@ class OperationRunner:
         category: RunFailureCategory,
     ) -> None:
         message = error_summary(error)
+        # The event log is a diagnostic; the terminal transition carries the
+        # same message, so a failed event write must not block it.
         with suppress(Exception):
             self.record(
                 RecordOperationEventRequest(
@@ -182,15 +185,7 @@ class OperationRunner:
                     message=message,
                 )
             )
-        with suppress(Exception):
-            self.runs.finish(
-                FinishRunRequest(
-                    run_id=context.run_id,
-                    status=RunStatus.FAILED,
-                    error=message,
-                    failure_category=category,
-                )
-            )
+        finish_failed_run(self.runs, context.run_id, message, category)
 
     @contextmanager
     def failure_phase(

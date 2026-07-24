@@ -106,6 +106,26 @@ The source entry is malformed.
     }
 
 
+def test_validate_reports_unreadable_topics_file(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = initialized_repo(tmp_path, isolated_home)
+    (repo / "almanac/topics.yaml").write_text("topics: [", encoding="utf-8")
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+
+    result = app.health.validate(ValidateWikiRequest(cwd=repo))
+
+    assert result.ok is False
+    topics_issues = [
+        issue for issue in result.issues if issue.category == "topics_file"
+    ]
+    assert [issue.path for issue in topics_issues] == ["topics.yaml"]
+    assert topics_issues[0].message.startswith("topics.yaml could not be read:")
+
+
 def test_validate_reports_runtime_state_leaks(
     tmp_path: Path,
     isolated_home: Path,

@@ -7,6 +7,7 @@ from conftest import initialize_repository, runtime_index_path
 from codealmanac.app import create_app
 from codealmanac.core.errors import NotFoundError, ValidationFailed
 from codealmanac.services.index.requests import ReindexRequest
+from codealmanac.services.index.sources import file_hash
 from codealmanac.services.pages.requests import ShowPageRequest
 from codealmanac.services.repositories.requests import (
     RegisterRepositoryRequest,
@@ -570,6 +571,26 @@ def test_ensure_fresh_skips_unchanged_projection_and_refreshes_edits(
     assert refreshed.changed == 2
     assert refreshed_rewrites == 2
     assert [row.slug for row in rows] == ["note"]
+
+
+def test_unreadable_source_file_does_not_hash_like_a_missing_one(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    present = tmp_path / "topics.yaml"
+    present.write_text("topics: []\n", encoding="utf-8")
+    readable_hash = file_hash(present)
+    missing_hash = file_hash(tmp_path / "absent.yaml")
+    monkeypatch.setattr(
+        Path,
+        "read_bytes",
+        lambda _self: (_ for _ in ()).throw(PermissionError("denied")),
+    )
+
+    unreadable_hash = file_hash(present)
+
+    assert unreadable_hash != missing_hash
+    assert unreadable_hash != readable_hash
 
 
 def test_reindex_forces_projection_rebuild_when_index_is_fresh(

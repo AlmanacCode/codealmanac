@@ -709,6 +709,44 @@ def test_operation_failure_finishes_when_error_event_write_fails(
     assert stored.error == "invalid source"
 
 
+def test_operation_failure_surfaces_unrecorded_terminal_transition(
+    tmp_path: Path,
+    isolated_home: Path,
+    monkeypatch,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "note.md").write_text("auth decision\n", encoding="utf-8")
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+    initialize_repository(app, path=repo)
+    operations, context, queued = begin_ingest_operation(
+        app,
+        IngestRequest(
+            cwd=repo,
+            inputs=("note.md",),
+            harness=HarnessKind.CODEX,
+            model="gpt-5.5",
+        ),
+    )
+    monkeypatch.setattr(
+        operations.runs,
+        "finish",
+        lambda _request: (_ for _ in ()).throw(OSError("database is locked")),
+    )
+
+    with pytest.raises(ExecutionFailed, match="could not be marked failed"):
+        operations.fail(
+            context,
+            ValidationFailed("invalid source"),
+            RunFailureCategory.SOURCE_PREPARATION,
+        )
+
+    stored = app.runs.show(ShowRunRequest(run_id=queued.run_id))
+    assert stored.status == RunStatus.RUNNING
+
+
 def test_operation_failure_handles_broken_exception_stringification(
     tmp_path: Path,
     isolated_home: Path,

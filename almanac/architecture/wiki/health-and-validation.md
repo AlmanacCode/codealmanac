@@ -26,6 +26,14 @@ sources:
     type: file
     path: src/codealmanac/services/health/runtime.py
     note: Runtime-state leak checks.
+  - id: health-topics
+    type: file
+    path: src/codealmanac/services/health/topics.py
+    note: topics.yaml readability check.
+  - id: index-sources
+    type: file
+    path: src/codealmanac/services/index/sources.py
+    note: Index source loading and the page route collision error.
   - id: validate-tests
     type: file
     path: tests/test_validate.py
@@ -34,7 +42,7 @@ sources:
 
 # Health And Validation
 
-Health and validation are the wiki's safety checks. `health` reports problems found in the indexed page graph, while `validate` turns those checks into a pass/fail boundary for commands and lifecycle runs [@health-service]. Validation also checks source frontmatter shape and runtime-state leaks before relying on the index-backed health report [@health-service] [@health-sources] [@health-runtime].
+Health and validation are the wiki's safety checks. `health` reports problems found in the indexed page graph, while `validate` turns those checks into a pass/fail boundary for commands and lifecycle runs [@health-service]. Validation also checks source frontmatter shape, `topics.yaml` readability, and runtime-state leaks before relying on the index-backed health report [@health-service] [@health-sources] [@health-topics] [@health-runtime].
 
 This matters because the committed `almanac/` tree is source. A lifecycle agent can write Markdown, but the run is not successful until the wiki can be indexed and validated [@validate-tests]. The same validation path is available to users before they commit wiki edits.
 
@@ -42,7 +50,7 @@ This matters because the committed `almanac/` tree is source. A lifecycle agent 
 
 `HealthService.check` selects a repository and returns the index service's health report [@health-service]. It is a read-side diagnostic, consistent with the read/write split described in [Service boundaries](../service-boundaries).
 
-`HealthService.validate` is stricter. It gathers source shape issues and runtime-state issues, then calls `index.ensure_fresh`. If index refresh fails, the validation result records a `page_routes` issue and stops before running index health queries [@health-service]. If refresh succeeds, validation adds issues derived from the health report [@health-service].
+`HealthService.validate` is stricter. It gathers source shape issues, `topics.yaml` issues, and runtime-state issues, then calls `index.ensure_fresh`. If index refresh fails, the validation result records the failure and stops before running index health queries: a `PageRouteCollision` becomes a `page_routes` issue and every other `ValidationFailed` becomes an `index_sources` issue [@health-service] [@index-sources]. If refresh succeeds, validation adds issues derived from the health report [@health-service].
 
 `ensure_valid` wraps the same validation path and raises `ValidationFailed` when any issue exists [@health-service]. `OperationRunner` uses that method after a lifecycle agent writes pages, so invalid wiki output fails the run instead of being marked done.
 
@@ -57,6 +65,8 @@ Source hygiene comes from a separate index view. Citation IDs are parsed from in
 ## Validation-Only Checks
 
 Some checks happen before or outside the indexed report. Source shape validation opens every page and verifies that `sources:` is a list and that each source entry has an `id`, a supported `type`, and a target field such as `path` for file evidence [@health-sources].
+
+Topic-file validation reads `topics.yaml` through the same lenient reader the index uses. Read commands keep working when that file is malformed or unreadable, so the reader returns no topics and carries the parse error instead of raising; validation turns that error into a `topics_file` issue so the dropped topics are never silent [@health-topics].
 
 Runtime-state validation rejects local state files and directories inside `almanac/`. The blocked names are `index.db`, `index.db-wal`, `index.db-shm`, `jobs`, and `runs`; the message points back to `~/.codealmanac/` as the correct runtime home [@health-runtime].
 

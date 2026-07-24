@@ -10,6 +10,10 @@ sources:
     type: file
     path: src/codealmanac/workflows/operations/harness.py
     note: Harness result validation and event classification.
+  - id: operation-failure
+    type: file
+    path: src/codealmanac/workflows/operations/failure.py
+    note: Terminal failed-run transition for operations.
   - id: operation-models
     type: file
     path: src/codealmanac/workflows/operations/models.py
@@ -44,7 +48,9 @@ If a harness returns no event stream, the harness helper creates a terminal fall
 
 After recording harness output, the runner validates harness success [@operation-service] [@operation-harness]. A failed harness therefore leaves its transcript and output in the run log before the run is marked failed.
 
-The runner then refreshes the index, validates the wiki through `HealthService.ensure_valid`, and finishes the run as `DONE` with the harness summary or operation success summary [@operation-service]. Each step runs inside an explicit failure phase. A failed readiness check becomes `harness_readiness`; an adapter exception or normalized failed result becomes `provider_execution`; index refresh becomes `indexing`; final health validation becomes `wiki_validation`; and event-sink or run machinery failures become `internal_error` [@operation-service]. `fail` computes a non-throwing one-line summary, then best-efforts the readable error event and authoritative terminal transition independently. It records the supplied phase rather than inferring durable analytics from exception classes or traceback modules.
+The runner then refreshes the index, validates the wiki through `HealthService.ensure_valid`, and finishes the run as `DONE` with the harness summary or operation success summary [@operation-service]. Each step runs inside an explicit failure phase. A failed readiness check becomes `harness_readiness`; an adapter exception or normalized failed result becomes `provider_execution`; index refresh becomes `indexing`; final health validation becomes `wiki_validation`; and event-sink or run machinery failures become `internal_error` [@operation-service]. `fail` computes a non-throwing one-line summary, best-efforts the readable error event, then writes the authoritative terminal transition. It records the supplied phase rather than inferring durable analytics from exception classes or traceback modules.
+
+The two writes are not equally optional. A failed error-event write is diagnostic noise and never blocks the terminal transition, but a failed transition raises `ExecutionFailed` naming the run, the original failure, and the bookkeeping error [@operation-failure]. A run left non-terminal with no record of why is worse than a noisy failure.
 
 The readiness and invocation calls are the stage distinction: missing, unavailable, or failed readiness checks are `harness_readiness`; once readiness passes, adapter exceptions are `provider_execution` regardless of their exception class. `HarnessEventSinkFailed` preserves the one exception to that stage rule by identifying caller-owned event persistence as `internal_error` [@operation-service]. Ingest source resolution and runtime inspection occur before shared execution, so the ingest workflow marks those scopes as `source_preparation` while still delegating the actual failure write to `OperationRunner`.
 

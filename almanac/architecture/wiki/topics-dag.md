@@ -18,6 +18,10 @@ sources:
     type: file
     path: src/codealmanac/services/wiki/topic_file.py
     note: Round-trip topics.yaml mutation path.
+  - id: topic-read
+    type: file
+    path: src/codealmanac/services/wiki/topic_read.py
+    note: Lenient topics.yaml reader that carries its parse error.
   - id: topic-tests
     type: file
     path: tests/test_topics_mutation.py
@@ -37,6 +41,8 @@ This area is split into read and write responsibilities. `TopicsService` is the 
 ## Read Shape
 
 Topic reads come from the index. `list` selects the repository and returns indexed topic summaries, while `show` kebab-cases the requested slug and asks the index for a `TopicDetail` [@topics-service]. This means callers do not parse `topics.yaml` directly during normal reads.
+
+The reader behind the index is deliberately lenient. A malformed or unreadable `topics.yaml` yields no topic definitions instead of breaking every read command, and the parse error travels with that empty result so `validate` can report it as a `topics_file` issue [@topic-read]. Mutation commands keep the stricter contract and refuse to rewrite a file they could not parse [@topic-file].
 
 The index can see two kinds of topic evidence. A topic can be defined in `topics.yaml`, or it can appear only in page frontmatter. Mutation commands call the index for existing topic slugs before deciding whether a topic exists, which lets commands promote page-only topics into explicit YAML entries when needed [@topic-mutations] [@topic-tests].
 

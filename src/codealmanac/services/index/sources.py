@@ -13,6 +13,10 @@ from codealmanac.services.wiki.paths import iter_page_paths
 from codealmanac.services.wiki.topics import TopicDefinition, load_topics_yaml
 
 
+class PageRouteCollision(ValidationFailed):
+    """Two page files claim the same wiki route."""
+
+
 class LoadedIndexSources(CodeAlmanacModel):
     documents: tuple[PageDocument, ...]
     topics: tuple[TopicDefinition, ...]
@@ -61,7 +65,7 @@ def load_documents(almanac_path: Path) -> tuple[list[PageDocument], int, int]:
             continue
         if document.slug in seen_slugs:
             first = seen_slugs[document.slug]
-            raise ValidationFailed(
+            raise PageRouteCollision(
                 "page route collision: "
                 f"{document.slug} maps to both {first} and {page_path}"
             )
@@ -75,5 +79,7 @@ def file_hash(path: Path) -> str:
         return sha256(b"").hexdigest()
     try:
         return sha256(path.read_bytes()).hexdigest()
-    except OSError:
-        return sha256(b"").hexdigest()
+    except OSError as error:
+        # An unreadable file must not hash like a missing one, or the index
+        # would report itself fresh while the file's content stays unread.
+        return sha256(f"unreadable:{error.__class__.__name__}".encode()).hexdigest()

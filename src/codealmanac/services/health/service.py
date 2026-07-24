@@ -9,8 +9,10 @@ from codealmanac.services.health.reports import (
 from codealmanac.services.health.requests import HealthCheckRequest, ValidateWikiRequest
 from codealmanac.services.health.runtime import runtime_state_issues
 from codealmanac.services.health.sources import source_shape_issues
+from codealmanac.services.health.topics import topics_file_issues
 from codealmanac.services.index.models import HealthReport, IndexRefreshResult
 from codealmanac.services.index.service import IndexService
+from codealmanac.services.index.sources import PageRouteCollision
 from codealmanac.services.repositories.models import Repository, RepositoryName
 from codealmanac.services.repositories.service import RepositoriesService
 
@@ -31,6 +33,7 @@ class HealthService:
     def validate_repository(self, repository: Repository) -> ValidationResult:
         issues = [
             *source_shape_issues(repository.almanac_path),
+            *topics_file_issues(repository.almanac_path),
             *runtime_state_issues(repository.almanac_path),
         ]
         index = None
@@ -39,7 +42,7 @@ class HealthService:
         except ValidationFailed as error:
             issues.append(
                 ValidationIssue(
-                    category="page_routes",
+                    category=index_issue_category(error),
                     message=str(error),
                     path=repository.almanac_root.as_posix(),
                 )
@@ -62,6 +65,12 @@ class HealthService:
         repository_name: RepositoryName | None,
     ) -> Repository:
         return self.repositories.select_for_read(cwd, repository_name)
+
+
+def index_issue_category(error: ValidationFailed) -> str:
+    if isinstance(error, PageRouteCollision):
+        return "page_routes"
+    return "index_sources"
 
 
 def validation_result(
