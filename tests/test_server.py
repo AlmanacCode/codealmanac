@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from codealmanac.app import CodeAlmanac
@@ -19,7 +20,7 @@ def test_server_serves_static_assets_and_viewer_api(
     viewer_repo: tuple[Path, CodeAlmanac],
 ):
     repo, app = viewer_repo
-    client = TestClient(create_server_app(app, repo))
+    client = viewer_client(create_server_app(app, repo))
 
     index = client.get("/")
     overview = client.get("/api/overview")
@@ -82,7 +83,7 @@ def test_server_serves_jobs_api_with_readable_steps(
 ):
     repo, app = viewer_repo
     record = create_server_run(repo, app)
-    client = TestClient(create_server_app(app, repo))
+    client = viewer_client(create_server_app(app, repo))
 
     jobs = client.get("/api/jobs")
     detail = client.get(f"/api/jobs/{record.run_id}")
@@ -118,7 +119,7 @@ topics: [operations]
 Tracks operational decisions.
 """,
     )
-    client = TestClient(create_server_app(app, repo))
+    client = viewer_client(create_server_app(app, repo))
 
     overview = client.get("/api/overview")
     other_overview = client.get("/api/overview", params={"wiki": other.name})
@@ -126,7 +127,7 @@ Tracks operational decisions.
         "/api/page/ops-note",
         params={"wiki": other.name},
     )
-    locked_client = TestClient(create_server_app(app, repo, other.name))
+    locked_client = viewer_client(create_server_app(app, repo, other.name))
     locked_overview = locked_client.get("/api/overview")
     locked_page = locked_client.get("/api/page/ops-note")
 
@@ -154,7 +155,7 @@ def test_server_maps_product_errors_to_http_statuses(
     viewer_repo: tuple[Path, CodeAlmanac],
 ):
     repo, app = viewer_repo
-    client = TestClient(create_server_app(app, repo))
+    client = viewer_client(create_server_app(app, repo))
 
     response = client.get("/api/page/missing")
 
@@ -166,7 +167,7 @@ def test_server_maps_request_validation_errors_to_http_statuses(
     viewer_repo: tuple[Path, CodeAlmanac],
 ):
     repo, app = viewer_repo
-    client = TestClient(create_server_app(app, repo))
+    client = viewer_client(create_server_app(app, repo))
 
     response = client.get("/api/search", params={"limit": "-1"})
 
@@ -178,7 +179,7 @@ def test_server_rejects_invalid_file_reference_paths(
     viewer_repo: tuple[Path, CodeAlmanac],
 ):
     repo, app = viewer_repo
-    client = TestClient(create_server_app(app, repo))
+    client = viewer_client(create_server_app(app, repo))
 
     response = client.get("/api/file", params={"path": "../secret.txt"})
 
@@ -190,7 +191,7 @@ def test_server_rejects_invalid_static_asset_paths(
     viewer_repo: tuple[Path, CodeAlmanac],
 ):
     repo, app = viewer_repo
-    client = TestClient(create_server_app(app, repo))
+    client = viewer_client(create_server_app(app, repo))
 
     traversal = client.get("/assets/%2E%2E/app.js")
     missing = client.get("/assets/viewer/missing.js")
@@ -208,12 +209,75 @@ def test_server_rejects_path_shaped_job_ids(
     viewer_repo: tuple[Path, CodeAlmanac],
 ):
     repo, app = viewer_repo
-    client = TestClient(create_server_app(app, repo))
+    client = viewer_client(create_server_app(app, repo))
 
     response = client.get("/api/jobs/..secret")
 
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "validation_failed"
+
+
+def test_server_sends_security_headers_and_hides_generated_api_docs(
+    viewer_repo: tuple[Path, CodeAlmanac],
+):
+    repo, app = viewer_repo
+    client = viewer_client(create_server_app(app, repo))
+
+    index = client.get("/")
+    docs = client.get("/docs")
+    schema = client.get("/openapi.json")
+
+    assert index.headers["x-content-type-options"] == "nosniff"
+    assert index.headers["x-frame-options"] == "DENY"
+    assert "frame-ancestors 'none'" in index.headers["content-security-policy"]
+    assert "default-src 'self'" in index.headers["content-security-policy"]
+    # Both fall through to the viewer shell instead of exposing generated docs.
+    assert "swagger" not in docs.text.lower()
+    assert "openapi" not in schema.text.lower()
+
+
+def test_server_rejects_non_loopback_host_headers_when_bound_to_loopback(
+    viewer_repo: tuple[Path, CodeAlmanac],
+):
+    repo, app = viewer_repo
+    client = viewer_client(create_server_app(app, repo))
+
+    rebound = client.get("/api/overview", headers={"host": "wiki.attacker.example"})
+    loopback = client.get("/api/overview", headers={"host": "localhost:3927"})
+
+    assert rebound.status_code == 400
+    assert loopback.status_code == 200
+
+
+def test_server_accepts_any_host_when_bound_beyond_loopback(
+    viewer_repo: tuple[Path, CodeAlmanac],
+):
+    repo, app = viewer_repo
+    client = viewer_client(create_server_app(app, repo, host="0.0.0.0"))
+
+    response = client.get("/api/overview", headers={"host": "workstation.local"})
+
+    assert response.status_code == 200
+
+
+def test_server_job_markdown_only_links_safe_url_schemes(
+    viewer_repo: tuple[Path, CodeAlmanac],
+):
+    repo, app = viewer_repo
+    client = viewer_client(create_server_app(app, repo))
+
+    jobs_module = client.get("/assets/viewer/jobs.js")
+
+    assert "safeHref" in jobs_module.text
+    assert 'SAFE_LINK_SCHEMES = new Set(["http:", "https:", "mailto:"])' in (
+        jobs_module.text
+    )
+
+
+def viewer_client(server: FastAPI) -> TestClient:
+    # The viewer answers loopback Host headers only, matching what a browser on
+    # the same machine sends to the served address.
+    return TestClient(server, base_url="http://127.0.0.1:3927")
 
 
 def write_server_page(repo: Path, name: str, body: str) -> None:

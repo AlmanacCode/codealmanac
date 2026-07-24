@@ -760,11 +760,25 @@ function inlineMarkdown(text) {
   html = html.replace(/`([^`]+)`/g, (_, code) => `<code>${code}</code>`);
   html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
-  html = html.replace(
-    /\[([^\]]+)\]\(([^)\s]+)\)/g,
-    (_, label, url) => `<a href="${escapeAttr(url)}" rel="noreferrer">${label}</a>`,
-  );
+  html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, label, url) => {
+    const href = safeHref(url);
+    if (href === null) return match;
+    return `<a href="${escapeAttr(href)}" rel="noreferrer">${label}</a>`;
+  });
   return html;
+}
+
+const SAFE_LINK_SCHEMES = new Set(["http:", "https:", "mailto:"]);
+
+function safeHref(url) {
+  const raw = String(url).trim();
+  if (raw.startsWith("#") || raw.startsWith("/")) return raw;
+  try {
+    const parsed = new URL(raw, window.location.origin);
+    return SAFE_LINK_SCHEMES.has(parsed.protocol) ? raw : null;
+  } catch {
+    return null;
+  }
 }
 
 function escapeHtml(value) {

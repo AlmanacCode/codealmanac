@@ -132,4 +132,10 @@ class GitSourceRuntimeAdapter:
 def require_revision_range(ref: SourceRef) -> str:
     if ref.revision_range is None or ref.revision_range.strip() == "":
         raise ExecutionFailed(f"Git source missing revision range: {ref.identity}")
+    # A leading dash makes git read the range as an option, so a source like
+    # `--output=~/.zshrc` would turn a read-only inspection into a write.
+    if ref.revision_range.startswith("-"):
+        raise ExecutionFailed(
+            f"Git source revision range must not start with '-': {ref.identity}"
+        )
     return ref.revision_range

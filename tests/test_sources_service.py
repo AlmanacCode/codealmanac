@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from codealmanac.app import create_app
-from codealmanac.core.errors import ValidationFailed
+from codealmanac.core.errors import ExecutionFailed, ValidationFailed
 from codealmanac.integrations.command import CommandResult
 from codealmanac.integrations.sources.git import GitSourceRuntimeAdapter
 from codealmanac.services.sources.models import (
@@ -161,6 +161,24 @@ def test_sources_runtime_uses_git_adapter_for_diff_and_range(tmp_path: Path):
     assert range_runtime.status == SourceRuntimeStatus.AVAILABLE
     assert "abc123 change auth" in (range_runtime.content or "")
     assert ("git", ("status", "--short"), tmp_path) in runner.calls
+
+
+def test_sources_reject_git_revision_ranges_that_read_as_git_options(tmp_path: Path):
+    runner = FakeGitRunner()
+    app = create_app(source_runtime_adapters=(GitSourceRuntimeAdapter(runner),))
+    (option_range,) = app.sources.resolve(
+        ResolveSourcesRequest(
+            cwd=tmp_path,
+            inputs=("git:range:--output=escaped.txt",),
+        )
+    )
+
+    with pytest.raises(ExecutionFailed):
+        app.sources.inspect_runtime(
+            InspectSourceRuntimeRequest(cwd=tmp_path, ref=option_range.ref)
+        )
+
+    assert runner.calls == []
 
 
 def test_sources_reject_malformed_source_refs(tmp_path: Path):

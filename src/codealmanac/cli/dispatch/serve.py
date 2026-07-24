@@ -31,7 +31,7 @@ def run_serve(app: CodeAlmanac, args: argparse.Namespace) -> int:
 
     from codealmanac.server.app import create_server_app
 
-    server_app = create_server_app(app, Path.cwd(), args.wiki)
+    server_app = create_server_app(app, Path.cwd(), args.wiki, host=args.host)
     url = f"http://{args.host}:{args.port}"
     server = uvicorn.Server(
         uvicorn.Config(
