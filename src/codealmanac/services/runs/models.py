@@ -5,7 +5,7 @@ from typing import Annotated
 from pydantic import StringConstraints, field_validator, model_validator
 
 from codealmanac.core.models import CodeAlmanacModel
-from codealmanac.core.text import required_text
+from codealmanac.core.text import optional_text, required_text
 from codealmanac.services.harnesses.models import (
     HarnessEvent,
     HarnessKind,
@@ -187,9 +187,7 @@ class RunSpec(CodeAlmanacModel):
     @field_validator("model", "title", "guidance")
     @classmethod
     def require_optional_text(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        return required_text(value, "run spec text")
+        return optional_text(value, "run spec text")
 
     @model_validator(mode="after")
     def validate_kind_payload(self) -> "RunSpec":

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pydantic import field_validator, model_validator
 
-from codealmanac.core.models import CodeAlmanacModel
+from codealmanac.core.models import CodeAlmanacModel, NonNegativeLimit
 from codealmanac.core.text import required_text
 from codealmanac.services.harnesses.models import HarnessEvent, HarnessTranscriptRef
 from codealmanac.services.repositories.models import RepositoryName
@@ -21,14 +21,7 @@ from codealmanac.services.runs.models import (
 
 class ListRunsRequest(CodeAlmanacModel):
     repository_name: RepositoryName | None = None
-    limit: int | None = None
-
-    @field_validator("limit")
-    @classmethod
-    def non_negative_limit(cls, value: int | None) -> int | None:
-        if value is not None and value < 0:
-            raise ValueError("limit must be non-negative")
-        return value
+    limit: NonNegativeLimit = None
 
 
 class ShowRunRequest(CodeAlmanacModel):

@@ -2,7 +2,11 @@ from pathlib import Path
 
 from pydantic import field_validator
 
-from codealmanac.core.models import CodeAlmanacModel
+from codealmanac.core.models import (
+    CodeAlmanacModel,
+    NonNegativeLimit,
+    RequiredNonNegativeLimit,
+)
 from codealmanac.core.text import required_text
 from codealmanac.services.repositories.models import RepositoryName
 from codealmanac.services.runs.models import RunId
@@ -41,21 +45,14 @@ class ViewerSearchRequest(CodeAlmanacModel):
     cwd: Path
     repository_name: RepositoryName | None = None
     query: str | None = None
-    limit: int = 50
-
-    @field_validator("limit")
-    @classmethod
-    def non_negative_limit(cls, value: int) -> int:
-        if value < 0:
-            raise ValueError("limit must be non-negative")
-        return value
+    limit: RequiredNonNegativeLimit = 50
 
 
 class ViewerFileRequest(CodeAlmanacModel):
     cwd: Path
     path: str
     repository_name: RepositoryName | None = None
-    limit: int = 50
+    limit: RequiredNonNegativeLimit = 50
 
     @field_validator("path")
     @classmethod
@@ -68,13 +65,6 @@ class ViewerFileRequest(CodeAlmanacModel):
         if not normalized:
             raise ValueError("file path must be repo-relative")
         return normalized
-
-    @field_validator("limit")
-    @classmethod
-    def non_negative_limit(cls, value: int) -> int:
-        if value < 0:
-            raise ValueError("limit must be non-negative")
-        return value
 
 
 class ViewerTopicRequest(CodeAlmanacModel):
@@ -92,14 +82,7 @@ class ViewerTopicRequest(CodeAlmanacModel):
 class ViewerJobsRequest(CodeAlmanacModel):
     cwd: Path
     repository_name: RepositoryName | None = None
-    limit: int | None = None
-
-    @field_validator("limit")
-    @classmethod
-    def non_negative_limit(cls, value: int | None) -> int | None:
-        if value is not None and value < 0:
-            raise ValueError("limit must be non-negative")
-        return value
+    limit: NonNegativeLimit = None
 
 
 class ViewerJobRequest(CodeAlmanacModel):

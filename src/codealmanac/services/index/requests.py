@@ -1,8 +1,6 @@
 from pathlib import Path
 
-from pydantic import field_validator
-
-from codealmanac.core.models import CodeAlmanacModel
+from codealmanac.core.models import CodeAlmanacModel, NonNegativeLimit
 from codealmanac.services.repositories.models import RepositoryName
 
 
@@ -10,14 +8,7 @@ class SearchIndexRequest(CodeAlmanacModel):
     query: str | None = None
     topics: tuple[str, ...] = ()
     mentions: str | None = None
-    limit: int | None = None
-
-    @field_validator("limit")
-    @classmethod
-    def non_negative_limit(cls, value: int | None) -> int | None:
-        if value is not None and value < 0:
-            raise ValueError("limit must be non-negative")
-        return value
+    limit: NonNegativeLimit = None
 
 
 class ReindexRequest(CodeAlmanacModel):
