@@ -26,6 +26,18 @@ sources:
     type: wiki
     path: architecture/lifecycle/workflows
     note: Architecture page for build, ingest, garden, and sync workflow boundaries.
+  - id: controlled-models
+    type: wiki
+    path: decisions/controlled-model-catalog
+    note: Decision page for product-owned harness and model choices.
+  - id: config-keys
+    type: wiki
+    path: reference/config-keys
+    note: Reference page for harness configuration keys.
+  - id: harness-guide
+    type: wiki
+    path: guides/add-a-harness-provider-adapter
+    note: Guide for extending provider or surface support through Yoke.
 ---
 
 # Agent Runs
@@ -67,3 +79,13 @@ that lifecycle workflows select before calling the harness [@runtime-resources].
 The lifecycle entry point is [Lifecycle workflows](../lifecycle/workflows),
 which explains build, ingest, garden, and sync before they reach this provider
 boundary [@lifecycle-workflows].
+
+For product-level runner and model choices, read
+[Controlled model catalog](../../decisions/controlled-model-catalog) and
+[Config keys](../../reference/config-keys). Those pages explain why
+CodeAlmanac keeps the visible harness/model catalog small even though provider
+execution is delegated through Yoke [@controlled-models] [@config-keys].
+
+[Extend the Yoke harness boundary](../../guides/add-a-harness-provider-adapter)
+is the task guide for adding provider or surface support without adding
+provider branches to lifecycle workflows [@harness-guide].

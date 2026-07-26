@@ -26,6 +26,14 @@ sources:
     type: file
     path: almanac/topics.yaml
     note: Topic graph entries for wiki, pages, sources, search, index, health, and topics.
+  - id: markdown-links-sources
+    type: wiki
+    path: decisions/markdown-links-and-sources
+    note: Decision page for Markdown page links and structured sources.
+  - id: no-page-kind
+    type: wiki
+    path: decisions/no-page-kind-frontmatter
+    note: Decision page rejecting page kind frontmatter as a hidden convention.
 ---
 
 # Wiki Architecture
@@ -49,3 +57,9 @@ Finish with [Health and validation](health-and-validation) when changing graph c
 ## Neighboring Contracts
 
 The exact authored page format lives in [Frontmatter and sources](../../reference/page-format/frontmatter-and-sources) and [Links and routes](../../reference/page-format/links-and-routes). The broader concept is [Local repo wiki](../../concepts/local-repo-wiki), which explains why committed Markdown is the durable source while runtime databases are rebuildable local state.
+
+Two decisions constrain page-format work. [Markdown links and sources](../../decisions/markdown-links-and-sources)
+keeps page navigation in normal Markdown links and evidence in structured
+`sources:` entries [@markdown-links-sources]. [No page kind frontmatter](../../decisions/no-page-kind-frontmatter)
+keeps concept, guide, decision, and reference labels as writing guidance rather
+than a parsed `kind:` contract [@no-page-kind].
