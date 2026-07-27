@@ -1,4 +1,5 @@
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,11 @@ from codealmanac.services.harnesses.models import (
     HarnessRunStatus,
 )
 from codealmanac.services.harnesses.requests import RunHarnessRequest
+from codealmanac.services.health.models import IssueSeverity, ValidationIssue
+from codealmanac.services.health.reports import validation_failure_message
 from codealmanac.services.health.requests import ValidateWikiRequest
+from codealmanac.services.health.service import validation_result
+from codealmanac.services.repositories.models import Repository, RepositoryName
 from codealmanac.services.runs.models import RunStatus
 from codealmanac.services.runs.requests import ListRunsRequest
 from codealmanac.settings import AppConfig
@@ -271,3 +276,63 @@ def run_git(repo: Path, *args: str) -> None:
         capture_output=True,
         check=True,
     )
+
+
+def _repository() -> Repository:
+    return Repository(
+        repository_id="repo-1",
+        name=RepositoryName("demo"),
+        description="",
+        root_path=Path("/repo"),
+        almanac_path=Path("/repo/almanac"),
+        registered_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+
+
+def test_validation_issue_defaults_to_error_severity():
+    issue = ValidationIssue(category="sources", message="broken")
+
+    assert issue.severity is IssueSeverity.ERROR
+
+
+def test_warning_severity_does_not_fail_validation():
+    repository = _repository()
+    warning = ValidationIssue(
+        category="reserved_directory",
+        message="page is not indexed",
+        severity=IssueSeverity.WARNING,
+    )
+
+    result = validation_result(repository, None, [warning])
+
+    assert result.ok is True
+    assert result.warnings == (warning,)
+    assert result.errors == ()
+
+
+def test_error_severity_still_fails_validation():
+    repository = _repository()
+    error = ValidationIssue(category="sources", message="broken")
+
+    result = validation_result(repository, None, [error])
+
+    assert result.ok is False
+    assert result.errors == (error,)
+    assert result.warnings == ()
+
+
+def test_warnings_do_not_mask_errors():
+    repository = _repository()
+    warning = ValidationIssue(
+        category="reserved_directory",
+        message="page is not indexed",
+        severity=IssueSeverity.WARNING,
+    )
+    error = ValidationIssue(category="sources", message="source is missing a target")
+
+    result = validation_result(repository, None, [warning, error])
+
+    assert result.ok is False
+    # The failure message must describe an error, not the warning that precedes it.
+    assert "source is missing a target" in validation_failure_message(result)
+    assert "1 issues" not in validation_failure_message(result)

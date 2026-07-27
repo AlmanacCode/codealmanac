@@ -3,12 +3,13 @@ from codealmanac.services.index.models import HealthReport
 
 
 def validation_failure_message(result: ValidationResult) -> str:
-    first = result.issues[0]
+    errors = result.errors or result.issues
+    first = errors[0]
     location = f" ({first.path})" if first.path else ""
-    if len(result.issues) == 1:
+    if len(errors) == 1:
         return f"validation failed: {first.category}: {first.message}{location}"
     return (
-        f"validation failed: {len(result.issues)} issues; first: "
+        f"validation failed: {len(errors)} issues; first: "
         f"{first.category}: {first.message}{location}"
     )
 

@@ -93,10 +93,16 @@ def render_validate(result: ValidationResult, json_output: bool) -> None:
     print(f"{style.DIM}path:{style.RST}  {result.almanac_path}")
     if result.index is not None:
         print(f"{style.DIM}index:{style.RST} {result.index.pages_indexed} pages")
-    if result.ok:
+    warnings = result.warnings
+    if warnings:
+        print(f"warnings ({len(warnings)}):")
+        for issue in warnings:
+            print(f"  {format_validation_issue(issue)}")
+    errors = result.errors
+    if not errors:
         return
-    print(f"issues ({len(result.issues)}):")
-    for issue in result.issues:
+    print(f"issues ({len(errors)}):")
+    for issue in errors:
         print(f"  {format_validation_issue(issue)}")
 
 
