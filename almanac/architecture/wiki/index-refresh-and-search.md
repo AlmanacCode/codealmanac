@@ -70,7 +70,7 @@ File mention search uses the indexed `file_refs` table. It supports exact file r
 
 ## Section-Level Search Direction
 
-Section-level search is the planned refinement for cases where a query matches a specific part of a page. The current `dev` branch indexes each page as one FTS document, so search can identify a matching page but not the heading under which the match occurred [@search-views] [@retrieval-transcript]. The experimental `codex/release-section-search` branch explored a different projection: parse every Markdown heading, store each heading's direct body as a separate searchable unit, rank those units, then group matches back to one result per page [@retrieval-transcript].
+Section-level search is the recorded refinement direction for cases where a query matches a specific part of a page. The current implementation indexes each page as one FTS document, so search can identify a matching page but not the heading under which the match occurred [@search-views] [@retrieval-transcript]. The experimental `codex/release-section-search` branch explored a different projection: parse every Markdown heading, store each heading's direct body as a separate searchable unit, rank those units, then group matches back to one result per page [@retrieval-transcript].
 
 In that direction, section and subsection are not separate domain types. They are both Markdown headings at different depths. A page with `# Terminal Output`, `## Styling`, and `### Colors` would yield heading paths such as `Terminal Output`, `Terminal Output > Styling`, and `Terminal Output > Styling > Colors` [@retrieval-transcript]. The result remains page-shaped for the user, but it carries the best matched heading path and an excerpt from that section [@retrieval-transcript].
 
