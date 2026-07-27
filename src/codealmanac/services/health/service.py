@@ -1,7 +1,11 @@
 from pathlib import Path
 
 from codealmanac.core.errors import ValidationFailed
-from codealmanac.services.health.models import ValidationIssue, ValidationResult
+from codealmanac.services.health.models import (
+    IssueSeverity,
+    ValidationIssue,
+    ValidationResult,
+)
 from codealmanac.services.health.reports import (
     health_report_issues,
     validation_failure_message,
@@ -74,5 +78,5 @@ def validation_result(
         almanac_path=repository.almanac_path,
         index=index,
         issues=tuple(issues),
-        ok=len(issues) == 0,
+        ok=not any(issue.severity is IssueSeverity.ERROR for issue in issues),
     )
