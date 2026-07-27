@@ -62,7 +62,8 @@ def is_reserved_page_path(almanac_path: Path, path: Path) -> bool:
         relative = path.relative_to(almanac_path)
     except ValueError:
         return True
-    return any(part in RESERVED_WIKI_SOURCE_DIRS for part in relative.parts[:-1])
+    directories = relative.parts[:-1]
+    return bool(directories) and directories[0] in RESERVED_WIKI_SOURCE_DIRS
 
 
 def page_id_for_path(almanac_path: Path, page_path: Path) -> str:

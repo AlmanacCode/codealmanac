@@ -19,6 +19,23 @@ def test_page_iteration_excludes_repository_manuals(tmp_path):
     assert tuple(iter_page_paths(almanac_path)) == (page,)
 
 
+def test_page_iteration_keeps_nested_dirs_named_after_reserved_roots(tmp_path):
+    almanac_path = tmp_path / "almanac"
+    reserved_manual = almanac_path / "manual"
+    reserved_manual.mkdir(parents=True)
+    (reserved_manual / "how-to-write.md").write_text("# Manual\n", encoding="utf-8")
+
+    nested_jobs = almanac_path / "architecture/jobs/queue.md"
+    nested_jobs.parent.mkdir(parents=True)
+    nested_jobs.write_text("# Queue\n", encoding="utf-8")
+
+    nested_manual = almanac_path / "guides/manual/setup.md"
+    nested_manual.parent.mkdir(parents=True)
+    nested_manual.write_text("# Setup\n", encoding="utf-8")
+
+    assert tuple(iter_page_paths(almanac_path)) == (nested_jobs, nested_manual)
+
+
 def test_frontmatter_uses_pydantic_validated_shape():
     parsed = parse_frontmatter(
         """---
