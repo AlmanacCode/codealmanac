@@ -41,9 +41,7 @@ def ancestors_of(definitions: tuple[TopicDefinition, ...], slug: str) -> set[str
     }
     ancestors: set[str] = set()
     frontier = list(parents_by_child.get(slug, set()))
-    depth = 0
-    while frontier and depth < 32:
-        depth += 1
+    while frontier:
         parent = frontier.pop()
         if parent in ancestors:
             continue

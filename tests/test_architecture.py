@@ -391,7 +391,7 @@ def test_topics_service_keeps_graph_and_repository_boundaries():
     ] == []
     assert "def reject_cycle(" in graph_text
     assert "def ancestors_of(" in graph_text
-    assert "depth < 32" in graph_text
+    assert "if parent in ancestors:" in graph_text
     assert "codealmanac.services.index" not in graph_text
     assert "codealmanac.services.repositories" not in graph_text
     assert "def existing_topic_slugs(" in read_model_text

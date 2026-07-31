@@ -373,6 +373,67 @@ def test_rename_malformed_page_frontmatter_fails_before_topics_yaml_write(
     assert topics_path.read_text(encoding="utf-8") == before
 
 
+def test_link_rejects_cycle_in_chain_longer_than_traversal_bound(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    # A 34-topic chain is the smallest that outran the old 32-iteration cap in
+    # ancestors_of, so the guard reported clean and wrote the cycle to disk.
+    repo = make_repo(tmp_path)
+    topics_path = repo / "almanac/topics.yaml"
+    entries = "".join(
+        f"  - slug: n{index}\n"
+        f"    title: N{index}\n"
+        f"    parents: [n{index + 1}]\n"
+        for index in range(33)
+    )
+    topics_path.write_text(
+        f"topics:\n{entries}  - slug: n33\n    title: N33\n    parents: []\n",
+        encoding="utf-8",
+    )
+    before = topics_path.read_text(encoding="utf-8")
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+
+    with pytest.raises(ConflictError):
+        app.topics.link(LinkTopicRequest(cwd=repo, child="n33", parent="n0"))
+
+    assert topics_path.read_text(encoding="utf-8") == before
+
+
+def test_link_rejects_cycle_in_wide_shallow_graph(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    # Only two levels deep, but wide enough that the old cap stopped early.
+    # ancestors_of seeds its frontier from a set, so this used to pass or fail
+    # depending on PYTHONHASHSEED.
+    repo = make_repo(tmp_path)
+    topics_path = repo / "almanac/topics.yaml"
+    parents = ", ".join(f"b{index}" for index in range(40))
+    entries = "".join(
+        f"  - slug: b{index}\n"
+        f"    title: B{index}\n"
+        f"    parents: [{'deep' if index == 0 else ''}]\n"
+        for index in range(40)
+    )
+    topics_path.write_text(
+        f"topics:\n  - slug: a\n    title: A\n    parents: [{parents}]\n"
+        f"{entries}  - slug: deep\n    title: Deep\n    parents: []\n",
+        encoding="utf-8",
+    )
+    before = topics_path.read_text(encoding="utf-8")
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+
+    with pytest.raises(ConflictError):
+        app.topics.link(LinkTopicRequest(cwd=repo, child="deep", parent="a"))
+
+    assert topics_path.read_text(encoding="utf-8") == before
+
+
 def make_repo(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
     (repo / "almanac").mkdir(parents=True)

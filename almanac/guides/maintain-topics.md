@@ -92,7 +92,7 @@ Dispatch turns those CLI calls into typed topic requests before calling the serv
 
 ## Keep The DAG Valid
 
-Before adding parent edges, the graph layer validates that parents exist, rejects self-parent links, and rejects cycles [@topic-graph]. Cycle detection walks ancestors with a depth cap of 32, which protects the command path if the graph is already unusual [@topic-graph].
+Before adding parent edges, the graph layer validates that parents exist, rejects self-parent links, and rejects cycles [@topic-graph]. Cycle detection walks the full ancestor set with no depth cap; the walk is bounded by the topics it has already visited, so it terminates on an unusual graph without missing ancestors [@topic-graph].
 
 If a command refuses a parent or reports that a link would create a cycle, fix the topic design rather than editing around the command. The command is protecting the browse graph.
 

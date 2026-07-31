@@ -56,7 +56,9 @@ The tests lock down that behavior. Creating a topic preserves existing comments,
 
 The graph layer prevents self-parent links and missing-parent links before mutation writes [@topic-graph]. When an edge is added, `reject_cycle` checks whether the child is already an ancestor of the proposed parent. If it is, the operation raises a conflict instead of writing the edge [@topic-graph].
 
-Ancestor traversal has a depth cap of 32 [@topic-graph]. The cap is defensive: valid topic graphs should be much shallower, and the mutation path should not risk unbounded traversal if the file is already strange.
+Ancestor traversal is bounded by the visited topic set, not by depth [@topic-graph]. `ancestors_of` skips any parent already in the result, so the walk visits each topic at most once and terminates even when `topics.yaml` already contains a cycle. That termination guard is the invariant to preserve: it keeps the walk safe without truncating it, so `reject_cycle` sees the complete ancestor set at any depth.
+
+There was previously a `depth < 32` counter here. It counted popped nodes rather than levels, so graphs wider or longer than 32 topics returned a partial ancestor set and `reject_cycle` wrote the cycle it was meant to block. Do not reintroduce a traversal cap; the visited set already bounds the walk, and any cap reopens that hole.
 
 ## Architectural Boundary
 
