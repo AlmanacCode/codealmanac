@@ -68,7 +68,7 @@ If the file is missing or empty, the loader treats it as an empty mapping and cr
 
 Slugs are kebab-case. The shared slug helper lowercases text, replaces runs of non-alphanumeric characters with hyphens, and strips leading or trailing hyphens [@slug]. A topic named `Auth Flow` therefore becomes `auth-flow`.
 
-Parents form a directed acyclic graph. A topic cannot be its own parent, requested parents must already exist for create/link operations, and adding an edge that would create a cycle raises a conflict [@topic-graph]. Ancestor traversal has a defensive depth cap of 32 [@topic-graph].
+Parents form a directed acyclic graph. A topic cannot be its own parent, requested parents must already exist for create/link operations, and adding an edge that would create a cycle raises a conflict [@topic-graph]. Ancestor traversal has no depth cap: it is bounded by the set of topics already visited, so it covers the whole ancestor set at any depth and still terminates on an already-cyclic file [@topic-graph].
 
 ## Mutation Behavior
 
