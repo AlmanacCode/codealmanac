@@ -38,9 +38,18 @@ sources:
   - id: manual-library
     type: file
     path: src/codealmanac/manual/library.py
+  - id: manual-models
+    type: file
+    path: src/codealmanac/manual/models.py
   - id: architecture-manual
     type: file
     path: src/codealmanac/manual/architecture.md
+  - id: manual-tests
+    type: file
+    path: tests/test_manual.py
+  - id: diagnostics-install
+    type: file
+    path: src/codealmanac/services/diagnostics/install.py
   - id: package
     type: file
     path: pyproject.toml
@@ -74,6 +83,23 @@ the complete durable CodeAlmanac kernel and operation instructions [@catalog]
 Manuals remain separate packaged reference documents. Runtime payloads name the
 manual inventory so the agent can read the relevant document from the installed
 package when it needs detailed page-writing rules [@manual-library].
+
+`ManualLibrary` is the service boundary for that inventory. It reads the
+thirteen bundled manual documents named by `MANUAL_DOCUMENTS`, rejects missing
+or unreadable package resources with `ValidationFailed`, and returns typed
+`ManualDocument` values with relative paths and non-empty bodies
+[@manual-library] [@manual-models]. Build, ingest, and garden call
+`manual.inventory()` when rendering their runtime context, so the full manual
+packet travels with the operation prompt instead of being discovered by the
+provider at run time [@build-service] [@ingest-service] [@garden-service].
+
+The same library also owns manual installation and diagnostics. `install_missing`
+copies only absent bundled files into a target manual directory, while
+`repository_status` compares present files against the package copy without
+rewriting local edits [@manual-library] [@manual-tests]. `doctor` uses the
+inventory as an install check and reports the number of bundled manual
+documents, which makes packaging failures visible before a lifecycle run reaches
+the harness [@diagnostics-install].
 
 The build agent should treat repository documentation as design evidence, not
 background text to summarize. Plans, ADRs, RFCs, live agreements, design notes,
