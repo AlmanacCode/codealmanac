@@ -79,10 +79,18 @@ topics:
     title: Product
     description: Product scope and public surface decisions
     parents: []
+  - slug: launch
+    title: Launch
+    description: Launch positioning, demo framing, traction interpretation, and public package presentation
+    parents: [product]
+  - slug: evaluation
+    title: Evaluation
+    description: Benchmark and comparison strategy for testing CodeAlmanac product claims
+    parents: [product]
   - slug: release
     title: Release
     description: Package publishing, release smoke checks, and public install verification
-    parents: [product]
+    parents: [product, launch]
   - slug: config
     title: Config
     description: User configuration and automation preferences

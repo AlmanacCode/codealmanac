@@ -1,6 +1,6 @@
 ---
 title: Evaluation Benchmarks
-topics: [product]
+topics: [product, evaluation]
 sources:
   - id: supabase-eval-readme
     type: web

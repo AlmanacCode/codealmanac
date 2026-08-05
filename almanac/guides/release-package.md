@@ -1,6 +1,6 @@
 ---
 title: Release Package
-topics: [guides, release, product]
+topics: [guides, release, product, launch]
 sources:
   - id: release-doc
     type: file

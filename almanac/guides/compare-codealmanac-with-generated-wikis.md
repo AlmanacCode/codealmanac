@@ -1,6 +1,6 @@
 ---
 title: Compare CodeAlmanac With Generated Wikis
-topics: [guides, product]
+topics: [guides, product, evaluation]
 sources:
   - id: product-surface
     type: wiki

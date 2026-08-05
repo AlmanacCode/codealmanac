@@ -40,9 +40,9 @@ sources:
 
 The product surface is the public shape CodeAlmanac presents outside its
 implementation internals. The topic graph defines `product` as product scope and
-public-surface decisions, and this hub routes that neighborhood: the local-only
-boundary, the package release path, positioning, launch metrics, demos, and
-evaluation strategy [@topics].
+public-surface decisions. Its child topics separate launch work from evaluation
+work, while this hub routes both neighborhoods from the same local-only product
+boundary [@topics].
 
 The base decision is [Local-only Python product](../decisions/local-only-python-product).
 It states that the active product is the `codealmanac` Python CLI, a repo-local
@@ -51,15 +51,15 @@ harnesses for lifecycle work [@local-only]. Read that decision before changing
 public commands, setup language, install instructions, hosted terminology, or
 compatibility behavior.
 
-For package work, use [Release package](../guides/release-package). That guide
-is the release checklist for proving the installed `codealmanac` command works
-from clean Python environments and that packaged prompts, manuals, and CLI
-resources ship with the distribution [@release].
+For package and launch work, use [Release package](../guides/release-package)
+and [Product positioning](positioning). The release guide proves the installed
+`codealmanac` command works from clean Python environments and that packaged
+prompts, manuals, and CLI resources ship with the distribution [@release].
 
-For launch work, start with [Product positioning](positioning). It preserves the
-product contrast: CodeAlmanac is a maintained repository wiki for decisions,
-invariants, gotchas, flows, and operating knowledge, not a team-chat router or
-generic documentation pitch [@positioning].
+[Product positioning](positioning) preserves the product contrast:
+CodeAlmanac is a maintained repository wiki for decisions, invariants, gotchas,
+flows, and operating knowledge, not a team-chat router or generic documentation
+pitch [@positioning].
 
 [Launch metrics](launch-metrics) keeps PyPI fetches separate from user counts,
 while [Evaluation benchmarks](evaluation-benchmarks) turns the positioning claim

@@ -1,6 +1,6 @@
 ---
 title: Product Positioning
-topics: [product]
+topics: [product, launch, evaluation]
 sources:
   - id: repo-readme
     type: file

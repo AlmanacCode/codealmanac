@@ -1,6 +1,6 @@
 ---
 title: Launch Metrics
-topics: [product]
+topics: [product, launch]
 sources:
   - id: launch-metrics-transcript
     type: conversation

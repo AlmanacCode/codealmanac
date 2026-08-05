@@ -1,6 +1,6 @@
 ---
 title: Demo CodeAlmanac In A Launch Video
-topics: [guides, product, viewer, cli]
+topics: [guides, product, launch, viewer, cli]
 sources:
   - id: public-readme
     type: file
