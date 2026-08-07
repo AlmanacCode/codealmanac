@@ -25,11 +25,11 @@ sources:
   - id: ai-wiki-standard-transcript
     type: conversation
     session_id: rollout-2026-07-14T22-51-58-019f6454-fa56-7ff0-b1b2-fe8a42abaf55
-    note: Product conversation framing Almanac as an AI wiki category, potential open standard, and simpler alternative to GBrain-style agent-memory machinery.
+    note: Product conversation framing CodeAlmanac as an AI wiki category, potential open standard, and simpler alternative to GBrain-style agent-memory machinery.
   - id: personal-launch-copy-transcript
     type: conversation
     session_id: rollout-2026-07-16T21-49-54-019f6e68-df3d-7621-8fe7-37ddb66d49f0
-    note: Product conversation refining personal social-launch copy around Claude forgetting sessions, MEMORY.md, and Almanac.
+    note: Product conversation refining personal social-launch copy around Claude forgetting sessions, MEMORY.md, and CodeAlmanac.
   - id: team-launch-copy-transcript
     type: conversation
     session_id: rollout-2026-07-22T10-03-56-019f8ac8-b302-7230-a550-1f2d844315f7
@@ -91,8 +91,8 @@ blueprint to rewrite into a shadow documentation site.
 
 Short launch posts should lead with the personal pain before naming the
 product: Claude forgets earlier shared understanding, a single `MEMORY.md` or
-`CLAUDE.md` turns into a long manual dumping ground, and Almanac replaces that
-with small connected Markdown pages the agent can search when needed
+`CLAUDE.md` turns into a long manual dumping ground, and CodeAlmanac replaces
+that with small connected Markdown pages the agent can search when needed
 [@personal-launch-copy-transcript]. That story is stronger than a broad feature
 list because it makes the product promise concrete: a new agent session should
 feel like continuing the same work, not starting the codebase explanation again
@@ -100,12 +100,12 @@ feel like continuing the same work, not starting the codebase explanation again
 
 For social copy, keep the call to action simple. The transcript converged on a
 compact post with a link and a feedback request, while preserving the
-frustration to file-based memory to Almanac arc [@personal-launch-copy-transcript].
+frustration to file-based memory to CodeAlmanac arc [@personal-launch-copy-transcript].
 
 Team launch copy should spend more time on the costly consequence before
 introducing the product. The strong arc is that coding agents can produce more
 code, but each new session starts from zero, reopens old investigations, and
-works from a different fragment of team context; Almanac then becomes the
+works from a different fragment of team context; CodeAlmanac then becomes the
 shared knowledge layer that lets agents search the same requirements,
 decisions, implementation history, and incidents before making changes
 [@team-launch-copy-transcript]. The founder-origin version of that story is
@@ -132,20 +132,21 @@ links, topics, search and retrieval, agent-authored updates, import and export,
 and change history [@ai-wiki-standard-transcript].
 
 GBrain is the useful cautionary comparison for this category. The transcript's
-durable conclusion is that Almanac has the clearer product shape, while GBrain
-currently has broader agent-memory machinery: continuous capture, synthesis and
-gap analysis, graph retrieval, an agent-memory loop, background maintenance, and
-production history [@ai-wiki-standard-transcript]. Almanac should add only the
-capabilities that matter for a maintained wiki, especially continuous capture,
+durable conclusion is that CodeAlmanac has the clearer product shape, while
+GBrain currently has broader agent-memory machinery: continuous capture,
+synthesis and gap analysis, graph retrieval, an agent-memory loop, background
+maintenance, and production history [@ai-wiki-standard-transcript].
+CodeAlmanac should add only the capabilities that matter for a maintained wiki,
+especially continuous capture,
 strong retrieval, and reliable maintenance, without turning the product into an
 operator dashboard or agent operating system [@ai-wiki-standard-transcript].
 
 If a future AI-wiki standardization effort grows out of CodeAlmanac, it should
 separate the open contract from any hosted product. The durable conclusion is
-not to invent an "Almanac format" first; the research direction is to target an
-existing open-knowledge-file-style contract while staying useful as plain
-Markdown [@ai-wiki-standard-transcript]. If CodeAlmanac later proves that shape,
-it can publish stable schemas, conformance tests, and a local or self-hosted
+not to invent a CodeAlmanac-specific format first; the research direction is to
+target an existing open-knowledge-file-style contract while staying useful as
+plain Markdown [@ai-wiki-standard-transcript]. If CodeAlmanac later proves that
+shape, it can publish stable schemas, conformance tests, and a local or self-hosted
 reference implementation before treating governance as the main problem
 [@ai-wiki-standard-transcript]. OpenAPI is the useful analogy because it became
 a vendor-neutral API description format after originating from Swagger, while
