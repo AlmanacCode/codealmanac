@@ -124,13 +124,13 @@ Start with [Service boundaries](service-boundaries). It explains the main depend
 
 ## Page-Writing Operations
 
-[Lifecycle](lifecycle/) is the entry point for build, ingest, garden, sync, queued runs, operation execution, and mutation safety. Build is the internal workflow and run kind behind public `codealmanac init`; ingest and garden share their names with public commands, and sync is a scanner that queues ingest work instead of writing pages itself [@lifecycle] [@command-surface].
+[Lifecycle](lifecycle) is the entry point for build, ingest, garden, sync, queued runs, operation execution, and mutation safety. Build is the internal workflow and run kind behind public `codealmanac init`; ingest and garden share their names with public commands, and sync is a scanner that queues ingest work instead of writing pages itself [@lifecycle] [@command-surface].
 
 Use [Operation runner](lifecycle/operation-runner) when changing the shared run-execution path [@operation-runner]. Use [Mutation safety](lifecycle/mutation-safety) when changing the checks that keep lifecycle writes inside the allowed wiki source files [@mutation-safety].
 
 ## Read Side And Wiki Graph
 
-[Wiki architecture](wiki/) is the entry point for page identity, path and file references, indexing, topics, health, and validation [@wiki-architecture].
+[Wiki architecture](wiki) is the entry point for page identity, path and file references, indexing, topics, health, and validation [@wiki-architecture].
 
 [Index refresh and search](wiki/index-refresh-and-search) explains the derived SQLite read model, implicit refresh before read commands, FTS search, topic filters, and mention search [@index-search].
 
@@ -138,7 +138,7 @@ For authored wiki contracts, read [Page identity](wiki/page-identity), [Path nor
 
 ## Edges And Interfaces
 
-Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Agent runs](agent-runs/) for harness contracts, Yoke run options, normalized events, and Codex or Claude runner boundaries [@agent-runs]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
+Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Agent runs](agent-runs) for harness contracts, Yoke run options, normalized events, and Codex or Claude runner boundaries [@agent-runs]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
 
 [Runtime resources](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents, operation instructions, writing manuals, and per-run payloads used by lifecycle runs, [Instruction installation](setup/instruction-installation) covers setup-owned Codex and Claude guidance files, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@instruction-installation] [@setup-automation].
 

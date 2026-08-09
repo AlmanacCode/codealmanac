@@ -65,7 +65,7 @@ commands, formats, and states, and this hub routes readers to the narrow page
 that owns each contract [@topics].
 
 Use this page when you already know the part of the system you need to verify.
-For narrative system shape, start with [Architecture](../architecture/)
+For narrative system shape, start with [Architecture](../architecture)
 instead; for task steps, start with the relevant guide.
 
 ## Public Surfaces

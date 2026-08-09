@@ -36,18 +36,18 @@ Begin with [Getting started](getting-started). It gives the shortest reading pat
 
 The core idea is the [local repo wiki](concepts/local-repo-wiki): a browseable Markdown wiki committed with the code, plus derived local state for search and runs. That concept explains why page identity comes from paths, why `README.md` files are landing pages, and why file evidence belongs in `sources:`.
 
-For implementation work, read [Architecture](architecture/) first, then follow the page for the boundary you plan to change. [Service boundaries](architecture/service-boundaries) explains how the CLI, app composition root, workflows, services, stores, ports, and integrations divide responsibility. For command behavior, use [CLI public command surface](reference/cli/public-command-surface). For config defaults and precedence, use [Config keys](reference/config-keys).
+For implementation work, read [Architecture](architecture) first, then follow the page for the boundary you plan to change. [Service boundaries](architecture/service-boundaries) explains how the CLI, app composition root, workflows, services, stores, ports, and integrations divide responsibility. For command behavior, use [CLI public command surface](reference/cli/public-command-surface). For config defaults and precedence, use [Config keys](reference/config-keys).
 
 ## Main Clusters
 
 The wiki is organized by page role, not by source file:
 
-- [Concepts](concepts/) defines repo-specific vocabulary such as local repo wiki, lifecycle operation, and source material.
-- [Architecture](architecture/) explains ownership, flows, persistence, provider edges, and runtime resources.
-- [Guides](guides/) gives task-oriented procedures for changing or verifying the wiki.
-- [Decisions](decisions/) records constraints that shape future work.
-- [Reference](reference/) documents exact contracts, commands, formats, and state shapes.
-- [Style](style/) routes the engineering principles for architecture fit, code shape, and behavior-preserving changes [@style].
+- [Concepts](concepts) defines repo-specific vocabulary such as local repo wiki, lifecycle operation, and source material.
+- [Architecture](architecture) explains ownership, flows, persistence, provider edges, and runtime resources.
+- [Guides](guides) gives task-oriented procedures for changing or verifying the wiki.
+- [Decisions](decisions) records constraints that shape future work.
+- [Reference](reference) documents exact contracts, commands, formats, and state shapes.
+- [Style](style) routes the engineering principles for architecture fit, code shape, and behavior-preserving changes [@style].
 - [Product](product) routes local-only product scope, release work, launch framing, demos, and generated-wiki comparisons [@product-surface].
 
 ## Reading Rule

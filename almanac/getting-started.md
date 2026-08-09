@@ -45,9 +45,9 @@ That route matches the main working loop in this repository: write durable Markd
 
 Start with the manual rule: evolve the codebase so the feature fits, then build the feature [@manual]. This repo treats architecture as living structure. When the current shape does not hold a feature cleanly, the expected move is to stop and flag the mismatch instead of bolting on a local workaround [@manual].
 
-For most implementation work, follow the architecture pages before opening individual modules. [Architecture](architecture/) gives the reading order for the architecture cluster. [Service boundaries](architecture/service-boundaries) explains the dependency direction from CLI adapters into the app, workflows, services, stores, ports, and integrations. [Lifecycle workflows](architecture/lifecycle/workflows) is the entry point for page-writing operations. [Source resolution and runtime](architecture/sources/source-resolution-and-runtime) is the entry point for ingest inputs.
+For most implementation work, follow the architecture pages before opening individual modules. [Architecture](architecture) gives the reading order for the architecture cluster. [Service boundaries](architecture/service-boundaries) explains the dependency direction from CLI adapters into the app, workflows, services, stores, ports, and integrations. [Lifecycle workflows](architecture/lifecycle/workflows) is the entry point for page-writing operations. [Source resolution and runtime](architecture/sources/source-resolution-and-runtime) is the entry point for ingest inputs.
 
-For large writes or refactors, read [Style](style/) before choosing the implementation shape. It routes the repo rules for architecture fit, code shape, typed boundaries, and behavior-preserving changes [@style].
+For large writes or refactors, read [Style](style) before choosing the implementation shape. It routes the repo rules for architecture fit, code shape, typed boundaries, and behavior-preserving changes [@style].
 
 ## If You Are Changing The Wiki
 

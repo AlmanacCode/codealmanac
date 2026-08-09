@@ -67,7 +67,7 @@ need. The topic graph defines `guides` as the task-oriented neighborhood, and
 this hub groups the procedures by the work they unblock [@topics].
 
 For background, follow the architecture or reference links inside each guide.
-For exact command syntax or file formats, use [Reference](../reference/).
+For exact command syntax or file formats, use [Reference](../reference).
 
 ## Change Product Surfaces
 
