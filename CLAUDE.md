@@ -161,3 +161,15 @@ Things we do not do. If a plan proposes one, push back.
 - **Workspace roots and registry:** `src/codealmanac/services/workspaces/`
 - **CLI edge:** `src/codealmanac/cli/`
 - **Test sandbox helpers:** `tests/conftest.py`
+
+## Code Review Rules
+
+- Review the diff against the originating Bead, approved specification, or
+  stated pull-request purpose. Focus on concrete acceptance failures, realistic
+  regressions, security boundaries, data loss, and unsafe side effects.
+- Support each finding with a concrete failure path grounded in current code,
+  tests, requirements, or an applicable contract. Treat uncertain product or
+  architecture choices as decisions, not defects.
+- Treat speculative hardening, style preferences, broad refactors, and
+  unrelated improvements as non-blocking follow-up work. Prefer the smallest
+  safe fix and leave deterministic formatting and lint checks to CI.
