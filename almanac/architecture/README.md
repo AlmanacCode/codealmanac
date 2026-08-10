@@ -22,6 +22,22 @@ sources:
     type: file
     path: almanac/architecture/lifecycle/README.md
     note: Architecture hub for build, ingest, garden, sync, queueing, operation execution, and mutation safety.
+  - id: cli
+    type: file
+    path: almanac/architecture/cli/README.md
+    note: Architecture hub for command dispatch, terminal rendering, JSON output, and CLI error contracts.
+  - id: repositories
+    type: file
+    path: almanac/architecture/repositories/README.md
+    note: Architecture hub for repository selection, fixed wiki roots, and local runtime state.
+  - id: sources
+    type: file
+    path: almanac/architecture/sources/README.md
+    note: Architecture hub for ingest source material, source resolution, and page evidence boundaries.
+  - id: setup
+    type: file
+    path: almanac/architecture/setup/README.md
+    note: Architecture hub for setup, uninstall, instruction targets, scheduler defaults, config reconciliation, and updates.
   - id: index-search
     type: file
     path: almanac/architecture/wiki/index-refresh-and-search.md
@@ -138,8 +154,10 @@ For authored wiki contracts, read [Page identity](wiki/page-identity), [Path nor
 
 ## Edges And Interfaces
 
-Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for command entrypoints and rendering [@cli-adapter] [@terminal-output]. Use [Agent runs](agent-runs) for harness contracts, Yoke run options, normalized events, and Codex or Claude runner boundaries [@agent-runs]. Use [Source resolution and runtime](sources/source-resolution-and-runtime) when changing ingest inputs or source adapters [@source-runtime].
+[CLI architecture](cli) is the entry point for command dispatch, terminal rendering, JSON output, and CLI error contracts [@cli]. Use [CLI adapter boundary](cli/adapter-boundary) and [Terminal output](cli/terminal-output) for the command-entry and render details [@cli-adapter] [@terminal-output].
 
-[Runtime resources](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents, operation instructions, writing manuals, and per-run payloads used by lifecycle runs, [Instruction installation](setup/instruction-installation) covers setup-owned Codex and Claude guidance files, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@instruction-installation] [@setup-automation].
+Use [Agent runs](agent-runs) for harness contracts, Yoke run options, normalized events, and Codex or Claude runner boundaries [@agent-runs]. Use [Sources architecture](sources) when changing ingest source material, source resolution, or the boundary between selected raw material and cited page evidence [@sources]. [Source resolution and runtime](sources/source-resolution-and-runtime) is the source-adapter detail page [@source-runtime].
 
-[Local state](repositories/local-state), [Selection and root](repositories/selection-and-root), and [SQLite store boundaries](persistence/sqlite-store-boundaries) explain repository selection, runtime paths, and persistence ownership [@local-state] [@selection-root] [@sqlite-stores]. [Local viewer](viewer/local-viewer) explains the browser UI that projects the same wiki, topics, files, and jobs [@local-viewer].
+[Setup architecture](setup) covers setup, uninstall, instruction targets, scheduler defaults, config reconciliation, and local updates [@setup]. [Runtime resources](runtime-resources/prompts-and-manuals) covers the packaged Yoke agents, operation instructions, writing manuals, and per-run payloads used by lifecycle runs, [Instruction installation](setup/instruction-installation) covers setup-owned Codex and Claude guidance files, and [Setup automation and update](setup/automation-and-update) covers setup-owned scheduler and update behavior [@agents-manuals] [@instruction-installation] [@setup-automation].
+
+[Repositories architecture](repositories) is the entry point for repository selection, fixed wiki roots, and local runtime state [@repositories]. [Local state](repositories/local-state), [Selection and root](repositories/selection-and-root), and [SQLite store boundaries](persistence/sqlite-store-boundaries) explain repository selection, runtime paths, and persistence ownership [@local-state] [@selection-root] [@sqlite-stores]. [Local viewer](viewer/local-viewer) explains the browser UI that projects the same wiki, topics, files, and jobs [@local-viewer].
