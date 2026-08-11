@@ -33,7 +33,7 @@ sources:
   - id: runtime-resources
     type: wiki
     page: architecture/runtime-resources/prompts-and-manuals
-    note: Architecture page for packaged agents, prompts, manuals, and package data.
+    note: Architecture page for packaged agents, operation instructions, manuals, and package data.
   - id: local-viewer
     type: wiki
     page: architecture/viewer/local-viewer
@@ -64,7 +64,7 @@ uv build --out-dir dist
 uvx twine check dist/*
 ```
 
-Then install both artifacts into clean Python 3.12 environments and smoke the installed command [@release-doc]. For product behavior, use the installed artifact command from those temporary environments or the user-facing installed `codealmanac` binary, not a command from the repo developer environment. The package must also include the agent, prompt, manual, and viewer resources described by [Runtime resources](../architecture/runtime-resources/prompts-and-manuals) [@runtime-resources].
+Then install both artifacts into clean Python 3.12 environments and smoke the installed command [@release-doc]. For product behavior, use the installed artifact command from those temporary environments or the user-facing installed `codealmanac` binary, not a command from the repo developer environment. The package must also include the agent YAML and Markdown resources, bundled manuals, and viewer assets described by [Runtime resources](../architecture/runtime-resources/prompts-and-manuals) and `pyproject.toml` [@runtime-resources] [@pyproject].
 
 Use current public syntax during smoke checks. `sync status` accepts `--wiki`, `--from`, and `--json`; it does not accept `--quiet` [@run-parser]. The release document may lag the parser, so trust parser-backed command syntax when a smoke command disagrees with the installed CLI [@release-doc] [@run-parser].
 
