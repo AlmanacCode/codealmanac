@@ -20,8 +20,14 @@ export async function writeInstallRuntime(args: {
   nodeVersion: string;
   nodeAbi?: string | null;
 }): Promise<void> {
+  let resolvedNodePath = args.nodePath;
+  const brewCellarRegex = /\/Cellar\/node\/[^/]+/i;
+  if (brewCellarRegex.test(resolvedNodePath)) {
+    resolvedNodePath = resolvedNodePath.replace(brewCellarRegex, "/opt/node");
+  }
+
   const runtime: InstallRuntime = {
-    nodePath: args.nodePath,
+    nodePath: resolvedNodePath,
     nodeVersion: args.nodeVersion,
     nodeAbi: args.nodeAbi ?? null,
   };

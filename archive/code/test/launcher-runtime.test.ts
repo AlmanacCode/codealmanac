@@ -42,6 +42,27 @@ describe("install launcher runtime", () => {
     });
   });
 
+  it("resolves Homebrew Cellar paths to stable opt paths", async () => {
+    await withTempHome(async (home) => {
+      const packageRoot = join(home, "pkg");
+      await mkdir(packageRoot, { recursive: true });
+
+      await writeInstallRuntime({
+        packageRoot,
+        nodePath: "/opt/homebrew/Cellar/node/26.0.0/bin/node",
+        nodeVersion: "v26.0.0",
+        nodeAbi: "147",
+      });
+
+      await expect(readInstallRuntime(packageRoot)).resolves.toEqual({
+        nodePath: "/opt/homebrew/opt/node/bin/node",
+        nodeVersion: "v26.0.0",
+        nodeAbi: "147",
+      });
+    });
+  });
+
+
   it("formats the repair message when the pinned node path is gone", () => {
     expect(
       formatMissingPinnedNodeMessage({
