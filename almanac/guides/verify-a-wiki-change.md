@@ -6,6 +6,10 @@ sources:
     type: file
     path: README.md
     note: Public read commands for search, health, and validate.
+  - id: contributing
+    type: file
+    path: CONTRIBUTING.md
+    note: Local development command guidance for running the checkout CLI.
   - id: health_service
     type: file
     path: src/codealmanac/services/health/service.py
@@ -24,11 +28,11 @@ For the exact page metadata and citation contract, see [Frontmatter and sources]
 
 ## Steps
 
-Run `codealmanac validate` from the repository root. Validation checks source frontmatter shape, rejects runtime-state leaks, refreshes the index, and fails when graph or source-health issues remain [@health_service].
+Run `uv run codealmanac validate` from the repository root when validating this checkout. The contributing guide says local CLI testing should use `uv run codealmanac ...`, which keeps verification on the repository source instead of any globally installed `codealmanac` binary on `PATH` [@contributing]. Validation checks source frontmatter shape, rejects runtime-state leaks, refreshes the index, and fails when graph or source-health issues remain [@health_service].
 
 If validation fails, fix the reported wiki source issue rather than editing runtime state. Broken page links need a real target page or plain text. Missing citations need a matching `sources:` entry or a removed citation marker. Unused sources should be cited near the claim they support or removed. See [Health and validation](../architecture/wiki/health-and-validation) for what each check looks for and why [@health_page].
 
-Use `codealmanac health` when you want the same graph report without treating it as a pass/fail gate. Use `codealmanac search`, `codealmanac show`, and `codealmanac topics` to spot-check that the page can be found and read through the public read surface [@repo_readme].
+Use `uv run codealmanac health` when you want the same graph report without treating it as a pass/fail gate. Use `uv run codealmanac search`, `uv run codealmanac show`, and `uv run codealmanac topics` to spot-check that the page can be found and read through the public read surface [@repo_readme] [@contributing].
 
 ## Recovery
 
