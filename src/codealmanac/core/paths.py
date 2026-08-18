@@ -1,4 +1,13 @@
-from pathlib import Path
+from pathlib import Path, PurePath
+
+
+def is_rooted(path: PurePath) -> bool:
+    # `is_absolute()` is not a containment check on Windows. `PureWindowsPath`
+    # treats "/tmp/x" as relative because it carries no drive, and "C:x" as
+    # relative because it carries no root, yet joining either one discards the
+    # left-hand side: `C:/repo` / `/tmp/x` is `C:/tmp/x`. A repo-relative guard
+    # therefore has to reject every anchor, not just fully qualified paths.
+    return path.is_absolute() or bool(path.drive) or bool(path.root)
 
 
 def home_dir() -> Path:

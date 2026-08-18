@@ -3,6 +3,7 @@ from pathlib import Path
 from pydantic import Field, field_validator
 
 from codealmanac.core.models import CodeAlmanacModel
+from codealmanac.core.paths import is_rooted
 from codealmanac.services.sources.models import SourceRef, TranscriptApp
 
 
@@ -57,7 +58,7 @@ class InspectSourceRuntimeRequest(CodeAlmanacModel):
 
 
 def normalize_ignored_directory(path: Path) -> Path:
-    if path.is_absolute():
+    if is_rooted(path):
         raise ValueError("source runtime ignored directories must be repo-relative")
     if len(path.parts) == 0:
         raise ValueError("source runtime ignored directories must name a directory")

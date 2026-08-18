@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from codealmanac.core.models import CodeAlmanacModel
-from codealmanac.core.paths import normalize_path
+from codealmanac.core.paths import is_rooted, normalize_path
 
 DEFAULT_ALMANAC_ROOT = Path("almanac")
 ALMANAC_ROOT_MARKER_FILE = "topics.yaml"
@@ -18,7 +18,7 @@ def require_default_almanac_root(value: Path | str | None) -> Path:
     if value is None:
         return DEFAULT_ALMANAC_ROOT
     path = Path(value)
-    if path.is_absolute():
+    if is_rooted(path):
         raise ValueError("Almanac root must be a repo-relative path")
     if len(path.parts) == 0:
         raise ValueError("Almanac root must name a directory")
