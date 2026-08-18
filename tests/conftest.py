@@ -77,7 +77,7 @@ def bind_inline_executor(
     spawner.bind(app.workflows.queue.executor)
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     home = tmp_path / "home"
     home.mkdir()
