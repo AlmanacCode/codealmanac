@@ -81,7 +81,18 @@ def bind_inline_executor(
 def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     home = tmp_path / "home"
     home.mkdir()
+    # `home_dir()` resolves `~` through `Path.home()`. POSIX reads $HOME, but
+    # Windows reads %USERPROFILE% and ignores $HOME entirely, so patching only
+    # $HOME leaves user state pointing at the real `~/.codealmanac`.
     monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    resolved = Path.home()
+    if resolved != home:
+        raise RuntimeError(
+            "isolated_home failed to redirect the user home: "
+            f"Path.home() is {resolved}, expected {home}. "
+            "Tests must never read or write the real ~/.codealmanac."
+        )
     yield home
 
 
