@@ -4,6 +4,7 @@ from codealmanac.services.wiki.paths import (
     escape_glob_meta,
     iter_page_paths,
     normalize_reference_path,
+    page_id_for_path,
 )
 
 
@@ -17,6 +18,27 @@ def test_page_iteration_excludes_repository_manuals(tmp_path):
     (manual_path / "how-to-write.md").write_text("# Manual\n", encoding="utf-8")
 
     assert tuple(iter_page_paths(almanac_path)) == (page,)
+
+
+def test_page_iteration_excludes_uppercase_markdown_suffixes(tmp_path):
+    almanac_path = tmp_path / "almanac"
+    almanac_path.mkdir(parents=True)
+    page = almanac_path / "wiki.md"
+    page.write_text("# Wiki\n", encoding="utf-8")
+    (almanac_path / "NOTES.MD").write_text("# Notes\n", encoding="utf-8")
+    (almanac_path / "Mixed.Md").write_text("# Mixed\n", encoding="utf-8")
+
+    assert tuple(iter_page_paths(almanac_path)) == (page,)
+
+
+def test_page_ids_resolve_for_every_iterated_page(tmp_path):
+    almanac_path = tmp_path / "almanac"
+    almanac_path.mkdir(parents=True)
+    (almanac_path / "wiki.md").write_text("# Wiki\n", encoding="utf-8")
+    (almanac_path / "NOTES.MD").write_text("# Notes\n", encoding="utf-8")
+
+    for path in iter_page_paths(almanac_path):
+        assert page_id_for_path(almanac_path, path)
 
 
 def test_frontmatter_uses_pydantic_validated_shape():
