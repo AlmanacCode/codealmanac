@@ -95,3 +95,39 @@ def test_store_connections_close_after_every_use(tmp_path: Path, monkeypatch):
     for connection in opened:
         with pytest.raises(sqlite3.ProgrammingError):
             connection.execute("SELECT 1")
+
+
+def test_index_store_connections_close_after_every_use(tmp_path: Path, monkeypatch):
+    from codealmanac.services.index import schema
+    from codealmanac.services.index.store import IndexStore
+
+    almanac_path = tmp_path / "repo" / "almanac"
+    almanac_path.mkdir(parents=True)
+    (almanac_path / "README.md").write_text(
+        "---\ntopics: [concepts]\n---\n# Wiki\n\nRoot page.\n",
+        encoding="utf-8",
+    )
+    (almanac_path / "topics.yaml").write_text("topics: []\n", encoding="utf-8")
+    runtime_path = tmp_path / "runtime"
+
+    opened: list[sqlite3.Connection] = []
+    real_connect = schema.connect_sqlite
+
+    def tracking_connect(path: Path) -> sqlite3.Connection:
+        connection = real_connect(path)
+        opened.append(connection)
+        return connection
+
+    monkeypatch.setattr(schema, "connect_sqlite", tracking_connect)
+    store = IndexStore()
+
+    for _ in range(50):
+        store.refresh(almanac_path, runtime_path)
+
+    # Every query command reindexes implicitly, so this is the hot path rather
+    # than a rare one. IndexStore was the only store still relying on sqlite3's
+    # transaction-only context manager instead of closing.
+    assert len(opened) == 50
+    for connection in opened:
+        with pytest.raises(sqlite3.ProgrammingError):
+            connection.execute("SELECT 1")

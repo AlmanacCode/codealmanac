@@ -15,7 +15,7 @@ from codealmanac.services.index.projection import (
     stored_signature,
 )
 from codealmanac.services.index.requests import SearchIndexRequest
-from codealmanac.services.index.schema import connect_index, index_db_path
+from codealmanac.services.index.schema import index_db_path, open_index
 from codealmanac.services.index.sources import load_index_sources
 from codealmanac.services.index.views import (
     build_health_report,
@@ -33,7 +33,7 @@ class IndexStore:
         require_initialized_almanac_root(almanac_path)
         sources = load_index_sources(almanac_path)
         db_path = index_db_path(runtime_path)
-        with connect_index(db_path) as connection:
+        with open_index(db_path) as connection:
             if stored_signature(connection) == sources.signature:
                 return IndexRefreshResult(
                     changed=0,
@@ -55,7 +55,7 @@ class IndexStore:
         require_initialized_almanac_root(almanac_path)
         sources = load_index_sources(almanac_path)
         db_path = index_db_path(runtime_path)
-        with connect_index(db_path) as connection:
+        with open_index(db_path) as connection:
             replace_documents(connection, sources)
         return IndexRefreshResult(
             changed=len(sources.documents),
@@ -72,12 +72,12 @@ class IndexStore:
         request: SearchIndexRequest,
     ) -> tuple[SearchPageResult, ...]:
         require_initialized_almanac_root(almanac_path)
-        with connect_index(index_db_path(runtime_path)) as connection:
+        with open_index(index_db_path(runtime_path)) as connection:
             return search_pages(connection, request)
 
     def counts(self, almanac_path: Path, runtime_path: Path) -> IndexCounts:
         require_initialized_almanac_root(almanac_path)
-        with connect_index(index_db_path(runtime_path)) as connection:
+        with open_index(index_db_path(runtime_path)) as connection:
             return index_counts(connection)
 
     def get_page(
@@ -87,7 +87,7 @@ class IndexStore:
         slug: str,
     ) -> PageView | None:
         require_initialized_almanac_root(almanac_path)
-        with connect_index(index_db_path(runtime_path)) as connection:
+        with open_index(index_db_path(runtime_path)) as connection:
             return get_page_view(connection, slug)
 
     def list_topics(
@@ -96,7 +96,7 @@ class IndexStore:
         runtime_path: Path,
     ) -> tuple[TopicSummary, ...]:
         require_initialized_almanac_root(almanac_path)
-        with connect_index(index_db_path(runtime_path)) as connection:
+        with open_index(index_db_path(runtime_path)) as connection:
             return list_topic_summaries(connection)
 
     def get_topic(
@@ -107,7 +107,7 @@ class IndexStore:
         include_descendants: bool,
     ) -> TopicDetail | None:
         require_initialized_almanac_root(almanac_path)
-        with connect_index(index_db_path(runtime_path)) as connection:
+        with open_index(index_db_path(runtime_path)) as connection:
             return get_topic_detail(connection, slug, include_descendants)
 
     def health_report(
@@ -118,7 +118,7 @@ class IndexStore:
         registered_wikis: set[str],
     ) -> HealthReport:
         require_initialized_almanac_root(almanac_path)
-        with connect_index(index_db_path(runtime_path)) as connection:
+        with open_index(index_db_path(runtime_path)) as connection:
             return build_health_report(
                 connection,
                 repository_root,
