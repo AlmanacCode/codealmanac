@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from codealmanac.services.wiki.frontmatter import parse_frontmatter
 from codealmanac.services.wiki.links import extract_page_links, resolve_page_href
 from codealmanac.services.wiki.paths import (
@@ -31,13 +33,23 @@ def test_page_iteration_excludes_uppercase_markdown_suffixes(tmp_path):
     assert tuple(iter_page_paths(almanac_path)) == (page,)
 
 
-def test_page_ids_resolve_for_every_iterated_page(tmp_path):
+def test_page_iteration_filters_case_insensitive_glob_matches(tmp_path, monkeypatch):
+    # `rglob` only returns uppercase suffixes on a case-insensitive filesystem,
+    # so on Linux the test above cannot reach the filter at all. Feeding the
+    # match in directly pins the behaviour on every runner, and keeps
+    # `iter_page_paths` and `page_id_for_path` provably in agreement.
     almanac_path = tmp_path / "almanac"
     almanac_path.mkdir(parents=True)
-    (almanac_path / "wiki.md").write_text("# Wiki\n", encoding="utf-8")
-    (almanac_path / "NOTES.MD").write_text("# Notes\n", encoding="utf-8")
+    page = almanac_path / "wiki.md"
+    page.write_text("# Wiki\n", encoding="utf-8")
+    upper = almanac_path / "NOTES.MD"
+    upper.write_text("# Notes\n", encoding="utf-8")
+    monkeypatch.setattr(Path, "rglob", lambda self, pattern: iter((page, upper)))
 
-    for path in iter_page_paths(almanac_path):
+    iterated = tuple(iter_page_paths(almanac_path))
+
+    assert iterated == (page,)
+    for path in iterated:
         assert page_id_for_path(almanac_path, path)
 
 
