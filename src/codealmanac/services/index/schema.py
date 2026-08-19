@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from codealmanac.database import (
@@ -130,3 +132,18 @@ def connect_index(path: Path) -> SQLiteConnection:
     connection = connect_sqlite(path)
     apply_migrations(connection, INDEX_MIGRATIONS)
     return connection
+
+
+@contextmanager
+def open_index(path: Path) -> Iterator[SQLiteConnection]:
+    # `with connection:` scopes a transaction and never closes, so callers using
+    # it alone left the handle for the interpreter to reclaim instead of closing
+    # it deterministically. `open_local_database` exists for the same reason and
+    # records where that ended up once already. Nesting `with connection:` keeps
+    # the commit-on-success and rollback-on-error behaviour exactly as it was.
+    connection = connect_index(path)
+    try:
+        with connection:
+            yield connection
+    finally:
+        connection.close()
