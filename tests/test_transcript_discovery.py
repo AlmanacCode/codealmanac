@@ -73,13 +73,13 @@ def test_claude_transcript_discovery_reads_metadata_and_skips_subagents(
     projects.mkdir(parents=True)
     transcript = projects / "session.jsonl"
     transcript.write_text(
-        f'{{"sessionId":"claude-1","cwd":"{repo}"}}\n',
+        json.dumps({"sessionId": "claude-1", "cwd": str(repo)}) + "\n",
         encoding="utf-8",
     )
     subagents = projects / "subagents"
     subagents.mkdir()
     (subagents / "session.jsonl").write_text(
-        f'{{"sessionId":"claude-2","cwd":"{repo}"}}\n',
+        json.dumps({"sessionId": "claude-2", "cwd": str(repo)}) + "\n",
         encoding="utf-8",
     )
 
