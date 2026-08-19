@@ -1,3 +1,4 @@
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -209,7 +210,8 @@ def test_queued_build_uses_harness_prompt_and_records_build_operation(
     assert adapter.requests[0].agent is HarnessAgentKind.BUILD
     assert adapter.requests[0].prompt.startswith("Runtime context:\n{")
     assert "Build Operation" not in adapter.requests[0].prompt
-    assert f'"manual_root": "{repo}/almanac/manual"' in adapter.requests[0].prompt
+    manual_root = json.dumps(str(repo / "almanac" / "manual"))
+    assert f'"manual_root": {manual_root}' in adapter.requests[0].prompt
     assert '"manual_documents"' not in adapter.requests[0].prompt
     assert "Write the smallest useful first wiki." in adapter.requests[0].prompt
 

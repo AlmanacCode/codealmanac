@@ -15,6 +15,7 @@ def test_tag_adds_topic_preserves_body_and_frontmatter_comment(
     page.write_text(
         f"---\ntitle: Auth Flow\n# keep this comment\ntopics: [auth]\n---\n{body}",
         encoding="utf-8",
+        newline="",
     )
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
@@ -43,6 +44,7 @@ def test_untag_removes_topic_and_allows_orphan_page(
     page.write_text(
         "---\ntitle: Auth Flow\ntopics: [auth]\n---\n# Auth Flow\n",
         encoding="utf-8",
+        newline="",
     )
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
@@ -63,7 +65,7 @@ def test_tag_adds_frontmatter_when_page_has_none(
 ):
     repo = make_repo(tmp_path)
     page = repo / "almanac/note.md"
-    page.write_text("# Note\n\nBody.\n", encoding="utf-8")
+    page.write_text("# Note\n\nBody.\n", encoding="utf-8", newline="")
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
@@ -81,7 +83,7 @@ def test_tag_handles_frontmatter_closing_fence_at_eof(
 ):
     repo = make_repo(tmp_path)
     page = repo / "almanac/note.md"
-    page.write_text("---\ntitle: Note\n---", encoding="utf-8")
+    page.write_text("---\ntitle: Note\n---", encoding="utf-8", newline="")
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
     )
@@ -104,6 +106,7 @@ def test_tag_preserves_crlf_frontmatter_and_body(
     page.write_text(
         f"---\r\ntitle: Auth Flow\r\ntopics:\r\n  - auth\r\n---\r\n{body}",
         encoding="utf-8",
+        newline="",
     )
     app = create_app(
         AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
