@@ -34,15 +34,23 @@ sources:
     type: wiki
     path: guides/compare-codealmanac-with-generated-wikis
     note: Guide for comparing CodeAlmanac with generated repository wikis.
+  - id: config-keys
+    type: wiki
+    path: reference/config-keys
+    note: Reference page for user configuration keys and precedence.
+  - id: model-catalog
+    type: wiki
+    path: decisions/controlled-model-catalog
+    note: Decision that supported harness models are controlled product configuration.
 ---
 
 # Product Surface
 
 The product surface is the public shape CodeAlmanac presents outside its
 implementation internals. The topic graph defines `product` as product scope and
-public-surface decisions. Its child topics separate launch work from evaluation
-work, while this hub routes both neighborhoods from the same local-only product
-boundary [@topics].
+public-surface decisions. Its child topics cover launch, evaluation, release,
+and configuration work, while this hub routes those neighborhoods from the same
+local-only product boundary [@topics].
 
 The base decision is [Local-only Python product](../decisions/local-only-python-product).
 It states that the active product is the `codealmanac` Python CLI, a repo-local
@@ -60,6 +68,11 @@ prompts, manuals, and CLI resources ship with the distribution [@release].
 CodeAlmanac is a maintained repository wiki for decisions, invariants, gotchas,
 flows, and operating knowledge, not a team-chat router or generic documentation
 pitch [@positioning].
+
+[Config keys](../reference/config-keys) is the lookup page for public
+configuration names, defaults, and precedence. [Controlled model catalog](../decisions/controlled-model-catalog)
+explains why supported harness models are a CodeAlmanac product contract rather
+than provider discovery behavior [@config-keys] [@model-catalog].
 
 [Launch metrics](launch-metrics) keeps PyPI fetches separate from user counts,
 while [Evaluation benchmarks](evaluation-benchmarks) turns the positioning claim

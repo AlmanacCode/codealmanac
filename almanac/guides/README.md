@@ -69,7 +69,7 @@ this hub groups the procedures by the work they unblock [@topics].
 For background, follow the architecture or reference links inside each guide.
 For exact command syntax or file formats, use [Reference](../reference).
 
-## Change Product Surfaces
+## Change Interfaces
 
 [Add a CLI command](add-a-cli-command) covers command parser, dispatch, app
 boundary, rendering, and tests for command work [@cli-command].

@@ -128,7 +128,7 @@ sources:
 
 Architecture pages explain the system areas that future work must preserve or reshape before adding behavior. The repo manual makes this explicit: implementation work should evolve the codebase so the feature fits, and should stop when the current shape cannot hold the request cleanly [@manual]. This hub gives the shortest route through the architecture cluster instead of requiring readers to scan every page under `architecture/`.
 
-The architecture topic has focused child neighborhoods for wiki behavior, lifecycle operations, agent runs, CLI behavior, repositories, local state, automation, setup, runtime resources, persistence, sources, and the viewer [@topics]. Read the page that owns the boundary you plan to change, then follow its links into guides, decisions, or reference pages.
+The architecture topic has focused child and descendant neighborhoods for wiki behavior, lifecycle operations, agent runs, CLI behavior, repositories, local state, automation, setup, runtime resources, persistence, sources, safety, style, and the viewer [@topics]. Read the page that owns the boundary you plan to change, then follow its links into guides, decisions, or reference pages.
 
 ## Core Shape
 
