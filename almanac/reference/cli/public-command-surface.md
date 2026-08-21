@@ -87,7 +87,7 @@ Parser failures go through the custom argument parser, which classifies syntax p
 | `list` | List registered local wikis. | `--json` [@parser_wiki] |
 | `search [query]` | Search the selected wiki. | `--wiki`, `--topic`, `--mentions`, `--limit`, `--slugs`, `--json` [@parser_wiki] |
 | `show <page>` | Show one indexed wiki page. | `--wiki`, `--json`, `--body`, `--meta`, `--lead`, `--links`, `--backlinks`, `--files`, `--topics` [@parser_wiki] |
-| `topics` | List, inspect, and mutate topics. | `show`, `create`, `describe`, `link`, `unlink`, `rename`, `delete` [@parser_wiki] |
+| `topics` | List, inspect, and mutate topics. | `show [--descendants]`, `create`, `describe`, `link`, `unlink`, `rename`, `delete` [@parser_wiki] |
 | `health` | Report graph and source health. | `--wiki`, `--json` [@parser_wiki] |
 | `validate` | Validate the local wiki and return nonzero when issues exist. | `--wiki`, `--json` [@parser_wiki] |
 | `reindex` | Force a full index rebuild. | `--wiki`, `--json` [@parser_wiki] |
