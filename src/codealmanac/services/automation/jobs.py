@@ -113,7 +113,16 @@ def default_interval(task: AutomationTask) -> timedelta:
 
 def plist_path_for(task: AutomationTask, home: Path) -> Path:
     definition = task_definition(task)
-    return home / "Library/LaunchAgents" / f"{definition.label}.plist"
+    if sys.platform == "darwin":
+        return home / "Library/LaunchAgents" / f"{definition.label}.plist"
+    return systemd_user_unit_dir(home) / f"{definition.label}.timer"
+
+
+def systemd_user_unit_dir(home: Path) -> Path:
+    xdg_config_home = os.environ.get("XDG_CONFIG_HOME", "").strip()
+    if xdg_config_home:
+        return Path(xdg_config_home) / "systemd/user"
+    return home / ".config/systemd/user"
 
 
 def launch_path(home: Path, env_path: str | None) -> str:

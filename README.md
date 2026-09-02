@@ -21,7 +21,7 @@ shaped the way it is, what broke before, which invariants matter, and how
 workflows cross files and services. The wiki is plain markdown in your repo,
 indexed locally, and reviewed in Git like any other code change.
 
-**Supported today:** macOS with Codex or Claude Code. Requires Python 3.12+.
+**Supported today:** macOS and Linux (systemd) with Codex or Claude Code. Requires Python 3.12+.
 
 ## Quickstart
 
@@ -57,8 +57,8 @@ codealmanac setup --yes
 codealmanac setup --yes --runner claude
 ```
 
-Setup installs agent instructions for your chosen tools and three local macOS
-`launchd` jobs. The jobs and all wiki work run locally.
+Setup installs agent instructions for your chosen tools and three local
+background jobs (`launchd` on macOS, systemd user timers on Linux). The jobs and all wiki work run locally.
 
 | Job | Default schedule | What it does |
 | --- | ---: | --- |
