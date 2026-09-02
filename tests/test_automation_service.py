@@ -13,6 +13,7 @@ from codealmanac.integrations.automation.scheduler.launchd import (
     LaunchdSchedulerAdapter,
     parse_launchd_inspection,
 )
+from codealmanac.services.automation.jobs import plist_path_for
 from codealmanac.services.automation.models import (
     AutomationTask,
     ScheduledJob,
@@ -80,9 +81,7 @@ def test_automation_reconcile_disabled_removes_explicit_task(
 ) -> None:
     scheduler = FakeSchedulerAdapter()
     app = automation_app(isolated_home, scheduler)
-    scheduler.loaded.add(
-        isolated_home / "Library/LaunchAgents/com.codealmanac.garden.plist"
-    )
+    scheduler.loaded.add(plist_path_for(AutomationTask.GARDEN, isolated_home))
 
     result = app.automation.reconcile_task(
         ReconcileAutomationTaskRequest(
@@ -115,7 +114,7 @@ def test_automation_remove_all_is_explicit(
     app = automation_app(isolated_home, scheduler)
     for task in AutomationTask:
         scheduler.loaded.add(
-            isolated_home / f"Library/LaunchAgents/com.codealmanac.{task.value}.plist"
+            plist_path_for(task, isolated_home)
         )
 
     result = app.automation.remove_all(RemoveAllAutomationRequest(home=isolated_home))
