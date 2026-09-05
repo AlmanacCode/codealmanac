@@ -1,9 +1,12 @@
+from pathlib import Path
+
 from codealmanac.services.wiki.frontmatter import parse_frontmatter
 from codealmanac.services.wiki.links import extract_page_links, resolve_page_href
 from codealmanac.services.wiki.paths import (
     escape_glob_meta,
     iter_page_paths,
     normalize_reference_path,
+    page_id_for_path,
 )
 
 
@@ -158,3 +161,34 @@ def test_reference_paths_normalize_and_escape_glob_metacharacters():
 def test_reference_paths_stay_repo_relative():
     assert normalize_reference_path("/Src/Auth.py", is_dir=False) == "src/auth.py"
     assert normalize_reference_path("../secrets.txt", is_dir=False) == ""
+
+
+def test_page_iteration_excludes_uppercase_markdown_suffixes(tmp_path):
+    almanac_path = tmp_path / "almanac"
+    almanac_path.mkdir(parents=True)
+    page = almanac_path / "wiki.md"
+    page.write_text("# Wiki\n", encoding="utf-8")
+    (almanac_path / "NOTES.MD").write_text("# Notes\n", encoding="utf-8")
+    (almanac_path / "Mixed.Md").write_text("# Mixed\n", encoding="utf-8")
+
+    assert tuple(iter_page_paths(almanac_path)) == (page,)
+
+
+def test_page_iteration_filters_case_insensitive_glob_matches(tmp_path, monkeypatch):
+    # `rglob` only returns uppercase suffixes on a case-insensitive filesystem,
+    # so on Linux the test above cannot reach the filter at all. Feeding the
+    # match in directly pins the behaviour on every runner, and keeps
+    # `iter_page_paths` and `page_id_for_path` provably in agreement.
+    almanac_path = tmp_path / "almanac"
+    almanac_path.mkdir(parents=True)
+    page = almanac_path / "wiki.md"
+    page.write_text("# Wiki\n", encoding="utf-8")
+    upper = almanac_path / "NOTES.MD"
+    upper.write_text("# Notes\n", encoding="utf-8")
+    monkeypatch.setattr(Path, "rglob", lambda self, pattern: iter((page, upper)))
+
+    iterated = tuple(iter_page_paths(almanac_path))
+
+    assert iterated == (page,)
+    for path in iterated:
+        assert page_id_for_path(almanac_path, path)

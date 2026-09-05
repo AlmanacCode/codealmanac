@@ -52,6 +52,13 @@ def iter_page_paths(almanac_path: Path) -> Iterator[Path]:
     if not almanac_path.is_dir():
         return
     for path in sorted(almanac_path.rglob("*.md")):
+        # `rglob` is case-insensitive on Windows and on default macOS volumes, so
+        # it also matches ".MD" and ".Md". `page_id_for_path` compares the suffix
+        # exactly, so yielding one of those raises and takes down every command
+        # that reindexes. Linux never matched them at all, so skipping here is
+        # what makes the three platforms agree on the same wiki tree.
+        if path.suffix != ".md":
+            continue
         if is_reserved_page_path(almanac_path, path):
             continue
         yield path
