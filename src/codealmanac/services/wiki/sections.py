@@ -1,8 +1,13 @@
+import re
+
 from markdown_it import MarkdownIt
 
 from codealmanac.core.models import CodeAlmanacModel
 
 MARKDOWN = MarkdownIt("commonmark", {"html": False, "linkify": False})
+# Token.map line numbers only count these breaks. str.splitlines() also splits
+# on form feeds, U+2028 and friends, which would shift every slice after them.
+SOURCE_LINE = re.compile(r"[^\r\n]*(?:\r\n?|\n)|[^\r\n]+$")
 
 
 class WikiSection(CodeAlmanacModel):
@@ -29,7 +34,7 @@ def project_sections(body: str, page_title: str) -> tuple[WikiSection, ...]:
     if not boundaries:
         return (section(0, (page_title,), body),)
 
-    lines = body.splitlines(keepends=True)
+    lines = SOURCE_LINE.findall(body)
     sections: list[WikiSection] = []
     headings: dict[int, str] = {}
 

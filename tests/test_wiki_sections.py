@@ -67,3 +67,24 @@ def test_heading_free_page_still_has_one_searchable_section():
     assert len(sections) == 1
     assert sections[0].heading_path == ("Note",)
     assert sections[0].body == "Only prose.\n"
+
+
+def test_section_slices_count_lines_the_way_the_markdown_parser_does():
+    body = (
+        "Pasted note with a line separator.\n\n"
+        "## Setup\n\n"
+        "Install it.\x0cNext page.\n\n"
+        "## Usage\n\n"
+        "Run it.\n"
+    )
+
+    sections = project_sections(body, page_title="Tool")
+
+    assert [section.heading_path for section in sections] == [
+        ("Tool",),
+        ("Setup",),
+        ("Usage",),
+    ]
+    assert sections[0].body == "Pasted note with a line separator.\n\n"
+    assert sections[1].body == "\nInstall it.\x0cNext page.\n\n"
+    assert sections[2].body == "\nRun it.\n"
