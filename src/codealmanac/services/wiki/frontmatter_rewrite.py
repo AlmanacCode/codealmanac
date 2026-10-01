@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable
 from io import StringIO
 from pathlib import Path
@@ -20,7 +21,7 @@ class PageTopicsRewrite(CodeAlmanacModel):
 def rewrite_page_topics(path: Path, topics: tuple[str, ...]) -> None:
     raw = path.read_bytes().decode("utf-8")
     split = split_frontmatter(raw)
-    line_ending = "\r\n" if "\r\n" in split.frontmatter else "\n"
+    line_ending = split.line_ending
     yaml = YAML(typ="rt")
     yaml.preserve_quotes = True
     if split.frontmatter.strip():
@@ -82,31 +83,31 @@ def read_page_topics(path: Path) -> tuple[str, ...]:
 
 
 class FrontmatterSplit:
-    def __init__(self, frontmatter: str, body: str):
+    def __init__(self, frontmatter: str, body: str, line_ending: str = "\n"):
         self.frontmatter = frontmatter
         self.body = body
+        self.line_ending = line_ending
+
+
+# Same fence rule python-frontmatter uses when the index parses a page, so a
+# rewrite always sees the block the index read: three or more dashes, then
+# optional trailing whitespace.
+FRONTMATTER_FENCE = re.compile(r"-{3,}\s*")
 
 
 def split_frontmatter(raw: str) -> FrontmatterSplit:
-    if raw.startswith("---\r\n"):
-        return split_with_delimiter(raw, "\r\n")
-    if raw.startswith("---\n"):
-        return split_with_delimiter(raw, "\n")
-    return FrontmatterSplit(frontmatter="", body=raw)
-
-
-def split_with_delimiter(raw: str, line_ending: str) -> FrontmatterSplit:
-    opener = f"---{line_ending}"
-    closer = f"{line_ending}---"
-    end = raw.find(closer, len(opener))
-    if end == -1:
+    lines = re.split(r"(?<=\n)", raw)
+    if not FRONTMATTER_FENCE.fullmatch(lines[0]):
         return FrontmatterSplit(frontmatter="", body=raw)
-    frontmatter = raw[len(opener) : end]
-    body_start = end + len(closer)
-    if raw.startswith(line_ending, body_start):
-        body_start += len(line_ending)
-    body = raw[body_start:]
-    return FrontmatterSplit(frontmatter=frontmatter, body=body)
+    line_ending = "\r\n" if lines[0].endswith("\r\n") else "\n"
+    for index in range(1, len(lines)):
+        if FRONTMATTER_FENCE.fullmatch(lines[index]):
+            return FrontmatterSplit(
+                frontmatter="".join(lines[1:index]),
+                body="".join(lines[index + 1 :]),
+                line_ending=line_ending,
+            )
+    return FrontmatterSplit(frontmatter="", body=raw)
 
 
 def apply_topics(data: CommentedMap, topics: tuple[str, ...]) -> None:

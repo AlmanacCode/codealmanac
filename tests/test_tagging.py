@@ -94,6 +94,48 @@ def test_tag_handles_frontmatter_closing_fence_at_eof(
     assert "concepts" in raw
 
 
+def test_tag_replaces_empty_frontmatter_block(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = make_repo(tmp_path)
+    page = repo / "almanac/note.md"
+    page.write_text("---\n---\n# Note\n\nBody.\n", encoding="utf-8")
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+
+    app.tagging.tag(TagPageRequest(cwd=repo, slug="note", topics=("concepts",)))
+
+    raw = page.read_bytes().decode("utf-8")
+    assert raw == "---\ntopics:\n- concepts\n---\n# Note\n\nBody.\n"
+
+
+def test_tag_reads_fences_with_trailing_whitespace_like_the_index(
+    tmp_path: Path,
+    isolated_home: Path,
+):
+    repo = make_repo(tmp_path)
+    page = repo / "almanac/auth-flow.md"
+    page.write_text(
+        "---  \ntitle: Auth Flow\ntopics: [auth]\n--- \n# Auth Flow\n",
+        encoding="utf-8",
+    )
+    app = create_app(
+        AppConfig(database_path=isolated_home / ".codealmanac/codealmanac.db")
+    )
+
+    result = app.tagging.tag(
+        TagPageRequest(cwd=repo, slug="auth-flow", topics=("sessions",))
+    )
+
+    raw = page.read_bytes().decode("utf-8")
+    assert result.topics_before == ("auth",)
+    assert raw.count("---") == 2
+    assert "title: Auth Flow" in raw
+    assert raw.endswith("---\n# Auth Flow\n")
+
+
 def test_tag_preserves_crlf_frontmatter_and_body(
     tmp_path: Path,
     isolated_home: Path,
