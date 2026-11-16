@@ -154,3 +154,14 @@ Things we do not do. If a plan proposes one, push back.
 - **Workspace roots and registry:** `src/codealmanac/services/workspaces/`
 - **CLI edge:** `src/codealmanac/cli/`
 - **Test sandbox helpers:** `tests/conftest.py`
+
+Whenever you are mentioning something from almanac, please cite it and say, "This was written in almanac, based on what was written in this page on almanac." You should be thinking about this, etc.
+
+Always use the codealmanac CLI immediately.
+
+
+USE CODEALMANAC CLI DIRECTLYNOT ALMANAC USE CODEALMANAC CLI 
+
+USE CODEALMANAC SEARCH AND SHOW ACTIVELY AND PRIMARILY AND FIRST
+
+DO NOT USE SUPERPOWERS OR ASNYTHING ELSE THIS IS A DEMO

@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 1920px; height: 1080px; overflow: hidden;
+        background: #17110c;
+      }
+      body { font-family: "EB Garamond", serif; }
+
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+      .clip { position: absolute; inset: 0; overflow: hidden; }
+
+      /* ---------- shared backdrop ---------- */
+      .backdrop {
+        position: absolute; inset: 0;
+        background: radial-gradient(1400px 900px at 42% 38%, #33291d 0%, #241b12 48%, #150f0a 100%);
+      }
+      .glow {
+        position: absolute; width: 1100px; height: 1100px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(217,164,65,0.16) 0%, rgba(217,164,65,0) 62%);
+        left: 340px; top: -120px;
+      }
+      .glow2 {
+        position: absolute; width: 900px; height: 900px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(196,120,73,0.12) 0%, rgba(196,120,73,0) 60%);
+        right: -180px; bottom: -260px;
+      }
+      .dotgrid {
+        position: absolute; inset: -60px;
+        background-image: radial-gradient(rgba(232,224,210,0.10) 1.5px, transparent 1.5px);
+        background-size: 44px 44px;
+        -webkit-mask-image: radial-gradient(1200px 800px at 50% 45%, #000 0%, transparent 78%);
+                mask-image: radial-gradient(1200px 800px at 50% 45%, #000 0%, transparent 78%);
+      }
+      .ghost {
+        position: absolute; font-family: "Playfair Display", serif; font-weight: 900;
+        color: rgba(217,164,65,0.09); user-select: none; line-height: 1;
+      }
+      .ghost-l { font-size: 640px; left: -70px; top: 120px; }
+      .ghost-r { font-size: 640px; right: -60px; bottom: 40px; }
+      .vignette {
+        position: absolute; inset: 0;
+        box-shadow: inset 0 0 320px 40px rgba(10, 7, 4, 0.6);
+      }
+      .corner-label {
+        position: absolute; font-family: "JetBrains Mono", monospace; font-size: 19px;
+        letter-spacing: 0.08em; color: rgba(232,224,210,0.42);
+      }
+      .corner-bl { left: 56px; bottom: 40px; }
+      .corner-br { right: 56px; bottom: 40px; }
+      .corner-label .dot { color: #e8825e; }
+
+      /* ---------- camera stage ---------- */
+      #stage { position: absolute; inset: 0; transform-origin: 0 0; }
+
+      /* ---------- terminal window ---------- */
+      #term {
+        position: absolute; left: 88px; top: 148px; width: 852px; height: 792px;
+        background: #1d1712; border-radius: 18px;
+        border: 2px solid rgba(232,224,210,0.10);
+        box-shadow: 0 42px 90px rgba(8,5,2,0.65), 0 8px 26px rgba(8,5,2,0.45);
+      }
+      .titlebar {
+        height: 52px; display: flex; align-items: center; padding: 0 22px;
+        border-bottom: 2px solid rgba(232,224,210,0.07);
+      }
+      .lights { display: flex; gap: 9px; }
+      .light { width: 15px; height: 15px; border-radius: 50%; }
+      .l-r { background: #f16a5d; } .l-y { background: #f5bf4f; } .l-g { background: #62c554; }
+      .titletext {
+        flex: 1; text-align: center; font-family: "JetBrains Mono", monospace;
+        font-size: 17px; color: rgba(232,224,210,0.45); letter-spacing: 0.04em;
+      }
+      .termbody {
+        position: relative; height: 738px; overflow: hidden; padding: 26px 30px;
+      }
+      #term-scroll { position: relative; width: 100%; }
+
+      .t-line {
+        font-family: "JetBrains Mono", monospace; font-size: 20.5px; line-height: 32px;
+        color: #e8e0d2; white-space: pre-wrap;
+      }
+      .t-dim   { color: #8d8172; }
+      .t-user  { color: #f3ecdd; }
+      .t-coral { color: #e8825e; }
+      .t-amber { color: #d9a441; }
+      .t-slug  { color: #cdb98b; }
+      .t-green { color: #8fbb6e; }
+      .t-gap { height: 16px; }
+      .ch { opacity: 0; }
+      .caret {
+        display: inline-block; width: 11px; height: 22px; background: #d9a441;
+        vertical-align: -3px; margin-left: 2px;
+      }
+
+      /* ---------- wiki cards ---------- */
+      #wiki-zone { position: absolute; left: 984px; top: 148px; width: 850px; height: 792px; }
+      .wikicard {
+        position: absolute; background: #f7f1e3; border-radius: 14px;
+        box-shadow: 0 38px 80px rgba(8,5,2,0.6), 0 6px 22px rgba(8,5,2,0.35);
+        border: 2px solid rgba(60,46,28,0.14);
+      }
+      #wiki1 { left: 0; top: 6px; width: 812px; padding: 44px 52px 40px; }
+      #wiki2 { left: 34px; top: 208px; width: 812px; padding: 40px 52px 38px; transform: rotate(1.1deg); }
+
+      .crumb {
+        font-family: "JetBrains Mono", monospace; font-size: 16px; letter-spacing: 0.10em;
+        color: #8a7554; text-transform: lowercase;
+      }
+      .crumb b { color: #b3812e; font-weight: 700; }
+      .wtitle {
+        font-family: "Playfair Display", serif; font-weight: 900; color: #2c2418;
+        font-size: 47px; line-height: 1.12; margin-top: 14px;
+      }
+      .wtitle2 { font-size: 40px; }
+      .metarow { display: flex; align-items: center; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
+      .chip {
+        font-family: "JetBrains Mono", monospace; font-size: 15px; font-weight: 700;
+        color: #6d5a35; background: rgba(217,164,65,0.16); border: 1.5px solid rgba(179,129,46,0.4);
+        padding: 4px 12px; border-radius: 999px;
+      }
+      .wmeta { font-family: "JetBrains Mono", monospace; font-size: 15px; color: #9a8a6c; }
+      .wrule { height: 2px; background: rgba(60,46,28,0.14); margin: 22px 0; transform-origin: left center; }
+      .wbody {
+        font-family: "EB Garamond", serif; font-size: 24.5px; line-height: 1.5; color: #3a3122;
+      }
+      .wbody code {
+        font-family: "JetBrains Mono", monospace; font-size: 19px; color: #7a5218;
+        background: rgba(217,164,65,0.13); padding: 1px 7px; border-radius: 6px;
+      }
+      .callout {
+        position: relative; margin-top: 22px; padding: 20px 24px 18px;
+        background: rgba(217,164,65,0.10); border: 2px solid rgba(179,129,46,0.42);
+        border-radius: 10px; overflow: hidden;
+      }
+      .callout .tag {
+        font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 700;
+        letter-spacing: 0.16em; color: #a06c14;
+      }
+      .callout .ctext {
+        font-family: "EB Garamond", serif; font-size: 23px; line-height: 1.45;
+        color: #4a3c22; margin-top: 8px;
+      }
+      .sweep {
+        position: absolute; inset: 0; background: rgba(217,164,65,0.20);
+        transform: scaleX(0); transform-origin: left center; display: block; width: 100%; height: 100%;
+      }
+      .linkedhead {
+        font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 700;
+        letter-spacing: 0.16em; color: #8a7554; margin-top: 26px;
+      }
+      .linkrow { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+      .wikilink {
+        font-family: "JetBrains Mono", monospace; font-size: 16.5px; color: #6d4f9a;
+        background: rgba(109,79,154,0.09); border: 1.5px solid rgba(109,79,154,0.32);
+        border-radius: 8px; padding: 6px 12px;
+      }
+
+      /* ---------- end card ---------- */
+      #scene-end .endwrap {
+        position: absolute; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 120px 160px; gap: 0;
+      }
+      .end-dot { width: 18px; height: 18px; border-radius: 50%; background: #e8825e; }
+      .end-name {
+        font-family: "Playfair Display", serif; font-weight: 900; color: #f3ecdd;
+        font-size: 128px; line-height: 1.05; margin-top: 30px; letter-spacing: 0.01em;
+      }
+      .end-cmd {
+        margin-top: 44px; font-family: "JetBrains Mono", monospace; font-size: 27px;
+        color: #e8e0d2; background: #1d1712; border: 2px solid rgba(217,164,65,0.35);
+        border-radius: 12px; padding: 18px 34px;
+      }
+      .end-cmd .p { color: #d9a441; }
+      .end-sub {
+        margin-top: 34px; font-family: "JetBrains Mono", monospace; font-size: 21px;
+        letter-spacing: 0.14em; color: rgba(232,224,210,0.55);
+      }
+      .end-url {
+        margin-top: 16px; font-family: "JetBrains Mono", monospace; font-size: 22px;
+        color: #d9a441;
+      }
+      .end-rule { width: 84px; height: 3px; background: rgba(217,164,65,0.5); margin-top: 40px; transform-origin: center; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="35"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- ================= DEMO SCENE ================= -->
+      <section id="scene-demo" class="clip" data-start="0" data-duration="31" data-track-index="1">
+        <div class="backdrop"></div>
+        <div class="glow" id="glow-a"></div>
+        <div class="glow2" id="glow-b"></div>
+        <div class="dotgrid" id="dotgrid"></div>
+        <div class="ghost ghost-l" id="ghost-l">[[</div>
+        <div class="ghost ghost-r" id="ghost-r">]]</div>
+
+        <div id="stage">
+          <!-- terminal -->
+          <div id="term">
+            <div class="titlebar">
+              <div class="lights"><div class="light l-r"></div><div class="light l-y"></div><div class="light l-g"></div></div>
+              <div class="titletext">claude — acme/dashboard</div>
+              <div style="width:63px"></div>
+            </div>
+            <div class="termbody">
+              <div id="term-scroll">
+                <div class="t-line t-dim" id="hdr">✳ Claude Code · acme/dashboard</div>
+                <div class="t-gap"></div>
+                <div class="t-line" id="q-line"><span class="t-dim">&gt; </span><span class="t-user type" id="q-text">Add Okta SSO to the dashboard. Didn't we decide something about WorkOS a few months back?</span><span class="caret" id="caret"></span></div>
+                <div class="t-gap"></div>
+                <div class="t-line print" id="tool1"><span class="t-coral">⏺</span> <span>Bash</span><span class="t-dim">(</span><span class="t-amber">codealmanac search "workos sso"</span><span class="t-dim">)</span></div>
+                <div class="t-line t-slug print" id="out1a">  ⎿  decisions/workos-over-auth0</div>
+                <div class="t-line t-slug print" id="out1b">     architecture/auth/session-tokens</div>
+                <div class="t-line t-slug print" id="out1c">     gotchas/workos-webhook-replay</div>
+                <div class="t-gap"></div>
+                <div class="t-line print" id="tool2"><span class="t-coral">⏺</span> <span>Bash</span><span class="t-dim">(</span><span class="t-amber">codealmanac show decisions/workos-over-auth0</span><span class="t-dim">)</span></div>
+                <div class="t-line t-dim print" id="out2a">  ⎿  slug:   decisions/workos-over-auth0</div>
+                <div class="t-line t-dim print" id="out2b">     topics: decisions, auth · from 4 sessions</div>
+                <div class="t-gap"></div>
+                <div class="t-line print" id="tool3"><span class="t-coral">⏺</span> <span>Bash</span><span class="t-dim">(</span><span class="t-amber">codealmanac show gotchas/workos-webhook-replay</span><span class="t-dim">)</span></div>
+                <div class="t-line t-dim print" id="out3a">  ⎿  slug:   gotchas/workos-webhook-replay</div>
+                <div class="t-gap"></div>
+                <div class="t-line" id="ans-line"><span class="t-green">⏺</span> <span class="t-user type" id="ans-text">Found it. In March you chose WorkOS over Auth0 — one API for SAML and SCIM, and Okta is a first-class connection. I'll wire Okta SSO through the existing client in src/auth/workos.ts, and use idempotency keys on the webhook handler — replays aren't deduped.</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- wiki -->
+          <div id="wiki-zone">
+            <div class="wikicard" id="wiki1">
+              <div class="crumb" id="w1-crumb">almanac / decisions / <b>workos-over-auth0</b></div>
+              <div class="wtitle" id="w1-title">WorkOS over Auth0</div>
+              <div class="metarow" id="w1-meta">
+                <span class="chip">decisions</span><span class="chip">auth</span>
+                <span class="wmeta">updated 3 days ago · written from 4 sessions</span>
+              </div>
+              <div class="wrule" id="w1-rule"></div>
+              <div class="wbody" id="w1-body">SSO and SCIM go through WorkOS. Auth0 was prototyped in February and dropped — enterprise connections were priced per-connection, and SCIM required a separate add-on.</div>
+              <div class="callout" id="w1-callout">
+                <span class="sweep" id="w1-sweep"></span>
+                <div class="tag">DECISION</div>
+                <div class="ctext">Every identity provider goes through <code>src/auth/workos.ts</code>. Never call provider APIs directly from route handlers.</div>
+              </div>
+              <div class="linkedhead" id="w1-linkedhead">LINKED PAGES</div>
+              <div class="linkrow" id="w1-links">
+                <span class="wikilink">gotchas/workos-webhook-replay</span>
+                <span class="wikilink">architecture/auth/session-tokens</span>
+                <span class="wikilink">flows/login</span>
+              </div>
+            </div>
+
+            <div class="wikicard" id="wiki2">
+              <div class="crumb">almanac / gotchas / <b>workos-webhook-replay</b></div>
+              <div class="wtitle wtitle2">WorkOS webhook replay</div>
+              <div class="metarow">
+                <span class="chip">gotchas</span><span class="chip">auth</span>
+                <span class="wmeta">from the Jun 3 debugging session</span>
+              </div>
+              <div class="wrule" id="w2-rule"></div>
+              <div class="wbody">WorkOS retries webhook deliveries aggressively and does not dedupe — a provisioning event can arrive twice.</div>
+              <div class="callout" id="w2-callout">
+                <span class="sweep" id="w2-sweep"></span>
+                <div class="tag">GOTCHA</div>
+                <div class="ctext">Handlers must be idempotent. Use the event id as an idempotency key — this caused the June 3 double-provision incident.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="corner-label corner-bl" id="label-bl"><span class="dot">⏺</span> codealmanac — live demo</div>
+        <div class="corner-label corner-br" id="label-br">wiki lives in your repo · almanac/</div>
+        <div class="vignette" data-layout-allow-occlusion></div>
+      </section>
+
+      <!-- ================= END CARD ================= -->
+      <section id="scene-end" class="clip" data-start="30" data-duration="5" data-track-index="2">
+        <div class="backdrop"></div>
+        <div class="glow" id="eglow" style="left:410px; top:-40px;"></div>
+        <div class="dotgrid" id="edotgrid"></div>
+        <div class="ghost ghost-l" id="eghost-l" style="font-size:520px; top:200px;">[[</div>
+        <div class="ghost ghost-r" id="eghost-r" style="font-size:520px; bottom:120px;">]]</div>
+        <div class="endwrap">
+          <div class="end-dot" id="end-dot"></div>
+          <div class="end-name" id="end-name">codealmanac</div>
+          <div class="end-cmd" id="end-cmd"><span class="p">$</span> curl -fsSL codealmanac.com/install.sh | sh</div>
+          <div class="end-sub" id="end-sub">open source · local · free</div>
+          <div class="end-url" id="end-url">github.com/AlmanacCode/codealmanac</div>
+          <div class="end-rule" id="end-rule"></div>
+        </div>
+        <div class="vignette" data-layout-allow-occlusion></div>
+      </section>
+    </div>
+
+    <script>
+      // split .type elements into per-char spans (synchronous, deterministic)
+      document.querySelectorAll(".type").forEach((el) => {
+        const text = el.textContent;
+        el.textContent = "";
+        for (const c of text) {
+          const s = document.createElement("span");
+          s.className = "ch";
+          s.textContent = c;
+          el.appendChild(s);
+        }
+      });
+
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // camera helper: transform-origin 0 0; center point P at scale S
+      const cam = (P, S) => ({ x: 960 - P.x * S, y: 540 - P.y * S, scale: S });
+
+      /* ---------- ambient ---------- */
+      tl.fromTo("#glow-a", { scale: 0.92 }, { scale: 1.08, duration: 5, ease: "sine.inOut", yoyo: true, repeat: 5 }, 0);
+      tl.fromTo("#glow-b", { scale: 1.06 }, { scale: 0.9, duration: 6, ease: "sine.inOut", yoyo: true, repeat: 4 }, 0);
+      tl.to("#ghost-l", { y: -36, duration: 31, ease: "none" }, 0);
+      tl.to("#ghost-r", { y: 30, duration: 31, ease: "none" }, 0);
+      tl.to("#dotgrid", { x: -22, y: -14, duration: 31, ease: "none" }, 0);
+
+      /* ---------- entrance ---------- */
+      const c0 = cam({ x: 514, y: 528 }, 1.34);
+      tl.set("#stage", { x: c0.x, y: c0.y, scale: c0.scale }, 0);
+      tl.from("#term", { y: 46, opacity: 0, scale: 0.965, duration: 0.9, ease: "power3.out" }, 0.15);
+      tl.from("#hdr", { opacity: 0, duration: 0.4 }, 0.75);
+      tl.from(["#label-bl", "#label-br"], { opacity: 0, y: 14, duration: 0.6, ease: "power2.out", stagger: 0.12 }, 0.7);
+
+      // wiki hidden until entry
+      tl.set("#wiki1", { opacity: 0 }, 0);
+      tl.set("#wiki2", { opacity: 0 }, 0);
+
+      /* ---------- question types 1.15 → 3.25 ---------- */
+      const qChars = gsap.utils.toArray("#q-text .ch");
+      tl.set("#q-line", { opacity: 1 }, 0);
+      tl.to(qChars, { opacity: 1, duration: 0.01, stagger: 2.0 / qChars.length, ease: "none" }, 1.15);
+      // caret blinks during + shortly after typing, then fades
+      tl.fromTo("#caret", { opacity: 1 }, { opacity: 0, duration: 0.42, yoyo: true, repeat: 7, ease: "steps(1)" }, 1.15);
+      tl.to("#caret", { opacity: 0, duration: 0.2 }, 4.6);
+
+      /* ---------- tool call 1: search 4.0 → 6.4 ---------- */
+      const printLine = (sel, t) =>
+        tl.fromTo(sel, { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.24, ease: "power2.out" }, t);
+      tl.set(".print", { opacity: 0 }, 0);
+      printLine("#tool1", 4.05);
+      printLine("#out1a", 4.75);
+      printLine("#out1b", 4.95);
+      printLine("#out1c", 5.15);
+
+      /* ---------- tool call 2: show 6.6 → 8.2 ---------- */
+      printLine("#tool2", 6.6);
+      printLine("#out2a", 7.25);
+      printLine("#out2b", 7.45);
+
+      /* ---------- camera pulls back, wiki card 1 enters 8.6 → 10 ---------- */
+      tl.to("#stage", { x: 0, y: 0, scale: 1, duration: 1.4, ease: "power2.inOut" }, 8.55);
+      tl.fromTo("#wiki1",
+        { opacity: 0, x: 150, rotation: 1.6 },
+        { opacity: 1, x: 0, rotation: 0, duration: 1.0, ease: "power3.out" }, 9.05);
+      tl.from("#w1-crumb", { opacity: 0, y: 16, duration: 0.45, ease: "power2.out" }, 9.7);
+      tl.from("#w1-title", { opacity: 0, y: 26, duration: 0.55, ease: "power3.out" }, 9.85);
+      tl.from("#w1-meta .chip", { opacity: 0, scale: 0.7, duration: 0.4, ease: "back.out(2)", stagger: 0.1 }, 10.05);
+      tl.from("#w1-meta .wmeta", { opacity: 0, duration: 0.45 }, 10.3);
+      tl.fromTo("#w1-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.inOut" }, 10.35);
+      tl.from("#w1-body", { opacity: 0, y: 20, duration: 0.55, ease: "power2.out" }, 10.5);
+      tl.from("#w1-callout", { opacity: 0, y: 22, duration: 0.55, ease: "power2.out" }, 10.75);
+      tl.from(["#w1-linkedhead", "#w1-links .wikilink"], { opacity: 0, y: 14, duration: 0.4, ease: "power2.out", stagger: 0.08 }, 11.0);
+
+      /* ---------- camera drifts to wiki; decision sweep 11.6 → 14 ---------- */
+      const c1 = cam({ x: 1398, y: 520 }, 1.16);
+      tl.to("#stage", { x: c1.x, y: c1.y, scale: c1.scale, duration: 1.5, ease: "power2.inOut" }, 11.7);
+      tl.to("#w1-sweep", { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 13.3);
+      tl.to("#w1-sweep", { opacity: 0, duration: 0.7 }, 14.3);
+
+      /* ---------- tool call 3 + gotcha card 14.8 → 18 ---------- */
+      printLine("#tool3", 14.9);
+      printLine("#out3a", 15.55);
+      const c2 = cam({ x: 1240, y: 560 }, 1.1);
+      tl.to("#stage", { x: c2.x, y: c2.y, scale: c2.scale, duration: 1.2, ease: "power2.inOut" }, 15.6);
+      tl.fromTo("#wiki2",
+        { opacity: 0, y: 140, x: 60, rotation: 3 },
+        { opacity: 1, y: 0, x: 0, rotation: 1.1, duration: 0.95, ease: "power3.out" }, 16.1);
+      tl.fromTo("#w2-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 16.8);
+      tl.to("#w2-sweep", { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 17.5);
+      tl.to("#w2-sweep", { opacity: 0, duration: 0.7 }, 18.5);
+
+      /* ---------- camera back to terminal; answer types 19 → 26 ---------- */
+      const c3 = cam({ x: 620, y: 560 }, 1.12);
+      tl.to("#stage", { x: c3.x, y: c3.y, scale: c3.scale, duration: 1.4, ease: "power2.inOut" }, 19.0);
+      tl.set("#ans-line", { opacity: 0 }, 0);
+      tl.to("#ans-line", { opacity: 1, duration: 0.15 }, 20.0);
+      const aChars = gsap.utils.toArray("#ans-text .ch");
+      tl.to(aChars, { opacity: 1, duration: 0.01, stagger: 5.6 / aChars.length, ease: "none" }, 20.1);
+      // terminal scrolls up as the answer fills in
+      tl.to("#term-scroll", { y: -168, duration: 4.6, ease: "power1.inOut" }, 20.8);
+
+      /* ---------- final pull-back and hold 26.5 → 31 ---------- */
+      tl.to("#stage", { x: 0, y: 0, scale: 1.0, duration: 1.6, ease: "power2.inOut" }, 26.4);
+      tl.to("#scene-demo", { opacity: 0, duration: 0.9, ease: "power1.inOut" }, 30.1);
+
+      /* ---------- end card 30 → 35 ---------- */
+      tl.from("#scene-end", { opacity: 0, duration: 0.7, ease: "power1.inOut" }, 30.2);
+      tl.from("#end-dot", { scale: 0, duration: 0.5, ease: "back.out(2.5)" }, 30.7);
+      tl.from("#end-name", { opacity: 0, y: 40, duration: 0.8, ease: "power3.out" }, 30.85);
+      tl.from("#end-cmd", { opacity: 0, y: 26, duration: 0.6, ease: "power2.out" }, 31.35);
+      tl.from(["#end-sub", "#end-url"], { opacity: 0, y: 18, duration: 0.5, ease: "power2.out", stagger: 0.14 }, 31.7);
+      tl.fromTo("#end-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power2.inOut" }, 32.0);
+      tl.fromTo("#eglow", { scale: 0.95 }, { scale: 1.08, duration: 2.2, ease: "sine.inOut", yoyo: true, repeat: 0 }, 31.0);
+      tl.to("#eghost-l", { y: -20, duration: 5, ease: "none" }, 30);
+      tl.to("#eghost-r", { y: 16, duration: 5, ease: "none" }, 30);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

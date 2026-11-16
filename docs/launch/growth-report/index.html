@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CodeAlmanac growth since its public launch on July 7, 2026.">
+  <title>CodeAlmanac — launch growth</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f7f6f1;
+      --card: #fff;
+      --ink: #171713;
+      --muted: #69685f;
+      --line: #d9d7ce;
+      --orange: #e65f2b;
+      --blue: #2468d8;
+      --soft-orange: #fae7de;
+      --soft-blue: #e5edfb;
+      --max: 1120px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: inherit; }
+    button { font: inherit; }
+    .wrap { width: min(calc(100% - 40px), var(--max)); margin: 0 auto; }
+
+    .topbar {
+      position: sticky;
+      z-index: 10;
+      top: 0;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--paper) 94%, transparent);
+      backdrop-filter: blur(12px);
+    }
+    .topbar .wrap {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand { font-weight: 760; letter-spacing: -0.02em; text-decoration: none; }
+    nav { display: flex; gap: 4px; overflow-x: auto; }
+    nav a {
+      padding: 8px 10px;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 14px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    nav a:hover, nav a:focus-visible { background: #eae8df; color: var(--ink); outline: none; }
+
+    header { padding: 76px 0 42px; border-bottom: 1px solid var(--line); }
+    .eyebrow { margin: 0 0 12px; color: var(--orange); font-size: 13px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { max-width: 820px; margin: 0; font-size: clamp(42px, 7vw, 76px); line-height: .98; letter-spacing: -.055em; }
+    .dek { max-width: 720px; margin: 24px 0 0; color: var(--muted); font-size: clamp(18px, 2.2vw, 23px); }
+    .snapshot { margin: 24px 0 0; color: var(--muted); font-size: 13px; }
+
+    main { padding-bottom: 100px; }
+    section { padding: 62px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 56px; }
+    .section-head { display: grid; grid-template-columns: 1fr 1.2fr; gap: 48px; margin-bottom: 32px; }
+    .kicker { margin: 0 0 8px; color: var(--muted); font-size: 13px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
+    h2 { margin: 0; font-size: clamp(30px, 4vw, 46px); line-height: 1.08; letter-spacing: -.035em; }
+    .section-copy { margin: 4px 0 0; color: var(--muted); font-size: 17px; }
+
+    .score-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .score {
+      min-height: 260px;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .score.downloads { border-top: 5px solid var(--orange); }
+    .score.stars { border-top: 5px solid var(--blue); }
+    .score-label { color: var(--muted); font-size: 14px; }
+    .score-value { display: block; margin-top: 8px; font-size: clamp(50px, 8vw, 84px); font-weight: 780; line-height: 1; letter-spacing: -.06em; }
+    .score-detail { margin: 22px 0 0; color: var(--muted); }
+    .score-detail strong { color: var(--ink); }
+
+    .takeaway {
+      margin-top: 16px;
+      padding: 22px 24px;
+      border-left: 4px solid var(--ink);
+      background: #eceae2;
+      font-size: 18px;
+    }
+    .takeaway p { margin: 0; }
+
+    .chart-card { padding: 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+    .chart-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+    .chart-title { margin: 0; font-size: 20px; letter-spacing: -.02em; }
+    .chart-subtitle { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .toggle { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+    .toggle button { padding: 7px 10px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; }
+    .toggle button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px #0001; }
+    .canvas-wrap { position: relative; height: 330px; }
+    canvas { width: 100%; height: 100%; }
+    .legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 18px; color: var(--muted); font-size: 13px; }
+    .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 50%; background: var(--legend); }
+
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin: 16px 0 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--line); }
+    .mini-stat { min-height: 120px; padding: 18px; background: var(--card); }
+    .mini-stat span { display: block; color: var(--muted); font-size: 13px; }
+    .mini-stat strong { display: block; margin-top: 10px; font-size: 28px; line-height: 1; letter-spacing: -.035em; }
+
+    .release-strip { display: grid; grid-template-columns: repeat(10, 1fr); gap: 8px; }
+    .release-day { min-height: 112px; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--card); }
+    .release-day.major { border-color: #efb49c; background: var(--soft-orange); }
+    .release-day time { display: block; color: var(--muted); font-size: 12px; }
+    .release-day strong { display: block; margin-top: 12px; font-size: 18px; }
+    .release-day small { display: block; margin-top: 3px; color: var(--muted); }
+
+    details { margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+    summary { padding: 16px 18px; cursor: pointer; font-weight: 700; }
+    .table-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { padding: 11px 16px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--muted); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+
+    .notes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .note { padding: 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+    .note h3 { margin: 0; font-size: 17px; }
+    .note p { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+    .source-list { margin: 24px 0 0; padding-left: 20px; }
+    .source-list li { margin: 8px 0; }
+    footer { padding: 28px 0 60px; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 800px) {
+      .topbar .wrap { align-items: flex-start; flex-direction: column; gap: 2px; padding: 12px 0 8px; }
+      nav { width: 100%; }
+      header { padding-top: 56px; }
+      .section-head, .score-grid { grid-template-columns: 1fr; gap: 20px; }
+      .stat-row { grid-template-columns: repeat(2, 1fr); }
+      .release-strip { grid-template-columns: repeat(2, 1fr); }
+      .notes-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 520px) {
+      .wrap { width: min(calc(100% - 24px), var(--max)); }
+      .score, .chart-card { padding: 20px; }
+      .chart-toolbar { flex-direction: column; }
+      .canvas-wrap { height: 280px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="wrap">
+      <a class="brand" href="#top">CodeAlmanac growth</a>
+      <nav aria-label="Report sections">
+        <a href="#answer">Answer</a>
+        <a href="#downloads">Users</a>
+        <a href="#stars">Stars</a>
+        <a href="#releases">Releases</a>
+        <a href="#method">Method</a>
+      </nav>
+    </div>
+  </div>
+
+  <header id="top">
+    <div class="wrap">
+      <p class="eyebrow">Public launch report · July 7–13, 2026</p>
+      <h1>What happened after CodeAlmanac moved to PyPI?</h1>
+      <p class="dek">A clean post-launch view of package adoption and GitHub attention, with all prerelease activity removed.</p>
+      <p class="snapshot">Data snapshot: July 14, 2026 at 01:54 UTC · July 13 is a partial day</p>
+    </div>
+  </header>
+
+  <main>
+    <section id="answer">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">The short answer</p>
+            <h2>Real early growth, in two different waves.</h2>
+          </div>
+          <p class="section-copy">The public launch began on July 7. GitHub traffic reached its first full-day peak on July 8, while PyPI downloads had another release-driven peak on July 11.</p>
+        </div>
+
+        <div class="score-grid">
+          <article class="score downloads">
+            <div>
+              <span class="score-label">PyPI downloads since stable release day</span>
+              <strong class="score-value">2,062</strong>
+            </div>
+            <p class="score-detail"><strong>295 per calendar day</strong> on average. The six complete launch days produced 1,989 downloads.</p>
+          </article>
+          <article class="score stars">
+            <div>
+              <span class="score-label">Net-new stars after stable release</span>
+              <strong class="score-value">+323</strong>
+            </div>
+            <p class="score-detail">From a <strong>153-star prelaunch baseline</strong> to 476 at this snapshot: a 211% increase.</p>
+          </article>
+        </div>
+        <div class="takeaway">
+          <p><strong>Read:</strong> July 7 is the launch boundary; July 8 is the first full day of the attention wave. Nearly 97% of post-launch stars arrived by July 12.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="downloads">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">User growth</p>
+            <h2>Package adoption</h2>
+          </div>
+          <p class="section-copy">PyPI does not expose unique users. Downloads are the best public adoption proxy, so this report uses non-mirror downloads to reduce automated mirror traffic.</p>
+        </div>
+        <div class="chart-card">
+          <div class="chart-toolbar">
+            <div>
+              <h3 class="chart-title">PyPI downloads</h3>
+              <p class="chart-subtitle">Public launch day onward · July 13 is incomplete</p>
+            </div>
+            <div class="toggle" aria-label="Download chart view">
+              <button type="button" data-chart="downloads" data-mode="daily" aria-pressed="true">Daily</button>
+              <button type="button" data-chart="downloads" data-mode="cumulative" aria-pressed="false">Cumulative</button>
+            </div>
+          </div>
+          <div class="canvas-wrap"><canvas id="downloads-chart" role="img" aria-label="Daily PyPI downloads from July 7 to July 13, 2026"></canvas></div>
+          <div class="legend"><span style="--legend: var(--orange)">Non-mirror downloads</span><span style="--legend: #aaa89f">Partial day</span></div>
+        </div>
+        <div class="stat-row">
+          <div class="mini-stat"><span>Launch-to-date</span><strong>2,062</strong></div>
+          <div class="mini-stat"><span>Peak day · Jul 11</span><strong>597</strong></div>
+          <div class="mini-stat"><span>Six complete days</span><strong>1,989</strong></div>
+          <div class="mini-stat"><span>Prelaunch baseline</span><strong>2,324</strong></div>
+        </div>
+        <details>
+          <summary>Browse daily download data</summary>
+          <div class="table-wrap"><table id="downloads-table"></table></div>
+        </details>
+      </div>
+    </section>
+
+    <section id="stars">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Star growth</p>
+            <h2>Attention after the reset</h2>
+          </div>
+          <p class="section-copy">The repository had 153 stars at the start of July 7. Those stay visible as the prelaunch baseline, but only the 323 stars added from launch day onward count as growth.</p>
+        </div>
+        <div class="chart-card">
+          <div class="chart-toolbar">
+            <div>
+              <h3 class="chart-title">Net-new GitHub stars</h3>
+              <p class="chart-subtitle">Exact stargazer timestamps, aggregated from July 7 UTC</p>
+            </div>
+            <div class="toggle" aria-label="Star chart view">
+              <button type="button" data-chart="stars" data-mode="daily" aria-pressed="true">Daily</button>
+              <button type="button" data-chart="stars" data-mode="cumulative" aria-pressed="false">Cumulative</button>
+            </div>
+          </div>
+          <div class="canvas-wrap"><canvas id="stars-chart" role="img" aria-label="Daily new GitHub stars from July 7 to July 13, 2026"></canvas></div>
+          <div class="legend"><span style="--legend: var(--blue)">Net-new stars</span><span style="--legend: #aaa89f">Partial day</span></div>
+        </div>
+        <div class="stat-row">
+          <div class="mini-stat"><span>Prelaunch baseline</span><strong>153</strong></div>
+          <div class="mini-stat"><span>Net-new</span><strong>323</strong></div>
+          <div class="mini-stat"><span>Snapshot total</span><strong>476</strong></div>
+          <div class="mini-stat"><span>Peak day · Jul 12</span><strong>131</strong></div>
+        </div>
+        <details>
+          <summary>Browse daily star data</summary>
+          <div class="table-wrap"><table id="stars-table"></table></div>
+        </details>
+      </div>
+    </section>
+
+    <section id="releases">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Release cadence</p>
+            <h2>Package work began before launch</h2>
+          </div>
+          <p class="section-copy">The first stable package shipped July 2, five days before the public launch. That earlier installation and testing activity belongs to the prelaunch baseline.</p>
+        </div>
+        <div class="release-strip" aria-label="Release activity by day">
+          <div class="release-day major"><time>Jul 2</time><strong>0.1.0</strong><small>stable launch</small></div>
+          <div class="release-day"><time>Jul 3</time><strong>9</strong><small>patch releases</small></div>
+          <div class="release-day major"><time>Jul 4</time><strong>0.2.0</strong><small>+ 5 releases</small></div>
+          <div class="release-day"><time>Jul 5</time><strong>1</strong><small>release</small></div>
+          <div class="release-day major"><time>Jul 6</time><strong>0.3.0</strong><small>minor release</small></div>
+          <div class="release-day"><time>Jul 7</time><strong>5</strong><small>patch releases</small></div>
+          <div class="release-day"><time>Jul 8</time><strong>—</strong><small>no release</small></div>
+          <div class="release-day"><time>Jul 9</time><strong>2</strong><small>patch releases</small></div>
+          <div class="release-day major"><time>Jul 11</time><strong>0.4.0</strong><small>+ 4 releases</small></div>
+          <div class="release-day"><time>Jul 13</time><strong>—</strong><small>no release</small></div>
+        </div>
+        <details>
+          <summary>Browse all stable PyPI versions</summary>
+          <div class="table-wrap"><table id="releases-table"></table></div>
+        </details>
+      </div>
+    </section>
+
+    <section id="method">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Method</p>
+            <h2>What the numbers mean</h2>
+          </div>
+          <p class="section-copy">The public launch boundary is July 7 UTC. The first stable PyPI upload on July 2 was a prerelease period for this analysis, not the launch itself.</p>
+        </div>
+        <div class="notes-grid">
+          <article class="note"><h3>“Users” is a proxy</h3><p>Package indexes publish downloads, not unique people. CI, reinstalls, upgrades, and multiple machines can create multiple downloads per person.</p></article>
+          <article class="note"><h3>Mirrors are removed</h3><p>The main series excludes mirror traffic. Including mirrors raises the all-time observed count to 14,912, but that is less useful as a human-adoption signal.</p></article>
+          <article class="note"><h3>The launch date is behavioral</h3><p>Traffic rose from 62 views on July 6 to 295 on July 7 and 973 on July 8. The concentrated star wave began late on July 7 UTC.</p></article>
+        </div>
+        <ul class="source-list">
+          <li><a href="https://pypi.org/project/codealmanac/">PyPI project and release files</a></li>
+          <li><a href="https://pypistats.org/packages/codealmanac">PyPIStats download history</a></li>
+          <li><a href="https://github.com/AlmanacCode/codealmanac">GitHub repository and stargazer history</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="wrap">A static, self-contained report. Refresh the source snapshot to extend the timeline.</div></footer>
+
+  <script>
+    const days = ["Jul 7", "Jul 8", "Jul 9", "Jul 10", "Jul 11", "Jul 12", "Jul 13"];
+    const isoDays = ["2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-11", "2026-07-12", "2026-07-13"];
+    const series = {
+      downloads: { daily: [577, 255, 377, 92, 597, 91, 73], color: "#e65f2b" },
+      stars: { daily: [12, 64, 54, 27, 25, 131, 10], color: "#2468d8" }
+    };
+    const releases = [
+      ["0.1.0", "Jul 2 · 20:23"], ["0.1.1", "Jul 3 · 05:41"], ["0.1.2", "Jul 3 · 08:27"],
+      ["0.1.3", "Jul 3 · 12:02"], ["0.1.4", "Jul 3 · 12:20"], ["0.1.5", "Jul 3 · 13:13"],
+      ["0.1.6", "Jul 3 · 14:37"], ["0.1.7", "Jul 3 · 15:41"], ["0.1.8", "Jul 3 · 16:06"],
+      ["0.1.9", "Jul 3 · 16:33"], ["0.1.10", "Jul 4 · 01:38"], ["0.1.11", "Jul 4 · 02:22"],
+      ["0.1.12", "Jul 4 · 03:52"], ["0.1.13", "Jul 4 · 04:40"], ["0.2.0", "Jul 4 · 23:09"],
+      ["0.2.1", "Jul 4 · 23:32"], ["0.2.2", "Jul 5 · 01:23"], ["0.3.0", "Jul 6 · 05:21"],
+      ["0.3.1", "Jul 7 · 04:03"], ["0.3.2", "Jul 7 · 05:56"], ["0.3.3", "Jul 7 · 06:23"],
+      ["0.3.4", "Jul 7 · 07:41"], ["0.3.5", "Jul 7 · 23:00"], ["0.3.6", "Jul 9 · 05:06"],
+      ["0.3.7", "Jul 9 · 05:45"], ["0.4.0", "Jul 11 · 05:14"], ["0.4.1", "Jul 11 · 07:25"],
+      ["0.4.2", "Jul 11 · 07:31"], ["0.4.3", "Jul 11 · 08:16"], ["0.4.4", "Jul 11 · 19:44"]
+    ];
+
+    const cumulative = values => values.map((_, i) => values.slice(0, i + 1).reduce((a, b) => a + b, 0));
+    const format = value => new Intl.NumberFormat("en-US").format(value);
+
+    function drawChart(name, mode = "daily") {
+      const canvas = document.getElementById(`${name}-chart`);
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.round(rect.width * ratio);
+      canvas.height = Math.round(rect.height * ratio);
+      const ctx = canvas.getContext("2d");
+      ctx.scale(ratio, ratio);
+
+      const width = rect.width, height = rect.height;
+      const pad = { top: 18, right: 12, bottom: 42, left: 48 };
+      const values = mode === "cumulative" ? cumulative(series[name].daily) : series[name].daily;
+      const max = Math.max(...values) * 1.12 || 1;
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const step = plotW / values.length;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.font = "12px ui-sans-serif, -apple-system, sans-serif";
+      ctx.fillStyle = "#69685f";
+      ctx.strokeStyle = "#e2e0d8";
+      ctx.lineWidth = 1;
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (let i = 0; i <= 4; i++) {
+        const y = pad.top + plotH * (i / 4);
+        const value = Math.round(max * (1 - i / 4));
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(width - pad.right, y); ctx.stroke();
+        ctx.fillText(format(value), pad.left - 9, y);
+      }
+
+      values.forEach((value, i) => {
+        const x = pad.left + i * step + step * .15;
+        const barW = step * .7;
+        const barH = (value / max) * plotH;
+        ctx.fillStyle = i === values.length - 1 ? "#aaa89f" : series[name].color;
+        ctx.fillRect(x, pad.top + plotH - barH, Math.max(2, barW), barH);
+        if (width > 620 || i % 2 === 0 || i === values.length - 1) {
+          ctx.fillStyle = "#69685f";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText(days[i], x + barW / 2, pad.top + plotH + 11);
+        }
+      });
+    }
+
+    function fillDataTable(id, values, cumulativeStart = 0) {
+      let running = cumulativeStart;
+      const rows = values.map((value, i) => {
+        running += value;
+        return `<tr><td>${isoDays[i]}${i === values.length - 1 ? " · partial" : ""}</td><td>${format(value)}</td><td>${format(running)}</td></tr>`;
+      }).join("");
+      document.getElementById(id).innerHTML = `<thead><tr><th>Date</th><th>New</th><th>Cumulative</th></tr></thead><tbody>${rows}</tbody>`;
+    }
+
+    fillDataTable("downloads-table", series.downloads.daily);
+    fillDataTable("stars-table", series.stars.daily, 153);
+    document.getElementById("releases-table").innerHTML = `<thead><tr><th>Version</th><th>Uploaded · UTC</th></tr></thead><tbody>${releases.map(([version, date]) => `<tr><td>${version}</td><td>${date}</td></tr>`).join("")}</tbody>`;
+
+    const modes = { downloads: "daily", stars: "daily" };
+    document.querySelectorAll("[data-chart]").forEach(button => button.addEventListener("click", () => {
+      const name = button.dataset.chart;
+      modes[name] = button.dataset.mode;
+      document.querySelectorAll(`[data-chart="${name}"]`).forEach(item => item.setAttribute("aria-pressed", item === button ? "true" : "false"));
+      drawChart(name, modes[name]);
+    }));
+
+    function drawAll() { drawChart("downloads", modes.downloads); drawChart("stars", modes.stars); }
+    let resizeTimer;
+    window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(drawAll, 100); });
+    drawAll();
+  </script>
+</body>
+</html>
